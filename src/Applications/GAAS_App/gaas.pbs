@@ -1,0 +1,15 @@
+#!/bin/csh -f
+#
+#PBS -N GAASsa
+#PBS -l walltime=6:00:00
+#PBS -l select=4:ncpus=8:proc=neha
+#PBS -j eo
+#PBS -q general
+#PBS -W group_list=s0911
+
+setenv ESMADIR $HOME/workspace/GEOSadas
+setenv ARCH `uname -s`
+
+cd /home/adasilva/silo/GAAS/e561_tst_02/run
+./run_all.csh 20110101 20110131
+

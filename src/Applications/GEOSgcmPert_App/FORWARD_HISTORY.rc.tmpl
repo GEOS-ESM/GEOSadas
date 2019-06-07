@@ -1,0 +1,41 @@
+######################################################################
+#                 Create History List for Output
+#######################################################################
+
+EXPID:  >>>EXPID<<<
+EXPDSC: >>>EXPFDSC<<<
+HIST_CF: FORWARD_HISTORY.rc
+
+COLLECTIONS: 'fvpert.eta'
+              ::
+
+GRID_LABELS: PC288x181-DC
+::
+
+PC288x181-DC.GRID_TYPE: LatLon
+PC288x181-DC.IM_WORLD: 288
+PC288x181-DC.JM_WORLD: 181
+PC288x181-DC.POLE: PC
+PC288x181-DC.DATELINE: DC
+PC288x181-DC.LM: 72
+
+GRID_LABELS:
+::
+
+  fvpert.eta.format:    'CFIO',
+  fvpert.eta.template:  '%y4%m2%d2_%h2%n2z.>>>NCSUFFIX<<<',
+  fvpert.eta.mode:      'instantaneous',
+  fvpert.eta.ref_date:   >>>NYMDE<<<,
+  fvpert.eta.ref_time:   >>>NHMSE<<<,
+  fvpert.eta.frequency:  >>>TRAJFRQ<<<,
+# fvpert.eta.duration:   003000,
+  fvpert.eta.grid_label: PC288x181-DC,
+  fvpert.eta.fields:   'U'   , 'AGCM_PERT',
+                       'V'   , 'AGCM_PERT',
+                       'TV'  , 'AGCM_PERT',
+                       'DP'  , 'AGCM_PERT', 
+                       'QV'  , 'AGCM_PERT', 
+                       'QI'  , 'AGCM_PERT', 
+                       'QL'  , 'AGCM_PERT', 
+                       'O3'  , 'AGCM_PERT', 
+                       ::

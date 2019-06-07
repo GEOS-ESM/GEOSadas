@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+%include <head.h>
+
+CWD=$(pwd)
+
+export WORKFLOW_DIR=%ECF_HOME%
+bash ${WORKFLOW_DIR}/tasks/atmens/AtmensCreateWorkspace.sh
+
+cd $CWD
+
+%include <tail.h>
+
+%manual
+
+(1) Create $FVWORK directory
+(2) Create directory $FVWORK/ExtData and create necessary symlinks there
+
+%end

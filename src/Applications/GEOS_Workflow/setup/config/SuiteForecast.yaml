@@ -1,0 +1,81 @@
+Forecast:
+  Type: Suite
+
+  Initialize:
+    Type: Family
+    CreateWorkspace: {Type: Task}
+    GetDateTime4Fcst:
+      Trigger: {CreateWorkspace: complete}
+      Type: Task
+    LinkGcmBdryFiles:
+      Trigger: {GetDateTime4Fcst: complete}
+      Type: Task
+    CopyResourceFiles4Fcst:
+      Trigger: {GetDateTime4Fcst: complete}
+      Type: Task
+    CopyGcmRestarts4Fcst:
+      Trigger: {CopyResourceFiles4Fcst: complete}
+      Type: Task
+
+  CreateIAUincrement4Fcst:
+    Type: Task
+    Trigger: {Initialize: complete}      
+    Variable:
+      ECF_JOB_CMD: "/usr/slurm/bin/sbatch %ECF_JOB% > %ECF_JOBOUT% 2>&1"
+      NCPUS_IAU: <<ncpus_iau>>
+      PRIORITY_IAU: <<priority>>
+      TIME_IAU: <<time_iau>>
+    
+  GCM:
+    Type: Family
+    Trigger: {CreateIAUincrement4Fcst: complete}
+    UpdateResource:
+      Type: Family
+      UpdateAgcmResource4Fcst: {Type: Task}
+      UpdateCapResource: {Type: Task}
+      UpdateHistoryResource4Fcst: {Type: Task}
+    RunGcm:
+      Type: Task
+      Trigger: {UpdateResource: complete}
+      Variable:
+        ECF_JOB_CMD: "/usr/slurm/bin/sbatch %ECF_JOB% > %ECF_JOBOUT% 2>&1"
+        NCPUS_GCM: <<ncpus_gcm>>
+        TIME_GCM: <<time_gcm>>
+        PRIORITY_GCM: <<priority>>
+
+  RunAdjointTools:
+    Type: Task
+    Trigger: {GCM: complete}
+    Variable:
+      ECF_JOB_CMD: "/usr/slurm/bin/sbatch %ECF_JOB% > %ECF_JOBOUT% 2>&1"
+      NCPUS_ADJ: <<ncpus_adj>>
+      TIME_ADJ: <<time_adj>>
+      PRIORITY_ADJ: <<priority>>
+
+  Finalize:
+    Type: Family
+    Trigger: {RunAdjointTools: complete}
+    Geos5SaveFcstRestart:
+      Type: Task
+    TagAndCopyForecastOutput:
+      Type: Task
+      Trigger: {Geos5SaveFcstRestart: complete}
+    ConvToPresCoords:
+      Type: Task
+      Trigger: {TagAndCopyForecastOutput: complete}
+      Variable:
+        NCPUS_CONV2PRS: <<ncpus_conv2prs>>
+    PostProcessAdjointTools:
+      Type: Task
+      Trigger: {ConvToPresCoords: complete}
+    TagAndRecycle4Fcst:
+      Type: Task
+      Trigger: {PostProcessAdjointTools: complete}
+      Variable:
+        NCPUS_GCM: <<ncpus_gcm>>
+    Archive:
+      Type: Task
+      Trigger: {TagAndRecycle4Fcst: complete}
+    # CleanupFcst:
+    #   Type: Task
+    #   Trigger: {TagAndRecycle4Fcst: complete}    

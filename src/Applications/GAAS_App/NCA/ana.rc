@@ -1,0 +1,46 @@
+#
+# FVPSAS Analysis resource file.
+#
+# !REVISION HISTORY:
+#
+# 14feb2010  da Silva  Adapted from GEOS-4 ana.rc.
+#
+# This configuration increases the bias timescale to ~ 15 days
+#
+#-----------------------------------------------------------------------------
+
+#                          -------------------
+#                            INPUT ODS FILES
+#                          -------------------
+
+ODS_files::
+# Active data (Note: deep blue in MYD04 is passive)
+/home/adasilva/iesa/aerosol/data/NCA/MOD04/Y%y4/M%m2/nnr_002.MOD04_L2a.land.%y4%m2%d2_%h200z.ods
+/home/adasilva/iesa/aerosol/data/NCA/MOD04/Y%y4/M%m2/nnr_002.MOD04_L2a.ocean.%y4%m2%d2_%h200z.ods
+/home/adasilva/iesa/aerosol/data/NCA/MYD04/Y%y4/M%m2/nnr_002.MYD04_L2a.land.%y4%m2%d2_%h200z.ods
+/home/adasilva/iesa/aerosol/data/NCA/MYD04/Y%y4/M%m2/nnr_002.MYD04_L2a.ocean.%y4%m2%d2_%h200z.ods
+/home/adasilva/iesa/aerosol/data/NCA/MISR/Y%y4/M%m2/misr_F12_0022.bright_tc8.obs.%y4%m2%d2.ods
+# Passive data
+# /home/adasilva/iesa/aerosol/data/OMI/Level2/ODS/Y%y4/M%m2/omi.aero_tc8.obs.%y4%m2%d2.ods
+# /home/adasilva/iesa/aerosol/data/AERONET/Level2/ODS/Y%y4/M%m2/AERONET.aero_tc8.obs.%y4%m2%d2.ods
+#/nobackup/3/PARASOL/Level2/ODS/Y%y4/M%m2/PARASOL_L2.aero_tc8.obs.%y4%m2%d2.ods
+::
+
+do_statistical_bias_correction: no # yes or no
+
+
+#                           -----------------
+#                               ANALYZER
+#                           -----------------
+
+do_averaging_kernel: yes
+
+do_you_want_to_skip_PSAS: no # yes or no
+
+alpha_for_bias_estimation: 0.010
+
+range_of_wavenumbers_to_analyze_in_nm: 550 550
+
+# superob_IMxJM: 576 361 # superob dimension (if <0, same as input grid)
+
+#.

@@ -1,0 +1,23 @@
+ &spptparm
+   sppt(1)=0.5,sppt(2)=0.18,sppt(3)=0.06,sppt(4)=-1.,sppt(5)=-1.,
+   sppt_tau(1)=21600,sppt_tau(2)=259200,sppt_tau(3)=2592000,sppt_tau(4)=-1.,sppt_tau(5)=-1.,
+   sppt_lscale(1)=500000,sppt_lscale(2)=1000000,sppt_lscale(3)=2000000.,sppt_lscale(4)=-1.,sppt_lscale(5)=-1.,
+   iseed_sppt(1)=4357,iseed_sppt(2)=4321,iseed_sppt(3)=4389,iseed_sppt(4)=0,iseed_sppt(5)=0,
+   sppt_sigtop1=0.1,sppt_sigtop2=0.025,
+   sppt_sfclimit= .true.,
+   sppt_logit= .true., 
+   stochini= .false.,
+ /
+ &skebparm
+   skeb(1)=0.28,skeb(2)=-1.,skeb(3)=-1.,skeb(4)=-1.,skeb(5)=-1.,
+   skeb_tau(1)=3600,skeb_tau(2)=-1.,skeb_tau(3)=-1.,skeb_tau(4)=-1.,skeb_tau(5)=-1.,
+   skeb_lscale(1)=-1.27,skeb_lscale(2)=-1.,skeb_lscale(3)=-1.,skeb_lscale(4)=-1.,skeb_lscale(5)=-1.,
+   iseed_skeb(1)=4357,iseed_skeb(2)=0,iseed_skeb(3)=0,iseed_skeb(4)=0,iseed_skeb(5)=0,
+   skeb_sigtop1=0.1,skeb_sigtop2=0.025,
+   skeb_diss_smooth= 12,
+   skeb_varspect_opt= 1,
+   stochini= .false.,
+   skeb_vfilt =1,
+   opt_jff = .false.,
+ /
+

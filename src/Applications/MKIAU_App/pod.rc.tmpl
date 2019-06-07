@@ -1,0 +1,22 @@
+# MAPL required variables
+# -----------------------
+RUN_DT: 21600   # for now, must be set to 6-hrs
+MAPL_ENABLE_TIMERS: NO
+PRINTSPEC: 0  # (0: OFF, 1: IMPORT & EXPORT, 2: IMPORT, 3: EXPORT)
+
+
+# Model Resolution and Timestep Parameters
+# 4x4 is usually enough for any resolution
+# ----------------------------------------
+NX: @NX
+NY: @NY
+
+#AGCM_GRIDNAME: @AGCM_GRIDNAME
+
+MP_STATS_IM: @MP_STATS_IM
+MP_STATS_JM: @MP_STATS_JM
+MP_STATS_LM: @MP_STATS_LM
+
+VNORM: YES
+EPS_EER: 1.0
+

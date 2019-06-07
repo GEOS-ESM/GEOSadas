@@ -1,0 +1,22 @@
+31May2018
+---------
+- update/merge TLM/ADM to/with drh-GEOSadas-5_19_0_newadj-dev
+  First Tapenade-based version of TLM/ADM
+  As in original tag, TLM/ADM are compiling r8
+  A single change in
+  GEOSagcmPert_GridComp/GEOSdynamicsPert_GridComp/GNUmakefile 
+  allows compiling under r4 - just comment out export FV_PRECISION line
+  and TLM/ADM will compile as FV in actual model, which is presently r4.
+  Unfortunately, there is some minor glitch that needs resolving since
+  the code crashes at run-time. Will be dealt w/ soon.
+
+  This versions entails:
+   (1) adding GEOS_Pert to GMAO_Shared
+   (2) removing dir
+   GEOSagcmPert_GridComp/GEOSdynamicsPert_GridComp/fvdycore_v2
+   (3) adding directory
+   GEOSagcmPert_GridComp/GEOSdynamicsPert_GridComp/fvdycorepert
+
+   Tag: EnADAS-5_20_0p4_Pert
+   Same as: EnADAS-5_21_1
+  

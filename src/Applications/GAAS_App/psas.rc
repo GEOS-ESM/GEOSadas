@@ -1,0 +1,529 @@
+#BOP
+#
+# !ROUTINE: psas.rc - PSAS resource file (AOD configuration)
+#
+# !DESCRIPTION:
+#
+#  This is a PSAS resource file with parameter settings closely
+#  matching what is described in:
+#
+#  DAO, 1996: Algorithm Theoretical Basis Document
+#             http://dao/subpages/atbd.html
+#
+#  This configuration is also similar to the so-called "etest7a" run,
+#  except that the HH horizontal correlation uses the window-power law
+#  function instead of GASPARI-COHN compactly supported spline, and
+#  the PSI and CHI  autocorrelations are the same as for height.
+#  Observation error stdvs have been updated with recent tuned values
+#  obtained by Dick and Leonid.
+#
+#  This version has been customized for AOD assimilation.
+#
+# !REVISION HISTORY:
+#
+# 2014-11-20  da Silva  Revised conjugate gradient parameters to improve convergence;
+#                       also turned on verbose at Level 5.
+# Dark Ages   da Silva  QQ L changed to 140 km, based on preliminary ML estimates for LAOD.
+#
+#EOP
+#-------------------------------------------------------------------------------
+
+#
+#              -----------------------------------
+#               SECTION I: Superobbing Parameters
+#              -----------------------------------
+#
+
+# Equal-Area intermediate grid settings
+# -------------------------------------
+latitude_treshold_for_equal_area_grid:       45
+
+#.
+                #-*-#           #-*-#           #-*-#
+
+#              ------------------------------------
+#               SECTION II-0: Matrix Configuration
+#              ------------------------------------
+
+#GlobalPartition_BaseLevel:       1      # "0" for 80.  It is the default
+                                        # value of BaseLevel.
+#GlobalPartition_RefinementLevel: 1      # "1" for 320.  It is the default
+                                        # value of RefinementLevel.
+
+# If there is not "amat_cuttdistance:" specified (leading by "#", there
+# is no windowing amat(:,:) specified in the code (or amat==I).
+
+#redwin_cutdistance:               1500
+#redwin_function:                  1       # 0 for NOWINDOW
+                                           # 1 for GASPCOHN
+
+#
+#              -------------------------------------------
+#               SECTION II: Conjugate Gradient Parameters
+#              -------------------------------------------
+
+
+# NOTE: Settings according to Greg Gaspari for eliminating premature
+#       exits (da Silva, Oct 2000)
+
+level_for_banded_approximation:        5   # 4 neglect corr R > 3000 km
+                                           # 5 neglect corr R > 6000 km
+                                           # (actual distances depend
+                                           #  on seplim below).
+
+#             Levels  -->      1       2    3*   4      5
+#                           --------------------------------
+
+conjgr_separation_limits:      0       0    0    26.5   58.25  # seplim
+
+conjgr_maximum_no_iterations:  40      40   1    40     40     # maxpass
+conjgr_minimum_no_iterations:  40      40    1   40     40      # minpass
+
+conjgr_max_tolerances:         0.1    0.1 0.1  0.1    0.07  # ~maxpass
+conjgr_min_tolerances:         0.1    0.1 0.3  0.1    0.07  # ~minpass
+
+conjgr_verbose:		        0       0    0    0      1      # 0 = F
+			 				        # 1 = T
+
+# (*) Level 3 is obsolete; set level 4 or 5 used according to your
+# choice of level_for_banded_approximation above. All levels must be
+# set even if not used.
+
+conjgr_M_small:                16                              # msmall
+
+#.
+
+
+#...............................................................................
+
+#              -------------------------------------------------
+#               SECTION III: Observing System Definition Tables
+#              -------------------------------------------------
+
+DataTypeTable::
+
+#                                                                    mvars
+#  kt    name      unit         desc                          kt = 1 2 3 4 5 6 7
+
+    7   q_UprAir   g/kg    Upper Air Water Vapor Mixing Ratio   $  0 0 0 0 0 0 1
+
+::      # End of "DataTypeTable"
+
+                #-*-#           #-*-#           #-*-#
+
+
+DataSourceTable::
+
+#  kx    clas      rank      desc
+
+    7  RAOBV_NA    -100  Rawinsonde
+  301  MODO        -100  MODIS/TERRA-Ocean
+  302  MODL        -100  MODIS/TERRA-Land (Dark Target)
+  310  MODD        -100  MODIS/TERRA-Land (Deep Blue)
+  311  MYDO        -100  MODIS/AQUA-Ocean
+  312  MYDL        -100  MODIS/AQUA-Land (Dark Target)
+  313  MISR        -100  MISR
+  314  OMI         -100  OMI
+  316  PARO        -100  PARASOL-Ocean
+  317  PARL        -100  PARASOL-Land
+  320  MYDD        -100  MODIS/AQUA-Land (Deep Blue)
+  323  ANET        -100  AERONET
+  324  AVHRR       -100  AVHRR NNR Retrievals
+
+::      # End of DataSourceTable
+
+
+# Data selection tables in 6-d boxes. For fvPSAS, actual data selection
+# is done at observer level - so insure these limits encompass all data used
+# ---------------------------------------------------------------------
+DataBoxes::
+
+  1  512   7  7  -90 +90  -180 +180     .009 1040.1   -180 +180
+
+::
+
+
+#...............................................................................
+
+#              -----------------------------------------------------
+#               SECTION IV: Observation Error Covariance Parameters
+#              -----------------------------------------------------
+
+NOTE:  All entries with 0.99 means that we have not tuned these as of yet.
+
+ObsErr*Levels:      Pressure  870 660 550 470
+
+ObsErr*RAOBV_NA::   # kx = 7 --- For now, same as MODO
+  q_UprAir.u  0.19   0.19   0.18   0.18 
+::
+
+ObsErr*MODO::   # kx = 301
+  q_UprAir.u  0.19   0.19   0.18   0.18 
+::
+
+ObsErr*MODL::   # kx = 302 --- For now, same as MODO
+  q_UprAir.u  0.19   0.19   0.18   0.18 
+::
+
+ObsErr*MODD::   # kx = 310 --- For now, same as MYDO
+  q_UprAir.u  0.22   0.21   0.20   0.19 
+::
+
+ObsErr*MYDO::   # kx = 311
+  q_UprAir.u  0.22   0.21   0.20   0.19 
+::
+
+ObsErr*MYDL::   # kx = 312 --- For now, same as MYDO
+  q_UprAir.u  0.22   0.21   0.20   0.19 
+::
+
+ObsErr*MISR::   # kx = 313
+  q_UprAir.u  0.16   0.16   0.15   0.14 
+::
+
+ObsErr*OMI::   # kx = 314
+  q_UprAir.u  0.99  0.99  0.99  0.99 
+::
+
+ObsErr*PARO::   # kx = 316
+  q_UprAir.u  0.99 0.99  0.99  0.99 
+::
+
+ObsErr*PARL::   # kx = 317
+  q_UprAir.u   0.99  0.99  0.99 
+::
+
+ObsErr*MYDD::   # kx = 320 --- For now, same as MYDO
+  q_UprAir.u  0.22   0.21   0.20   0.19 
+::
+
+ObsErr*ANET::   # kx = 323
+#  q_UprAir.u  0.99  0.99  0.99  0.99 
+  q_UprAir.u   0.22   0.21 0.20   0.19 
+::
+
+ObsErr*AVHRR::   # kx = 324 (like MYDO)
+  q_UprAir.u  0.22   0.21   0.20   0.19 
+::
+
+#...............................................................................
+
+#              --------------------------------------------------
+#               SECTION V: Forecast Error Covariance Parameters
+#              --------------------------------------------------
+
+# Forcast error stadandard deviations
+# -----------------------------------
+#fcst_err_grads_descr_file: $SHARE/fvpsas/data/sigF/sigF.20lev.ctl $
+#fcst_err_grads_descr_file: $SHARE/fvpsas/data/sigF/sigF.K60.21lev.ctl $
+fcst_err_grads_descr_file: /dev/null
+#fcst_err_grads_descr_file:$SHARE/fvdas/fvInput/Static/psas/sigF.revcML.21lev.ctl  $
+
+
+FcstErr*hCor_HH::
+
+  WIN-POWERLAW  A power-law function windowed with a convolved spline
+
+# pres   d_m     L
+
+   870  6000   650.0
+   660  6000   650.0
+   550  6000   650.0
+   470  6000   650.0
+
+::
+
+                #-*-#           #-*-#           #-*-#
+
+
+FcstErr*vCor_HH::
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+#-----------------------------------------------------------------------
+#
+# !NAME: FcstErr*vCor_HH::      Fall '94 NA raob height O-F's (emeasaF)
+#
+# !DESCRIPTION: Forecast height error vertical correlations.
+#               Tuned to fall 1994 North-American rawinsonde height O-F's
+#                       obtained from the emeasaF run.
+#
+# Simplified for AOD
+#_______________________________________________________________________
+
+   870  1.000
+   660  0.000  1.000
+   550  0.000  0.000  1.000
+   470  0.000  0.000  0.000  1.000
+
+::
+
+                #-*-#           #-*-#           #-*-#
+
+
+FcstErr*Aref::
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# !NAME: FcstErr*Aref:: - a parameter table of mass-wind balance
+#
+# !DESCRIPTION:
+# This model uses the maximum latitude locations to describe the pattern
+# of the mass-wind balanced scheme.
+#
+# Simplified for AOD
+#_______________________________________________________________________
+
+  PSAS:x2
+
+#        !  G(x)=b*(1-exp(-x^2/K^2))/sin(x), |x| > 0,
+#        !  G(x)=0.0,                         x  = 0,
+#        !  e(x)=A + B*exp(-x^2/L^2),
+#        !  D(x)=e(x).
+#        !
+#        !  u = -G(x)(dh/dy) - D(x)(dh/dx),
+#        !  v = -D(x)(dh/dy) + G(x)(dh/dx).
+# pres       A      L     B    K     b
+
+   870.    0.07    0.4   0.6  0.40   0.80
+   660.    0.07    0.4   0.6  0.40   0.80
+   550.    0.07    0.4   0.6  0.40   0.80
+   470.    0.07    0.4   0.6  0.40   0.80
+
+::
+
+
+FcstErr*Sigma_Wind::
+
+  PSAS/S&L
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+#-----------------------------------------------------------------------
+#
+# !NAME: FcstErr*Sigma_Wind::   Fall '94 NA raob multivariate O-F's (emeasaF)
+#
+# !DESCRIPTION: Forecast wind error standard deviations: stream function and
+#                       velocity potential components.
+#               Tuned to fall 1994 North-American rawinsonde height-wind
+#                       O-F's obtained from the emeasaF run.
+#               Horizontal correlations modeled by the compactly
+#                       supported spline function.
+#
+# !REVISION HISTORY:
+#       May 13, 1996 - C. Redder and D. Dee - (original table)
+#       Oct 05, 1996 - da Silva, divided original psi stdv by
+#                      a factor of 2; then plotted ratio psi/chi
+#                      and subjectively "smoothed" this curve:
+#  13 Jan 99  R. Swinbank Experimental parameters derived by
+#    scaling up earlier values to give more reasonable overall wind errors,
+#    and more of the wind error is assigned to streamfunction.
+#    In trosphere SigWv is 10% of sigWs, at lower levels % is greater, above
+#    tropopause sigWv goes to 0.
+#
+#       Feb 28, 2003 - Dee - based on ML estimation
+#
+#       model*  desc
+# The height decoupled winds are computed via:
+#!
+#! ud = + dChi/dx - dPsi/dy
+#! vd = + dPsi/dx + dChi/dx
+#! Cov(Chi) = sigChi.sigChi.corChi
+#! sigChi = sigWv.(scaling).exp(-x^2/J^2)
+#! sigPsi = sigWs.(scaling).exp(-x^2/J^2)
+
+# pres*               sigWs  sigWv  J
+
+        870.00         13.9  15.4  4.0
+        660.00         13.9  15.4  4.0
+        550.00         13.9  15.4  4.0
+        470.00         13.9  15.4  4.0
+::
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+#-----------------------------------------------------------------------
+#
+# !RESOURCE: FcstErr*hCor_SS - a copy of WPL FcstErr*hCor_HH
+#
+# !DESCRIPTION:
+#
+#   A table specify a windowed power-law correlation function.  The
+#   length scale of the convolved spline used as the window function
+#   is fixed to vanish beyond 6000 km.
+#
+# !REVISION HISTORY:
+#       01Jul97 - Jing Guo <guo@eramus> - created the data table, based
+#                 Grep Gaspari's expressions and numbers.  See PSAS'
+#                 source code win_powerlaw_() in file hcorfuns.F90 for
+#                 additional information.
+#       Feb 28, 2003 - Dee - based on ML estimation
+#_______________________________________________________________________
+
+FcstErr*hCor_SS::
+
+#  WIN-POWERLAW-3000km  A power-law function windowed with a convolved spline
+  WIN-POWERLAW  A power-law function windowed with a convolved spline
+
+
+# pres   d_m     L
+
+   870  6000   680.0
+   660  6000   680.0
+   550  6000   680.0
+   470  6000   680.0
+
+::
+
+                #-*-#           #-*-#           #-*-#
+
+
+FcstErr*vCor_SS::
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+#-----------------------------------------------------------------------
+#
+# !NAME: FcstErr*vCor_SS::
+#
+# !DESCRIPTION: Forecast wind error vertical correlations: stream function
+#                       component.
+#
+
+#
+# Simplified for AOD
+#_______________________________________________________________________
+
+   870  1.000
+   660  0.000  1.000
+   550  0.000  0.000  1.000
+   470  0.000  0.000  0.000  1.000
+
+::
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+#-----------------------------------------------------------------------
+#
+# !RESOURCE: FcstErr*hCor_VV
+#
+# !DESCRIPTION:
+#
+#   A table specify a windowed power-law correlation function.  The
+#   length scale of the convolved spline used as the window function
+#   is fixed to vanish beyond 6000 km.
+#
+# !REVISION HISTORY:
+#       01Jul97 - Jing Guo <guo@eramus> - created the data table, based
+#                 Grep Gaspari's expressions and numbers.  See PSAS'
+#                 source code win_powerlaw_() in file hcorfuns.F90 for
+#                 additional information.
+#       Feb 28, 2003 - Dee - based on ML estimation
+#_______________________________________________________________________
+
+FcstErr*hCor_VV::
+
+  WIN-POWERLAW  A power-law function windowed with a convolved spline
+
+# pres   d_m     L
+
+   870  6000   1000.0
+   660  6000   1000.0
+   550  6000   1000.0
+   470  6000   1000.0
+
+::
+# FcstErr.hCor_VV
+
+                #-*-#           #-*-#           #-*-#
+
+
+FcstErr*vCor_VV::
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+#-----------------------------------------------------------------------
+#
+# !NAME: FcstErr*vCor_VV::
+#
+# !DESCRIPTION: Forecast wind error vertical correlations: velocity potential
+#                       component.
+#
+#
+# Simplified for AOD
+#_______________________________________________________________________
+
+   870  1.000
+   660  0.000  1.000
+   550  0.000  0.000  1.000
+   470  0.000  0.000  0.000  1.000
+
+::
+
+
+
+FcstErr*hCor_QQ::
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+#-----------------------------------------------------------------------
+#
+# !NAME: FcstErr*hCor_QQ::      Fall '94 EU raob mixing ratio O-F's (emeasaF)
+#
+# !DESCRIPTION: Forecast mixing ratio error horizontal correlations.
+#               Tuned to fall 1994 European rawinsonde mixing ratio O-F's
+#                       obtained from the emeasaF run.
+#               Horizontal correlations modeled by the compactly
+#                       supported spline function.
+#               Constant length scale --> separable correlation model.
+#
+# !REVISION HISTORY:
+#       May 13, 1996 - C. Redder and D. Dee - (original table)
+#       Aug 14, 1996 - D. Dee - replaced tuned length scales by a constant
+#                                       (average of tuned values)
+#_______________________________________________________________________
+
+#       model*  desc
+
+#  WIN-POWERLAW-3000km  A power-law function windowed with a convolved spline
+GASPARI-COHN    compactly supported spline function
+
+# pres*    d_m*    L ( km )
+
+   870     3000     140.0
+   660     3000     140.0
+   550     3000     140.0
+   470     3000     140.0
+
+::
+
+                #-*-#           #-*-#           #-*-#
+
+
+
+FcstErr*vCor_QQ::
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#       NASA/GSFC, Data Assimilation Office, Code 910.3, GEOS/DAS      !
+#-----------------------------------------------------------------------
+#
+# !NAME: FcstErr*vCor_QQ::      Fall '94 EU raob mixing ratio O-F's (emeasaF)
+#
+# !DESCRIPTION: Forecast mixing ratio error vertical correlations.
+#               Tuned to fall 1994 North-American rawinsonde mixing ratio O-F's
+#                       obtained from the emeasaF run.
+#
+# Simplified for AOD
+#_______________________________________________________________________
+
+   870  1.000
+   660  0.000  1.000
+   550  0.000  0.000  1.000
+   470  0.000  0.000  0.000  1.000
+
+::
+
+#...............................................................................
+
+
+

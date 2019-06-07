@@ -1,0 +1,220 @@
+#
+# Makefile for ESMA components.
+#
+# REVISION HISTORY:
+#
+# 3mar2004  Zaslavsky  Initial imlementation.
+# 20Oct2004  da Silva  Standardization
+#
+
+# Make sure ESMADIR is defined
+# ----------------------------
+ifndef ESMADIR
+       ESMADIR := $(PWD)/../../../..
+endif
+
+# Compilation rules, flags, etc
+# -----------------------------
+  include $(ESMADIR)/Config/ESMA_base.mk  # Generic stuff
+  include $(ESMADIR)/Config/ESMA_arch.mk  # System dependencies
+  include $(ESMADIR)/Config/GMAO_base.mk  # System dependencies
+
+CASE := $(shell basename $(PWD))
+NTHIS = enkf
+THIS = $(NTHIS)_$(CASE)
+LIB  = lib$(THIS).a
+
+# NOTE: The messy circular dependencies in GSI (among diff libs) is so huge that libs must be presented multiple times for 
+#       the executable to be generated. 
+LIB_NCEPSTUFF = $(LIB_CRTM) $(LIB_SFCIO) $(LIB_BUFR) $(LIB_NEMSIO) $(LIB_BACIO) $(LIB_GFSIO) $(LIB_SIGIO) $(LIB_SP) $(LIB_W3) \
+                $(LIB_NCDIAG_READ) $(LIB_NCDIAG_WRITE)
+
+libpresence := $(shell ls $(LIB_HERMES))
+ifeq ( $(wildcard $(libpresence)),$(null) )
+   LIB_CHEM_BASE := 
+   LIB_HERMES := 
+   LIB_GFIO := 
+   LIB_ODS := 
+   INC_CHEM_BASE := 
+   INC_HERMES := 
+   INC_GFIO := 
+   INC_ODS := 
+   LIB_SDF :=
+   LIBS_ALL = $(LIB) $(LIB_GSI_SOLVER) $(LIB_GSI_OBSERVER) $(LIB_GSI_UTIL) $(LIB_NCEPSTUFF)
+   BIN := enkf_$(CASE).x \
+          getsfcensmean.x \
+          getsigensmean.x \
+          recentersig_ncep.x \
+          recentersigp.x
+else
+   THIS_CFIO  = MAPL_cfio_r4
+   LIBS_ALL = $(LIB) $(LIB_GSI_OBSERVER) $(LIB_GSI_UTIL) $(LIB_GSI_SOLVER) $(LIB_GSI_OBSERVER) $(LIB_GSI_OTHER) $(LIB_GSI_UTIL) $(LIB_NCEPSTUFF) $(LIB_HERMES) $(LIB_GFIO) $(LIB_CHEM_BASE) $(LIB_ODS) $(LIB_MAPL_BASE) $(LIB_MAPL_BASE_STUBS) $(LIB_ESMF)
+   BIN := enkf_$(CASE).x 
+   ifeq ($(CASE),geos)
+     BIN += ene_adaptinf.x enkf_obs2ods.x
+   endif
+endif
+
+#                  ---------------------
+#                  Standard ESMA Targets
+#                  ---------------------
+
+esma_install install: $(LIB) $(BIN)
+	$(MKDIR) $(ESMABIN) 
+	$(CP) $(BIN) $(ESMABIN)
+
+esma_clean clean:
+	$(RM) *~ *.[aox] *.[Mm][Oo][Dd]
+
+esma_distclean distclean:
+	$(RM) *~ *.[aoxd] *.[Mm][Oo][Dd]
+
+esma_doc doc:
+	@echo "Target $@ not implemented yet in `pwd`"
+
+esma_help help:
+	@echo "Standard ESMA targets:"
+	@echo "% make esma_install    (builds and install under ESMADIR)"
+	@echo "% make esma_clean      (removes deliverables: *.[aox], etc)"
+	@echo "% make esma_distclean  (leaves in the same state as cvs co)"
+	@echo "% make esma_doc        (generates PDF, installs under ESMADIR)"
+	@echo "% make esma_help       (this message)"
+	@echo "Environment:"
+	@echo "      ESMADIR = $(ESMADIR)"
+	@echo "      BASEDIR = $(BASEDIR)"
+	@echo "         ARCH = $(ARCH)"
+	@echo "         SITE = $(SITE)"
+	@echo "        FREAL = $(FREAL)"
+
+#                  --------------------
+#                  User Defined Targets
+#                  --------------------
+ifeq ($(CASE),aero)
+      XSRCS := gridinfo_geos5.f90\
+               gridio_aergeos5.f90\
+	       smooth_geos5.f90
+endif
+ifeq ($(CASE),geos)
+     XSRCS := gridinfo_geos5.f90\
+              gridio_geos5.f90\
+	      smooth_geos5.f90
+endif
+ifeq ($(CASE),gfs)
+     XSRCS := gridinfo_gfs.f90 \
+	      gridio_gfs.f90 \
+	      smooth_gfs.f90
+endif
+ifeq ($(CASE),wrf)
+   XSRCS  :=
+endif
+
+SRCS := common_mtx.f90 \
+        covlocal.f90 \
+        enkf.f90 \
+        enkf_main.f90 \
+        enkf_obs_sensitivity.f90 \
+        fftpack.f90 \
+        fso.f90 \
+        genqsat1.f90 \
+        inflation.f90 \
+        innovstats.f90 \
+        kdtree2.f90 \
+        letkf.F90 \
+        loadbal.f90 \
+        mpi_readobs.f90 \
+        mpisetup.F90 \
+        netlib.f90 \
+        enkf_obsmod.f90 \
+        params.f90 \
+        quicksort.f90 \
+        radbias.f90 \
+        read_locinfo.f90 \
+        readaerobs.f90 \
+        readconvobs.f90 \
+        readozobs.f90 \
+        readsatobs.f90 \
+        reducedgrid.f90 \
+        rnorm.f90 \
+        smooth.F90 \
+        sorting.f90 \
+        specmod.f90 \
+        statevec.f90 \
+        write_logfile.f90 $(XSRCS)
+
+OBJS := $(addsuffix .o, $(basename $(SRCS)))
+DEPS := $(addsuffix .d, $(basename $(OBJS) enkf_main.o))
+
+FOPT = -O1 -traceback #$(FOPT3)
+#-implicitnone -mcmodel medium -shared-intel -g -debug \
+#                -ftrapuv -check all  -fp-stack-check  -fstack-protector -warn
+#FOPT = -O0 -fp-model source -implicitnone -warn all -g -traceback -debug all -check all
+FREAL = $(FREAL4)
+USER_LDFLAGS = $(OMPFLAG)
+FPE = -fpe0
+
+THIS_SP   = NCEP_sp_r8i4
+THIS_W3   = NCEP_w3_r8i4
+THIS_BACIO = NCEP_bacio_r4i4
+THIS_NEMSIO = NCEP_nemsio
+THIS_BUFR = NCEP_bufr_r8i4
+THIS_GFIO = GMAO_gfio_r8
+
+MOD_DIRS = . .. $(ESMAINC)/GSI_GridComp $(INC_SIGIO) $(INC_SFCIO) $(INC_HERMES) $(INC_MPEU) $(INC_MPI) $(INC_SP) $(INC_MAPL_BASE) $(INC_CHEM_BASE) $(INC_ODS)
+USER_FFLAGS = $(BIG_ENDIAN)
+USER_FMODS  = $(foreach dir,$(MOD_DIRS),$(M)$(dir)) 
+USER_FINC   = $(foreach dir,$(MOD_DIRS),$(M)$(dir)) 
+
+# if you may need MPI
+_Lmp	 = $(foreach lib,$(LIBS_ALL) $(LIB_MPEU),-L`dirname $(lib)` -l`basename $(lib) .a|sed -e's/^lib//'`) $(LIB_MPI)
+# if you don't need or don't have a MPI implementation
+_Leu	 = $(foreach lib,$(LIBS_ALL) $(LIB_EU)  ,-L`dirname $(lib)` -l`basename $(lib) .a|sed -e's/^lib//'`) 
+
+vpath % $(MOD_DIRS)
+
+$(LIB) lib : $(DEPS) $(OBJS) $(LIB_HERMES) $(LIBS_MPEU) $(LIB_CHEM_BASE) $(LIB_ODS)
+	$(RM) $(LIB)
+	$(AR) $(AR_FLAGS) $(LIB) $(OBJS)
+
+all: $(BIN)
+
+enkf_$(CASE).x:  $(LIB) enkf_main.o
+	$(LD) $(LDFLAGS) $(FPE) -o $@ enkf_main.o $(_Lmp) $(LIB_SCI) $(LIB_SDF) $(LIB_SYS)
+
+simpleread.x:  $(LIB) simpleread.o
+	$(LD) $(LDFLAGS) $(FPE) -o $@ simpleread.o $(_Lmp) $(LIB_SCI) $(LIB_SDF) $(LIB_SYS)
+
+ene_adaptinf.x:  $(LIB) ene_adaptinf.o
+	$(LD) $(LDFLAGS) $(FPE) -o $@ ene_adaptinf.o $(_Lmp) $(LIB_SCI) $(LIB_SDF) $(LIB_SYS)
+
+enkf_obs2ods.x:  $(LIB) enkf_obs2ods.o
+	$(LD) $(LDFLAGS) $(FPE) -o $@ enkf_obs2ods.o $(_Lmp) $(LIB_SCI) $(LIB_SDF) $(LIB_SYS)
+
+getsfcensmean.x: $(LIB) getsfcensmean.o
+	$(LD) $(LDFLAGS) -o $@ getsfcensmean.o $(LIB_SFCIO)
+
+getsigensmean.x: $(LIB) getsigensmean.o
+	$(LD) $(LDFLAGS) -o $@ getsigensmean.o $(LIB_SIGIO) $(LIB_SP) $(LIB_SCI)
+
+recentersig_ncep.x: $(LIB) recentersig_ncep.o
+	$(LD) $(LDFLAGS) -o $@ recentersig_ncep.o $(LIB_SIGIO)
+
+recentersigp.x: $(LIB) recentersigp.o
+	$(LD) $(LDFLAGS) -o $@ recentersigp.o $(LIB_SIGIO) $(_Lmp) $(LIB_SCI) $(LIB_SYS)
+
+# bypass opt
+read_diag.o: read_diag.f90
+	$(FC) -c $(f) $(FOPT) $(FREAL) $(USER_FFLAGS) -O1 -fpe0 $<
+
+joaero.x:  $(LIB) joaero.o
+	$(LD) $(LDFLAGS) $(FPE) -o $@ joaero.o $(_Lmp) \
+	      $(LIB_SCI) $(LIB_SDF) $(LIB_SYS)
+
+# Hack to prevent remaking dep files during cleaning
+# --------------------------------------------------
+  ifneq ($(findstring clean,$(MAKECMDGOALS)),clean)
+    -include $(DEPS)
+  endif
+
+  -include $(ESMADIR)/Config/ESMA_post.mk  # ESMA additional targets, macros
+
+#.

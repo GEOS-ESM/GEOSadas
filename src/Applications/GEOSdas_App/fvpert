@@ -1,0 +1,295 @@
+#!/bin/csh -fx
+
+################################################################
+#
+# !DESCRIPTION: Run tangent linear model
+#
+# !TO DO:
+#
+# !REVISION HISTORY:
+#
+#  06May2016  Todling  Initial code (cannot find original I put in years ago)
+##################################################################
+
+set workdir = $1    # work directory
+set etcdir  = $2    # etc-directory (rc files)
+set expid   = $3    # name of experiment
+set nymdb   = $4    # initial date of integration
+set nhmsb   = $5    # initial time of integration
+set taub    = $6    # length of integration (min)
+set ipertfn = $7    # fullpath of input perturbation filename
+
+set hhmmb = `echo $nhmsb | cut -c1-4`
+@ taub_sc = $taub * 60 
+@ taub_hr = $taub / 60
+#
+# Echo environment to make sure all is well
+# -----------------------------------------
+#env
+set myname = "fvpert"
+
+#
+# WARNING: Must specify appropriate FVINPUT for your resolution
+# -------------------------------------------------------------
+#if ( ! $?GID ) then
+#     echo " GID must be defined in called script "
+#     exit 1
+#endif
+#if ( ! $?FVINPUT ) then
+#     echo " Invalid path for fvinput "
+#     exit 1
+#endif
+#if ( ! $?SHARE ) then
+#     echo " Invalid path for share directory "
+#     exit 1
+#endif
+#if ( !($?DO_DMGET )   ) setenv DO_DMGET  0
+if ( !($?CUBED)       ) setenv CUBED  1
+#if ( $?FVSPOOL ) then
+#    set spool = "-s $FVSPOOL "
+#else
+#    set diren = `dirname $FVHOME`
+#    set spool = "-s $diren/spool "
+#endif
+if ( !($?NCSUFFIX) ) then
+   echo "env variable not defined: NCSUFFIX "
+   echo "please check main script"
+   exit 1
+endif
+if ( !($?TLMRUN_OPT_BEGIN) ) then
+   echo "env variable not defined: TLMRUN_OPT_BEGIN "
+   echo "please check main script"
+   exit 1
+endif
+
+# Get positioned
+# --------------
+if( -d $workdir/pert.$nymdb.$nhmsb ) /bin/rm -r $workdir/pert.$nymdb.$nhmsb
+mkdir $workdir/pert.$nymdb.$nhmsb
+cd    $workdir/pert.$nymdb.$nhmsb
+
+# Establish link to trajectory/resource files
+# -------------------------------------------
+  if ( ! -e $workdir/traj1 ) then # this bit is necessary if doing default way
+     mkdir -p $workdir/traj1
+     cd $workdir/traj1
+     ln -sf $workdir/*.lcv.*.nc4      .
+     cd -
+  endif
+  ln -sf $workdir/traj? .
+  ln -sf $workdir/ExtData .
+
+  set nnorms = 1
+ 
+# Determine end time of integrations
+# ----------------------------------
+  set buf  = `tick $nymdb $nhmsb $taub_sc`
+  set nymde  =  $buf[1]
+  set nhmse  =  $buf[2]
+  set hhe = `echo $nhmse | cut -c 1-2`
+
+  echo "${myname}: TLM will integrate from $nymdb $nhmsb to $nymde $nhmse"
+
+#        --------------------------------------------------------------
+#         PART Ia - Create initial conditions dJ/dx_t for adjoint model
+#        --------------------------------------------------------------
+
+# Determine the no. of trajectories used for the adjoint integration
+# ------------------------------------------------------------------
+  @ ntraj = 1
+                                                                                               
+# Make sure trajectory file is present at final time of ADM integration
+# ---------------------------------------------------------------------
+  set trajtmpl   = "$EXPID.traj.lcv.${nymdb}_${hhmmb}z.$NCSUFFIX"
+  set begin_traj = `echorc.x -template $EXPID $nymdb $nhmsb -fill $trajtmpl`
+  @ itraj = 1
+  while ( $itraj <= $ntraj )
+     if ( ! -e traj${itraj}/$begin_traj ) then
+          echo "${myname}: initial trajectory for ${itraj} not found, cannot proceed "
+          exit 2
+     endif
+     @ itraj++
+  end # < ntraj >
+
+# Determine dimensions of required BCs and static ICs; do error checking
+# ----------------------------------------------------------------------
+  set tres  = `getgfiodim.x traj1/$begin_traj`
+
+  set resol = "none"
+  if ( $tres[1] ==   72 && $tres[2] ==   46 ) set resol = "a"
+  if ( $tres[1] ==  144 && $tres[2] ==   91 ) set resol = "b"
+  if ( $tres[1] ==  288 && $tres[2] ==  181 ) set resol = "c"
+  if ( $tres[1] ==  576 && $tres[2] ==  361 ) set resol = "d"
+  if ( $tres[1] == 1152 && $tres[2] ==  721 ) set resol = "e"
+  if ( $tres[1] == 2304 && $tres[2] == 1441 ) set resol = "e"
+  if ( $resol == "none" ) then
+       if ( $tres[1] ==   48 && $tres[2] ==  288 ) set resol = "b"
+       if ( $tres[1] ==   90 && $tres[2] ==  540 ) set resol = "c"
+       if ( $tres[1] ==  180 && $tres[2] == 1080 ) set resol = "d"
+       if ( $tres[1] ==  360 && $tres[2] == 2160 ) set resol = "e"
+       if ( $tres[1] ==  720 && $tres[2] == 4320 ) set resol = "f"
+       if ( $resol == "none" ) then
+           echo "${myname}: unknown resolution "
+           exit 3
+       else
+           setenv CUBED 1
+       endif
+  endif
+
+  if ( $CUBED ) then
+
+# Establish link to cubed-related resource files
+# ----------------------------------------------
+       ln -sf $etcdir/AGCM_apert.rc.tmpl       .
+       ln -sf $etcdir/CAP_apert.rc.tmpl        .
+       ln -sf $etcdir/FORWARD_HISTORY.rc.tmpl  .
+       ln -sf $etcdir/BACKWARD_HISTORY.rc.tmpl .
+       ln -sf $etcdir/Chem_Registry_apert.rc   .
+
+#      First edit CAP
+#      --------------
+       rm -f sed_file
+       echo "s/>>>NYMDB<<</$nymdb/1"          >> sed_file
+       echo "s/>>>NHMSB<<</$nhmsb/1"          >> sed_file
+       echo "s/>>>NYMDE<<</$nymde/1"          >> sed_file
+       echo "s/>>>NHMSE<<</$nhmse/1"          >> sed_file
+       echo "s/>>>JOB_SGMT<<</0 ${taub_hr}0000/1" >> sed_file
+
+       /bin/rm -f ./CAP_apert.rc
+       sed -f sed_file  ./CAP_apert.rc.tmpl > ./CAP_apert.rc
+
+#      calculate trajectory frequency - must be same as GCM dt
+#      ------------------------------
+       @ rundt_sc = `echorc.x -rc CAP_apert.rc HEARTBEAT_DT`
+       @ rundt    = $rundt_sc / 60
+
+#      Next edit AGCM
+#      --------------
+       @ calls_per_window = $taub_hr * 60 / $rundt 
+       /bin/rm -f sed_file
+       echo "s/>>>EXPID<<</$EXPID/1"                           > sed_file
+       echo "s/>>>PDT<<</$rundt_sc/1"                         >> sed_file
+       echo "s/>>>CALLS_PER_WINDOW<<</${calls_per_window}/1"  >> sed_file
+       echo "s/>>>NCSUFFIX<<</${NCSUFFIX}/1"                  >> sed_file
+
+       /bin/rm -f ./AGCM_apert.rc
+       sed -f sed_file  ./AGCM_apert.rc.tmpl > ./AGCM_apert.rc
+
+#      Now edit HISTORIES
+#      ------------------
+       /bin/rm -f sed_file
+       echo "s/>>>EXPID<<</$EXPID/1"           > sed_file
+       echo "s/>>>EXPBDSC<<</ADM/1"           >> sed_file
+       echo "s/>>>NYMDB<<</$nymdb/1"          >> sed_file
+       echo "s/>>>NHMSB<<</$nhmsb/1"          >> sed_file
+       echo "s/>>>NCSUFFIX<<</${NCSUFFIX}/1"  >> sed_file
+
+       /bin/rm -f ./BACKWARD_HISTORY.rc
+       sed -f sed_file  ./BACKWARD_HISTORY.rc.tmpl > ./BACKWARD_HISTORY.rc
+
+       /bin/rm -f sed_file
+       echo "s/>>>EXPID<<</$EXPID/1"           > sed_file
+       echo "s/>>>EXPFDSC<<</TLM/1"           >> sed_file
+       echo "s/>>>NYMDE<<</$nymde/1"          >> sed_file
+       echo "s/>>>NHMSE<<</$nhmse/1"          >> sed_file
+       echo "s/>>>NCSUFFIX<<</${NCSUFFIX}/1"  >> sed_file
+
+       /bin/rm -f ./FORWARD_HISTORY.rc
+       sed -f sed_file  ./FORWARD_HISTORY.rc.tmpl  > ./FORWARD_HISTORY.rc
+
+       # MAPL Cap needs a dummy history as well
+       /bin/cp FORWARD_HISTORY.rc HISTORY.rc
+
+  else # this is not set to run old pert model
+
+      echo "${myname}: scripting for lat/lon TLM not available"
+      exit 4
+
+  endif
+
+# Execute program for adjoint sensitivity calculation
+# ---------------------------------------------------
+  unsetenv KMP_LIBRARY
+
+#                ------------------------------------
+#                 PART II - Run tangent linear model
+#                ------------------------------------
+
+
+# Loop over number of available gradient vectors
+# ----------------------------------------------
+  @ ng = 1
+  while ( $ng <= $nnorms )
+
+    ls -lrt
+    /bin/rm -f status.log EGRESS
+    if ( $CUBED ) then
+
+       # copy input perturbation and create proper link
+       /bin/cp $workdir/$ipertfn fvpert.eta.nc4
+       if (! -e fvpert.eta.$NCSUFFIX ) then
+          echo "${myname}: cannot find input perturbation fvpert.eta.$NCSUFFIX"
+          exit 5
+       endif
+
+       set fvsens_exe = `which GEOSgcmPert.x`
+       date
+       $TLMRUN_OPT_BEGIN 
+       date
+       if ( -e PERT_EGRESS ) then
+           echo "Normal Execution of TLM." > status.log
+           cat status.log
+       else
+           echo "Failed Execution of TLM."
+           exit(1)
+       endif
+
+       # For now hard-wired since ADM history is messed up
+#      if( -e fvpert.eta.${nymdb}_${nhb}z.$NCSUFFIX ) then
+#        /bin/mv fvpert.eta.${nymdb}_${nhb}z.$NCSUFFIX $EXPID.fvpert.eta.${nymdb}_${nhb}z.$NCSUFFIX
+#      else
+#        echo " ${myname}: cannot find output from adjoint run, aborting ..."
+#        exit 1
+#      endif
+       foreach fn ( `ls $EXPID.fvpert.eta.*.$NCSUFFIX` )
+         set sfx  = `echo $fn | cut -d. -f4-`
+         set nymd = `echo $sfx | cut -c1-8`
+         set hh   = `echo $sfx | cut -c10-11`
+         set nhms = ${hh}0000
+
+#        If so, update analysis increments
+         if (   -e $etcdir/updAincWpert.rc.tmpl ) then
+            ln -sf $etcdir/updAincWpert.rc.tmpl .
+            rm -f sed_file
+            echo "s/>>>ANADATE<<</$nymd/1"          >> sed_file
+            echo "s/>>>ANATIME<<</$nhms/1"          >> sed_file
+  
+            /bin/rm -f ./updAincWpert.rc
+            sed -f sed_file  ./updAincWpert.rc.tmpl > ./updAincWpert.rc
+  
+            set xincfn = `echorc.x -rc updAincWpert.rc -template $EXPID $nymd $nhms AINC_FILENAME`
+            set updinc = `echorc.x -rc updAincWpert.rc -template $EXPID $nymd $nhms UPD_FILENAME`
+            if (-e $workdir/$xincfn ) then
+               ln -sf $workdir/$xincfn .
+               if ( !($?MPIRUN_UPDAINC) ) then
+                  echo "env variable not defined: MPIRUN_UPDAINC "
+                  echo "please check main script, aborting ..."
+                  exit 1
+               endif
+               $MPIRUN_UPDAINC
+               if ( -e $updinc ) then
+                  /bin/mv $updinc $fn   # overwrite original TLM field with (evolved) analysis increment
+               else
+                  echo "unable to update (merge) pert with xinc, aborting ..."
+                  exit 2
+               endif
+            endif
+         endif
+         /bin/mv $fn $workdir/$fn # $EXPID.fvpert.eta.${nymde}_${hhe}z+${sfx}
+       end
+
+    endif
+
+
+    @ ng++
+  end  # n gradients

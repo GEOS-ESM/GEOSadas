@@ -1,0 +1,194 @@
+#!/bin/csh -fx
+
+################################################################
+#
+# !DESCRIPTION: Run singular vector program
+#
+#
+# !TO DO:
+#     1) This needs to be converted into a perl script
+#
+# !REVISION HISTORY:
+#
+#  04Oct2004  Todling Initial code
+#  14Apr2005  Gelaro  Use template fill for dyn2drs conversion
+#  14Feb2006  Todling Happy V-Day: define FVINPUT the level up
+#  13Mar2006  Todling G4-surf derived from trajectory file and all bcs local
+#  02May2006  Gelaro  Use sed and input from fvpsas to define adjoint integration
+#  15Aug2006  Todling Added move of cnop output to main work dir
+#  02Feb2007  Todling Calling fvsvec as mpi code
+#  23Aug2007  Todling Make copy of initial/final trajectories
+#  13Mar2009  Todling Generalized suffix of NC files
+#
+################################################################
+
+set fcstdir = $1
+set expid   = $2
+set nymde0  = $3
+set nhmse0  = $4
+set tauf_sc = $5
+
+#
+# Echo environment to make sure all is well
+# -----------------------------------------
+#env
+set myname = "fvsvec"
+set nymde  = $nymde0
+set nhmse  = $nhmse0
+
+#
+# Remember that svec program is still an OpenMP program
+# -----------------------------------------------------
+if ( ! $?FVROOT ) then
+     echo " Invalid path FVROOT "
+     exit 1
+endif
+if ( ! $?FVINPUT ) then
+     echo " Invalid path for SVEC bcs "
+     exit 1
+endif
+if ( !($?NCSUFFIX) ) then
+   echo "env variable not defined: NCSUFFIX "
+   echo "please check main script"
+   exit 1
+endif
+
+# WARNING: Must ADMRUN_OPT_BEGIN to for MPI purposes
+# --------------------------------------------------
+if ( ! $?ADMRUN_OPT_BEGIN ) then
+     echo " Invalid ADMRUN_OPT_BEGIN fvsens "
+     exit 1
+endif
+
+
+if( -d $fcstdir/svec.$nymde.$nhmse ) /bin/rm -r $fcstdir/svec.$nymde.$nhmse
+mkdir $fcstdir/svec.$nymde.$nhmse
+cd    $fcstdir/svec.$nymde.$nhmse
+
+#
+# Establish link to trajectory files
+# ----------------------------------
+  ln -sf $fcstdir/*.traj.* .
+  ln -sf $fcstdir/*.ptrj.* .
+
+# Get namelists, resource files, etc ...
+# --------------------------------------
+  cp $fcstdir/fvsvec.ccmrun.namelist.tmpl ccmrun.namelist.tmpl
+  cp $fcstdir/fvgcm.ccmflags.namelist     ccmflags.namelist
+  cp $fcstdir/fvsvec.rc                   .
+
+#
+# Compute begin time for adjoint integration
+# ------------------------------------------
+  set taub  = `echorc.x -rc ccmrun.namelist.tmpl integration_length_hrs`
+  @ nday    =  $taub / 24
+  @ taub_sc =  $taub * 3600
+
+  if ( $taub_sc > $tauf_sc ) then
+     echo FATAL ERROR: Adjoint forecast length exceeds trajectory
+     echo forward $tauf_sc secs,   backward $taub_sc secs
+     exit 1
+  endif
+
+# Determine actual start date/time of sensitivity integration
+# -----------------------------------------------------------
+  set tlag = `echorc.x -rc ccmrun.namelist.tmpl integration_time_lag_start_hrs`
+    @ ntp1 = $#tlag + 1
+
+@ ic = 1
+while ( $ic < $ntp1 )
+
+  @ tlag_sec =  $tlag[$ic] * 3600
+                                                                                                                                   
+  set buf  = `tick $nymde0 $nhmse0 -$tlag_sec`
+  set nymde  =  $buf[1]
+  set nhmse  =  $buf[2]
+
+  set buf  = `tick $nymde $nhmse -$taub_sc`
+  set nymdb  =  $buf[1]
+  set nhmsb  =  $buf[2]
+
+#
+# Fill in namelist template for this experiment
+# ---------------------------------------------
+  rm -f sed_file
+  echo "s/>>>EXPID<<</$EXPID/1"    > sed_file
+  echo "s/>>>NYMDB<<</$nymdb/1"   >> sed_file
+  echo "s/>>>NHMSB<<</$nhmsb/1"   >> sed_file
+  echo "s/>>>NYMDE<<</$nymde/1"   >> sed_file
+  echo "s/>>>NHMSE<<</$nhmse/1"   >> sed_file
+  echo "s/>>>NDAY<<</$nday/1"     >> sed_file
+  echo "s/>>>NCSUFFIX<<</${NCSUFFIX}/1"  >> sed_file
+
+  /bin/rm -f ./ccmrun.namelist
+  sed -f sed_file  ./ccmrun.namelist.tmpl > ./ccmrun.namelist
+
+# Strip out f95 style comments from namelists
+# -------------------------------------------
+  cut -f1 -d!  ccmrun.namelist     | tee          fort.811
+  cut -f1 -d!  ccmflags.namelist   | tee          fort.813
+
+# Make sure trajectory file is present at initial time of SVEC integration
+# ------------------------------------------------------------------------
+  set trajtmpl = `grep -i trajtmpl ccmrun.namelist|awk '{printf "%s", $3}' | cut -d"'" -f2 | cut -d"'" -f3`
+  set traj0 = `echorc.x -template $EXPID $nymdb $nhmsb -fill $trajtmpl`
+  if ( ! -e $traj0 ) then
+       echo "fvsens: initial trajectory not found, cannot proceed "
+       exit 1
+  endif
+  ln -sf $traj0 rst.$NCSUFFIX
+
+# Determine dimensions of required BCs and static ICs; do error checking
+# ----------------------------------------------------------------------
+  set dimbuf  = `getgfiodim.x rst.$NCSUFFIX`
+  set im = $dimbuf[1]
+  set jm = $dimbuf[2]
+
+# Other restart files: p_rst is fixed for ADM/TLM
+# -----------------------------------------------
+  cp $FVINPUT/rs/g4fixedIC/${im}x${jm}/p_rst   .
+
+  ln -s $FVINPUT/fvgcm/${im}x${jm}/o3.amip2_uars_fub_${jm}x55.nc  g4ozdata.nc
+  ln -s $FVINPUT/fvgcm/${im}x${jm}/RandelH2O_${jm}x25.bin         g4h2odata.bin
+  ln -s $FVINPUT/fvgcm/${im}x${jm}/SSTM5079_${im}x${jm}.nc        g4sst.nc
+
+# 
+# Execute program for singular vectors
+# ------------------------------------
+  /bin/rm -f status.log
+  set myexec = `which fvsvec.x`
+  $ADMRUN_OPT_BEGIN $myexec
+
+# Check whether we ran without errors
+# -----------------------------------
+  grep 'Normal Execution.' status.log >& /dev/null
+  if ( ${status} ) then
+    /bin/rm -f          ${FVHOME}/run/*.abnormal.log
+    echo $myname": saving  abnormal logs to ${FVHOME}/run"
+    echo $myname": abnormal exit from fvpsas, bye, bye..."
+    exit 2
+  endif
+
+#
+# Move output files from svec program to main directory
+# -----------------------------------------------------
+  /bin/mv *.svalu.* $fcstdir
+  /bin/mv *.isvec.* $fcstdir
+  /bin/mv *.fsvec.* $fcstdir
+  /bin/mv *.icnop.* $fcstdir
+  /bin/mv *.fcnop.* $fcstdir
+
+#
+# Save only initial and final time trajectories for archiving
+# -----------------------------------------------------------
+  set traj_b = `echorc.x -template $EXPID $nymdb $nhmsb -fill $trajtmpl`
+  set traj_e = `echorc.x -template $EXPID $nymde $nhmse -fill $trajtmpl`
+  set itraj = `echo $traj_b | cut -d. -f3-5`
+  set ftraj = `echo $traj_e | cut -d. -f3-5`
+  set itraj = "$EXPID.itraj.$itraj"
+  set ftraj = "$EXPID.ftraj.$ftraj"
+  /bin/cp ${fcstdir}/$traj_b ${fcstdir}/$itraj
+  /bin/cp ${fcstdir}/$traj_e ${fcstdir}/$ftraj
+
+  @ ic++
+end  # < cases >

@@ -1,0 +1,42 @@
+######################################################################
+#                 Create History List for Output
+#######################################################################
+
+EXPID:  >>>EXPID<<<
+EXPDSC: >>>EXPBDSC<<<
+HIST_CF: BACKWARD_HISTORY.rc
+
+
+GRID_LABELS: PC288x181-DC
+::
+
+PC288x181-DC.GRID_TYPE: LatLon
+PC288x181-DC.IM_WORLD: 288
+PC288x181-DC.JM_WORLD: 181
+PC288x181-DC.POLE: PC
+PC288x181-DC.DATELINE: DC
+PC288x181-DC.LM: 72
+
+COLLECTIONS: 'fsens.eta'
+              ::
+
+  fsens.eta.format:    'CFIO',
+  fsens.eta.template:  '%y4%m2%d2_%h2z.>>>NCSUFFIX<<<',
+  fsens.eta.mode:      'instantaneous',
+  fsens.eta.ref_date:   27760704,
+# fsens.eta.ref_date:   >>>NYMDB<<<,
+# fsens.eta.ref_time:   >>>NHMSB<<<,
+  fsens.eta.frequency:  060000,
+  fsens.eta.duration:   060000,
+  fsens.eta.backwards:  1
+  fsens.eta.grid_label: PC288x181-DC,
+  fsens.eta.fields:   'U'   , 'AGCM_PERT', 'u',
+                      'V'   , 'AGCM_PERT', 'v',
+                      'TV'  , 'AGCM_PERT', 'tv',
+                      'DP'  , 'AGCM_PERT', 'delp',
+                      'QV'  , 'AGCM_PERT', 'sphu',
+                      'QI'  , 'AGCM_PERT', 'qitot',
+                      'QL'  , 'AGCM_PERT', 'qltot',
+                      'O3'  , 'AGCM_PERT', 'ozone',
+                      ::
+

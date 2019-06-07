@@ -1,0 +1,13 @@
+
+ &INPUT
+   DOSPOB = .FALSE., DOACRS=.FALSE., WINDOW=3.00, TIMINC=1.00,  
+   STCLIM = 41.9,    WAYPIN=.TRUE.,  INIDST= 2,   IFLGUS=0,
+   JAMASS = 6*0,     JAWIND= 6*0,                            
+   FWRITE = .TRUE.,  SWRITE=.FALSE., IWRITE=.FALSE., EWRITE=.FALSE.
+ /
+
+  Cards for PREPACQC -- Version  17 February 1998
+  Here: GMAO/MERRA System -- Effective:  12Z 03/11/98 to present
+  Updated: 11/05/97 -- IFLGUS=0 (was =1) -- AIREP/PIREP reports over
+                       CONUS now assimilated by SSI
+

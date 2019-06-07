@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+%include <slurm.h>
+#SBATCH --ntasks=4
+#SBATCH --qos=advda
+#SBATCH --time=2:00:00
+#SBATCH --job-name=%STE_NAME%-atmens-post-analysis
+#SBATCH --output=%BATCHOUT_DIR%/%STE_NAME%-atmens-post-analysis.out.%j
+
+%include <head.h>
+
+CWD=$(pwd)
+
+export WORKFLOW_DIR=%ECF_HOME%
+bash ${WORKFLOW_DIR}/tasks/atmens/AtmensPostAnalysis.sh
+
+cd $CWD
+
+%include <tail.h>

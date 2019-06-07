@@ -1,0 +1,49 @@
+#
+# FVPSAS Analysis resource file.
+#
+# !REVISION HISTORY:
+#
+# 14feb2010  da Silva  Adapted from GEOS-4 ana.rc.
+# 21oct2016  Todling   Setting for running members of ensemble:
+#                       - bypass qc (done by ensmean or central DAS)
+#                       - bypass kernel calculation
+#                       - bypass PSAS analysis
+#                      All members must read common set of observations,
+#                      the settings here use a post-ana file as input to
+#                      AOD member-observers.
+#
+# This configuration increases the bias timescale to ~ 15 days
+#
+#-----------------------------------------------------------------------------
+
+#                          -------------------
+#                            INPUT ODS FILES
+#                          -------------------
+
+ODS_files::
+# Active data (Note: use post-analysis file)
+
+ensmean_logaod_post_anal.obs.ods
+
+::
+
+do_statistical_bias_correction: no # yes or no
+
+do_online_quality_control: no
+
+
+#                           -----------------
+#                               ANALYZER
+#                           -----------------
+
+do_averaging_kernel: no
+
+do_you_want_to_skip_PSAS: yes # yes or no
+
+alpha_for_bias_estimation: 0.010
+
+range_of_wavenumbers_to_analyze_in_nm: 470 870
+
+# superob_IMxJM: 576 361 # superob dimension (if <0, same as input grid)
+
+#.

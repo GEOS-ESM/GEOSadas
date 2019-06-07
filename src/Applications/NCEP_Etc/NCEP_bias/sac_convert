@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+#-----------------------------------------------------------------------
+#        NAME:	sac_convert
+#       USAGE:	sac_convert [global_satangbias.txt]
+#
+# DESCRIPTION:	convert satangbias.txt in an old format with integer
+#		sensor indicators to the new format with string
+#		satellite/instrument/sensor indicators.  The converted
+#		output data are sent to stdout.
+#
+#        USES:	sac_convert.x
+#-----------------------------------------------------------------------
+
+c=$(basename $(which $0))	# find command name
+d=$(dirname  $(which $0))	# locate the command
+
+#-- Try to locate associated executables
+convert=${d}/sac_convert.x	# locate sac_convert.x
+
+if [ ! -x ${convert} ]; then
+  echo "$c: not available, executable \"${convert}\"" 1>&2
+  exit 2
+fi
+
+#-- Check arguments
+if [ $# -eq 0 -o $# -gt 1 ]; then
+  echo "Usage: ${c} <global_satangbias.txt>" 1>&2
+  exit 1
+fi
+
+#-- Now, convert.
+( echo "&setup sorted=.false. /"
+  cat $1
+) | ${convert}
+#.

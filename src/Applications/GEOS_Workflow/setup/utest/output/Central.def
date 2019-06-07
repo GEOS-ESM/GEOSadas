@@ -1,0 +1,94 @@
+# 4.13.0
+suite Central
+  edit ECF_TRIES '1'
+  edit ECF_HOME './tmp-test-workflow-setup'
+  edit ECF_INCLUDE './tmp-test-workflow-setup/include'
+  edit STE_NAME 'Central'
+  edit TIME0 '20160918_21z'
+  edit BATCHOUT_DIR './tmp-test-workflow-setup/batchout'
+  edit BATCH_SUBMIT './tmp-test-workflow-setup/tools/slurm/submit.sh'
+  edit BATCH_KILL './tmp-test-workflow-setup/tools/slurm/kill.sh'
+  family Initialize
+    task CreateWorkspace
+    task GetDateTime4DAS
+      trigger CreateWorkspace==complete
+    task LinkGcmBdryFiles
+      trigger GetDateTime4DAS==complete
+    task CopyResourceFiles4DAS
+      trigger GetDateTime4DAS==complete
+    task CopyAnaRestarts
+      trigger CopyResourceFiles4DAS==complete
+    task CopyGcmRestarts4DAS
+      trigger CopyResourceFiles4DAS==complete
+  endfamily
+  family TimeLoop
+    trigger Initialize==complete
+    repeat string SEGMENT "20160918_21z" "20160919_03z"
+    task AerosolAnalysis
+      edit NCPUS_AOD '1'
+    family Analysis
+      task AcquireObservations
+        edit ECF_JOB_CMD '/usr/slurm/bin/sbatch %ECF_JOB% > %ECF_JOBOUT% 2>&1'
+        edit NCPUS_ACQOBS '1'
+        edit TIME_ACQOBS '2:00:00'
+      task PreAnalysisQC
+        trigger AcquireObservations==complete
+      task QualityControl
+        trigger PreAnalysisQC==complete
+      task UpdateGsiGridCompResource_3DVAR
+        trigger QualityControl==complete
+      task RunAnalysis
+        trigger UpdateGsiGridCompResource_3DVAR==complete
+        edit ECF_JOB_CMD '/usr/slurm/bin/sbatch %ECF_JOB% > %ECF_JOBOUT% 2>&1'
+        edit NCPUS_GSI '<<ncpus_gsi>>'
+        edit NCPUS_SAC '1'
+        edit TIME_GSI '<<time_gsi>>'
+        edit PRIORITY_GSI '<<priority>>'
+      task DiagToOds
+        trigger RunAnalysis==complete
+        edit NCPUS_GSI '<<ncpus_gsi>>'
+        edit NCPUS_SAC '1'
+    endfamily
+    task CoupleAnaToGcm_3DVAR_3DIAU
+      trigger Analysis==complete and AerosolAnalysis==complete
+      edit ECF_JOB_CMD '/usr/slurm/bin/sbatch %ECF_JOB% > %ECF_JOBOUT% 2>&1'
+      edit NCPUS_IAU '<<ncpus_iau>>'
+      edit PRIORITY_IAU '<<priority>>'
+      edit TIME_IAU '<<time_iau>>'
+    family GCM
+      trigger CoupleAnaToGcm_3DVAR_3DIAU==complete
+      family UpdateResource
+        task UpdateAgcmResource4DAS
+        task UpdateCapResource
+        task UpdateHistoryResource4DAS
+      endfamily
+      task RunGcm
+        trigger UpdateResource==complete
+        edit ECF_JOB_CMD '/usr/slurm/bin/sbatch %ECF_JOB% > %ECF_JOBOUT% 2>&1'
+        edit NCPUS_GCM '<<ncpus_gcm>>'
+        edit TIME_GCM '<<time_gcm>>'
+        edit PRIORITY_GCM '<<priority>>'
+      task RenameRstCheckpoint
+        trigger RunGcm==complete
+    endfamily
+    task TrackVortex4DAS
+      trigger GCM==complete
+      edit NCPUS_VTX '<<ncpus_vtx>>'
+    task CoupleGcmToAna
+      trigger TrackVortex4DAS==complete
+    task UpdateDateTime4DAS
+      trigger CoupleGcmToAna==complete
+  endfamily
+  family Finalize
+    trigger TimeLoop==complete
+    task ConvToPresCoords
+      edit NCPUS_CONV2PRS '<<ncpus_conv2prs>>'
+    task TagAndRecycle4DAS
+      trigger ConvToPresCoords==complete
+    task Archive
+      trigger TagAndRecycle4DAS==complete
+    task CleanupDAS
+      trigger Archive==complete
+  endfamily
+endsuite
+# enddef

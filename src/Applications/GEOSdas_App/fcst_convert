@@ -1,0 +1,388 @@
+#!@DASPERL
+#
+# Script for driving post-processing of fvDAS forecast
+# data for distribution to NCEP.
+#
+# !REVISION HISTORY:
+#
+# 20011015   Owens           Initial code (adapted from fvconvert)
+#---------------------------------------------------------------
+
+BEGIN {
+
+# Standard modules  (local modules defined below)
+# ----------------
+
+use Env;                 # make env vars readily available
+use FindBin;             # so we can find where this script resides
+use File::Basename;      # for basename(), dirname()
+use Getopt::Std;         # command line options
+
+# Command line options
+# --------------------
+  getopts('ChH:D:d:E:f:n:p:R:r:st:');
+
+  ($die_away = 1) if $opt_h;
+
+  if ( $opt_H ) { 
+    $fvhome =  $opt_H;
+  }
+  elsif ( defined $ENV{'FVHOME'} ) {
+    $fvhome = $ENV{'FVHOME'};
+  }
+  else {
+    print "fcst_convert ERROR: No FVHOME is set.\n\n";
+    $die_away = 1;
+  }
+
+  if ( $opt_E ) {
+    $expid = $opt_E;
+  }
+  elsif ( defined $ENV{'EXPID'} ) {
+    $expid = $ENV{'EXPID'};
+  }
+  else {
+    print "fcst_convert ERROR: No EXPID is set.\n\n";
+    $die_away = 1;
+  }
+
+  if ( $opt_R ) {
+    $fvroot = $opt_R;
+  }
+  elsif ( defined $ENV{'FVROOT'} ) {
+    $fvroot = $ENV{'FVROOT'};
+    print "\$fvroot = $fvroot\n";
+  }
+  else {
+    print "fcst_convert ERROR: No FVROOT is set.\n\n";
+    $die_away = 1;
+  }
+
+  if ( $opt_D ) {
+    $fdate = $opt_D;
+  }
+  else {
+    print "fcst_convert ERROR: Date is a required 'option'.\n\n";
+    $die_away = 1;
+  }
+   
+  ( $delete = 1 ) if  $opt_C;
+
+  if ( $opt_t ) {
+    $ftime = "$opt_t";
+  }
+  else {
+    print "fcst_convert ERROR: Time is a required 'option'.\n\n";
+    $die_away = 1;
+  }
+
+  if ( $opt_r ) {
+    $remote_base = $opt_r;
+  }
+
+# Local module search path
+# ------------------------
+
+   $PROGRAM_PATH = $FindBin::Bin;
+   $BINDIR = '/usr/local/dasutils/bin';
+
+# Set the GrADS envronment variables.
+
+   $ENV{'GADDIR'} = "/usr/local/dasutils/lib/grads";
+   $ENV{'GASCRP'} = "$fvroot/lib/grads";
+
+# Set the path to be searched for required programs.
+
+   @SEARCH_PATH = ( "${fvhome}/run", "${PROGRAM_PATH}", "${fvroot}/bin", $ENV{'GASCRP'}, $ENV{'GADDIR'}, $BINDIR );
+   $ENV{'PATH'} = join( ':', @SEARCH_PATH, $ENV{'PATH'} );
+   $ENV{'PATH'} = join( ':', $ENV{'PATH'}, $ENV{'PBS_O_PATH'} )  if ( defined $ENV{'PBS_O_PATH'} );
+   $ENV{'SHELL'} = '/bin/csh';
+ 
+system("/sbin/env");
+
+  if ( $die_away ) {
+     usage();
+  }
+}
+
+# Local modules
+# -------------
+
+  use lib (  @SEARCH_PATH );
+  use Manipulate_time;     # inc_time and token_resolve subroutine
+  use Remote_utils;        # file transfer and hendling routines
+
+#Variables to exclude for ncep
+  @xvars = ( 'bma', 'capemx', 'emsfc', 'gwet', 'gwet1', 
+            'h300', 'h500', 'htlcl', 'htmmse', 'lwsh', 
+            'pardif', 'pardir', 't200', 't850', 'trad', 
+            'tskin', 'v200', 'v850', 'u200', 'u850', 'xdim', 
+            'ydim', 'z0h', 'z0m', 'zmmb', 'zmpr', 'zmpr', 'zpd' );
+
+
+# Determine where to get rc files
+# --------------------------------------
+
+  if ( $opt_d ){
+     $ddf_skel = $opt_d;
+  }
+  elsif ( -r "${fvhome}/run/fcst_diag.ddf.skel" ) {
+     $ddf_skel = "${fvhome}/run/fcst_diag.ddf.skel";
+  }
+  else {
+    $ddf_skel = "${fvroot}/etc/fcst_diag.ddf.skel";
+  }
+
+
+#--Check fv2prs.rc
+
+  if ( $opt_f ){
+     $fv2prs_rc = $opt_f;
+  }
+  elsif ( -r "${fvhome}/run/fcst_fv2prs.rc" ) {
+     $fv2prs_rc = "${fvhome}/run/fcst_fv2prs.rc";
+  }
+  else {
+    $fv2prs_rc = "${fvroot}/etc/fcst_fv2prs.rc";
+  }
+#
+  if ( $opt_p ){
+     $prog_tbl = $opt_p;
+  }
+  elsif ( -r "${fvhome}/run/ncep_prog.tbl" ) {
+     $prog_tbl = "${fvhome}/run/ncep_prog.tbl";
+  }
+  else {
+     $prog_tbl = "${fvroot}/etc/ncep_prog.tbl";
+  }
+
+#
+  if ( $opt_n ){
+     $diag_tbl = $opt_n;
+  }
+  elsif ( -r "${fvhome}/run/ncep_diag.tbl" ) {
+     $diag_tbl = "${fvhome}/run/ncep_diag.tbl";
+  }
+  else {
+     $diag_tbl = "${fvroot}/etc/ncep_diag.tbl";
+  }
+
+# Lets go
+#------------------------------------
+
+  print "DATE at start.\n";
+  system ("date");
+
+# Create remote stage directory if needed
+# -----------------------------------
+
+  if ( $opt_r ) {
+    $remote_stage = token_resolve( $remote_base, $fdate );
+    $rc = mkdir_remote("$remote_stage");
+    if ( !$rc ) {
+      print "fcst_convert WARNING: Could not create $remote_stage or directory already exists\n";
+    }
+  }
+
+# Calculate file dates 
+# ------------------------------------
+
+  $month = substr($fdate,4,2);
+  $year  = substr($fdate,0,4);
+  $day   = substr($fdate,6,2);
+
+# Calculate file times (Hardwired for now -- needs logic)
+# ------------------------------------
+
+  ( $pdate, $ptime ) = inc_time( $fdate, ${ftime}, 0, 6);
+  ( $ddate, $dtime ) = inc_time( $fdate, ${ftime}, 0, 3);
+  ( $edate, $etime ) = inc_time( $fdate, ${ftime}, 5, 0);
+  $lats_time = $dtime;
+  $ptime =~ s/$ptime/0${ptime}/ if ( $ptime < 10 );
+  $dtime =~ s/$dtime/0${dtime}/ if ( $dtime < 10 );
+  $etime =~ s/$etime/0${etime}/ if ( $etime < 10 );
+
+# Build file names for conversion
+# ----------------------------------------
+
+##--Prog Files--#
+
+  $prog_dir   = "${fvhome}/prog/Y${year}/M${month}";
+  $prog_base  = "prog.eta.${fdate}_${ftime}z+";
+  $prog_prs   = "${prog_dir}/prog.prs.${fdate}_${ftime}z";
+
+##--Diag Files--#
+
+  $diag_dir   = "${fvhome}/diag/Y${year}/M${month}";
+  $diag_hdf   = "${expid}.diag.sfc.${fdate}_${ftime}z+";
+ 
+# Convert eta files to pressure levels using fv2prs
+# ----------------------------------
+
+# Get prog file names
+  opendir(PROGDIR, $prog_dir);
+     @progf =  grep !/^\./, grep /${prog_base}/, readdir PROGDIR or die "no prog files found or cannot read ${prog_dir}";
+  closedir(PROGDIR);
+
+# sort the files 
+  @progfiles = sort {$a cmp $b} @progf;
+
+# calculate the starting date of forecast
+  $start_file = $progfiles[0];
+  @start_nodes = split(/\+/,$start_file);
+  $start_date = substr($start_nodes[1],0,8);
+
+# calculate the ending date of forecast
+  $end_file = $progfiles[-1]; 
+  @end_nodes = split(/\+/,$end_file);
+  $end_date = substr($end_nodes[1],0,8);
+
+# create the tag for files
+  $prog_tag = "${fdate}_${ftime}z+${start_date}_${ptime}z-${end_date}_${etime}z";
+
+  $prog_lats   = "${expid}.prog.prs.${prog_tag}";
+  $prog_grib   = "${prog_dir}/${prog_lats}.grb";
+  $prog_ctl    = "${prog_dir}/${prog_lats}.ctl";
+  $prog_map    = "${prog_dir}/${prog_lats}.gmp";
+
+
+# run fv2prs to convert to pressure levels
+  chdir(${prog_dir});
+  print "Running fv2prs with $fv2prs_rc to convert prog file to pressure levels.\n";
+  print "${fvroot}/bin/fv2prs.x -o ${prog_prs} -rc $fv2prs_rc -vars \@tncep3d_p \@progfiles\n";
+  $rc = system ("${fvroot}/bin/fv2prs.x -o ${prog_prs} -rc $fv2prs_rc -vars \@tncep3d_p @progfiles");
+  if ( $rc ) {
+       die "(fcst_convert) FATAL ERROR: fv2prs.x failed on @progfiles\n";
+  }
+ 
+# print "DATE after converting to pressure level data.\n";
+  system ("date");
+
+# Convert pressure level file to grib
+# -----------------------------------------
+
+  $| = 1;
+  print "Running lats4d to convert HDF pressure level file to grib\n";
+  print "\$rc=system(lats4d -v -xvars xdim ydim -table $prog_tbl -format grads_grib -i ${prog_prs} -freq 6 hourly -o $prog_lats)";
+  $rc=system("lats4d -v -table $prog_tbl -format grads_grib -i ${prog_prs} -freq 6 hourly -o $prog_lats");
+  if ( ( $rc ) || ( -z "${prog_lats}.gmp" ) || ( ! -e "${prog_lats}.gmp" ) ) {
+       die "(fcst_convert) FATAL ERROR: lats4d failed on ${prog_prs}\n";
+  }else{
+       push(@ncep_files,$prog_grib, $prog_ctl, $prog_map);
+        if ( $delete ) {
+             $rc=unlink("$prog_prs");
+             print "(fcst_convert) \$rc = $rc for Deleted $prog_prs\n";
+        }
+  }
+  print "DATE after converting HDF files to grib format.\n";
+  system ("date");
+
+  if ( $opt_s ){
+  print "Converting 2d diag file to grib for NCEP.\n";
+# Convert 2d diag file to grib
+#---------------------------------------------
+
+# create ddf file
+    chdir(${diag_dir});
+    $ddf = "$diag_dir/diag.ddf.$$";
+    @MON = ( NULL, JAN, FEB, MAR, APR, MAY, JUN, JUL, AUG, SEP, OCT, NOV, DEC ); 
+    open( DDF, ">$ddf" ) or die "cannot open $ddf for writing\n";
+    open( SKEL, "<$ddf_skel" ) or die "cannot read $ddf_skel\n";
+    while ( <SKEL> ) {
+         chop;
+         $line =$_;
+
+         if ( /DIAG_DIR/ ) { ($line = $line) =~ s/DIAG_DIR/$diag_dir/g;}
+         if ( /DATE/ )     { ($line = $line) =~ s/DATE/$fdate/g;}
+         if ( /HOUR/ )     { ($line = $line) =~ s/HOUR/$ftime/g;}
+         if ( /LATSTIME/ ) { ($line = $line) =~ s/LATSTIME/$lats_time/g;}
+         if ( /YEAR/ )     { ($line = $line) =~ s/YEAR/$year/g;}
+         if ( /DAY/ )      { ($line = $line) =~ s/DAY/$day/g;}
+         if ( /MON/ )      { ($line = $line) =~ s/MON/$MON[$month]/g;}
+         print DDF ("$line\n");
+    }
+    close(DDF);
+    close(SKEL);
+
+# create the tag for files
+  $diag_tag   = "${fdate}_${ftime}z+${ddate}_${dtime}z-${edate}_${etime}z";
+  $diag_sfc    = "${expid}.diag.sfc.${fdate}_${ftime}z-${edate}.nc4";
+  $diag_lats   = "${expid}.diag2d.prs.${diag_tag}";
+  $diag_grib   = "${diag_dir}/${diag_lats}.grb";
+  $diag_ctl    = "${diag_dir}/${diag_lats}.ctl";
+  $diag_map    = "${diag_dir}/${diag_lats}.gmp";
+
+  chdir($diag_dir);
+  $| = 1;
+  print "Running lats4d to convert 2d diag file to grib\n";
+  $rc=system("lats4d -v -xvars @xvars -ftype xdf -table $diag_tbl -format grads_grib -i $ddf  -freq 3 hourly -o $diag_lats");
+  if ( ( $rc ) || ( -z "${diag_map}" ) || ( ! -e "${diag_map}" ) ) {
+       die "(fcst_convert) FATAL ERROR: lats4d failed on ${diag_bin}\n";
+  }else{
+       push(@ncep_files, $diag_grib, $diag_ctl, $diag_map);
+       $rc=unlink("$ddf");
+  }
+  print "DATE after converting 2d diag file to grib format. Status=$rc\n";
+  system ("date");
+
+}
+# Transfer grib file to remote stage directory
+#---------------------------------------------
+  if ( $opt_r ) {
+       foreach $ncep_file ( @ncep_files ){
+            $rput_rc=rput( "$ncep_file", "${remote_stage}", { direct => '1', debug => '1'} );
+            if ( ! $rput_rc ) {
+                 print "(fcst_convert) WARNING:  Unable to copy $ncep_file to ${remote_stage}\n";
+            }else{
+                 if ( $delete ) {
+                      $rc=unlink("$ncep_file");
+                      print "(fcst_convert) \$rc = $rc for Deleted $ncep_file\n";
+                 }
+            }
+       }
+  }
+
+exit(0);
+
+#----------------------------------------------------------------------------------#
+
+sub usage {
+
+   print <<"EOF";
+
+USAGE
+
+     fcst_convert -D YYYYMMDD [ -H fvhome -E expid -R fvroot -r location -h -p ]
+
+DESCRIPTION
+
+     fcst_convert - convert fvDAS forecast output files using fv2prs
+
+OPTIONS
+
+ -f rcfile  fv2prs resource file to use (default is  FVROOT/etc/fcst_fv2prs.rc)
+ -D date    Date of data to convert, in YYYYMMDD format.
+ -d ddfskel skel file for creating valid ddf file.
+ -E EXPID   Exeriment ID of the data files.  If -E is not specified,
+            fcst_convert probes the EXPID environment variable.
+ -H FVHOME  The home directory for this fvDAS run.  fcst_convert will
+            expect data files to exist under the FVHOME structure.
+            If -H is not specified, fcst_convert probes the FVHOME 
+            environment variable.
+ -R FVROOT  The installation directory of the fvDAS software.  If
+            -R is not specified, fcst_convert probes the FVROOT environment
+            variable.
+ -h         prints this usage notice
+ -r loc     If this flag is present, SCP is used to push output HDF files
+            to "loc."  loc is can be defined with templates or as a direct
+            pathname, i.e., dao_it\@bj:/silo2/dao_it/cfv124_01_tst/Y%y4/M%m2.
+            If '-r' is not specified, HDF files are left in FVHOME. 
+ -C         Remove local file after data transfer.  -r must also be specified.
+ -s         Produce 2d surface diagnostic grib file for NCEP 
+
+EOF
+
+exit(1)
+
+}
+

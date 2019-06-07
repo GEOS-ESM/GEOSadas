@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+%include <slurm.h>
+#SBATCH --ntasks=%NCPUS_GCM%
+#SBATCH --qos=%PRIORITY_GCM%
+#SBATCH --time=%TIME_GCM%
+#SBATCH --job-name=%STE_NAME%-run-gcm
+#SBATCH --output=%BATCHOUT_DIR%/%STE_NAME%-run-gcm.out.%j
+
+%include <head.h>
+
+CWD=$(pwd)
+
+export NCPUS_GCM=%NCPUS_GCM%
+export WORKFLOW_DIR=%ECF_HOME%
+bash ${WORKFLOW_DIR}/tasks/RunGcm.sh
+
+cd $CWD
+
+%include <tail.h>

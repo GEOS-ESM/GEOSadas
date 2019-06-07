@@ -1,0 +1,1064 @@
+#!/usr/bin/env perl
+#=======================================================================
+# name - monthly.yyyymm.pl
+# purpose - script for submitting jobs to
+#           > prefetch monthly means inputs
+#           > compute monthly means
+#           > tar and clean monthly means inputs
+#           > create monthly plots
+# Notes:
+# 1. To use this script,
+#    - copy to experiment run directory
+#    - rename by replacing "yyyymm" with the actual year/month date
+#    - change file permissions to be executable
+#
+# 2. runtime processing flags:
+#    -means: run monthly means
+#    -plots: run monthly plots
+#    -tar: tar monthly inputs
+#    (see usage() for more complete processing information)
+#
+# 3. To reiterate from Note #1:
+#    - The script must be located in the experiment run directory before running
+#    - The yyyymm data date is extracted from the script name.
+#=======================================================================
+use strict;
+use warnings;
+use FindBin qw($Bin);
+my $fvroot;
+
+# pre-process to get $fvroot location
+#------------------------------------
+BEGIN {
+    use FindBin qw($Bin);
+    my ($dot_fvroot);
+
+    $dot_fvroot = "$Bin/../.FVROOT";
+    $dot_fvroot = "$Bin/.../.FVROOT" unless -e $dot_fvroot;
+    die "Error. Cannot find .FVROOT file;" unless -e $dot_fvroot;
+
+    open DRF, "< $dot_fvroot" or die "Error opening $dot_fvroot;";
+    chomp($fvroot = <DRF>);
+    close DRF;
+}
+use lib "$fvroot/bin";
+use WriteLog qw(chdir_ mkpath_ unlink_ system_);
+
+# global variables
+#-----------------
+my ($meansFLG, $plotsFLG, $tarFLG, $finish, $nopush, %doMeans);
+my ($EXPID, $FVHOME, $PBS_BIN, $account, $listdir, $mnthlyRC);
+my ($numnodes_mm, $numnodes_mp, $plotHISTrc, $qcmd, $rundir);
+my ($script, $siteID, $workdir, $yyyymm, %newrc, %JOBID);
+my ($walltime_cl, $walltime_mm, $walltime_mp, $walltime_pf);
+
+my %valid = ( "fetch" => 1,
+              "means" => 1,
+              "tarandclean" => 1,
+              "gcm_plot" => 1 );
+
+#=======================================================================
+# main program
+#=======================================================================
+{
+    init();
+
+    if ($finish) {
+        finish_monthly_plots();
+        exit;
+    }
+
+    system_("write_monthly_rc_arc.pl -rc -outrc $mnthlyRC") if $newrc{1};
+    system_("edhist.pl -plot $mnthlyRC -q -o $plotHISTrc")  if $newrc{2};
+
+    if ($meansFLG or $tarFLG) {
+        fetch_calc_tar_and_clean();
+        archive_monthly_files();
+        archive_monthly_keep_files();
+    }
+    monthly_plots() if $plotsFLG;
+}
+
+#=======================================================================
+# name - init
+# purpose - get runtime options;
+#=======================================================================
+sub init {
+    use Cwd qw(cwd);
+    use Getopt::Long qw(GetOptions);
+    use File::Basename qw(basename);
+    use GMAO_utils qw(get_siteID);
+    use Perl_Config qw(perl_config);
+
+    my ($GID, $agcm_im, $agcmRC, $agrid, $debug, $help, $job_tarfile);
+    my ($month, $runconfig, $user, $workarea, $year);
+    my (%agrid_id, %low_res, %mid_res, %opts, @newrc);
+
+    $script = basename $0;
+    $siteID = get_siteID();
+
+    # get yyyymm from script name
+    #----------------------------
+    $yyyymm = $1 if $script =~ m/\.(\d{6})\./;
+    die "Error. Unable to extract date from script name: $script;" unless $yyyymm;
+
+    # get runtime parameters
+    #-----------------------
+    GetOptions( "means"        => \$meansFLG,
+                "tar"          => \$tarFLG,
+                "plots"        => \$plotsFLG,
+                "finish_plots" => \$finish,
+                "nopush"       => \$nopush,
+
+                "rc|mrc=s" => \$mnthlyRC,
+                "newrc:s"  => \@newrc,
+
+                "db|debug" => \$debug,
+                "h|help"   => \$help );
+    usage() if $help;
+
+    # flags indicating whether to create new resource files
+    #------------------------------------------------------
+    if ($#newrc == 0 and $newrc[0] eq "") { $newrc[0] = "1,2" }
+    @newrc = split /[,]/, join(",", @newrc);
+
+    foreach (@newrc) {
+        next unless m/^1$/ or m/^2$/;
+        $newrc{$_} = 1;
+    }
+    usage() unless $meansFLG or $tarFLG or $plotsFLG or $finish or %newrc;
+
+    # process options
+    #----------------
+    $meansFLG = 0 unless $meansFLG;
+    $plotsFLG = 0 unless $plotsFLG;
+    $tarFLG = 0 unless $tarFLG;
+
+    # get job environment variables
+    #------------------------------
+    $rundir = $Bin;
+    $runconfig = "$rundir/FVDAS_Run_Config";
+    die "Error. Cannot find $runconfig;" unless -e $runconfig;
+
+    %opts = ();
+    $opts{"config_file"} = $runconfig;
+    $opts{"debug"} = $debug if $debug;
+    perl_config(%opts);
+
+    $EXPID   = $ENV{"EXPID"};
+    $FVHOME  = $ENV{"FVHOME"};
+    $PBS_BIN = $ENV{"PBS_BIN"};
+    $GID     = $ENV{"GID"};
+
+    $ENV{"PATH"} = "$rundir:$fvroot/bin:$ENV{PATH}";
+
+    # rcfiles
+    #--------
+    $agcmRC = "$rundir/AGCM.rc.tmpl";
+    $mnthlyRC = "$rundir/" . basename($mnthlyRC) if $mnthlyRC;
+    $mnthlyRC = "$rundir/monthly.rc" unless $mnthlyRC;
+    $plotHISTrc = "$rundir/monthly_plots/HISTORY.rc_tmpl";
+
+    # get atmosphere grid info
+    #-------------------------
+    %agrid_id = ("72"   => "a",
+                 "144"  => "b",
+                 "288"  => "c",
+                 "576"  => "d",
+                 "1152" => "e",
+                 "48"   => "C48",
+                 "90"   => "C90",
+                 "180"  => "C180",
+                 "360"  => "C360",
+                 "720"  => "C720");
+    foreach (qw(a b C48)) { $low_res{$_} = 1 }
+    foreach (qw(c C90))   { $mid_res{$_} = 1 }
+
+    open AGCM, "< $agcmRC" or die "Error opening $agcmRC;";
+    $agcm_im = "";
+    while (<AGCM>) {
+        $agcm_im = $1 if /^\s*AGCM_IM:\s*(\S*)\s*$/;
+        last if $agcm_im;
+    }
+    close AGCM;
+    $agrid = $agrid_id{$agcm_im};
+
+    die "Error. Cannot determine atmosphere grid from '$agcmRC';" unless $agcm_im;
+    die "Error. Cannot determine agrid from agcm_im='$agcm_im';"  unless $agrid;
+
+    # set $walltime and $numnodes values
+    #-----------------------------------
+    # cl = tar & clean
+    # mm = monthly means
+    # mp = monthly plots
+    # pf = prefetch
+    #--------------------------------
+    if ($low_res{$agrid}) {
+        $walltime_cl = "1:00:00";
+        $walltime_mm = "2:00:00";
+        $walltime_pf = "1:00:00";
+        $numnodes_mm = 2;
+    }
+    elsif ($mid_res{$agrid}) {
+        $walltime_cl = "1:00:00";
+        $walltime_mm = "4:00:00";
+        $walltime_pf = "1:00:00";
+        $numnodes_mm = 4;
+    }
+    else {
+        $walltime_cl = "2:00:00";
+        $walltime_mm = "8:00:00";
+        $walltime_pf = "2:00:00";
+        $numnodes_mm = 6;
+    }
+    $walltime_mp = "1:00:00";
+    $numnodes_mp = 1;
+
+    # listing directory
+    #------------------
+    $year = substr($yyyymm, 0, 4);
+    $month = substr($yyyymm, 4, 2);
+    $listdir = "$FVHOME/etc/Y$year/M$month";
+
+    unless (-d $listdir) {
+        %opts = ();
+        $opts{"verbose"} = 1;
+        mkpath_($listdir, \%opts);
+    }
+
+    # queue flag for qsub jobs needing archive access
+    #------------------------------------------------
+    $account = "";
+    if ($siteID eq "nccs") {
+        $qcmd = "$PBS_BIN/sbatch";
+        $account = "SBATCH --account=$GID" if $GID;
+    }
+    else {
+        $qcmd = "$PBS_BIN/qsub";
+        $account = "PBS -W group_list=$GID" if $GID;
+    }
+
+    # monthly means working directory
+    #--------------------------------
+    if ($meansFLG or $tarFLG) {
+        $user = $ENV{"USER"};
+        #--if (! $?WDIR) set WDIR = $FVSILO/monthly_temp/Y$year/M$month
+
+        if    ($siteID eq "nccs") { $workarea = "/discover/nobackup/$user" }
+        elsif ($siteID eq "nas")  { $workarea = "/nobackup/$user" }
+        else                      { $workarea = "/scratch/$user" }
+
+        die "Error. Cannot find workarea directory: $workarea;"
+            unless -d $workarea;
+        $workdir = "$workarea/mmwork.$yyyymm.$$";
+    }
+}
+
+#=======================================================================
+# name - fetch_calc_tar_and_clean
+# purpose - this is a wrapper function which calls other functions to
+#           submit jobs to fetch inputs, calculate monthly means, and
+#           then tar and clean inputs.
+#=======================================================================
+sub fetch_calc_tar_and_clean {
+    my (%opts, $MMWORK, $filestring, $lastFLG);
+    my (@fetchArr, $processflags);
+    my ($max, $label, $num, $job_tarfile, @list);
+    my ($fileToken, @parts, %ftype, %htype, $ftype, $htype);
+    my (%doFetch, %doTar);
+
+    # check for existence of work directory
+    #--------------------------------------
+    unless (-d $workdir) {
+        %opts = ();
+        $opts{"verbose"} = 1;
+        mkpath_($workdir, \%opts);
+        system_("touch $workdir/.no_archiving");
+
+        $MMWORK = "$FVHOME/.MMWORK.$yyyymm";
+        unlink $MMWORK if -e $MMWORK;
+        system_("echo $workdir > $MMWORK");
+    }
+    chdir $workdir;
+
+    # get list of filestrings from monthly means rcfile
+    #--------------------------------------------------
+    die "Error. Cannot find monthly rcfile, $mnthlyRC;" unless -e $mnthlyRC;
+    open MRC, "< $mnthlyRC" or die "Error opening monthly rcfile: $mnthlyRC;";
+
+    foreach (<MRC>) {
+        chomp;
+        next if m/^\s*\#/;  # skip comment lines
+        next if m/^\s*$/;   # skip blank lines
+        
+        ($filestring, $processflags, $htype) = (split /\s+/, expand($_))[0, 1, 2];
+        $fileToken = basename($filestring);
+
+        # get $ftype by removing expid, datetime, and ext segments 
+        #---------------------------------------------------------
+        @parts = split /[\.]/, $fileToken;
+        shift(@parts); pop(@parts); pop(@parts);
+        $ftype = join ".", @parts;
+
+        # get $htype from $ftype, unless alternate htype value given
+        #-----------------------------------------------------------
+        unless ($htype) {
+            if ($ftype =~  /\./) { $htype = $ftype }
+            else                 { $htype = (split(/_/, $ftype))[0] }
+        }
+
+        $ftype{$filestring} = $ftype;
+        $htype{$filestring} = $htype;
+
+        $processflags = "" unless $processflags;
+        if ($meansFLG and $processflags =~ m/M/) {
+            push @fetchArr, $filestring;
+            $doFetch{$filestring} = 1;
+            $doMeans{$filestring} = 1;
+        }
+        if ($tarFLG and $processflags =~ m/T/) {
+            push @fetchArr, $filestring unless $doFetch{$filestring};
+            $doFetch{$filestring} = 1;
+            $doTar{$filestring} = 1;
+        }
+    }
+    close MRC;
+
+    # process each filestring in @fetchArr
+    #-------------------------------------
+    $lastFLG = 0;
+    foreach $filestring (@fetchArr) {
+
+        %opts = ();
+        $opts{"filestring"} = $filestring;
+        $opts{"ftype"} = $ftype{$filestring};
+        $opts{"htype"} = $htype{$filestring};
+
+        $opts{"do_dmput"} = 1;
+        $opts{"do_dmput"} = 0 if $doTar{$filestring}; 
+
+        $opts{"do_tar"} = 0;
+        $opts{"do_tar"} = 1 if $doTar{$filestring};
+
+        $opts{"lastFLG"} = 0;
+        $opts{"lastFLG"} = 1 if $filestring eq $fetchArr[-1];
+
+        fetch_inputs(%opts)         if $doFetch{$filestring};
+        calc_monthly_means(%opts)   if $doMeans{$filestring};
+        tar_and_clean_inputs(%opts) if $doFetch{$filestring};
+    }
+
+    # tar jobscripts
+    #---------------
+    chdir_("\n$rundir/jobscripts");
+    foreach $label qw( prefetch means tarandclean ) {
+        @list =(<$label.*.$yyyymm.j>);
+        if (@list) {
+            $job_tarfile = "$label.$yyyymm.j.$$.tar";
+            die "Error; $job_tarfile already exists" if -e $job_tarfile;
+
+            system_("\ntar rf $job_tarfile --remove-files @list");
+            print "$label jobscript tarfile created: $job_tarfile\n";
+        }
+    }
+}
+
+#=======================================================================
+# name - fetch_inputs
+# purpose - qsub job to fetch inputs
+#
+# note:
+# * Due to space limitations, we do not want more than two sets of inputs
+#   in the $workdir at a time. Therefore, set the prefetch job dependent
+#   on the tarandclean job from two ftypes back.
+#
+# inputs from %opts
+# => $filestring: entry from monthly.rc file
+# => $ftype: data file type
+# => $htype: data hour type
+# => $do_dmput: flag indicating whether to dmput the input files
+#=======================================================================
+sub fetch_inputs {
+    use File::Basename qw(basename);
+    my (%opts, $filestring, $ftype, $htype, $do_dmput, $do_tar);
+    my ($tmpl, $prefetch_j, $jobname, $outfile);
+    my ($job_name, $time, $output, $partition, $vFLG);
+    my (%value, @deps, $dependFLG, $cmd);
+
+    # input arguments
+    #----------------
+    %opts = @_;
+    $filestring = $opts{"filestring"};
+    $ftype      = $opts{"ftype"};
+    $htype      = $opts{"htype"};
+    $do_dmput   = $opts{"do_dmput"};
+    $do_tar     = $opts{"do_tar"};
+
+    # create prefetch job script
+    #---------------------------
+    $tmpl = "$fvroot/etc/monthly_prefetch.j.tmpl";
+    $prefetch_j = "$FVHOME/run/jobscripts/prefetch.$ftype.$yyyymm.j";
+    
+    $jobname = "PF_$ftype";
+    $outfile = "$listdir/$EXPID.prefetch.$ftype.$yyyymm.log.$$.txt.FAILED";
+
+    if ($siteID eq "nccs") {
+        $job_name = "SBATCH --job-name=$jobname";
+        $time = "SBATCH --time=$walltime_pf";
+        $output = "SBATCH --output=$outfile";
+        $partition = "SBATCH --partition=datamove";
+        $vFLG = "--export=outfile=$outfile";
+    }
+    else {
+        $job_name = "PBS -N $jobname";
+        $time = "PBS -l walltime=$walltime_pf";
+        $output = "PBS -o $outfile";
+        $partition = "";
+        $vFLG = "-v outfile=$outfile";
+    }
+
+    %value = ();
+    $value{"__JOB_NAME__"}   = $job_name;
+    $value{"__TIME__"}       = $time;
+    $value{"__ACCOUNT__"}    = $account;
+    $value{"__OUTPUT__"}     = $output;
+    $value{"__PARTITION__"}  = $partition;
+
+    $value{"__FILESTRING__"} = $filestring;
+    $value{"__HOURTYPE__"}   = $htype;
+    $value{"__YYYYMM__"}     = $yyyymm;
+    $value{"__RUNDIR__"}     = $rundir;
+    $value{"__WORKDIR__"}    = $workdir;
+    $value{"__DO_DMPUT__"}   = $do_dmput;
+    $value{"__DO_TAR__"}     = $do_tar;
+
+    replaceLabels($tmpl, $prefetch_j, %value);
+
+    # no more than two data sets in work directory at a time
+    #-------------------------------------------------------
+    @deps = ("tarandclean -2");
+    $dependFLG = get_dependFLG(@deps);
+
+    # submit job
+    #-----------
+    $cmd = "$qcmd $vFLG $dependFLG $prefetch_j";
+    qsubW($cmd);
+}
+
+#=======================================================================
+# name - calc_monthly_means
+# purpose - submit job to calculate monthly means
+#
+# inputs from %opts
+# => $filestring: file name template from monthly means rc file
+# => $ftype: data file type
+# => $htype: data hour type
+# => $do_dmput: flag indicating whether to dmput data input files
+#=======================================================================
+sub calc_monthly_means {
+    use File::Basename qw(basename);
+    my (%opts, $filestring, $ftype, $htype, $do_dmput);
+    my ($tmpl, $means_j, $jobname, $outfile, $tasks_per_node);
+    my ($job_name, $nodes, $time, $output, $per_node);
+    my ($vFLG, $processors, %value, @deps, $dependFLG, $cmd);
+
+    # input parameters
+    #-----------------
+    %opts = @_;
+    $filestring = $opts{"filestring"};
+    $ftype      = $opts{"ftype"};
+    $htype      = $opts{"htype"};
+    $do_dmput   = $opts{"do_dmput"};
+
+    # create monthly_means job script
+    #--------------------------------
+    $tmpl = "$fvroot/etc/monthly_means.j.tmpl";
+    $means_j = "$FVHOME/run/jobscripts/means.$ftype.$yyyymm.j";
+
+    $jobname = "MM_$ftype";
+    $outfile = "$listdir/$EXPID.means.$ftype.$yyyymm.log.$$.txt.FAILED";
+    $tasks_per_node = 24;
+
+    if ($siteID eq "nccs") {
+        $job_name = "SBATCH --job-name=$jobname";
+        $time = "SBATCH --time=$walltime_mm";
+        $output = "SBATCH --output=$outfile";
+        $nodes = "SBATCH --nodes=$numnodes_mm";
+        $per_node = "SBATCH --tasks-per-node=$tasks_per_node";
+        $vFLG = "--export=outfile=$outfile";
+    }
+    else {
+        $job_name = "PBS -N $jobname";
+        $time = "PBS -l walltime=$walltime_mm";
+        $output = "PBS -o $outfile";
+        $nodes = "PBS -l select=$numnodes_mm";
+        $per_node = "PBS -l ncpus=$tasks_per_node";
+        $vFLG = "-v outfile=$outfile";
+    }
+    $processors = "@ num_processors = $numnodes_mm * $tasks_per_node";
+
+    %value = ();
+    $value{"__JOB_NAME__"}   = $job_name;
+    $value{"__TIME__"}       = $time;
+    $value{"__ACCOUNT__"}    = $account;
+    $value{"__OUTPUT__"}     = $output;
+    $value{"__NODES__"}      = $nodes;
+    $value{"__PER_NODE__"}   = $per_node;
+    $value{"__PROCESSORS__"} = $processors;
+
+    $value{"__FILESTRING__"} = $filestring;
+    $value{"__HOURTYPE__"}   = $htype;
+    $value{"__YYYYMM__"}     = $yyyymm;
+    $value{"__RUNDIR__"}     = $rundir;
+    $value{"__WORKDIR__"}    = $workdir;
+    $value{"__DO_DMPUT__"}   = $do_dmput;
+
+    replaceLabels($tmpl, $means_j, %value);
+
+    # wait for "fetch" job to complete
+    #---------------------------------
+    @deps = ("fetch -1");
+    $dependFLG = get_dependFLG(@deps);
+
+    # submit job
+    #-----------
+    $cmd = "$qcmd $vFLG $dependFLG $means_j";
+    qsubW($cmd);
+}
+
+#=======================================================================
+# name - tar_and_clean_inputs
+# purpose - qsub job to do the following:
+#           1. if $tarFLG, then tar monthly files
+#              and remove them from the archive
+#           2. remove monthly files from the work directory
+#
+# inputs from %opts
+# => $filestring: entry from monthly.rc file
+# => $ftype: data file type
+# => $do_tar: flag indicating whether to tar monthly files
+# => $lastFLG: flag indicating whether this is last data collection
+#=======================================================================
+sub tar_and_clean_inputs {
+    use File::Basename qw(basename);
+    my (%opts, $filestring, $ftype, $do_tar, $lastFLG);
+    my ($tmpl, $tarandclean_j, $jobname, $outfile);
+    my ($job_name, $time, $output, $partition, $vFLG);
+    my (%value, $walltime, @deps, $dependFLG, $cmd);
+
+    # input arguments
+    #----------------
+    %opts = @_;
+    $filestring = $opts{"filestring"};
+    $ftype      = $opts{"ftype"};
+    $do_tar     = $opts{"do_tar"};
+    $lastFLG    = $opts{"lastFLG"};
+
+    # create tarandclean job script
+    #-------------------------------
+    $tmpl = "$fvroot/etc/monthly_tarandclean.j.tmpl";
+    $tarandclean_j = "$FVHOME/run/jobscripts/tarandclean.$ftype.$yyyymm.j";
+
+    $jobname = "CL_$ftype";
+    $outfile = "$listdir/$EXPID.tarandclean.$ftype.$yyyymm.log.$$.txt.FAILED";
+
+    if ($siteID eq "nccs") {
+        $job_name = "SBATCH --job-name=$jobname";
+        $time = "SBATCH --time=$walltime_cl";
+        $output = "SBATCH --output=$outfile";
+        $partition = "SBATCH --partition=datamove";
+        $vFLG = "--export=outfile=$outfile";
+    }
+    else {
+        $job_name = "PBS -N $jobname ";
+        $time = "PBS -l walltime=$walltime_cl";
+        $output = "PBS -o $outfile";
+        $partition = "";
+        $vFLG = "-v outfile=$outfile";
+    }
+
+    %value = ();
+    $value{"__JOB_NAME__"}   = $job_name;
+    $value{"__TIME__"}       = $time;
+    $value{"__ACCOUNT__"}    = $account;
+    $value{"__OUTPUT__"}     = $output;
+    $value{"__PARTITION__"}  = $partition;
+
+    $value{"__FILESTRING__"} = $filestring;
+    $value{"__YYYYMM__"}     = $yyyymm;
+    $value{"__RUNDIR__"}     = $rundir;
+    $value{"__WORKDIR__"}    = $workdir;
+    $value{"__DO_TAR__"}     = $do_tar;
+    $value{"__LASTFLG__"}    = $lastFLG;
+
+    replaceLabels($tmpl, $tarandclean_j, %value);
+
+    # determine job dependencies
+    #--------------------------------------------------------
+    # note: last tarandclean job submitted should be last job
+    # to start, since it will remove work directory when done
+    #--------------------------------------------------------
+    @deps = ();
+    if ($lastFLG)              { push @deps, "tarandclean -1" }
+    if ($doMeans{$filestring}) { push @deps, "means -1" }
+    else                       { push @deps, "fetch -1" }
+    $dependFLG = get_dependFLG(@deps);
+
+    # submit job
+    #-----------
+    $cmd = "$qcmd $vFLG $dependFLG $tarandclean_j";
+    qsubW($cmd);
+}
+
+#=======================================================================
+# name - archive_monthly_keep_files
+# purpose - submit job to archive files in monthly.keep.arc
+#          (these files will not be deleted after archival)
+#=======================================================================
+sub archive_monthly_keep_files {
+    my ($outfile, $vars, $vFLG, $outFLG, $qFLGs, @deps, $dependFLG);
+    my ($KEEParc_csh, $cmd, $cmd_save);
+
+    # command flags
+    #--------------
+    $outfile = "$listdir/$EXPID.KEEParc.$yyyymm.log.$$.txt.FAILED";
+    $vars = "arch_type=MKEEP,"
+        .   "arch_date=$yyyymm,"
+        .   "outfile=$outfile";
+
+    if ($siteID eq "nccs") {
+        $vFLG = "--export=$vars";
+        $outFLG = "--output=$outfile";
+        $qFLGs = "--job-name=KEEParc.$yyyymm --time=$walltime_cl"
+            .    " --partition=datamove";
+    }
+    else {
+        $vFLG = "-v $vars";
+        $outFLG = "-o $outfile";
+        $qFLGs = "-N MMarc.$yyyymm -l ncpus=1,walltime=$walltime_cl";
+    }
+
+    # note: make dependent on last "tarandclean" job, since the
+    # last "means" job submitted might not be the last to complete
+    #-------------------------------------------------------------
+    @deps = ("tarandclean -1");
+    $dependFLG = get_dependFLG(@deps);
+
+    # submit job
+    #-----------
+    $cmd = "$qcmd $vFLG $dependFLG $outFLG $qFLGs $rundir/fvarchive.j";
+    qsubW($cmd);
+
+    # save $cmd in script, in case KEEParc job needs to be resubmitted
+    #-----------------------------------------------------------------
+    ($cmd_save = $cmd) =~ s/ $dependFLG//;
+    $cmd_save =~ s/$$/\$\$/g;
+
+    $KEEParc_csh = "$FVHOME/run/jobscripts/KEEParc.$yyyymm.csh";
+    open MM, "> $KEEParc_csh" or die "Error opening file: $KEEParc_csh; $!";
+
+    print MM "#!/usr/bin/env csh\n";
+    print MM "#-----------------------------------------------------\n"
+        .    "# Use this script to resubmit KEEParc job for $yyyymm, \n"
+        .    "# e.g. if the previous job timed out before finishing.\n"
+        .    "#-----------------------------------------------------\n";
+    print MM "$cmd_save\n";
+    close MM;
+    chmod 0755, $KEEParc_csh;
+}
+
+#=======================================================================
+# name - archive_monthly_files
+# purpose - submit job to archive files in monthly.arc
+#=======================================================================
+sub archive_monthly_files {
+    my ($outfile, $vars, $vFLG, $outFLG, $qFLGs, @deps, $dependFLG);
+    my ($MPParc_csh, $cmd, $cmd_save);
+
+    # command flags
+    #--------------
+    $outfile = "$listdir/$EXPID.MPParc.$yyyymm.log.$$.txt.FAILED";
+    $vars = "arch_type=MNTHLY,"
+        .   "arch_date=$yyyymm,"
+        .   "outfile=$outfile,"
+        .   "mmid=$$";
+
+    if ($siteID eq "nccs") {
+        $vFLG = "--export=$vars";
+        $outFLG = "--output=$outfile";
+        $qFLGs = "--job-name=MPParc.$yyyymm --nodes=1 --time=$walltime_cl"
+            .    " --partition=datamove";
+    }
+    else {
+        $vFLG = "-v $vars";
+        $outFLG = "-o $outfile";
+        $qFLGs = "-N MPParc.$yyyymm -l ncpus=1,walltime=$walltime_cl";
+    }
+
+    @deps = ("tarandclean -1");
+    $dependFLG = get_dependFLG(@deps);
+
+    # submit job
+    #-----------
+    $cmd = "$qcmd $vFLG $dependFLG $outFLG $qFLGs $rundir/fvarchive.j";
+    qsubW($cmd);
+
+    # save $cmd in script, in case MPParc job needs to be resubmitted
+    #----------------------------------------------------------------
+    ($cmd_save = $cmd) =~ s/ $dependFLG//;
+    $cmd_save =~ s/$$/\$\$/g;
+
+    $MPParc_csh = "$FVHOME/run/jobscripts/MPParc.$yyyymm.csh";
+    open MPP, "> $MPParc_csh" or die "Error opening MPP archive script; $!";
+
+    print MPP "#!/usr/bin/env csh\n";
+    print MPP "#-----------------------------------------------------\n"
+        .     "# Use this script to resubmit MPParc job for $yyyymm,\n"
+        .     "# e.g. if the previous job timed out before finishing.\n"
+        .     "#-----------------------------------------------------\n";
+    print MPP "$cmd_save\n";
+    close MPP;
+    chmod 0755, $MPParc_csh;
+}
+
+#=======================================================================
+# name - monthly_plots
+# purpose - submit plotting job
+#=======================================================================
+sub monthly_plots {
+    use File::Basename qw(basename);
+    my ($tmpl, $transfer_csh, $plots_j, $jobname, $outfile);
+    my ($job_name, $nodes, $time, $output, $partition);
+    my (%value, @deps, $dependFLG, $vFLG, $cmd);
+
+    # create plots transfer job script
+    #---------------------------------
+    $tmpl = "$fvroot/etc/plots_transfer.csh.tmpl";
+    $transfer_csh = "$FVHOME/run/jobscripts/plots_transfer.$yyyymm.csh";
+    $jobname = "MPT$yyyymm";
+    $outfile = "$listdir/$EXPID.plots_transfer.$yyyymm.log.$$.txt.FAILED";
+
+    if ($siteID eq "nccs") {
+        $job_name = "SBATCH --job-name=$jobname";
+        $time = "SBATCH --time=$walltime_cl";
+        $output = "SBATCH --output=$outfile";
+        $partition = "SBATCH --partition=datamove";
+        $vFLG = "--export=outfile=$outfile";
+    }
+    else {
+        $job_name = "PBS -N $jobname";
+        $time = "PBS -l walltime=$walltime_cl";
+        $output = "PBS -o $outfile";
+        $partition = "";
+        $vFLG = "-v outfile=$outfile";
+    }
+
+    %value = ();
+    $value{"__JOB_NAME__"}  = $job_name;
+    $value{"__TIME__"}      = $time;
+    $value{"__ACCOUNT__"}   = $account;
+    $value{"__OUTPUT__"}    = $output;
+    $value{"__PARTITION__"} = $partition;
+
+    $value{"__TRANSFER__"}  = basename($transfer_csh);
+    $value{"__RUNDIR__"}    = $rundir;
+    $value{"__YYYYMM__"}    = $yyyymm;
+
+    replaceLabels($tmpl, $transfer_csh, %value);
+    chmod 0755, $transfer_csh;
+
+    # create monthly plots job script
+    #--------------------------------
+    $tmpl = "$fvroot/etc/monthly_plots.j.tmpl";
+    $plots_j = "$FVHOME/run/jobscripts/plots.$yyyymm.j";
+    $jobname = "MP$yyyymm";
+    $outfile = "$listdir/$EXPID.plots.$yyyymm.log.$$.txt.FAILED";
+
+    if ($siteID eq "nccs") {
+        $job_name = "SBATCH --job-name=$jobname";
+        $nodes = "SBATCH --nodes=$numnodes_mp";
+        $time = "SBATCH --time=$walltime_mp";
+        $output = "SBATCH --output=$outfile";
+        $vFLG = "--export=outfile=$outfile";
+    }
+    else {
+        $job_name = "PBS -N $jobname";
+        $nodes = "PBS -l select=$numnodes_mp";
+        $time = "PBS -l walltime=$walltime_mp";
+        $output = "PBS -o $outfile";
+        $vFLG = "-v outfile=$outfile";
+    }
+    $vFLG .= ",push=no" if $nopush;
+
+    %value = ();
+    $value{"__JOB_NAME__"}  = $job_name;
+    $value{"__NODES__"}     = $nodes;
+    $value{"__TIME__"}      = $time;
+    $value{"__ACCOUNT__"}   = $account;
+    $value{"__OUTPUT__"}    = $output;
+
+    $value{"__PLOTS_J__"}   = basename($plots_j);
+    $value{"__RUNDIR__"}    = $rundir;
+    $value{"__YYYYMM__"}    = $yyyymm;
+
+    $value{"__QCMD__"}      = $qcmd;
+    $value{"__TRANSFER__"}  = $transfer_csh;
+
+    replaceLabels($tmpl, $plots_j, %value);
+
+    # command flags
+    #--------------
+    @deps = ();
+    @deps = ("tarandclean -1") if $meansFLG;
+    $dependFLG = get_dependFLG(@deps);
+
+    # submit job
+    #-----------
+    $cmd = "$qcmd $dependFLG $vFLG $plots_j";
+    qsubW($cmd, "$rundir");
+}
+
+#=======================================================================
+# name - finish_monthly_plots
+# purpose - 
+#=======================================================================
+sub finish_monthly_plots {
+    my ($plot_dir, @jobfiles, $LISTFILE);
+    my ($jobfile, $cmd, $transfer_csh);
+    my ($nn, @deps, $dependFLG);
+
+    # locate gcm_plot*.j files
+    #-------------------------
+    $plot_dir = "$FVHOME/monthly_plots/plot";
+    die "Error. Cannot find directory: $plot_dir;" unless -d $plot_dir;
+
+    chdir $plot_dir or die "Error while chdir $plot_dir; $!";
+    @jobfiles = (<gcm_plot*.j>);
+    die "Error. No gcm_plot*.j file found in $plot_dir;" unless @jobfiles;
+
+    # find LISTFILE name
+    #-------------------
+    open JOBFILE, "$jobfiles[0]" or die "Error opening $jobfiles[0]; $!";
+    while (<JOBFILE>) {
+        if (m/\b(LIST_\S+)\b/) { last if ($LISTFILE = $1) }
+    }
+    die "Error. $LISTFILE not found in $plot_dir;" unless -e $LISTFILE;
+
+    # submit job files to do plots
+    #-----------------------------
+    foreach $jobfile (@jobfiles) {
+        $cmd = "$qcmd $jobfile";
+        qsubW($cmd);
+    }
+
+    # submit job to transfer files
+    #-----------------------------
+    unless ($nopush) {
+        foreach $nn (0..$#jobfiles) { push @deps, "gcm_plot $nn" };
+        $dependFLG = get_dependFLG(@deps);
+        $transfer_csh = "$FVHOME/run/jobscripts/plots_transfer.$yyyymm.csh";
+        $cmd = "$qcmd $dependFLG $transfer_csh";
+        qsubW($cmd);
+    }
+}
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#                         UTILITY subroutines
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+#=======================================================================
+# name - replaceLabels
+# purpose - replace labels in template file with values and write to job file
+#
+# input parameters
+# => $infil: template file containing labels to be replaced
+# => $outfl: output file containing values in place of labels
+# => %values: hash with $label => $value entries
+#
+# notes:
+# 1. $infil and $outfl should contain their directory path locations
+# 2. If $outfl is a directory, then output will be written to a file in
+#    that directory with the same filename as $infil.
+#=======================================================================
+sub replaceLabels {
+    use File::Basename qw(basename dirname);
+    use File::Path qw(mkpath);
+
+    my ($infil, $outfl, %values) = @_;
+    my ($outdir, $label);
+
+    die "Error. Input file not found: $infil;" unless -f $infil;
+    $outfl = $outfl ."/" .basename($infil) if -d $outfl;
+    $outdir = dirname($outfl);
+    mkpath($outdir, {"verbose"=>1}) unless -d $outdir;
+
+    open INFIL, "< $infil" or die "Error opening INFIL file: $infil;";
+    open OUTFL, "> $outfl" or die "Error opening OUTFL file: $outfl;";
+    while (<INFIL>) {
+        foreach $label (keys %values) { s/$label/$values{$label}/g }
+        print OUTFL;
+    }
+    close INFIL;
+    close OUTFL;
+}
+
+#=======================================================================
+# name - expand
+# purpose - expand variables within a text string
+#
+# input argument
+# => $strIN: string to expand
+#
+# return value
+# => $strOUT: expanded string
+#=======================================================================
+sub expand {
+    my ($strIN, $strOUT);
+    my ($nn, @vars, $var, $varname, $val_ENV, $val_eval);
+
+    $strIN = shift;
+    $strOUT = $strIN;
+
+    # make list of variables embedded in $strIN
+    #------------------------------------------
+    for $nn (0..length($strIN)-1) {
+        if (substr($strIN,$nn) =~ /^(\$\w+)/)    { push @vars, $1 }
+        if (substr($strIN,$nn) =~ /^(\$\{\w+})/) { push @vars, $1 }
+    }
+
+    # if variables have values, then substitute
+    #------------------------------------------
+    foreach $var (@vars) {
+
+        ($varname = $var) =~ s/[\$\{\}]//g;
+        $val_ENV  = $ENV{$varname};
+        $val_eval = eval($var);
+
+        $var =~ s/([\$\{])/\\$1/;    # change '$' => '\$' and '{' => '\{'
+
+        $strOUT =~ s/$var/$val_eval/ if defined($val_eval);
+        $strOUT =~ s/$var/$val_ENV/  if defined($val_ENV);
+    }
+    return $strOUT;
+}
+
+#=======================================================================
+# name - get_dependFLG
+# purpose - return flag to include with qsub command to specify the job
+#           dependencies
+#
+# input arguments
+# => @deps: array of strings with format, "$jobtype $index"
+#       where
+#          $jobtype indicates which $jobID array to use
+#          $index is index in $JOBID{$jobtype} array
+#=======================================================================
+sub get_dependFLG {
+    my (@deps, $dependFLG, $IDlist);
+    my ($jobtype, $index, $jobID);
+
+    @deps = @_;
+    $dependFLG = "";
+
+    $IDlist = "";
+    foreach (@deps) {
+        ($jobtype, $index) = split /\s+/;
+        die "Error. Unknown jobtype: $jobtype;" unless $valid{$jobtype};
+
+        $jobID = $JOBID{$jobtype}[$index];
+        unless ($IDlist) { $IDlist  =     $jobID if $jobID }
+        else             { $IDlist .= ":".$jobID if $jobID }
+    }
+
+    if ($siteID eq "nccs") {
+        $dependFLG = "--dependency=afterany:$IDlist" if $IDlist;
+    }
+    else {
+        $dependFLG = "-W depend=afterany:$IDlist" if $IDlist;
+    }
+    return $dependFLG;
+}
+
+#=======================================================================
+# name - qsubW
+# purpose - wrapper to qsub command; does the following:
+#           1. print qsub command
+#           2. execute qsub command
+#           3. check status for successful job submittal
+#           4. capture and store jobID in the order of job
+#              submittal for each jobtype in the %valid hash
+#
+# note
+# - If $dir parameter is specified, then the job will cd to $dir prior to
+#   submitting the qsub command. This will be the location where the qsub
+#   log file will be written.
+#
+# input argument
+# => $cmd: qsub command
+# => $dir: cd to this directory prior to qsub command
+#=======================================================================
+sub qsubW {
+    use Cwd ("cwd");
+    my ($cmd, $dir, $wdir, $jobID_line, $jobID, $jobtype);
+    $cmd = shift;
+    $dir = shift;
+
+    if ($dir) {
+        die "Error. directory does not exist: $dir;" unless -d $dir;
+        $wdir = cwd();
+        chdir $dir;
+    }
+
+    print "\n$cmd\n";
+    chomp($jobID_line = `$cmd`);
+    $jobID = (split /\s+/, $jobID_line)[-1];
+    if ($?) { print "\$\? = $?\n"; die "Error; $cmd; $!;" }
+    print "jobID = $jobID\n";
+
+    # store $jobID in hash array for valid jobtypes
+    #----------------------------------------------
+    foreach $jobtype (keys %valid) {
+        if ($cmd =~ m/$jobtype/) {
+            unless ($JOBID{$jobtype}) { $JOBID{$jobtype}[0] = $jobID }
+            else                      { push @{$JOBID{$jobtype}}, $jobID }
+            last;
+        }
+    }
+    chdir $wdir if $dir;
+}
+
+#=======================================================================
+# name - usage
+# purpose - print usage information
+#=======================================================================
+sub usage {
+
+    print <<"EOF";
+purpose: calculate means, tar inputs, and/or produce plots for monthly data
+usage: $script [process options] [plot option] [other options]
+
+process options (see Notes below)
+  -means             calculate monthly means
+  -tar               tar input files
+  -plots             produce monthly plots from monthly means
+  -finish_plots      finish monthly plots job which stopped before completion
+
+plot option (only valid when used with -plots or -finish_plots)
+  -nopush            do not transfer gif files to Web server after plotting
+
+other options
+  -rc mnthlyRC       name of monthly rc file [run/monthly.rc]
+  -newrc [n]         re-create resource files prior to any other processing
+                     if n==1, then write new monthly rc file
+                     if n==2, then write new plots HISTORY.rc_tmpl
+                     if no value for n is given, then n==1,2
+  -h                 print usage information
+
+Notes:
+1. Plots cannot be produced unless monthly means are calculated
+2. Tarring will not occur if a full month tarfile is already in the archive directory.
+3. If -finish_plots flag is present, then all other flags are ignored, except -nopush and -h.
+EOF
+;
+    exit();
+}

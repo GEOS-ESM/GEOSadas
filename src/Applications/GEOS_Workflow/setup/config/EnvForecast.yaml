@@ -1,0 +1,55 @@
+common:
+  GID: <<gid>>
+  NCSUFFIX: nc4
+  RSTSUFFIX: nc4
+  EXPID: <<expid>>
+  FVHOME: <<fvhome>>
+  FVROOT: <<fvroot>>
+  PATH: "$FVROOT/bin:$PATH"
+  FVWORK: "$NOBACKUP/tmp.forecast"
+  PESTOROOT: <<pestoroot>>
+  COMMAND:
+    - "source g5_modules.sh"
+    - "module list"
+
+iau:
+  ifcst: 1 # Nonzero => Force first 6-hr of fcst w/ IAU inc
+
+gcm:
+  DOIAU: 0
+  DO4DIAU: 0
+  blendrs: 0 # Nonzero => Blend NCEP data with rst files
+  blendec: 0 # Nonzero => ?
+  FCSTOFFSET: 0
+
+gcm_mpi:
+  MPIRUN_GCM: "\"mpiexec_mpt -np $NCPUS_GCM GEOSgcm.x\""
+
+adj:
+  grsv: 1
+  FVINPUT: $FVHOME/fvInput
+  group_list: "\"SBATCH -A <<gid>>\""
+
+adj_mpi:
+  ADMRUN_OPT_BEGIN: "\"mpiexec_mpt -np $NCPUS_ADJ GEOSgcmPert.x\""
+
+finalize:
+  STAGE4FCST: 0
+  AGCMFCST: 0
+
+mpi:
+  MPI_COLL_REPRODUCIBLE: 1
+  SLURM_DISTRIBUTION: block
+  MPI_DISPLAY_SETTINGS: 1
+  # For some reason, PMI_RANK is randomly set and interferes
+  # with binarytile.x and other executables.
+  NONE: 
+    - "unset PMI_RANK"
+  MPI_COMM_MAX: 1024
+  MPI_GROUP_MAX: 1024
+  MPI_BUFS_PER_PROC: 256
+
+conv2prs:
+  CONVUPA: 0
+  CONVSFC: 0
+  CONVPROG: 1

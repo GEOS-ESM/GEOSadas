@@ -1,0 +1,284 @@
+
+# Atmospheric Model Configuration Parameters
+# ------------------------------------------
+
+           NX: @NX
+           NY: @NY
+      AGCM_IM: @AGCM_IM
+      AGCM_JM: @AGCM_JM
+      AGCM_LM: @AGCM_LM
+AGCM_GRIDNAME: PE@AGCM_IMx@AGCM_JM-CF
+
+DYCORE: FV3
+
+DYNAMICS_PERT_GRIDNAME: PE@AGCM_IMx@AGCM_JM-CF
+PHYSICS_PERT_GRIDNAME: PE@AGCM_IMx@AGCM_JM-CF
+
+AGCM_PERT_GRIDNAME: PC@AGCM_PERT_IMx@AGCM_PERT_JM-DC
+
+DYNAMICS_PERT_IM: @AGCM_IM
+DYNAMICS_PERT_JM: @AGCM_JM
+DYNAMICS_PERT_LM: @AGCM_LM
+DYNAMICS_PERT_NPX: @AGCM_IM
+DYNAMICS_PERT_NPY: @AGCM_IM # (540=6*NPX)
+
+PHYSICS_PERT_IM: @AGCM_IM
+PHYSICS_PERT_JM: @AGCM_JM
+PHYSICS_PERT_LM: @AGCM_LM
+
+AGCM_PERT_IM: @AGCM_PERT_IM
+AGCM_PERT_JM: @AGCM_PERT_JM
+AGCM_PERT_LM: @AGCM_PERT_LM
+
+
+AGCM_PERT.GRIDNAME: PC@AGCM_PERT_IMx@AGCM_PERT_JM-DC
+AGCM_PERT.GRID_TYPE: LatLon
+AGCM_PERT.NX: @NX
+AGCM_PERT.NY: @NY
+AGCM_PERT.IM_WORLD: @AGCM_PERT_IM
+AGCM_PERT.JM_WORLD: @AGCM_PERT_JM
+AGCM_PERT.POLE: PC
+AGCM_PERT.DATELINE: DC
+AGCM_PERT.LM: @AGCM_PERT_LM
+
+DYNAMICS_PERT.GRIDNAME: PE@AGCM_IMx@AGCM_JM-CF
+DYNAMICS_PERT.GRID_TYPE: Cubed-Sphere
+DYNAMICS_PERT.NX: @NX
+DYNAMICS_PERT.NY: @NY
+DYNAMICS_PERT.IM_WORLD: @AGCM_IM
+DYNAMICS_PERT.JM_WORLD: @AGCM_JM
+DYNAMICS_PERT.LM: @AGCM_LM
+
+PHYSICS_PERT.GRIDNAME: PE@AGCM_IMx@AGCM_JM-CF
+PHYSICS_PERT.GRID_TYPE: Cubed-Sphere
+PHYSICS_PERT.NX: @NX
+PHYSICS_PERT.NY: @NY
+PHYSICS_PERT.IM_WORLD: @AGCM_IM
+PHYSICS_PERT.JM_WORLD: @AGCM_JM
+PHYSICS_PERT.LM: @AGCM_LM
+
+  RUN_DT: >>>PDT<<<
+SOLAR_DT: 3600 # SOLAR_PDT
+IRRAD_DT: 3600 # IRRAD_PDT
+
+SOLARAvrg: 0
+IRRADAvrg: 0
+
+# Comment out the following line to run with bi-linear transforms between cube and lat-lon grids
+TILEFILE: ExtData/agcmpert/@PERT_TILE
+
+TRAJ_FILE::
+traj1/>>>EXPID<<<.traj.lcv.%y4%m2%d2_%h2%n2z.>>>NCSUFFIX<<<
+#traj2/>>>EXPID<<<.traj.lcv.%y4%m2%d2_%h2%n2z.>>>NCSUFFIX<<<
+::
+
+#Read trajectory at the beginning or on the fly
+MEMTRAJ:   1            # 0: trajectory thru I/O
+                        # 1: trajectory on memory
+
+#Frequency at which trajectory is read
+TRAJ_FREQ: >>>PDT<<<    # RUN_DT or n times RUN_DT (in seconds)
+
+
+# Number of tracers
+# -----------------
+
+ncnst: 4          #With moist physics extra tracers dynamically added
+
+
+# FV3 options
+# -----------
+
+# Dyn core options are controlled from inputpert.nml/fvcorepert_layout_xxx.rc
+
+# hord_x_pert control the advection schemes used for perturbation variables only
+# kord_x_pert control the remapping for both perturbation and trajectory
+# split_damp turns on different damping for the perturbation variables only,
+#            when false it reverts to the values in fv_core_nml, otherwise the
+#            values in fv_core_pert_nml are used.
+
+# Notes:
+# When different schemes are used for the perturabtions compared to the trajectory it 
+# slows the code down (compared to using linear schemes throughout) but increases accuracy. 
+# For shorter window 4DVAR consider using the same values throughout and split_damp = .F.. 
+# For longer window impact and sensitivity calculations consider keeping the default 
+# trajectory calculations and adjusting only the perturbation calculations. 
+# Note that when using the less diffusive linear schemes for advection and remapping 
+# greater damping is generally required to maintain stability.
+
+fv_timers: 1          # Activate timers on internal FV routines
+CustomNSplit: 0       # User sets the number of n splits for the core
+
+# Options to perform dynamics test case.
+DynamicsTestCase: 0   # (ver 3)
+
+# 0 - No test case
+# 1 - Jablonowski-Williamson dry baroclinic instability, run tangent linear for u'
+# 2 - Jablonowski-Williamson dry baroclinic instability, run nonlinear model for u + u'
+# 3 - Passive tracer perturbation on realistic steady state NLM, output to ozone holder
+# 4 - Passive tracer perturbation on realistic steady state TLM, output to ozone holder
+# 5 - Rotating hydrostatic gravity wave, run tangent linear model for PT'
+# 6 - Rotating hydrostatic gravity wave, run nonlinear mode for PT + PT'
+
+# With the exception of the tracer test set TRAJ_FREQ to something large as trajectory
+# not needed. Can insert copied or dummy files in the /traj1 directory for long runs.
+
+TrTest_ver: 3         # Tracer test, pert shape. 1-cosine bell, 2-cylinder, 3-slotted cylinder
+TrTest_lon: 0.0       # Tracer test, longitude of center (-180.0 to 180.0)
+TrTest_lat: 45.0      # Tracer test, latitude of center (-90.0 to 90.0)
+TrTest_h0: 1.0        # Tracer test, max magnitude
+TrTest_R: 0.5         # Tracer test, cosine bell width factor
+
+## ADJOINT CHECKPOINTING OPTIONS FOR FV3  ##
+
+#Global options
+CP_i: 0         # Starting iteration (0 or 1), 0 for no custom checkpointing
+CP_nm: 1        # Number of modules using custom checkpointing
+CP_gb: -0.1     # Estimated gigabytes per processor that is available
+
+#Dynamics options
+CP_dyn_ind: 1             # CP index for dynamical core
+CP_dyn_rep: 0             # Write reports on checkpointing at iter 1 and iter 2
+CP_dyn_test: 0            # 1: Turn on testing mode
+CP_dyn_chk_st_control: 1
+CP_dyn_chk_st_integer: 1
+CP_dyn_chk_st_real_r4: 1
+CP_dyn_chk_st_real_r8: 1
+CP_dyn_dim_st_control: 0           
+CP_dyn_dim_st_integer: 0           
+CP_dyn_dim_st_real_r4: 0           
+CP_dyn_dim_st_real_r8: 0 
+CP_dyn_dim_cp_control: 0           
+CP_dyn_dim_cp_integer: 0           
+CP_dyn_dim_cp_real_r4: 0           
+CP_dyn_dim_cp_real_r8: 0  
+ 
+# Component options and switches
+# ------------------------------
+
+DO_DYNAMICS: 1        # 0: Dynamics off
+                        1: Dynamics on (default)
+
+DO_TURBULENCE: 1      # 0: Boundary layer off
+                      # 1: Boundary layer on (default)
+
+DO_MOIST: 2           # 0: Do not do moist physics (default)
+                      # 1: Do moist physics (4DVAR & 6H Runs)
+                      # 2: Do moist physics (default: Obs Impacts & Sensitivity 12H-24H runs)
+                      # 3: Do tracer scavenging only (modify code for other tracers)
+                      #>3: Read moist variables (needed by rad), no moist calc
+
+DO_RADIATION: 0       # 0: Radiation off (default)
+                      # 1: Raditioan on, longwave and shortwave (DO_MOIST should be > 0)
+
+DO_GWAVEDRAG: 0       # 0: Gravity wave drag off (default)
+                      # 1: Gravity wave drag on
+
+DO_PHYS_D2A: 0        # 0: Dont regrid trajectory winds to a-grid (default)
+                      # 1: Regrid trajectory winds to a-grid
+
+
+# Adjoint and TLM options
+# -----------------------
+ADD_INCS:  0
+PERT_PHASE: 2         # set to ADM for now
+DOTP_TEST: 0          # set to non-zero to perform dot-prod test in stand-alone mode
+
+# Time stepping
+# -------------
+CallsPerWindow: >>>CALLS_PER_WINDOW<<<
+StepsPerCall: 1
+
+
+INTERPOLATE_SST: 1
+
+
+# AeroChem Climatology Environment (For DAS and GCM)
+# --------------------------------------------------
+    CHEM_METHOD: PCHEM
+   OX_RELAXTIME: 0.001      # Standard Options:  GCM: 0.001,     DAS: 0.000
+  OX_FRIENDLIES: ANALYSIS:DYNAMICS:TURBULENCE:MOIST   # Standard Options:  GCM: ANALYSIS,  DAS: ANALYSIS:D
+  CH4_RELAXTIME: 0.001
+  N2O_RELAXTIME: 0.001
+CFC11_RELAXTIME: 0.001
+CFC12_RELAXTIME: 0.001
+HCFC22_RELAXTIME: 0.001
+  H2O_RELAXTIME: 259200.
+     pchem_clim: species.data
+
+# Vertical pert Shapiro filter coeff
+# ----------------------------------
+#AGCM_SHAPIRO_COEFF137: need to put this here (Todling)
+AGCM_SHAPIRO_COEFF072:
+   1    0.125000
+   2    0.125000
+   3    0.125000
+   4    0.125000
+   5    0.125000
+   6    0.125000
+   7    0.125000
+   8    0.125000
+   9    0.125000
+  10    0.125000
+  11    0.125000
+  12    0.125000
+  13    0.125000
+  14    0.125000
+  15    0.125000
+  16    0.125000
+  17    0.125000
+  18    0.125000
+  19    0.125000
+  20    0.125000
+  21    0.125000
+  22    0.125000
+  23    0.125000
+  24    0.125000
+  25    0.125000
+  26    0.125000
+  27    0.125000
+  28    0.125000
+  29    0.125000
+  30    0.125000
+  31    0.125000
+  32    0.125000
+  33    0.125000
+  34    0.125000
+  35    0.125000
+  36    0.125000
+  37    0.125000
+  38    0.125000
+  39    0.150000
+  40    0.150000
+  41    0.150000
+  42    0.150000
+  43    0.150000
+  44    0.150000
+  45    0.125000
+  46    0.100000
+  47    0.050000
+  48    0.022000
+  49    0.007500
+  50    0.001000
+  51    0.000000
+  52    0.000000
+  53    0.000000
+  54    0.000000
+  55    0.000000
+  56    0.000000
+  57    0.000000
+  58    0.000000
+  59    0.000000
+  60    0.000000
+  61    0.000000
+  62    0.000000
+  63    0.000000
+  64    0.000000
+  65    0.000000
+  66    0.000000
+  67    0.000000
+  68    0.000000
+  69    0.000000
+  70    0.000000
+  71    0.000000
+  72    0.000000

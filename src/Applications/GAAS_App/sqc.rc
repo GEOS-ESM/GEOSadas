@@ -1,0 +1,154 @@
+# sqc.header.rsrc
+#-----------------------------------------------------------------------
+#///////////////////////////////////////////////////////////////////////
+#-----------------------------------------------------------------------
+#
+#  This is an I90 style resource file for input of QC parameters.
+#
+#  Revision history:
+#
+#  15May2002 (Dee) - First version, replacing psas_qc.rc
+#
+#///////////////////////////////////////////////////////////////////////
+#-----------------------------------------------------------------------
+
+reset_allqc:      no      # reset all qc marks on input
+reset_passive:    no      # reset all passive marks on input
+reset_sqc:       yes      # reset all sqc marks on input
+
+# background check:
+# ----------------
+
+tau_bgh:         2.0      # tolerance parameter for suspect
+tau_bgx:         6.0      # tolerance parameter for rejection
+
+# buddy check:
+# -----------
+
+tau_buddy:       0.1      # tolerance parameter for rejection
+niter_max:         5      # maximum number of iterations
+search_rad:      1.0      # search radius in length scales
+nbuddy_max:      100      # maximum number of buddies
+nstar:             0      # adaptive damping parameter
+seplim:           26.5    # maximum separation angle (deg) for regional search
+
+# pairwise check:
+# --------------
+
+paired_kts::
+   1  2          #   (u_s,v_s)
+   4  5          #   (u,v)
+::
+
+
+# profile check:
+# -------------
+
+profile_kxs::
+       33:56     # NESDIS TOVS
+       93:113    # DAOTOVS
+      125:145    # DAOTOVS
+      171:182    # GPS
+#
+#      301:302    # MOD04, ocean and land (MODIS TERRA)
+#      311:312    # MYD04, ocean and land (MODIS AQUA)
+#      316:317    # PARASOL ocean and land 
+#      320        # Deep Blue (AQUA)
+#      314        # OMI
+
+::
+
+# allowable datatypes and covariance parameters:
+# ---------------------------------------------
+
+allowable_kts::
+
+#  kt  scaling   sigs    ls_h      ls_v
+
+#   1      no     PSAS    0.5e6       0       # (u_s)           (2D)
+#   2      no     PSAS    0.5e6       0       # (v_s)           (2D)
+#   3      no     PSAS    0.5e6       0       # (slp)           (2D)
+#   4      no     PSAS    0.5e6     1.0e3     # (u)             (3D)
+#   5      no     PSAS    0.5e6     1.0e3     # (v)             (3D)
+#   6      no     PSAS    1.0e6     2.0e3     # (h)             (3D)
+#   7      xm     PSRH    0.5e6     1.0e3     # (pseudo-rh)     (3D)
+#   8      no     TEMP    0.5e6     1.0e3     # (T)             (3D)
+#  13      no     TSKIN   0.5e6       0       # (T2m)           (2D)
+#  18      xm     STPW    0.5e6       0       # (scaled tpw)    (2D)
+#  27      no     TSKIN   0.5e6       0       # (Old T2m)       (2D)
+#  38      no     TSKIN   0.5e6       0       # (Tskin)         (2D)
+#  41      no     TEMP    0.5e6     1.0e3     # (Tv)            (3D)
+   43      no     LAOD    0.15e6    1.0e3     # (AOD)           (3D)  
+   45      no     AOD     0.15e6    1.0e3     # (AOD)           (3D)  
+::
+
+# sigO, sigF for LAOD:
+# Numbers below roughly basic on ML results
+# -----------------------------------------
+LAOD_sigs::# lev   sigO  sigF
+                  354   0.18  0.45
+                  388   0.18  0.45
+                  470   0.18  0.45
+                  550   0.18  0.45
+                  660   0.18  0.45
+                  870   0.18  0.45
+                 1200   0.18  0.45
+                 1600   0.18  0.45
+                 2100   0.18  0.45
+::
+
+# sigO, sigF for AOD:
+# ------------------
+AOD_sigs::     #  lev  sigO  sigF
+                  354   0.05 0.10
+                  388   0.05 0.10
+                  470   0.05 0.10
+                  550   0.05 0.10
+                  660   0.05 0.10
+                  870   0.05 0.10
+                 1200   0.05 0.10
+                 1600   0.05 0.10
+                 2100   0.05 0.10
+::
+
+# sigO, sigF for PSRH:
+# -------------------
+PSRH_sigs::     #  lev  sigO  sigF
+
+                   100  0.18  0.20
+                   300  0.15  0.18
+                   400  0.14  0.17
+                   500  0.13  0.16
+                   700  0.12  0.15
+                   850  0.11  0.14
+                  1000  0.10  0.13
+::
+
+# sigO, sigF for TEMP:
+# -------------------
+
+TEMP_sigs::     #  lev  sigO  sigF
+
+                     1  2.00  2.00
+                   100  1.50  1.50
+                   700  1.00  1.00
+                  1000  1.50  1.50
+::
+
+# sigO, sigF for TSKIN:
+# -------------------
+# da Silva & Radakovich sigF and sigO determined such that K=0.866 & sigF^2 +sigO^2 = 25
+
+TSKIN_sigs::     #  lev  sigO  sigF
+
+                     1  1.83  4.65
+::
+
+# sigO, sigF for STPW:
+# -------------------
+
+STPW_sigs::     #  lev  sigO  sigF
+
+                     1  0.07  0.14
+::
+

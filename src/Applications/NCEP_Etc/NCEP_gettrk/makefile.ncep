@@ -1,0 +1,24 @@
+SHELL=  /bin/sh
+ISIZE = 4
+RSIZE = 8
+COMP=   ncepxlf
+LIBS = -L/nwprod/lib -lw3_d -lbacio_4
+LDFLAGS= -bloadmap:loadmap -bnoquiet
+###FFLAGS= -O   -qflttrap=ov:und:zero:inv:enable -qintsize=$(ISIZE) -qrealsize=$(RSIZE)
+FFLAGS= -O -qcheck -qextchk -qarch=auto -qflttrap=ov:zero:inv:enable -qintsize=$(ISIZE) -qrealsize=$(RSIZE)
+##FFLAGS= -O0 -qnoopt -qcheck -qextchk -qarch=auto -qflttrap=ov:zero:inv:enable -qintsize=$(ISIZE) -qrealsize=$(RSIZE)
+#FFLAGS= -O   -qintsize=$(ISIZE) -qrealsize=$(RSIZE)
+#FFLAGS= -O -qcheck -qextchk -qwarn64   -qflttrap=ov:und:zero:inv:enable -qintsize=$(ISIZE) -qrealsize=$(RSIZE)
+#FFLAGS=  -qcheck -qextchk -qwarn64   -qflttrap=ov:und:zero:inv:enable -qintsize=$(ISIZE) -qrealsize=$(RSIZE)
+
+gettrk:      gettrk_main.f gettrk_modules.o
+	@echo " "
+	@echo "  Compiling the tracking program....."
+	$(COMP) $(FFLAGS) $(LDFLAGS) gettrk_modules.o gettrk_main.f $(LIBS) -o gettrk
+	@echo " "
+
+gettrk_modules.o:    gettrk_modules.f
+	@echo " "
+	@echo "  Compiling the modules....."
+	$(COMP) $(FFLAGS) -c gettrk_modules.f -o gettrk_modules.o
+	@echo " "

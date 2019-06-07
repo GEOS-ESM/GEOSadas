@@ -1,0 +1,56 @@
+#
+# Sample acquire file for analysis replay. In order to activate replay,
+# rename this file "replay.acq" in the $FVHOME/run directory,
+# and enter below a template for the analysis files to be "replayed".
+#
+# If you are running replay in single-exec mode you also need to fill
+# in the contents of fvpsas.rc.
+#
+# Notice the following: 
+# 
+#  1) In GEOS-4.0.3 and later versions the default frequency of analysis 
+#     update is 3-hrs and the DAS runs in split-exec mode. In this
+#     environment, in order to get reproducibility from replay, the replay
+#     must be done in exactly the same manner, that is, in split-exec mode 
+#     and with an update frequency of 3-hrs; in this context, sometimes,
+#     the eta analysis files can be hourly files usually named: 
+#            %s.ana.eta.%y4%m2%d2_%h2z.nc4
+#     even when the analysis files from the off-synoptic hours (3z,9z,etc)
+#     are not available, the replay will still work; indeed in replay mode
+#     the off-synoptic hour files never get referenced. It is best in this
+#     case to explictly list all 4 synoptic hour analysis files in this 
+#     replay.acq file, that is,
+#            ...%s.ana.eta.%y4%m2%d2_00z.nc4
+#            ...%s.ana.eta.%y4%m2%d2_06z.nc4
+#            ...%s.ana.eta.%y4%m2%d2_12z.nc4
+#            ...%s.ana.eta.%y4%m2%d2_18z.nc4
+#
+#  2) In the pre-GEOS-5 system (fvGCM-based):
+#
+#    2.1) the frequency of analysis is 6-hrs and replay works closely to its 
+#         initial implementation of GEOS-4, and the thing mentioned in (1) 
+#         about reproducibility due to the split-exec mode still applies.
+#         That is to say, these runs are only reproducible when replay is done 
+#         in split-exec mode, since the pre-GEOS-5 DAS runs in split-exec mode 
+#         by default, at the assimilation frequency, which is 6hrs in this case.
+#
+#    2.2) a "replay" like mode can be done from NCEP sigma analyses by 
+#         using the analyses as observations ... but for that you would not
+#         need to use this replay.acq file ... leave it as noreplay.acq; use
+#         obsys.rc and env(SKIPSOLVER). Here are the steps to run from
+#         spectral analyses:
+#           2.2.1) added an obs class to obsys.rc spefifying how to bring
+#                  spectral analysis from old run into new run, e.g.,
+#                  BEGIN myclass => newrun.siganl.%y4%m2%d2_%h2z.bin
+#                    20010101_00z-21010101_18z 240000 /output/.../old.sigmafiles.date_time
+#                  END
+#           2.2.2) modify fvdas.j as follows:
+#                  2.2.2.1)  replace whateven obsclass defined in the command line of
+#                            fvpsas call to -obscall myclass (as defined above)
+#                  2.2.2.2)  set the following env variable:
+#                              setenv skipSOLVER 1
+#    2.3) make sure that silo.rc and mstorage.rc are set so that the sigma analyses 
+#         do not get stored again within the new run.
+#
+helios1.nas.nasa.gov:%s/ana/Y%y4/M%m2/%s.ana.eta.%y4%m2%d2.nc4
+

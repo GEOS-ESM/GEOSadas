@@ -1,0 +1,13 @@
+# This RC file allows running a very simplified EnDAS setting 
+# where the ensemble analysis (e.g., EnKF) is replaced with
+# an ensemble of analyses created from adding NMC-like 
+# perturbations to the central analysis.  That is,
+#     x_i^a = T(x_c^a) + T(dp_i)
+# where T is an interpolation operator (dyn2dyn) and dp_i
+# representes the i-th NMC-like perturbation.
+# The resolution of the analyzed members is determined by
+# the RC parameter "ensemble_resolution".
+#
+ensemble_resolution: c
+
+central_das_resolution: d

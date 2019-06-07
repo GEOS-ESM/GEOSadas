@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+%include <slurm.h>
+#SBATCH --ntasks=%NCPUS_AOD%
+#SBATCH --qos=%PRIORITY_AOD%
+#SBATCH --time=%TIME_AOD%
+#SBATCH --job-name=%STE_NAME%-aerosol-analysis
+#SBATCH --output=%BATCHOUT_DIR%/%STE_NAME%-aerosol-analysis.out.%j
+
+%include <head.h>
+
+CWD=$(pwd)
+
+export NCPUS_AOD=%NCPUS_AOD%
+export WORKFLOW_DIR=%ECF_HOME%
+bash ${WORKFLOW_DIR}/tasks/AerosolAnalysis.sh
+
+cd $CWD
+
+%include <tail.h>

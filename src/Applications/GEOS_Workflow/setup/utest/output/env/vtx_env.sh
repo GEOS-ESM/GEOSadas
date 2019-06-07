@@ -1,0 +1,3 @@
+export VTRACK=1
+export VTRKFRQA=180
+export NCPUS=$NCPUS_VTX

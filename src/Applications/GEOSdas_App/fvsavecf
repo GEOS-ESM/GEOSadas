@@ -1,0 +1,149 @@
+#!@DASPERL
+#
+# Script for saving fvPSAS experiment configurationfiles on Mass Storage.
+# See usage() for more info.
+#
+# !REVISION HISTORY:
+#
+#  23Jan2001  da Silva  Initial code.
+#  11Apr2005  Todling   Added nccs as possible host name.
+#  27Aug2007  Stassi    Use $ARCHIVE for output location; /sbin -> /bin/mkdir
+#
+#------------------------------------------------------------------
+
+use Env;                 # make env vars readily available
+use FindBin;             # so we can find where this script resides
+use File::Basename;      # for basename(), dirname()
+use Getopt::Std;         # command line options
+
+# Command line options
+# --------------------
+  getopts('vhnqm:H:c:s:');
+  usage() if $opt_h;
+
+# Figure out expid, directories, etc
+# ----------------------------------
+  init();
+
+# Archive files in each config directory
+# -------------------------------------- 
+  savecfg();
+
+# All done
+# --------
+  exit(0);
+
+#......................................................................
+
+sub init {
+
+  $fvhome = dirname($FindBin::Bin) unless ( $fvhome = $FVHOME );
+  $fvhome = $opt_H if ( $opt_H );
+
+  $mhost = "s1.nas.nasa.gov" unless ( $mhost = $MHOST );
+  $mhost = $opt_m if ( $opt_m );
+
+  $cp = "scp -q";
+  $cp = "$opt_c" if ( $opt_c );
+
+  $rsh = "ssh";
+  $rsh = "$opt_s" if ( $opt_s );
+
+  $expid  = basename($fvhome);
+  if( $mhost =~ /.gsfc./ || $mhost =~ /.nccs./ ) {
+    $expid_path = "$ARCHIVE/$expid";
+  } elsif ($mhost =~ /.nas./ ) {
+    $expid_path = "/helios1/${USER}/$expid";
+  } else { $expid_path = $expid; }
+  @fvconfig = ( "run", "fcst" );
+
+  foreach $dir ( @fvconfig ) {
+	die ">>> ERROR <<< cannot find directory $fvhome/$dir"
+             unless ( -d "$fvhome/$dir" );
+      }
+}
+
+#......................................................................
+
+sub savecfg {
+
+  foreach $dir ( @fvconfig ) {
+
+     print "$0: Archiving config files in $dir/\n" unless ( $opt_q );
+
+     chdir("$fvhome/$dir");
+
+     if( $rsh eq "local" ) {  #local operation
+       $cmd = "/bin/mkdir -p $expid_path/$dir";
+     } else { $cmd = "$rsh $mhost /bin/mkdir -p $expid_path/$dir"; }
+     print "          $cmd\n" if ( $opt_v );
+     $rc = system($cmd) unless ( $opt_n );
+     die ">>> ERROR <<< $!" if ( $rc );
+
+     FILE: while ( <*> ) {
+     
+	 if ( -d $_ ) {
+	     print "$0: skipping subdirectory $dir/$_/\n" unless ( $opt_q );
+             next FILE;
+	 }
+
+	 if ( /^$expid\./ ) {
+	     print "$0: skipping data file $_\n"    unless ( $opt_q );
+             next FILE;
+	 }
+
+     if( $rsh eq "local" ) { #local operation
+       $cmd = "cp -p $_ $expid_path/$dir"; 
+     } else { $cmd = "$cp $_ $mhost\:$expid_path/$dir"; }
+     print "          $cmd\n" if ( $opt_v );
+
+     $rc = system($cmd) unless ( $opt_n );
+      die ">>> ERROR <<< $!" if ( $rc );
+   }
+ }
+}
+
+#......................................................................
+
+sub usage {
+
+   print <<"EOF";
+
+NAME
+     fvsavecf - transfer fvDAS configuration files to Mass Storage
+          
+SYNOPSIS
+
+     fvsavecf [-hnvq] [-m mhost] [-H fvhome] [-c cp_appl] [-s shell]
+          
+DESCRIPTION
+
+     fvSaveCf transfers fvPSAS configuration files from the local disk
+     to mass storage. Scripts, namelists and resource files on
+     \$(FVHOME)/run and \$(FVHOME)/fcst are saved.
+
+OPTIONS
+
+ -c cp_appl remote copy application (default: scp)
+ -H fvhome  experiment home directory (default: \$FVHOME or derived 
+            from location of this script)
+ -h         prints this usage notice
+ -m mhost   specify mass storage host, e.g., "gatun"
+	     (default: \$MHOST or "s1.nas.nasa.gov")
+ -n         dry-run mode: just print what it would do
+ -s shell   remote shell (default: ssh)
+ -v         verbose mode
+ -q         real quiet mode
+
+ENVIRONMENT
+
+    The following environment variables are recognized:
+
+    MHOST   default mass storage host     
+    FVHOME  default experiment home directory          
+
+EOF
+
+  exit(1)
+
+	   }

@@ -1,0 +1,29 @@
+README for oiqc
+
+8 July 2004                                          Meta Sienkiewicz
+
+This is the 'oiqc' program from NCEP, used to perform quality
+control on observation data.  It works when compiled with
+MPI but will need more work for the OpenMP (revise one
+IBM specific directive, I believe).
+
+The code is more-or-less as-is from NCEP.
+
+A routine vscos.f has been added to substitute for the IBM 
+vector cosine routine.
+
+19 Jan 2006
+
+Updated source for oiqcbufr.f with recent NCEP release
+
+26 Jan 2006
+
+New script "ssprepqc" replaces OIQC only "ssoiqc".  Script also includes
+execution of 'fv2ss.x' as an interim solution until we can replace
+'ssprevents.x'
+
+1 July 2008
+
+New script "gmao_prepqc" replaces "ssprepqc" - we can now read the
+g5-eta files directly into the 'prevents' routine and so can eliminate
+'fv2ss' step

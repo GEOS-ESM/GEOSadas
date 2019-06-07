@@ -1,0 +1,133 @@
+#!/bin/csh -fx
+#------------------------------
+#PBS -l walltime=1:00:00
+#PBS -S /bin/csh
+#PBS -j eo
+#SBATCH --constraint=hasw
+#------------------------------
+setenv FVHOME >>>FVHOME<<<
+
+if ($#argv > 0) then
+   setenv aod_parallel_flag $1
+   shift
+else
+   setenv aod_parallel_flag 0
+   setenv PATH $PBS_O_PATH
+   source $FVHOME/run/FVDAS_Run_Config
+endif
+
+#------------------------------
+# Odd variables that offend MPT-built execs
+unsetenv PMI_RANK
+unsetenv PMI_FD
+unsetenv PMI_JOBID
+unsetenv PMI_SIZE
+#------------------------------
+setenv PATMOSX        >>>PATMOSX<<<
+setenv MODIS_L2_HDF   >>>MODIS_L2_HDF<<<
+
+setenv AODWORK        >>>AODWORK<<<
+setenv FVWORK         >>>FVWORK<<<
+setenv GAASFAIL       >>>GAASFAIL<<<
+setenv MPIRUN_AOD    ">>>MPIRUN_AOD<<<"
+setenv NCPUS_AOD      >>>NCPUS_AOD<<<
+setenv nhms           >>>NHMS<<<
+setenv nymd           >>>NYMD<<<
+#------------------------------
+cd $AODWORK
+ls
+
+setenv PYTHONPATH $FVROOT/lib/Python
+setenv PSAS_NUM_MPI $NCPUS_AOD
+
+set aod_modis_pcf = $AODWORK/modis_l2a.pcf
+set aod_avhrr_pcf = $AODWORK/avhrr_l2a.pcf
+cat $aod_modis_pcf
+cat $aod_avhrr_pcf
+cat $AODWORK/ana.rc
+
+# external data directory
+#------------------------
+if ( !($?EXTDATA) ) then
+   echo "ana_aod.j: missing EXTDATA env definition, aborting ..."
+   exit (1)
+else
+  ln -s $EXTDATA .
+endif
+ 
+# use AOD_list nodes for parallel runs which need to share nodes
+#---------------------------------------------------------------
+if ($aod_parallel_flag) then
+   setenv AOD_NODEFILE "PBS_NODEFILE=$AODWORK/AOD_list;"
+else
+   if ( $?PBS_NODEFILE ) then
+       setenv AOD_NODEFILE "PBS_NODEFILE=${PBS_NODEFILE};"
+   else
+       setenv AOD_NODEFILE 
+   endif
+endif
+setenv MPIRUN "$AOD_NODEFILE $MPIRUN_AOD -np $NCPUS_AOD"
+
+# loop for two time steps
+#------------------------
+foreach time_offset ( 000000 030000 )
+   set gaastime = (`tick $nymd $nhms 0 $time_offset`)
+
+   set ymd  = $gaastime[1]
+   set hms  = $gaastime[2]
+   set yyyy = `echo $ymd | cut -c1-4`
+   set mm   = `echo $ymd | cut -c5-6`
+   set dd   = `echo $ymd | cut -c7-8`
+   set hh   = `echo $hms | cut -c1-2`
+
+   # check existence of aerosol bkg file
+   #------------------------------------
+   set aer_f = `echorc.x gaas_bkg_filename -template $EXPID $ymd $hms -rc gaas.rc`
+   if (! -e $aer_f) then
+       echo
+       echo "Warning: Cannot find gaas_bkg_filename file: $aer_f"    
+       echo
+       continue
+   endif
+
+   # aod_l2.py and ana_aod.x output files
+   #-------------------------------------
+   set aod_a = "${FVWORK}/${EXPID}.aod_a.sfc.${ymd}_${hh}00z.nc"
+   set aod_d = "${FVWORK}/${EXPID}.aod_d.sfc.${ymd}_${hh}00z.nc"
+   set aod_f = "${FVWORK}/${EXPID}.aod_f.sfc.${ymd}_${hh}00z.nc"
+   set aod_k = "${FVWORK}/${EXPID}.aod_k.sfc.${ymd}_${hh}00z.nc"
+   set ods_a = "${FVWORK}/${EXPID}.aod.obs.${ymd}_${hh}00z.ods"
+   /bin/rm -f $aod_a $aod_d $aod_f $aod_k $ods_a
+
+   # run aod_l2a.py
+   #---------------
+   @ errcnt = 0
+   if ($MODIS_L2_HDF) then
+      set isotime = "${yyyy}-${mm}-${dd}T${hh}:00:00"
+      modis_l2a.py $aod_modis_pcf $isotime
+      @ errcnt = $errcnt + $status
+   endif
+
+   if ($PATMOSX) then
+      avhrr_l2a.py $aod_avhrr_pcf $ymd $hms
+      @ errcnt = $errcnt + $status
+   endif
+
+   # run ana_aod.x
+   #--------------
+   if (-e ANAAOD_EGRESS) /bin/rm ANAAOD_EGRESS
+   set flags = "-a $aod_a -d $aod_d -f $aod_f -k $aod_k"
+   ana_aod.x -v -x $EXPID $flags -o $ods_a $aer_f
+   if (! -e ANAAOD_EGRESS) then
+      @ errcnt = $errcnt + 1
+   endif
+
+   # zip AOD analysis files
+   #-----------------------
+   n4zip ${FVWORK}/${EXPID}.aod*.nc
+
+end
+
+# remove $GAASFAIL for successful runs
+#-------------------------------------
+if (! $errcnt) /bin/rm -f $GAASFAIL

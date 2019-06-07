@@ -1,0 +1,123 @@
+Combining NCEP (Woolen format) BUFR files
+
+27 Jan 2011 -
+  New BUFRLIB V10.0.0 now operational at NCEP
+  
+The new version of the BUFRlib has added code to recognize the 'data
+dictionary definition' records when they appear within a BUFR file -
+instead of only using the records at the beginning of a file.  The
+library will shift to using the new table defintions if it encounters
+them in a BUFR file.  
+
+This will make it much simpler to combine BUFR files, and makes much of
+discussion below irrelevant.  To combine BUFR files, it is possible
+to just 'cat' them, or use 'combfrd.x' if you want to check that 
+the "center dates" for 'prepbufr' files match.  You do not have to 
+insure that the BUFR table information matches because the software
+can handle the new definitions when it encounters them in the file.
+
+===== prior discussion of combining BUFR files is retained below =======
+
+
+There are several options for combining Woolen format BUFR files
+
+1) Using 'cat' to concatenate the files
+
+
+The NCEP BUFR files are self-documenting, with BUFR table information
+embedded in the first few messages of a file.  The BUFR table
+information is followed by binary format records containing the
+meteorological observation data.
+
+It is possible to concatenate BUFR files, each containing a number of
+BUFR messages (or records) because each message is more or less an
+individual unit.  This is possible even for the NCEP BUFR files which
+contain the BUFR table information, because the software can recognize
+the (repeated) records containing BUFR table information (and not
+meteorological data) and skip over those records.  There is a
+potential problem though in that the BUFR table information is only
+read and interpreted by the BUFR software once per input file - and so
+if BUFR files created with incompatible BUFR table definitions are
+concatenated, this could lead to problems in reading some of the data.
+
+When BUFR files are concatenated, there is no error checking to
+determine that the same BUFR table definitions have been used for each
+file, so one would need to exercise caution when using this method.
+
+
+2) 'combfr.x' - copying records from BUFR files to a combined file
+
+The NCEP routine combfr.x can be used to combine BUFR files.  As with
+the 'cat' method, the BUFR tables from one file are used for the table
+definition in the output file - the table records are only written
+once at the beginning of the output file however.  There is a little
+rudimentary error checking in that the program will notice if an
+unrecognized Table A entry (SUBSET value) is encountered in one of the
+input files.  This program will not recognize if a Table A entry is
+defined differently in one of the input BUFR files and so does not
+offer safety against changes in BUFR table definitions.
+
+
+3) Copy needed data mnemonics from each BUFR file to a new file
+
+One way to make sure that the desired data is copied even if the
+various input BUFR files have slightly different BUFR table
+definitions is to read each BUFR mnemonic (type of data) needed by the
+analysis program individually from each input file and write to an
+output file, using whichever BUFR table definition you choose for the
+output file.  In this way the BUFR table information is used for each
+input file and is not skipped over - thus if the tables differ
+slightly they can be reconciled in the output file.  This method has a
+disadvantage in that it will take longer to read the individual data
+entities from each record than to perform a simple concatentation.
+The combine program would need to be modified to keep up with the
+input data needs of the analysis program.  Also, copying the data to
+an output file in this manner will remove the 'stacked events' from a
+PREPBUFR file, retaining only the latest data entry.  (This may be an
+advantage or disadvantage depending on your point of view.)  A sample
+program to accomplish this is 'cp_2ssi.x'.
+
+9 Feb 2005: The 'npb2npb.x' program was added - it copies a 'master'
+PREPBUFR file to the output and then appends auxiliary BUFR files by
+reading mnemonics as for 'cp_2ssi.x'.  (This has been removed from
+the MERRA tag)
+
+4) Insure that concatenated files have the same BUFR table definitions.
+
+If you are the one generating most or all of the BUFR files that you
+want to combine, you can avoid the problem of combining files with
+differing BUFR table definitions simply by insuring the files use a
+common table definition.  For example, if you combine a PREPBUFR file
+from NCEP with some locally generated PREPBUFR files, you can use the
+NCEP file to provide the BUFR table definitions needed when generating
+the local files.  In that case any combination method would do as
+well.
+
+Important note: We have a text BUFR table 'prepobs_prep.bufrtable'
+ from late 2002 or thereabouts.  On 12 August 2003 there was a change
+ to the PREPBUFR bufr table to add new mnemonics for marking whether
+ the data should be restricted from redistribution.  This changed the
+ length of the HEADR sequence; which can lead to a problem if these
+ BUFR files are concatenated with BUFR files created with the older
+ (text) table.
+
+On 25 January 2005 there was another major revision to the PREPBUFR
+table used at NCEP.  The FXY codes for the Table A mnemonics were all
+modified - for example the previous code for ADPUPA upper air data now
+corresponds to SPSSMI SSM/I data.  The good news is that a new BUFR
+library adopted at the same time has a routine which will generate a
+text BUFR definition table from a BUFR file - which would make it
+easier for us to keep up with changes to the BUFR table definitions.
+
+
+17 Apr 2008 -
+  new routine combfrd.x - based on combfr.x
+This routine combines data in the same way as combfr.x except it also
+checks the center date on the BUFR messages and discards the files
+where the date on the 1st record do not match a previously specified date.
+To specify a date, use '-d' flag on command line
+e.g.  ls -1 *pre-qc* | combfrd.x -d 2008041600 combined_bfr.bfr
+
+If a date is not specified on the command line, the program will use the
+first date sucessfully read in by the program from the first readable file.
+ 

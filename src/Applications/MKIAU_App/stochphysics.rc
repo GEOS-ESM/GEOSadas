@@ -1,0 +1,19 @@
+
+# Atmospheric Model Configuration Parameters
+# ------------------------------------------
+           NX: 1
+           NY: 6
+    AGCM_IM: 180
+    AGCM_JM: 1080
+#    AGCM_IM: 288
+#    AGCM_JM: 181
+#     AGCM_IM: 576
+#     AGCM_JM: 361
+     AGCM_LM: 72
+     MEMID: 1
+     RUN_DT: 450
+     SPPT: 1
+     SKEB: 0
+
+     TESTCASE: sppt
+

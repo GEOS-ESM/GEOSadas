@@ -1,0 +1,570 @@
+#!/usr/bin/perl -w
+#------------------------------------------------------------------------
+#
+# Vortex relocator control script.
+#
+# !REVISION HISTORY:
+#
+#  23Sep2005  Todling   Initial code
+#  25Oct2005  Todling   tcvitals used is that from previous analysis time
+#  13Jul2006  Stassi    divided code into subroutines; added parallelization
+#  17Jul2006  Todling   Added correction call to bkg sfc files
+#  28Jul2006  Stassi    Moved parallelizing routines to a separate package
+#  08Aug2006  Stassi    Write zeit messages from main program only
+#  14Nov2006  JGuo      Modified to interact directly with the physical grid
+#  13Mar2009  Todling   Generalize NC filename suffix
+#  24Mar2009  RT/Zhang  Update interface call to recalcsfc.x
+#   1Jul2010  Sienkiewicz  Modify to preserve original sfc files as bkgXX
+#                          files (in same way as eta files).  Write vtx.log
+#                          in $fvwork instead of moving, so earlier 
+#                          output is not overwritten.
+#
+#------------------------------------------------------------------------
+use strict;
+use FindBin;                    # so we can find where this script resides
+use lib "$FindBin::Bin";        # look for perl packages in bin directory
+use Env;                        # make env vars readily available
+use File::Basename;             # for basename(), dirname()
+use File::Copy "cp";            # for cp()
+use Shell qw(cat rm);           # cat command
+use Time::Local;                # time functions
+use Run_parallel qw(parallel);
+
+my $scriptname = basename($0);
+
+# global variables
+#-----------------
+my ($fvroot,$fvwork,$rlcdir,$expid);
+my ($lev,$rlcfnbase,$overwrite);
+my ($vtxlog,$debug);
+my ($pabove,$pbelow);
+my ($tcvitals,$trackfn);
+my ($ncinput,$spc,$ncsuffix);
+my ($nymdana,$nhmsana);
+my ($xgrd,$ygrd);
+my $DODYN2DYN;
+my @fcsts;
+my $quietzeit = 1;    #*** suppress zeit messages in parallelized routines
+my $GEOSGRID = 1;       # 0: use the specGridIO files
+                        # 1: use the geosGridIO files
+
+{
+    # main program
+    #-------------
+    &init();
+
+    &parallel( \&convert_bkgs_fv2ss,   \@fcsts );
+    &parallel( \&relocate_storms,      \@fcsts );
+    &parallel( \&reconvert_bkgs_ss2fv, \@fcsts );
+
+    &wrapup;
+}
+
+#-----------------------------------------------------------------------
+#  name - init
+#  purpose -
+#
+#  !!!UNUSED input parameters
+#    -i   : full path location of input files
+#    -d2d : force conversion of bkg.eta files to GEOS-4-compliant format
+#  !!!UNUSED input parameters
+#-----------------------------------------------------------------------
+sub init {
+    use Getopt::Long;
+    use GMAO_utils qw(Assignfn);
+    use Manipulate_time;
+    use Run_parallel qw(init_parallel);
+
+    my $subname = $scriptname . "::init()";
+
+    my ($help);
+    my ($filepath,$dod2d);
+    my ($nymd,$nhms);
+    my ($nymdvit,$nhmsvit,$hhvit,$hhana);
+    my ($rc,$rc_ignore);
+    my $NCPUS;
+
+    $DODYN2DYN = $ENV{"DODYN2DYN"};
+
+    # FVROOT is where the binaries have been installed
+    #-------------------------------------------------
+    $fvroot = dirname($FindBin::Bin);
+    $fvroot =~ s|/u/.realmounts/share|/share|; # portability across NAS machines
+    $fvwork  = $ENV{FVWORK};
+    $ncinput = $ENV{NCEPINPUT};
+    $ncsuffix = $ENV{NCSUFFIX};
+
+    # Command line options
+    #---------------------
+    GetOptions( "h"         => \$help,
+                "d2d"       => \$dod2d,       #*** UNUSED; see prologue ***
+                "debug"     => \$debug,
+                "fhr=s"     => \@fcsts,
+                "i=s"       => \$filepath,    #*** UNUSED; see prologue ***
+                "pa=s"      => \$pabove,
+                "pb=s"      => \$pbelow,
+                "lev=s"     => \$lev,
+                "log=s"     => \$vtxlog,
+                "o=s"       => \$rlcfnbase,
+                "overwrite" => \$overwrite,
+                "spc=s"     => \$spc);
+
+    usage() if $help;
+
+    # Check for required two arguments
+    #---------------------------------
+    if ( $#ARGV < 2 ) {
+        print STDERR "missing argument; see usage";
+        usage();
+    } else {
+        $nymd  = $ARGV[0];
+        $nhms  = sprintf("%6.6d",$ARGV[1]);
+        $expid = $ARGV[2];
+    }
+
+    # Set defaults for missing input parameters
+    #------------------------------------------
+    ($rlcfnbase) || ($rlcfnbase = "$expid.rlc.eta");
+    ($filepath)  || ($filepath = ".");
+    ($vtxlog)    || ($vtxlog = "$fvwork/vtx.log");
+    ($pabove)    || ($pabove = "0.2");
+    ($pbelow)    || ($pbelow = "0.4");
+
+    @fcsts = split(/[ ,][ ,]*/, join(',',@fcsts));
+    (@fcsts)     || (@fcsts = qw/ 03 06 09 /);
+
+    # Environment variables take precedent over input parameters: -spc & -lev
+    #------------------------------------------------------------------------
+    ($spc) || ($spc = 254);
+    if ( $ENV{SPECVTX} ) { $spc = $ENV{SPECVTX} }
+    $ygrd = $spc + 2;
+    $xgrd = $ygrd * 2;
+
+    ($lev) || ($lev = 64);
+    if ( $ENV{LEVSTX} ) { $lev = $ENV{LEVSVTX} }
+
+    # Date of analysis to be completed after relocation
+    #--------------------------------------------------
+    $nymdvit = $nymd;
+    $nhmsvit = $nhms;
+    $hhvit = substr($nhmsvit,0,2);
+
+    # Tick time to initial time of forecast (previous analysis)
+    #----------------------------------------------------------
+    ($nymdana, $nhmsana) = ( tick($nymd,$nhms,-6*3600) );
+    $hhana = substr($nhmsana,0,2);
+
+    # Check on presence of tcvitals file (containing storm locations)
+    #----------------------------------------------------------------
+    $tcvitals = "$fvwork/tcvitals.${nymdvit}${hhvit}";
+    if ( ( ! -e $tcvitals ) || ( -z $tcvitals ) ) {
+        print " No TCVITALS file $tcvitals found, nothing to do ... \n";
+        exit(0);
+    }
+
+    # Check on presence of file containing model-predicted storm track
+    #-----------------------------------------------------------------
+    $trackfn  = "$fvwork/$expid.trak.GDA.all.${nymdana}${hhana}.txt";
+    if ( ! -e "$trackfn" ) {
+        print " cannot find track file: $trackfn ... leaving gracefully! \n ";
+        exit (0);
+    }
+
+    # Create separate directory for this job
+    #---------------------------------------
+    if (scalar(@fcsts) == 1) {
+        $rlcdir = "$fvwork/rlc.$nymdana.${nhmsana}+$fcsts[0]";
+    } else {
+        $rlcdir = "$fvwork/rlc.$nymd.$nhms";
+    }
+
+    # Start with clean directory (unless in debug mode)
+    #--------------------------------------------------
+    if ( ! $debug ) {$rc = system("/bin/rm -r $rlcdir" )};
+    $rc = system("/bin/mkdir -p $rlcdir" );
+    if ( $rc ) {
+        die ">>> ERROR <<< cannot create $rlcdir, rc = $rc";
+    }
+    $rc_ignore = system("/bin/touch $rlcdir/.no_archiving");
+
+    # Move to separate directory to avoid conflicts
+    #----------------------------------------------
+    chdir("$rlcdir");
+
+    # Create proper link
+    #-------------------
+    Assignfn( "$ncinput/gsi/etc/newncepsfc.$spc", "ncepsfc" );
+
+    # check the number of CPUS and initialize the parallel routines
+    #--------------------------------------------------------------
+    ($NCPUS = $ENV{NCPUS}) || ($NCPUS = 4);
+    # &init_parallel($NCPUS/4,$rlcdir);
+    &init_parallel(1,$rlcdir);
+}
+
+#-----------------------------------------------------------------------
+#  name - convert_bkgs_fv2ss
+#  purpose - Convert all gridded background files to spectral space
+#-----------------------------------------------------------------------
+sub convert_bkgs_fv2ss {
+    use GMAO_utils qw(System);
+    use Manipulate_time;
+    use Run_parallel qw(halt);
+
+    my $subname = $scriptname . "::convert_bkgs_fv2ss()";
+
+    my ($nymdnow,$nhmsnow,$hhnow);
+    my ($bkgname,$bkgeta,$bkgsfc,$dyneta);
+    my ($fchr,$cmd,$msg,$rc);
+
+    my @hours = @_;
+
+    foreach $fchr ( @hours ) {
+
+        ($nymdnow, $nhmsnow) = ( tick($nymdana,$nhmsana,$fchr*3600) );
+        $hhnow = substr($nhmsnow,0,2);
+
+        # Original bkg.eta file from GCM (not a dyn-vec)
+        #-----------------------------------------------
+        $cmd = "echorc.x -template $expid $nymdnow $nhmsnow "
+            . " -rc $fvwork/fvpsas.rc upper-air_bkg_filename";
+        chomp($bkgname = `$cmd`);
+        $bkgeta = "$fvwork/$bkgname";
+
+        # Original bkg.sfc file from GCM
+        #-------------------------------
+        $cmd = "echorc.x -template $expid $nymdnow $nhmsnow "
+            .  " -rc $fvwork/fvpsas.rc surface_bkg_filename";
+        chomp($bkgname = `$cmd`);
+        $bkgsfc = "$fvwork/$bkgname";
+
+        # Complete header info from G5GCM bkg files
+        #------------------------------------------
+        if ( $DODYN2DYN ) {
+
+            # Intermediate dyn-vec after bkg conversion by dyn2dyn
+            #-----------------------------------------------------
+            $dyneta = "$expid.dyn.eta.${nymdnow}_${hhnow}z.$ncsuffix";
+
+            $cmd = $fvroot . "/bin/dyn2dyn.x -o $dyneta $bkgeta";
+            print " $cmd\n";
+            $rc = System($cmd,"$vtxlog","dyn2dyn.x",$quietzeit);
+            if ($rc) { &halt("${subname}: dyn2dyn.x rc=$rc",$rc) };
+
+        } else {
+            $dyneta = $bkgeta;
+        }
+
+        if ( $GEOSGRID ) {
+            print "$subname: Spectral file \"sigf$fchr\" not produced.\n";
+            print "$subname: Use GEOS file \"dynf$fchr\" instead. \n";
+            Assignfn( "$dyneta", "dynf$fchr" );
+        } else {
+
+            # Convert background to spectral
+            #-------------------------------
+            if ( -e "sigf$fchr" ) {
+                print " Spectral file already available:  sigf$fchr \n";
+            } else {
+                $cmd = $fvroot."/bin/fv2ss.x "
+                    . " $dyneta $bkgsfc "
+                    . " -jcap $spc "
+                    . " -nsig $lev "
+                    . " -fhour $fchr "
+                    . " -pick $nymdnow $nhmsnow "
+                    . " -os sfcf$fchr "
+                    . " -o sigf$fchr ";
+
+                print " $cmd\n";
+                $rc = System($cmd,"$vtxlog","fv2ss.x",$quietzeit);
+                if ($rc) { &halt("${subname}: fv2ss.x rc = $rc",$rc) };
+            }
+
+            # Convert back to grid to account for error ("no-data noharm")
+            #-------------------------------------------------------------
+            if ( -e "eta_out$fchr.$ncsuffix" ) {
+                $msg = " Non-data no-harm eta file already available:  ";
+                print $msg . "eta_out$fchr.$ncsuffix \n";
+            } else {
+                $cmd = $fvroot."/bin/ss2fv.x "
+                    . " sigf$fchr $dyneta "
+                    . " -ua $dyneta "
+                    . " -pick $nymdnow $nhmsnow "
+                    . " -pa $pabove "
+                    . " -pb $pbelow "
+                    . " -prec 32 "
+                    . " -bkgfrq "
+                    . " -o eta_out$fchr.$ncsuffix ";
+
+                print " $cmd\n";
+                $rc = System($cmd,"$vtxlog","ss2fv.x",$quietzeit);
+                if ($rc) { &halt("${subname}: ss2fv.x rc = $rc",$rc) };
+            }
+        }
+    }
+}
+
+#-----------------------------------------------------------------------
+#  name - relocate_storms
+#  purpose - Relocate storm(s) on each background case
+#-----------------------------------------------------------------------
+sub relocate_storms {
+    use GMAO_utils qw(Assignfn System);
+    use Run_parallel qw(halt);
+    my $subname = $scriptname . "::relocate_storms()";
+
+    my ($fchr,$cmd,$rc);
+    my @hours = @_;
+    my ($iun,$kun);
+
+    # Create links for program I/O
+    #-----------------------------
+    Assignfn( "$tcvitals", "fort.11" );
+    Assignfn( "$trackfn",  "fort.30" );
+
+#    if ( -e "sigf03" ) { Assignfn( "sigf03", "fort.20" ) };
+#    if ( -e "sigf06" ) { Assignfn( "sigf06", "fort.21" ) };
+#    if ( -e "sigf09" ) { Assignfn( "sigf09", "fort.22" ) };
+#
+#    Assignfn( "sigf03.rlc", "fort.53" );
+#    Assignfn( "sigf06.rlc", "fort.56" );
+#    Assignfn( "sigf09.rlc", "fort.59" );
+
+    # Execute vortex relocator on sigf background files
+    #--------------------------------------------------
+    foreach $fchr ( @hours ) {
+        chop($iun = `expr $fchr / 3 + 19`);     # (3,6,9) -> (20,21,22)
+        chop($kun = `expr $fchr + 50`);         # (3,6,9) -> (53,56,59)
+        if ( -e "dynf$fchr" ) {
+            print "$subname: \n";
+            Assignfn( "dynf$fchr", "fort.$iun" );
+            Assignfn( "dynf$fchr.rlc", "fort.$kun" );
+            system("ls -l");
+        }
+        if ( -e "sigf$fchr" ) {
+            Assignfn( "sigf$fchr", "fort.$iun" );
+            Assignfn( "sigf$fchr.rlc", "fort.$kun" );
+        }
+
+        if ( $GEOSGRID ) {
+            print "$subname: \n";
+            $cmd = "echo 1 $fchr $xgrd $ygrd | $fvroot/bin/relocate_mv_nvortex.x";
+        } else {
+            $cmd = "echo 0 $fchr $xgrd $ygrd | $fvroot/bin/relocate_mv_nvortex.x";
+        }
+        print " $cmd\n";
+        $rc = System($cmd,"$vtxlog","relocate_mv_nvortex.x",$quietzeit);
+        if ($rc) { &halt("${subname}: relocate_mv_nvortex.x rc = $rc",$rc) };
+    }
+}
+
+#-----------------------------------------------------------------------
+#  name - reconvert_bkgs_ss2fv
+#  purpose - convert backgrounds back to physical space.
+#-----------------------------------------------------------------------
+sub reconvert_bkgs_ss2fv {
+    use GMAO_utils qw(System);
+    use Manipulate_time;
+    use Run_parallel qw(halt);
+    my $subname = $scriptname . "::reconvert_bkgs_ss2fv()";
+
+    my ($fchr,$cmd,$rc);
+    my ($nymdnow,$nhmsnow,$hhnow);
+    my ($bkgname,$bkgeta,$bkgsfc,$obkgeta,$obkgsfc);
+    my ($rlceta,$dyneta,$rlcsfc);
+
+    my @hours = @_;
+
+    foreach $fchr ( @hours ) {
+
+        ($nymdnow, $nhmsnow) = ( tick($nymdana,$nhmsana,$fchr*3600) );
+        $hhnow = substr($nhmsnow,0,2);
+
+        # relocated bkg.eta background (dyn-vec)
+        #---------------------------------------
+        $rlceta = "$rlcfnbase.${nymdnow}_${hhnow}z.$ncsuffix";
+
+        # intermediate dyn-vec after bkg conversion by dyn2dyn
+        #-----------------------------------------------------
+        if ( $DODYN2DYN ) {
+            $dyneta = "$expid.dyn.eta.${nymdnow}_${hhnow}z.$ncsuffix";
+        } else {
+            $cmd = "echorc.x -template $expid $nymdnow $nhmsnow "
+                .  " -rc $fvwork/fvpsas.rc "
+                .  " upper-air_bkg_filename";
+            chomp($bkgname = `$cmd`);
+            $dyneta = "$fvwork/$bkgname";
+        }
+
+        if ( $GEOSGRID ) {
+            print "$subname: \n";
+            $cmd = "mv dynf$fchr.rlc $rlceta";
+            print " $cmd\n";
+            System($cmd,"$vtxlog","mv()",$quietzeit);
+            $cmd = "ln -s $rlceta ./dynf$fchr.rlc";
+            print " $cmd\n";
+            System($cmd,"$vtxlog","ln()",$quietzeit);
+            system("ls -l");
+
+        } else {
+
+            # Convert spectral analysis or background back to grid
+            #-----------------------------------------------------
+            if (! -e "eta_out$fchr.$ncsuffix" ) {
+                &halt("${subname}: >>> ERROR <<< cannot find eta_out$fchr.$ncsuffix.");
+            }
+
+            $cmd = $fvroot . "/bin/ss2fv.x "
+                . " sigf$fchr.rlc $dyneta "
+                . " -ua $dyneta "
+                . " -pick $nymdnow $nhmsnow "
+                . " -pa $pabove "
+                . " -pb $pbelow "
+                . " -prec 32 "
+                . " -bkgfrq "
+                . " -i eta_out$fchr.$ncsuffix "
+                . " -o $rlceta ";
+
+            print " $cmd\n";
+            System($cmd,"$vtxlog","ss2fv.x",$quietzeit);
+        }
+
+        # Original bkg.sfc file from GCM - copy to rlcsfc (to be overwritten)
+        #--------------------------------------------------------------------
+        $cmd = "echorc.x -template $expid $nymdnow $nhmsnow "
+            .  " -rc $fvwork/fvpsas.rc surface_bkg_filename";
+        chomp($bkgname = `$cmd`);
+        $bkgsfc = "$fvwork/$bkgname";
+        $rlcsfc = "$rlcdir/$bkgname";
+        cp("$bkgsfc","$rlcsfc");
+
+        # Fix surface fields after relocation's complete
+        # ----------------------------------------------
+        $cmd = "recalcsfc.x -g5 -v $rlceta $dyneta $rlcsfc";
+        print " $cmd\n";
+        System($cmd,"$vtxlog","recalcsfc.x",$quietzeit);
+
+        # if so, replace bkg.eta with relocated file
+        #-------------------------------------------
+        if ( -e "$rlceta" && $overwrite ) {
+            $cmd = "echorc.x -template $expid $nymdnow $nhmsnow "
+                .  " -rc $fvwork/fvpsas.rc upper-air_bkg${fchr}_filename";
+            chomp($obkgeta = `$cmd`);
+
+            $cmd = "echorc.x -template $expid $nymdnow $nhmsnow "
+                .  " -rc $fvwork/fvpsas.rc upper-air_bkg_filename";
+            chomp($bkgeta = `$cmd`);
+
+            # if obkgeta exists, original bkg already preserved; do nothing
+            #--------------------------------------------------------------
+            if ( ! -e "$fvwork/$obkgeta" ) {
+                $cmd = "/bin/mv $fvwork/$bkgeta  $fvwork/$obkgeta";
+                print " $cmd\n";
+                $rc = system($cmd);
+            }
+            $cmd = "/bin/mv $rlcdir/$rlceta  $fvwork/$bkgeta";
+            print " $cmd\n";
+            $rc = system($cmd);
+        }
+        if ( -e "$rlcsfc" && $overwrite) {
+            $cmd = "echorc.x -template $expid $nymdnow $nhmsnow "
+                .  " -rc $fvwork/fvpsas.rc surface_bkg${fchr}_filename";
+            chomp($obkgsfc = `$cmd`);
+
+            # if obkgsfc exists, original bkg already preserved; do nothing
+            #--------------------------------------------------------------
+            if ( ! -e "$fvwork/$obkgsfc" ) {
+                $cmd = "/bin/mv $bkgsfc  $fvwork/$obkgsfc";
+                print " $cmd\n";
+                $rc = system($cmd);
+            }
+            $cmd = "/bin/mv $rlcsfc $bkgsfc";
+            print " $cmd\n";
+            $rc = system($cmd);
+        }
+    }
+}
+
+#-----------------------------------------------------------------------
+#  name -wrapup
+#  purpose -
+#    This subroutine performs end-of-job wrap-up procedures.
+#-----------------------------------------------------------------------
+sub wrapup {
+    use Run_parallel qw(wrapup_parallel);    
+    my($cmd,$rc);
+
+    &wrapup_parallel;
+    exit;
+}
+
+#-----------------------------------------------------------------------
+#  name - usage
+#  purpose - display usage information to standard output
+#-----------------------------------------------------------------------
+sub usage {
+
+    print <<"EOF";
+
+NAME
+     vtxreloc - Vortex Relocator Driving Script
+
+SYNOPSIS
+
+     vtxreloc [...options...]  nymd nhms expid
+
+DESCRIPTION
+
+     The following parameter are required
+
+     nymd     Year-month-day, e.g., 19990901  for 01 Sept 1999
+     mhms     Hour-minutes-seconds, e.g., 120000
+     expid    Experiment ID (name)
+
+OPTIONS
+
+ -h            prints this usage notice
+
+ -d2d          forces conversion of bkg.eta files to GEOS-4-compliant format
+
+ -fhr          forecast hour (either 03, 06 or 09 for corresponding hr fcst);
+               default: process all three forecast hours.
+
+ -o            base filename of relocated output file;
+               default: expid.rlc.eta
+
+ -overwrite    will rename original bkg.eta and replace it with relocated file;
+               default: do not overwrite
+
+ -spc          spectral resolution to convert gridded background to;
+               default: 254
+
+ -lev          number of levels in spectral file
+               default: 64
+
+ -pabove       level above which analysis and background are blended
+
+ -pbelow       level below which analysis and background are blended
+
+ -debug        will not create working dir from scratch
+
+ -log LOGFILE   file for log file (default: $FVWORK/vtx.log)
+
+ENVIRONMENT
+
+  FVWORK       directory where input files (bkg.eta,bkg.sfc,tcvitasl,track) are located
+  NCEPINPUT    location of GSI static files; e.g., /nobackup2/dkokron/fvInput/Static
+  SPECVTX      spectral resolution to use when converting GEOS bkg; ENV var takes
+               precedence over other setting
+  LEVSVTX      number of levels to convert background to (really, should use default);
+               ENV var takes precedence over other setting
+  NCSUFFIX     suffix of NC filename (hdf or nc4)
+
+AUTHOR
+      R. Todling (todling\@gmao.gsfc.nasa.gov), NASA/GSFC/GMAO
+
+EOF
+
+exit(1);
+
+}

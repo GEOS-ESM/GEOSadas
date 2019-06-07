@@ -1,0 +1,52 @@
+#######################################################################
+#                 Create History List for Output
+#######################################################################
+ 
+EXPID:  @EXPID
+EXPDSC: @EXPDSC
+ 
+COLLECTIONS: 'traj.lcv'
+             ::
+
+  traj.lcv.format:     'CFIO' ,
+  traj.lcv.template:   '%y4%m2%d2_%h2%n2z.nc4',
+  traj.lcv.frequency:  001500 ,
+  traj.lcv.duration:   001500 ,
+  traj.lcv.mode:       'instantaneous',
+  traj.lcv.resolution: 90 540,
+  traj.lcv.fields:     'U_DGRID;V_DGRID' , 'DYN'   , 'U;V'      ,
+                       'TH'         , 'DYN'        , 'PT'       ,
+                       'Q'          , 'MOIST'      , 'QV'       ,
+                       'DELP'       , 'DYN'        , 'DP'       ,
+                       'QITOT'      , 'AGCM'       , 'QI'       ,
+                       'QLTOT'      , 'AGCM'       , 'QL'       ,
+                       'O3PPMV'     , 'CHEMISTRY'  , 'O3'       ,
+                       'QCLSX0'     , 'MOIST'      , 'QLS'      ,
+                       'QCCNX0'     , 'MOIST'      , 'QCN'      ,
+                       'CLCNX0'     , 'MOIST'      , 'CFCN'     ,
+                       'PS'         , 'DYN'        , 'PS'       , 
+                       'PHIS'       , 'AGCM'       , 'PHIS'     ,
+                       'SGH'        , 'AGCM'       , 'HS_STDV'  ,
+                       'FRLAND'     , 'SURFACE'    , 'FRLAND'   , 
+                       'FROCEAN'    , 'SURFACE'    , 'FROCEAN'  ,
+                       'KCBL_moist' , 'MOIST'      , 'KCBL'     ,
+                       'TS_moist'   , 'MOIST'      , 'TS'       ,
+                       'KHl_moist'  , 'MOIST'      , 'KHL'      ,
+                       'KHu_moist'  , 'MOIST'      , 'KHU'      ,
+                       'VARFLT'     , 'AGCM'       , 'VARFLT'   ,
+                       'USTAR'      , 'SURFACE'    , 'USTAR'    ,
+                       'BSTAR'      , 'SURFACE'    , 'BSTAR'    ,
+                       'ZPBL'       , 'TURBULENCE' , 'ZPBL'     ,
+                       'CM'         , 'SURFACE'    , 'CM'       ,
+                       'CT'         , 'SURFACE'    , 'CT'       ,
+                       'CQ'         , 'SURFACE'    , 'CQ'       ,
+# Needed for radiation
+#                       'MCOSZ'      , 'SOLAR'      , 'COSZ'     ,
+#                       'SLRTP'      , 'SOLAR'      , 'SLR'      ,
+#                       'ALBVR'      , 'SURFACE'    , 'RGBUV'    ,
+#                       'ALBVF'      , 'SURFACE'    , 'RGFUV'    ,
+#                       'ALBNR'      , 'SURFACE'    , 'RGBIR'    ,
+#                       'ALBNF'      , 'SURFACE'    , 'RGFIR'    ,
+#                       'EMIS'       , 'SURFACE'    , 'EMIS'     ,
+#                       'DE_tlad'    , 'IRRAD'      , 'DELTIRD'  ,
+                       ::

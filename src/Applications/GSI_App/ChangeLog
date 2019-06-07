@@ -1,0 +1,591 @@
+11Dec2018
+---------
+- Update from Ben Auer in support of split cap;
+  original tag: bma_GEOSadas-5_22_0_p2_splitcap
+
+03Dec2018
+---------
+- Enable SPPT in EnsDA; merge w/ tag: Amal-GEOSadas-5_22_0_p1-stoch-phys-1  
+- Optional kx split for Ship obs:
+     tag: SA-id_ships_convinfo-MetaS_reviewed-GEOSadas-5_22_0_p1
+
+08Oct2018: EnADAS-5_22_0p1
+----------
+- Add full knob for correlated obs (see fvsetup and
+  gmao_global_anavinfo_rcov.txt/rc); note split in anavinfo
+  zero-diff to 5_22_0 when correlated obs not triggered.
+
+24Sep2018: EnADAS-5_22_0
+----------
+- partial merge with NCEP All-Sky implementation
+   5_21_3_p1 and VLab-ProdGSI-master-2018062220Z1707-60d4448
+- increased paoverbpb for EnKF from 0.975 to 0.990 - this gets descent amount
+  of radiance in both C90 and C180 configurations
+
+14Aug2018: EnADAS-5_21_5
+---------
+- Update to bma_ADAS_MAPLRefactor_5_21_2 which include latest changes in MAPL
+  (including adding pFIO) - this version does not reproduce its predecessor
+  but results are almost roundoff. Furthermore, at present tag steps back
+  from reading the ensemble members in parallel in GSI due to a bug in pFIO
+  still to be uncovered.
+
+26Jul2018:
+---------
+- Add ability to handle OMPs (merge w/ Wargan: kw-GEOSadas-5_21_2-OMPS-all3)
+- Additional norms for initadj and related programs
+
+26May2018:
+---------
+  - EnADAS-5_20_0p3: generalized analysis and ensemble components to handle L132 
+    (Departing point: GEOSadas-5_20_0_p2)
+    
+30Apr2018:
+---------
+- rid RC files of ak/bk info; using set_eta instead
+  modules changes: -> GSI, MKIAU, GEOSgcmPert
+
+16Apr2018:
+---------
+- Support for YZhu sat-bias-correction in both central and EnADAS (Ticket #3)
+- Add GMAObufr_util under Applications/GMAO_Etc to support gen of GMAO version
+  of AVHRR files not provided by NCEP (Ticket #39) 
+- note new RC file in run/atmens: 
+     o dyn_recenter.rc - controls recentering parameters (for now set to
+                         behave as usual)
+- Note on RSTs for GEOSadas-5_20_x:
+    - when coming from f519_fpp users only need to BOOTSTRAP moist_import_rst
+      which means deleting the files coming from f519_fpp in both central and
+      EnADAS; both should use AGCM.BOOTSTRAP.rc.tmpl both recall that ensemble
+      use old-style bootstrap, which requires copying AGCM.rc.tmpl into
+      BOOTSTRAP file and commenting out line for MOIST_IMPORT_RESTART_FILE 
+    - when RSTs are from any other version (say, f517_fp) full BOOTSTRAP
+      should take place.
+
+09Jan2017:
+---------
+Changes from Meta (GOES-16 and Revised convinfo file):
+Changes from original 5_17 tag
+a) Turn on Meteosat-8 (subtype 55) [replaced Meteosat-7 (subtype 54)]
+b) Add entries for GOES-16 (subtype 270) [replaces GOES-13 (subtype 257)]
+c) revision just prior to this one added kx 299 drifting buoy winds
+
+14Aug2017:
+---------
+ TAG NAME: EnADAS-5_17_0p9
+ - merge w/ Meta tag br_meta_radbias_517 (ticket #3) to bring YZ bias
+   correction capability to GEOS (ensemble part still pending)
+ - anavinfo and enkf.nml updated to handle/analyze hybrometeors
+
+14Aug2017:
+---------
+ TAG NAME: EnADAS-5_17_0p8
+- Meta and Will fixes to nc-diag out (setuprad and read_diag)
+- Update B-error code to rt4Amal-NCEP_bkgecov-5_17_AllSky 
+- backout q>0 changes in EnKF and dyn_recenter (per MJK request)
+- util code gsidiag_bin2txt.x (from Will)
+
+11Aug2017:
+---------
+ TAG NAME: EnADAS-5_17_0p7
+  - sat-database update to GMI/GPM
+  - obs1gsi*rc update in run/atmens for GMI/GPM
+  - Background error update (add qr/qs/qi/ql, but other as before)
+  - All that is needed for GMI assimilation, except triggers (anavinfo and enkf.nml)
+    (also location of CloudCoeff for CRTM)
+  - Zero diff to EnADAS-5_17_0p6
+
+11Aug2017:
+---------
+ TAG NAME: EnADAS-5_17_0p6
+- Updates to AtmEnsConfig.csh, atm_ens.j, and ut_atmens_arch.j
+- Check on Wired MODIS_L2_STAGE_DIR to main job script (g5das.j)
+- bruce-force prevention of negative q (EnKF, Hermes)
+- back to disc_airs_bufr class  (check gsi.rc.tmpl and gsi_sens.rc.tmpl)
+  need update gmao_airs_bufr.tbl in run directory
+
+28Jul2017:
+---------
+- MAJOR: introduced variale ATMENS4ARCH to specify dir where ens out is held
+         before being archived - see AtmEnsConfig.csh
+
+17Jul2017:
+---------
+- Bug fix in beta weights and localization scales (shifted levels)
+- Revert back to TC ob weigh as used in e5131_fp 
+
+06Jul2017:
+---------
+- #8: add changes related to aircraft bias correction (metadata from NCEP)
+- #17: fix for standalone analysis (save cbkg09.eta); requires change in asens.acq
+- Back to default as recentering ensemble (AtmEnsConfig.csh)
+- Store non-inflated EnKF analyses (AtmEnsConfig.csh)
+- Add bin/ODS output containing obs used by EnKF (atmos_enkf.nml.tmpl)
+- Update GEOS_AgcmGridComp.F90 to correct two issues: (1) remapping should not
+  be taking place when bkg and ana are of same resolution; and (2) zero ob
+  case had been giving non zero diff w/ free-running model - now program 
+  defaults to handling PS and producing identical results w/ free-running
+  model in case ana=bkg.
+- Add capability to run ensemble-based obs impact; ensemble of model
+  integrations; ensemble of adjoint model integrations.
+
+18Apr2017:
+=========
+- #12: update Aircraft bias correction to: meta_2016_update
+- #13: update Paqc files:
+    NCEP_Paqc/prepobs_cqcbufr.fd/cqcbufr.f
+    NCEP_Paqc/radcor/m_RadBufr.f
+    NCEP_Paqc/oiqc/oiqcbufr.f
+    to tag: meta_maxout_patch
+- Analysis: GEOSaana-5_18_0-r88040
+   - bug fix: time of obs going into diag/ods files
+   
+18Apr2017:
+=========
+- TAG: EnADAS-5_17_0
+- Update to Icarus-1_0_p1
+- Brough in Joe fcst scores changes from GEOSadas-5_16_5_js1 (baseline: EnADAS-5_16_5)
+- Bug fix: ensemble had been running ocean at 3600 DT as opposed to central at 1800
+- EnKF updated to: GMAO_EnKF-5_16_7_r86502_GEPS-1 (zero-diff to previous DAS tag)
+
+17Apr2017:
+=========
+- TAG: EnADAS-5_16_7p5
+  - update EnKF to: GMAO_EnKF-5_16_7_r86502_EFSO-4
+    (zero-diff to previous)
+  - fix ptop handling in dyn-recenter
+  - fix moist relationship with nitrates (NiX unfriendlied to moist; GOCART GridComp change)
+
+01Apr2017:
+=========
+- TAG: EnADAS-5_16_7p4
+- merge with Larry's fix to aerosol diagnostic (does this affect the AOD
+  offline calc?)
+ (not zero diff since emissions refreshed one DT earlier than in previous tag)
+- update GSI to GEOSaana-5_16_7p3-r88040_part-4 (zero-diff to prior tag)
+- non-zero diff: fixed AVHRR lapse rate in gmao_global_tlapmean.rc (per Meta)
+
+28Mar2017:
+=========
+- TAG: EnADAS-5_16_7p3
+- Update EnKF to GMAO_EnKF-5_16_7_r86502_r89920-EFSO (zero diff to Ker-1)
+
+27Mar2017:
+=========
+- TAG: EnADAS-5_16_7p2
+- Update EnKF to GMAO_EnKF-5_16_7_r86502_AERO-Ker-1 
+  now handles 3d-concentrations and kernel estimation
+
+21Mar2017:
+=========
+- TAG: EnADAS-5_16_7p1
+- Bring in capability of analyzing aerosol in ensemble members with
+  either PSAS or EnKF; configuration settings controlled in
+  AtmEnsConfig.csh - default is to still for members to take
+  central analysis and do neither PSAS nor EnKF
+- No weighting of obs within the 4d time window (only applicable to 4d)
+
+- name change for ensemble tarball classes related to aerosols
+  naming goes from eaer to ebaer and eaaer
+  files involved: 
+        AtmEnsConfig.csh
+	atmens_storage.arc
+
+28Feb2017:
+=========
+- TAG: EnADAS-5_16_7
+- Up-to-date to NCEP trunk (r86502) as of today, plus Polymorphic Observer
+  and NCdiag capability: GEOSaana-5_16_5_r86502-NCdiag-2
+- GCM Tag: LLT_GEOSadas-5_16_5_OPS_patch_gocart_alarms
+   This includes the DT changes in the physics to speed up GCM, and
+   the cubed-SST handling capability.
+- Update EnKF to: NCEP_EnKF-5_16_5_r86502
+
+06Jan2017: 
+=========
+- TAG: EnADAS-5_16_6
+- Up-to-date w/ NCEP trunk version as of 1Feb2017
+- GSI merge w/ ncep-gsi-r86502 and Jing's work on observer; 
+  ana tag: GEOSaana-5_16_5_r86502
+  Requires pointing to slightly different CRTM-Coeffs
+  Requires restart changes (see below)
+  
+  Differences are rather minor (largely due to QC changes in qcmod and setuprad)
+  Example of diffs (using r84191):
+      Original initial Jo table
+          Observation Type           Nobs                        Jo
+	  Jo/n 
+	  surface pressure              73072    1.2077974687130536E+04 0.165
+	  temperature                  179883    2.3022587042485608E+05 1.280
+	  wind                         585396    6.3400250466882822E+05 1.083
+	  moisture                      14921    6.9002687814721085E+03 0.462
+	  ozone                          2640    5.4903625283017891E+03 2.080
+	  level ozone                   27935    5.6828314860853221E+04 2.034
+	  gps                          144147    1.4625060695924173E+05 1.015
+	  radiance                    2987311    7.3128828075105255E+05 0.245
+	                                 Nobs                        Jo  Jo/n
+                      Jo Global        4015305   1.8230641836617363E+06 0.454
+      From GEOSaana-5_16_5_r84191
+          Observation Type           Nobs                        Jo
+	  Jo/n
+	  surface pressure              73072    1.2077974687130536E+04 0.165
+	  temperature                  179883    2.3022587042485608E+05 1.280
+	  wind                         585396    6.3400250466882822E+05 1.083
+	  moisture                      14921    6.9002687814721085E+03 0.462
+	  ozone                          2640    5.4903625283017891E+03 2.080
+	  level ozone                   27935    5.6828314860853221E+04 2.034
+	  gps                          144147    1.4625060695924173E+05 1.015
+	  radiance                    2992061    7.3503494081301522E+05 0.246
+	                                 Nobs                        Jo  Jo/n
+	              Jo Global        4020055   1.8268108437236990E+06 0.454
+
+     These initial diffs lead to the following diff in the final Jo
+          Original: 
+	  Jo Global        4135035    1.1484952083258254E+06 0.278
+	  Latest:
+          Jo Global        4138517    1.1510829371534996E+06 0.278
+
+     These diffs only apply when GSI runs w/ unchanged observing system
+     settings. In actuality the tag also includes:
+	 - addition of kx=247 SATWND   NESDIS IMAGER WATER VAPOR (ALL LEVELS)
+	                               DEEP LAYER (GOES) 
+	   (includes update to errors in prepobs_errtable.global)
+         - addition of kx=260 VIIRS IR LW Cloud Drift Winds
+
+     RC FILES CHANGED:
+        - gmao_global_convinfo.rc
+        - gsi.rc.tmpl
+	- gsi_sens.rc.tmpl
+	- sac.rc.tmpl
+	- obs1gsi_mean.rc
+	- obs1gsi_member.rc
+	- atmos_enkf.nml.tmpl
+	- prepobs_errtable.global
+	  note: this also takes in Meta' change to add obs errors for ACARS
+	        q, copied from NCEP table - as used in GDAS
+        - gmao_global_satinfo.rc
+	    o SEVIRI (SIDB has been updated accordingly)
+	    o AIRS281 -> AIRS
+	    o IASI616 -> IASI
+	- RESTART:
+	    o satbias and satbang:
+	      > SEVIRI changes requires satbias/bang updates to chn 1-8 for 4-11
+	      > AIRS281 -> AIRS
+	      > IASI616 -> IASI
+	- OBSSYS:
+	    o must use ncep_airs_bufr instead of disc_airs_bufr
+
+19Dec2016: Updates to EnADAS-5_16_4
+=========
+  Tag:     EnADAS-5_16_4p3 same as EnADAS-5_16_5
+  Module:  GEOSadas-5_16
+  GCM:     Heracles-5_4_p3 (changes to AGCM_gridComp and Phys_GridComp)
+  GSI:     rt-GSIGridComp-5_16_4p2_meta_amsuach15_fix
+
+ - update from Meta bringing in NCEP change to missing AMSU-A MetOp-B ch15
+   following files updated: read_bufrtovs.f90 read_atms.f90 qcmod.f90
+                            clw_mod.f90 setuprad.f90
+   under tag: meta_amsuach15_fix			     
+ - along with above: turn off channels 1-6 for MetOp-B AMSU-A starting 20160925 000000
+
+ - also bringing in Arlindo/Joe changes to latest AOD observing system (2017 and beyond)
+   original in tag: rt-EnADAS-5_16_4_p1-GAAS (which was some UNSTABLE tag from
+   J. Stassi) created on top of EnADAS-5_16_4
+
+- update to high-resolution and new version QFED emissions: from version
+  v2.4r6/ to v2.5r1_0.1_deg 
+    the following files update to: asd-Heracles-5_4_p3+qfed-v2_5_r1-a3
+    BC_GridComp/BC_GridComp_ExtData.rc
+    CO2_GridComp/CO2_GridComp.rc
+    CO2_GridComp/CO2_GridComp_ExtData.rc
+    CO_GridComp/CO_GridComp---bbae.rc
+    CO_GridComp/CO_GridComp---bbaf.rc
+    CO_GridComp/CO_GridComp---bbbo.rc
+    CO_GridComp/CO_GridComp---bbgl.rc
+    CO_GridComp/CO_GridComp---bbla.rc
+    CO_GridComp/CO_GridComp---bbna.rc
+    CO_GridComp/CO_GridComp---bbnb.rc
+    CO_GridComp/CO_GridComp---full.rc
+    CO_GridComp/CO_GridComp_ExtData.rc
+    NI_GridComp/NI_GridComp_ExtData.rc
+    OC_GridComp/OC_GridComp_ExtData.rc
+    SU_GridComp/SU_GridComp_ExtData.rc
+
+- RST changes: gaas background files:
+  cp /archive/*.inst1_2d_hwl_Nx.YYYYMMDD_HH00z.nc4 recycle/*.gaas_bkg_sfc_rst.YYYYMMDD_HHz.nc4
+
+19Dec2016: Updates to EnADAS-5_16_4
+=========
+  Tag:     EnADAS-5_16_4p2
+  Module:  GEOSadas-5_16
+  GCM:     Heracles-5_4_p3 (changes to AGCM_gridComp and Phys_GridComp)
+  GSI:     EnADAS-5_16_4p2
+
+- MAPL corrections to allow properly running cube-to-cube interpolation
+- MAPL corrections to allow producing backward (PERT) output via History
+- Reset RAIN_REVAP_FAC: 1.0 in both central and ensemble (AGCM.rc.tmpl)
+- Correction to handling reduced GSI diag files output produced in the
+  ensemble observers. The fixes here involve updates to ODS, and the ensemble
+    scripts that handle ODS generation.
+    - Fix in satellite DB handling AMSUA-AQUA: channel 14 bias correction
+    turned
+      off, since no longer assimilated
+      - Turned off AURA channel 8
+
+29Nov2016: EnADAS-5_16_4
+- Merge with Heracles-5_4_p3
+
+29Nov2016: EnADAS-5_16_3p3
+- rename hyb localization files to reflect horiz-res dependency
+- allow cycle to store flow-dependent variances
+- fix for MLS55 ozone in EnKF
+- allow ensemble observers to handle observations related to diurnal variations in SST
+- minor changes to GAAS analysis to allow running observer over post-ana ODS files
+- Use of Heracles-5_4_p2
+- Fix use of DFI coeffs in AGCMGridComp (thus far not used in cycle)
+01Oct2016: EnADAS-5_6_1
+- Lowered transition zone for beta weights
+- mkiau, GEOS_Agcm, and inc-part of GEOSmkiau all changed
+  following Larry's change to used DELP in place of PS to
+  calculate IAU increment.
+
+21Jun2016
+- Merge with Heracles-5_2_p1
+  Not all GCM files are the same. The following are 
+  changed from the GCM tag:
+  GEOSagcm_GridComp/GEOS_AgcmGridComp.F90
+  GEOSagcm_GridComp/GEOSphysics_GridComp/GEOSsurface_GridComp/GEOSland_GridComp/GEOScatch_GridComp/mk_restarts/mk_Restarts
+  GEOSmkiau_GridComp/DynVec_GridComp.F90
+  GEOSmkiau_GridComp/GEOS_mkiauGridComp.F90
+ These are largely related to the implementation of 4dIAU
+    
+- Update CO2 used in GSI: now taking it from cbkg.eta file
+  This means: users must update CO2 in their gocart restart files by running
+  the following command line (gogo.x in FVROOT/bin):
+  gogo.x -s Chem_Registry.rc -t Chem_Registry.rc -i USER.gocart_internal_rst.yyyymmdd_hhz.bin -o new.bin -c 40e-6 -r RESOLUTION -l 72
+  where resolution is something like c360, or c90, etc (see gogo.x command line info)
+
+  NOTES: 
+     1 - Users running ensemble ADAS must do the same for each membe of the ensemble
+     2 - Make sure Chem_Registry.rc is consistent w/ gocart RSTs being used
+     3 - The first cycle of the DAS will take slightly less radiance than usual simply 
+         because the cbkg.eta file will likely have old CO2 levels; unless cbkg has been 
+	 corrected some other way. This will correct itself as the DAS cycles.
+
+- Add knobs to relocate and track vortex in ensemble DAS
+
+23Mar2016
+- update GSI to merge with ncep-gsi-r68292
+  (this involves considerable updates to the convinfo file - considerable
+  changes in the wind selection and QC).
+
+22Mar2016
+- update EnKF with initial implementation of aerosol capability
+
+18Mar2016
+- back to 24Jun2011 background error covariance (Amal still tunning coming update)
+- using sfcio to read fix ncep-sfc file w/ vegtype and all
+- update CRTM to: ncep-crtm-REL-2_2_3-r60152_gmao-build 
+
+29Feb2016
+- permanently add QR/QS to GSI background
+  NOTE: This requires RST updates for members and central DAS
+  users activating MERRA-2 settings will need to be careful
+- GSI merge w/ NCEP-r65747
+
+21Oct2015
+
+- NST analysis (new defaults)
+  o GSI settings uses NST analysis
+  o IAU constructs DTSDT increment
+  o model has diurnal layer on and takes in DTSDT increment
+- GSI now uses GMAO-maintained prepob error table 
+  (errors set to be consistent w/ MERRA)
+
+20Sep2015
+---------
+- brough in Wei's and Jing's work on correlated obs and full-res observer,
+respectively:
+   rt-gsi-5137p3-JGuoObvsr2 original tag: jg-gsi-EnADAS-5_13_4p3_obs-redistr-r2
+   rt-gsi-5137p3-WeiCorrObs original tag: wgu-GSIsa_m3-pert-04Oct14-BBC_bundle-2_BR_01
+
+In default configuration these changes are zero diff to the GSI in EnADAS-5_13_7p3
+
+22Apr2014
+---------
+- Merge with Jinang Jun's gmi/tmi bug fix:
+  jjin_EnADAS-5_13_7_tmi_gmi_qcbug_fix
+- Merge with Min-Jeong's QC updates: mkim-EnADAS-5_13_6-iextraQC
+  including de-activation of HIRS chns 7-11
+- Merge with Wei Gu's tag: wgu-GSIsa_m3-pert-04Oct14-BBC_bundle-2
+  adjustments to interchannel observation error correlations software 
+  (still off)
+- Revisit (tightened) RAOB observation errors (prepobs_errtable.global)
+  consequently GSI now reads prepobs_errtable and bypasses errors in prepbufr file
+
+01Dec2014
+---------
+Tag name: GSIsa_m3-pert-01Dec14_merge-r47948
+GSI has been updated and is now merged with changes from NCEP as of their
+last trunk update in November 2014 (r47948). Specifically, local changes
+include:
+a) revamped background bias correction mechanism (GMAO)
+b) clean up version of GMI/TMI (GMAO)
+c) cosmetic loop-level optimization (NCEP)
+d) Revisted dot-product (an attempt to reproducibility across PEs; NCEP)
+e) near-generalization to hybrid component to allow more flexible 
+   specification of ensemble covariance (GMAO)
+
+
+03Jun2014
+---------
+- Fully merged with NCEP's trunk as of end of May2014.
+- Bring in GMI/TMI (beyond NCEP trunk) from Jianjin Jin
+- Add all main sensors of Metop-b (per x0012_metb) as default
+- Add SSMI/S (per x0012_metb) as default
+- Add CrIS (per x0012_cs) as default
+- Use of GPS up to 60km with down-weighted AMSUA-chn14 (per x0014_so14)
+
+28Feb2014
+---------
+- Sync w/ NCEP trunk (merged version: r36859)
+
+29Sep2013
+---------
+- automatic determination of observing system for GSI; this is how it works:
+   o User chooses OBSCLASS as usual (either thru fvsetup or by hand) in main
+     script
+   o assuming to proper entry (corresponding to the obs class in question) 
+     exists in gsi.rc.tmpl (and gsi_sens.rc.tmpl), the GSI will match the 
+     naming it uses with the actual filename obtained from the acquire_obs
+     by looking at obsys.rc. For example, the env var OBSCLASS requests the 
+     the class ncep_prep_bufr. A call
+
+           append_gsigcrc.pl obsys.rc GSI_GridComp.rc
+
+     to the program append_gsigcrc.pl will look into obsys.rc, figure out
+     that the ncep_prep_bufr class brings in file with template name
+               gdas1.%y4%m2%d2.t%h2z.prepbufr.ublk 
+     and  append the class and the filename template to GSI_GridComp.rc.
+
+     Assuming the file gsi.rc.tmpl has a line like:
+!  dfile      dtype dplat  dsis  dval dthin dsfcalc  obsclass
+   prepbufr   t     null   t     1.0  0     0        ncep_prep_bufr
+   
+     the GSIsa program will match the obclass column in gsi.rc.tmpl
+     with the obsclass provided in GSI_GridComp.rc and create the proper
+     link between the actual file, say gdas1.20120319.t12z.prepbufr.ublk,
+     and the GSI desired name, prepbufr.
+
+    From this point on, there are only two files to edit when observing 
+    systems as added or updated: gsi.rc.tmpl (gsi_sens.rc.tmpl) and obsys.rc.
+
+    The special case related to when PREPQC is running is automatically
+    handled by append_gsigcrc.pl, where a link is created to a prep-bufr
+    file with an experiment name attached to it (a class called gmao_prep_bufr 
+    is added to GSI_GridComp.rc and expected in gsi.rc.tmpl).
+
+    NOTE: A technical point, most users shouldn't care for, is that
+          the obsclass in gsi.rc.tmpl is GMAO's only. The parts of 
+	  GSI that read OBS_INPUT table from the gsi.rc.tmpl file
+	  only know about the first 7 columns; the obsclass column
+	  is extra, and handled by the GMAO-specific file GSI_GridComp.F90.
+	  In the future, if other columns are added to OBS_INPUT, the GMAO
+	  column should always be placed at the end and GSI_GridComp adjusted
+	  accordingly.
+
+20Sep2013
+---------
+
+- Fixes to properly handle MLS Ozone observations (not only in GSI but also
+  fvsetup(silo.arc);  and ODS)
+
+- merge with ncep-gsi-r31500 (also add Kris/Jing changes to ozone)
+
+- GSI minimization now using BiCG with orthogonalization of gradients for the
+  forward DAS; backward DAS still uses sqrt(B) precond with orthogonalization
+
+- update bufr lib to BUFRLIB_v10-2-3
+
+07Sep2013
+--------
+
+- turn off chns 13 and 14 of HIRS3 and HIRS4 (Joa>Job, consistently)
+
+02Aug2013
+--------
+
+Preliminary merge with NCEP r30303 (local tag: ncep-gsi-r30303)
+
+o update to CRTM-2.1.3 (analysis pointing to temporary location of Coeffs)
+o important to average user:
+    - satinfo has now extra column for second-level qc (all set to 1 for now,
+    which means do nothing)
+    - scaninfo file includes more recent instruments 
+    - both satbias and satbang restarts need to have airs281SUBSET_aqua
+    replaced with airs281_aqua (mind the spaces)
+
+This merge is preliminary for the following reasons:
+
+- need to make sure SSMI/S modifications from NCEP and GMAO are correctly merged
+- need to make sure aircraft bias correction has been integrated properly
+- NCEP changes in read_ozone have largely been bypassed - need close look
+- aerosol and chem-constituents capability incorporated as from NCEP, which means 
+  code does not work for GMAO purposes: crtm_interface needs revision
+- SSU change in crtm_interface needs revision (Meta had a change that seems to
+  conflict with NCEP's)
+- hybrid knob has not been tested for GMAO purposes (merged code also not yet
+  tested for NCEP's dual resolution case)
+- NCEPgsi_Coupler: needs proper update; a couple of routines dependent on 
+                   grid2sub and sub2grid have been masked so code compiles;
+		   that is, NCEP-4dvar knob will not work in this perlim version
+
+  Relevant tags:
+    Standalone NCEP-mode (gsi.x):
+       - GSIsa_m0-ncep-r30303  - essentially, this is original NCEP r30303
+         with minor changes to work for GMAO 
+       - GSIsa_m0-gmao-r30303  - merged code (starting GMAO tag:
+         GSIsa_m3-pert-22Jul2013 which is the version of GSI in
+	 EnADAS-5_11_0_p7)
+    Standalone GMAO-mode (GSIsa.x):
+       GSIsa_m3-pert-r30303
+
+  It is important to notice that the versions related to this merge are not
+  yet fully consistent w/ the changes from 18Jun2013 and earlier - a full
+  merge is yet to be completed.
+
+18Jun2013
+---------
+- Changes to obs-impact related features:
+   o now asm.acq controls asm.eta location (typically required by obs impact calc)
+   o env var FCSTVERIFY defaults to asm but can be used to have obs-imp calculation
+   done wrt ana.eta by setting it to ana and placing ana.acq in run dir
+
+- Analysis now uses climatological CO2 to influence RTM calculations. 
+  This requires the background file named cbkg.eta; this is now the default
+  mode of running GSI. 
+  To de-activate this feature do as follows:
+    a) comment out table chem_guess in anavinfo file 
+    b)
+
+- Add NOAA-15 GOES, per Meta and Steve B. (and NCEP)
+
+23Jun2013
+---------
+
+- knob to allow sensitivity on increment to be calculated.
+  Instructions for how to use this feature:
+    Say, sensitivity on increment at 20130115_00z is to be calculated
+    a) touch a file named
+           standalone.20130115_00z+20130115_00z-20130115_00z
+       under the FVHOME/asens directory
+    b) as with regular analysis sensitivity runs, this calculation uses 
+       gsi_sens.rc.tmpl as driver of adjoint-GSI
+    note: output ODS files will show up under Y2013/M01/D15/H00 with name
+          type imp1_inc
+    c) if user wants to apply an initadj-like norm to the increment:
+       copy an existing initadj.rc to $FVHOME/asens/initadj4inc.rc and
+       edit at will
+    d) look in fvpsas.rc to properly set reference_eta_filename and
+    verifcation_eta_filename entries
+    e) make sure ana.acq brings in your reference and verification states

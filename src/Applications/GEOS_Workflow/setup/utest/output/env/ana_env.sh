@@ -1,0 +1,11 @@
+export SKIPANA=0
+export TIMEINC=360
+export ASYNBKG=180
+export DO4DVAR=0
+export ACFTBIAS=0
+export VAROFFSET=180
+export NVAROUTER=1
+export SPECRES=62
+export NOSFCANA=1
+export DO_0HR_IMP=0
+export VTXRELOC=1

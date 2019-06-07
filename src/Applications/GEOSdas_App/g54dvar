@@ -1,0 +1,571 @@
+#!/bin/csh -fx
+#
+# g54dvar driver script.
+#
+# This script runs the GEOS-5 4d-var assimilation system. This script
+# is based on the old fvpsas and for now it represents a simple swap
+# of mechanisms in fvpsas.
+#
+# !REVISION HISTORY
+#
+#  Years 2000-2006
+#  ---------------
+#                       See fvpsas.
+#
+#  Year 2007
+#  ---------
+#  05Mar2007 Todling    Initial stub of 4d-var script.
+#  12Mar2007 Todling    Passed testing for 6-hr assimilation intervals.
+#  13Jul2007 Todling    Add mechanisms to fully triger 4d-var.
+#  15Dec2007 Todling    Updated w/ Stassi's and Kokron's blend changes to fvpsas
+#  04Mar2009 Todling    Remove reference to traj files for adj tools
+#  19Mar2009 Todling    Add RenameRstCheckPoint_ 
+#  19Mar2009 Todling    - Remove cprs; revisited rst-staging to fcst
+#                       - Add TagAndCopyStraightForecastOutput_ to handle straight fcst
+#                       - Add QualityControlRun
+#                       - Diag2ods called after each analysis
+#  02Dec2011 Todling   Allow for observer to run in split mode (ie, separate from GCM)
+#  03Sep2012 Todling   Add IDF call
+#  29Apr2016 Todling   Update interface to Diag2ODS
+#  02May2016 Todling   Add GAAS analysis; only run in first iteration
+#
+#-----------------------------------------------------------------------------
+
+# Functions.csh must be somewhere in your path
+# --------------------------------------------
+  set Functions = ( `which Functions.csh` )
+  if ( $status ) then
+     echo $0": cannot find required Functions.csh"
+     exit 1
+  else
+     source $Functions[1]
+  endif
+
+# When "Verify" is set, non-zero return code from any user defined
+# csh Function causes this script to exit with the same return code; 
+# see Functions.csh
+# -------------------------------------------------------------------
+  set Verify
+  set Trace
+  Echo
+
+# Function definitions
+# --------------------
+  Use GEOSdas
+
+#                       M A I N    S C R I P T
+#                       ----------------------
+
+#  Getting started...
+#  ------------------
+   Call  Initialize_()
+   Call_ ParseCmdLine_  $argv 
+   Call  SanityCheck_()
+
+   setenv DO4DVAR 1
+
+#
+#
+#                 -------------------------------------
+#                  PART I - Prepare Working Directory 
+#                 -------------------------------------
+
+# Set up working directory and copy all the restart files along
+# with analysis resource files, model namelists and diagnostic table
+# file to this directory. The simulation is carried out here in
+# the working directory.
+# ------------------------------------------------------------------
+  cd $FVWORK
+
+# Copy resource files to working directory
+# ----------------------------------------
+  Call CopyResourceFiles_()
+
+# Set RSTSUFFIX for output GCM restart files (default: nc4)
+# ---------------------------------------------------------
+  setenv RSTSUFFIX nc4
+
+  set checktype_found = `grep -c DEFAULT_CHECKPOINT_TYPE: AGCM.rc.tmpl`
+  if ($checktype_found) then
+        set checktype = `echorc.x -rc AGCM.rc.tmpl DEFAULT_CHECKPOINT_TYPE`
+        if ($checktype == pbinary || $checktype == binary) then
+              setenv RSTSUFFIX bin
+        endif
+  endif
+
+# Define GCM's restart names
+# --------------------------
+  set grs_list = `grs_list.pl -rc AGCM.rc.tmpl -flg 1`
+  set grs_boot = `grs_list.pl -rc AGCM.rc.tmpl -flg 2`
+
+# Stage restarts in forecast mode ...
+# -----------------------------------
+  if ( $FORECAST ) then
+
+#       GEOS-5 forecast restarts
+#       ------------------------
+        Call CopyGcmRestarts4Forecast_()
+
+#       Determine time of trajectory output in forecast mode
+#       ----------------------------------------------------
+        Call DetermineTrjTimes_ ( TrjBegEpoch, TrjEndEpoch )
+
+#       Update HISTORY.rc for VORTEX tracker if MAP06
+#       ---------------------------------------------
+        if ( $blendrs || $blendg5 ) then
+             Call UpdateHistoryResource4Blend_Fcst_()
+        else
+             Call UpdateHistoryResource4Forecast_()
+        endif
+
+#       Link to GEOS-5 GCM boundary condition files
+#       -------------------------------------------
+        lnbcs $GcmBegDate || exit 95 
+
+                                                       zeit_ci.x blend
+#       G5/NCEP hybrid forecast restarts
+#       --------------------------------
+        if ( $blendrs ) then
+
+             Call BlendGcmNcepRestarts4Fcst_()
+
+        else if ( $blendg5 ) then  
+
+             Call BlendGcmG5Restarts4Fcst_()
+
+        endif
+                                                       zeit_co.x blend
+
+# .. or in DAS mode (with or without analysis)
+# --------------------------------------------
+  else 
+
+#  In any case, we need to stage the model restarts
+#  ------------------------------------------------
+                                                       zeit_ci.x CopyGCMRS
+   Call CopyGcmRestarts4DAS_()
+                                                       zeit_co.x CopyGCMRS
+
+#  If we are running an analysis, we must stage the analysis restarts
+#  ------------------------------------------------------------------
+   if ( $DOING_ANA ) then 
+                                                      zeit_ci.x CopyAnaRS
+        Call CopyAnaRestarts_() 
+                                                      zeit_co.x CopyAnaRS
+   endif 
+
+   wait # while copies are being done in the background
+
+#  Link to GEOS-5 GCM boundary condition files
+#  -------------------------------------------
+                                                       zeit_ci.x lnbcs 
+   lnbcs $GcmBegDate || exit 95 
+                                                       zeit_co.x lnbcs 
+
+  endif # running in FORECAST or DAS mode 
+
+
+# Make sure restarts are all there
+# --------------------------------
+                                                       zeit_ci.x VerifyRS
+  Call VerifyGcmRestarts_()
+                                                       zeit_co.x VerifyRS
+
+# Determine beginning/ending times for this run
+# ---------------------------------------------
+  Call DetermineSimulationTimes_()
+
+# -------------------------------------------------------
+# AMS Note: Need to standardize date/time variable names 
+#           The following is a suggestion:
+#  xxxTime  integer of the form hhmmss. e.g., 120000
+#  xxxDate  integer of the form yyyymmdd, e.g., 20010720
+#  xxxEpoch list of (date,time), e.g., (20010720 120000)
+# -------------------------------------------------------
+  Call DetermineExpTimes_ ( ExpEndEpoch )
+  Call DetermineGcmTimes_ ( GcmBegEpoch, GcmEndEpoch, GcmLenEpoch )  
+  Call DetermineAnaTimes_ ( $VAROFFSET, $GcmBegEpoch, $TIMEINC, \
+                            AnaBegEpoch, AnaFreqEpoch ) 
+
+# Are we done with the simulation?
+# --------------------------------
+  if (${nymd1} >= ${nymde} && ${nhms1} >= ${nhmse}) then
+      echo $myname": simulation already completed, stop."
+      exit 100
+  endif
+
+                                                       zeit_ci.x acquire
+
+# Acquire "replay" analysis or observations
+# -----------------------------------------
+  if ( ! $FORECAST && $AnaFreqEpoch[2] > 0 ) then
+
+#    Determine relevant time/frequency information
+#    ---------------------------------------------
+     Call DetermineAcquireTimes_()
+
+#    Acquire replay analysis...
+#    -----------------------------------------
+     if ( -e replay.acq ) then  
+
+          Call AcquireReplayAnalysis_()
+
+#    .. or observational data
+#    ------------------------
+     else if ( $DOING_ANA ) then
+
+          Call AcquireObservations_() 
+
+     endif
+
+  endif
+                                                       zeit_co.x acquire
+
+# Pre-analysis Quality Control
+# ----------------------------
+  if ( $DOING_ANA ) then
+                                                       zeit_ci.x PreAnaQC
+       Call PreAnalysisQC_()
+                                                       zeit_co.x PreAnaQC
+
+  endif
+
+  echo ""
+  /bin/ls -la
+  echo ""
+
+#
+#
+#                  -------------------------------
+#                   PART  IIa - Run the Poor Model
+#                  -------------------------------
+
+# Determine location of executables
+# ---------------------------------
+  Call DetermineExecutables_()
+
+# Set variables for Aerosol Analysis
+# ----------------------------------
+  if ( $GAAS_ANA ) then
+     Call InitAerosolAnalysis_()
+  endif
+
+# Run system in split executable mode
+# -----------------------------------
+  if ( $SPLITEXE ) then
+
+      Call SplitExecInit_()
+
+#     For each segment
+#     ----------------
+      @ seg = 0
+      while ( $seg < $nsegs )
+
+#            Determines times/frequencies for this segment
+#            ---------------------------------------------
+             Call SplitExecSegmentTimes_()
+
+#            Run quality control
+#            -------------------
+                                                       zeit_ci.x QCRun
+             Call QualityControlRun_()
+                                                       zeit_co.x QCRun
+
+#            Loop over 4d-var iterations
+#            ---------------------------
+             @ vitermax = $NVAROUTER
+             @ viter = 0
+             set final = 0
+             while ( $viter < ($vitermax + 1) )
+                     if( $viter == $vitermax ) set final = 1
+
+#                    Update remaining GCM resource files (caution: order dependent)
+#                    -----------------------------------
+                     Call UpdateAgcmResource4SplitExec_( $viter, $final )
+                     Call UpdateCapResource4SplitExec_( $final )
+                     Call UpdateHistoryResource4SplitExec_( $viter, $final )
+                     if ( $DO4DVAROBSVR ) then
+                         Call SetupObserver_( $viter, $final )
+                     endif
+
+#                    Produce initial trajectory slot
+#                    -------------------------------
+#                    Call StartTrajectory_()
+
+#                    Run the model/observer
+#                    ----------------------
+                                                       zeit_ci.x RunGcm
+                     Call SplitExecGcmRun_( $final )
+                                                       zeit_co.x RunGcm
+                     if ( $DO4DVAROBSVR ) then
+                                                       zeit_ci.x RunObsvr
+                        Call RunSplitObserver_( $viter, $final )
+                                                       zeit_co.x RunObsvr
+                                                       zeit_ci.x WrapObsvr
+                        Call WrapupObserver_( $viter, $final )
+                                                       zeit_co.x WrapObsvr
+                     endif
+
+#                    Run Aerosol Analysis
+#                    --------------------
+                     if ( $GAAS_ANA && $viter == 0 ) then
+
+#                       Check for bootstrap (see GAAS.BOOTSTRAP Notes in prologue)
+#                       -------------------
+                        if (( -e $FVHOME/run/gaas/GAAS.BOOTSTRAP ) && ( ! $?RUN_GAAS )) then
+                           setenv RUN_GAAS 1
+                           setenv RESET_AFTER_GAAS_BOOTSTRAP 1
+     
+                            set HISTinc = `$FVROOT/bin/edhist.pl -q -list inc: $FVWORK/HISTORY.rc.tmpl`
+                            $FVROOT/bin/edhist.pl -Xpm gas_N -i -q $FVWORK/HISTORY.rc.tmpl
+
+                            vED -i $FVWORK/GEOS_ChemGridComp.rc -vv ENABLE_GAAS=.FALSE.
+                            echo "cat $FVWORK/GEOS_ChemGridComp.rc"
+                            cat $FVWORK/GEOS_ChemGridComp.rc
+            
+                        else
+                            set aod_date = $gaasDateBeg
+                            set aod_time = $gaasTimeBeg
+
+                            Call AerosolAnalysis_()
+
+#                           Restore pre-BOOTSTRAP HISTORY collections and
+#                           reset ENABLE_GAAS in GEOS_ChemGridComp.rc, if necessary
+#                           -------------------------------------------------------
+                            if ($?RESET_AFTER_GAAS_BOOTSTRAP) then
+                                $FVROOT/bin/edhist.pl -i -q $FVWORK/HISTORY.rc.tmpl -Xall -I $HISTinc
+                                if ($GAASFDBK) then
+                                   vED -i $FVWORK/GEOS_ChemGridComp.rc -vv ENABLE_GAAS=.TRUE.
+                                   echo "cat $FVWORK/GEOS_ChemGridComp.rc"
+                                   cat $FVWORK/GEOS_ChemGridComp.rc
+                                endif
+                                unsetenv RESET_AFTER_GAAS_BOOTSTRAP
+                            endif
+    
+                        endif
+
+                     endif
+
+#                    Run the vortex tracker
+#                    ----------------------
+#                    Call SplitExecVortexTrackerRun_()
+
+#                    Couple Model to Analysis
+#                    ------------------------
+                                                       zeit_ci.x GcmToAna
+                     Call CoupleGcmToAna_( $nymdb, $nhmsb, $viter )
+                                                       zeit_co.x GcmToAna
+
+#                    Run the analysis if not doing replay
+#                    -----------------------------------
+                     Call UpdateGsiGridCompResource_( $viter, $final )
+                                                       zeit_ci.x RunAna
+                     Call AnalysisRun_( $viter, $final )
+                                                       zeit_co.x RunAna
+
+
+#                    Wait here for aerosol analysis if it is being fed back to GCM
+#                    -------------------------------------------------------------
+                     if ( $GAASFDBK && $viter == 0 ) then
+            
+                        # wait for background job to complete
+                        #------------------------------------
+                        if ($aod_parallel_flag) then
+                            wait
+
+                        # or wait for qsub'd job to complete
+                        #-----------------------------------
+                        else
+                            if ($?aodJobIDs) then
+                                $FVROOT/bin/jobIDfilter -w $aodJobIDs
+                                unsetenv aodJobIDs
+                            endif
+                        endif
+
+                        # check for job success
+                        #----------------------
+                        if (! $?GAASFAIL ) setenv GAASFAIL "/this/file/does/not/exist"
+                        if ( -e $GAASFAIL ) then
+                            mv $gaasLOG $gaasLOGx
+                            set msg = "FATAL ERROR: Aerosol Analysis FAILED, check $gaasLOGx"
+                            echo $myname": $msg"
+                            if ( $GAAS_IGNORE ) then
+                                echo "\$GAAS_IGNORE = ${GAAS_IGNORE}; IGNORING AEROSOL ANALYSIS ERROR"
+                            else
+                                if ( $log ) then
+                                     Err_Log.pl -N ${EXPID}.j -I $ERROR_ID -X $ERROR_EXP \
+                                                -C 92 -E 5 $ERROR_LOG_NAME \
+                                                -D "${EXPID}.j $msg"
+                                endif
+                                exit 92
+                            endif
+                        endif
+
+                     endif # <GAASFDBK>
+
+#                    Propagate initial increment with linear model
+#                    ---------------------------------------------
+                                                       zeit_ci.x TLMAInc0
+                     Call EvolveAinc0_( $viter, $final )
+                                                       zeit_co.x TLMAinc0
+
+#                    Convert analysis eta file into GCM restart
+#                    ------------------------------------------
+                                                       zeit_ci.x AnaToGcm
+                     Call CoupleAnaToGcm_( $viter, $final )
+                                                       zeit_co.x AnaToGcm
+
+#                    Convert GSI obs output to ODS
+#                    -----------------------------
+                                                       zeit_ci.x Diag2ODS
+                     Call Diag2ODSRun_( $viter, $final )
+                                                       zeit_co.x Diag2ODS
+
+#                    Calculate IDF-initialized state
+#                    -------------------------------
+                                                       zeit_ci.x IDFUpdate
+                     Call IDFUpdate_( $final )
+                                                       zeit_co.x IDFUpdate
+
+#                    Tag files coming out of forecasts with assimilation run
+#                    -------------------------------------------------------
+                     Call TagAndCopyStraightForecastOutput_( $final )
+
+                     @ viter++
+
+             end # loop over 4d-var iterations
+
+#            Convert GSI obs output to ODS
+#            -----------------------------
+             if ( $DO4DVAROBSVR ) then
+                                          zeit_ci.x Diag2ODS
+                Call Diag2ODSRun_( $viter, $final )
+                                          zeit_co.x Diag2ODS
+             endif
+
+#            Save desired restarts for future forecasts
+#            ------------------------------------------
+                                          zeit_ci.x SaveRstFcst
+             Call SaveRstForFcst_()
+                                          zeit_co.x SaveRstFcst
+
+#            Rename initial condition (relevant restarts) for next segment
+#            -------------------------------------------------------------
+                                          zeit_ci.x RenameRstChk
+             Call RenameRstCheckPoint_( $final )
+                                          zeit_co.x RenameRstChk
+
+             @ seg++
+
+      end # loop over analysis times
+
+#     Post processing
+#     ---------------
+      Call SplitExecPostProcessing_()
+
+# Single executable 
+# -----------------
+  else
+
+#     ------------------------------------------
+#     AMS Note: No provision for analysis yet...
+#     ------------------------------------------
+
+#     Run the GCM in either forecast or DAS mode
+#     ------------------------------------------
+                                                       zeit_ci.x RunGcm
+      Call SingleExecGcmRun_() 
+                                                       zeit_co.x RunGcm
+
+#     Run the vortex tracker (does not work)
+#     -------------------------------------
+                                                       zeit_ci.x VortexTrack
+      Call SingleExecVortexTrackerRun_()
+                                                       zeit_co.x VortexTrack
+
+ endif # split executable
+
+
+#   -------------------------------------------------------------------
+#   PART  IIb - Run Singular Vectors or Adjoint Sensitivity Calculation
+#   -------------------------------------------------------------------
+
+ if ( $FORECAST ) then
+
+    Call AdjointToolsRun_()
+
+ endif # < forecast >
+
+#
+#                  ---------------------------------
+#                   PART III - Final Post-processing
+#                  ---------------------------------
+
+# Be sure that all non-feedback aerosol analysis jobs have completed
+# ------------------------------------------------------------------
+  if ( ( $GAAS_ANA ) && ( ! $GAASFDBK ) ) then
+
+       if ($aod_parallel_flag) then
+           wait
+       else
+           if ($?aodJobIDs) then
+               $FVROOT/bin/jobIDfilter -w $aodJobIDs
+               unsetenv aodJobIDs
+           endif
+       endif
+
+  endif
+
+
+# If G5/NCEP initialization run
+# ------------------------------
+  if ( $FORECAST ) then
+
+       Call Geos5SaveFcstRestart_()
+
+  endif
+
+# Tag and copy forecast related files, making extra copies for
+#  staging area, if necessary
+# ------------------------------------------------------------
+                                          zeit_ci.x CopyForecastOut
+  Call TagAndCopyForecastOutput_()
+                                          zeit_co.x CopyForecastOut
+
+# Singular vector/adjoint sensitivity post processing
+# ---------------------------------------------------
+                                          zeit_ci.x AdjPostPro
+  Call AdjointToolsPostProcessing_()
+                                          zeit_co.x AdjPostPro
+
+# Tag various restarts and log files, making extra copies
+#  of restarts for recycling
+# -------------------------------------------------------
+                                          zeit_ci.x TagAndRecycle
+  Call FinalTaggingAndRecycling_()
+                                          zeit_co.x TagAndRecycle
+
+# Display profiler results
+# ------------------------
+  zeit_pr.x
+
+#
+#                  ------------------------------
+#                       PART IV - All Done
+#                  ------------------------------
+
+
+# Determine whether experiment is completed
+# -----------------------------------------
+  if (${nymd2} > ${nymde} || (${nymd2} == ${nymde} && ${nhms2} >= ${nhmse})) then
+    echo $myname": simulation just completed, no further job segments"
+    exit 101 
+  endif
+
+# All done
+# --------
+  Clean
+  exit 0
+
+#.
+#........................................................................................

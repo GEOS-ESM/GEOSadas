@@ -1,0 +1,2139 @@
+#!@DASPERL
+#
+# ANALYZER
+#
+# Main driver for the fvSSI analysis
+#
+# !REVISION HISTORY:
+#
+#  ?????????  Cruz      Initial code
+#  17Nov2003  Todling   Rename satbias file that's stored permanently
+#  27Feb2004  Todling   Updated to work with latest changes in SSI/GSI
+#  14May2004  Todling   Updated to have it working on NCEP's IBM
+#  24Jun2004  Todling   Updated default run to be 64-lev from NCEP stats
+#  20Oct2004  Todling   Added hooks to OIQC
+#  18Feb2005  Todling   Updated SGI compiler and mpt versions
+#  24Feb2005  Owens/RT  Generalized diag_ files template for silo.arc
+#  02Mar2005  Todling   Updated MIPSpro version to MIPSpro.7.4.2.0
+#  08Mar2005  Todling   Updated to handle high resolution GSI case (y386)
+#  11Apr2005  Todling   Added palm-related FVWORK setting
+#  12Apr2005  Kokron    Added MPI_MEMMAP_OFF for columbia to avoid failure!
+#  20Apr2005  Todling   Redefined default test date to date when AIRS' avail
+#  27Apr2005  Todling   Replaced helios references to lou
+#  10May2005  Todling   A number of small updates to cope w/ recent changes for G5DAS
+#  28Oct2005  Todling   Added vortex relocator env vars; adjustments to allow setup
+#                       native-grid analysis
+#  31Oct2005  RT/Owens  Added Run_Config for acquire to work properly; added xana/renamed
+#                       bkg files for when vortex is on
+#  06Jan2006  Todling   Updated default bkg errors to 08Nov2005 version
+#  02Feb2006  Todling   Redefined naming convention for gmao berror files;
+#                       replaced analon=540 by 544 - fix for native grid;
+#                       turned native analysis into default of setup
+#  26Apr2006  Todling   Renamed var controling diag2ods call
+#  01May2006  Todling   GCM-forced compiler update
+#  12May2006  WGu/RT    Updated default bkg errs to gmao12May2006
+#  12May2006  WGu/JGuo  Bug fix in grid type for y=544 case
+#  29Aug2006  WGu/JGuo  Updated default bkg errs to gmao29Aug2006
+#  21Sep2006  Meta/JCS  Added ".tmpl" to gmao_global_satinfo.rc file and
+#                       made modifications to recognize columbia as cfe
+#  05Oct2006  RT/JCS    Change bkg err stats location back to gmao12May2006
+#  09Oct2006  Meta/JCS	Add gmao_satinfo_base.rc and gmao_ssu_effcell_prs.rc
+#                       to @ag_files.
+#  03Nov2006  RT/WGu    Updated bkg err stats to 09Oct2006
+#  08Nov2006  Stassi    Added blacklist.rc
+#  13Dec2006  Todling   Small changes to bring GSI up to 2006_09 version
+#  03Apr2006  Stassi    /nobackup/$USER -> $NOBACKUP on palm; default $gid
+#  17Apr2007  Todling   Prep-work for ESMF-GSI
+#  12Jul2007  WGu/RT    Updated berror to 27Jun2007 
+#------------------------------------------------------------------
+
+ 
+#||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+# fvSSI Experiment setup 
+#||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+use English;
+use Env;                 # make env vars readily available
+use FindBin;             # so we can find where this script resides
+use File::Path;          # for mkpath()
+use File::Copy "cp";     # for cp()
+use File::Basename;      # for basename(), dirname()
+use Time::Local;         # time functions
+use Sys::Hostname;
+
+# FVROOT is where the binaries have been installed
+# ------------------------------------------------
+
+  $fvroot  = dirname($FindBin::Bin);
+  $fvroot  =~ s|/u/.realmounts/share|/share|;   # for portability accros
+                                                # NAS machines
+
+  $user = getlogin();
+
+# Assorted defaults
+# -----------------
+  defaults();
+
+# User defined options
+# --------------------
+  welcome();
+  while ( &get_setssi ){};
+  while ( &get_setgsi ){};
+  while ( &get_expid  ){};
+  while ( &get_fvhome ){};
+  while ( &get_times  ){};
+  while ( &get_skips  ){};
+  while ( &get_background){};
+  while ( &get_satbiasics){};
+  while ( &get_obsys  ){};
+
+# Define default input path
+# -------------------------
+  if ( $GFLAG == 2 ) {
+      $given_fvInput = "/nfsuser/g01/wx20td/share/fvInput";
+  } else {
+      $default = "/share/todling/fvInput";
+      unless ( $given_fvInput = $ENV{FVINPUT} ) { $given_fvInput = $default };
+  }
+  $fvStatic  = "$given_fvInput";
+  $fvDynamic = "$given_fvInput/Dynamic";
+
+# Create subdirectories in FVHOME
+# -------------------------------
+  mkdir_fvhome();
+  archiving_rules();
+
+# Copy files
+# ----------
+  copy_resources();
+# copy_background();
+
+# Finally, create the JOB scripts
+# -------------------------------
+  while ( &get_GID ){};;
+  create_bkgacq();
+  create_satacq();
+  create_archscript();
+  if ( $GFLAG == 2 ) {
+       create_ncep_script();
+  } else {
+       create_script();
+  }
+
+# Make sure ssh is defined properly
+# ---------------------------------
+  run_config();
+
+# All done
+# --------
+  goodbye();
+
+  exit 0;
+
+#||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+sub defaults {
+
+  $basedir = $ENV{BASEDIR};
+
+# Determine where running at DAO computer centers
+# -----------------------------------------------
+  @ComputingCenters = ("nas.nasa", "gsfc.nasa","ncep.noaa","nccs.nasa");
+  my $hname = hostname();
+  ($name, $alias, $addrtype, $length, @addrs) = gethostbyname($hname || "localhost");
+  if ( $name =~ m/$ComputingCenters[0]/i ||  $name =~ m/$ComputingCenters[1]/i ||  $name =~ m/$ComputingCenters[3]/i
+   || $alias =~ m/$ComputingCenters[0]/i || $alias =~ m/$ComputingCenters[1]/i || $alias =~ m/$ComputingCenters[3]/i) {
+       $DAO = 1;
+  } else {
+       $DAO = 0;
+  }
+  $gsfc  = ".gsfc.";
+  $gsfc2 = ".nccs.";
+  $ncep  = ".ncep.";
+  if ( $name =~ m/$gsfc/ || $alias =~ m/$gsfc/ || $name =~ m/$gsfc2/ || $alias =~ m/$gsfc2/) {
+    $GFLAG = 1;       #NCCS account (mintz, daley,...)
+  } elsif ( $name =~ m/$ncep/ ) {
+    $GFLAG = 2;
+  } else {
+    $GFLAG = 0;
+  }
+
+
+# Mass storage
+# ------------
+  if( $DAO == 1 ) {        #nas or gsfc accounts
+    if( $GFLAG == 1 ) {    #NCCS account (mintz, daley)
+      $mhost = $MHOST or $mhost = "mintz.gsfc.nasa.gov";
+    } else { $mhost = $MHOST or $mhost = "lou.nas.nasa.gov";}
+  }
+
+
+# Set default for experiment date/time and other
+# ----------------------------------------------
+  if ( $GFLAG == 2 ) {
+    $nymde = "20041215";
+    $nhmse = "120000  ";
+  } else {
+    $nymde = "20051230";
+    $nhmse = "000000  ";
+  }
+  $yyyye = substr($nymde,0,4);
+  $mme   = substr($nymde,4,2);
+  $nymdb = $nymde;
+  $nhmsb = $nhmse;
+  @synt  = ( 0 );
+  $ndays = "1       ";  # this is fixed at 1-day for now
+  $nsegs = "1       ";
+  $fdays = "1       ";
+  $ncpus = "16      ";
+  $jobn  = "ana"     ;
+
+  @as_files = ( 'ssi.rc','lnlist.rc','sac.nl.tmpl' );
+  @ag_files = ( 'gsi.rc','lnlist.rc','sac.nl.tmpl', 'gmao_airs_bufr.tbl', 'gmao_global_satinfo.rc', 'gmao_global_pcpinfo.rc', 
+                'gmao_global_ozinfo.rc', 'prepobs_prep.bufrtable', 'tlmadj_parameter.rc', 'gmao_global_convinfo.rc',
+		'gmao_satinfo_base.rc', 'gmao_ssu_effcell_prs.rc','gmao_global_blacklist.rc','GSI_GridComp.rc');
+
+  $version = "1.0";    #`cat $fvroot/etc/VERSION`;
+  $cvstag  = "Rel1";  #`cat $fvroot/etc/CVSTAG`;
+  #chomp($version);
+  #chomp($cvstag);
+  @tokens = split (/\:/,`grep ^$USER /etc/passwd`);
+  @user = split(/ /,$tokens[4]);
+
+  $today = `date`; chomp($today);
+  $nameta = "fvSSI v$version setup on $today by @user.\n\n";
+
+  $jcap = 62;
+  $nsig = 64;
+  $ssires = "T62L64";
+  $gsires = "l28y96";
+  $berror_env = " ";
+
+# Determine which analysis system
+# -------------------------------
+  $anassi  = 1  if ( -e "$fvroot/bin/ssi.x" );
+  $anagsi  = 1  if ( -e "$fvroot/bin/gsi.x" );
+
+  if ( $anassi  ) { @rc_files = @as_files };
+  if ( $anagsi  ) { @rc_files = @ag_files };
+
+
+
+}
+
+#||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+sub welcome {
+
+  system clear;
+  print <<EOF;
+ 
+         -------------------------------------------
+          fvDAS Stand-Alone Analysis Setup Procedure
+         -------------------------------------------
+
+         Using executables from $fvroot  
+  
+EOF
+
+}
+ 
+#||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+sub get_expid {
+
+  $expid = "fvssi_"."$ssires" if ( $anassi ) ; 
+  $expid = "fvgsi_"."$gsires" if ( $anagsi ) ;
+
+  print <<"EOF";
+ 
+----- 
+EXPID 
+----- 
+         This is a short string which will serve as an identifier 
+         for labeling all output files produced during this 
+         experiment. 
+ 
+         DEFAULT: $expid 
+ 
+EOF
+
+  print "EXPID? "; chomp($ans = <STDIN> ); $ans and $expid = $ans;
+
+  if ( $expid ) {
+     return 0;
+  }
+  else {
+     warn ">>> ERROR <<< invalid experiment ID $expid";
+     return1 ;
+  }
+}
+
+#||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+sub get_fvhome {
+
+  $jobqueue1 = "";
+  if ( $GFLAG == 2 ) {
+      $fvhome = $FVHOME or $fvhome = "/ptmp/$USER/$expid";
+      $qsub = "llsubmit";
+  } else {
+    if ( `uname -n` =~ "halem" ) {
+      $fvhome = $FVHOME or $fvhome = "/gmao/das/$USER/$expid";
+      $qsub = "bsub <";
+      $jobqueue1 ="BSUB -q gmao_hi";
+    } elsif ( `uname -n` =~ "tropic" ) {     
+        $fvhome = $FVHOME or $fvhome = "/scratch/$USER/$expid";
+        $qsub = "qsub";
+    } elsif ( `uname -n` =~ "cfe" ) {     
+        $mywork = "/nobackup";
+        foreach $cnode ( < /nobackup[1-3][a-d] > ) {
+           if (-d "$cnode/$USER") {
+              $mywork = "$cnode";
+              last;
+           }
+        }
+        $fvhome = $FVHOME or $fvhome = "$mywork/$USER/$expid";
+        $jobqueue1 ="#PBS -q science\@c${cnode}";
+    } elsif ( `uname -n` =~ "palm" ) {     
+        $fvhome = $FVHOME or $fvhome = "$NOBACKUP/$expid";
+        $mywork = "\$TMPDIR";
+        $qsub = "qsub";
+    } else {
+        $fvhome = $FVHOME or $fvhome = "/scratch1/$USER/$expid";
+        $qsub = "qsub";
+    }
+  }
+
+  print <<"EOF";
+ 
+------
+FVHOME 
+------ 
+         This is the HOME directory for your fvSSI experiment. 
+         Resource files, restarts and system output will be stored 
+         under this directory. Usually it will contain subdirectories: 
+ 
+         ana/        first guess/analysis output 
+         diag/       diagnostic field output 
+         etc/        listings and other odds & ends 
+         fvInput/    process required inputs 
+         obs/        post-analysis ODS files 
+         rs/         restart files 
+         run/        resource files 
+         recycle/    latest restart files 
+ 
+         DEFAULT: $fvhome 
+ 
+EOF
+
+  print "FVHOME? "; chomp($ans = <STDIN> ); $ans and $fvhome = $ans;
+
+  $basen = basename("$fvhome");
+  $diren = dirname("$fvhome");
+  if ( "$expid" ne "$basen" ) {
+        $FVHOME = "$diren/$basen/$expid";
+        return warn ">>> ERROR <<< FVHOME must end with '$expid'";
+  }
+
+  if ( -d $fvhome ) {
+     print "\n The directory $fvhome already exists. Clean it? [y] ";
+     chomp($ans = <STDIN> ); $ans = "y" unless $ans;
+     if ( (lc $ans) eq "y" ) {
+          rmtree($fvhome) or
+               return warn ">>> ERROR <<< cannot erase directory $fvhome";
+          mkpath($fvhome) or
+               return warn ">>> ERROR <<< cannot create directory $fvhome";
+        }
+  }
+  else {
+     print "\n The directory $fvhome does not exist. Create it now? [y] ";
+     chomp($ans = <STDIN> ); $ans = "y" unless $ans;
+     if ( (lc $ans) eq "y" ) {
+          mkpath($fvhome) or
+            return warn ">>> ERROR <<< cannot create directory $fvhome";
+     }
+   }
+
+   $fvhome =~ s|/u/.realmounts||; # for portability across NAS machines
+
+   return 0
+}
+
+#||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+sub get_background {
+
+  $bkgfreq   = 3*60; # Default is 3-hr background
+  $anafreq   = 6; $anafreq_mn = $anafreq * 60; # Default is 6-hr analysis
+  $varoffset = 3 * 60; # Default is 3-hr from analysis
+  $varcase   = 3;      # Default is 3dvar
+  if ( $GFLAG == 2 ) {
+      $ident_def = "gdas1";
+      $fvics_def = "/nfsuser/g01/wx20td/data/t${specres}l${siglevs}/$ident_def/ana/Y2004/M04";
+  } else {
+    if ( `uname -n` =~ "tropic" ) {
+      if ( $siglevs == 64 ) {
+           $ident_def = "fvssi_test1";
+           $fvics_def = "/scratch/ccruz/$ident_def/ana/Y${yyyye}/M${mme}";
+      } else {
+          die "no available initial conditions in this platform";
+      }
+    } elsif ( `uname -n` =~ "columbia" ) {
+      if ( $siglevs == 64 ) {
+          die "no available initial conditions in this platform";
+      } elsif ( $siglevs == 72 ) {
+           $ident_def = "g5b3p1_c1";
+           $fvics_def = "lou:/u/todling/$ident_def/ana/Y${yyyye}/M${mme}";
+      } else {
+          die "cannot handle the number of levels requested";
+      }
+    } else {
+      if ( $siglevs == 64 ) {
+           $ident_def = "fvgsi_01";
+           $fvics_def = "/output/dao_ops/fvdas-1_5/$ident_def/ana/Y${yyyye}/M${mme}";
+      } elsif ( $siglevs == 72 ) {
+           $ident_def = "b11_b1";
+           $fvics_def = "/output/todling/$ident_def/ana/Y${yyyye}/M${mme}";
+      } else {
+          die "cannot handle the number of levels requested";
+      }
+    }
+  }
+  $ident = $ident_def;
+  $fvics = $fvics_def;
+
+  print <<"EOF";
+ 
+------------------ 
+INITIAL CONDITIONS 
+------------------ 
+ 
+         The following start-up data file types are needed for a simulation:
+
+                    bkg.eta: upper-air eta
+                    bkg.sfc: surface background
+
+         These files are normally available from a DAS experiment. The 
+         default for this here is: 
+
+         DEFAULT   EXPID: $ident_def
+         DEFAULT     DIR: $fvics_def
+         DEFAULT VAR-WINDOW(hr):    $anafreq
+         DEFAULT BKG-FREQUENCY(mn): $bkgfreq
+         DEFAULT VAR-OFFSET(mn):    $varoffset
+         DEFAULT VAR-CASE:          $varcase
+        
+         Answer "later" if you prefer to copy these files later.
+
+EOF
+
+  print "EXPID? ";  chomp($ans = <STDIN> ); $ans and $ident = $ans;
+
+  return 0 if $ident eq "later";
+
+  print "DIR? ";  chomp($ans = <STDIN> ); $ans and $fvics = $ans;
+
+
+  if ( $fvtrf eq 'n' ) {
+    $hh = substr($nhmsb,0,2);
+    @rs_files = ( "sigbkg.${nymdb}_${hh}z.bin","sfcbkg.${nymdb}_${hh}z.bin" );
+    $bkgtmpl  = "$ident.sigbkg.%y4%m2%d2_%h2z.bin";
+    $sbkgtmpl = "$ident.sfcbkg.%y4%m2%d2_%h2z.bin";
+  } else {
+    $hh = substr($nhmsb,0,2);
+    @rs_files = ( "bkg.eta.${nymdb}_${hh}z.hdf","bkg.sfc.${nymdb}_${hh}z.hdf" );
+    $bkgtmpl  = "$ident.bkg.eta.%y4%m2%d2_%h2z.hdf";
+    $sbkgtmpl = "$ident.bkg.sfc.%y4%m2%d2_%h2z.hdf";
+  }
+
+  foreach $fname ( @rs_files ) {
+    unless ( -e "$fvics/${ident}.$fname" ) {
+     print "Cannot determine file: $fvics/${ident}.$fname existence. Continue? [y] ";
+     chomp($ans = <STDIN> ); $ans = "y" unless ( $ans );
+     die "Missing resource files"  unless lc $ans =~ /^y/;
+    }
+  }
+  
+  print "Window of variational analysis (hours; multiple of 6-hrs)? ";
+  chomp($ans = <STDIN> ); $ans and $anafreq = $ans;
+  $anafreq =~ s/ //g;   $nhmse =~ s/ //g;
+  if ( $anafreq < 6 ) {
+    warn ">>> ERROR <<< invalid analysis frequency (must be >= 6)";
+    return 1;
+  }
+  $anafreq_mn = $anafreq * 60; # reset default in minutes
+
+  print "Background availability (minutes)? ";
+  chomp($ans = <STDIN> ); $ans and $bkgfreq = $ans;
+  $bkgfreq =~ s/ //g;   $nhmse =~ s/ //g;
+  if ( $bkgfreq < 1 ) {
+    warn ">>> ERROR <<< invalid background frequency (must be >= 1)";
+    return 1;
+  }
+
+  print "Offset time from analysis time within var window (min>=0)? ";
+  chomp($ans = <STDIN> ); $ans and $bkgfreq = $ans;
+  $varoffset =~ s/ //g;   $nhmse =~ s/ //g;
+  if ( $varoffset < 1 ) {
+    warn ">>> ERROR <<< invalid var offset time (must be >= 1)";
+    return 1;
+  }
+
+  print "3Dvar (=3) or 4Dvar (=4))?";
+  chomp($ans = <STDIN> ); $ans and $varcase = $ans;
+  $varcase =~ s/ //g;
+
+}
+
+#||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+sub get_satbiasics {
+
+  if ( $GFLAG == 2 ) {
+      $fvsatics = "/nfsuser/g01/wx20td/data/$ident/ana/Y${yyyye}/M${mme}";
+  } else {
+    if ( `uname -n` =~ "tropic" ) {
+      $fvsatics = "/scratch/ccruz/$ident/ana/Y${yyyye}/M${mme}";
+    } else {
+      $fvsatics = "/output/dao_ops/fvdas-1_5/$ident/rs/Y${yyyye}/M${mme}";
+    }
+  }
+
+  return 0 if ( $satbias eq "n" );
+
+  print <<"EOF";
+ 
+------------------------------------- 
+SATBIAS CORRECTION INITIAL CONDITIONS 
+------------------------------------- 
+ 
+         The allows you to specify satellite bias correction files for
+         the static analysis run. These extension on these filenames are 
+
+                    rst.satbias.yyyymmdd.txt: satellite bias correction coeffs
+                    rst.satbang.yyyymmdd.txt: satellite angular correction coeffs
+
+         DEFAULT DIR: $fvsatics
+        
+         Answer "later" if you prefer to copy these files later.
+
+EOF
+
+  print "FVSATICS-DIR? ";  chomp($ans = <STDIN> ); $ans and $fvsatics = $ans;
+
+  return 0 if $ident eq "later";
+
+  # NOTE: For now, these files are only available at 18z from previous runs
+  @st_files = ( "rst.satbias.${nymdb}_18z.txt","rst.satbang.${nymdb}_18z.txt" );
+  foreach $fname ( @st_files ) {
+    unless ( -e "$fvsatics/${ident}.$fname" ) {
+      warn ">>> ERROR <<< cannot find start-up file $fvsatics/${ident}.$fname";
+    }
+  }
+
+
+}
+#||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+sub get_times {
+
+print <<"EOF";
+
+----------
+TIME RANGE
+----------
+         The following parameters control the time length of the
+         whole experiment, as well as the size of each job segment,
+         and the number of CPU\'s to use:
+
+         PARAMETER   DEFAULT                DESCRIPTION
+         ---------   -------     -------------------------------------------------
+         NYMD_beg    $nymdb      Beginning year-month-day
+         NHMS_beg    $nhmsb      Beginning hour-min-sec
+         NYMD_end    $nymde      Ending year-month-day
+         NHMS_end    $nhmse      Ending hour-min-sec
+         SYNTIMES    00z           Synoptic times (0z,6z...) to analyze in a day
+         NCPUS       $ncpus      Number of CPUS to use
+         NICKNAME    $jobn      Job nickname (max 5 characters)
+
+         NOTE: The actual experiment starting date/time is determined
+               by the dynamics restart file.
+
+EOF
+
+  #FDAYS       $fdays      Length (in days) of run segments
+  $nsegs = $fdays;
+
+  print "  Beginning year-month-day? ";
+  chomp($ans = <STDIN> ); $ans and $nymdb = $ans;
+
+  print "  Begining hour-min-sec? ";
+  chomp($ans = <STDIN> ); $ans and $nhmsb = $ans;
+
+  print "  Ending year-month-day? ";
+  chomp($ans = <STDIN> ); $ans and $nymde = $ans;
+
+  print "  Ending hour-min-sec? ";
+  chomp($ans = <STDIN> ); $ans and $nhmse = $ans;
+
+  print "  Synoptic times (enter as 0, 6, 12, 18)? ";
+  chomp($ans = <STDIN> ); $ans and @synt = split(/,/,$ans);
+
+  $scalar = @synt;
+  if ($scalar>1) { print "  New synoptic times : @synt\n"; }
+
+  #print "  Length (in days) of run segments? ";
+  #chomp($ans = <STDIN> ); $ans and $fdays = $ans;
+
+  print "  Number of CPUs? ";
+  chomp($ans = <STDIN> );  $ncpus = $ans if $ans;
+  if ( $ncpus == 1 ) { $mem = "500mb"; }
+
+  print "  Job nickname? ";
+  chomp($ans = <STDIN> );  $jobn = $ans if $ans;
+
+  if ( $ndays < 1 ) {
+    warn ">>> ERROR <<< invalid length of job segment";
+    return 1;
+  }
+  if ( $ncpus < 1 ) {
+    warn ">>> ERROR <<< invalid number of CPUs";
+    return 1;
+  }
+  if ( $nymde < $nymdb ) {
+    warn ">>> ERROR <<< ending date earlier than starting date";
+    return 1;
+  }
+  if ( ($nymdb == $nymde) and ($nhmse < $nhmsb) ) {
+    warn ">>> ERROR <<< ending time earlier than starting time";
+    return 1;
+  }
+
+  # rename in case date/time are different from defaults
+
+  #$bkgeta = $expid.".bkg.eta.".$nymde.".hdf";
+  #$bkgsfc = $expid.".bkg.sfc.".$nymde.".hdf";
+  #@rs_files = ( $bkgeta, $bkgsfc );
+
+  $yyyye = substr($nymde,0,4);
+  $mme   = substr($nymde,4,2);
+
+  return 0 ;
+
+}
+
+#||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+sub get_setssi {
+
+  return 0 unless ( $anassi );  # this is SSI-specific
+
+  $specres = "62";
+  $siglevs = "64";
+  $gsihgrd = "0";
+  $anaexec = "ssi.x";
+  $anajobn = "fvssi.j";
+
+print <<"EOF";
+
+------------
+SSI SETTINGS
+------------
+         The following parameters are SSI specific settings.
+
+         PARAMETER   DEFAULT                DESCRIPTION
+         ---------   -------     ---------------------------------------
+         SPECRES     $specres     Spectral truncation
+         SIGLEVS     $siglevs     Analysis sigma levels
+
+EOF
+
+  print "  Triangular spectral truncation? ";
+  chomp($ans = <STDIN> );  $specres  = $ans if $ans;
+
+  print "  Analysis vertical levels (sig))? ";
+  chomp($ans = <STDIN> );  $siglevs  = $ans if $ans;
+
+  $ssires = "T${specres}L${siglevs}";
+
+  if ( $ssires ne "T62L64" && $ssires ne "T62L28" && $ssires ne "T170L42" && $ssires ne "T170L64" && $ssires ne "T254L64" && $ssires ne "T382L64" ) {
+       warn ">>> ERROR <<< invalid resolution: ${ssires}";
+       print "  VALID RESOLUTION COMBINATIONS: T62L28, T62L64, T170L42, T170L64, T254L64, T382L64";
+       return 1;
+  }
+
+  return 0 ;
+
+}
+#||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+sub get_setgsi {
+
+  return 0 unless ( $anagsi );  # this is GSI-specific
+
+  if ( $GFLAG == 2 ) {
+    $specres = "254";
+    $siglevs = "64";
+    $gsihgrd = "258";
+    $analat  = "181"; $gcmlat = $analat;
+    $analon  = "288"; $gcmlon = $analon;
+    $geosgrd = "NA";
+  } else {
+    $specres = "254";
+    $siglevs = "72";
+    $gsihgrd = "NA";
+    $analat  = "91";  $gcmlat = $analat;
+    $analon  = "144"; $gcmlon = $analon;
+    $geosgrd = "b";
+  }
+  $anaexec = "gsi.x";
+  $anajobn = "fvgsi.j";
+  $hybrid = ".false.";
+  $hgridtype = 0;
+
+print <<"EOF";
+
+------------
+GSI SETTINGS
+------------
+         The following parameters are GSI specific settings.
+
+         PARAMETER   DEFAULT                DESCRIPTION
+         ---------   -------     ---------------------------------------
+         SPECRES     $specres         Spectral truncation
+         SIGLEVS     $siglevs          Analysis sigma levels
+         GSIGRDS     $gsihgrd         GSI (gaussian) grid representation
+         GEOSGRD     $geosgrd          GEOS-5 native grid resolution (a,b,c,d,e)
+
+EOF
+
+  print "  Triangular spectral truncation? ";
+  chomp($ans = <STDIN> );  $specres  = $ans if $ans;
+
+  print "  Analysis vertical levels (sig))? ";
+  chomp($ans = <STDIN> );  $siglevs  = $ans if $ans;
+
+  print "  GSI grid resolution? ";
+  chomp($ans = <STDIN> );  $gsihgrd = $ans if $ans;
+
+  if ( $gsihgrd ne "NA" ) {
+
+       $gsires = "l${siglevs}y${gsihgrd}";
+
+       if ( $gsires ne "l28y96" && $gsires ne "l64y96" && $gsires ne "l42y192" && $gsires ne "l64y192" && $gsires ne "l64y258" && $gsires ne "l32y96"  && $gsires ne "l64y386" && $gsires ne "l72y96" && $gsires ne "l72y258" && $gsires ne "l72y386" ) {
+            warn ">>> ERROR <<< invalid resolution: ${gsires}";
+            print "  VALID RESOLUTION COMBINATIONS: l28y96, l64y96, l42y142, l64y192, l64y258, l32y96";
+            return 1;
+       }
+
+  } else {
+
+       print "  GEOS grid resolution instead? ";
+       chomp($ans = <STDIN> );  $geosgrd = $ans if $ans;
+       if ( $geosgrd eq "a"  ) { $analon =   72; $analat =  46; } # define resolution of grid file
+       if ( $geosgrd eq "b"  ) { $analon =  144; $analat =  91; }
+       if ( $geosgrd eq "c"  ) { $analon =  288; $analat = 181; }
+       if ( $geosgrd eq "d"  ) { $analon =  544; $analat = 361; $hgridtype = 1 } # note: for now 1/2 deg is hecked to 544 instead of 540
+       if ( $geosgrd eq "e"  ) { $analon = 1080; $analat = 721; }
+
+       $gsires  = "l${siglevs}_${analon}x${analat}";
+       $gsihgrd = $analat;
+
+       $berror_env = "setenv BERROR  \$NCEPINPUT/gsi/gmao27Jun2007/l${siglevs}x${analon}y${analat}.berror_stats_ps.bin";
+  }
+  $gcmlon = $analon;
+  $gcmlat = $analat;
+  if( $analon == 544 ) { $gcmlon = 540 };
+
+  $dospc = 1;
+  if ( $siglevs == 72 ) { 
+       $dospc  = 0;
+       $hybrid = ".true.";
+  }
+
+
+
+  return 0 ;
+
+}
+#||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+sub get_skips {
+
+  $solver  = "y";
+  $fvtrf   = "y";
+  $satbias = "n";
+  $defoiqc = "n"; $oiqc = 0;
+
+  print <<"EOF";
+
+-----------------------------------------------------------------------
+Select whether you want to skip the analysis (run transformations only)
+-----------------------------------------------------------------------
+
+         PARAMETER   DEFAULT
+         ---------   -------
+         transf      $fvtrf   (run transforms)
+         solver      $solver  (run analysis solver)
+         satbias     $satbias (run satellite bias correction)
+         oiqc        $defoiqc (run OIQC)
+
+EOF
+
+  print "  Run transforms? ";
+  chomp($ans = <STDIN> );  $fvtrf = $ans if $ans;
+  print "  Run analysis solver? ";
+  chomp($ans = <STDIN> );  $solver = $ans if $ans;
+
+  if ( $fvtrf eq 'n' ) { 
+       $skipTRANSF = "-skipTRANSF";
+       print "  Setting up for analysis-only case (spec files should be available)\n";
+  }
+  if ( $solver eq 'n' ) { 
+       $skipSOLVER = "-skipSOLVER"; 
+       print "  The analysis solver will not run.\n";
+  } else {
+    print "  Run satellite bias correction? ";
+    chomp($ans = <STDIN> );  $satbias = $ans if $ans;
+    print "  Run OIQC? ";
+    chomp($ans = <STDIN> );  $defoiqc = $ans if $ans;
+    if ( $defoiqc eq 'y' ) { $oiqc = 1 };
+  }
+  if ( $satbias eq 'n' ) { $skipSATBIAS = "-skipSATBIAS"; };
+
+  return 0 ;
+
+}
+
+#||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+sub get_obsys {
+
+  my($nobs, @a, @b, $i, $m, $n, $nn, $clsfile);
+
+  $FBIN = $fvroot . "/bin";
+  $FETC = $fvroot . "/etc";
+  if ( $GFLAG == 1 ) { 
+    if ( `uname -n` =~ "tropic" ) {
+      $obsysrc = "$FETC/obsys-test.rc";  # testing
+    }
+    else {
+      $obsysrc = "$FETC/obsys-nccs.rc";  #NCCS account
+    }
+  } elsif ( $GFLAG == 2 ) { 
+    $obsysrc = "$FETC/obsys-ncep.rc"; 
+  } else { 
+    $obsysrc = "$FETC/obsys-nas.rc"; 
+  }
+
+  $reqobs = $FBIN . "/require_obsys";
+  $drst = $fvics . "/$rs_files[0]";
+
+# Get class list first
+# --------------------
+  print("\n------------------------\n");
+  print("OBSERVING SYSTEM CLASSES\n");
+  print("------------------------\n");
+#  $com = $FBIN . "/require_obsys -drc $obsysrc -class_desc";
+  #$com = "$reqobs -drc $obsysrc -class_desc";
+
+  #$rc = system($com);
+  #if($rc != 0) {return 1;}
+
+# Initialization run to check the default obsclass
+# ------------------------------------------------
+#  if(!$get_obsys_flag) {
+#    $get_obsys_flag = 1;
+
+# initial set up of obsclass $obsclass
+# ------------------------------------
+# Save class_desc to a file $HOME/#_o_class
+#    $clsfile = $ENV{HOME} ."/#_o_class";
+#    $com = "$reqobs -drc $obsysrc -class_desc > $clsfile";
+#    $rc = system($com);
+#    $obsclass = "ssi_obs_ncep";
+#  }  #end of if(!$get_obsys_flag) { initialization
+
+# Regular run
+# -----------
+  if ( $GFLAG == 2 ) {
+       $obsclass = "ssi_prep_bufr,ssi_osbuv_bufr,ssi_spssmi_bufr,ssi_sptrmm_bufr,ssi_1bamua_bufr,ssi_1bamub_bufr,ssi_1bhrs2_bufr,ssi_1bhrs3_bufr,ssi_1bmsu_bufr";
+  } else {
+       $obsclass1 = "ncep_osbuv_bufr,ncep_sptrmm_bufr,ncep_ssmit_bufr,ncep_spssmi_bufr";
+       $obsclass2 = "ncep_1bamua_bufr,ncep_1bamub_bufr,ncep_1bhrs2_bufr,ncep_1bhrs3_bufr,ncep_1bmsu_bufr,ncep_prep_bufr,gmao_airs_bufr";
+       $obsclass = "$obsclass1,$obsclass2";
+  }
+  if ( $solver ne 'n' ) {
+       print("\n  DEFAULT : $obsclass\n\n");
+       print "OBSERVING SYSTEM CLASSES? ";
+       chomp($ans = <STDIN> ); $ans and $obsclass = $ans;
+  }
+
+  #$obsclass=~ s/^ | //g;
+  #if(length($obsclass) <= 1) {
+  #  print("Please type in obclass names...\n");
+  #  $obsclass = "";
+  #  return 1;
+  #}
+  $obClass = "-obsclass " . "$obsclass";
+  return 0 ;
+
+}
+#||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+sub mkdir_fvhome {  # create directories on FVHOME
+
+  foreach $dir (ana,diag,daotovs,etc,obs,rs,run,recycle,fvInput) {
+    if ( $opt_v ) { print ">>> ERROR <<< creating $fvhome/$dir";}
+    unless ( -d "$fvhome/$dir" ) {
+      mkpath("$fvhome/$dir")  or
+        die ">>> ERROR <<< cannot create directory $fvhome/$dir";
+    }
+  }
+
+# Some directories are not meant to be archived
+# ---------------------------------------------
+  foreach $dir ( run, recycle, fvInput ) {
+          die ">>> ERROR <<< $! "
+          if system("/bin/touch $fvhome/$dir/.no_archiving");
+  }
+
+# Record FVROOT so scripts know where to look
+# -------------------------------------------
+  die ">>> ERROR <<< $! " if system("/bin/echo $fvroot > $fvhome/.FVROOT");
+
+}
+
+#||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+sub archiving_rules {
+
+   open(ARC,">$fvhome/run/silo.arc")
+   || die "Cannot create $fvhome/run/silo.arc: $!";
+
+   print ARC <<"EOF";
+#
+# Archiving rules for fvSSI output.
+#
+# This is a PESTO (Put Experiment in Mass STOrage) resource file.
+#
+# The environment variable PESTOROOT refers to the destination archive
+# location, e.g.,
+#
+# a) for moving files to SILO:
+#    setenv PESTOROOT '/scratch1/dasilva'
+#
+# b) for moving files to MASS STORAGE:
+#    setenv PESTOROOT 'dasilva\@helios1.nas.nasa.gov:'
+#
+# This file has been automatically generated by fvssisetup.
+#...........................................................................
+#
+#                   ---------------
+#                   ANALYSIS FILES
+#                   ---------------
+#
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg%c%c.eta.%y4%m2%d2.hdf
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg%c%c.sfc.%y4%m2%d2.hdf
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.ana.eta.%y4%m2%d2.hdf
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.ana.eta.%y4%m2%d2_%h2z.hdf
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.siganl.%y4%m2%d2_%h2z.bin
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.sfcanl.%y4%m2%d2_%h2z.bin
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.ana.satbias.%y4%m2%d2_%h2z.txt
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.ana.satbang.%y4%m2%d2_%h2z.txt
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.ingesfile.%y4%m2%d2_%h2z.bin
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.ana.prepqc.%y4%m2%d2_%h2z.bfr
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.xana.sfc.%y4%m2%d2_%h2z.hdf
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.xbkg.sfc.%y4%m2%d2_%h2z.hdf
+#
+#                   --------------------
+#                   GSI DIAGNOSTIC FILES
+#                   --------------------
+#
+\${PESTOROOT}%s/obs/Y%y4/M%m2/%s.ana.obs.%y4%m2%d2_%h2z.ods
+#
+\${PESTOROOT}%s/obs/Y%y4/M%m2/%s.diag_conv_%c%c%c.%y4%m2%d2%h2
+\${PESTOROOT}%s/obs/Y%y4/M%m2/%s.diag_gps_bnd_%c%c%c.%y4%m2%d2%h2
+\${PESTOROOT}%s/obs/Y%y4/M%m2/%s.diag_pcp_ssmi_%c%c%c_%c%c%c.%y4%m2%d2%h2
+\${PESTOROOT}%s/obs/Y%y4/M%m2/%s.diag_pcp_tmi_%c%c%c_%c%c%c.%y4%m2%d2%h2
+\${PESTOROOT}%s/obs/Y%y4/M%m2/%s.diag_sbuv%c_%c%c%c_%c%c%c.%y4%m2%d2%h2
+\${PESTOROOT}%s/obs/Y%y4/M%m2/%s.diag_omi_aura_%c%c%c.%y4%m2%d2%h2
+\${PESTOROOT}%s/obs/Y%y4/M%m2/%s.diag_hirs%c_%c%c%c_%c%c%c.%y4%m2%d2%h2
+\${PESTOROOT}%s/obs/Y%y4/M%m2/%s.diag_sndr_%c%c%c_%c%c%c.%y4%m2%d2%h2
+\${PESTOROOT}%s/obs/Y%y4/M%m2/%s.diag_sndr_g%c%c_prep_%c%c%c.%y4%m2%d2%h2
+\${PESTOROOT}%s/obs/Y%y4/M%m2/%s.diag_imgr_%c%c%c_%c%c%c.%y4%m2%d2%h2
+\${PESTOROOT}%s/obs/Y%y4/M%m2/%s.diag_airs_aqua_%c%c%c.%y4%m2%d2%h2
+\${PESTOROOT}%s/obs/Y%y4/M%m2/%s.diag_msu_%c%c%c_%c%c%c.%y4%m2%d2%h2
+\${PESTOROOT}%s/obs/Y%y4/M%m2/%s.diag_amsu%c_%c%c%c_%c%c%c.%y4%m2%d2%h2
+\${PESTOROOT}%s/obs/Y%y4/M%m2/%s.diag_mhs_%c%c%c_%c%c%c.%y4%m2%d2%h2
+\${PESTOROOT}%s/obs/Y%y4/M%m2/%s.diag_ssmi_%c%c%c_%c%c%c.%y4%m2%d2%h2
+\${PESTOROOT}%s/obs/Y%y4/M%m2/%s.diag_amsre_aqua_%c%c%c.%y4%m2%d2%h2
+\${PESTOROOT}%s/obs/Y%y4/M%m2/%s.diag_ssmis_%c%c%c_%c%c%c.%y4%m2%d2%h2
+\${PESTOROOT}%s/obs/Y%y4/M%m2/%s.diag_sndrD%c_%c%c%c_%c%c%c.%y4%m2%d2%h2
+\${PESTOROOT}%s/obs/Y%y4/M%m2/%s.diag_ssu_%c%c%c_%c%c%c.%y4%m2%d2%h2
+#
+#                   --------------------
+#                   GSI PROGNOSTIC FILES
+#                   --------------------
+#
+\${PESTOROOT}%s/prog/Y%y4/M%m2/%s.ana.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
+#
+
+#                 -----------------
+#                     LISTING
+#                 -----------------
+#
+\${PESTOROOT}%s/etc/Y%y4/M%m2/%s.ods.log.%y4%m2%d2_%h2z.txt
+\${PESTOROOT}%s/etc/Y%y4/M%m2/%s.ana.log.%y4%m2%d2_%h2z.txt
+\${PESTOROOT}%s/etc/Y%y4/M%m2/%s.zeit.reg.%y4%m2%d2_%h2z.txt
+#
+#                 -----------------
+#                   RECYCLABLES
+#                 -----------------
+#
+\${PESTOROOT}%s/recycle/%s.pcpbias
+\${PESTOROOT}%s/recycle/%s.satbias
+\${PESTOROOT}%s/recycle/%s.satbang
+\${PESTOROOT}%s/recycle/%s.ingesfile
+#
+EOF
+
+   close(ARC);
+
+# make identical copy for flexibility
+  cp("$fvhome/run/silo.arc","$fvhome/run/mstorage.arc")
+    || die ">>> ERROR <<< $!";
+
+}
+
+sub get_GID {
+
+    return 0 if ( $GFLAG == 2 ); # no GID at NCEP
+ 
+    my ($gspon);
+    chomp($gspon =`which getsponsor`);
+    $counter = 0;
+    if ( -e "/share/fvpsas/etc/MapGIDLoginIDTask.rc"  ) {
+
+# Read in the mapping between GID and DAO tasks
+        open(file,"/share/fvpsas/etc/MapGIDLoginIDTask.rc")
+        || die "cannot open GID database /share/fvpsas/etc/MapGIDLoginIDTask.rc";
+        @map = <file>;
+        close(file);
+
+        @ValidTasks = grep(/$user/, @map);
+
+        print <<"EOF";
+
+-----
+GID
+-----
+         UNIX group ID to which resources used should be credited.
+
+         Our records show that you currently work on the following DAO tasks.
+         If this list is not current, please contact the CSG engineering group.
+
+ user         GID      Description                               Team lead
+-------------------------------------------------------------------------------
+ @ValidTasks
+
+EOF
+
+# Create an array of GIDs that this user can charge resources to.
+        foreach $line (@ValidTasks) {
+            chomp;
+            ($line = $line) =~ s/^ *(.*) *$/$1/;
+            ($line = $line) =~ s/\s+/ /g;
+            @tmp = split(/ /, $line);
+            @ValidGIDs[$counter] = $tmp[1];
+            $counter = $counter + 1;
+        }
+
+        print "GID? ";  chomp($ans = <STDIN> ); $ans and $gid = $ans;
+    $valid = 0;
+
+        if ( $gid ) {
+            foreach (@ValidGIDs) {
+                if ($_ eq $gid) {
+#                   print "You chose a valid GID.\n";
+                    $group_list="PBS -W group_list=$gid";
+                    return 0;
+                }
+            }
+            if ( $valid eq 0 ) {  #check if user entered a valid GID
+                warn ">>> ERROR <<< You cannot run experiments under ID $gid";
+                warn ">>> ERROR <<< Please chose a GID from the provided list.";
+                return 1 ;
+            }
+        } else {  # return with error because user did not enter a GID
+            return 1 ;
+        }
+    } elsif ( length($gspon) <=0 || $gspon =~ /not in/ ) {
+        print("\n GID command getsponsor not found or
+    GID entry not required for this computing center.\n");
+        return 0;
+    } elsif ( `uname -n` =~ "halem" ) {
+        print `getsponsor`;
+        print "\n GID? ";  chomp($ans = <STDIN> ); $ans and $gid = $ans;
+        $gid =~ s/ //g;   $ggid = " " . $gid . " ";
+        if((`getsponsor` =~ $ggid) && (length($gid) >= 3)) {
+          $group_list="BSUB -P $gid";
+          return 0;
+        } else {  # return with error because user did not enter a GID
+          warn ">>> ERROR <<< Please chose a GID from the provided list.";
+          return 1;
+        }
+    } else {
+
+	# Look for default group ID
+	#--------------------------
+	$dummy = `getsponsor`;
+	@sponsorinfo = split /\s/, $dummy;
+	$groupID = "";
+	$n = 0;
+	while ($n < $#sponsorinfo) {
+	    if ($sponsorinfo[$n] =~ /g\d{4}/) {
+		$groupID = $sponsorinfo[$n];
+		#--break  # uncomment this line to make 1st entry the default
+	    }
+	    $n++;
+	}
+
+	# Query for group ID
+	#-------------------
+	print `getsponsor`;
+	if ("$groupID" ne "") {
+	    print "\n GID? [$groupID] ";
+	} else {
+	    print "\n GID? ";
+	}
+	chomp($ans = <STDIN> ); $gid = $groupID unless($gid = $ans);
+        $gid =~ s/ //g;   $ggid = " " . $gid . " ";
+        if((`getsponsor` =~ $ggid) && (length($gid) >= 3)) {
+          $group_list="PBS -W group_list=$gid";
+          return 0;
+        } else {  # return with error because user did not enter a GID
+          warn ">>> ERROR <<< Please chose a GID from the provided list.";
+          return 1;
+        }
+    }
+
+}
+
+
+#||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+sub create_bkgacq {
+
+   open(ACQ,">$fvhome/run/bkg.acq")
+   || die "Cannot create $fvhome/run/bkg.acq: $!";
+
+   print ACQ <<"EOF";
+#
+# Sample acquire file for acquiring restart files.
+#
+# This file has been automatically generated by fvssisetup.
+#...........................................................................
+#
+$fvics/$bkgtmpl
+$fvics/$sbkgtmpl
+#
+EOF
+
+   close(ACQ);
+
+}
+
+#||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+sub create_satacq {
+
+   open(ACQ,">$fvhome/run/sat.acq")
+   || die "Cannot create $fvhome/run/sat.acq: $!";
+
+   print ACQ <<"EOF";
+#
+# Sample acquire file for acquiring restart files.
+#
+# This file has been automatically generated by fvssisetup.
+#...........................................................................
+#
+$fvics/%s.pcpbias.%y4%m2%d2_%h2z.txt
+$fvics/%s.satbias.%y4%m2%d2_%h2z.txt
+$fvics/%s.satbang.%y4%m2%d2_%h2z.txt
+#
+EOF
+
+   close(ACQ);
+
+}
+
+#||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+# Edit ssi.rc under run
+sub ed_ncep_rc {
+
+  return 0 unless ( $anassi || $anagsi );
+
+  my($frun, $ft, $com, $rc, $rcd, $nlon);
+  my($gsinlon, $ssinlath, $ssinlon);
+  my($nceprc);
+
+  if( $anagsi ) { $nceprc = "gsi.rc" };
+  if( $anassi ) { $nceprc = "ssi.rc" };
+
+  $ft   = "$fvhome/run/tmp.rc";
+  $frun = "$fvhome/run/$nceprc";
+
+  open(LUN,"$frun") || die "Fail to open $nceprc: $!\n";
+  open(LUN2,">$ft") || die "Fail to open tmp.rc: $!\n";
+
+  # Change variables to the correct inputs
+  #---------------------------------------
+
+  if ( $nceprc eq "gsi.rc" ) {
+
+     $gsinlon = 2 * $gsihgrd;
+     if( "$gsinlon" eq "516") { $gsinlon = "512" }; # RT: hacked in for now
+     if( "$gsinlon" eq "772") { $gsinlon = "768" }; # RT: hacked in for now
+     while( defined($rcd = <LUN>) ) {
+       chomp($rcd);
+       if($rcd =~ /\@JCAP/) {$rcd=~ s/\@JCAP/$specres/; }
+       if ( $geosgrd eq "NA" ) {
+            if($rcd =~ /\@GSINLAT/) {$rcd=~ s/\@GSINLAT/$gsihgrd/; }
+            if($rcd =~ /\@GSINLON/) {$rcd=~ s/\@GSINLON/$gsinlon/; }
+       } else {
+            if($rcd =~ /\@GSINLAT/) {$rcd=~ s/\@GSINLAT/$analat/; }
+            if($rcd =~ /\@GSINLON/) {$rcd=~ s/\@GSINLON/$analon/; }
+       }
+       if($rcd =~ /\@NSIG/) {$rcd=~ s/\@NSIG/$siglevs/g; }
+       if($rcd =~ /\@HYBRID/) {$rcd=~ s/\@HYBRID/$hybrid/g; }
+       if($rcd =~ /\@INTFC/) {$rcd=~ s/\@INTFC/$hybrid/g; }
+       if($rcd =~ /\@HGRIDTYPE/) {$rcd=~ s/\@HGRIDTYPE/$hgridtype/g; }
+       if($rcd =~ /\@VARWINDOW/) {$rcd=~ s/\@VARWINDOW/$anafreq/g; }
+       if ($varcase == 4) {
+           if($rcd =~ /\@L4DVAR/) {$rcd=~ s/\@L4DVAR/.true./g; }
+           if($rcd =~ /\@MITER/)  {$rcd=~ s/\@MITER/1/g; }
+       } else {
+           if($rcd =~ /\@L4DVAR/) {$rcd=~ s/\@L4DVAR/.false./g; }
+           if($rcd =~ /\@MITER/)  {$rcd=~ s/\@MITER/2/g; }
+       }
+       print(LUN2 "$rcd\n");
+     }
+
+  } else {
+
+     if ( $specres eq "62"  ) { $ssinlon = 192; $ssinlath = 48  };
+     if ( $specres eq "170" ) { $ssinlon = 384; $ssinlath = 96  };
+     if ( $specres eq "254" ) { $ssinlon = 512; $ssinlath = 129 };
+     if ( $specres eq "382" ) { $ssinlon = 768; $ssinlath = 193 };
+#?   if ( $specres eq "254" ) { $ssinlon = 768; $ssinlath = 192 };
+
+     while( defined($rcd = <LUN>) ) {
+       chomp($rcd);
+       if($rcd =~ /\@JCAP/) {$rcd=~ s/\@JCAP/$specres/; }
+       if($rcd =~ /\@NLATH/) {$rcd=~ s/\@NLATH/$ssinlath/; }
+       if($rcd =~ /\@GSINLON/) {$rcd=~ s/\@GSINLON/$ssinlon/; }
+       if($rcd =~ /\@NSIG/) {$rcd=~ s/\@NSIG/$siglevs/; }
+       print(LUN2 "$rcd\n");
+     }
+
+  }
+  close(LUN);
+  close(LUN2);
+  cp($ft, $frun);
+  unlink $ft;
+}
+
+
+#||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+# Edit gsigridcomp.rc under run
+sub ed_gsigridcomp_rc {
+
+  return 0 unless ( $anassi || $anagsi );
+
+  my($frun, $ft, $com, $rc, $rcd, $nlon);
+  my($gsinlon, $ssinlath, $ssinlon);
+  my($myrc);
+
+  { $myrc = "GSI_GridComp.rc" };
+
+  $ft   = "$fvhome/run/tmp.rc";
+  $frun = "$fvhome/run/$myrc";
+
+  open(LUN,"$frun") || die "Fail to open $nceprc: $!\n";
+  open(LUN2,">$ft") || die "Fail to open tmp.rc: $!\n";
+
+  # Change variables to the correct inputs
+  #---------------------------------------
+
+     $gsinlon = 2 * $gsihgrd;
+     if( "$gsinlon" eq "516") { $gsinlon = "512" }; # RT: hacked in for now
+     if( "$gsinlon" eq "772") { $gsinlon = "768" }; # RT: hacked in for now
+     while( defined($rcd = <LUN>) ) {
+       chomp($rcd);
+       if($rcd =~ /\@JCAP/) {$rcd=~ s/\@JCAP/$specres/; }
+       if ( $geosgrd eq "NA" ) {
+            if($rcd =~ /\@GCMNLAT/) {$rcd=~ s/\@GCMNLAT/$gcmlat/; }
+            if($rcd =~ /\@GCMNLON/) {$rcd=~ s/\@GCMNLON/$gcmlon/; }
+            if($rcd =~ /\@GSINLAT/) {$rcd=~ s/\@GSINLAT/$gsihgrd/; }
+            if($rcd =~ /\@GSINLON/) {$rcd=~ s/\@GSINLON/$gsinlon/; }
+       } else {
+            if($rcd =~ /\@GCMNLAT/) {$rcd=~ s/\@GCMNLAT/$gcmlat/; }
+            if($rcd =~ /\@GCMNLON/) {$rcd=~ s/\@GCMNLON/$gcmlon/; }
+            if($rcd =~ /\@GSINLAT/) {$rcd=~ s/\@GSINLAT/$analat/; }
+            if($rcd =~ /\@GSINLON/) {$rcd=~ s/\@GSINLON/$analon/; }
+       }
+       if($rcd =~ /\@NSIG/) {$rcd=~ s/\@NSIG/$siglevs/g; }
+       if($rcd =~ /\@HGRIDTYPE/) {$rcd=~ s/\@HGRIDTYPE/$hgridtype/g; }
+       if($rcd =~ /\@VARWINDOW/) {$rcd=~ s/\@VARWINDOW/$anafreq/g; }
+       print(LUN2 "$rcd\n");
+     }
+
+  close(LUN);
+  close(LUN2);
+  cp($ft, $frun);
+  unlink $ft;
+}
+
+
+#||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+sub copy_resources {
+
+  foreach $fname ( @rc_files ) {
+
+    if ( -e "$fvroot/etc/$fname" ) {
+       cp("$fvroot/etc/$fname","$fvhome/run/$fname")
+          || die "Cannot write file $fvhome/run/$fname: $!";
+    }
+    else {
+      print "$0: Cannot find resource file $fvroot/etc/$fname\n";
+      $missing = 1;
+    }
+
+  }
+
+
+  # Edit ssi.rc or gsi.rc
+  ed_ncep_rc();
+  ed_gsigridcomp_rc();
+
+  if ( $missing ) {
+     die ">>> ERROR <<< Missing resource files\n\n";
+  }
+
+  if($GFLAG == 1) { 
+    if ( `uname -n` =~ "tropic" ) {
+      `cp $FETC/obsys-test.rc $fvhome/run/obsys.rc`;  # test
+    }
+    else {
+      `cp $FETC/obsys-nccs.rc $fvhome/run/obsys.rc`;  #NCCS account
+    }
+  } elsif ( $GFLAG == 2 ) { 
+    `cp $FETC/obsys-ncep.rc $fvhome/run/obsys.rc`; 
+  } else {
+    `cp $FETC/obsys-nas.rc $fvhome/run/obsys.rc`; 
+  }
+
+}
+
+#||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+sub copy_background {
+
+  print "\n    Copying start-up files ...\n";
+
+  foreach $fname ( @rs_files ) {
+    print ".";
+    if ( -e "$fvics/${ident}.$fname" ) {
+       cp("$fvics/${ident}.$fname","$fvhome/recycle/${ident}.$fname")
+          || die "Cannot write file $fvhome/recycle/${ident}.$fname: $!";
+    }
+    else {
+      die "Cannot find start-up file $fvics/${ident}.$fname";
+    }
+  }
+
+  foreach $fname ( @st_files ) {
+    print ".";
+    if ( -e "$fvsatics/${ident}.$fname" ) {
+       if ( $fname =~ "satbias" ) {
+           cp("$fvsatics/${ident}.$fname","$fvhome/recycle/${expid}.satbias")   # will rename files
+          || warn "Cannot write file $fvhome/recycle/${ident}.satbias: $!";
+       } elsif ( $fname =~ "satbang" ) {
+           cp("$fvsatics/${ident}.$fname","$fvhome/recycle/${expid}.satbang")   # will rename files
+          || warn "Cannot write file $fvhome/recycle/${ident}.satbang: $!";
+       } else {
+           cp("$fvsatics/${ident}.$fname","$fvhome/recycle/${expid}.$fname")    # will rename files
+          || warn "Cannot write file $fvhome/recycle/${ident}.$fname: $!";
+       }
+    }
+    else {
+      warn " Cannot find $fvsatics/${ident}.$fname";
+    }
+  }
+
+  print "    done!\n";
+
+}
+
+#||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+sub create_archscript {
+ my ($proot);
+
+ if ($DAO == 1) {     #nas or gsfc accounts
+   if($GFLAG == 1) {  #NCCS Account
+     $proot = "/output/${USER}";
+   } else { $proot = "lou:/u/${USER}"; }
+ } else { $proot = $mhost.":"; }
+ #print("    DAO=$DAO; GFLAG=$GFLAG; proot=$proot; mhost=$mhost\n");
+
+ open(SCRIPT,">$fvhome/run/fvarchive.j") or
+ die ">>> ERROR <<< cannot write $fvhome/run/fvarchive.j";
+
+print  SCRIPT <<"EOF";
+#!/bin/csh -x 
+# 
+# ------------------------------ 
+#$group_list 
+#$jobqueue1
+#PBS -N arch_$expid 
+#PBS -l ncpus=1
+#PBS -l walltime=1:00:00 
+#PBS -S /bin/csh 
+#PBS -V 
+#PBS -j eo 
+#BSUB -J arch_$expid 
+#BSUB -n 4 
+#BSUB -W 3:00 
+#BSUB -o arch_$expid.%J 
+#BSUB -e arch_$expid.%J 
+# ------------------------------ 
+# 
+# PBS front end for fvarchive(). 
+# 
+# ------------------------------ 
+ 
+  setenv FVROOT  $fvroot  # fvSSI installation root dir 
+  setenv FVHOME  $fvhome  # experiment home directory 
+  if(`uname -s` == "OSF1" ) then 
+     setenv FVSSIWORK  /gmao/das/$user/tmp.\$\$ # temporary fix while TMPDIR not avail on Halem 
+  endif 
+  if( (`uname -s` == "Linux") && (`uname -m` == "ia64") ) then
+     setenv FVSSIWORK  `pwd`            # temporary fix while TMPDIR not avail on Halem
+     setenv FVSSIWORK  $FVSSIWORK/tmp.\$\$
+  endif 
+  if(`uname -s` == "IRIX64" ) then 
+     if(`uname -n` == "sunrise" ) then 
+         setenv FVSSIWORK  \$TMPDIR   # working directory 
+     else 
+         setenv FVSSIWORK  \$SCRATCH1 # working directory 
+     endif 
+  endif 
+
+  if(\$\?arch_date) then
+    set adate = "-d \$arch_date"
+  else
+    set adate = ""
+  endif
+  $fvroot/bin/fvarchive \$adate -f -r $proot -H $fvhome -a $fvhome/run/mstorage.arc
+
+EOF
+
+ close(SCRIPT);
+
+}
+
+#||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+sub create_ncep_script {
+
+ my $ncpus = 48;    # wired in until I figure how to do this correctly on the IBM
+
+ open(SCRIPT,">$fvhome/run/$anajobn") or
+ die ">>> ERROR <<< cannot write $fvhome/run/$anajobn";
+
+ print  SCRIPT <<"EOF";
+#!/bin/sh
+## Below are LoadLeveler (IBM queueing system) commands
+#@ job_name=gsi254
+#@ error=gsi254.e\$(jobid)
+#@ job_type=parallel
+#@ network.MPI=csss,shared,us
+#@ total_tasks=$ncpus
+#@ blocking=unlimited
+#@ class= dev
+#__@ group=devonprod
+#@ wall_clock_limit = 1:00:00
+#@ notification=error
+#__@ requirements = Feature == "batch_node"
+#@ queue
+
+
+# ------------------------------
+#
+# fvGSI driver script.
+#
+# This file has been automatically generated by fvssisetup.
+#
+# ------------------------------
+ myname = `basename \$0`
+ set -x
+
+#
+#                 ---------------------------------
+#                  PART I - Prepare the Enviroment
+#                 ---------------------------------
+
+# Experiment environment
+# ----------------------
+  export ARCH=`uname -s`                   # Numbers of CPU to run job
+  export NCPUS=$ncpus                      # Numbers of CPU to run job
+  export EXPID=$expid                      # experiment ID
+  export CASE=\$EXPID                      # experiment ID (for LSM's sake)
+  export FVROOT=$fvroot                    # fvGSI installation root dir
+  export FVHOME=$fvhome                 # experiment home directory
+  export FVSSIWORK=/ptmp/$USER/fvwork.\$\$   # working directory
+
+# Analyzer options
+# ----------------
+  export OIQC=$oiqc                        # determine if OIQC will run
+  export skipTRANSF=$skipTRANSF            # determine if transforms are called
+  export skipSOLVER=$skipSOLVER            # determine if solver is called (gsi.x)
+  export skipSATBIAS=$skipSATBIAS          # determine if ang-sat bias correction is called
+  export NCEPINPUT=$fvStatic               # location of fixed files
+  export TIMEINC=$anafreq_mn               # time window of (4dvar) analysis
+  export ASYNBKG=$bkgfreq                  # freq of background
+  export VAROFFSET=$varoffset              # abs value of time off from 1st synoptic hour of var window
+  export D2ODS=1                           # convert GSI-DIAG files to ODS
+  export DOSPC=$dospc                      # do ss2fv
+  export NOSFCANA=1                        # no surface analysis
+
+  export SIGLEVS=$siglevs
+  export SPECRES=$specres
+  export GSIHGRD=$gsihgrd
+  setenv SPECVTX=\$SPECRES
+  setenv LEVSVTX=64                        # this is the wired-in number of levels when tracking reloc used
+ 
+# Add FVROOT/bin to front of path so fvSSI binaries are found first
+# -----------------------------------------------------------------
+  export BASEDIR=$basedir
+  export LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:\${BASEDIR}/\${ARCH}/lib
+  export PATH=\${PATH}:\$FVHOME/run
+  export PATH=\${PATH}:\$FVROOT/bin
+  export PATH=\${PATH}:\$BASEDIR/\$ARCH/bin
+
+  export FVHOME=\$FVHOME  # compatibility with fvsetup
+  export FVWORK=\$FVSSIWORK  # ditto
+
+  /bin/mkdir -p \$FVSSIWORK            # create working directory
+
+  echo \$FVWORK > \$FVHOME/.FVWORK     # record working directory
+
+# MPI/OMP specific environment variables
+# --------------------------------------
+  export OMP_NUM_THREADS=\$NCPUS
+  export MP_SHARED_MEMORY=yes
+  export MP_COREFILE_FORMAT=lite
+  export MP_LABELIO=yes
+
+# Run GSI/SSI under Parallel Operating Environemnt (poe) on NCEP IBM
+# ------------------------------------------------------------------
+  ANAX=`whence $anaexec`
+  SACX=`whence sac.x`
+  FVSSI=`whence fvssi`
+  export MPIRUN_ANA="poe hpmcount \$ANAX"
+  export MPIRUN_SAC="poe hpmcount \$SACX"
+
+# Make sure files are acessible
+# -----------------------------
+  umask 022
+
+EOF
+
+# Continue with rest of script
+# ----------------------------
+  print  SCRIPT <<"EOF";
+
+# Start by cleaning working directory
+# -----------------------------------
+  /bin/rm -rf   \$FVSSIWORK
+  /bin/mkdir -p \$FVSSIWORK
+  cd \$FVSSIWORK
+
+  iden=$ident
+
+# Run fvSSI for Several (1-day) Run Segments
+# ------------------------------------------
+
+  ymd=$nymdb
+  hms=$nhmsb
+
+# 
+#                 -----------------------------------------
+#                  PART II - Run fvSSI for 1 synoptic time
+#                 -----------------------------------------
+
+                             cd \$FVSSIWORK
+
+  \$FVSSI\ $obClass \$skipTRANSF \$skipSOLVER \$skipSATBIAS \$FVHOME \$FVWORK \$FVWORK \$ymd \$hms \$iden
+
+  rc=\$status
+
+  if [ \$rc -eq 100 ]
+  then
+       echo \$myname": simulation already completed, no further job segments"
+       exit 0
+  fi 
+ 
+  if [ \$rc > 0 && \$rc < 100  ]
+  then 
+       mv \$FVSSIWORK \$FVHOME/morgue  # save runtime environment
+       touch \$FVHOME/morgue/.no_archiving
+       echo \$myname": abnormal error condition from fvssi..."
+       echo \$myname": runtime environment saved under \$FVHOME/morgue" 
+       exit 1 
+  fi 
+
+# 
+#                 ----------------------------------------
+#                      PART III - Data Archival
+#                 ---------------------------------------
+
+                          cd \$FVHOME/run
+
+
+# Move files to FVHOME for archiving and/or post-processing
+# ---------------------------------------------------------
+  ls -altuF \$FVSSIWORK
+  export PESTOROOT=`dirname \$FVHOME`
+  pesto -v -d \$FVSSIWORK -arc silo.arc -cp /bin/mv
+
+
+# All done
+# --------
+  exit 0
+
+EOF
+
+ close(SCRIPT);
+
+}
+#||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+sub create_script {
+
+ my ($i, $c);
+# threads and processes estimation for GCM
+ if($ncpus >= 128) { @athread=(16, 14, 8, 4, 1); } else { @athread=(8, 4, 1); }
+ if(`uname -n` =~ "halem" ) {
+    $i = 1;
+    @athread=(4, 4);
+    $c = $athread[$i]; $ampi = $ncpus/$athread[$i];   # not going to hold for ncpus<4
+ } else {
+    for ($i=0;  $i<scalar(@athread); $i++) { # t:threads; m:mpi   mpiXthreads=ncpu
+      $ampi = $ncpus/$athread[$i];  $c = $ncpus%$athread[$i];
+      if ($c == 0) {last;}
+    }
+ }
+ $ai = $i;       # a for GCM
+
+ open(SCRIPT,">$fvhome/run/$anajobn") or
+ die ">>> ERROR <<< cannot write $fvhome/run/$anajobn";
+
+ print  SCRIPT <<"EOF";
+#!/bin/csh -fx
+# ------------------------------
+#$group_list
+#$jobqueue1
+#PBS -N $jobn
+#PBS -l ncpus=$ncpus
+#PBS -l walltime=1:00:00
+#PBS -S /bin/csh
+#PBS -V
+#PBS -j eo
+#BSUB -J $jobn
+#BSUB -n $ncpus
+#BSUB -W 4:00
+#BSUB -o ${jobn}.%J
+#BSUB -e ${jobn}.%J
+# ------------------------------
+#
+# fvSSI driver script.
+#
+# This file has been automatically generated by fvssisetup.
+#
+# ------------------------------
+ set myname = `basename \$0`
+
+
+#
+#                 ---------------------------------
+#                  PART I - Prepare the Enviroment
+#                 ---------------------------------
+
+# Experiment environment
+# ----------------------
+  if (`uname -m` == "ia64") then 
+    setenv ARCH       `uname -s`IA64
+  else
+    setenv ARCH       `uname -s`
+  endif 
+  setenv NCPUS      $ncpus        # Numbers of CPU to run job
+  setenv N_CPU      \$NCPUS
+  setenv EXPID      $expid        # experiment ID
+  setenv CASE       \$EXPID       # experiment ID (for LSM's sake)
+  setenv FVROOT     $fvroot       # fvSSI installation root dir
+  setenv FVHOME  $fvhome       # experiment home directory
+  # analyzer options
+  setenv OIQC        $oiqc        # determine if OIQC will run
+  setenv skipTRANSF  $skipTRANSF  # determine if transforms are called
+  setenv skipSOLVER  $skipSOLVER  # determine if solver is called (gsi.x)
+  setenv skipSATBIAS $skipSATBIAS # determine if ang-sat bias correction is called
+  setenv NCEPINPUT   $fvStatic    # location of fixed files
+  setenv TIMEINC     $anafreq_mn  # time window of (4dvar) analysis
+  setenv ASYNBKG     $bkgfreq     # frequency of background
+  setenv VAROFFSET   $varoffset   # abs value of time off from 1st synoptic hour of var window
+  setenv D2ODS       1            # convert GSI-DIAG files to ODS
+  setenv DOSPC       $dospc       # do ss2fv
+  setenv NOSFCANA    1            # no surface analysis (in stand-alone mode)
+  $berror_env
+
+  # SSI/GSI specifics
+  # -----------------
+  setenv SIGLEVS    $siglevs
+  setenv SPECRES    $specres
+  setenv GSIHGRD    $gsihgrd
+  setenv SPECVTX    \$SPECRES
+  setenv LEVSVTX     64           # this is the wired-in number of levels when tracking reloc used
+
+  if(`uname -s` == "OSF1" ) then
+     cd \$TMPDIR_UBC
+     setenv FVSSIWORK  `pwd`            # temporary fix while TMPDIR not avail on Halem
+     setenv FVSSIWORK  \$FVSSIWORK/tmp.$$
+  endif
+  if( (`uname -s` == "Linux") && (`uname -m` == "ia64") ) then
+     if ( ! -d $mywork/$user/tmp.$$ ) mkdir -p  $mywork/$user/tmp.$$
+     setenv FVSSIWORK $mywork/$user/tmp.$$ # temporary fix while TMPDIR not avail on Halem
+  endif
+  if(`uname -s` == "IRIX64" ) then
+     if(`uname -n` == "sunrise" ) then
+        setenv FVSSIWORK  \$TMPDIR/fvwork.$$   # working directory
+     else
+        setenv FVSSIWORK  \$SCRATCH1/fvwork.$$ # working directory
+     endif
+  endif
+
+  setenv BASEDIR $basedir
+
+# Add FVROOT/bin to front of path so fvSSI binaries are found first
+# -----------------------------------------------------------------
+  set path = ( . \$FVHOME/run \$FVROOT/bin \$BASEDIR/\$ARCH/bin \$path )
+
+  setenv FVHOME  \$FVHOME  # compatibility with fvsetup
+  setenv FVWORK  \$FVSSIWORK  # ditto
+
+  /bin/mkdir -p \$FVSSIWORK            # create working directory
+
+  echo \$FVWORK > \$FVHOME/.FVWORK     # record working directory
+
+# MPI/OMP specific environment variables
+# --------------------------------------
+  setenv OMP_NUM_THREADS             \$NCPUS    # Number OMP Threads (generic)
+
+  set ANAX = `which $anaexec`
+  set SACX = `which sac.x`
+  if ( `uname -s` == "OSF1" ) then
+       set ANAX = `which $anaexec`
+       setenv MPIRUN_ANA    "prun -t -s -n \$NCPUS \$ANAX"
+#      setenv MPIRUN_SAC    "prun -t -s -n \$NCPUS \$SACX"   # code does not work properly for n>1
+       setenv MPIRUN_SAC    "prun -t -s -n  1      \$SACX"
+  else
+       set ANAX = `which $anaexec`
+       setenv MPIRUN_ANA    "mpirun -prefix "\\"%g\\"" -np \$NCPUS \$ANAX"
+#      setenv MPIRUN_SAC    "mpirun -prefix "\\"%g\\"" -np \$NCPUS \$SACX"   # code does not work properly for n>1
+       setenv MPIRUN_SAC    "mpirun -prefix "\\"%g\\"" -np  1      \$SACX"   # code does not work properly for n>1
+  endif
+
+# Make sure files are acessible
+# -----------------------------
+  umask 022
+
+EOF
+
+# System dependent configuration ..........................................
+# ------------------------------
+  $os = uc $OSNAME;
+
+  if ( $os =~ /IRIX/ ) {
+
+  $sgimodule = "modules MIPSpro.7.4.2.0 mpt.1.9.0.0 scsl.1.3.0.0";
+  print  SCRIPT <<"EOF";
+
+# Load correct module for SGI
+# ---------------------------
+  source /opt/modules/modules/init/csh
+  module purge
+  module load $sgimodule
+  setenv LD_LIBRARY_PATH \${LD_LIBRARY_PATH}:\${BASEDIR}/\${ARCH}/lib
+  setenv LD_LIBRARY64_PATH \${LD_LIBRARY64_PATH}:\${BASEDIR}/\${ARCH}/lib
+
+
+# SGI Specific
+# ------------
+  limit stacksize 4000000kb   # 4 Gbytes
+  limit coredumpsize 0
+  setenv _DSM_PPM 2
+  setenv MPC_GANG OFF
+  setenv OMP_DYNAMIC FALSE
+  setenv MP_STACK_OVERFLOW OFF
+  setenv MP_SLAVE_STACKSIZE 1024000000
+
+EOF
+   }
+
+  elsif ( $os =~ /AIX/ ) {
+
+  print  SCRIPT <<"EOF";
+
+# IBM specific configuration
+# --------------------------
+  limit stacksize   4000000                # KB
+  limit coredumpsize 0
+  setenv MP_SLAVE_STACKSIZE 100000000      # bytes
+  setenv MP_PROCS \${N_MPI}
+  setenv MP_EUIDEVICE css0
+  setenv MP_EUILIB us
+  setenv MP_HOSTILE host.list
+  setenv MP_INFOLEVEL 2
+  setenv XLSMPOPTS "parthds=\${N_SMP}:schedule=static"
+  setenv MP_CSS_INTERRUPT yes
+
+EOF
+}
+
+  elsif ( $os =~ /LINUX/ ) {
+
+    if(`uname -n` =~ /thunder/) {
+       print  SCRIPT <<"EOF";
+
+# Altix specific configuration
+# ---------------------------------
+  limit stacksize unlimited
+  limit coredumpsize 0
+  unsetenv F_UFMTENDIAN
+  setenv KMP_LIBRARY turnaround
+  setenv MPI_DSM_DISTRIBUTE  # pin MPI proceeses to assigned CPU
+EOF
+
+    }elsif (`uname -n` =~ /columbia/) {
+
+  $sgimodule = "intel-comp.8.1.034 mpt.1.12.0.nas scsl.1.5.1.1";
+  print  SCRIPT <<"EOF";
+                                                                                            
+# Load correct module for SGI-ALTIX
+# ---------------------------------
+  if ( -e /opt/modules/modules/init/csh ) source /opt/modules/modules/init/csh
+  module purge
+  module load $sgimodule
+                                                                                            
+                                                                                            
+# Altix specific configuration
+# ----------------------------
+  limit stacksize unlimited
+  limit coredumpsize 0
+  unsetenv F_UFMTENDIAN
+  setenv KMP_LIBRARY turnaround
+  setenv MPI_DSM_DISTRIBUTE  # pin MPI proceeses to assigned CPU
+  setenv MPI_MEMMAP_OFF
+EOF
+    }elsif (`uname -n` =~ /palm/) {
+
+  $sgimodule = "intel-comp.8.1.034 mpt.1.12.0.nas scsl.1.5.1.1";
+  print  SCRIPT <<"EOF";
+                                                                                                                     
+# Load correct module for SGI-ALTIX
+# ---------------------------------
+  if (-e /opt/modules/modules/init/csh) source /opt/modules/modules/init/csh
+  module purge
+  module load $sgimodule
+                                                                                                                     
+# Altix specific configuration
+# ----------------------------
+  limit stacksize unlimited
+  limit coredumpsize 0
+  setenv FORT90L -Wl,-T
+  setenv KMP_STACKSIZE    450m
+  unsetenv F_UFMTENDIAN
+  setenv KMP_LIBRARY turnaround
+  setenv MPI_DSM_DISTRIBUTE  # pin MPI proceeses to assigned CPU
+  setenv MPI_REQUEST_MAX 32768
+  setenv MPI_UNBUFFERED_STDIO
+EOF
+
+    }else{
+
+  print  SCRIPT <<"EOF";
+
+# Linux specific configuration
+# ----------------------------
+  limit stacksize   unlimited
+  limit coredumpsize 0
+  setenv FORT90L -Wl,-T
+  setenv F_UFMTENDIAN big
+  setenv MPSTKZ     32M
+
+EOF
+    }
+ } # close LINUX block
+
+ elsif ( $os =~ /OSF/ ) {
+
+ print  SCRIPT <<"EOF";
+
+# OSF specific configuration
+# --------------------------
+ setenv KMP_STACKSIZE 64000000            # bytes
+ setenv MP_STACK_SIZE 64000000            # bytes
+ #setenv PARALLEL            \${N_SMP}
+
+EOF
+}
+# End of system dependent configuration ...................................
+
+
+# Continue with rest of script
+# ----------------------------
+  print  SCRIPT <<"EOF";
+
+# Start by cleaning working directory
+# -----------------------------------
+  /bin/rm -rf   \$FVSSIWORK
+  /bin/mkdir -p \$FVSSIWORK
+  cd \$FVSSIWORK
+
+  set iden = $ident
+
+# Run fvSSI for Several (1-day) Run Segments
+# ------------------------------------------
+
+# temporary 
+# 
+set ymd = $nymdb  # start date 
+set hms = $nhmsb  # start hour 
+set nsegs  = $nsegs  # number of fvSSI run segments 
+set seg = 0 
+while ( \$seg < \$nsegs ) 
+
+
+  foreach syntime ( @synt )
+ 
+  @ thishrs = \$syntime * 10000
+  set hms   = `echo \$thishrs |awk '{printf "%06d", \$1}'`
+
+# 
+#                 -----------------------------------------
+#                  PART II - Run fvSSI for 1 synoptic time
+#                 -----------------------------------------
+
+                             cd \$FVSSIWORK
+
+  fvssi\ $obClass \$skipTRANSF \$skipSOLVER \$skipSATBIAS \$FVHOME \$FVWORK \$FVWORK \$ymd \$hms \$iden
+
+  set rc = \$status
+
+  if ( \$rc == 100 ) then
+       echo \$myname": simulation already completed, no further job segments"
+       exit 0
+  endif 
+ 
+  if ( \$rc > 0 && \$rc < 100  ) then 
+       mv \$FVSSIWORK \$FVHOME/morgue  # save runtime environment
+       touch \$FVHOME/morgue/.no_archiving
+       echo \$myname": abnormal error condition from fvssi..."
+       echo \$myname": runtime environment saved under \$FVHOME/morgue" 
+       exit 1 
+  endif 
+
+  end # foreach loop
+# 
+#                 ----------------------------------------
+#                      PART III - Data Archival
+#                 ---------------------------------------
+
+                          cd \$FVHOME/run
+
+
+# Move files to FVHOME for archiving and/or post-processing
+# ---------------------------------------------------------
+  ls -altuF \$FVSSIWORK
+  setenv PESTOROOT `dirname \$FVHOME`
+  pesto -v -d \$FVSSIWORK -arc silo.arc -cp /bin/mv
+
+
+# Mass storage archival as an 1 CPU batch job
+# -------------------------------------------
+  #set jname = arch.\${rsdate[1]}
+  #if ( `uname -s` == "OSF1" ) then
+  #      bsub -J \$jname < \$FVHOME/run/fvarchive.j
+  #else
+  #      qsub -N \$jname \$FVHOME/run/fvarchive.j
+  #endif
+
+
+# --------------------------
+# No post-processing for now
+# --------------------------
+
+# If simulation is done, stop here
+# --------------------------------
+ if ( \$rc == 101 ) then
+   echo \$myname": simulation just completed, no further job segments"
+   exit 0
+ endif
+
+
+ \@ seg++
+ \@ ymd++
+
+end # while: loop over fvSSI run segments
+
+
+#
+#
+#                  ----------------------------------
+#                    PART IV - Next PBS Job Segment
+#                  ----------------------------------
+
+                          cd \$FVHOME/run
+
+# Resubmits itself
+# ----------------
+# set jname = $jobn.\${rsdate[1]}
+# if ( `uname -s` == "OSF1" ) then
+#     bsub  -J \$jname < \$FVHOME/run/$anajobn
+# endif
+
+
+# All done
+# --------
+  exit 0
+
+EOF
+
+ close(SCRIPT);
+
+}
+
+#||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+sub goodbye {
+
+  if( $DAO == 1) {   #nas or gsfc account
+    if( $GFLAG == 1 ) { $expid_path = "/output/${USER}/$expid";
+    } else { $expid_path = "lou:/u/${USER}/$expid"; }
+  } else { $expid_path = $expid; }
+  print <<EOF;
+
+        --------------------------------------------------
+         fvSSIsetup - The fvSSI Experiment Setup Tool
+        --------------------------------------------------
+
+---------
+ALL DONE!
+---------
+         Well done @user[0]! This completes your fvSSI experiment setup.
+         For starting your data assimilation experiment please enter:
+
+            cd $fvhome/run
+            $qsub $anajobn
+
+         This script will carry out the static analysis experiments by means
+         of several job segments, each $ndays simulation day(s) long.
+EOF
+
+  if ( $fvics eq "later" ) {
+  print <<"EOF";
+
+----------------
+RESTART REMINDER
+----------------
+
+        Do not forget to copy the following start-up files to
+        $fvhome/recycle:
+
+                    1) dynamics restart file
+                    2) surface restart file
+
+EOF
+}
+
+
+
+print "\n";
+
+
+}
+
+#||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+sub run_config {
+                                                                                                                                 
+# Special handle rsh/rcp at DAO
+# -----------------------------
+  chomp($rsh = `which ssh`);
+  chomp($rcp = `which scp`);
+  if ( $DAO ) {
+       $rsh = "/usr/local/bin/ssh" if ( -x "/usr/local/bin/ssh" );
+       $rcp = "/usr/local/bin/scp" if ( -x "/usr/local/bin/scp" );
+  }
+                                                                                                                                 
+  die "cannot find $rsh" unless ( -x "$rsh" );
+  die "cannot find $rcp" unless ( -x "$rcp" );
+                                                                                                                                 
+ open(RUNCONFIG,">$fvhome/run/Run_Config") or
+ die ">>> ERROR <<< cannot write $fvhome/run/Run_Config";
+                                                                                                                                 
+ print  RUNCONFIG <<"EOF";
+set REMSH = $rsh
+set RCP = $rcp
+EOF
+                                                                                                                                 
+ close(RUNCONFIG);
+                                                                                                                                 
+}
+
+#||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+
+sub DateList {
+  my($bymdh, $eymdh, $hinc) = @_;
+  my(@mday,$ymdh,$ymdh1,$bhms,$y4,$m2,$d2,$nstep);
+
+  @mday=(31,28,31,30,31,30,31,31,30,31,30,31);
+  $nstep = 1;
+  $ymdh1=$bymdh;
+  $y4=substr($ymdh1,0,4);  $m2=substr($ymdh1,4,2);  $d2=substr($ymdh1,6,2);
+  $bhms = substr($ymdh1,8,2);
+  if(($y4%4 == 0 && $y4%100 != 0) || $y4%400==0 ) { $mday[1] = 29; }
+  do {
+    $bhms += $hinc;   #in HH format
+    while($bhms >= 24 ) {
+      $bhms -= 24;
+      $d2++;
+      if($d2>$mday[$m2-1]) {$d2 -= $mday[$m2-1];  $m2++;}
+      if($m2>12) {
+        $m2 -= 12;
+        $y4++;
+        if(($y4%4 == 0 && $y4%100 != 0) || $y4%400==0 ) {$mday[1] = 29; }
+        else { $mday[1] = 28; }
+        }
+      }  #End of while($bhms >= 24 )
+      $ymdh = $y4 . sprintf("%02d",$m2) . sprintf("%02d",$d2). sprintf("%02d",$bhms);
+      if($ymdh > $eymdh) { return($nstep, $ymdh1); }   #beyond eymdh
+      $nstep++;
+      $ymdh1 .= ",".$ymdh;
+    } until ($eymdh <= $ymdh);
+    return($nstep, $ymdh1);
+  }
+
+#||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+

@@ -1,0 +1,49 @@
+&nam_enkf
+  datestring=">>>YYYYMMDDHH<<<",datapath="./",
+  expid=">>>EXPID<<<",
+  nlevs=>>>ENS_NLEVS<<<,nanals=>>>NMEM<<<,
+  nlats=>>>ENS_NLATS<<<,nlons=>>>ENS_NLONS<<<,
+!
+  analpertwtnh=0.85,analpertwtsh=0.85,analpertwttr=0.85,
+  covinflatemax=1.e2,covinflatemin=1,
+  pseudo_rh=.false.,
+  obtimelnh=1.e30,obtimelsh=1.e30,obtimeltr=1.e30,
+  saterrfact=1.0,numiter=1,
+  sprd_tol=1.e30,
+  univaroz=.false.,
+! make sure all observation are used:
+  paoverpb_thresh=1.000,iassim_order=0,
+!
+  deterministic=.true.,
+  readin_localization=.false.,	
+!
+!-Concentration analysis
+! corrlengthnh=1000,corrlengthsh=1000,corrlengthtr=1000,
+! lnsigcutoffnh=-999.0,lnsigcutoffsh=-999.0,lnsigcutofftr=-999.0,
+! nsfcvars=0,
+! nvars=18,
+! ensmean_roundoff_fix=.false.,
+!-AOD analysis
+  corrlengthnh=1000,corrlengthsh=1000,corrlengthtr=1000,
+  nsfcvars=1,
+  nvars=0,
+  ensmean_roundoff_fix=.false.,
+  do_avk=>>>DO_AVK<<<,
+!
+! When using LETKF, scales must be shorter than for EnSF
+! letkf_flag=.true.,
+! letkf_novlocal=.true.,
+! lupd_obspace_serial=.true.,
+! corrlengthnh=500,corrlengthsh=500,corrlengthtr=500,
+!
+! nhr_anal(1)=6,
+! nhr_anal(2)=9,
+ /
+&satobs_enkf
+/
+&ozobs_enkf
+/
+
+spectral_truncation: 96
+
+eps_for_log_transform_aod:  0.01

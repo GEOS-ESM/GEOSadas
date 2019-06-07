@@ -1,0 +1,65 @@
+#
+# GAAS Grid Component Resource File.
+#
+# !REVISION HISTORY:
+#
+#  07dec2010  da Silva  First version.
+#
+#-----------------------------------------------------------------------------
+   
+#                           -----------------
+#                             Miscellaneous
+#                           -----------------
+
+           single_channel:  550.  # Single channel to analyze
+eps_for_log_transform_aod:  0.01 
+                  verbose: .TRUE.
+
+   no_fuss_if_ana_missing: .TRUE. # simply return if analysis file is missing
+
+             CoresPerNode:  8     # Will be reset in SetServices with value from main CF
+
+
+
+#                        -------------------
+#                         File Name Templates
+#                        -------------------
+
+aod_ana_filename: ${FVWORK}/${EXPID}.aod_a.sfc.%y4%m2%d2_%h200z.mem${MEMTAG}.nc4
+aod_bkg_filename: ${FVWORK}/${EXPID}.aod_f.sfc.%y4%m2%d2_%h200z.mem${MEMTAG}.nc4
+aod_avk_filename: ${FVWORK}/${EXPID}.aod_k.sfc.%y4%m2%d2_%h200z.mem${MEMTAG}.nc4
+
+aodbias_internal_restart:     aodbias_internal_restart.nc
+aodbias_internal_checkpoint:  aodbias_internal_checkpoint.nc
+
+
+#                          -------------------
+#                            MIE PARAMETERS
+#                          -------------------
+
+# Common MODIS/MISR channels
+### NUM_BANDS: 4
+### BANDS: 470.E-9  550.E-9 660.E-9   870.E-9
+
+NUM_BANDS: 1
+    BANDS: 550.E-9
+
+DU_OPTICS: ExtData/PIESA/x/optics_DU.v15_3.nc
+SS_OPTICS: ExtData/PIESA/x/optics_SS.v3_3.nc
+SU_OPTICS: ExtData/PIESA/x/optics_SU.v1_3.nc
+OC_OPTICS: ExtData/PIESA/x/optics_OC.v1_3.nc
+BC_OPTICS: ExtData/PIESA/x/optics_BC.v1_3.nc
+BRC_OPTICS: ExtData/PIESA/x/optics_BRC.v1_5.nc
+NI_OPTICS: ExtData/PIESA/x/optics_NI.v2_5.nc
+
+#                         --------------
+#                          LDE Parameters
+#                         --------------
+
+top_vertical_layer: 36 # k = 36, p ~ 72 hPa
+
+number_of_ensemble_members: 100
+      stencil_radius_in_km: 1000.
+          aod_weight_delta: 0.5
+
+#.

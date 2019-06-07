@@ -1,0 +1,99 @@
+common:
+  GID: g0613
+  NCSUFFIX: nc4
+  RSTSUFFIX: nc4
+  EXPID: C90c_ecf
+  FORECAST: 0
+  GAAS_ANA: 1
+  GAASFDBK: 1
+  LOCAL_ACQUIRE: 0
+  FVHOME: /discover/nobackup/pchakrab/runs/adas/g5170p5A/C90c_ecf
+  FVROOT: /discover/nobackup/pchakrab/code/gmao/adas/g5170p5A/Linux
+  FVWORK: "$NOBACKUP/tmp.fvwork"
+  PESTOROOT: $NOBACKUP/archive/g5170p5A
+  COMMAND:
+    - "export PATH=$PATH:$FVROOT/bin"
+    - "export PATH=$PATH:/discover/nobackup/projects/gmao/share/dasilva/opengrads/Contents"
+    - "source g5_modules.sh"
+    - "module list"
+
+ana:
+  SKIPANA: 0
+  TIMEINC: 360
+  ASYNBKG: 180
+  DO4DVAR: 0
+  ACFTBIAS: 0
+  VAROFFSET: 180
+  # number of iterations for var loop
+  NVAROUTER: 1
+  # GSI-specifc
+  SPECRES: 62
+  # 1 - enable sfc-analysis, 0 - disables it (ISN'T IT THE OTHER WAY AROUND)
+  NOSFCANA: 1
+  DO_0HR_IMP: 0
+  # Enable hurricane vortex relocation
+  VTXRELOC: 1
+
+ana_mpi:
+  NCPUS: $NCPUS_GSI
+  MPIRUN_ANA: "\"mpiexec_mpt -np $NCPUS_GSI GSIsa.x\""
+  MPIRUN_SAC: "\"mpiexec_mpt -np $NCPUS_SAC sac.x\""
+
+obs:
+  OBSCLASS: "\"ncep_1bamua_bufr,ncep_osbuv_bufr,ncep_prep_bufr,disc_airs_bufr,disc_amsua_bufr,ncep_mhs_bufr,ncep_1bhrs4_bufr,ncep_goesfv_bufr,ncep_mtiasi_bufr,ncep_gpsro_bufr,ncep_aura_omi_bufr,ncep_satwnd_bufr,ncep_atms_bufr,ncep_sevcsr_bufr,ncep_cris_bufr,ncep_ssmis_bufr,ncep_tcvitals,ncep_avcsam_bufr,ncep_avcspm_bufr\""
+  OBSWINDOW: 360
+  IGNORE_0: 1 # 1 = ignore 0 length obs files in acquire
+
+aod:
+  PATMOSX: 0
+  MOD04_NNR: 0
+  MYD04_NNR: 0
+  MISR_BRIGHT: 0
+  AERONET: 0
+  MODIS_L2_HDF: 1 # 0: pre-processed MODIS for GAAS, 1: staged MODIS
+
+aod_mpi:
+  MPIRUN_AOD: "\"mpiexec_mpt -np $NCPUS_AOD\""
+
+gcm:
+  MKRESRST: 0
+  WCONSTRAINT: 0
+  SHORTFCST: 0
+  FCSTAGE: $FVHOME/fcst
+
+gcm_mpi:
+  MPIRUN_GCM: "\"mpiexec_mpt -np $NCPUS_GCM GEOSgcm.x\""
+
+iau:
+  # 0: disable IAU; otherwise offset should be 030000
+  DOIAU: 1
+  # 1: enables gcm to take time changing IAU forcing
+  DO4DIAU: 0
+
+iau_mpi:
+  MPIRUN_IAU: "\"mpiexec_mpt -np $NCPUS_IAU mkiau.x\""
+
+vtx:
+  VTRACK: 1
+  VTRKFRQA: 180 # frequency of input vtx files for storm relocation
+  NCPUS: $NCPUS_VTX
+  
+mpi:
+  MPI_COLL_REPRODUCIBLE: 1
+  SLURM_DISTRIBUTION: block
+  MPI_DISPLAY_SETTINGS: 1
+  # For some reason, PMI_RANK is randomly set and interferes
+  # with binarytile.x and other executables.
+  COMMAND: 
+    - "unset PMI_RANK"
+  MPI_COMM_MAX: 1024
+  MPI_GROUP_MAX: 1024
+  MPI_BUFS_PER_PROC: 256
+
+conv2prs:
+  CONVUPA: 1
+  CONVSFC: 1
+  CONVPROG: 0
+
+other:
+  MKL_CBWR: SSE4_2

@@ -1,0 +1,31 @@
+22 May 2009 - replace block.f , unblock.f, cnvt.c with new routine
+              block_09.F - based on NCEP 'cwordsh' script/program
+Source code is for both 'block' and 'unblock' routine, choice of
+action is made through define -DUNBLOCK for 'unblock' routine.
+The new 'cwordsh' requires linking to current NCEP BUFRLIB.  
+This new version of 'block' will skip over extraneous data in the
+input files such as bulletin headers - and even Fortran control
+words so that files already 'block'ed can be 'block'ed again.
+
+5 May 2005 - Seg fault on Palm/Altix showed a need to add error
+    checking to the C routine which reads in the BUFR messages 
+    for 'block'.  (For 'unblock' error checking can be done in
+    Fortran routine used to read the data.)
+
+28 Nov 2003 - Add some error checking to 'block', 'unblock' to
+  exit with an error message if the BUFR message was bigger than
+  the size of the buffer array 'mbay'.  Increased buffer size. 
+
+25 Oct 2002 - Added Baoyu's 'reblock.c' program for converting
+    big-endian blocked files to little-endian
+
+Usage: reblock blockedfile(big endian) reblockedfile(little endian)
+
+19 Sep 2002 - Adaptation for 'molotov' DEC Alpha - Sienkiewicz
+
+I discovered a problem in our "cnvt.c" routine - it was finding
+the sizeof(bufr) where 'bufr' is a pointer.  What is needed is
+sizeof(*bufr), the object that 'bufr' was pointing to (integer).
+When the sizeof(pointer) != sizeof(integer) this fails.
+
+

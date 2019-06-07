@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+%include <slurm.h>
+#SBATCH --ntasks=%NCPUS_IAU%
+#SBATCH --qos=%PRIORITY_IAU%
+#SBATCH --time=%TIME_IAU%
+#SBATCH --job-name=CreateIAUincrement4Fcst
+#SBATCH --output=%BATCHOUT_DIR%/CreateIAUincrement4Fcst.out.%j
+
+%include <head.h>
+
+CWD=$(pwd)
+
+export NCPUS_IAU=%NCPUS_IAU%
+export WORKFLOW_DIR=%ECF_HOME%
+bash ${WORKFLOW_DIR}/tasks/CreateIAUincrement4Fcst.sh
+
+cd $CWD
+
+%include <tail.h>

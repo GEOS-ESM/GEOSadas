@@ -1,0 +1,778 @@
+#!/bin/csh -fx
+#
+# fvPSAS driver script.
+#
+# This script runs fvPSAS for one job segment. Restarts and such are
+# expected to be available from $FVHOME/recycle. The run is performed
+# in $FVWORK, and the output files are left there for archival
+# by the calling script.
+#
+# GAAS.BOOTSTRAP Notes:
+# 1. Two factors control the GAAS bootstrapping procedures:
+#    - run/gaas/GAAS.BOOTSTRAP file
+#    - RUN_GAAS environment variable
+# 2. If the run/gaas/GAAS.BOOTSTRAP file exists, and the RUN_GAAS environment
+#    variable is not defined, then GAAS processing is skipped during the first
+#    time segment.
+# 3. The RUN_GAAS environment variable is then defined so that GAAS processing
+#    will occur during subsequent time segments
+# 4. The run/gaas/GAAS.BOOTSTRAP file is not renamed until after
+#    FinalTaggingAndRecycling(), so that if the job dies before completion, the
+#    file does not need to be reset in order to process again with bootstrapping. 
+#
+# !REVISION HISTORY
+#
+#  Years 2000-2005
+#  ---------------
+#                       See end of file.
+#
+#  Year 2006
+#  ---------
+#  02Feb2006 Todling    Merged in svec/sens modifications from GEOS-4
+#  13Feb2006 Todling    Added refs to standalone svec and sens appls
+#  13Feb2006 Meta       Added Prep-QC components
+#  14Feb2006 Stassi     Added lcv2prs.x program
+#  22Feb2006 Todling    Renamed ox_internal_rst to pchem_internal_rst; a 
+#                       must-have now
+#  08Mar2006 Stassi     Replaced lcv2prs.x call with calls to cnv2prs.pl script
+#  14Mar2006 Meta       Patch to check for aircraft obs and skip ACFT-qc 
+#                       if none
+#  11Apr2006 Owens      Date/Time of assimil. start to be passed via -dtg; 
+#                       renamed rst files
+#  19Apr2006 Todling    Swapped order of gcm and analysis in prep for IAU 
+#                       implementation
+#                       (zero-diff)
+#  03Apr2006 Stassi/RT  Implemented IAU capability
+#  21Apr2006 Gelaro     Modifications for sensitivity calculation with 
+#                       GEOS-5 trajectory
+#  26Apr2006 Elena N.   Added archiving of SENS results: $EXPID.Jnormf.*.txt 
+#                       and $EXPID.pert.*.hdf
+#  28Apr2006 Gelaro     Gradient name change pert.hdf to Jgradf.hdf
+#  01May2006 Gelaro     Pass ending date/time to fvsens and fvsvec
+#  17May2006 Stassi     Added -diag flag to cnv2prs.x call if ($DIAGUPA)
+#  04Jun2006 Todling    Added IAU handling of rsts for forecast purposes
+#  06Jun2006 Owens      Modified logics of vortex ctl file generation
+#  06Jun2006 Todling    Fixed fcst mode in presence of AGCM.rc.tmpl
+#  21Jun2006 Todling    Calling vortex relator code from this level 
+#  03Jul2006 Todling    Added tracking call after forecast; changed call 
+#                       to makeiau
+#  08Jul2006 Guo/RT     Fix for IAU in the presence of relocator (bkg was not 
+#                       correct as a consequence placed vtxreloc call back 
+#                       to analyzer and started recycling trak.GDA.all file
+#  10Jul2006 Todling    Skipping copy of bkg and analysis-related rst's in 
+#                       replay mode
+#  11Jul2006 Todling    Added capability to output bkg files at syn time only 
+#                       in replay mode.
+#  20Jul2006 Owens/RT   Turned vtx.mix into rst file for fcst; removed vtxmix 
+#                       acquire in fcst mode
+#  10Aug2006 Todling    Merged w/ Owens version (under beta9 dao_ops build)
+#                       +adm version
+#  24Aug2006 Owens/LT   added additional options for blending restarts 
+#  30Aug2006 Zhang/Guo  Added input and output for bias correction scheme
+#  06Sep2006 Owens/JS   Moved lnbcs call to locations where data date 
+#                       is available.
+#  08Sep2006 Todling    Changed naming of bias restart files to follow 
+#                       convention.
+#  26Sep2006 Owens      Removed GEOS-4 references; modified BOOTSTRAP 
+#                       functionality
+#  10Oct2006 Stassi     Get mydate calling parameter to lnbcs from ./d_rst
+#  16Oct2006 Owens      Check VTXRELOC variable before copying vtxmix files;
+#                       Added zeit messages for cnv2prs calls
+#  26Oct2006 da Silva   Some context sensitive actions enforced: if $obsclass
+#                       is not defined, then we are not doing analysis and 
+#                       should not be acquiring obs, etc. This is important 
+#                       for running GEOSgcm only. Several other adjustment to
+#                       be able to make a pure model run in "DAS mode".
+#  09Nov2006 Owens/JS   Added error trapping for ana restarts and added error 
+#                       codes to error log messages          
+#  15Nov2006 da Silva   Fixed pure model in single executable mode.
+#  17Nov2006 da Silva   Procedural encapsulation using Functions.csh.
+#  19Nov2006 da Silva   Moved function definitions to module file 
+#                       "GEOSdas.csm"; Revision history for previous years 
+#                       moved to end of file.
+#  06Dec2006 Stassi     Changed "set echo" to "Echo" (alias in Functions.csh)
+#                       This will keep added noise out of log.
+#  27Dec2006 Todling    Echo command lines
+#  12Mar2007 Todling    Mild modifications to accommodate 4d-var-like setting
+#  04Apr2007 Stassi     $rst4ncepf to $blendg5 as per GEOSdas.csm change
+#  21Apr2007 Todling    Add call to generate ESMF-rc file for GSI
+#  13Apr2007 Todling    Updated to cope with changes in routines of GEOSdas.csm
+#  15Jun2007 Kokron     Added calls to zeit
+#  23Jan2008 Owens      Added call to new InterimTag_() function
+#  23Apr2008 Stassi     Added call to LandAnalysisRun_() function
+#  24Jun2008 Todling    Added call to CreateIAUincrement4Fcst_()
+#  04Mar2009 Todling    Remove reference to traj files for adj tools
+#  19Mar2009 Todling    - Remove cprs; revisited rst-staging to fcst
+#                       - Add TagAndCopyStraightForecastOutput_ to handle straight fcst
+#                       - Add QualityControlRun_
+#  23Mar2009 Todling    Diag2ODSRun_ now called at the end of each analysis time
+#  10Oct2010 Todling    Changes to allow FcstSens to run during DAS-issued forecast
+#  22Apr2011 Owens      Support for G5/ECMWF restart blending via the -blendec option
+#  09Aug2011 Kokron     Added zeit calls to capture new functionality
+#  30May2013 Todling    Add GetAODinfo4Fcst_ to retrieve AOD fields for fcsts
+#
+#-----------------------------------------------------------------------------
+
+# Functions.csh must be somewhere in your path
+# --------------------------------------------
+  set Functions = ( `which Functions.csh` )
+  if ( $status ) then
+     echo $0": cannot find required Functions.csh"
+     exit 1
+  else
+     source $Functions[1]
+  endif
+
+# When "Verify" is set, non-zero return code from any user defined
+# csh Function causes this script to exit with the same return code; 
+# see Functions.csh
+# -------------------------------------------------------------------
+  set Verify
+  set Trace
+  Echo
+
+# Function definitions
+# --------------------
+  Use GEOSdas
+
+#                       M A I N    S C R I P T
+#                       ----------------------
+
+#  Getting started...
+#  ------------------
+   Call  Initialize_()
+   Call_ ParseCmdLine_  $argv 
+   Call  SanityCheck_()
+
+   setenv DO4DVAR 0
+
+#
+#
+#                 -------------------------------------
+#                  PART I - Prepare Working Directory 
+#                 -------------------------------------
+
+# Set up working directory and copy all the restart files along
+# with analysis resource files, model namelists and diagnostic table
+# file to this directory. The simulation is carried out here in
+# the working directory.
+# ------------------------------------------------------------------
+  cd $FVWORK
+
+# Copy resource files to working directory
+# ----------------------------------------
+  Call CopyResourceFiles_()
+
+# Set RSTSUFFIX for output GCM restart files (default: nc4)
+# ---------------------------------------------------------
+  setenv RSTSUFFIX nc4
+
+  set checktype_found = `grep -c DEFAULT_CHECKPOINT_TYPE: AGCM.rc.tmpl`
+  if ($checktype_found) then
+        set checktype = `echorc.x -rc AGCM.rc.tmpl DEFAULT_CHECKPOINT_TYPE`
+        if ($checktype == pbinary || $checktype == binary) then
+              setenv RSTSUFFIX bin
+        endif
+  endif
+
+# Define GCM's restart names
+# --------------------------
+  set grs_list = `grs_list.pl -rc AGCM.rc.tmpl -flg 1`
+  set grs_boot = `grs_list.pl -rc AGCM.rc.tmpl -flg 2`
+
+# Stage restarts in forecast mode ...
+# -----------------------------------
+  if ( $FORECAST ) then
+
+#       GEOS-5 forecast restarts
+#       ------------------------
+        Call CopyGcmRestarts4Forecast_()
+
+#       Determine time of trajectory output in forecast mode
+#       ----------------------------------------------------
+        Call DetermineTrjTimes_ ( TrjBegEpoch, TrjEndEpoch )
+
+#       Update HISTORY.rc for VORTEX tracker if MAP06
+#       ---------------------------------------------
+        if ( $blendrs || $blendg5 || $blendec ) then
+             Call UpdateHistoryResource4Blend_Fcst_()
+        else
+             Call UpdateHistoryResource4Forecast_()
+        endif
+
+#       Link to GEOS-5 GCM boundary condition files
+#       -------------------------------------------
+        lnbcs $GcmBegDate || exit 95 
+
+                                                       zeit_ci.x blend
+#       G5 hybrid forecast restarts
+#       --------------------------------
+        if ( $blendrs ) then         # G5/NCEP
+             Call BlendGcmNcepRestarts4Fcst_()
+
+        else if ( $blendg5 ) then  
+
+             Call BlendGcmG5Restarts4Fcst_()
+
+        else if ( $ifcst ) then  
+
+             Call CreateIAUincrement4Fcst_()
+             Call GetAODinfo4Fcst_()
+
+        else if ( $blendec ) then    # G5/ECMWF
+
+             Call BlendGcmEcmwfRestarts4Fcst_()
+
+        endif
+                                                       zeit_co.x blend
+
+# .. or in DAS mode (with or without analysis)
+# --------------------------------------------
+  else 
+
+#       If we are running an analysis, we must stage the analysis restarts
+#       ------------------------------------------------------------------
+        if ( $DOING_ANA ) then 
+                                                       zeit_ci.x CopyAnaRS
+             Call CopyAnaRestarts_() 
+                                                       zeit_co.x CopyAnaRS
+        endif 
+
+#       In any case, we need to stage the model restarts
+#       ------------------------------------------------
+                                                       zeit_ci.x CopyGCMRS
+        Call CopyGcmRestarts4DAS_()
+        wait # while copies are being done in the background
+                                                       zeit_co.x CopyGCMRS
+
+#       Link to GEOS-5 GCM boundary condition files
+#       -------------------------------------------
+                                                       zeit_ci.x lnbcs 
+        lnbcs $GcmBegDate || exit 95 
+                                                       zeit_co.x lnbcs 
+
+#       Determine time of trajectory output in forecast mode
+#       ----------------------------------------------------
+        Call DetermineTrjTimes_ ( TrjBegEpoch, TrjEndEpoch )
+
+
+  endif # running in FORECAST or DAS mode 
+
+
+# Make sure restarts are all there
+# --------------------------------
+                                                       zeit_ci.x VerifyRS
+  Call VerifyGcmRestarts_()
+                                                       zeit_co.x VerifyRS
+
+# Determine beginning/ending times for this run
+# ---------------------------------------------
+  Call DetermineSimulationTimes_()
+
+# -------------------------------------------------------
+# AMS Note: Need to standardize date/time variable names 
+#           The following is a suggestion:
+#  xxxTime  integer of the form hhmmss. e.g., 120000
+#  xxxDate  integer of the form yyyymmdd, e.g., 20010720
+#  xxxEpoch list of (date,time), e.g., (20010720 120000)
+# -------------------------------------------------------
+  Call DetermineExpTimes_ ( ExpEndEpoch )
+  Call DetermineGcmTimes_ ( GcmBegEpoch, GcmEndEpoch, GcmLenEpoch )  
+  Call DetermineAnaTimes_ ( $VAROFFSET, $GcmBegEpoch, $TIMEINC, \
+                            AnaBegEpoch, AnaFreqEpoch ) 
+
+# Are we done with the simulation?
+# --------------------------------
+  if (${nymd1} >= ${nymde} && ${nhms1} >= ${nhmse}) then
+      echo $myname": simulation already completed, stop."
+      exit 100
+  endif
+
+# In IAU mode, quit if GCM run will exceed the CAP.rc END_DATE
+# ------------------------------------------------------------
+  set GcmEndDate = $GcmEndEpoch[1]
+  set GcmEndTime = $GcmEndEpoch[2]
+
+  if ($DOIAU) then
+     if ($GcmEndDate > $nymde || \
+        ($GcmEndDate == $nymde && $GcmEndTime > $nhmse)) then
+        echo $myname": simulation already completed, stop."
+        exit 100
+     endif
+  endif
+                                                       zeit_ci.x acquire
+
+# Acquire "replay" analysis or observations
+# -----------------------------------------
+  if ( ! $FORECAST && $AnaFreqEpoch[2] > 0 ) then
+
+#    Determine relevant time/frequency information
+#    ---------------------------------------------
+     Call DetermineAcquireTimes_()
+
+#    Acquire replay analysis...
+#    -----------------------------------------
+     if ( -e replay.acq ) then  
+
+          Call AcquireReplayAnalysis_()
+
+#    .. or observational data
+#    ------------------------
+     else if ( $DOING_ANA ) then
+
+          Call AcquireObservations_() 
+
+     endif
+
+  endif
+                                                       zeit_co.x acquire
+
+# Pre-analysis Quality Control
+# ----------------------------
+  if ( $DOING_ANA ) then
+                                                       zeit_ci.x PreAnaQC
+       Call PreAnalysisQC_()
+                                                       zeit_co.x PreAnaQC
+
+  endif
+
+  echo ""
+  /bin/ls -la
+  echo ""
+
+#
+#
+#                  -------------------------------
+#                   PART  IIa - Run the Poor Model
+#                  -------------------------------
+
+# Determine location of executables
+# ---------------------------------
+  Call DetermineExecutables_()
+
+# Set variables for Aerosol Analysis
+# ----------------------------------
+  if ( $GAAS_ANA ) then
+
+     Call InitAerosolAnalysis_()
+
+  endif
+
+# Run system in split executable mode
+# -----------------------------------
+  if ( $SPLITEXE ) then
+
+      Call SplitExecInit_()
+
+#     For each segment
+#     ----------------
+      @ seg = 0
+      while ( $seg < $nsegs )
+
+#        Determines times/frequencies for this segment
+#        ---------------------------------------------
+         Call SplitExecSegmentTimes_()
+
+#        Run Aerosol Analysis
+#        --------------------
+         if ( $GAAS_ANA ) then
+
+#           Check for bootstrap (see GAAS.BOOTSTRAP Notes in prologue)
+#           -------------------
+            if (( -e $FVHOME/run/gaas/GAAS.BOOTSTRAP ) && ( ! $?RUN_GAAS )) then
+               setenv RUN_GAAS 1
+               setenv RESET_AFTER_GAAS_BOOTSTRAP 1
+ 
+                set HISTinc = `$FVROOT/bin/edhist.pl -q -list inc: $FVWORK/HISTORY.rc.tmpl`
+                $FVROOT/bin/edhist.pl -Xpm gas_N -i -q $FVWORK/HISTORY.rc.tmpl
+
+                vED -i $FVWORK/GEOS_ChemGridComp.rc -vv ENABLE_GAAS=.FALSE.
+                echo "cat $FVWORK/GEOS_ChemGridComp.rc"
+                cat $FVWORK/GEOS_ChemGridComp.rc
+
+            else
+                set aod_date = $gaasDateBeg
+                set aod_time = $gaasTimeBeg
+                Call AerosolAnalysis_()
+
+#               Restore pre-BOOTSTRAP HISTORY collections and
+#               reset ENABLE_GAAS in GEOS_ChemGridComp.rc, if necessary
+#               -------------------------------------------------------
+                if ($?RESET_AFTER_GAAS_BOOTSTRAP) then
+                    $FVROOT/bin/edhist.pl -i -q $FVWORK/HISTORY.rc.tmpl -Xall -I $HISTinc
+                    if ($GAASFDBK) then
+                       vED -i $FVWORK/GEOS_ChemGridComp.rc -vv ENABLE_GAAS=.TRUE.
+                       echo "cat $FVWORK/GEOS_ChemGridComp.rc"
+                       cat $FVWORK/GEOS_ChemGridComp.rc
+                    endif
+                    unsetenv RESET_AFTER_GAAS_BOOTSTRAP
+                endif
+
+            endif
+
+         endif
+
+#        Run the analysis if not doing replay
+#        -----------------------------------
+         if ( ! -e replay.acq ) then
+                                                       zeit_ci.x QCRun
+              Call QualityControlRun_()
+                                                       zeit_co.x QCRun
+
+              Call UpdateGsiGridCompResource_( 0, 1 )
+                                                       zeit_ci.x AnalysisRun
+              Call AnalysisRun_( 0, 1 )
+                                                       zeit_co.x AnalysisRun
+
+              if ( $DOING_ANA && $DIAG2ODS ) then
+                  Call Diag2ODSRun_( -1, 1 )
+              endif
+
+#             Call StageAna4FSens_()
+
+         endif
+
+#        Wait here for aerosol analysis if it is being fed back to GCM
+#        -------------------------------------------------------------
+         if ($GAASFDBK) then
+
+            # wait for background job to complete
+            #------------------------------------
+            if ($aod_parallel_flag) then
+                wait
+
+            # or wait for qsub'd job to complete
+            #-----------------------------------
+            else
+                if ($?aodJobIDs) then
+                    $FVROOT/bin/jobIDfilter -w $aodJobIDs
+                    unsetenv aodJobIDs
+                endif
+            endif
+
+            # check for job success
+            #----------------------
+            if (! $?GAASFAIL ) setenv GAASFAIL "/this/file/does/not/exist"
+            if ( -e $GAASFAIL ) then
+                mv $gaasLOG $gaasLOGx
+                set msg = "FATAL ERROR: Aerosol Analysis FAILED, check $gaasLOGx"
+                echo $myname": $msg"
+                if ( $GAAS_IGNORE ) then
+                    echo "\$GAAS_IGNORE = ${GAAS_IGNORE}; IGNORING AEROSOL ANALYSIS ERROR"
+                else
+                    if ( $log ) then
+                         Err_Log.pl -N ${EXPID}.j -I $ERROR_ID -X $ERROR_EXP \
+                                    -C 92 -E 5 $ERROR_LOG_NAME \
+                                    -D "${EXPID}.j $msg"
+                    endif
+                    exit 92
+                endif
+            endif
+         endif
+
+#        Convert analysis eta file into GCM restart
+#        ------------------------------------------
+                                                       zeit_ci.x AnaToGcm
+         Call CoupleAnaToGcm_( 0, 1 )
+                                                       zeit_co.x AnaToGcm
+
+#        Update GCM resource files (caution: order-dependent)
+#        -------------------------
+         Call UpdateAgcmResource4SplitExec_( 0, 1 )
+         Call UpdateCapResource4SplitExec_( 1 )
+         Call UpdateHistoryResource4SplitExec_( 0, 1 )
+
+#        Run the model
+#        -------------
+                                                       zeit_ci.x RunGcm
+         Call SplitExecGcmRun_( 1 )
+                                                       zeit_co.x RunGcm
+
+#        Save desired restarts for future forecasts
+#        ------------------------------------------
+                                                       zeit_ci.x SaveRstForFcst
+         Call SaveRstForFcst_()
+                                                       zeit_co.x SaveRstForFcst
+
+#        Rename initial condition (relevant restarts) for next segment
+#        -------------------------------------------------------------
+                                                       zeit_ci.x RenameRstCheckPoint
+         Call RenameRstCheckPoint_( 1 )
+                                                       zeit_co.x RenameRstCheckPoint
+
+#        Run Land analysis
+#        -----------------
+         if ( $LDAS_ANA ) then         
+                                                       zeit_ci.x LandAnalysisRun
+              Call LandAnalysisRun_()
+                                                       zeit_co.x LandAnalysisRun
+         endif
+
+#        Run the vortex tracker
+#        ----------------------
+                                                       zeit_ci.x VortexTrack
+         Call SplitExecVortexTrackerRun_()
+                                                       zeit_co.x VortexTrack
+
+#        Couple Model to Analysis
+#        ------------------------
+                                                       zeit_ci.x GcmToAna
+         Call CoupleGcmToAna_( $ana_nymde, $ana_nhmse, 0 )
+                                                       zeit_co.x GcmToAna
+
+#        Tag files coming out of forecasts with assimilation run
+#        -------------------------------------------------------
+                                                       zeit_ci.x TagAndCopy
+         Call TagAndCopyStraightForecastOutput_( 1 )
+                                                       zeit_co.x TagAndCopy
+
+         Call SignalEndOfDasCycle_( $nymdb, $nhmsb )
+
+#        Increment the Loop Counter
+#        --------------------------
+         @ seg++
+         set grs_boot = ""
+
+      end # loop over analysis times
+
+#     Post processing
+#     ---------------
+                                                       zeit_ci.x SplitExecPost
+      Call SplitExecPostProcessing_()
+                                                       zeit_co.x SplitExecPost
+
+# Single executable 
+# -----------------
+  else
+
+#     ------------------------------------------
+#     AMS Note: No provision for analysis yet...
+#     ------------------------------------------
+
+#     Run the GCM in either forecast or DAS mode
+#     ------------------------------------------
+      Call SingleExecGcmRun_() 
+
+#     Run the vortex tracker (does not work)
+#     -------------------------------------
+      Call SingleExecVortexTrackerRun_()
+
+ endif # split executable
+
+
+#   -------------------------------------------------------------------
+#   PART  IIb - Run Singular Vectors or Adjoint Sensitivity Calculation
+#   -------------------------------------------------------------------
+
+ Call Stage4AdjointTools_()
+ if ( $FORECAST ) then
+                                                       zeit_ci.x AdjointRun
+    Call AdjointToolsRun_()
+                                                       zeit_co.x AdjointRun
+ endif # < forecast >
+
+#
+#                  ---------------------------------
+#                   PART III - Final Post-processing
+#                  ---------------------------------
+
+# Be sure that all non-feedback aerosol analysis jobs have completed
+# ------------------------------------------------------------------
+  if ( ( $GAAS_ANA ) && ( ! $GAASFDBK ) ) then
+
+       if ($aod_parallel_flag) then
+           wait
+       else
+           if ($?aodJobIDs) then
+               $FVROOT/bin/jobIDfilter -w $aodJobIDs
+               unsetenv aodJobIDs
+           endif
+       endif
+
+  endif
+
+# If G5/NCEP initialization run
+# ------------------------------
+  if ( $FORECAST ) then
+
+       Call Geos5SaveFcstRestart_()
+
+  endif
+
+# Tag and copy forecast related files, making extra copies for
+#  staging area, if necessary
+# ------------------------------------------------------------
+                                                       zeit_ci.x TagAndStage
+  Call TagAndCopyForecastOutput_()
+                                                       zeit_co.x TagAndStage
+
+# Singular vector/adjoint sensitivity post processing
+# ---------------------------------------------------
+                                                       zeit_ci.x AdjointPost
+  Call AdjointToolsPostProcessing_()
+                                                       zeit_co.x AdjointPost
+
+# Tag various restarts and log files, making extra copies
+#  of restarts for recycling
+# -------------------------------------------------------
+                                                       zeit_ci.x TagAndRecycle
+  Call FinalTaggingAndRecycling_()
+                                                       zeit_co.x TagAndRecycle
+
+# Rename GAAS.BOOTSTRAP file, if it exists
+#-----------------------------------------
+if ( -e $FVHOME/run/gaas/GAAS.BOOTSTRAP ) then
+     mv $FVHOME/run/gaas/GAAS.BOOTSTRAP{,_}
+endif
+
+# Display profiler results
+# ------------------------
+  zeit_pr.x
+
+#
+#                  ------------------------------
+#                       PART IV - All Done
+#                  ------------------------------
+
+
+# Determine whether experiment is completed
+# -----------------------------------------
+  if (${nymd2} >= ${nymde} && ${nhms2} >= ${nhmse}) then
+    echo $myname": simulation just completed, no further job segments."
+    exit 101 
+  endif
+
+  if ($DOIAU) then
+     set GcmEndEpoch = ( `tick $nymd2 $nhms2 $GcmLenEpoch` )
+     set GcmEndDate = $GcmEndEpoch[1]
+     set GcmEndTime = $GcmEndEpoch[2]
+
+     if ($GcmEndDate > $nymde || \
+        ($GcmEndDate == $nymde && $GcmEndTime > $nhmse)) then
+        echo $myname": simulation just completed, no further job segments."
+        exit 101
+     endif
+  endif
+
+# All done
+# --------
+  Clean
+  exit 0
+
+#.
+#........................................................................
+#
+#                       --------------------------
+#                       Revision History 2000-2005 
+#                       --------------------------
+#
+# !REVISION HISTORY
+#
+#  Year 2000
+#  ---------
+#  19Jul2000  da Silva  Added -fcst option
+#  12sep2000  da Silva  Revised -fcst option
+#  22sep2000  da Silva  Remove rs links to fort.nn files; save forecast
+#                       restarts to $FVHOME/fcst
+#  03oct2000  da Silva  Implemented new acquire script by Tommy Owens.
+#
+#  Year 2001
+#  ---------
+#  03May2001  da Silva  Hooks for CQC, added "-strict".
+#  23jul2001  da Silva  Fixed setenv $FVROOT bug (thanks to Meta)
+#  14Nov2001  E. Yeh    Replaced acquire by acquire_obsys
+#  28Dec2001  E. yeh    Changed $FVHOME/run/morgue to $FVHOME/morgue
+#  31Dec2001  da Silva  Hooks for bias corrected Ts analysis; implemented
+#                       recycle/ directory.
+#  Year 2002
+#  ---------
+#  11jan2002  da Silva  Handling of replay mode.
+#  16Jan2002  E. Yeh    Changed the "endif" of "foreach anafn ( $anafiles )"
+#                         loop to "end".
+#                       Changed the restart files list under $cprs 
+#                        option as a string
+#  29Jan2002 T. Owens   Introduced new option -log and clean *abnormal.log* 
+#                       before create them.
+#  31Jan2002 da Silva   Merged Jiundar MPI 2 mods with Tommy's.
+#  01Feb2002 da Silva   Introduced .myenv stuff.
+#  08Feb2002 da Silva   Fixed/simplified tagging of forecast files
+#  12Feb2002 E. Yeh     Seperated :r and :e commands from one statement 
+#                       to two statements
+#  13Feb2002 E. Yeh     Error checking for acquire and acquire_obsys
+#  06Jun2002 E. Yeh     Added zeit calls bkg.sfc for forecast archiving 
+#                       name tag
+#  15Jun2002 da Silva   Added logic to select fvpsas.x
+#  08Jul2002 T. Owens   Removed $EXPID.lsm_hst and $EXPID.lsm.rpointer copied
+#  14Aug2002 T. Owens   Added env variable FVSPOOL
+#  12Sep2002 T. Owens   Added SYNCHECK support for checking times in ods 
+#                       and oms files
+#  05Nov2002 Dee        Support for SBC (simplified bias correction)
+#
+#  Year 2003
+#  ---------
+#  31Jan2003 Todling    Added logic to convert upa files (big/little-endian)
+#  14Jul2003 Todling    Merge dee-sbc-fvsys-00 w/ 1_4beta9
+#  19Aug2003 Todling    Added logics to reblock NCEP bufr files on Halem
+#  16Sep2003 Todling    Merged in Ops PR-1039
+#  17Oct2003 T. Owens   Added return code 98 for pre-existing morgue 
+#                       directory (CR 1128)
+#                       Added support for $FCHOME forecast location (CR 1152)
+#                       Added rm of tagged LSM restart files in Forecast 
+#                       mode (DR 1131)
+#  25Nov2003 T. Owens   Added support for hybrid fvNCEP forecasts(CR 1153) 
+#  23oct2003 da Silva   Support for chemical restarts
+#  07Nov2003 Todling    - Implemented split executable option
+#                       - Added SKIPANA env variable
+#  17Nov2003 Todling    Added copying of *.tmpl (for template files)
+#  21Nov2003 Todling    Naming and recycling of NCEP ana ingesfile
+#  04Dec2003 Todling    - Fixed replay while running split mode
+#                       - Fixed storage files to forecast from when in split 
+#                         mode
+#
+#  Year 2004
+#  ---------
+#  04Feb2004 Todling    Modifications related to asynoptic generation of 
+#                       bkg.eta
+#  30Mar2004 Todling    Renamed ingesfile to gesfile
+#  07Jul2004 Todling    Merged in 25sep2003 change: added RTOPT for Linux
+#  16Jul2004 Todling    Added a fix to allow running replay even when starting 
+#                       from 21z rst
+#  02Aug2004 RT/Lucchesi Fix for ASYNOPTIC case; rst's were not written 
+#                       correctly
+#  30Sep2004 Todling    Renamed eta2bin to dyn2drs; added mechanism to file 
+#                       in 1st slot of prog file when doing forecast; per 
+#                       Steve Bloom's "request" 
+#  01Oct2004 Todling    Removed -lW,-T for Linux; to be set via env 
+#                       FORT90L or F_UFMTENDIAN
+#                       Added traj.lcv and ptrj.prs files for TLM/ADM purposes
+#  09Oct2004 Todling    Added capability to generate singular vectors when 
+#                       in FCST mode
+#  22Oct2004 Todling    Added move of OIQC-related rc files to run dir
+#  28Oct2004 Todling    Fixed SKIPANA option
+#  05Nov2004 Todling    Initial modifications to accommodate GEOS-5 GCM
+#  19Nov2004 Todling    Added rst storage capability for lauching forecasts
+#  14Dec2004 Todling    Fixed precision output of drs2dyn call in forecast mode
+#
+#  Year 2005
+#  ---------
+#  07Feb2005 T. Owens   Cleaned up restart file handling
+#  25Feb2005 T. Owens   Added support for hybrid g5NCEP forecasts
+#  10Feb2005 da Silva   Small bug fix for replay: in replay mode uses fvpsasdt
+#                       in ccmrun namelist for nhmsa (as before).
+#  13Apr2005 T. Owens   added ana file existence check for g5NCEP
+#  14Apr2005 Kokron/RT  Added ia64/Linux around block/reblock
+#  29Apr2005 Todling    Interface change to rs52dyn to cope w/ CEREBUS/GCM 
+#  06May2005 Owens/RT   Work around block/reblock and its possible failing
+#  06Jun2005 LPChang/RT Added ox internal restart for GEOS-5 DAS pChem
+#                       Notice that script does not die when OX restart not found (for now)
+#                       Turn bkg/ana.eta into 32 bit output
+#  14Jun2005 T. Owens   Modifications to allow for G5NCEP fcst and 6-hr restarts
+#  23Jun2005 T. Owens   Modifications to allow for MAP05 fcsts to run properly
+#  27Jun2005 Todling    Implemented asynoptic-bkg for GEOS-5 DAS
+#  21Jul2005 Todling    Removed call to rs52dyn from within main loop
+#  28Sep2005 Owens/RT   Updated w/ changes from OPS (mainly map05-related)
+#  07Oct2005 Todling    Added dyn2dyn call to convert bkg files from gcm to dyn-vect
+#  21Oct2005 Todling    Merged OPS changes in and added tracker call within DAS; 
+#                       introduced new bkg.eta filenames
+#
+#........................................................................................

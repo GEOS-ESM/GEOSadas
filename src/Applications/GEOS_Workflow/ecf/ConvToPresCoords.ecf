@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+%include <head.h>
+
+CWD=$(pwd)
+
+export NCPUS=%NCPUS_CONV2PRS%
+export WORKFLOW_DIR=%ECF_HOME%
+bash ${WORKFLOW_DIR}/tasks/ConvToPresCoords.sh
+
+cd $CWD
+
+%include <tail.h>

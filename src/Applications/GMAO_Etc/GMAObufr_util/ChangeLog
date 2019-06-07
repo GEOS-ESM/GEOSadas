@@ -1,0 +1,64 @@
+AVHRR radiance data description and useful information for the use of bufrizing code:
+
+1. AVHRR radiance data is avialble at
+	https://www.class.ncdc.noaa.gov/saa/products/welcome
+
+2. For N15-N19 L1B, section 8 provides a good L1B data description
+	https://www1.ncdc.noaa.gov/pub/data/satellite/publications/podguides/N-15%20thru%20N-19/pdf/
+
+3. BUFRLIB Software User Guide is available at
+	http://www.nco.ncep.noaa.gov/sib/decoders/BUFRLIB/
+
+4. AVHRR Bufr code
+	http://www.nco.ncep.noaa.gov/pmb/codes/nwprod
+	obsproc_satingest.v3.4.*/sorc/bufr_tranavhrr.fd
+	
+   steps to bufrize an example orbit file: 
+	input files needed -> input.bufr, bufrtab.021, lnd_sea_mask_dat, infile
+	
+	dd bs=512 skip=1 if=NSS.GHRR.NN.D16336.S0109.E0257.B5942930.GC of=input.bufr
+	ln -s bufrtab.021 fort.20
+	tranavhrr.x < infile
+	fort.51 and fort.52 will be generated for ocean and land bufr files.
+
+   an example infile to process N18 orbit data:
+	b021 xx053 xxzz 2016010106
+	NOTIMLIM
+	b021 xx054 xxaa 2016010106
+	NOTIMLIM
+	2016 01 01 03 2016 01 01 09
+
+5. make_avhrr_bufr.py script provides a capability to make 6-hourly bufr files from a set of orbit 
+	data files for a given time period. Comment lines inside the python script explains bufrizing 
+	process. In order to run make_avhrr_bufr.py, properly set config_avhrr.py file. 
+	work, code, and data directories. Satellite id and processing time period are set in 
+	the config_avhrr.py file.
+	
+	an example to set variables in config_avhrr.py is:
+	   nobackup_path   = '/discover/nobackup/jgkim'
+	   build_path      = nobackup_path + '/GEOSadas-5_17/GEOSadas'
+	   work_path       = nobackup_path + '/avhrr'
+	   data_path       = nobackup_path + '/avhrr/NOAA_CLASS/avhrr_n15_orbit/2005'
+	   bufr_path       = nobackup_path + '/avhrr/NOAA_CLASS/avhrr_n15_bufr'
+	   which_satellite = 'n15'
+	   start_date      = '2005,09,02 00:00'
+	   end_date        = '2005,09,02 00:00'
+
+6. steps to run make_avhrr_bufr.py script are:
+	- compile bufr codes (tranavhrr.x and table_and_timestamp.x) in build directory
+	  GEOSadas/src/Applications/GMAO_Etc/GMAObufr_util
+	- make a work directory (work_path)
+	- copy make_avhrr_bufr.py and config_avhrr.py into the work directory
+	  modify config_avhrr.py as needed
+	- download AVHRR orbit data files (www.class.ncdc.noaa.gov) 
+	  and put them into data directory (data_path)
+	- make a directory to save new 6-hourly bufr files (bufr_path)
+	- execute the python script in the work directory (work_path): 
+	  python make_avhrr_bufr.py
+	
+7. note that AVHRR radiance data of NOAA 15, 16, 17, 18, and 19 can be processed with the current 
+	version of bufr codes. 6-hourly bufr files are created in the following file name format.
+	
+	- NOAA AM: gmao.050902.t00z.avcsam.tm00.n15.bufr_d
+	- NOAA PM: gmao.050902.t00z.avcspm.tm00.n18.bufr_d
+

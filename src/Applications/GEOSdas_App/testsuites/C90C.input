@@ -1,0 +1,227 @@
+#-----------
+# C90C.input
+#-----------
+
+description: C90C__GEOSadas-5_25_0__agrid_C90__ogrid_CS
+tag: GEOSadas-5_25_0
+
+---ENDHEADERS---
+
+Remote account for Intranet plots? [jstassi@train]
+> 
+
+Is this a MERRA2 experiment (y/n)? [n]
+> 
+
+AGCM Horizontal Resolution? [C180]
+> C90
+
+AGCM Vertical Resolution? [72]
+> 
+
+OGCM Resolution? [f]
+> CS
+
+EXPID? [u000_C90]
+> $expid
+
+Check for previous use of expid (y/n)? [y]
+> n
+
+EXPDSC? [C90C__GEOSadas-5_25_0__agrid_C90__ogrid_CS]
+> 
+
+Land Surface Model choice [1]
+> 
+
+FVHOME? [/discover/nobackup/jstassi/C90C]
+> 
+
+The directory /discover/nobackup/jstassi/C90C does not exist. Create it now? [y]
+> 
+
+Which case of variational analysis? [1]
+> 
+
+Window of the variational analysis (min)? [360]
+> 
+
+FVINPUT? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar]
+> 
+
+REAL TIME BCS? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/g5gcm/bcs/realtime/OSTIA_REYNOLDS]
+> 
+
+agcmpert? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/agcmpert]
+> 
+
+g5chem? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/g5chem]
+> 
+
+g5gcm? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/g5gcm]
+> 
+
+PIESA? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/PIESA]
+> 
+
+MERRA2? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/MERRA2]
+> 
+
+AeroCom? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/AeroCom]
+> 
+
+FVICS? [/archive/u/jstassi/restarts/5C0/CF0090x6C]
+> /archive/u/jstassi/restarts/GEOSadas-5_24_0
+
+Starting year-month-day? [20130902]
+> 20170204
+
+Starting hour-min-sec? [210000]
+> 21
+
+Name of experiment where ICs come from: [C90fF2]
+> 
+
+Run model-adjoint-related applications (0=no,1=yes)? [0]
+> 
+
+Run analysis-sensitivity applications (0=no,1=yes)? [0]
+> 
+
+Ending year-month-day? [20170206]
+> 20170210
+
+Length of FORECAST run segments (in hours)? [123]
+> 27
+
+Number of one-day DAS segments per PBS job? [1]
+> 
+
+Number of PEs in the zonal direction (NX)? [4]
+> 
+
+Number of PEs in the meridional direction (NY)? [24]
+> 
+
+Job nickname? [g5das]
+> 
+
+Run in split executable mode (1=yes;0=no)? [1]
+> 
+
+Frequency of background fields (min)? [180]
+> 
+
+Triangular spectral truncation? [62]
+> 
+
+Analysis vertical levels (sig))? [72]
+> 
+
+GSI grid resolution? [NA]
+> 
+
+GEOS grid resolution instead? [c]
+> 
+
+Ensemble Hybrid (<0;3=3dHyb;4=Hyb4d)? [-1]
+> 
+
+Number of procs in the zonal direction (NX)? [4]
+> 
+
+Number of procs in the meridional direction (NY)? [12]
+> 
+
+Which main class of ObsSys (1: NRT; 2: MERRA; 3: MERRA-2)? [1]
+> 1
+
+OBSERVING SYSTEM CLASSES?
+> disc_airs_bufr,disc_amsua_bufr,gmao_gmi_bufr,mls_nrt_nc,ncep_1bamua_bufr,ncep_1bhrs4_bufr,ncep_atms_bufr,ncep_aura_omi_bufr,ncep_avcsam_bufr,ncep_avcspm_bufr,ncep_cris_bufr,ncep_goesfv_bufr,ncep_gpsro_bufr,ncep_mhs_bufr,ncep_mtiasi_bufr,ncep_prep_bufr,ncep_satwnd_bufr,ncep_sevcsr_bufr,ncep_ssmis_bufr,ncep_tcvitals,rscat_bufr
+
+CHECKING OBSYSTEM? [2]
+> 
+
+Which RADCOR option? [NONE]
+> 
+
+Use sat channel-correlated observation errors (y/n)? [y]
+> 
+
+Use aircraft bias correction (y/n)? [n]
+> 
+
+Use unified radiance bias correction (y/n)? [y]
+> n
+
+Frequency (in days) for writing restarts? [0]
+> 
+
+Frequency for PROGNOSTIC fields? [030000]
+> 
+
+Frequency for surface (2D) DIAGNOSTIC fields? [010000]
+> 
+
+Frequency for upper air (3D) DIAGNOSTIC fields? [030000]
+> 
+
+Dimension of output in zonal direction? [288]
+> 
+
+Dimension of output in meridional direction? [181]
+> 
+
+Would you like 2D diagnostics? [y]
+> 
+
+Would you like 3D diagnostics? [y]
+> 
+
+Would you like to compress diagnostics output files? [n]
+> 
+
+Include GOCART tracers (CO,CO2,aerosols,etc) (y/n)? [y]
+> 
+
+Select GOCART Emission Files to use: [OPS]
+> OPS
+
+Do Aerosol Analysis (y/n)? [y]
+> 
+
+AOD OBSERVING CLASSES [or type 'none']?
+> 
+
+Enable GAAS feedback to model (y/n)? [y]
+> 
+
+Which template? [HISTORY.rc.tmpl]
+> 
+
+Which template? [GCMPROG.rc.tmpl]
+> 
+
+Output Restart TYPE (bin or nc4) [nc4]
+> 
+
+Select group: [g0620]
+> 
+
+Continue without missing resource files? [y]
+> 
+
+Edit COLLECTIONS list in run/HISTORY.rc.tmpl (y/n)? [n]
+> y
+
+COLLECTIONS?
+> gaas_bkg.sfc,bkg.eta,bkg.sfc,cbkg.eta,vtx.mix,asm.eta,inst3_2d_gas_Nx,inst3_3d_gas_Nv,inst3_3d_asm_Np,inst3_3d_asm_Nv,tavg3_3d_cld_Cp,tavg3_3d_mst_Ne
+
+Edit COLLECTIONS list in fcst/HISTORY.rc.tmpl (y/n)? [n]
+> 
+
+Edit files in run directory for CERES configuration (y/n)? [n]
+> 
+
+Which? [Q]
+> 

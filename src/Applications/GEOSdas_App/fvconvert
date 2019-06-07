@@ -1,0 +1,739 @@
+#!/usr/bin/env perl
+#
+# Script for driving post-processing of fvDAS data.
+#
+# !REVISION HISTORY:
+#
+# 20010730   Lucchesi        Initial code
+# 20010807   Lucchesi/K Tai  Mods for multiple diag streams
+# 20010814   Lucchesi        Mods for fv2prs.x interface changes
+# 20020208   Lucchesi/K Tai  Mods for ana2sfc processing
+# 20020321   Owens/Lucchesi  Mods for operational processing
+# 20020819   Owens           Mods to combine LLK and FLK processing
+#                            and support ECS processing
+# 20021017   Owens           support for external configuration file
+# 20021101   Owens           allow empty field in fvconvert.rc file
+# 20021105   Owens           added -A option for grib only ana.prs output
+# 20021125   Owens/Lucchesi  mods for processing partial day files (SOLVE)
+# 20030321   Owens           fixed bug in staging grib analysis files
+# 20030410   Owens           fixed bug in 18z partial processing
+# 20030930   Owens           Mods for GEOS-4.0.3 output stream
+# 20031106   Owens           Mods for FLK partial file processing
+# 20040224   Owens           Mods for subsetting diag eta files
+#---------------------------------------------------------------
+
+BEGIN {
+
+
+sub usage {
+
+   print <<"EOF";
+
+USAGE
+
+     fvconvert -d YYYYMMDD -c config_file 
+               [ -C cvs_file -H fvhome -E expid -R fvroot -B bindir -F fchome -L logfile 
+                 -f fcst_fv2prs.rc -r fv2prs.rc -l fv2prs.lcv.rc -e ecs_out.rc -A hdf,grb 
+                 -a lats.tbl -h -P -p -v ]
+
+DESCRIPTION
+
+     fvconvert - convert fvDAS output files using fv2prs.x and fvsubset.x
+
+OPTIONS
+ -A type          Create pressure level analysis files from ana.eta. Valid 
+                  arguments are hdf or grb, or both separated by a comma. 
+ -a lats.tbl      optional lats4d configuration table to use for grb ana file
+ -B bindir        Path to supplementary DAO binaries - (/usr/local/dasutils/bin)
+ -c config_file   fvconvert configuration file  (Default FVHOME/run/fvconvert.rc)
+ -C cvs_file      File containing CVS tag information
+ -d date          Date of data to convert, in YYYYMMDD format.
+ -e ecs_out.rc    Path and name of rc file for ecs_out - This toggles ECS processing
+ -E EXPID         Experiment ID of the data files.  If -E is not specified,
+                    fvconvert probes the EXPID environment variable.
+ -F FCHOME        The forecast directory for this fvDAS run.  fvconvert will
+                    check for the fcst_fv2prs.lcv.rc (for creating compatible ana.prs 
+                    files) in FCHOME.  If -F is not specified, fvconvert probes the 
+                    FCHOME environment variable.
+ -f fcst_fv2prs   fcst_fv2prs.lcv.rc resource file to use if not default in FCHOME
+ -H FVHOME        The home directory for this fvDAS run.  fvconvert will
+                    expect data files to exist under the FVHOME structure.
+                    If -H is not specified, fvconvert probes the FVHOME 
+                    environment variable.
+ -L logfile       path and name of Error/Event log file (DEFAULT)
+ -l fv2prs.lcv.rc fv2prs.lcv.rc file to use if not default in FVROOT/etc
+ -R FVROOT        The installation directory of the fvDAS software.  If
+                    -R is not specified, fvconvert probes the FVROOT environment
+                    variable.
+ -h               prints this usage notice
+ -P               Flag to allow processing partial files. (First Look mode)
+ -p               Change Precision. Convert the 64-bit ana and bkg files in the 
+                    "ana" directory to 32-bit. Arguments can be ana, bkg, ana32 or bkg32.
+                    ana and bkg remove the 64-bit versions, ana32 and bkg32 keep both versions.
+ -r fv2prs.rc     fv2prs.rc file to use if not default in FVHOME/run
+ -v               Flag to enable verbose output
+
+EOF
+
+exit(1);
+
+}
+
+$ die_away = 0;
+
+# Standard modules  (local modules defined below)
+# ----------------
+
+use Env;                 # make env vars readily available
+use FindBin;             # so we can find where this script resides
+use File::Basename;      # for basename(), dirname()
+use File::Path;          # for mkpath
+use File::Copy;          # for copy() and move()
+use Getopt::Std;         # command line options
+
+# Command line options
+# --------------------
+  
+  getopts('A:B:c:C:d:e:E:f:F:hH:L:l:R:r:Pp:v');
+  $die_away = 1 if ( $#ARGV >= 0 );
+
+  if ( $opt_B ) {
+    $fvbin =  $opt_B;
+  }elsif ( exists $ENV{'FVBIN'} ) {
+    $fvbin = $ENV{'FVBIN'};
+  }else{
+    $fvbin = "/usr/local/dasutils/";
+  }
+
+  if ( $opt_d ) {
+    $date = $opt_d;
+  }else{
+    print "fvconvert ERROR: Date is a required 'option' - Specify with -d\n\n";
+    $die_away = 1;
+  }
+
+  if ( $opt_e ) {
+    $ecs_config_file = $opt_e;
+    $RUN_ECS    = 1;  
+  }else{
+    $RUN_ECS    = 0;
+  }
+
+  if ( $opt_E ) {
+    $expid = $opt_E;
+  }elsif ( exists $ENV{'EXPID'} ) {
+    $expid = $ENV{'EXPID'};
+  }else{
+    print "fvconvert ERROR: No -E EXPID is set.\n\n";
+    $die_away = 1;
+  }
+
+  if ( $opt_F ) { 
+    $fchome =  $opt_F;
+  }elsif ( exists $ENV{'FCHOME'} ) {
+    $fchome = $ENV{'FCHOME'};
+  }else{
+    print "fvconvert ERROR: No -F FCHOME is set.\n\n";
+    $die_away = 1;
+  }
+
+  if ( $opt_H ) { 
+    $fvhome =  $opt_H;
+  }elsif ( exists $ENV{'FVHOME'} ) {
+    $fvhome = $ENV{'FVHOME'};
+  }else{
+    print "fvconvert ERROR: No -H FVHOME is set.\n\n";
+    $die_away = 1;
+  }
+
+  if ( $opt_R ) {
+    $fvroot = $opt_R;
+  }elsif ( exists $ENV{'FVROOT'} ) {
+    $fvroot = $ENV{'FVROOT'};
+  }else{
+    print "fvconvert ERROR: No -R FVROOT is set.\n\n";
+    $die_away = 1;
+  }
+
+  if ( $opt_c ){
+     $config_file = $opt_c;
+  } elsif ( -r "${fvhome}/run/fvconvert.rc" ) {
+     $config_file = "${fvhome}/run/fvconvert.rc";
+  } else {
+      print "fvconvert ERROR: No fvconvert.rc file found - Specify with -c\n\n";
+      $die_away = 1;
+  }
+
+  if ( $opt_L ) {
+    $error_log = $opt_L;
+  }elsif ( exists $ENV{'ERROR_LOG_NAME'} ) {
+    $error_log = $ENV{'ERROR_LOG_NAME'}; 
+    $error_log =~ s/^\-L //;
+  }else{
+    $error_log = "DEFAULT"
+  }
+ 
+  if ( $opt_P ) {
+    $PARTIAL    = 1;
+  }else{
+    $PARTIAL    = 0;
+  }
+
+  $do_ana32 = 0; 
+  $rename_ana64 = 1;
+  $do_bkg32 = 0;
+  $rename_bkg64 = 1;
+  
+  $do_ana32 = 1 if ( $opt_p =~ /ana/ );
+  $do_bkg32 = 1 if ( $opt_p =~ /bkg/ );
+  $rename_ana64 = 0 if ( $opt_p =~ /ana32/ );
+  $rename_bkg64 = 0 if ( $opt_p =~ /bkg32/ );
+
+# Determine where to get fv2prs rc files
+# --------------------------------------
+
+  if ( $opt_r ){
+       $fv2prs_rc = $opt_r;
+  }elsif ( -r "${fvhome}/run/fv2prs.rc" ) {
+       $fv2prs_rc = "${fvhome}/run/fv2prs.rc";
+  }elsif ( -r "${fvroot}/etc/fv2prs.rc" ) {
+       $fv2prs_rc = "${fvroot}/etc/fv2prs.rc";
+  }else{
+       print "fvconvert ERROR: No fv2prs.rc file found - Specify with -r\n\n";
+       $die_away = 1;
+  }
+
+  if ( $opt_l ){
+      $fv2prs_lcv_rc = $opt_l;
+  }elsif ( -r "${fvhome}/run/fv2prs.lcv.rc" ) {
+      $fv2prs_lcv_rc = "${fvhome}/run/fv2prs.lcv.rc";
+  }elsif ( -r "${fvroot}/etc/fv2prs.lcv.rc" ) {
+      $fv2prs_lcv_rc = "${fvroot}/etc/fv2prs.lcv.rc";
+  }else{
+      print "fvconvert ERROR: No fv2prs.lcv.rc file found - Specify with -l\n\n";
+      $die_away = 1;
+  }  
+
+# Initialize ana file options
+  $do_ana_grb = 0;
+  $do_ana_hdf = 0;
+  $ana_tbl = "";
+
+  if ( $opt_A ) {
+       $do_ana_grb  = 1 if ( $opt_A =~ /grb/ );
+       $do_ana_hdf  = 1 if ( $opt_A =~ /hdf/ );
+
+#--Check fcst_fv2prs.lcv.rs
+       if ( $opt_f ){
+            $fcst_fv2prs = $opt_f;
+       }elsif ( -r "${fchome}/fcst_fv2prs.lcv.rc" ) {
+            $fcst_fv2prs = "${fchome}/fcst_fv2prs.lcv.rc";
+       }elsif ( -r "${fvhome}/run/fcst_fv2prs.lcv.rc" ) {
+            $fcst_fv2prs = "${fchome}/fcst_fv2prs.lcv.rc";
+       }elsif ( -r "${fvroot}/etc/fcst_fv2prs.lcv.rc" ) {
+            $fcst_fv2prs = "${fvroot}/etc/fcst_fv2prs.lcv.rc";
+       }else{
+            print "fvconvert ERROR: No fcst_fv2prs.lcv.rc file found - Specify with -f\n\n";
+            $die_away = 1;
+       }
+  }
+  if ( $do_ana_grb ) {
+#--Check optional ana.tbl for grib ana.prs
+       if ( $opt_a ){
+            $ana_tbl = " -table $opt_a ";
+       }elsif ( -r "${fchome}/fcst_ana.tbl" ) {
+            $ana_tbl = " -table ${fchome}/fcst_ana.tbl ";
+       }elsif ( -r "${fvhome}/fcst_ana.tbl" ) {
+            $ana_tbl = " -table ${fvhome}/fcst_ana.tbl ";
+       }else{
+             warn "Default lats.tbl being used for ana grib file\n";
+       }
+  }
+
+#--Check CVS tag file
+
+  if ( $opt_C ){
+     $cvs_tag  = "-cvs $opt_C";
+  } elsif ( -r "${fvhome}/run/CVSTAG" ) {
+     $cvs_tag  = "-cvs ${fvhome}/run/CVSTAG";
+  } else {
+     $cvs_tag  = "";
+     warn "No CVSTAG being used\n";
+  }
+
+  if ( $opt_v ) {
+    $verbose    = 1;
+  }else{
+    $verbose    = 0;
+  }
+
+  usage() if ( $opt_h || $die_away );
+
+# Set the GrADS envronment variables.
+
+  $ENV{'GADDIR'} = "$fvbin/lib/grads";
+  $ENV{'GASCRP'} = "$fvroot/lib/grads";
+  $ENV{'SHELL'} = '/bin/csh';
+
+# Local module search path
+# ------------------------
+
+#-Set the path to be searched for required programs.
+   $PROGRAM_PATH = $FindBin::Bin;
+   print "${fvhome}/run ", "${PROGRAM_PATH} ", "${fvroot}/bin ","$ENV{'GASCRP'}", "$ENV{'GADDIR'}", "${fvbin}/bin","\n";
+   @SEARCH_PATH = ( "${fvhome}/run", "${PROGRAM_PATH}", "${fvroot}/bin", $ENV{'GASCRP'}, $ENV{'GADDIR'}, "${fvbin}/bin" );
+   if ( exists $ENV{'PATH'} ) {
+        $ENV{'PATH'} = join( ':', @SEARCH_PATH, $ENV{'PATH'} );
+   }else{
+        $ENV{'PATH'} = join( ':', @SEARCH_PATH );
+   }
+   $ENV{'PATH'} = join( ':', $ENV{'PATH'}, $ENV{'PBS_O_PATH'} )  if ( exists $ENV{'PBS_O_PATH'} );
+
+# Record current environment
+# --------------------------
+
+   system("/sbin/env") if ( $verbose );
+
+
+  }#End BEGIN block
+
+# Local modules
+# -------------
+  
+  print "\@SEARCH_PATH = @SEARCH_PATH\n" if ( $verbose );
+  use lib (  @SEARCH_PATH );
+  use Manipulate_time;     # inc_time subroutine
+  use Remote_utils;        # file transfer functions
+  use Extract_config;      # read configuration files
+  use Err_Log;             # error reporting and logging  
+  $walltime = `date`; 
+  print "DATE at start = $walltime\n" if ( $verbose );
+
+# Extract File types to be post-processed
+# ----------------------------------------
+
+  if ( ( $TAVG2D = extract_config( "tavg2d_files", $config_file, "NONE" ) ) eq "NONE" ) {
+       @tavg2d_files = (); 
+  }else{
+       @tavg2d_files = ex_array($TAVG2D);
+  }
+
+  if ( ( $TAVG3D = extract_config( "tavg3d_files", $config_file, "NONE" ) ) eq "NONE" ) {
+       @tavg3d_files = ();
+  }else{
+       @tavg3d_files = ex_array($TAVG3D);
+  }
+          
+  if ( ( $TSYN2D = extract_config( "tsyn2d_files", $config_file, "NONE" ) ) eq "NONE" ) {
+       @tsyn2d_files = ();
+  }else{
+       @tsyn2d_files = ex_array($TSYN2D);
+  }
+
+  if ( ( $TSYN3D = extract_config( "tsyn3d_files", $config_file, "NONE" ) ) eq "NONE" ) {
+       @tsyn3d_files = ();
+  }else{
+       @tsyn3d_files = ex_array($TSYN3D);
+  }
+   
+  $post_files  = join ' ',$TAVG2D,$TAVG3D,$TSYN2D,$TSYN3D;
+
+# Extract File names and locations for ECS
+# ----------------------------------------
+  my $ECS_OUTPUT_DIR;
+  my $ECS_FILE_TYPES;
+  my $now;
+ 
+  if ( $RUN_ECS ) {
+
+#-Initialize error flag
+     $ecs_err = 0;
+
+#-get output location
+     if ( ( $ECS_OUTPUT_DIR = extract_config( "ECS_OUTPUT", $ecs_config_file, "NONE" ) ) eq "NONE")
+         {
+            err_log (5, "fvconvert", "${date}","${expid}","-1",
+                     {'err_desc' => "$0:FATAL ERROR - can not get ECS_OUTPUT configuration value.",
+                      'log_name' => "$error_log" });
+            die "(fvconvert) FATAL ERROR - can not set ECS_OUTPUT configuration value.\n";
+         }
+
+#-get list of file names
+     if ( ( $ECS_FILE_TYPES = extract_config( "TYPES", $ecs_config_file, "NONE" ) ) eq "NONE" )
+         {
+            err_log (5, "fvconvert", "${date}","${expid}","-1",
+                    {'err_desc' => "$0:FATAL ERROR - can not get TYPES configuration value.",
+                    'log_name' => "$error_log" });
+            die "(fvconvert) FATAL ERROR - can not set TYPES configuration value.\n";
+         }
+
+#-verify that the ECS_FILE_TYPES specified will be converted
+     @ecs_files = split ' ',$ECS_FILE_TYPES;
+     foreach (@ecs_files) {
+         @ecs_file = split /\./,$_;
+         if ( $post_files =~ /$ecs_file[-2]/ ){
+             undef @ecs_file;
+         }else{ 
+             err_log (5, "fvconvert", "${date}","${expid}","-1",
+                    {'err_desc' => "$0:FATAL ERROR - ECS_TYPE $ecs_file[-2] not in list of file types to be converted",
+                    'log_name' => "$error_log" });
+             die "(fvconvert) FATAL ERROR - ECS_TYPE $ecs_file[-2] not listed in fvconvert.rc, check config_file.\n";
+         }
+     }
+#-set now value for directory name
+     
+     $now =  now();
+
+#-create ECS output directory
+
+     $ECS_DIR="${ECS_OUTPUT_DIR}/${now}";
+     print "Will use $ECS_DIR for ECS output files.\n" if ( $verbose );
+
+#-create output directory or warn if it already exists.
+
+    if ( ( -d $ECS_DIR ) && ( -w $ECS_DIR ) ) {
+         print "$0:Warning, $ECS_DIR already exists.\n" if ( $verbose );
+    } else {
+         mkpath( "$ECS_DIR", 1, 0755 );
+         if (( ! -d $ECS_DIR ) || ( ! -w $ECS_DIR )) {
+             err_log (5, "fvconvert", "${date}","${expid}","-1",
+                   {'err_desc' => "$0:FATAL ERROR - can not write to $ECS_DIR.",
+                    'log_name' => "$error_log" });
+             die "(fvconvert) FATAL ERROR Could not write to $ECS_DIR.\n";
+         }
+    }
+ } # End if ($RUN_ECS) 
+
+
+#-Set options for file transfers
+
+  %options = ( 'debug' => '1', 
+               'mode'  => '0644',
+               'direct' => '1');
+
+# ------------------- #
+# Process diag files  #
+# ------------------- #
+
+  $walltime = `date`; 
+  print "DATE before processing tavg3d files = $walltime\n" if ( $verbose );
+
+  undef @diag_sfc_files;
+  undef @diag_eta_files;
+  undef @sub_eta_files;
+
+#--Set location for current diag files
+  $diagdir = token_resolve("${fvhome}/diag/Y%y4/M%m2",$date);
+
+#--Calculate previous date
+ ( $datem1, $nextime ) = inc_time ($date, 0, -1, 0);
+
+#--Set file location for previous date
+  $diagdirm1 = token_resolve("${fvhome}/diag/Y%y4/M%m2",$datem1);
+
+#--Build diag file lists
+  chdir ("$diagdir"); 
+  foreach ( "01","04","07","10","13","16","19","22" ){
+       $diag_sfc_test = "${expid}.diag.sfc.${date}_${_}30z.nc4";
+       $diag_eta_test = "${expid}.diag.eta.${date}_${_}30z.nc4";
+       if ( ( -e $diag_sfc_test ) && ( ! -z $diag_sfc_test ) ) {
+            push (@diag_sfc_files, "$diag_sfc_test");
+       }else{
+            die "$0 ERROR: $diag_sfc_test not found or zero length\n" if ( ! $PARTIAL );
+       }
+       if ( ( -e $diag_eta_test ) && ( ! -z $diag_eta_test ) ) {
+            push (@diag_eta_files, "$diag_eta_test");
+       }else{
+            die "$0 ERROR: $diag_eta_test not found or zero length\n" if ( ! $PARTIAL );
+       }
+  }
+
+#--Make list for subsetter
+  push ( @sub_eta_files, "${diagdirm1}/${expid}.diag.eta.${datem1}_2230z.nc4", @diag_eta_files );
+
+#--Remove last file from array if doing partial processing  
+#  $tmp=pop(@diag_sfc_files) if ( $PARTIAL );
+  $tmp=pop(@diag_eta_files) if ( $PARTIAL );
+  $tmp=pop(@sub_eta_files ) unless ( $PARTIAL );
+
+
+# Create 3-D diag files using fv2prs
+# ----------------------------------
+
+#--Join psf file list with commas 
+       $psf_files = join ',',  @diag_sfc_files;
+
+       $count=0;
+       foreach $file ( @tavg3d_files ) {
+           print "Processing $file  count = $count\n";
+           $cmd = "no files found";
+           if ($file =~ /_e$/ ) {
+                 $bin = "fvsubset.x";
+                 if ( -r "${fvhome}/run/${file}.rc" ) {
+                     $subset_rc = "${fvhome}/run/${file}.rc";
+                 }elsif ( -r "${fvroot}/etc/${file}.rc" ) {
+                     $subset_rc = "${fvroot}/etc/${file}.rc";
+                 }else{
+                   die "fvconvert ERROR: No ${file}.rc file found\n";
+                 }
+                 $cmd = "$bin $cvs_tag -begDate ${date} -begTime 0 -incTime 60000 -o ${expid}.${file}.t${date} -rc $subset_rc -vars \@${file} @sub_eta_files";
+
+#--Check if any diag_eta_files exist after popping the array ( 03z can't do avg )
+           }elsif ( $#diag_eta_files > 0 ) {
+                 $bin = "fv2prs.x";
+                 $cmd =  "$bin $cvs_tag -f ${expid}.${file}.t${date} -psf $psf_files -inc 60000 -date ${date} -start 030000 -rc $fv2prs_rc -vars \@${file} @diag_eta_files";
+           }
+      
+           print "cmd = $cmd\n";
+           if ( $cmd ne "no files found" ) {
+                $rc = system("$cmd") if $cmd ne "null"; 
+                if ( $rc ) {
+                     die "fvconvert ERROR: $bin failed on ${file}";
+                }
+      
+#--Transfer files for ECS if needed
+               if ( ( $RUN_ECS ) && ( $ECS_FILE_TYPES =~/$file/ ) ) {
+                     $rc=rput ("${expid}.${file}.t${date}" , "${ECS_DIR}/${expid}.${file}.t${date}", \%options);
+                     if ( ! $rc ) {
+                          print "fvconvert WARNING:  Unable to copy ${expid}.${file}.t${date} to ${ECS_DIR}\n";
+                          $ecs_err ++;
+                     }
+               }
+           }
+           $count ++;
+      } 
+      $walltime = `date`; 
+      print "DATE after processing tavg3d files = $walltime\n" if ( $verbose );
+
+# Create 2-D diag files using fv2prs
+# ----------------------------------
+  if ( $#diag_sfc_files >= 0 ) {
+      foreach $file ( @tavg2d_files ) {
+         $cmd = "fv2prs.x $cvs_tag -f ${expid}.${file}.t${date} -rc $fv2prs_rc -vars \@${file} @diag_sfc_files";
+         print "cmd = $cmd\n";
+         $rc=system("$cmd");
+         if ( $rc ) {
+              die "fvconvert ERROR: fv2prs.x failed on ${file}";
+         }
+#--Transfer files for ECS if needed
+         if ( ( $RUN_ECS ) && ( $ECS_FILE_TYPES =~/$file/ ) ) {
+              $rc=rput ("${expid}.${file}.t${date}" , "${ECS_DIR}/${expid}.${file}.t${date}", \%options);
+              if ( ! $rc ) {
+                   print "fvconvert WARNING:  Unable to copy ${expid}.${file}.t${date} to ${ECS_DIR}\n";
+                   $ecs_err ++;
+              }
+         }
+      }
+         $walltime = `date`; 
+         print "DATE after processing tavg2d files = $walltime\n";
+
+
+  }else{  
+         print "No partial diag files found to process. Skipping tavg2d. \n";
+  }#End diag file processing
+
+#------------------------# 
+# Process analysis files # 
+#------------------------#
+  undef @ana_files;
+  undef @sfc_files;
+  undef @bkg_files;
+
+#--directory locations
+  $rec_dir     = "${fvhome}/recycle/";
+  $ana_dir     = token_resolve("${fvhome}/ana/Y%y4/M%m2",$date);
+
+#--ana file names
+  $ana_eta     = "${expid}.ana.eta.${date}";
+  $bkg_eta     = "${expid}.bkg.eta.${date}";
+  $ana_sfc     = "${expid}.ana.sfc.${date}";
+
+#--ana lats4d input files
+  $ana_hdf  = "${ana_dir}/${expid}.ana.prs.${date}.nc4";
+
+#--Check optional ana.tbl for grib ana.prs
+  if ( $opt_a ){
+       $ana_tbl = " -table $opt_a ";
+  }elsif ( -r "${fchome}/fcst_ana.tbl" ) {
+       $ana_tbl = " -table ${fchome}/fcst_ana.tbl ";
+  }elsif ( -r "${fvhome}/fcst_ana.tbl" ) {
+       $ana_tbl = " -table ${fvhome}/fcst_ana.tbl ";
+  }else{
+        warn "Default lats.tbl being used for ana grib file\n";
+  }
+
+#--ana lats4d output files
+  $ana_nc     = "${expid}.ana.prs.${date}";
+  $ana_grb    = "${ana_dir}/${ana_nc}.grb";
+  $ana_ctl    = "${ana_dir}/${ana_nc}.ctl";
+  $ana_map    = "${ana_dir}/${ana_nc}.gmp";
+
+#--check file existence
+  chdir ("$ana_dir");
+  foreach ( "00","06","12","18" ) {
+       $ana_test = "${ana_eta}_${_}z.nc4";
+       $bkg_test = "${bkg_eta}_${_}z.nc4";
+       if ( ( -e $ana_test ) && ( ! -z $ana_test ) ) {
+            push (@ana_files, "$ana_test");
+       }else{
+            die "$0 ERROR: $ana_test not found or zero length\n" if ( ! $PARTIAL ); 
+       }
+       if ( ( -e $bkg_test ) && ( ! -z $bkg_test ) ) {
+            push (@bkg_files, "$bkg_test");
+       }else{
+            die "$0 ERROR: $bkg_test not found or zero length\n" if ( ! $PARTIAL ); 
+       }
+  }
+
+  foreach ( "00","03","06","09","12","15","18","21" ) { 
+       $sfc_test = "${ana_sfc}_${_}z.nc4";
+       if ( ( -e $sfc_test ) && ( ! -z $sfc_test ) ) {  
+            push (@sfc_files, "$sfc_test" );
+       }else{
+            die "$0 ERROR: $sfc_test not found or zero length\n" if ( ! $PARTIAL ); 
+       }
+  }
+
+  foreach $file ( @tsyn3d_files ) {
+      $cmd = "fv2prs.x $cvs_tag -f ${expid}.${file}.t${date} -inc 60000 -date ${date} -rc $fv2prs_lcv_rc -vars \@${file} @ana_files";
+      print "$cmd \n" if ( $verbose );
+      $rc = system ("$cmd");
+      if ( $rc ) {
+           die "fvconvert ERROR: fv2prs.x failed on ${file}";
+      }
+
+#--Transfer files for ECS if needed
+      if ( ( $RUN_ECS ) && ( $ECS_FILE_TYPES =~/$file/ ) ) {
+           $rc=rput ("${expid}.${file}.t${date}" , "${ECS_DIR}/${expid}.${file}.t${date}", \%options);
+           if ( ! $rc ) {
+                print "fvconvert WARNING:  Unable to copy ${expid}.${file}.t${date} to ${ECS_DIR}\n";
+                $ecs_err ++;
+           }
+      }
+  }
+  $walltime = `date`;
+  print "DATE after processing tsyn3d files = $walltime\n" if ( $verbose );
+
+#--Create  files ana.prs files for monitoring
+  if ( ( $do_ana_hdf ) || ( $do_ana_grb ) ) {
+       print "Running fv2prs with $fcst_fv2prs to convert ana file to pressure levels.\n" if ( $verbose );
+       $cmd = "fv2prs.x $cvs_tag -f ${ana_hdf} -rc $fcst_fv2prs -inc 60000 -date ${date} -vars \@prog.prs @ana_files";
+       print "$cmd \n" if ( $verbose );
+       $rc = system ("$cmd");
+       if ( $rc ) {
+            die "(fvconvert) FATAL ERROR: fv2prs.x failed on @ana_files\n";
+       }
+
+#--Create GRIB format analysis files if requested with -a flag
+       if ( $do_ana_grb ) {
+            print "Running lats4d to convert HDF pressure level file to grib\n" if ( $verbose );
+            $cmd = "lats4d -v -xvars xdim ydim $ana_tbl -format grads_grib -i $ana_hdf -freq 6 hourly -o $ana_nc";
+            print "$cmd \n" if ( $verbose );
+            $rc=system("$cmd");
+            if ( ( $rc ) || ( -z $ana_map ) || ( ! -e $ana_map ) ) {
+                 die  "\$rc = $rc (fvconvert) FATAL ERROR: lats4d failed on ${ana_prs}\n";
+            }else{
+                 if ( ! $do_ana_hdf ){
+                      print "Removing interim file: ${ana_hdf} \n" if ( $verbose );
+                      unlink ("${ana_hdf}");
+                 }
+            }  
+       }
+  $walltime = `date`;
+  print "DATE after processing ana pressure files = $walltime\n" if ( $verbose );
+  }
+
+#-Use fv2prs to time-interpolate tsyn2d files to 3-hourly data
+  print "Using fv2prs to time-interpolate tsyn2d files to 3-hourly data\n";
+  foreach $file ( @tsyn2d_files ) {
+       $cmd = "fv2prs.x $cvs_tag -date ${date} -f ${expid}.${file}.t${date} -rc ${fv2prs_lcv_rc} -vars \@tsyn2d_mis_x -inc 030000 @sfc_files";
+       print "cmd = $cmd\n" if ( $verbose );
+       $rc=system ("$cmd");
+       if ( $rc ) {
+               die "fvconvert ERROR: fv2prs.x failed on ${file}";
+       }
+
+#--Transfer files for ECS if needed
+       if ( ( $RUN_ECS ) && ( $ECS_FILE_TYPES =~/$file/ ) ) {
+            $rc=rput ("${expid}.${file}.t${date}" , "${ECS_DIR}/${expid}.${file}.t${date}", \%options);
+            if ( ! $rc ) {
+                  print "fvconvert WARNING:  Unable to copy ${expid}.${file}.t${date} to ${ECS_DIR}\n";
+                  $ecs_err ++;
+            }
+      }
+  }
+
+  $walltime = `date`;
+  print "DATE after processing tsyn2d files = $walltime\n" if ( $verbose );
+
+# Run ecs_out to append metadata and generate PDR
+# -----------------------------------------------
+ 
+  if ( $RUN_ECS ){
+     if ( ! $ecs_err ) {
+        $cmd = "ecs_out -now $now -expno $expid -date $date -config $ecs_config_file -logfile $error_log"; 
+        print "cmd = $cmd \n" if ( $verbose );
+        $ecs_rc=system("$cmd");
+     }else{
+          err_log (5, "fvconvert", "${date}","${expid}","-1",
+                  {'err_desc' => "$0:FATAL ERROR - One or more files not copied to $ECS_DIR.",
+                   'log_name' => "$error_log" });
+     }
+
+     if ( $ecs_rc  ) {
+            err_log (5, "fvconvert", "${date}","${expid}","-1",
+                  {'err_desc' => "$0:FATAL ERROR - ecs_out failed.",
+                   'log_name' => "$error_log" });
+            die "(fvconvert) FATAL ERROR: ecs_out failed.\n";
+     }
+
+     $walltime = `date`;
+     print "DATE after ECS processing = $walltime\n" if ( $verbose );
+  }
+
+# Convert ana and bkg files to 32 bits, if requested.
+# ---------------------------------------------------
+  if ( $do_ana32 ) {
+       chdir ("$ana_dir");
+       
+       # Convert ana file 
+       foreach $ana64file ( @ana_files ){
+           ($ana32file = $ana64file) =~ s/\.ana\./\.ana32\./;      
+           unless ( ( -e $ana32file ) && ( $PARTIAL ) ){
+                $cmd = "${fvroot}/bin/dyn2dyn.x -o $ana32file $ana64file";
+                 print "$cmd\n"  if ( $verbose );
+                 $rc=system("$cmd");
+                 if ( $rc ) {
+                     warn "fvconvert: ERROR converting $ana64file to 32-bit.\n";
+                 }else{
+                     rename ($ana32file, $ana64file) if ( $rename_ana64 );
+                 }
+           }
+       }
+       $walltime = `date`;
+       print "DATE after converting 64-bit ana to 32-bit ana = $walltime\n"  if ( $verbose );
+  }
+
+  if ( $do_bkg32 ) {
+       chdir ("$ana_dir");
+
+       # Convert bkg file
+       foreach $bkg64file ( @bkg_files ){
+           ($bkg32file = $bkg64file) =~ s/\.bkg\./\.bkg32\./;
+           unless ( ( -e $bkg32file ) && ( $PARTIAL ) ){
+                $cmd = "${fvroot}/bin/dyn2dyn.x -o $bkg32file $bkg64file";
+                 print "$cmd\n"  if ( $verbose );
+                 $rc=system("$cmd");
+                 if ( $rc ) {
+                     warn "fvconvert: ERROR converting $bkg64file to 32-bit.\n";
+                 }else{
+                     rename ($bkg32file, $bkg64file) if ( $rename_bkg64 );
+                 }
+           }
+       }
+       $walltime = `date`;
+       print "DATE after converting 64-bit bkg to 32-bit bkg = $walltime\n"  if ( $verbose );
+  }
+
+ 
+exit(0);

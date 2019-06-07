@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+%include <slurm.h>
+#SBATCH --ntasks=%NCPUS_ACQOBS%
+#SBATCH --partition=datamove
+#SBATCH --time=%TIME_ACQOBS%
+#SBATCH --job-name=%STE_NAME%-acq-obs-1
+#SBATCH --output=%BATCHOUT_DIR%/%STE_NAME%-acq-obs-1.out.%j
+
+%include <head.h>
+
+CWD=$(pwd)
+
+export WORKFLOW_DIR=%ECF_HOME%
+bash ${WORKFLOW_DIR}/tasks/AcquireObservations.sh
+
+cd $CWD
+
+%include <tail.h>

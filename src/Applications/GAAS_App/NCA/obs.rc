@@ -1,0 +1,117 @@
+#
+# FVPSAS Observer resource file.
+#
+# !REVISION HISTORY:
+#
+# 09feb2010  da Silva  Simplified for AOD analysis
+#
+#-----------------------------------------------------------------------------
+
+#                          ---------------
+#                          Quality control
+#                          ---------------
+
+do_duplicate_elimination:   no
+do_online_quality_control:  yes 
+
+#                          ---------------
+#                            Red Listing
+#                          ---------------
+
+# Red list: these observations are excluded immediatly after they read
+#           They take qc flag X_PRE_BAD
+# ----------------------------------------------------------------------
+Red*List::
+
+INSIDE    # mark data which are INSIDE these boxes
+
+#
+# BoxId      kx       kt      lat          lon          lev         time
+# -----   -------  -------  ----------  ----------  ----------- ------------
+
+# Keep kt=45 (AOD)
+
+   1       1  512   1    44    -90 +90     -180 +180    0  2100    -180 +180
+   2       1  512   46  255    -90 +90     -180 +180    0  2100    -180 +180
+
+# Keep channels in (460,880)
+
+   3       1  512   1   255    -90 +90     -180 +180    0   460    -180 +180
+   4       1  512   1   255    -90 +90     -180 +180  880  2100    -180 +180
+
+# Eliminate MISR south of of 60S (mostly over Antarctica)
+
+   5      313 313   1   255   -90 -60     -180 +180    0  2100    -180 +180
+
+# -----   -------  -------  ----------  ----------  ----------- ------------
+# BoxId      kx       kt      lat          lon          lev         time
+
+::
+
+#                          ---------------
+#                           Yellow Listing
+#                          ---------------
+
+# Yellow list: these observations are marked as suspect immediatly after
+#              they are read. Currently, they are marked with the qc flag
+#              H_PRE_SUSP.
+# -----------------------------------------------------------------------------
+Yellow*List::
+
+INSIDE    # mark data which are inside these boxes
+
+# BoxId      kx       kt      lat          lon          lev         time
+# -----   -------  -------  ----------  ----------  ----------- ------------
+
+::
+
+#                          ---------------
+#                           Passive Data
+#                          ---------------
+
+# Passive data: O-F are computed for these but they do not enter QC/PSAS
+# ----------------------------------------------------------------------
+PassiveData*List::
+
+INSIDE    # Exclude data which are inside these boxes
+
+# BoxId      kx       kt      lat          lon          lev         time
+# -----   -------  -------  ----------  ----------  ----------- ------------
+
+# MODIS-TERRA/Land is NOT passive
+###   1      302 302   45  45    -90 +90     -180 +180    0  2100    -180 +180
+
+# MODIS-AQUA/Land is NOT passive
+###   1      312 312   45  45    -90 +90     -180 +180    0  2100    -180 +180
+
+# MISR is NOT passive
+###   1      313 313   43  43    -90 +90     -180 +180    0  2100    -180 +180
+###   1      313 313   45  45    -90 +90     -180 +180    0  2100    -180 +180
+
+# OMI is passive
+   1      314 314   43  43    -90 +90     -180 +180    0  2100    -180 +180
+   1      314 314   45  45    -90 +90     -180 +180    0  2100    -180 +180
+
+# PARASOL is passive
+   1      316 317   43  43    -90 +90     -180 +180    0  2100    -180 +180
+   1      316 317   45  45    -90 +90     -180 +180    0  2100    -180 +180
+
+# Deep-blue is passive
+   1      320 320   43  43    -90 +90     -180 +180    0  2100    -180 +180
+   1      320 320   45  45    -90 +90     -180 +180    0  2100    -180 +180
+
+# AERONET is passive
+   1      323 323   43  43    -90 +90     -180 +180    0  2100    -180 +180
+   1      323 323   45  45    -90 +90     -180 +180    0  2100    -180 +180
+
+# -----   -------  -------  ----------  ----------  ----------- ------------
+# BoxId      kx       kt      lat          lon          lev         time
+
+::
+
+#                          ---------------
+#                           Log Transform
+#                          ---------------
+
+do_log_transform_aod:       yes
+eps_for_log_transform_aod:  0.01

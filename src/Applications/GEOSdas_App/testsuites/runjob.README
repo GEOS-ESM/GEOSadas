@@ -1,0 +1,61 @@
+Notes for using runjob script
+last modification date for these notes: 12Jul2010
+
+    usage: runjob
+
+ 1. The runjob script looks for fvsetup input files with an ".input" extension.
+
+ 2. The heading information in the .input file is used by runjob to get
+    information about the test and fvsetup flags.
+
+    Heading information in the .input file can include the following
+
+      a) expid: The job experiment ID.  This value is substituted for $expid
+                wherever it occurs in the inputs, thus allowing the user to
+                define the expid in only one place.
+
+      b) description: A description of what is being tested with the run.
+
+      c) fvsetupflags: Runtime flags for the fvsetup script include these options:
+            -batchmode: This flag is recommended for automated tests since it
+                        reduces the possibility of receiving unexpected prompts
+                        from fvsetup, especially when modifying a .input file for
+                        a new experiment which may require a different set of
+                        bootstrapped restarts, for example.
+      d) tag: Tag ID of build
+
+ 3. Other than the headings, the only significant information in the .input file
+    are the values which follow a '>' character in first column of the file.
+
+ 4. The information following a '>' character in the first column is stripped
+    out and and used as redirected input to the fvsetup script.
+
+ 5. Other verbage in the .input file is provided for guidance only, to help the
+    user determine what input should follow '>'.
+
+ 6. Blank input following the '>' character is interpreted as an empty <CR> to
+    fvsetup.  For many of the prompts, this will invoke a default response.
+
+ 7. Values stripped from the .input file are written to a hidden file named
+
+    .redirFile[n]
+
+    This file is automatically deleted when runteset.pl is complete.  Use the
+    -debug runtime flag with runjob to keep this file from being deleted if
+    you wish to inspect it after runjob is done.
+
+ 8. Other files to inspect after runjob completes are
+      a) fvsetup.$expid.LOG
+      b) fvsetup.$expid.ERR
+
+    The LOG file is saved in the LOGs subdirectory following setup.
+
+    The ERR file is deleted following setup, if no significant errors are found
+    in it.  The -debug runtime flag will also the ERR file from being deleted.
+
+ 9. It goes without saying that if you are having trouble with runjob, then
+    check your .input file carefully to be sure that the order of your '>'
+    inputs matches exactly with what is being asked by fvsetup.  When doing this
+    check, be sure to use the same flags listed at the top of the .input file
+    when interactively calling fvsetup.
+

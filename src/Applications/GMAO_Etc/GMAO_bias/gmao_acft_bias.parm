@@ -1,0 +1,8 @@
+Configuration for aircraft bias correction calculation
+This version uses only level flight (level<600hPa, 
+abs(ascent/descent rate)<10hPa/min)  
+To configure for original bias correction (use all good data) set:
+ plevlim=1100 adsclm=99999.  bvarmin=0.001  nobsmin -1 nminb 1
+
+&acftbias plevlim=600., adsclm=10., dfact=0.99, nobsmin=0, 
+      bvarmin=0.001, nminb=10 /

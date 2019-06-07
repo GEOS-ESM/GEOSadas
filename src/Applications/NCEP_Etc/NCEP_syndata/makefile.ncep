@@ -1,0 +1,19 @@
+SHELL=		/bin/sh
+LIBS= -L/nwprod/lib -lbufr_4_64 -lw3_4 -lsp_4
+FFLAGS=     -Q -O3 -qlist -qsource -qsuffix=f=f -qxlf77=leadzero -qnosave \
+ -qsmp=noauto     -l essl -bnoquiet
+
+LDFLAGS=   $(FFLAGS)
+
+SRCS=		syndata.f spherp.f
+OBJS=		syndata.o spherp.o
+
+FC=		ncepxlf
+
+CMD=		syndat_syndata
+
+all:		$(CMD)
+
+$(CMD):		$(OBJS)
+	$(FC) $(LDFLAGS) -o $(@) $(OBJS) $(LIBS) 
+

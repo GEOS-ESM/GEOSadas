@@ -1,0 +1,9 @@
+# Resource control file for vortex tracking script
+# ------------------------------------------------
+
+# long. range from 0 to 360
+xrange_beg:    0   # long. range from 
+xrange_end:  360
+# lat. range
+yrange_beg:  -60
+yrange_end:   60

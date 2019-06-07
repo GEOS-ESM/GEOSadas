@@ -1,0 +1,35 @@
+#
+# ObsFuncs Resource file.
+#
+#
+
+OBS*Operations: sum numneg
+#OBS*Variable: xvecxomf
+
+OBS*Class*Kts:: 
+   spr       33
+   temp      44
+   uv        4 5
+   hum       11
+   spd       12
+   pcp       17
+   oz        21
+#  ozo       ??
+   o3l       22
+   gps       88 89
+   rad       40
+::
+
+#OBS*Class*Kxs::
+#   spr       1
+#   temp      1
+#   uv        1
+#   hum       1
+#   spd       1
+##  pcp       1
+#   oz        1
+##  ozo       1
+#   o3l       1
+#   gps       1
+#   rad       1
+#::

@@ -1,0 +1,877 @@
+#!/usr/bin/env perl
+#
+# Wrapper script for NCEP OI Complex Quality Control
+#
+# !REVISION HISTORY:
+#
+#
+#  13Jul2004  Meta      Initial version based on fvcqc script
+#  26Jul2004  Meta      Tested, fixed bugs.  First release
+#  03Aug2004  Meta      Changes for HP/Compaq (prun, touch files, big_endian)
+#  12Jan2006  Meta      Add cqcht and other programs to script
+#  23Jan2006  Meta      Move individual checks to separate subdirectories.
+#  10Feb2006  Meta      Added option to skip Profiler QC (via env. variable)
+#  14Mar2006  Meta      Added option to skip aircraft QC (via env. variable)
+#  17Nov2006  DanK      Added zeit calls
+#  13Jun2007  Meta      Add 'cqcvad' program
+#  20Jun2007  Meta      Limit OIQC mpirun to 4 CPUs unless 'np' was specified
+#                        add options to run Chris Redder's Haimberger and
+#                        raobcor (radcor for homogenized obs) programs
+#  02May2008  Meta      Copied 'ssprepqc' script to create
+#                       'gmao_prepqc' without fv2ss step.
+#  20Mar2009  Todling   Remove DASPERL (per da Silva)
+#  17Nov2015  Meta      Clean up some unused (old) fort.XX assignments
+#------------------------------------------------------------------
+
+# make env vars readily available
+#--------------------------------
+use Env qw(STRICT NCPUS EXPID PROFQC ACFTQC ACARSQC RADCOR FVWORK
+           FORT_CONVERT12 FORT_CONVERT13 FORT_CONVERT15 );
+use File::Basename;      # for basename(), dirname()
+use Getopt::Long;        # command line options
+use Shell qw(cat);       # cat command
+use File::Copy;
+
+# Command line options
+# --------------------
+
+  GetOptions (  "np=s"  => \$ncpu,
+                "r=s"   => \$rcdir,
+                "o=s"   => \$bfr1,
+                "e=s"   => \$expid,
+                "d=s"   => \$workdir,
+                "s=s"   => \$spc,
+                "q",
+                "n",
+                "h");
+
+  usage() if $opt_h;
+
+# Parse command line, etc
+# -----------------------
+  $fvwork  = $ENV{"FVWORK"};
+  $rc1 = system("zeit_ci.x -r $fvwork/.zeit pqc_init");
+  init();
+  $rc1 = system("zeit_co.x -r $fvwork/.zeit pqc_init");
+  
+  # Prevents
+  # --------
+  $rc1 = system("zeit_ci.x -r $fvwork/.zeit pqc_ssprev");
+    gmaoprevents();
+  $rc1 = system("zeit_co.x -r $fvwork/.zeit pqc_ssprev");
+  # copy("$pref", "next.$nymd.$hh");
+    
+  # CQCHT   (radiosonde QC)
+  # --------
+  $rc1 = system("zeit_ci.x -r $fvwork/.zeit pqc_cqcht");
+    cqcht();
+  $rc1 = system("zeit_co.x -r $fvwork/.zeit pqc_cqcht");
+
+  # Haimberger RAOBCOR  ( raob homgenization and bias correction )
+  # ------------------
+
+  $rc1 = system("zeit_ci.x -r $fvwork/.zeit pqc_raobcor");
+    raobcor() if ($RADCOR =~ /HAIM/);
+  $rc1 = system("zeit_co.x -r $fvwork/.zeit pqc_raobcor");
+    
+  # PROFCQC   (Wind profiler QC)
+  # --------
+  $rc1 = system("zeit_ci.x -r $fvwork/.zeit pqc_profcqc");
+    profcqc() if ($doPROFQC) ;
+  $rc1 = system("zeit_co.x -r $fvwork/.zeit pqc_profcqc");
+  
+  # PREPACQC   (Aircraft/AMDAR QC)
+  # --------
+  $rc1 = system("zeit_ci.x -r $fvwork/.zeit pqc_arqc");
+    acqc()   if ($doACQC) ;
+  $rc1 = system("zeit_co.x -r $fvwork/.zeit pqc_arqc");
+  
+  # ACARSQC     (ACARS QC)
+  # -------
+  $rc1 = system("zeit_ci.x -r $fvwork/.zeit pqc_acarsqc");
+    acarsqc()   if ($doACARSQC) ;
+  $rc1 = system("zeit_co.x -r $fvwork/.zeit pqc_acarsqc");
+
+  # CQCVAD     (Radar VAD wind QC)
+  # ------
+  $rc1 = system("zeit_ci.x -r $fvwork/.zeit pqc_cqcvad");
+    cqcvad()   ;
+  $rc1 = system("zeit_co.x -r $fvwork/.zeit pqc_cqcvad");
+  
+
+  # Complex QC
+  # ----------
+  $rc1 = system("zeit_ci.x -r $fvwork/.zeit pqc_oiqcc");
+    oiqc();
+  $rc1 = system("zeit_co.x -r $fvwork/.zeit pqc_oiqcc");
+    
+    chdir($prepqcdir);
+    copy("next.$nymd.$hh","$bfr");
+
+# All done
+# --------
+  if ( $opt_n ) {
+     print "$0: dry-run completed.\n\n" unless ( $opt_q );
+   } else {
+     print "$0: sucessfully completed.\n\n" unless ( $opt_q );
+   }
+  exit(0);
+
+#......................................................................
+
+sub init {
+
+
+  if ( $#ARGV < 3 ) {
+       print STDERR "missing nymd, nhr, prepbufr or bkgf; see usage";
+       usage();
+     } else {              # required command line args
+       $nymd = $ARGV[0];
+       $nhms  = sprintf("%6.6d",$ARGV[1]);
+       $hh = substr($nhms,0,2);
+       $pref1 = $ARGV[2];
+       $dynf1 = $ARGV[3];
+     }
+
+    
+    $mxoicpu = $NCPUS<4 ? $NCPUS : 4;  # default oi mpu cpus = 4 (or less)
+    $ncpu = $mxoicpu unless ( $ncpu );
+    $expid = $EXPID unless ( $expid );
+    $expid = "unknown" unless ( $expid );
+    $rcdir = "." unless ( $rcdir );
+
+    $doPROFQC = $PROFQC ;
+    $doACQC = $ACFTQC ;
+    $doACARSQC = $ACARSQC ;
+
+
+    $RADCOR = "NCEP_VAI" unless ( $RADCOR );
+
+    $yyyy  = substr($nymd,0,4);
+    $mm    = substr($nymd,4,2);
+    $dd    = substr($nymd,6,2);
+
+    $bfr1 = "$expid.prepqc.obs.${nymd}.t${hh}z.bfr"  unless ( $bfr1 );
+    
+    $spc = 254 unless ( $spc );
+
+    $ncinput  = $ENV{"NCEPINPUT"};
+
+
+#   Get full pathnames
+#   ------------------
+    $bfr  = fullpath($bfr1);     
+    $pref = fullpath($pref1);     
+    $dynf = fullpath($dynf1);
+  if (! -e $dynf ) {
+       die ">>> ERROR <<< cannot find BKG file $dynf" if ( $STRICT );
+       warn ">>> ERROR <<< cannot find BKG file $dynf";
+       exit (0);
+  }
+  if (! -e $pref ) {
+       die ">>> ERROR <<< cannot find BFR file $pref" if ( $STRICT );
+       warn ">>> ERROR <<< cannot find BFR file $pref";
+       exit (0);
+  }
+#   Work in local PREPQC directory to avoid conflicts
+#   ----------------------------------------------
+#   $tmp = "." unless ( $tmp = $TMPDIR );
+    chomp($tmp=`pwd`) unless ( $tmp = $workdir );
+    $prepqcdir = "$tmp/prepqc.$nymd.$hh"; # PREPQC working directory
+    $rc = system("/bin/mkdir -p $prepqcdir" );
+    die ">>> ERROR <<< cannot create $prepqcdir " if ( $rc );
+    chdir("$prepqcdir"); 
+    system("/bin/touch .no_archiving");   # working prepqc dir not to be archived
+
+#   Create data file for NCEP programs
+#   ----------------------------------
+    $cmd = "echo DATE  $nymd$hh"."WASHINGTON > nmcdate";
+    $cmd = "echo \"DATE  ${nymd}${hh}WASHINGTON\" > nmcdate";
+    $rc = system($cmd) unless ( $opt_n );
+    die ">>>> ERROR <<< creating nmcdate" if ( $rc );
+ 
+#   Welcome message
+#   ----------------
+    print <<"EOF";
+
+      -----------------------------------------------------------
+       PREPQC - NCEPs prepro quality control frontend for GEOS-5 
+      -----------------------------------------------------------
+ 
+                       Date: $nymd             
+                       Time: $hh
+
+           Input BUFR  File: $pref1 
+     Input G5 BKG ETA File: $dynf1
+           Output BUFR File: $bfr1
+
+
+ Starting...
+
+EOF
+                        
+   
+}
+
+#......................................................................
+#
+sub fv2ss {                        
+
+  Assignfn( "$ncinput/gsi/etc/newncepsfc.$spc", "ncepsfc");
+
+# Run fv2ss
+# -------------
+  $cmd = "fv2ss.x $dynf $sfcf -jcap $spc -nsig 64 -fhour 6 -pick $nymd $nhms -o sigf06";
+  print "$0: $cmd\n" unless ( $opt_q );
+#  $rc = System ( $cmd, "/dev/null" ) unless ( $opt_n ) ;    
+  $rc = system ( $cmd ) unless ( $opt_n ) ;    
+  die ">>>> ERROR <<< running fv2ss.x rc=$rc" if ( $rc );
+
+}
+
+#------------------------------------------------------------------------------------
+sub Assignfn {
+                                                                                                         
+# Assignfn - assigns fn to given file name fname.
+# fname = old file
+# fn = new file (links to old)
+  my ( $fname, $fn ) = @_;
+  unlink($fn) if ( -e $fn ) ;
+  symlink("$fname","$fn");
+                                                                                                         
+}
+
+#......................................................................
+#
+# Prevents - Calculates O-F at obs locations
+#
+
+sub ssprevents {                        
+
+# Assign FORTRAN units for prevents 
+# ------------------------------------------------------------
+
+#  Input files
+#  -----------
+   Assign("$pref",                          11);
+   Assign("sigf06",                         12);
+   system("touch fort.13");
+   Assign("$rcdir/prepobs_errtable.global", 14);
+   Assign("nmcdate",             15);
+ 
+#  Output files
+#  ------------
+   Assign("prepdv.$nymd.$hh",       51);
+   Assign("prevents.out.$nymd.$hh", 52);
+
+
+   $FORT_CONVERT12 = "BIG_ENDIAN";
+   $FORT_CONVERT13 = "BIG_ENDIAN";
+
+# Run prevents
+# -------------
+  $cmd = "ssprevents.x < $rcdir/prepobs_prevents.merra.parm";
+  print "$0: $cmd\n" unless ( $opt_q );
+#  $rc = System ( $cmd, "/dev/null" ) unless ( $opt_n ) ;    
+ $rc = system ( $cmd ) unless ( $opt_n ) ;    
+  die ">>>> ERROR <<< running ssprevents.x rc=$rc" if ( $rc );
+
+  undef $FORT_CONVERT12;
+  undef $FORT_CONVERT13;
+  
+  copy("prepdv.$nymd.$hh","next.$nymd.$hh");
+
+}
+
+sub gmaoprevents {                        
+
+# Assign FORTRAN units for prevents 
+# ------------------------------------------------------------
+
+#  Input files
+#  -----------
+   Assign("$pref",                          11);
+   system("touch fort.12");
+   system("touch fort.13");
+   Assign("$rcdir/prepobs_errtable.global", 14);
+   Assign("nmcdate",             15);
+ 
+#  Output files
+#  ------------
+   Assign("prepdv.$nymd.$hh",       51);
+   Assign("prevents.out.$nymd.$hh", 52);
+
+
+   $FORT_CONVERT12 = "BIG_ENDIAN";
+   $FORT_CONVERT13 = "BIG_ENDIAN";
+
+# Run prevents
+# -------------
+  $cmd = "gmao_prevents.x $dynf < $rcdir/prepobs_prevents.merra.parm";
+  print "$0: $cmd\n" unless ( $opt_q );
+#  $rc = System ( $cmd, "/dev/null" ) unless ( $opt_n ) ;    
+ $rc = system ( $cmd ) unless ( $opt_n ) ;    
+  die ">>>> ERROR <<< running gmao_prevents.x rc=$rc" if ( $rc );
+
+  undef $FORT_CONVERT12;
+  undef $FORT_CONVERT13;
+  
+  copy("prepdv.$nymd.$hh","next.$nymd.$hh");
+
+}
+
+
+#......................................................................
+#
+# OI QC
+#
+
+sub oiqc {                        
+
+    $oiqcdir = "$prepqcdir/oiqc"; # PREPQC working directory
+    $rc = system("/bin/mkdir -p $oiqcdir" );
+    die ">>> ERROR <<< cannot create $oiqcdir " if ( $rc );
+    chdir("$oiqcdir"); 
+    system("/bin/touch .no_archiving");   # working prepqc dir not to be archived
+
+
+# Assign FORTRAN units for OIQC
+# ------------------------------------------------------------
+
+#  NOTE: these files do not follow the fv file name conventions
+#        Many of the output files are discarded
+#  ------------------------------------------------------------
+
+#  Input files
+#  ------------------------------------------------------------
+   Assign("$prepqcdir/nmcdate",                 11 );
+   Assign("$prepqcdir/next.$nymd.$hh",          14 );
+   Assign("$rcdir/prepobs_oiqc.oberrs", 17 );
+
+
+#  Work files
+#  ------------------------------------------------------------
+   Assign("obprt.wrk",                  18 );
+   Assign("tolls.wrk",                  20 );
+  
+#  Output files
+#  ------------------------------------------------------------
+   Assign("toss.sfz.$nymd.$hh.txt",     61 );
+   Assign("toss.upa.$nymd.$hh.txt",     62 );
+   Assign("toss.sat.$nymd.$hh.txt",     63 );
+   Assign("toss.smi.$nymd.$hh.txt",     64 );
+   Assign("tosslist.$nymd.$hh.txt",     65 );
+  
+   Assign("prepoic.$nymd.$hh",          70 );
+   Assign("obogram.out.$nymd.$hh.txt",  81 );
+   Assign("obogram.$nymd.$hh.bin",      82 );
+
+# Modify for Compaq - touch files so they exist before run
+# (avoids modifying CQC source code)
+# --------------------------------------------------------
+    system("touch obprt.wrk");
+    system("touch tolls.wrk");
+
+
+# Run OIQC
+# -------
+  
+  $oiqcx = `which oiqcbufr.x` ;
+  chomp($uname = `uname -s`);
+
+  $MPIRUN_OIQC = $ENV{"MPIRUN_OIQC"};
+  if ( $uname eq "OSF1" ) {
+    $cmd = "cd $oiqcdir; prun -t -s -n $ncpu $oiqcx";
+  } else {
+      if ( $MPIRUN_OIQC ) {
+         $cmd = "cd $oiqcdir; $MPIRUN_OIQC $oiqcx" ;
+         print "Command is ($cmd)\n";
+      }else{
+         $cmd = "cd $oiqcdir; mpirun -np $ncpu $oiqcx" ;
+         print "Command is ($cmd)\n"; 
+      }
+  } 
+
+  print "$0: $cmd\n" unless ( $opt_q );
+  $rc = system ( $cmd ) unless ( $opt_n ) ;    
+  die ">>>> ERROR <<< running oiqcbufr.x" if ( $rc );
+
+   copy("prepoic.$nymd.$hh","$prepqcdir/next.$nymd.$hh");
+}
+
+#......................................................................
+
+sub cqcht {                        
+
+    $cqcdir = "$prepqcdir/cqc"; # PREPQC working directory
+    $rc = system("/bin/mkdir -p $cqcdir" );
+    die ">>> ERROR <<< cannot create $cqcdir " if ( $rc );
+    chdir("$cqcdir"); 
+    system("/bin/touch .no_archiving");   # working prepqc dir not to be archived
+
+# Set up namelist parameters based on value of env. variable RADCOR
+# -----------------------------------------------------------------
+
+    open(CQCPARM, '>cqcht.parm');
+
+    if ( $RADCOR =~ /HAIM/ ) {        # Haimberger - so no RADCOR, do VIRTMP
+        print "$0: CQCBUFR with Haimberger - no RADCOR, but do VIRTMP!\n";
+        print CQCPARM " &NAMLST TEST=FALSE, DOVTMP= TRUE, RADCOR= FALSE / \n";
+    } elsif ( $RADCOR eq "NONE" ) { # explicit no RADCOR
+        print "$0: CQCBUFR without RADCOR\n";
+        print CQCPARM " &NAMLST TEST=FALSE, DOVTMP= TRUE, RADCOR= FALSE / \n";
+    } else {                          # do RADCOR
+        print "$0: CQCBUFR with RADCOR;";
+        print CQCPARM " &NAMLST TEST=FALSE, DOVTMP= TRUE, RADCOR= TRUE / \n";
+
+        open (RADPRM, '>fort.4');
+        print RADPRM "  &KDTA / \n";
+        if ( $RADCOR =~ /VAI/ ) {
+            print " don't adjust US Vaisala sondes\n";
+            print RADPRM "  &LDTA CORUSVAI=TRUE /\n";
+        } else {
+            print " do adjust US Vaisala sondes\n";
+            print RADPRM "  &LDTA CORUSVAI=FALSE /\n";
+        }
+        close(RADPRM);
+    }
+
+    close(CQCPARM);
+
+# Assign FORTRAN units for CQCHT
+# ------------------------------------------------------------
+
+#  NOTE: these files do not follow the fv file name conventions
+#        Many of the output files are discarded
+#  ------------------------------------------------------------
+   Assign("$prepqcdir/next.$nymd.$hh",          14 );  
+
+
+#  Assign("/dev/null",                   4 );    # not using radcor parm
+#  Assign("$rcdir/prepobs_radcor.merra.parm", 4 );    # now using radcor parm
+   Assign("cqc_mandev.$nymd.$hh",       12 );
+   Assign("cqc_blktot.$nymd.$hh",       15 );
+   Assign("cqc_stnlst.$nymd.$hh",       16 );
+  
+   Assign("$expid.prog.cqcstats.$nymd", 21 );
+   Assign("cqc_winderr.$nymd.$hh",      22 );
+   Assign("$rcdir/prepobs_cqc_statbge", 23 );
+  
+   Assign("prepcqc.$nymd.$hh",          51 );
+   Assign("cqc_result.$nymd.$hh",       52 );
+   Assign("cqc_sngstn.$nymd.$hh",       55 );
+   Assign("cqc_qcdecs.$nymd.$hh",       60 );
+   Assign("cqc_holes.$nymd.$hh",        61 );
+   Assign("cqc_radcor.$nymd.$hh",       68 ); 
+
+# Modify for Compaq - touch files so they exist before run
+# (avoids modifying CQC source code)
+# --------------------------------------------------------
+   system("touch cqc_mandev.$nymd.$hh");
+   system("touch cqc_blktot.$nymd.$hh");
+   system("touch cqc_stnlst.$nymd.$hh");
+
+
+# Run CQC
+# -------
+  $cmd = "cqcbufr.x < cqcht.parm";
+  print "$0: $cmd\n" unless ( $opt_q );
+  $rc = system ( $cmd ) unless ( $opt_n ) ;    
+  die ">>>> ERROR <<< running cqcht.x" if ( $rc );
+
+# copy output file to 'next' so next routine will use it
+  copy("prepcqc.$nymd.$hh", "$prepqcdir/next.$nymd.$hh");
+
+}
+
+#......................................................................
+
+sub raobcor {                        
+
+    $raobcordir = "$prepqcdir/raobcor"; # PREPQC working directory
+    $rc = system("/bin/mkdir -p $raobcordir" );
+    die ">>> ERROR <<< cannot create $raobcordir " if ( $rc );
+    chdir("$raobcordir"); 
+    system("/bin/touch .no_archiving");   # working prepqc dir not to be archived
+
+# location of input file with homogenization database
+# -----
+    $rtplate = "$ncinput/preproc/racor/biascor-1.4r.txt";
+    
+    $prepfile = "$prepqcdir/next.$nymd.$hh";
+
+# Run Haimberger homgenization
+# -------
+    $cmd = "raobcore.x -o raobcor.%y4%m2%d2.%h2 -r $rtplate $prepfile" ;
+    print "$0: $cmd\n" unless ( $opt_q );
+    $rc = system ( $cmd ) unless ( $opt_n ) ;    
+    die ">>>> ERROR <<< running raobcore.x" if ( $rc );
+
+    if ( $RADCOR =~ /HRAD/ ) {
+
+# Run modified RADCOR
+# ------
+        $cmd = "hradcor.x -o hradcor.%y4%m2%d2.%h2 raobcor.$nymd.$hh";
+        print "$0: $cmd\n" unless ( $opt_q );
+        $rc = system ( $cmd ) unless ( $opt_n ) ;    
+        die ">>>> ERROR <<< running hradcor.x" if ( $rc );
+    }
+
+# copy output file to 'next' so next routine will use it
+    copy("hradcor.$nymd.$hh", "$prepqcdir/next.$nymd.$hh");
+    
+}
+
+#......................................................................
+
+sub cqcvad {                        
+
+    $vadqcdir = "$prepqcdir/vadqc"; # PREPQC working directory
+    $rc = system("/bin/mkdir -p $vadqcdir" );
+    die ">>> ERROR <<< cannot create $vadqcdir " if ( $rc );
+    chdir("$vadqcdir"); 
+    system("/bin/touch .no_archiving");   # working prepqc dir not to be archived
+    open(DATEF, '>fort.14');
+    print DATEF "$nymd$hh\n";
+    close(DATEF);
+
+# Assign FORTRAN units for cqcvad
+# ------------------------------------------------------------
+
+#  NOTE: these files do not follow the fv file name conventions
+#        Many of the output files are discarded
+#  ------------------------------------------------------------
+   Assign("$prepqcdir/next.$nymd.$hh",          11 );  
+  
+   Assign("prepvad.$nymd.$hh",          51 );
+   Assign("vad_birdqc.$nymd.$hh",       52 );
+   Assign("vad_qclist.$nymd.$hh",       53 );
+   Assign("vad_bystnl.$nymd.$hh",       55 );
+   Assign("vad_events.$nymd.$hh",       60 );
+
+# Run cqcvad
+# -------
+  $cmd = "cqcvad.x < /dev/null ";
+  print "$0: $cmd\n" unless ( $opt_q );
+  $rc = system ( $cmd ) unless ( $opt_n ) ;    
+  die ">>>> ERROR <<< running cqcvad.x" if ( $rc );
+
+# copy output file to 'next' so next routine will use it
+  copy("prepvad.$nymd.$hh", "$prepqcdir/next.$nymd.$hh");
+
+}
+
+#......................................................................
+
+sub profcqc {                        
+
+    $pfqcdir = "$prepqcdir/pfqc"; # PREPQC working directory
+    $rc = system("/bin/mkdir -p $pfqcdir" );
+    die ">>> ERROR <<< cannot create $pfqcdir " if ( $rc );
+    chdir("$pfqcdir"); 
+    system("/bin/touch .no_archiving");   # working prepqc dir not to be archived
+
+
+# Assign FORTRAN units for profcqc
+# ------------------------------------------------------------
+
+#  NOTE: these files do not follow the fv file name conventions
+#        Many of the output files are discarded
+#  ------------------------------------------------------------
+   Assign("$prepqcdir/next.$nymd.$hh",          14 );  
+  
+   Assign("prepprf.$nymd.$hh",          51 );
+   Assign("prf_list1.$nymd.$hh",        52 );
+   Assign("prf_list2.$nymd.$hh",        53 );
+   Assign("prf_events1.$nymd.$hh",      54 );
+   Assign("prf_events2.$nymd.$hh",      55 );
+   Assign("prf_statrs.$nymd.$hh",       61 );
+   Assign("prf_statfl.$nymd.$hh",       62 ); 
+
+# Run profcqc
+# -------
+  $cmd = "profcqc.x < $rcdir/prepobs_profcqc.merra.parm";
+  print "$0: $cmd\n" unless ( $opt_q );
+  $rc = system ( $cmd ) unless ( $opt_n ) ;    
+  die ">>>> ERROR <<< running profcqc.x" if ( $rc );
+
+# copy output file to 'next' so next routine will use it
+  copy("prepprf.$nymd.$hh", "$prepqcdir/next.$nymd.$hh");
+
+}
+
+#......................................................................
+
+sub acqc {                        
+
+    $acqcdir = "$prepqcdir/acqc"; # PREPQC working directory
+    $rc = system("/bin/mkdir -p $acqcdir" );
+    die ">>> ERROR <<< cannot create $acqcdir " if ( $rc );
+    chdir("$acqcdir"); 
+    system("/bin/touch .no_archiving");   # working prepqc dir not to be archived
+
+# Assign FORTRAN units for acqc
+# ------------------------------------------------------------
+
+#  NOTE: these files do not follow the fv file name conventions
+#        Many of the output files are discarded
+#  ------------------------------------------------------------
+   Assign("$prepqcdir/next.$nymd.$hh",          14 );  
+   Assign("$rcdir/prepobs_landc",       15 );
+   Assign("$rcdir/prepobs_waypoints",   23 );
+  
+   Assign("prepaqc.$nymd.$hh",          61 );
+   Assign("aqc_sdmisol.$nymd.$hh",      52 );
+   Assign("aqc_sdmxlim.$nymd.$hh",      53 );
+
+   $FORT_CONVERT15 = "BIG_ENDIAN";
+   
+# Run prepacqc
+# -------
+  $cmd = "prepacqc.x < $rcdir/prepobs_prepacqc.merra.parm";
+  print "$0: $cmd\n" unless ( $opt_q );
+  $rc = system ( $cmd ) unless ( $opt_n ) ;    
+  die ">>>> ERROR <<< running prepacqc.x" if ( $rc );
+
+# copy output file to 'next' so next routine will use it
+  copy("prepaqc.$nymd.$hh", "$prepqcdir/next.$nymd.$hh");
+
+  undef $FORT_CONVERT15;
+
+
+}
+
+#......................................................................
+
+sub acarsqc {                        
+
+    $arqcdir = "$prepqcdir/acarqc"; # PREPQC working directory
+    $rc = system("/bin/mkdir -p $arqcdir" );
+    die ">>> ERROR <<< cannot create $arqcdir " if ( $rc );
+    chdir("$arqcdir"); 
+    system("/bin/touch .no_archiving");   # working prepqc dir not to be archived
+
+
+# Assign FORTRAN units for acarsqc
+# ------------------------------------------------------------
+
+#  NOTE: these files do not follow the fv file name conventions
+#        Many of the output files are discarded
+#  ------------------------------------------------------------
+   Assign("$prepqcdir/next.$nymd.$hh",          14 );  
+   Assign("$rcdir/prepobs_landc",       15 );
+  
+   Assign("prepacr.$nymd.$hh",          61 );
+   Assign("acr_sdmlist.$nymd.$hh",      52 );
+
+   $FORT_CONVERT15 = "BIG_ENDIAN";
+   
+# Run acarsqc
+# -------
+  $cmd = "acarsqc.x < $rcdir/prepobs_acarsqc.merra.parm";
+  print "$0: $cmd\n" unless ( $opt_q );
+  $rc = system ( $cmd ) unless ( $opt_n ) ;    
+  die ">>>> ERROR <<< running acarsqc.x" if ( $rc );
+
+# copy output file to 'next' so next routine will use it
+  copy("prepacr.$nymd.$hh", "$prepqcdir/next.$nymd.$hh");
+
+  undef $FORT_CONVERT15;
+
+}
+#......................................................................
+
+#
+# System: This routine saves stdout/stderr, redirects it to a specified file, 
+#         runs a shell command using this new stdout/stderr, and finally 
+#         restores the original stdout/stderr.
+#
+
+sub System {
+
+    my ( $cmd, $logfile ) = @_;
+    my ( @zname );
+
+    open SAVEOUT, ">&STDOUT";  # save stdout
+    open SAVEERR, ">&STDERR";  # save stderr
+
+    open STDOUT, ">>$logfile" or die "can't redirect stdout";
+    open STDERR, ">>$logfile" or die "can't redirect stderr";
+
+    select STDERR; $| = 1;     # make it unbuffered
+    select STDOUT; $| = 1;     # make it unbuffered
+
+    @zname = split(" ", $cmd);
+    $rc1 = system( "zeit_ci.x $zname[0]");
+
+    $rc = system ( $cmd );     # run the shell command
+
+    $rc2 = system( "zeit_co.x $zname[0]");
+
+    # Bitwise shift returns actual UNIX return code
+    $exit_code = $rc >> 8;
+
+    close STDOUT;
+    close STDERR;
+
+    open STDOUT, ">&SAVEOUT" ;  # restore stdout
+    open STDERR, ">&SAVEERR" ;  # restore stdout
+
+    return $exit_code;
+
+  }
+
+#......................................................................
+
+#
+# Assign - assigns file name to Fortran units.
+#
+
+sub Assign {
+
+    my ( $fname, $lu ) = @_;
+
+    $f77name = "fort.$lu";
+    unlink($f77name) if ( -e $f77name ) ;
+    symlink("$fname","$f77name");
+
+  }
+
+
+#......................................................................
+sub fullpath {
+
+    my ( $fname ) = @_;
+
+    $dirn = dirname("$fname");
+    chomp($dirn = `pwd`) if ( "$dirn" eq "." ) ; 
+    $name = basename("$fname");
+    $full = "$dirn/$name";
+    return ($full);
+
+  }
+
+#......................................................................
+
+sub usage {
+
+   print <<"EOF";
+
+NAME
+     gmao_prepqc - Frontend for NCEP preprocessing QC routines
+          
+SYNOPSIS
+
+     gmao_prepqc [...options...]  nymd  hr  prepbufr  bkgeta
+          
+DESCRIPTION
+
+     This script is a frontend for NCEP\'s observation quality
+     subsystem. It executes the following applications:
+
+        gmao_prevents.x - computes O-F
+        cqcbufr.x  - radiosonde QC
+        profcqc.x  - profiler CQC
+        prepacqc.x - aircraft qc (other than ACARS) 
+        acarsqc.x  - ACARS (MDCARS) aircraft qc
+        oiqcbufr.x    - performs actual OIQC
+
+     The following parameters are required 
+
+     nymd      Year-month-day, e.g., 19990901  for 01 Sept 1999 
+     nhms      Hour-minutes-seconds, e.g., 120000
+     prepbufr  PREP BUFR file name; assumed to be blocked
+     bkgeta    Background eta file
+     bkgsfc    Background sfc file
+
+OPTIONS
+ 
+     -h        prints this usage notice
+     -e expid  experiment id
+     -d dir    Full path of working directory to use (if not current directory)
+     -n        dry-run mode: just print what it would do
+     -np       number of processors
+     -o fname  output BUFR file name; default: \$expid.prepqc.obs.\$nymd.t\$\{hr\}z.bfr
+     -q        quiet mode
+     -r rcdir  resource file directory name
+     -s specres spectral resolution for fv2ss.x (default: 254)
+
+ENVIRONMENT
+
+     NCPUS       number of cpus (unless -n is set)
+     EXPID       experiment id (unless -e is set)
+     STRICT      toggle actions for 'strict' execution
+     NCEPINPUT   location of GSI static files; e.g. /share/todling/fvInput
+     PROFQC      toggle run of Profiler CQC (crashes if no Profiler data)
+     ACFTQC      toggle run of aircraft CQC (crashes if no AIRCFT data)
+     ACARSQC     toggle run of ACARS (MDCARS) QC
+     FVWORK      location of work directory of run (for 'zeit' file storage)
+     RADCOR      method for radiosonde bias correction:
+       RADCOR='NONE'       neither NCEP nor Haimberger-hradcor
+       RADCOR='NCEP'       standard NCEP (correct US Vaisala)
+       RADCOR='NCEP_VAI'   NCEP radcor except leave US Vaisala alone
+                              (when using 'fixvai' files already corrected
+       RADCOR='HAIMB'      No NCEP RADCOR, use Haimberger homogenization
+                              and do not apply 'hradcor' correction
+       RADCOR='HAIMB_HRAD' Apply both Haimberger homogenization and
+                              'hradcor' correction (modified NCEP) 
+
+     Environment variables set and unset by script:
+       FORT_CONVERT12, FORT_CONVERT13  FORT_CONVERT15 (control big-endian conversion)
+
+EOF
+
+  exit(1)
+
+           }
+
+
+#  Notes on RADCOR et. al.
+#
+#  NCEP gdas.prepbufr files already have preprocessing done - do
+#    not get processed by 'ssprepqc'
+#
+#  MERRA files
+# A. Earlier copies of the raob datasets did not have the US Vaisala
+#    correction applied.  These datasets need to be processed with
+#    NCEP RADCOR and need to have corrections applied to inst. type 52 sondes
+#
+#    cqcht.parm
+#        &NAMLST TEST=FALSE, DOVTMP= TRUE, RADCOR= TRUE /
+#    radcor.parm
+#        &KDTA /
+#        &LDTA CORUSVAI=F /
+#
+# B. For datasets that have had the US Vaisala correction applied - to
+#    turn off the RADCOR type 52 correction change CORUSVAI=T
+#
+#    radcor.parm
+#        &KDTA /
+#        &LDTA CORUSVAI=T /
+#
+# C. When the Haimberger homogenization is applied, we want to also
+#    turn off the NCEP RADCOR entirely. (but not skip applying the
+#    conversion to virtual temperature)  This is specified in cqcht.parm
+#    (contents of radcor.parm do not matter in this case)
+#
+#    cqcht.parm
+#        &NAMLST TEST=FALSE, DOVTMP= TRUE, RADCOR= FALSE /
+#
+#
+# Proposed environment variable RADCOR:
+#    RADCOR='NONE'       neither NCEP nor Haimberger-hradcor
+#    RADCOR='NCEP'       standard NCEP (correct type 52, CORUSVAI=F)
+#    RADCOR='NCEP_VAI'   NCEP radcor but do not correct type 52 CORUSVAI=T
+#    RADCOR='HAIMB'      No NCEP RADCOR, apply Haimberger homogenization
+#                          but do not apply 'hradcor' correction
+#    RADCOR='HAIMB_HRAD' Apply both Haimberger homogenization and 'hradcor'
+#
+#
+#    
+#  RADCOR contains/starts with HAIMB:  turn off RADCOR (but not VIRTMP!)
+#     in this case if RADCOR also contains HRAD - run hradcor, else not.
+#  RADCOR starts with or is NONE: turn off RADCOR, leave VIRTMP on
+#  RADCOR starts with NCEP:  RADCOR and VIRTMP are on
+#   if in this case contains VAI - set CORUSVAI=TRUE in radcor.parm
+#   otherwise if no VAI          - set CORUSVAI=FALSE in radcor.parm
+#

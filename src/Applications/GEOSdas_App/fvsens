@@ -1,0 +1,870 @@
+#!/bin/csh -fx
+
+################################################################
+#
+# !DESCRIPTION: Run adjoint sensitivity program
+#
+# !TO DO:
+#     1) A better approach to build the initial gradient when there is a resolution
+#        difference is to diff the verifying analysis and forecast and then interpolate
+#        the resuting vector ... progs are ready, but need to upgrade this script
+#
+# !REVISION HISTORY:
+#
+#  04Oct2004  Todling  Initial code
+#  30Mar2005  Gelaro   Initialize adjoint model to compute fcst error sensitivity
+#  23Oct2005  Gelaro   Use dyn2dyn.x to compute verify_fcst for fcst error sensitivity
+#  24Oct2005  Gelaro   Removed dependence on ccmrun.namelist of trajectory model
+#  14Feb2006  Todling  Happy V-Day: Define FVINPUT the level up
+#  13Mar2006  Todling  G4-surf derived from trajectory file and doing all bcs local
+#  21Apr2006  Gelaro   Modifications for sensitivity calculation with GEOS5 trajectory
+#  26Apr2006  Elena N. Changed naming convention for Jnormf.txt to be archived
+#  28Apr2006  Gelaro   Gradient name change pert.hdf to Jgradf.hdf
+#  02May2006  Gelaro   Use sed and input from fvpsas to define adjoint integration
+#  18Jan2007  Todling  Added proper grid identification to grad file name
+#  23Aug2007  Todling  Make copy of initial/final trajectories
+#  04Oct2007  Todling  Handle for differing fcst/anal/traj resolutions
+#  04Nov2007  Todling  Verification fcst no longer from trajectory
+#  22Nov2007  Todling  Updated to resolution-free ADM
+#  13Dec2007  Todling  Add ability to run adm for various norm choices
+#  05Apr2008  Todling  Verify with assimilation instead of ana
+#  03Oct2008  Todling  Added acquire job request for discover runs (what a mess!)
+#  27Jan2009  Todling  Define spool for acquire
+#  13Mar2009  Todling  Generalized suffix of NC files; pbs opts update
+#  10Oct2010  Todling  - Allow diff fvsens.ccmrun.namelist for diff initial times
+#                      - Allow for e-resolution prognostic file
+#                      - Revisit interface to this script
+#  15Apr2011  Todling Add knob to handle cubed-sphere ADM
+#  02Aug2011  Stassi   Use getsponsor.pl wrapper script
+#  12Apr2012  Kim/RT   Some fixes for when running Cubed-ADM
+#  12Mar2013  Holdaway Add reference to mtrj.lcv 
+#  22Mar2013  Todling Link ExtData here for bcs (tile files)
+#  23May2013  Mahajan Add gaussian quadrature capability (order 2)
+#  05Jun2013  Todling Allow exec to be bypassed
+#  22Jun2013  Todling Add FCSTVERIFY to allow verifying against ana or asm at will
+#  28Feb2014  Todling Add NCVRFANA for non-compliant verification analysis
+#  29Aug2014  Todling Clean insanity of var name redef before ADM/TLM
+#  25Oct2016  Todling Allow use of specific fvcore-layout
+#  27Apr2017  Todling Allow for TLM/ADM integrations shorter than 24 hrs
+#  16Jun2017  Todling Knob to calculate M^T*C*(efb+efa); that is, add the error in 
+#                     two forecasts, valid at same type, but issued from two analysis
+#                     one cycle appart from one another
+#  23Jul2017  Holdaway Tidy and new fvcorepert_layout needed by nggps FV3 TLM/ADM
+##################################################################
+
+set fcstdir = $1
+set expid   = $2
+set nymde0  = $3
+set nhmse0  = $4
+set hhb0    = $5
+set rundt   = $6
+
+#
+# Echo environment to make sure all is well
+# -----------------------------------------
+#env
+set myname = "fvsens"
+set nymde  = $nymde0
+set nhmse  = $nhmse0
+
+# calculate trajectory frequency - must be same as GCM dt
+# ------------------------------
+@ hh =  $rundt / 3600
+@ mn = ($rundt - 10000 * $hh) / 60
+set hh = `echo $hh |awk '{printf "%02d", $1}'`
+set mn = `echo $mn |awk '{printf "%02d", $1}'`
+set trajfrqhms = ${hh}${mn}00
+
+#
+# WARNING: Must specify appropriate FVINPUT for your resolution
+# -------------------------------------------------------------
+if ( ! $?GID ) then
+     echo " GID must be defined in called script "
+     exit 1
+endif
+if ( ! $?FVINPUT ) then
+     echo " Invalid path for fvinput "
+     exit 1
+endif
+if ( ! $?SHARE ) then
+     echo " Invalid path for share directory "
+     exit 1
+endif
+if ( !($?FCSTVERIFY)  ) setenv FCSTVERIFY asm
+if ( !($?CORRECT4IAU) ) setenv CORRECT4IAU 0
+if ( !($?VEXPID)      ) setenv VEXPID $EXPID
+if ( !($?NCVRFANA)    ) setenv NCVRFANA  0
+if ( !($?LOCJGRADF)   ) setenv LOCJGRADF 0
+if ( !($?DO_DMGET )   ) setenv DO_DMGET  0
+if ( !($?CUBED)       ) setenv CUBED  0
+if ( !($?TIMEINC)     ) setenv TIMEINC    360
+if ( !($?VAROFFSET)   ) setenv VAROFFSET  180
+if ( $?FVSPOOL ) then
+    set spool = "-s $FVSPOOL "
+else
+    set diren = `dirname $FVHOME`
+    set spool = "-s $diren/spool "
+endif
+if ( !($?NCSUFFIX) ) then
+   echo "env variable not defined: NCSUFFIX "
+   echo "please check main script"
+   exit 1
+endif
+
+if ( $NCVRFANA ) then
+   set ncvrfana = "-ncf"
+else
+   set ncvrfana = ""
+endif
+
+if( -d $fcstdir/sens.$nymde.$nhmse ) /bin/rm -r $fcstdir/sens.$nymde.$nhmse
+setenv SENSWDIR $fcstdir/sens.$nymde.$nhmse
+mkdir $fcstdir/sens.$nymde.$nhmse
+cd    $fcstdir/sens.$nymde.$nhmse
+
+
+# Establish link to trajectory/resource files
+# -------------------------------------------
+  if ( ! -d $fcstdir/traj1 ) then # this bit is necessary if doing default way
+     mkdir -p $fcstdir/traj1
+     cd $fcstdir/traj1
+     ln -sf $fcstdir/*.lcv.*.$NCSUFFIX      .
+     ln -sf $fcstdir/*.prog.eta.*.$NCSUFFIX .
+     cd -
+  endif
+  ln -sf $fcstdir/traj? .
+  ln -sf $fcstdir/initadj.rc .
+  ln -sf $fcstdir/oseledec.rc .
+  ln -sf $fcstdir/dyn2dyn.rc .
+  ln -sf $fcstdir/fvpsas.rc  .
+  ln -sf $fcstdir/asm.acq .
+  ln -sf $fcstdir/ana.acq .
+  ln -sf $fcstdir/ExtData .
+  ln -sf $fcstdir/fvcorepert_layout_fsoi.rc ./inputpert.nml
+  ln -sf $fcstdir/fvcoretraj_layout.rc ./input.nml
+
+# Get namelists, resource files, etc ...
+# --------------------------------------
+  set thisrc = fvsens.ccmrun.namelist.tmpl
+  if(-e $fcstdir/fvsens.ccmrun.namelist_${hhb0}.tmpl ) set thisrc = fvsens.ccmrun.namelist_${hhb0}.tmpl
+  cp $fcstdir/$thisrc                     ccmrun.namelist.tmpl
+  cp $fcstdir/fvgcm.ccmflags.namelist     ccmflags.namelist
+
+  set rcName = initadj.rc
+  set norms  = `echorc.x -rc $rcName pert_norm`
+  set nnorms = $#norms
+#
+# Compute begin time for adjoint integration
+# ------------------------------------------
+  set taub  = `echorc.x -rc ccmrun.namelist.tmpl integration_length_hrs`
+  @ nhrs    = $taub
+  @ nday    = $nhrs / 24
+  @ taub_sc = $taub * 3600
+  @ timeinc_sc   = $TIMEINC   * 60
+  @ varoffset_sc = $VAROFFSET * 60
+
+# Determine actual start date/time of sensitivity integration
+# -----------------------------------------------------------
+  set tlag  = `echorc.x -rc ccmrun.namelist.tmpl integration_time_lag_start_hrs`
+    @ ntp1  = $#tlag + 1
+
+# Determine the no. of trajectories used for the adjoint integration
+# ------------------------------------------------------------------
+  @ ntraj = `echorc.x -rc ccmrun.namelist.tmpl GQ_ORDER`
+
+# Specify template name for prognostic from "background-issue" forecasts
+# ----------------------------------------------------------------------
+  set xbfntmpl  = `echorc.x -rc ccmrun.namelist.tmpl forecast_filename_from_background`
+
+@ ic = 1
+while ( $ic < $ntp1 ) 
+
+  @ tlag_sc =  $tlag[$ic] * 3600
+
+  # time at start of adjoint integration (end of taub-hr forecast)
+  set buf  = `tick $nymde0 $nhmse0 -$tlag_sc`
+  set nymde  =  $buf[1]
+  set nhmse  =  $buf[2]
+  set nhe = `echo $nhmse | cut -c 1-2`
+
+  # time at end of adjoint integration (start of taub-hr forecast)
+  set buf  = `tick $nymde $nhmse -$taub_sc`
+  set nymdb  =  $buf[1]
+  set nhmsb  =  $buf[2]
+  set nhb = `echo $nhmsb | cut -c 1-2`
+
+  # initial time of gcm integration from forecast from synoptic date nymdb,nhmsb
+  @ ndelta = $varoffset_sc + $timeinc_sc
+  set buf  = `tick $nymdb $nhmsb -$ndelta`
+  set nymdb0 =  $buf[1]
+  set nhmsb0 =  $buf[2]
+  set nhb0 = `echo $nhmsb0 | cut -c 1-2`
+
+# Fill in namelist template for this experiment
+# ---------------------------------------------
+  rm -f sed_file
+  echo "s/>>>EXPID<<</$EXPID/1"           > sed_file
+  echo "s/>>>NYMDB<<</$nymdb/1"          >> sed_file
+  echo "s/>>>NHMSB<<</$nhmsb/1"          >> sed_file
+  echo "s/>>>NYMDE<<</$nymde/1"          >> sed_file
+  echo "s/>>>NHMSE<<</$nhmse/1"          >> sed_file
+  echo "s/>>>NDAY<<</$nday/1"            >> sed_file
+  echo "s/>>>PDT<<</$rundt/1"            >> sed_file
+  echo "s/>>>MDT<<</$rundt/1"            >> sed_file
+  echo "s/>>>TRAJFRQ<<</$trajfrqhms/1"   >> sed_file
+  echo "s/>>>NCSUFFIX<<</${NCSUFFIX}/1"  >> sed_file
+
+  /bin/rm -f ./ccmrun.namelist
+  sed -f sed_file  ./ccmrun.namelist.tmpl > ./ccmrun.namelist
+
+# Strip out f95 style comments from namelists
+# -------------------------------------------
+  cut -f1 -d!  ccmrun.namelist     | tee          fort.811
+  cut -f1 -d!  ccmflags.namelist   | tee          fort.813
+
+#
+#        --------------------------------------------------------------
+#         PART Ia - Create initial conditions dJ/dx_t for adjoint model
+#        --------------------------------------------------------------
+                                                                                               
+# Make sure trajectory file is present at final time of ADM integration
+# ---------------------------------------------------------------------
+  set trajtmpl   = `grep -i trajtmpl ccmrun.namelist|awk '{printf "%s", $3}' | cut -d"'" -f2 | cut -d"'" -f3`
+  set begin_traj = `echorc.x -template $EXPID $nymdb $nhmsb -fill $trajtmpl`
+  @ itraj = 1
+  while ( $itraj <= $ntraj )
+     if ( ! -e traj${itraj}/$begin_traj ) then
+          echo "fvsens: initial trajectory for ${itraj} not found, cannot proceed "
+          exit 1
+     endif
+     @ itraj++
+  end # < ntraj >
+
+# Generate d_rst from appropriate trajectory file
+# -----------------------------------------------
+    echo "Initial trajectory point: $begin_traj"
+    ln -sf traj1/$begin_traj rst.$NCSUFFIX
+ 
+# Determine dimensions of required BCs and static ICs; do error checking
+# ----------------------------------------------------------------------
+  set tres  = `getgfiodim.x traj1/$begin_traj`
+
+  set resol = "none"
+  if ( $tres[1] ==   72 && $tres[2] ==  46 ) set resol = "a"
+  if ( $tres[1] ==  144 && $tres[2] ==  91 ) set resol = "b"
+  if ( $tres[1] ==  288 && $tres[2] == 181 ) set resol = "c"
+  if ( $tres[1] ==  576 && $tres[2] == 361 ) set resol = "d"
+  if ( $tres[1] == 1152 && $tres[2] == 721 ) set resol = "e"
+  if ( $resol == "none" ) then
+       if ( $tres[1] ==   48 && $tres[2] ==  288 ) set resol = "b"
+       if ( $tres[1] ==   90 && $tres[2] ==  540 ) set resol = "c"
+       if ( $tres[1] ==  180 && $tres[2] == 1080 ) set resol = "d"
+       if ( $tres[1] ==  360 && $tres[2] == 2160 ) set resol = "e"
+       if ( $resol == "none" ) then
+           echo "fvsens: unknown resolution "
+           exit 1
+       else
+           setenv CUBED 1
+       endif
+  endif
+
+  if ( $CUBED ) then
+
+# Establish link to cubed-related resource files
+# ----------------------------------------------
+       ln -sf $fcstdir/AGCM_apert.rc.tmpl       .
+       ln -sf $fcstdir/CAP_apert.rc.tmpl        .
+       ln -sf $fcstdir/FORWARD_HISTORY.rc.tmpl  .
+       ln -sf $fcstdir/BACKWARD_HISTORY.rc.tmpl .
+       ln -sf $fcstdir/Chem_Registry_apert.rc   .
+
+#      First edit CAP
+#      --------------
+       rm -f sed_file
+       echo "s/>>>NYMDB<<</$nymdb/1"          >> sed_file
+       echo "s/>>>NHMSB<<</$nhmsb/1"          >> sed_file
+       echo "s/>>>NYMDE<<</$nymde/1"          >> sed_file
+       echo "s/>>>NHMSE<<</$nhmse/1"          >> sed_file
+       echo "s/>>>JOB_SGMT<<</$nday ${nhrs}0000/1" >> sed_file
+       echo "s/>>>PDT<<</$rundt/1"            >> sed_file
+
+       /bin/rm -f ./CAP_apert.rc
+       sed -f sed_file  ./CAP_apert.rc.tmpl > ./CAP_apert.rc
+
+#      Next edit AGCM
+#      --------------
+       @ calls_per_window = $nhrs * 3600 / $rundt 
+       /bin/rm -f sed_file
+       echo "s/>>>EXPID<<</$EXPID/1"                           > sed_file
+       echo "s/>>>PDT<<</$rundt/1"                            >> sed_file
+       echo "s/>>>CALLS_PER_WINDOW<<</${calls_per_window}/1"  >> sed_file
+       echo "s/>>>NCSUFFIX<<</${NCSUFFIX}/1"                  >> sed_file
+
+       /bin/rm -f ./AGCM_apert.rc
+       sed -f sed_file  ./AGCM_apert.rc.tmpl > ./AGCM_apert.rc
+
+#      Now edit HISTORIES
+#      ------------------
+       /bin/rm -f sed_file
+       echo "s/>>>EXPID<<</$EXPID/1"           > sed_file
+       echo "s/>>>EXPBDSC<<</ADM/1"           >> sed_file
+       echo "s/>>>NYMDB<<</$nymdb/1"          >> sed_file
+       echo "s/>>>NHMSB<<</$nhmsb/1"          >> sed_file
+       echo "s/>>>TRAJFRQ<<</$trajfrqhms/1"   >> sed_file
+       echo "s/>>>NCSUFFIX<<</${NCSUFFIX}/1"  >> sed_file
+
+       /bin/rm -f ./BACKWARD_HISTORY.rc
+       sed -f sed_file  ./BACKWARD_HISTORY.rc.tmpl > ./BACKWARD_HISTORY.rc
+
+       /bin/rm -f sed_file
+       echo "s/>>>EXPID<<</$EXPID/1"           > sed_file
+       echo "s/>>>EXPFDSC<<</TLM/1"           >> sed_file
+       echo "s/>>>NYMDE<<</$nymde/1"          >> sed_file
+       echo "s/>>>NHMSE<<</$nhmse/1"          >> sed_file
+       echo "s/>>>TRAJFRQ<<</$trajfrqhms/1"   >> sed_file
+       echo "s/>>>NCSUFFIX<<</${NCSUFFIX}/1"  >> sed_file
+
+       /bin/rm -f ./FORWARD_HISTORY.rc
+       sed -f sed_file  ./FORWARD_HISTORY.rc.tmpl  > ./FORWARD_HISTORY.rc
+
+       # MAPL Cap needs a dummy history as well
+       /bin/cp FORWARD_HISTORY.rc HISTORY.rc
+
+  endif
+
+  if ( $LOCJGRADF == 0 ) then
+
+    @ itraj = 1
+    while ( $itraj <= $ntraj )
+
+#     Determine dimension of forecast fields (from prognostic file)
+#     -------------------------------------------------------------
+      set verify_prog  = `echorc.x -template $EXPID $nymde $nhmse upper-air_prog_filename`
+      if ( -e $fcstdir/traj${itraj}/$verify_prog ) then
+         set  fullpath_verify_prog = $fcstdir/traj${itraj}/$verify_prog
+      else
+         set  fullpath_verify_prog = $fcstdir/$verify_prog
+      endif
+      set  fres = `getgfiodim.x $fullpath_verify_prog`   # resolution of verifying forecast
+
+                                  set halt   = 0
+                                  set interp = 0
+      if ( $fres[1] != $tres[1] ) set interp = 1
+      if ( $fres[2] != $tres[2] ) set interp = 1
+      if ( $fres[3] != $tres[3] ) set halt   = 1
+      if ( $halt ) then
+           echo "fvsens: unacceptable resolution(1)"
+           exit 1
+      endif
+
+      if( -e traj${itraj}/verify_fcst.$NCSUFFIX ) /bin/rm -f traj${itraj}/verify_fcst.$NCSUFFIX
+      if ( $interp ) then
+        dyn2dyn.x -g5 -o traj${itraj}/verify_fcst.$NCSUFFIX -res $resol -nlevs $fres[3] -geos4 -pick $nymde $nhmse $fullpath_verify_prog
+      else
+        dyn2dyn.x -g5 -o traj${itraj}/verify_fcst.$NCSUFFIX -pick $nymde $nhmse $fullpath_verify_prog
+      endif
+     
+      @ itraj++
+
+    end # < ntraj >
+
+#   If so, prepare to acquire forecast from background
+#   --------------------------------------------------
+    if ( $xbfntmpl != "NONE" ) then
+         set tmplx   = `echorc.x -template $EXPID $nymdb0 $nhmsb0 -fill $xbfntmpl`
+         set xbfname = `echorc.x -template $EXPID $nymde  $nhmse  -fill $tmplx`
+         echo "fvsens: Will retrieve the following forecast file: $xbfname"
+         if( -e xbfcst.acq ) /bin/rm xbfcst.acq
+         echo $xbfname > xbfcst.acq
+    endif
+
+#   Acquire verifying analysis
+#   --------------------------
+    if ( $FCSTVERIFY == "asm" ) then
+        set averif = "asm.eta" # if wanted for research, can be set to ana.eta
+        set avfacq = asm.acq
+    endif
+    if ( $FCSTVERIFY == "ana" ) then
+        set averif = "ana.eta" # if wanted for research, can be set to ana.eta
+        set avfacq = ana.acq
+    endif
+    set hires_full = `grep $averif $avfacq`
+    if ( $EXPID == $VEXPID ) then
+         set hires_temp = $hires_full:t
+         set hires_anal  = `echorc.x -template $EXPID $nymde $nhmse -fill $hires_temp`
+         set hires_analf = `echorc.x -template $EXPID $nymde $nhmse -fill $hires_full`
+    else
+         set hires_temp = $hires_full:t
+         set hires_anal  = `echorc.x -template $VEXPID $nymde $nhmse -fill $hires_temp`
+         set hires_analf = `echorc.x -template $VEXPID $nymde $nhmse -fill $hires_full`
+    endif
+    echo "hires_anal  = $hires_anal "
+    echo "hires_analf = $hires_analf "
+
+    if (   -e $hires_analf ) /bin/cp $hires_analf .
+    if ( ! -e $hires_anal ) then
+
+      if (`uname -n` !~ borg*) then
+
+          acquire -v -rc $avfacq $spool -d . -strict $nymde $nhmse 060000 1
+
+      else   # acquire using batch job (discover)
+             # ----------------------------------
+
+          set qsub_acquire = 0
+          set fname = "acquire.pbs"
+          alias fname1 "echo \!* >! $fname"
+          alias fname2 "echo \!* >> $fname"
+
+          set qsub_acquire = 1
+          if ($?gid) then
+             set gsflg = "-grpID $gid"
+          else
+             set gsflg = "-dflt"
+          endif
+          set GID = `getsponsor.pl $gsflg`
+
+          if (`uname -n` =~ borg*) then
+             set data_queue=datamove
+          else if (`uname -n` =~ r*i[0-3]n*) then
+             set data_queue=normal
+          else
+             set data_queue=""
+          endif
+
+          fname1 "#\!/bin/csh -xvf"
+          fname2 "#$group_list"
+          fname2 "#PBS -N acquire"
+          fname2 "#PBS -o acquire.log.o%j"
+          fname2 "#PBS -l nodes=1:ppn=1"
+          fname2 "#PBS -l walltime=1:00:00"
+          fname2 "#PBS -q $data_queue"
+          fname2 "#PBS -S /bin/csh"
+          fname2 "#PBS -j eo"
+          fname2 ""
+          fname2 "setenv DO_DMGET $DO_DMGET"
+          fname2 "set path = ( $path )"
+          fname2 "cd $SENSWDIR"
+          fname2 " acquire -v -rc $avfacq $spool -d . -strict $nymde $nhmse 060000 1 "
+          if( -e xbfcst.acq ) then
+            fname2 " acquire -v -rc xbfcst.acq $spool -d . -strict $nymde $nhmse 060000 1 "
+          endif
+          fname2 "exit"
+
+          qsub -W block=true $fname
+
+      endif # end of aquire (discover)
+
+      if ( ! -e $hires_anal[1] ) then
+         echo "fvsens: verifying analysis not found, cannot proceed "
+         exit 1
+      endif
+
+    endif
+
+#   Check resolution of verifying analysis and map if needed
+#   --------------------------------------------------------
+    set  ares = `getgfiodim.x $hires_anal[1]`    # resolution of veryfying analysis
+  
+                                set halt   = 0
+                                set interp = 0
+    if ( $ares[1] != $tres[1] ) set interp = 1
+    if ( $ares[2] != $tres[2] ) set interp = 1
+    if ( $ares[3] != $tres[3] ) set   halt = 1
+    if ( $halt ) then
+         echo "fvsens: unacceptable resolution(2)"
+         exit 1
+    endif
+
+    if ( -e verify_anal.$NCSUFFIX ) /bin/rm verify_anal.$NCSUFFIX
+    if ( $interp ) then
+      dyn2dyn.x $ncvrfana -g5 -o verify_anal.$NCSUFFIX -res $resol -nlevs $ares[3] -geos4 -pick $nymde $nhmse $hires_anal[1]
+    else
+      /bin/mv $hires_anal[1] verify_anal.$NCSUFFIX
+    endif
+
+#   If so, interpolate/link forecast from background
+#   ------------------------------------------------
+    if ( $xbfntmpl != "NONE" ) then
+       set NF = `echo $xbfname | awk -F/ '{print NF-1}'`
+       set xbfname = `echo $xbfname | awk -F/ '{print $NF}'`
+       echo "fvsens: forecast from background state, $xbfname"
+       set xbttag  = `echo $xbfname | cut -d. -f4`
+
+       if ( -e $xbfname ) then
+          # Check resolution of verifying analysis and map if needed
+          # --------------------------------------------------------
+          set  fres = `getgfiodim.x $xbfname`    # resolution of forecast from background
+  
+                                      set halt   = 0
+                                      set interp = 0
+          if ( $fres[1] != $tres[1] ) set interp = 1
+          if ( $fres[2] != $tres[2] ) set interp = 1
+          if ( $fres[3] != $tres[3] ) set   halt = 1
+          if ( $halt ) then
+               echo "fvsens: unacceptable resolution(3)"
+               exit 1
+          endif
+
+          if ( -e fcst_xb.$NCSUFFIX ) /bin/rm fcst_xb.$NCSUFFIX
+          if ( $interp ) then
+            dyn2dyn.x $ncvrfana -g5 -o fcst_xb.$NCSUFFIX -res $resol -nlevs $fres[3] -geos4 -pick $nymde $nhmse $xbfname
+          else
+            /bin/mv $xbfname fcst_xb.$NCSUFFIX
+          endif
+
+       else
+          echo "fvsens: cannot find $xbfname"
+          exit 1
+       endif
+    endif
+
+#   Generate the adjoint initial state
+#   ----------------------------------
+    set rcName = initadj.rc
+    set norms  = `echorc.x -rc $rcName pert_norm`
+    set nnorms = $#norms
+    if ( $ic == 1 ) /bin/rm -f Jgradf_*.eta.$NCSUFFIX
+    set initadjx = `which initadj.x`
+
+    @ itraj = 1
+    while ( $itraj <= $ntraj )
+
+      esma_mpirun -np 1 $initadjx -g5 -pick $nymde $nhmse -rc $rcName traj${itraj}/verify_fcst.$NCSUFFIX verify_anal.$NCSUFFIX
+      @ ng = 1
+      while ( $ng <= $nnorms )
+         /bin/mv Jgradf_${norms[$ng]}.eta.$NCSUFFIX traj${itraj}/
+         @ ng++
+      end
+      /bin/mv Jnormf.txt traj${itraj}/
+
+      if ( -e fcst_xb.$NCSUFFIX ) then
+         esma_mpirun -np 1 $initadjx -g5 -pick $nymde $nhmse -rc $rcName fcst_xb.$NCSUFFIX verify_anal.$NCSUFFIX
+         @ ng = 1
+         while ( $ng <= $nnorms )
+            /bin/cp Jgradf_${norms[$ng]}.eta.$NCSUFFIX ${fcstdir}/$EXPID.Jgradf_${norms[$ng]}.eta.$xbttag.$NCSUFFIX
+            /bin/mv Jgradf_${norms[$ng]}.eta.$NCSUFFIX traj${itraj}/xb_Jgradf_${norms[$ng]}.eta.$NCSUFFIX
+            @ ng++
+         end
+         /bin/cp Jnormf.txt ${fcstdir}/${EXPID}.Jnormf.$xbttag.txt
+         /bin/mv Jnormf.txt traj${itraj}/xb_Jnormf.txt
+      endif
+
+      @ itraj++
+
+    end # < ntraj >
+
+    @ ng = 1
+    while ( $ng <= $nnorms )
+
+       if ( $ntraj == 1 ) then
+
+          if ( -e fcst_xb.$NCSUFFIX ) then
+             dynp.x -s traj1/Jgradf_${norms[$ng]}.eta.$NCSUFFIX -p traj1/xb_Jgradf_${norms[$ng]}.eta.$NCSUFFIX -gsi -scale 0.5 -g5 -pureadd -realp -twoperts -ainc -adm -os Jgradf_${norms[$ng]}.eta.$NCSUFFIX -res $resol
+
+          else
+             /bin/mv traj1/Jgradf_${norms[$ng]}.eta.$NCSUFFIX .
+          endif
+
+       else if ( $ntraj == 2 ) then
+
+          dynp.x -s traj1/Jgradf_${norms[$ng]}.eta.$NCSUFFIX -p traj2/Jgradf_${norms[$ng]}.eta.$NCSUFFIX -gsi -scale 0.5 -g5 -pureadd -realp -twoperts -ainc -adm -os Jgradf_${norms[$ng]}.eta.$NCSUFFIX -res $resol
+
+       endif
+  
+       @ ng++
+
+    end # < nnorms >
+
+  endif # < LOCJGRADF >
+
+# -----------------------------------
+# Set boundary conditions for ADM/TLM
+# -----------------------------------
+  set im = $tres[1]
+  set jm = $tres[2]
+
+# Execute program for adjoint sensitivity calculation
+# ---------------------------------------------------
+  unsetenv KMP_LIBRARY
+
+#         ----------------------------------------------------------
+#         PART Ib - Calculate reduction to forecast error due to IAU
+#         ----------------------------------------------------------
+
+  if ( $CORRECT4IAU ) then
+
+#         ---------------------------------------------------------
+#         PART Ib.1 - Calculate error difference between background
+#                     and forecast at background time
+#         ---------------------------------------------------------
+
+# Tap on to forecast at background time
+# -------------------------------------
+  set verify_bprg  = `echorc.x -template $EXPID $nymdb $nhmsb upper-air_prog_filename`
+  set fres = `getgfiodim.x $fcstdir/$verify_bprg`   # resolution of forecast at bkg time
+
+                              set halt   = 0
+                              set interp = 0
+  if ( $fres[1] != $tres[1] ) set interp = 1
+  if ( $fres[2] != $tres[2] ) set interp = 1
+  if ( $fres[3] != $tres[3] ) set   halt = 1
+  if ( $halt ) then
+       echo "fvsens: unacceptable resolution"
+       exit 1
+  endif
+
+  /bin/rm -f verify_bfcs.$NCSUFFIX
+  if ( $interp ) then
+    dyn2dyn.x -g5 -o verify_bfcs.$NCSUFFIX -res $resol -nlevs $fres[3] -geos4 -pick $nymdb $nhmsb $fcstdir/$verify_bprg
+  else
+    dyn2dyn.x -g5 -o verify_bfcs.$NCSUFFIX -pick $nymdb $nhmsb $fcstdir/$verify_bprg
+  endif
+
+# Acquire background field
+# ------------------------
+  set hires_full = `grep bkg.eta $avfacq`
+  set hires_temp = $hires_full:t
+  set hires_bkgd  = `echorc.x -template $EXPID $nymdb $nhmsb -fill $hires_temp`
+  set hires_bkgdf = `echorc.x -template $EXPID $nymdb $nhmsb -fill $hires_full`
+  if (   -e $hires_bkgdf ) /bin/cp $hires_bkgdf .
+  if ( ! -e $hires_bkgd ) then
+
+      if (`uname -n` !~ borg*) then
+
+         acquire -v -rc $avfacq $spool -d . -strict $nymdb $nhmsb 060000 1
+
+      else   # acquire using batch job (discover)
+             # ----------------------------------
+
+       set qsub_acquire = 0
+       set fname = "acquire.pbs"
+       alias fname1 "echo \!* >! $fname"
+       alias fname2 "echo \!* >> $fname"
+
+        set qsub_acquire = 1
+        if ($?gid) then
+           set gsflg = "-grpID $gid"
+        else
+           set gsflg = "-dflt"
+        endif
+        set GID = `getsponsor.pl $gsflg`
+
+        if (`uname -n` =~ borg*) then
+           set data_queue=datamove
+        else if (`uname -n` =~ r*i[0-3]n*) then
+           set data_queue=normal
+        else
+           set data_queue=""
+        endif
+
+        fname1 "#\!/bin/csh -xvf"
+        fname2 "#$group_list"
+        fname2 "#PBS -N acquire"
+        fname2 "#PBS -o acquire.log.o%j"
+        fname2 "#PBS -l nodes=1:ppn=1"
+        fname2 "#PBS -l walltime=1:00:00"
+        fname2 "#PBS -q $data_queue"
+        fname2 "#PBS -S /bin/csh"
+        fname2 "#PBS -j eo"
+        fname2 ""
+        fname2 "setenv DO_DMGET $DO_DMGET"
+        fname2 "set path = ( $path )"
+        fname2 "cd $SENSWDIR"
+        fname2 " acquire -v -rc $avfacq $spool -d . -strict $nymdb $nhmsb 060000 1 "
+        fname2 "exit"
+
+        qsub -W block=true $fname
+
+      endif # end of aquire (discover)
+
+      if ( ! -e $hires_bkgd[1] ) then
+        echo "fvsens: inital time background not found, cannot proceed "
+        exit 1
+      endif
+
+  endif
+
+# Check resolution of background and interpolate if needed
+# --------------------------------------------------------
+  set  bres = `getgfiodim.x $hires_bkgd[1]`    # resolution of background
+
+                              set halt   = 0
+                              set interp = 0
+  if ( $bres[1] != $fres[1] ) set interp = 1
+  if ( $bres[2] != $fres[2] ) set interp = 1
+  if ( $bres[3] != $fres[3] ) set   halt = 1
+  if ( $halt ) then
+       echo "fvsens: unacceptable resolution of background"
+       exit 1
+  endif
+
+  /bin/rm verify_bkgd.$NCSUFFIX
+  if ( $interp ) then
+    dyn2dyn.x -g5 -o verify_bkgd.$NCSUFFIX -res $bresol -nlevs $bres[3] -geos4 -pick $nymdb $nhmsb $hires_bkgd[1]
+  else
+    /bin/mv $hires_bkgd[1] verify_bkgd.$NCSUFFIX
+  endif
+
+# Generate diff of forecast and background fields
+# -----------------------------------------------
+  set nhb = `echo $nhmsb | cut -c 1-2`
+  set nhe = `echo $nhmse | cut -c 1-2`
+  set ferr = $expid.ferr.eta.${nymdb}_${nhb}z.$NCSUFFIX
+  dyndiff.x -g5 -o $ferr verify_bkgd.$NCSUFFIX verify_bfcs.$NCSUFFIX
+         /bin/mv $ferr ${fcstdir}/$ferr
+         /bin/ln -sf ${fcstdir}/$ferr fvpert.eta.$NCSUFFIX         # filename w/ IC for fvpert.x
+
+#         ---------------------------------------------------------
+#         PART Ib.2 - Propagate forecast and background difference
+#                     forward to the end of the forecast time
+#         ---------------------------------------------------------
+
+# Propagate perturbation forward
+# ------------------------------
+  ls -lrt
+  /bin/rm -f status.log
+  set pertout = $expid.Mferr.eta.${nymde}_${nhe}z.$NCSUFFIX
+  set fvpert_exe = `which fvpert.x`
+  if ( $CUBED ) then
+     echo "fvsens: this option is not read for the cube - needs update"
+     exit 1
+  else
+     $ADMRUN_OPT_BEGIN -g5 -o $expid.Mferr.eta
+  endif
+
+  if ( ! -e $pertout ) then
+       echo "fvsens: initial pert not propagated by TLM"
+       exit 1
+  endif
+
+# Normalize evolved analysis increment as desired
+# -----------------------------------------------
+  mkdir zztmp  # Need to be careful since Jgradf files already exist
+  cd zztmp     # --------------------------------------------------
+  set initadjx = `which initadj.x`
+  esma_mpirun -np 1 $initadjx -g5 -pick $nymde $nhmse -rc $SENSWDIR/oseledec.rc $SENSWDIR/$pertout $SENSWDIR/verify_fcst.$NCSUFFIX
+  foreach fn ( `ls Jgradf*$NCSUFFIX` )
+     set suffix = `echo $fn | cut -d_ -f2 | cut -d. -f1-2`
+     /bin/mv $fn ${fcstdir}/${EXPID}.EMferr_${suffix}.${nymdb}_${nhb}z+${nymde}_${nhe}z.$NCSUFFIX
+  end
+  /bin/mv Jnormf.txt  ${fcstdir}/${EXPID}.EMferrnorm.${nymdb}_${nhb}z+${nymde}_${nhe}z.txt
+  cd ../
+  /bin/rm -r zztmp
+
+  endif # < CORRECT4IAU >
+
+#                ---------------------------------
+#                 PART II - Run the adjoint model
+#                ---------------------------------
+
+
+# Loop over number of available gradient vectors
+# ----------------------------------------------
+  @ ng = 1
+  while ( $ng <= $nnorms )
+
+    if ( ! -e Jgradf_${norms[$ng]}.eta.$NCSUFFIX ) then
+        if ( $LOCJGRADF != 0 ) then #  input vector already available, lets get it ...
+             /bin/cp $LOCJGRADF/${EXPID}.ferr_${norms[$ng]}.eta.*z+${nymde}_${nhe}z.$NCSUFFIX Jgradf_${norms[$ng]}.eta.$NCSUFFIX
+             if ( $status ) then
+                  echo "fvsens: error, expecting to find pre-computed gradient for $norms[$ng], but did not"
+                  exit 1
+             endif
+             /bin/ln -sf Jgradf_${norms[$ng]}.eta.$NCSUFFIX  Jgradf.eta.$NCSUFFIX
+        else
+             echo "fvsens: error, expecting to find fcst gradient for $norms[$ng], but did not"
+             exit 1
+        endif
+    else
+        /bin/rm  -f Jgradf.eta.$NCSUFFIX
+        if ( $CORRECT4IAU ) then
+            dynp.x -s Jgradf_${norms[$ng]}.eta.$NCSUFFIX \
+                   -p ${fcstdir}/${EXPID}.EMferr_${norms[$ng]}.eta.${nymdb}_${nhb}z+${nymde}_${nhe}z.$NCSUFFIX \
+                   -gsi -a 0.5 -g5 -pureadd -realp -twoperts \
+                   -ainc -gradient -os Jgradf.eta.$NCSUFFIX -res $resol
+            /bin/cp Jgradf.eta.$NCSUFFIX Jgradf_${norms[$ng]}.eta.$NCSUFFIX  # overwrite Jgradf w/ the corrected vector
+        else
+            /bin/ln -sf Jgradf_${norms[$ng]}.eta.$NCSUFFIX  Jgradf.eta.$NCSUFFIX
+        endif
+    endif
+
+    ls -lrt
+    /bin/rm -f status.log EGRESS
+    if ( $CUBED ) then
+
+       date
+       set fvsens_exe = `which GEOSgcmPert.x`
+       $ADMRUN_OPT_BEGIN 
+       if ( -e EGRESS ) echo "Normal Execution." > status.log
+       date
+
+       # For now hard-wired since ADM history is messed up
+       if( -e fsens.eta.${nymdb}_${nhb}z.$NCSUFFIX ) then
+         /bin/mv fsens.eta.${nymdb}_${nhb}z.$NCSUFFIX $EXPID.fsens.eta.${nymdb}_${nhb}z.$NCSUFFIX
+       else
+         echo " ${myname}: cannot find output from adjoint run, aborting ..."
+         exit 1
+       endif
+       foreach fn ( `ls $EXPID.fsens.eta.*.$NCSUFFIX` )
+         set sfx = `echo $fn | cut -d. -f4-`
+         /bin/mv $fn $EXPID.fsens.eta.${nymde}_${nhe}z-${sfx}
+       end
+
+    else
+       set fvsens_exe = `which fvsens.x`
+       $ADMRUN_OPT_BEGIN -g5
+    endif
+
+#   Check whether we ran without errors
+#   -----------------------------------
+    grep 'Normal Execution.' status.log >& /dev/null
+    if ( ${status} ) then
+      /bin/rm -f          ${FVHOME}/run/*.abnormal.log
+      echo $myname": saving  abnormal logs to ${FVHOME}/run"
+      echo $myname": abnormal exit from fvsens, bye, bye..."
+      exit 2
+    endif
+
+#   Move output files from sens program to main directory
+#   -----------------------------------------------------
+    set myfile = `ls -1 *.fsens.*`
+    foreach fn ( $myfile )
+       set prefix = `echo $fn | cut -d. -f1-2`
+       set suffix = `echo $fn | cut -d. -f3-`
+       /bin/mv $fn $fcstdir/${prefix}_${norms[$ng]}.$suffix
+    end
+ 
+#   If correcting for IAU factor, x-term dot product
+#   ------------------------------------------------
+    if ( $CORRECT4IAU ) then
+         dyndot.x $fcstdir/${prefix}_${norms[$ng]}.$suffix ${fcstdir}/$ferr 
+         echo "X-term dot product (tot,u,v,pt,ps,q):"
+         cat dyndot.txt
+         /bin/mv dyndot.txt $fcstdir/${EXPID}.Xdot_${norms[$ng]}.${nymde}_${nhe}z.txt
+
+    endif # < CORRECT4IAU >
+ 
+#   Rename Jgradf.eta.$NCSUFFIX for archiving
+#   -----------------------------------------
+    set nhb = `echo $nhmsb | cut -c 1-2`
+    set nhe = `echo $nhmse | cut -c 1-2`
+    /bin/mv Jgradf_${norms[$ng]}.eta.$NCSUFFIX ${fcstdir}/${EXPID}.Jgradf_${norms[$ng]}.eta.${nymde}_${nhe}z.$NCSUFFIX
+
+    @ ng++
+  end  # n gradients
+
+  \rm -f ${fcstdir}/${EXPID}.Jnormf.${nymde}_${nhe}z.txt
+  touch  ${fcstdir}/${EXPID}.Jnormf.${nymde}_${nhe}z.txt
+  @ itraj = 1
+  while ( $itraj <= $ntraj )
+    cat traj${itraj}/Jnormf.txt >> ${fcstdir}/${EXPID}.Jnormf.${nymde}_${nhe}z.txt
+    @ itraj++
+  end # < ntraj >
+
+  @ ic++
+
+end  # < cases >
+
+# if made if here ...
+exit 0

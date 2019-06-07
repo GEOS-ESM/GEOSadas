@@ -1,0 +1,422 @@
+#!/bin/csh -f
+#__JOB_NAME__
+#__TIME__
+#__ACCOUNT__
+#__OUTPUT__
+#__PARTITION__
+#SBATCH --no-requeue
+#SBATCH --export=NONE
+#PBS -S /bin/tcsh
+#PBS -r n
+#PBS -j oe
+#=======================================================================
+# name - __TRANSFER__
+# purpose - transfer monthly plots to Web server
+#
+# Notes
+# 1. This script can be run interactively or submitted as a batch job
+#=======================================================================
+alias echo1 "unset echo; echo \!*; set echo"
+set echo
+unalias ls
+
+# initializations
+#----------------
+umask 022
+@ exit_status = 0
+set do_cleanup = 0
+set send_mail = 0
+set mail_users = ("Stephen.C.Bloom" "gary.partyka" "Lawrence.L.Takacs")
+
+# job parameters
+#---------------
+set rundir = __RUNDIR__
+set yyyymm = __YYYYMM__
+set jobscript = __TRANSFER__
+
+if (! $?season) set season = null
+unset echo
+
+echo
+echo "----------------------"
+echo "Monthly Plots Transfer"
+echo "----------------------"
+echo "rundir   = $rundir"
+echo "yyyymm   = $yyyymm"
+echo "----------------------"
+echo
+
+set echo
+set yyyy = `echo $yyyymm | cut -c1-4`
+set mm   = `echo $yyyymm | cut -c5-6`
+
+# set the environment
+#--------------------
+unset echo
+source $rundir/FVDAS_Run_Config
+source $FVROOT/bin/g5_modules
+set echo
+
+set path = ($rundir $FVROOT/bin $path)
+set MC   = `$FVROOT/bin/token_resolve %MC $yyyymm`
+
+printenv
+
+# record start of job
+#--------------------
+$ERR -C 60 -E 0 -D "NOTICE: $jobscript has begun processing"
+
+# get frequency
+#--------------
+cd $rundir/monthly_plots
+set freq = `grep PLOT_FREQUENCY: ./plot/plot.rc | cut -d'#' -f1 | cut -d':' -f2 | tr "[:lower:]" "[:upper:]"`
+
+if ($freq == "YEARLY") then
+  set freq = "Y$yyyy"
+endif
+
+# count local gif images
+#-----------------------
+set plots_dir = $FVHOME/monthly_plots
+cd $plots_dir/plots_$freq
+
+set plot_cnt = `find . -name  "*.gif" | wc -l`
+echo1 " local plot count = $plot_cnt"
+
+# determine remote destinations
+#------------------------------
+set remloc  = "$PLOTS_LOC/Y$yyyy"
+set climloc = "$PLOTS_LOC/CLIM"
+set miscloc = "$PLOTS_LOC/misc/Y$yyyy"
+
+set plotdest = (`echo $PLOTS_LOC | cut -d: -f1` `echo $PLOTS_LOC  | cut -d: -f2`)
+set remdest  = (`echo $remloc    | cut -d: -f1` `echo $remloc     | cut -d: -f2`)
+set climdest = (`echo $climloc   | cut -d: -f1` `echo $climloc    | cut -d: -f2`)
+set miscdest = (`echo $miscloc   | cut -d: -f1` `echo $miscloc    | cut -d: -f2`)
+
+# check for existence of $PLOTS_LOC
+#----------------------------------
+ssh -oBatchMode=yes $plotdest[1] "ls $plotdest[2] >& /dev/null"
+if ($status) then
+    unset echo
+    echo ""
+    echo "WARNING. Unable to transfer gif images to Web server"
+    echo "----------------------------------------------------"
+    echo "Verify that the PLOTS_LOC directory exists and that"
+    echo "file transfers can occur without entering a password"
+    echo "----------------------------------------------------"
+    echo "PLOTS_LOC: $PLOTS_LOC"
+    echo ""
+    set echo
+    exit 1
+endif
+
+# create remote directories
+#--------------------------
+ssh $remdest[1] "if (! -d $remdest[2])  mkdir -p $remdest[2]"
+ssh $remdest[1] "if (! -d $climdest[2]) mkdir -p $climdest[2]"
+ssh $remdest[1] "if (! -d $miscdest[2]) mkdir -p $miscdest[2]"
+
+# transfer MC plots
+#------------------
+echo1 "Transferring gif images to $remloc"
+
+@ transfer_status = 0
+@ gifs_ALL = 0
+@ gifs_CLIM = 0
+
+set gifs = ()
+set gifs = (`ls ./*.$MC.gif`)
+@ gifs_MC = $#gifs
+
+if ($gifs_MC) then
+    scp $gifs $remloc 
+    @ scp_status = $status
+    @ transfer_status += $scp_status
+    @ gifs_ALL += $gifs_MC
+
+    echo1 "Finished pushing $MC plots; scp_status = $scp_status"
+    set gifs_REM = `ssh $remdest[1] "find $remdest[2] -name '*.$MC.gif' | wc -l"`
+    if ($gifs_REM < $gifs_MC) then
+        echo1 " $MC Plots delivered = $gifs_REM"
+        $ERR -E 0 -D "ERROR: ${jobscript}: $MC plots: $gifs_REM of $gifs_MC transferred"
+        @ transfer_status ++
+    else
+        echo1 " $MC Plots delivered = $gifs_MC"
+        \rm ./*.$MC.gif
+    endif
+else
+    echo1 "NO $MC gif files were created"
+    $ERR -E 0 -D "COMMENT: ${jobscript}: No $MC gif files were created"
+endif
+
+# transfer misc/MC plots
+#-----------------------
+set gifs = ()
+set gifs = (`ls ./misc/*.$MC.gif`)
+@ gifs_MISC = $#gifs
+
+if ($gifs_MISC) then
+    @ gifs_ALL += $gifs_MISC
+
+    scp $gifs $miscloc 
+    @ scp_status = $status
+    @ transfer_status += $scp_status
+
+    echo1 "Finished pushing misc/$MC plots; scp_status = $scp_status"
+    set gifs_REM = `ssh $miscdest[1] "find $miscdest[2] -name '*.$MC.gif' | wc -l"`
+    if ($gifs_REM < $gifs_MISC) then
+        echo1 " misc/$MC Plots delivered = $gifs_REM"
+        $ERR -E 0 -D "ERROR: ${jobscript}: misc/$MC plots: $gifs_REM of $gifs_MISC transferred"
+        @ transfer_status ++
+    else
+        echo1 " misc/$MC Plots delivered = $gifs_MISC"
+        \rm ./misc/*.$MC.gif
+    endif
+else
+    echo1 "NO misc/$MC gif files were created"
+    $ERR -E 0 -D "COMMENT: ${jobscript}: No misc/$MC gif files were created"
+endif
+
+# transfer season plots
+#----------------------
+@ gifs_SEAS = 0
+if ($season != "null") then
+    set gifs = ()
+    set gifs = (`ls ./*.${season}*.gif`)
+    @ gifs_SEAS = $#gifs
+
+    if ($gifs_SEAS) then
+        @ gifs_ALL += $gifs_SEAS
+
+        scp $gifs $remloc 
+        @ scp_status = $status
+        @ transfer_status += $scp_status
+
+        echo1 "Finished pushing $season plots; scp_status = $scp_status"
+        set gifs_REM = `ssh $remdest[1] "find $remdest[2] -name '*.${season}*.gif' | wc -l"`
+        if ($gifs_REM < $gifs_SEAS) then
+            echo1 " $season Plots delivered = $gifs_REM"
+            $ERR -E 0 -D "ERROR: ${jobscript}: $season plots: $gifs_REM of $gifs_SEAS transferred"
+            @ transfer_status ++
+        else
+            echo1 " $season Plots delivered = $gifs_SEAS"
+            \rm ./*.${season}*.gif
+        endif
+    else
+        echo1 "NO $season gif files were created"
+        $ERR -E 0 -D "COMMENT: ${jobscript}: No $season gif files were created"
+    endif
+endif
+
+# transfer tseries plots
+#-----------------------
+set gifs = ()
+set gifs = (`ls ./*_TIME_SERIES*.gif`)
+@ gifs_TSER = $#gifs
+
+if ($gifs_TSER) then
+    @ gifs_ALL += $gifs_TSER
+    @ gifs_CLIM += $gifs_TSER
+
+    scp $gifs $climloc
+    @ scp_status = $status
+    @ transfer_status += $scp_status
+
+    echo1 "Finished pushing tseries files; scp_status = $scp_status"
+    set gifs_REM  = `ssh $climdest[1] "find $climdest[2] -name '*_TIME_SERIES*.gif' | wc -l"`
+    if ($gifs_REM < $gifs_TSER) then
+        echo1 " tseries plots delivered = $gifs_REM"
+        $ERR -E 0 -D "ERROR: ${jobscript}: tseries plots: $gifs_REM of $gifs_TSER transferred"
+        @ transfer_status ++
+    else
+        echo1 " tseries plots delivered = $gifs_TSER"
+        \rm ./*_TIME_SERIES*.gif
+    endif
+else
+    echo1 "NO tseries gif files were created"
+    $ERR -E 0 -D "COMMENT: ${jobscript}: No tseries gif files were created"
+endif
+
+# transfer taylor plots
+#----------------------
+set gifs = ()
+set gifs = (`ls ./taylor_*.gif`)
+@ gifs_TAYL = $#gifs
+
+if ($gifs_TAYL) then
+    @ gifs_ALL += $gifs_TAYL
+    @ gifs_CLIM += $gifs_TAYL
+
+    scp $gifs $climloc
+    @ scp_status = $status
+    @ transfer_status += $scp_status
+
+    echo1 "Finished pushing taylor files; scp_status = $scp_status"
+    set gifs_REM  = `ssh $climdest[1] "find $climdest[2] -name 'taylor_*.gif' | wc -l"`
+    if ($gifs_REM < $gifs_TAYL) then
+        echo1 " taylor plots delivered = $gifs_REM"
+        $ERR -E 0 -D "ERROR: ${jobscript}: taylor plots: $gifs_REM of $gifs_TAYL transferred"
+        @ transfer_status ++
+    else
+        echo1 " taylor plots delivered = $gifs_TAYL"
+        \rm ./taylor_*.gif
+    endif
+else
+    echo1 "NO taylor gif files were created"
+    $ERR -E 0 -D "COMMENT: ${jobscript}: No taylor gif files were created"
+endif
+
+# transfer VORTEX plots
+#----------------------
+set gifs = ()
+set gifs = (`ls ./VORTEX_*.gif`)
+@ gifs_VORT = $#gifs
+
+if ($gifs_VORT) then
+    @ gifs_ALL += $gifs_VORT
+    @ gifs_CLIM += $gifs_VORT
+
+    scp $gifs $climloc
+    @ scp_status = $status
+    @ transfer_status += $scp_status
+
+    echo1 "Finished pushing VORTEX files; scp_status = $scp_status"
+    set gifs_REM  = `ssh $climdest[1] "find $climdest[2] -name 'VORTEX_*.gif' | wc -l"`
+    if ($gifs_REM < $gifs_VORT) then
+        echo1 " VORTEX plots delivered = $gifs_REM"
+        $ERR -E 0 -D "ERROR: ${jobscript}: VORTEX plots: $gifs_REM of $gifs_VORT transferred"
+        @ transfer_status ++
+    else
+        echo1 " VORTEX plots delivered = $gifs_VORT"
+        \rm ./VORTEX_*.gif
+    endif
+else
+    echo1 "NO VORTEX gif files were created"
+    $ERR -E 0 -D "COMMENT: ${jobscript}: No VORTEX gif files were created"
+endif
+
+# transfer QBO plots
+#-------------------
+set gifs = ()
+set gifs = (`ls ./QBO_*.gif`)
+@ gifs_QBO = $#gifs
+
+if ($gifs_QBO) then
+    @ gifs_ALL += $gifs_QBO
+    @ gifs_CLIM += $gifs_QBO
+
+    scp $gifs $climloc
+    @ scp_status = $status
+    @ transfer_status += $scp_status
+
+    echo1 "Finished pushing QBO files; scp_status = $scp_status"
+    set gifs_REM  = `ssh $climdest[1] "find $climdest[2] -name 'QBO_*.gif' | wc -l"`
+    if ($gifs_REM < $gifs_QBO) then
+        echo1 " QBO plots delivered = $gifs_REM"
+        $ERR -E 0 -D "ERROR: ${jobscript}: QBO plots: $gifs_REM of $gifs_QBO transferred"
+        @ transfer_status ++
+    else
+        echo1 " QBO plots delivered = $gifs_QBO"
+        \rm ./QBO_*.gif
+    endif
+else
+    echo1 "NO QBO gif files were created"
+    $ERR -E 0 -D "COMMENT: ${jobscript}: No QBO gif files were created"
+endif
+
+# final check that all gif plots were found
+#------------------------------------------
+if ($plot_cnt != $gifs_ALL) then
+    echo1 "Some created gif files were not transferred. Check $plots_dir/plots_$freq directory."
+    $ERR -E 0 -D "ERROR: ${jobscript}: $gifs_ALL of $plot_cnt plots transferred"
+    @ transfer_status ++
+endif
+
+# report error
+#-------------
+cd $plots_dir
+if ($transfer_status) then
+    set errmsg = "FATAL ERROR: $jobscript image transfer to $remloc has failed"
+    $ERR -C 62 -E 5 -D "$errmsg"
+    exit 1
+endif
+
+# record success & clean up
+#--------------------------
+$ERR -C 64 -E 0 -D "NOTICE: $jobscript plot transfer successful - Plot count = $plot_cnt"
+\rm -rf $plots_dir/plots_$freq
+
+# send email
+#-----------
+if ($send_mail) then
+
+   if ($season != "null") then
+      cat <<EOF > temp_file.$$
+
+***************************************************************
+
+                   $yyyymm 
+      $MC Monthly Plots for $EXPID are ready
+      $season Seasonal Plots for $EXPID are ready
+
+ see: http://gmao.gsfc.nasa.gov/intranet/research/modeling/agcm/geos5/$EXPID/
+
+***************************************************************
+
+EOF
+
+   else
+      cat <<EOF > temp_file.$$
+
+***************************************************************
+
+                      $yyyymm 
+        $MC Monthly Plots for $EXPID are ready
+ see: http://gmao.gsfc.nasa.gov/intranet/research/modeling/agcm/geos5/$EXPID/
+
+***************************************************************
+
+EOF
+
+   endif
+   set mail_cmd = "/usr/bin/Mail -r oa@gmao.gsfc.nasa.gov -R oa@gmao.gsfc.nasa.gov"
+   foreach mail_user ($mail_users)
+      $mail_cmd -s "$EXPID $yyyymm Monthly Plots Ready"  $mail_user@nasa.gov < temp_file.$$
+      sleep 5
+   end
+   $mail_cmd -s "$EXPID $yyyymm Monthly Plots Ready"  oa@gmao.gsfc.nasa.gov < temp_file.$$
+   /bin/rm -f temp_file.$$
+endif
+
+# rename output file for successful run
+#--------------------------------------
+if ($?PBS_JOBID) then
+    if ($?outfile) then
+        set outfile = `echo $outfile | sed -e "s|.FAILED||"`
+    else
+        set listdir = "$FVHOME/etc/Y$yyyy/M$mm"
+        set outfile = "$listdir/$EXPID.plots_transfer.$yyyymm.log.$$.txt";
+    endif
+    $PBS_BIN/qalter -o $outfile $PBS_JOBID
+endif
+
+unset echo
+echo
+echo "================"
+echo "Transfer Summary"
+echo "================"
+echo "The following gif plot files were transferred"
+echo "* $MC plots: $gifs_MC"
+echo "* misc/$MC plots: $gifs_MISC"
+echo "* season plots: $gifs_SEAS"
+echo "* CLIM plots: $gifs_CLIM"
+echo "  - tseries ($gifs_TSER)"
+echo "  - taylor ($gifs_TAYL)"
+echo "  - VORTEX ($gifs_VORT)"
+echo "  - QBO ($gifs_QBO)"
+echo "================"
+echo "Total: $gifs_ALL"
+echo ""
+echo
+exit 0

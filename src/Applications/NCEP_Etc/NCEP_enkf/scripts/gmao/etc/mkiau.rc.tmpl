@@ -1,0 +1,50 @@
+# MAPL required variables
+# -----------------------
+RUN_DT: 21600   # for now, must be set to 6-hrs
+MAPL_ENABLE_TIMERS: NO
+PRINTSPEC: 0  # (0: OFF, 1: IMPORT & EXPORT, 2: IMPORT, 3: EXPORT)
+
+# request increment to (also) come out in sdf format
+# --------------------------------------------------
+#SDF_FILENAME: agcm_import_rst.%y4%m2%d2_%h2z.nc4
+
+# Model Resolution and Timestep Parameters
+# 4x4 is usually enough for any resolution
+# ----------------------------------------
+NX: @NX
+NY: @NY
+
+#TEST_CASE: 0
+#TEST_CASE: 1  # convert cubed back to latlon
+#TEST_CASE: 2  # test ad l2c (not avail yet)
+#TEST_CASE: 3  # test ad c2l
+
+DYCORE: FV3
+AGCM.GRIDNAME: PE@AGCM_IMx@AGCM_JM-CF
+
+AGCM.IM_WORLD: @AGCM_IM
+AGCM.JM_WORLD: @AGCM_JM
+AGCM.LM: @AGCM_LM
+AGCM.GRID_TYPE: Cubed-Sphere
+
+IAU_DATE: >>>ANADATE<<<
+IAU_TIME: >>>ANATIME<<<
+
+# This is presently set the same file as the old makeiau.x did
+# NOTE: the internal_rst of this program provides
+#       the import to GEOSgcm.x, therefore its name
+# ------------------------------------------------------------
+AGCM_INTERNAL_CHECKPOINT_FILE:          agcm_import_>>>NMEMTAG<<<_rst
+AGCM_INTERNAL_CHECKPOINT_TYPE:          binary
+
+ANALYZE_TS: 1
+REPLAY_BKG:  >>>EXPID<<<.bkg.eta.%y4%m2%d2_%h2z.>>>NCSUFFIX<<<
+REPLAY_FILE: >>>EXPID<<<.ana.eta.%y4%m2%d2_%h2z.>>>NMEMTAG<<<.>>>NCSUFFIX<<<
+REPLAY_DAMPBEG: 0
+REPLAY_DAMPEND: 0
+REPLAY_OFFLINE: 1
+REPLAY_REMAP: YES
+REPLAY_WINDFIX: YES
+# Following allows zero-out of q-tendency (careful)
+#NO_DQVDT: 1
+

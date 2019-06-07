@@ -1,0 +1,62 @@
+some_atmens_exp:
+  Type: Suite
+
+  Initialize:
+    Type: Family
+    AtmensCreateWorkspace: {Type: Task}
+    AtmensGetDateTime:
+      Trigger: {AtmensCreateWorkspace: complete}
+      Type: Task
+
+  TimeLoop:
+    Type: Family
+    Trigger: {Initialize: complete}
+    AtmensSetPerturbations:
+      Type: Task
+    AtmensObserver:
+      Type: Task
+    AtmensAerosolAnalysis:
+      Type: Task
+      Trigger: {AtmensObserver: complete}
+    AtmensAnalysis:
+      Type: Task
+      Trigger: {AtmensAerosolAnalysis: complete}
+    AtmensPostAnalysis:
+      Type: Task
+      Trigger:
+        AtmensSetPerturbations: complete
+        AtmensAnalysis: complete
+      Variable:
+        ECF_JOB_CMD: "/usr/slurm/bin/sbatch %ECF_JOB% > %ECF_JOBOUT% 2>&1"
+    AtmensAnaToGcm:
+      Type: Task
+      Trigger: {AtmensPostAnalysis: complete}
+    AtmensGcm:
+      Type: Task
+      Trigger: {AtmensAnaToGcm: complete}
+    AtmensVortexTrack:
+      Type: Task
+      Trigger: {AtmensGcm: complete}
+    AtmensComputeStatistics:
+      Type: Task
+      Trigger: {AtmensVortexTrack: complete}
+      Variable:
+        ECF_JOB_CMD: "/usr/slurm/bin/sbatch %ECF_JOB% > %ECF_JOBOUT% 2>&1"
+    AtmensTagAndRecycle:
+      Type: Task
+      Trigger: {AtmensComputeStatistics: complete}
+    AtmensUpdateDateTime:
+      Type: Task
+      Trigger: {AtmensTagAndRecycle: complete}
+    AtmensSummarizeTimings:
+      Type: Task
+      Trigger: {AtmensUpdateDateTime: complete}
+
+  Finalize:
+    Type: Family
+    Trigger: {TimeLoop: complete}
+    AtmensArchive:
+      Type: Task
+    AtmensCleanup:
+      Type: Task
+      Trigger: {AtmensArchive: complete}

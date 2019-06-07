@@ -1,0 +1,100 @@
+# 0. Generic parameters (independent of NAG/ARPACK choice)
+# --------------------------------------------------------
+
+# select eigensolver (1=ARPACK, 2=NAG, 3=CNOP)
+eigensolver_package: 1
+
+# initial-time SV norm (default - same as final-time norm)
+start_svec_norm: te
+
+# projection for intitial time norm
+start_svec_west: -180
+start_svec_east: 180  
+start_svec_south: -89.7
+start_svec_north: 89.7
+start_svec_upper: 40
+start_svec_lower: 72
+
+# final-time SV norm (TE, WE, KE | total, wet, kinetic)
+final_svec_norm: te
+
+# projection for final time norm
+final_svec_west: -180
+final_svec_east: 180
+final_svec_south: 30.0
+final_svec_north: 90.0
+final_svec_upper: 40
+final_svec_lower: 72
+
+# calculate eigenvectors (if no, only eigenvalues)
+calculate_eigenvectors:  .true.
+ 
+# produce final-time (evolved) SVs
+evolve_svec: .true.
+
+# test-level for norms (0, 1, 2)
+do_norm_test: 1
+
+# maximum number of ADM_TLM iterations per job segment
+maximum_iterations_per_job: 10
+
+# when wet norm read q coeff
+ehrendorfer_errico_raedder_eps: 0.3
+
+# hold the internal fv checkpoints in memory over all iterations
+hold_fv_checkpoints: .false.
+
+# 1. ARPACK-specific parameters
+# -----------------------------
+
+# desired number of converged SVs (and/or singular values)
+number_eigenvectors:  10
+
+# this * nev = number of Lanczos basis vectors used in the eigendecomposition (guidance in code suggests >= 2*nev)
+number_lanczos_basis_vectors:  21
+
+# relative accuracy of eigenvalue calculation
+eigenvalue_relative_accuracy:  0.05
+
+# maximum allowed number of Arnoldi iterations 
+maximum_arnoldi_iterations:  10
+
+# check on accuracy of eigendecomposition
+eigen_decomposition_accuracy:  .false.
+
+# which eigenvalues: LM=leading, SM=trailing, BE=both (default is LM)
+which_eigenvalues: LM
+
+
+
+# 2. NAG-specific parameters
+# --------------------------
+
+# total number of Lanczos iterations
+number_lanczos_iterations: 10
+
+# accuracy for eigenvector calculation
+eigenvector_accuracy: 0.05
+
+
+# 3. CNOP (SPG-based minimization)
+# --------------------------------
+
+# Number of CNOPs to calculate (only 1 for now)
+number_of_cnops: 1
+
+# total number of SPG iterations
+number_spg_iterations: 10
+
+# tolerance for convergence criterium for CNOP (converges for norm < tol**2)
+cnop_tolerance: 0.32
+
+# maximum norm value to be acheived by CNOP (in TE or KE units)
+cnop_norm_value: 28
+
+
+# 4. Vertical weighting option
+# ----------------------------
+
+# Choose vertical weighting option (1. dsigma, 2. height )
+vweight: 1

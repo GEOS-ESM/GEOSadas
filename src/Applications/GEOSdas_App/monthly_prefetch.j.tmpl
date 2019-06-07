@@ -1,0 +1,82 @@
+#!/bin/csh
+###############################################################################
+#__JOB_NAME__
+#__TIME__
+#__ACCOUNT__
+#__OUTPUT__
+#__PARTITION__
+#SBATCH --no-requeue
+#SBATCH --export=NONE
+#PBS -S /bin/csh
+#PBS -r n
+#PBS -j oe
+
+# job parameters
+#---------------
+echo
+echo "----------------------"
+echo "Monthly Means Prefetch"
+echo "----------------------"
+set echo
+set filestring = __FILESTRING__
+set htype      = __HOURTYPE__
+set yyyymm     = __YYYYMM__
+set rundir     = __RUNDIR__
+set workdir    = __WORKDIR__
+set do_dmput   = __DO_DMPUT__
+set do_tar     = __DO_TAR__
+unset echo
+echo
+
+set ignoreFLG = ""
+if ($do_tar) set ignoreFLG = "-i"
+
+set hourtypeFLG = ""
+if ("H$htype" != "H") set hourtypeFLG = "-T $htype"
+
+set dmputFLG = ""
+if ($do_dmput) set dmputFLG = "-p"
+
+set tarFLG = ""
+if ($do_tar) set tarFLG = "-t"
+
+# set job environment variables
+#------------------------------
+source $rundir/FVDAS_Run_Config
+set path = ( $rundir $FVROOT/bin $BASEDIR/$ARCH/bin $path )
+
+set echo
+chdir $workdir
+
+# command to prefetch inputs
+#---------------------------
+monthly_means.pl -l -prefetch -v $dmputFLG $tarFLG $ignoreFLG \
+   -H $FVHOME \
+   -R $FVROOT \
+   -D $yyyymm \
+   -f $filestring $hourtypeFLG \
+   -w $workdir
+@ exit_status = $status
+
+# check status
+#-------------
+if ( $exit_status ) then
+    $ERR -E 5 -D "$EXPID FATAL ERROR: Monthly Means prefetch job has FAILED for $yyyymm"
+    exit 1
+endif
+
+# rename output file for successful run
+#--------------------------------------
+if ($?outfile) then
+    set outfile = `echo $outfile | sed -e "s|.FAILED||"`
+else
+   set yyyy = `echo $yyyymm | cut -c1-4`
+   set mm = `echo $yyyymm | cut -c5-6`
+   set ftype = `echo $filestring:t:r:r | cut -d. -f2-`
+
+   set listdir = "$FVHOME/etc/Y$yyyy/M$mm"
+   set outfile = "$listdir/$EXPID.prefetch.$ftype.$yyyymm.log.$$.txt";
+endif
+$PBS_BIN/qalter -o $outfile $PBS_JOBID
+
+exit 0

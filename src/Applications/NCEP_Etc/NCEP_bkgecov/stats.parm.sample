@@ -1,0 +1,5 @@
+ &NAMSTAT
+   jcap=254,nsig=64,nlat=258,nlon=512,maxcases=40,hybrid=.false.,
+   smoothdeg=4.0,ssmooth=50.,vscon=.001,
+ /
+

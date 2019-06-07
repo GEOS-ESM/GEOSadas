@@ -1,0 +1,220 @@
+#!/bin/csh -f
+#__JOB_NAME__
+#__NODES__
+#__TIME__
+#__ACCOUNT__
+#__OUTPUT__
+#SBATCH --no-requeue
+#SBATCH --export=NONE
+#PBS -S /bin/tcsh
+#PBS -r n
+#PBS -j oe
+#=======================================================================
+# name - __PLOTS_J__
+# purpose - run the monthly plots program on the monthly means outputs
+#
+# Examples:
+# 1. Normal operation
+#    > sbatch __PLOTS_J__
+#    > qsub __PLOTS_J__
+#
+# 2. Generate plots without transferring them to the Web server
+#    > sbatch --export=push="no" __PLOTS_J__
+#    > qsub -v push="no" __PLOTS_J__
+#
+# Notes:
+# 1. To continue a plotting job that has timed out, without starting over
+#    again, resubmit one or more of the gcm_plot[n].j job scripts in the
+#    $EXPID/monthly_plots/plots/Y$yyyy/M$mm/plot directory.
+#=======================================================================
+alias echo1 "unset echo; echo \!*; set echo"
+set echo
+
+# initializations
+#----------------
+umask 022
+@ exit_status = 0
+set send_mail = 0
+set mail_users = ("Stephen.C.Bloom" "gary.partyka" "Lawrence.L.Takacs")
+
+# job parameters
+#---------------
+set rundir = __RUNDIR__
+set yyyymm = __YYYYMM__
+set plots_j = __PLOTS_J__
+
+set qcmd = __QCMD__
+set transfer_csh = __TRANSFER__
+
+if (! $?push) then
+    set push = "yes"
+endif
+
+if ($?type) then
+   set plottype = "-type $type"
+else
+   set plottype = ""
+endif
+unset echo
+
+echo
+echo "------------------------"
+echo "Monthly Plots Processing"
+echo "------------------------"
+echo "rundir   = $rundir"
+echo "yyyymm   = $yyyymm"
+echo "push     = $push"
+echo "plottype = $plottype"
+echo "------------------------"
+echo
+
+set echo
+set yyyy = `echo $yyyymm | cut -c1-4`
+set mm   = `echo $yyyymm | cut -c5-6`
+
+# set the environment
+#--------------------
+unset echo
+source $rundir/FVDAS_Run_Config
+source $FVROOT/bin/g5_modules
+set echo
+set path = ($rundir $FVROOT/bin $path)
+
+printenv
+
+# record start of job
+#--------------------
+$ERR -C 60 -E 0 -D "NOTICE: $plots_j:t has begun processing"
+
+# prepare the environment
+#------------------------
+set plots_dir  = $FVHOME/monthly_plots
+set remloc     = $PLOTS_LOC/Y$yyyy/
+set MC         = `$FVROOT/bin/token_resolve %MC $yyyymm`
+set freq       = `grep PLOT_FREQUENCY: $FVHOME/run/monthly_plots/plot/plot.rc | cut -d'#' -f1 | cut -d':' -f2 | tr "[:lower:]" "[:upper:]"`
+
+if ($freq == "YEARLY") then
+  set freq = "Y$yyyy"
+endif
+
+if ($?PLOTS_PBSTAG) then
+  set pbs_tag = $PLOTS_PBSTAG
+else
+  set pbs_tag = $EXPID
+endif
+
+# set date related variables
+#---------------------------
+set NFILES = 1
+set TDEF = `$FVROOT/bin/token_resolve %MC%y4 $yyyymm`
+
+# create plots directory
+#-----------------------
+echo1 "Local Directory = $plots_dir"
+if (! -d $plots_dir/plot) mkdir -p $plots_dir/plot
+if (! -d $plots_dir/plots_$freq) mkdir -p $plots_dir/plots_$freq
+
+# clean $plots_dir
+#-----------------
+/bin/rm -f $plots_dir/*.tabl 
+/bin/rm -f $plots_dir/HISTORY.rc
+
+/usr/bin/find $plots_dir/plot -type f -exec rm '{}' \;
+/usr/bin/find $plots_dir/plots_$freq -type f -exec rm '{}' \;
+
+/usr/bin/find $plots_dir -type f -name "*.gif" -exec rm '{}' \;
+/usr/bin/find $plots_dir -type d -name "*.*_*" -exec rm -r '{}' \;
+
+# create single month tabl files from templates
+#----------------------------------------------
+cd $FVHOME/run/monthly_plots
+set sedfile = $plots_dir/tmpl_sed_file
+
+echo "s?>>>FVHOME<<<?$FVHOME?g" >! $sedfile
+echo "s/>>>EXPID<<</$EXPID/g"   >> $sedfile
+echo "s/>>>NFILES<<</$NFILES/g" >> $sedfile
+echo "s/>>>TDEF<<</$TDEF/g"     >> $sedfile
+
+foreach tmpl (*.tmpl) 
+  set name = $tmpl:r
+  sed -f $sedfile $tmpl >! $plots_dir/$name.tabl
+end
+/bin/rm -f $sedfile
+
+# create HISTORY.rc
+#------------------
+echo "s?>>>PLOTSDIR<<<?$plots_dir?" >! $sedfile
+sed -f $sedfile HISTORY.rc_tmpl >! $plots_dir/HISTORY.rc
+/bin/rm -f $sedfile
+
+# files to $plots_dir/plot directory
+#-----------------------------------
+cd $FVHOME/run/monthly_plots/plot/
+
+echo "s|@EXPID|$EXPID|g"        >! $sedfile
+echo "s|@EXPDIR|$plots_dir|"    >> $sedfile
+echo "s|@HOMDIR|$plots_dir|"    >> $sedfile
+echo "s|@MOVE_N|${EXPID}_MOVE|" >> $sedfile
+
+sed -f $sedfile gcm_plot.tmpl   >! $plots_dir/plot/gcm_plot.tmpl
+sed -f $sedfile gcm_moveplot.j  >! $plots_dir/plot/gcm_moveplot.j
+/bin/rm -f $sedfile
+
+cp -v plot.rc           $plots_dir/plot/plot.rc
+cp -v gcm_quickplot.csh $plots_dir/plot/gcm_quickplot.csh
+chmod 744 $plots_dir/plot/gcm_quickplot.csh
+
+# run plots package for single month plots
+#-----------------------------------------
+echo1 "Running gcmpost.script to generate plots"
+$GEOSUTIL/post/gcmpost.script -source $plots_dir -plots $MC \
+                              -ana -begdate $yyyymm -enddate $yyyymm
+sleep 5
+
+# truncate ${pbs_tag}_PLT to match 15-char limit in gcmpost.script
+#-----------------------------------------------------------------
+set PLT_TAG = `echo $pbs_tag | cut -c1-15`
+qstat -a -u $USER | grep $PLT_TAG
+
+# get plot job ids
+#-----------------
+set jobids = ( `qstat -a -u $USER | grep $PLT_TAG | cut -d" " -f1` )
+set jobcnt = $#jobids
+
+set depflg = ""
+if ($jobcnt) then
+    if ($qcmd == sbatch) then
+        set depflg = "--dependency=afterany"
+    else
+        set depflg = "--depend=afterany"
+    endif
+
+    foreach id ($jobids)
+        set depflg = $depflg":$id"
+    end
+endif
+
+# transfer files to Web server
+#-----------------------------
+if ($push == "yes") $qcmd $depflg $transfer_csh
+
+# record Successful completion in log 
+#------------------------------------
+if ($jobcnt) then
+    $ERR -C 64 -E 0 -D "NOTICE: $plots_j:t - $jobcnt plot jobs submitted"
+else
+    $ERR -C 61 -E 5 -D "ERROR: No plot jobs were successfully submitted"
+    exit 1
+endif
+
+# rename output file for successful run
+#--------------------------------------
+if ($?outfile) then
+    set outfile = `echo $outfile | sed -e "s|.FAILED||"`
+else
+   set listdir = "$FVHOME/etc/Y$yyyy/M$mm"
+   set outfile = "$listdir/$EXPID.plots.$yyyymm.log.$$.txt";
+endif
+$PBS_BIN/qalter -o $outfile $PBS_JOBID
+
+exit 0

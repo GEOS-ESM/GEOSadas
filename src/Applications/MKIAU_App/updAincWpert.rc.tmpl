@@ -1,0 +1,27 @@
+# MAPL required variables
+# -----------------------
+RUN_DT: 21600   # for now, must be set to 6-hrs
+MAPL_ENABLE_TIMERS: NO
+PRINTSPEC: 0  # (0: OFF, 1: IMPORT & EXPORT, 2: IMPORT, 3: EXPORT)
+
+# request increment to (also) come out in sdf format
+# --------------------------------------------------
+UPD_FILENAME: @EXPID.updated.xinc.eta.%y4%m2%d2_%h2z.nc4
+
+# Model Resolution and Timestep Parameters
+# 4x4 is usually enough for any resolution
+# ----------------------------------------
+NX: @NX
+NY: @NY
+
+AINC_DATE: >>>ANADATE<<<
+AINC_TIME: >>>ANATIME<<<
+
+RECALCULATE_PS: YES
+
+AINC_FILENAME: @EXPID.xinc.eta.%y4%m2%d2_%h2z.nc4
+PERT_FILENAME: @EXPID.fvpert.eta.%y4%m2%d2_%h2z.nc4
+
+# parameter only used in scripting, but conveniently place here
+# -------------------------------------------------------------
+OVERWRITE_ANAINC: NO

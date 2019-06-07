@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+%include <slurm.h>
+#SBATCH --ntasks=%NCPUS_IAU%
+#SBATCH --qos=%PRIORITY_IAU%
+#SBATCH --time=%TIME_IAU%
+#SBATCH --job-name=%STE_NAME%-couple-ana-to-gcm_3_3
+#SBATCH --output=%BATCHOUT_DIR%/%STE_NAME%-couple-ana-to-gcm_3_3.out.%j
+
+%include <head.h>
+
+CWD=$(pwd)
+
+export NCPUS_IAU=%NCPUS_IAU%
+export WORKFLOW_DIR=%ECF_HOME%
+bash ${WORKFLOW_DIR}/tasks/CoupleAnaToGcm_3DVAR_3DIAU.sh
+
+cd $CWD
+
+%include <tail.h>

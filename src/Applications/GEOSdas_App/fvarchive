@@ -1,0 +1,216 @@
+#!/usr/bin/perl
+#
+# Script for archiving fvPSAS files on Mass Storage.
+# See usage() for more info.
+#
+# !REVISION HISTORY:
+#
+#  18Feb2000  da Silva  Initial code.
+#  21Mar2000  da Silva  Excluded run
+#  15Jan2001  da Silva  Excluded fcst/stage
+#  07May2001  da Silva  Changed options: -m to -r
+#  16jul2001  da Silva  Now it follows symlinks of directories (option -f);
+#                       This option requires at least Perl version 5.005_64 
+#  23jul2001  da Silva  Skips archiving if ".no_archiving" file exists
+#                       on directory
+#  22Aug2001  Owens     Added support for processing data only for supplied date  
+#  18Oct2001  Owens     Added support for processing data only for supplied synoptic time
+#  17May2002  Owens     Added support for non-zero exit status 
+#  22Apr2003  E. Yeh    Enabled set_dirs to find ExpId with "+" character(s)
+#  01Dec2003  Owens     Modified find to stop at top level .no_archiving
+#                       changed default pestoroot to be mintz.gsfc.nasa.gov 
+#------------------------------------------------------------------
+
+use Env;                 # make env vars readily available
+use FindBin;             # so we can find where this script resides
+use File::Basename;      # for basename(), dirname()
+use File::Find;          # for find()
+use Getopt::Std;         # command line options
+use Shell qw(cat);       # cat command
+
+# Command line options
+# --------------------
+  getopts('A:a:d:t:fvhnpqr:sH:');
+  usage() if $opt_h;
+
+# Figure out expid, directories, etc
+# ----------------------------------
+  init();
+
+# Find directories where data files might be
+# ------------------------------------------
+  if ( $opt_f ) {
+       find( {wanted => \&set_dirs, follow => 1}, $arcdir);
+  } else {
+       find(\&set_dirs, $arcdir);
+  }
+
+# Archive files in each directory
+# ------------------------------- 
+  archive();
+
+# All done
+# --------
+  exit($exit_stat);
+
+#......................................................................
+
+sub init {
+  $exit_stat = 0;
+  $fvhome = dirname($FindBin::Bin) unless ( $fvhome = $FVHOME );
+  $fvhome = $opt_H if ( $opt_H );
+  print "Using fvhome = $fvhome\n" if ( $opt_v );
+
+  $pestoroot = "mintz.gsfc.nasa.gov:" unless ( $pestoroot = $PESTOROOT );
+  $pestoroot = $opt_r if ( $opt_r );
+  print "Using pestoroot = $pestoroot\n" if ( $opt_v );
+  $arcdir = $fvhome;
+  $arcdir = $opt_A  if ( $opt_A );
+  $expid  = basename($fvhome);
+  @fvdata = ( 'ana', 'diag', 'etc', 'obs', 'prog', 'rs' ); 
+
+  foreach $dir ( @fvdata ) {
+	print "$0: cannot find directory $arcdir/$dir\n"
+             unless ( -d "$arcdir/$dir" );
+      }
+  print "Using arcdir = $arcdir\n" if ( $opt_v ); 
+  die ">>> ERROR << missing $fvhome/.FVROOT" unless ( -e "$fvhome/.FVROOT" );
+  chomp ( $fvroot = cat("$fvhome/.FVROOT") );
+
+  $pesto = "$fvroot/bin/pesto";
+  die ">>> ERROR << cannot execute $pesto" unless ( -x "$pesto" );
+
+}
+
+#......................................................................
+
+sub set_dirs { 
+  
+  @new = split(/\+/, $expid);
+  $newexpid = join("\\+", @new);
+  $File::Find::prune = 0; 
+  $File::Find::prune = 1 if ( ( -e "$File::Find::dir/.no_archiving" ) && ( ! $opt_s ) );
+  if ( defined( $opt_d ) ) {
+      $fvdirs{$File::Find::dir} = 1 if (( /^$newexpid\./ ) && ( /$opt_d/ )); 
+  }
+  else{    
+      $fvdirs{$File::Find::dir} = 1 if ( /^$newexpid\./ ); 
+  }
+}
+
+#......................................................................
+
+sub archive {
+
+  $rundir   = "${fvhome}/run";
+  $fcstdir  = "${fvhome}/fcst";
+  $stagedir = "${fvhome}/fcst/stage";
+  $recydir  = "${fvhome}/recycle";
+  $pestorc  = "${fvhome}/run/silo.arc";
+  $pestorc  = "${fvhome}/run/mstorage.arc" 
+     if ( -e "${fvhome}/run/mstorage.arc" );
+  $syn_time = "";
+  $date     = "";
+  $dryrun   = ""; 
+  $clean    = "";
+  $verb     = ""; 
+  $local    = "";
+  $local = "-l" unless ( $pestoroot =~ /:/ );
+  $clean   = "-clean" unless ( $opt_p );
+  $dryrun  = "-n"     if     ( $opt_n );
+  $verb    = "-v"     unless ( $opt_q );
+  $pestorc = "$opt_a" if     ( $opt_a );
+  $date     = "-date $opt_d"  if         ( $opt_d );
+  $syn_time = "-syntime $opt_t"  if (defined( $opt_t ));
+
+  foreach $dir ( keys %fvdirs ) {
+     if ( "$dir" eq "$rundir" ) {   # never clean run/ directory
+           print "$0: preserving $dir\n" if ( $opt_v );
+           $cmd = "$pesto -arc $pestorc $syn_time $date $verb $local $dryrun -d $dir -r $pestoroot";
+     } elsif ( ("$dir" eq "$fcstdir") || ("$dir" eq "$stagedir") || ("$dir" eq "$recydir") ) { 
+           print "$0: skipping $dir\n" if ( $opt_v );
+           $cmd = "";
+     } else {
+           $cmd = "$pesto -arc $pestorc $date $syn_time $verb $local $clean $dryrun -d $dir -r $pestoroot";
+     }
+
+     if ( -e "$dir/.no_archiving" ) {
+         print "$0: skipping $dir\n" if ( $opt_v );
+         $cmd = "";
+     } else { 
+         print "$0: Archiving in $dir\n" if ( $opt_v );
+     }
+
+     if ( $cmd ) {
+          print "system command = $cmd\n";
+          $status = system($cmd);
+          if ($status) { 
+              print "\$status = $status\n"; 
+              die ">>> ERROR <<< from $cmd";
+              $exit_stat ++;
+          }
+     } 
+
+  }
+
+}
+
+#......................................................................
+
+sub usage {
+
+   print <<"EOF";
+
+NAME
+     fvarchive - transfer fvPSAS files from SILO to Mass Storage
+          
+SYNOPSIS
+
+     fvarchive [-fhnpqsv] [-a arcfile] [-r pestoroot] [-H fvhome] [-t time] [-d date] 
+          
+DESCRIPTION
+
+     fvArchive transfers fvPSAS output files from the local disk
+     to mass storage. By default, the local files are deleted
+     if the transfer is sucessfull. 
+
+     Pesto archiving rules are taken from file \$FVHOME/run/mstorage.arc
+     if it exists, otherwise from file \$FVHOME/run/silo.arc.
+     This way, the user can control which files get automatically
+     migrated to mass storage, and which files stay on SILO.
+
+OPTIONS
+
+ -a arcfile  archive rules file (default: "mstorage.arc" or "silo.arc")
+ -d date    if supplied, only archive files which match this date   
+ -f         follow symbolic links (not supported by older perl versions 
+            and not recommended)
+ -h         prints this usage notice
+ -n         call pesto in dry-run mode: just print what it would do
+ -p         preserve files after transfer to Mass Storage
+            (default is to delete these files)
+ -r root    destination for archiving files (default: "mintz:")
+ -s         search for unprotected subdirectories below top level .no_archive
+            ( default is to stop at top level )
+ -t time    if supplied, only archive files which match this time 
+ -H fvhome  experiment home directory (default: \$FVHOME or derived 
+            from location of this script)
+ -q         call pesto quiet mode (default is verbose)
+ -v         run fvarchive in verbose mode (default is quiet)
+
+ENVIRONMENT
+
+    The following environment variables are recognized:
+
+    PESTOROOT   archiving destination
+    FVHOME      default experiment home directory          
+
+SEE ALSO  
+
+    pesto - (P)ut (E)xperiment in Mass (Sto)rage
+
+EOF
+
+  exit(1)
+
+ }

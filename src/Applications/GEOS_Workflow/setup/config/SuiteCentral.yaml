@@ -1,0 +1,118 @@
+Central:
+  Type: Suite
+
+  Initialize:
+    Type: Family
+    CreateWorkspace: {Type: Task}
+    GetDateTime4DAS:
+      Trigger: {CreateWorkspace: complete}
+      Type: Task
+    LinkGcmBdryFiles:
+      Trigger: {GetDateTime4DAS: complete}
+      Type: Task
+    CopyResourceFiles4DAS:
+      Trigger: {GetDateTime4DAS: complete}
+      Type: Task
+    CopyAnaRestarts:
+      Trigger: {CopyResourceFiles4DAS: complete}
+      Type: Task
+    CopyGcmRestarts4DAS:
+      Trigger: {CopyResourceFiles4DAS: complete}
+      Type: Task
+
+  TimeLoop:
+    Type: Family
+    Trigger: {Initialize: complete}
+    AerosolAnalysis:
+      Type: Task
+      Variable:
+        NCPUS_AOD: 1
+    Analysis:
+      Type: Family
+      AcquireObservations:
+        Type: Task
+        Variable:
+          ECF_JOB_CMD: "/usr/slurm/bin/sbatch %ECF_JOB% > %ECF_JOBOUT% 2>&1"
+          NCPUS_ACQOBS: 1
+          TIME_ACQOBS: "2:00:00"
+      PreAnalysisQC:
+        Type: Task
+        Trigger: {AcquireObservations: complete}
+      QualityControl:
+        Type: Task
+        Trigger: {PreAnalysisQC: complete}
+      UpdateGsiGridCompResource_3DVAR:
+        Type: Task
+        Trigger: {QualityControl: complete}
+      RunAnalysis:
+        Type: Task
+        Trigger: {UpdateGsiGridCompResource_3DVAR: complete}
+        Variable:
+          ECF_JOB_CMD: "/usr/slurm/bin/sbatch %ECF_JOB% > %ECF_JOBOUT% 2>&1"
+          NCPUS_GSI: <<ncpus_gsi>>
+          NCPUS_SAC: 1
+          TIME_GSI: <<time_gsi>> # "2:00:00"
+          PRIORITY_GSI: <<priority>>
+      DiagToOds:
+        Type: Task
+        Trigger: {RunAnalysis: complete}
+        Variable:
+          NCPUS_GSI: <<ncpus_gsi>>
+          NCPUS_SAC: 1
+    CoupleAnaToGcm_3DVAR_3DIAU:
+      Type: Task
+      Trigger:
+        Analysis: complete
+        AerosolAnalysis: complete
+      Variable:
+        ECF_JOB_CMD: "/usr/slurm/bin/sbatch %ECF_JOB% > %ECF_JOBOUT% 2>&1"
+        NCPUS_IAU: <<ncpus_iau>>
+        PRIORITY_IAU: <<priority>>
+        TIME_IAU: <<time_iau>>
+    GCM:
+      Type: Family
+      Trigger: {CoupleAnaToGcm_3DVAR_3DIAU: complete}
+      UpdateResource:
+        Type: Family
+        UpdateAgcmResource4DAS: {Type: Task}
+        UpdateCapResource: {Type: Task}
+        UpdateHistoryResource4DAS: {Type: Task}
+      RunGcm:
+        Trigger: {UpdateResource: complete}
+        Type: Task
+        Variable:
+          ECF_JOB_CMD: "/usr/slurm/bin/sbatch %ECF_JOB% > %ECF_JOBOUT% 2>&1"
+          NCPUS_GCM: <<ncpus_gcm>>
+          TIME_GCM: <<time_gcm>>
+          PRIORITY_GCM: <<priority>>
+      RenameRstCheckpoint:
+        Type: Task
+        Trigger: {RunGcm: complete}
+    TrackVortex4DAS:
+      Type: Task
+      Trigger: {GCM: complete}
+      Variable:
+        NCPUS_VTX: <<ncpus_vtx>>
+    CoupleGcmToAna:
+      Type: Task
+      Trigger: {TrackVortex4DAS: complete}
+    UpdateDateTime4DAS:
+      Type: Task
+      Trigger: {CoupleGcmToAna: complete}
+
+  Finalize:
+    Type: Family
+    Trigger: {TimeLoop: complete}
+    ConvToPresCoords: 
+      Type: Task
+      Variable:
+        NCPUS_CONV2PRS: <<ncpus_conv2prs>>
+    TagAndRecycle4DAS:
+      Type: Task
+      Trigger: {ConvToPresCoords: complete}
+    Archive:
+      Type: Task
+      Trigger: {TagAndRecycle4DAS: complete}
+    CleanupDAS:
+      Type: Task
+      Trigger: {Archive: complete}

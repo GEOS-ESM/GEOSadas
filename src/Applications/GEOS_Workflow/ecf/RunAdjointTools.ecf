@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+%include <slurm.h>
+#SBATCH --ntasks=%NCPUS_ADJ%
+#SBATCH --qos=%PRIORITY_ADJ%
+#SBATCH --time=%TIME_ADJ%
+#SBATCH --job-name=RunAdjointTools
+#SBATCH --output=%BATCHOUT_DIR%/RunAdjointTools.out.%j
+
+%include <head.h>
+
+CWD=$(pwd)
+
+export NCPUS_ADJ=%NCPUS_ADJ%
+export WORKFLOW_DIR=%ECF_HOME%
+bash ${WORKFLOW_DIR}/tasks/RunAdjointTools.sh
+
+cd $CWD
+
+%include <tail.h>

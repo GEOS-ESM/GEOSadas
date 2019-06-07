@@ -1,0 +1,448 @@
+#!/usr/bin/env perl
+#========================================================================
+# name - monthly_means._YYYYMM_.pl
+# purpose - This script is called by the fvarchive.j job to perform monthly
+#           means processing after a data month of DAS processing is complete.
+#
+# Notes:
+# 1. Key job parameters
+#      $doPLOTS: If true (=1), then submit job to do monthly plots when monthly
+#                means are complete.
+#      $PREFETCH_ALL: If true (=1), then prefetch all inputs prior to
+#                calculating monthly means.
+# 2. If script called with -plots flag, then monthly plots job is submitted
+#    regardless of $doPLOTS value.
+# 3. See usage notes
+#
+# !Revision History
+# 19Sep2012  JStassi   Initial version; converted from monthly_means.csh.tmpl
+#========================================================================
+use strict;
+use warnings;
+
+# job parameters
+#---------------
+my ($EXPID, $FVGROUP, $FVHOME, $PBS_BIN, $date, $doPLOTS);
+my ($mywork, $PREFETCH_ALL, $queueFLG, $groupFLG);
+
+$doPLOTS      = _doPLOTS_;   # controls whether monthly plots job called
+$PREFETCH_ALL = _PREFETCH_ALL_;   # controls how inputs are fetched
+
+$EXPID        = "_EXPID_";
+$FVGROUP      = "_FVGROUP_";
+$FVHOME       = "_FVHOME_";
+$PBS_BIN      = "_PBS_BIN_";
+$date         = "_YYYYMM_";
+$mywork       = "_MYWORK_";
+$queueFLG     = "_QUEUEFLAG_";
+
+$groupFLG = "";
+$groupFLG = "-W group_list=$FVGROUP" if $FVGROUP;
+
+# global variables
+#-----------------
+my ($listdir, $month, $onlyplots);
+my ($quiet, $rcfile, $script, $workdir, $year);
+my (@JOBID, @fpath, @ftmpl, @ftype, @htype);
+
+# main program
+#-------------
+{
+    my ($nn, $finale, $ftmpl, $fpath, $ftype, $htype);
+
+    init();
+    if ($onlyplots) { create_monthly_plots(); exit }
+
+    extract_collection_info();
+    foreach $nn (0..$#ftmpl) {
+        $ftmpl = $ftmpl[$nn];
+        $fpath = $fpath[$nn];
+        $ftype = $ftype[$nn];
+        $htype = $htype[$nn];
+
+        prefetch($ftmpl, $fpath, $ftype, $htype);
+        unless ($PREFETCH_ALL) {
+            if ($nn == $#ftmpl) { $finale = 1 }
+            else                { $finale = 0 }
+            calc_monthly_means($finale, $ftmpl, $fpath, $ftype, $htype);
+        }
+    }
+
+    if ($PREFETCH_ALL) { $finale = 1; calc_monthly_means($finale) }
+    create_monthly_plots() if $doPLOTS;
+    archive_monthly_means();
+}
+
+#=======================================================================
+# name - init
+# purpose - get runtime options;
+#=======================================================================
+sub init {
+    use File::Basename;
+    use File::Path ("mkpath");
+    use Getopt::Long;
+    my ($help, $MMWORK, %opts);
+
+    $script = basename $0;
+    die "Error. Cannot execute template file;" if $script =~ /tmpl/;
+
+    # get runtime parameters
+    #-----------------------
+    GetOptions( "plots"  => \$onlyplots,
+                "q"      => \$quiet,
+                "rc=s"   => \$rcfile,
+                "h|help" => \$help );
+
+    usage() if $help;
+
+    $rcfile = "$FVHOME/run/monthly_means.rc" unless $rcfile;
+    die "Error: Cannot find rcfile - $rcfile; " unless -e $rcfile;
+
+    # listing directory
+    #------------------
+    %opts = ();
+    $opts{"verbose"} = 1 unless $quiet;
+
+    $year = substr($date, 0, 4);
+    $month = substr($date, 4, 2);
+    $listdir = "$FVHOME/etc/Y$year/M$month";
+    unless (-d $listdir) { mkpath($listdir, \%opts) };
+
+    # working directory
+    #------------------
+    #--if (! $?WDIR) set WDIR = $FVSILO/monthly_temp/Y$year/M$month
+    $workdir = "$mywork/$ENV{USER}/mmwork.$date.$$";
+    unless (-d $workdir) { mkpath($workdir, \%opts) }
+    system "touch $workdir/.no_archiving";
+
+    $MMWORK = "$FVHOME/.MMWORK.$date";
+    unlink $MMWORK if -e $MMWORK;
+    system "echo $workdir > $MMWORK";
+
+    chdir $workdir;
+}
+
+#=======================================================================
+# name - extract_collection_info
+# purpose - extract collection information from the rcfile
+#=======================================================================
+sub extract_collection_info {
+    use File::Basename qw(basename dirname);
+    my ($filestring, $filetype, $hourtype);
+    my ($filetmpl, $filepath, $type, $msg);
+
+    # read lines from rcfile
+    #-----------------------
+    open RCF, "< $rcfile" or die "Error opening rcfile: $rcfile;";
+    while (<RCF>) {
+        next if /^\s*\#/;  # skip comment lines
+        next if /^\s*$/;   # skip blank lines
+
+        # extract info
+        #-------------
+        ($filestring, $filetype, $hourtype) = split;
+        $filepath = dirname $filestring;
+
+        $filetmpl = basename $filestring;
+        $filetmpl = expand($filetmpl);
+
+        # check for file type consistency in name
+        #----------------------------------------
+        $type = (split(/[.]/, $filetmpl))[1];
+        $msg = "file type inconsistency found in $rcfile ($filetmpl/$filetype)";
+        die "error; $msg;" if $type ne $filetype;
+
+        # store values in arrays
+        #-----------------------
+        push @ftmpl, $filetmpl;
+        push @fpath, $filepath;
+        push @ftype, $filetype;
+        push @htype, $hourtype;
+    }
+}
+
+#=======================================================================
+# name - prefetch
+# purpose - qsub job to prefetch inputs
+#
+# input arguments
+# => $ftmpl: file name template
+# => $fpath: relative file path (from $FVHOME)
+# => $ftype: file type
+# => $htype: data hour type
+#=======================================================================
+sub prefetch {
+    my ($ftmpl, $fpath, $ftype, $htype);
+    my ($assignFLG, $dependFLG, $outfile, $outFLG, $cmd, @deps);
+
+    # input arguments
+    #----------------
+    ($ftmpl, $fpath, $ftype, $htype) = @_;
+
+    # job output filename
+    #--------------------
+    $outfile = "$listdir/$EXPID.prefetch.$ftype.$date.log.txt.FAILED";
+
+    # command flags
+    #--------------
+    $assignFLG = "-v JOB_LOC=$FVHOME/run,"
+        .           "WDIR=$workdir,"
+        .           "date=$date,"
+        .           "file=$ftmpl,"
+        .           "fpath=$fpath,"
+        .           "ftype=$ftype,"
+        .           "hType=$htype,"
+        .           "outfile=$outfile";
+    $outFLG = "-o $outfile";
+
+    if ($PREFETCH_ALL) { @deps = ( -1 )     }
+    else               { @deps = ( -2, -3 ) }
+    $dependFLG = get_dependFLG(@deps);
+
+    # submit job
+    #-----------
+    $cmd = "$PBS_BIN/qsub -N PF$date $assignFLG $outFLG $dependFLG $groupFLG"
+        .               " $FVHOME/run/monthly_means_prefetch.j";
+    qsubW($cmd);
+}
+
+#=======================================================================
+# name - calc_monthly_means
+# purpose - submit job to calculate monthly means
+#
+# input arguments
+# => $finale: if true (=1), then remove $workdir when complete
+# => $ftmpl: file name template
+# => $fpath: relative file path (from $FVHOME)
+# => $ftype: file type
+# => $htype: data hour type
+#=======================================================================
+sub calc_monthly_means {
+    my ($finale, $ftmpl, $fpath, $ftype, $htype);
+    my ($outfile, $assignFLG, $modeFLG, $outFLG, $dependFLG);
+    my (@deps, $fileinfo, $cmd);
+
+    # input parameters (if $PREFETCH_ALL = 0)
+    #----------------------------------------
+    ($finale, $ftmpl, $fpath, $ftype, $htype) = @_;
+
+    # which mode? "all" or "single"
+    #------------------------------
+    if ($PREFETCH_ALL) {
+        $modeFLG = "all";
+        $fileinfo = "";
+        $outfile = "$listdir/$EXPID.monthly_means.$date.log.txt.FAILED";
+        @deps = ( -1 );
+    }
+    else {
+        die "Error calling calc_monthly_means();"
+            unless $ftmpl and $fpath and $ftype and $htype;
+
+        $modeFLG = "single";
+        $fileinfo = ",file=$ftmpl,fpath=$fpath,ftype=$ftype,hType=$htype";
+        $outfile = "$listdir/$EXPID.monthly_means.$ftype.$date.log.txt.FAILED";
+        @deps = ( -1, -2 );
+    }
+
+    # command flags
+    #--------------
+    $assignFLG = "-v JOB_LOC=$FVHOME/run,"
+        .           "WDIR=$workdir,"
+        .           "date=$date,"
+        .           "finale=$finale,"
+        .           "mode=$modeFLG,"
+        .           "outfile=$outfile"
+        .           $fileinfo;
+    $outFLG = "-o $outfile";
+    $dependFLG = get_dependFLG(@deps);
+
+    # submit job
+    #-----------
+    $cmd = "$PBS_BIN/qsub -N MM$date $assignFLG $outFLG $dependFLG $groupFLG"
+        .               " $FVHOME/run/monthly_means.j";
+    qsubW($cmd);
+}
+
+#=======================================================================
+# name - create_monthly_plots
+# purpose - submit plotting job
+#=======================================================================
+sub create_monthly_plots {
+    my ($monthly_plots_j, $assignFLG, $dependFLG, $cmd, @deps);
+
+    # check for existence of monthly_plots job file
+    #----------------------------------------------
+    $monthly_plots_j = "$FVHOME/run/monthly_plots/monthly_plots.j";
+    unless (-e $monthly_plots_j) {
+        warn "WARNING: unable to find $monthly_plots_j;";
+        return;
+    }
+
+    # command flags
+    #--------------
+    @deps = ( -1 );
+    $assignFLG= "-v JOB_LOC=$FVHOME/run,"
+        .          "date=$date,"
+        .          "push=qsub";
+    $dependFLG = get_dependFLG(@deps);
+
+    # submit job
+    #-----------
+    $cmd = "$PBS_BIN/qsub $assignFLG $dependFLG $groupFLG"
+        . " -l select=1:ncpus=12 -N MP.$date $monthly_plots_j";
+    qsubW($cmd, "$FVHOME/run");
+}
+
+#=======================================================================
+# name - archive_monthly_means
+# purpose - submit monthly means archive job
+#=======================================================================
+sub archive_monthly_means {
+    my ($outfile, $assignFLG, $outFLG, $dependFLG, $cmd, @deps);
+
+    # job output filename
+    #--------------------
+    $outfile = "$FVHOME/run/archMM.$date.log.txt.FAILED";
+
+    # command flags
+    #--------------
+    @deps = ( -1 );
+    $assignFLG = "-v arch_type=MMEANS,"
+        .           "arch_date=$date,"
+        .           "RC_LOC=$FVHOME/run/,"
+        .           "outfile=$outfile";
+    $outFLG = "-o $outfile";
+    $dependFLG = get_dependFLG(@deps);
+
+    # submit job
+    #-----------
+    $cmd = "$PBS_BIN/qsub $queueFLG $assignFLG $dependFLG $outFLG $groupFLG"
+        .              " -N mmarc.$year$month"
+        .              " -l ncpus=1,walltime=1:00:00"
+        .              " $FVHOME/run/fvarchive.j";
+    qsubW($cmd);
+}
+
+#=======================================================================
+# name - expand
+# purpose - expand variables within a text string
+#
+# input argument
+# => $strIN: string to expand
+#
+# return value
+# => $strOUT: expanded string
+#=======================================================================
+sub expand {
+    my ($strIN, $strOUT);
+    my ($nn, @vars, $var, $val);
+
+    $strIN = shift @_;
+    $strOUT = $strIN;
+
+    # make list of variables embedded in $strIN
+    #------------------------------------------
+    for $nn (0..length($strIN)-1) {
+        if (substr($strIN,$nn) =~ /^(\$\w+)/)    { push @vars, $1 }
+        if (substr($strIN,$nn) =~ /^(\$\{\w+})/) { push @vars, $1 }
+    }
+
+    # if variables have values, then substitute
+    #------------------------------------------
+    foreach $var (@vars) {
+        if (eval($var)) {
+            $val = eval($var);
+
+            $var =~ s/\$/\\\$/;
+            $var =~ s/\{/\\\{/;
+
+            $strOUT =~ s/$var/$val/;
+        }
+    }
+    return $strOUT;
+}
+
+#=======================================================================
+# name - get_dependFLG
+# purpose - return flag to include with qsub command to specify the job
+#           dependencies
+#
+# input arguments
+# => @deps: array of numbers indicating dependency, where
+#           -1 means set dependency on last submitted job
+#           -2 means set dependency on second-to-last submitted job
+#           -3 means set dependency on third-to-last submitted job
+#=======================================================================
+sub get_dependFLG {
+    my (@deps, $dependFLG, $IDlist);
+
+    @deps = @_;
+    $dependFLG = "";
+
+    $IDlist = "";
+    foreach (@deps) {
+        if (! $IDlist) { $IDlist  =     $JOBID[$_] if $JOBID[$_] }
+        else           { $IDlist .= ":".$JOBID[$_] if $JOBID[$_] }
+    }
+
+    $dependFLG = "-W depend=afterany:$IDlist" if $IDlist;
+    return $dependFLG;
+}
+
+#=======================================================================
+# name - qsubW
+# purpose - wrapper to qsub command; does the following:
+#           1. prints qsub command
+#           2. execute qsub command
+#           3. checks status for successful job submittal
+#           4. captures and stores jobID after job submittal
+#
+# note
+# - If $dir parameter is specified, then will cd to $dir prior to submitting
+#   qsub command. This will be the location where the qsub log file will be
+#   written.
+#
+# input argument
+# => $cmd: qsub command
+# => $dir: cd to this directory prior to qsub command
+#=======================================================================
+sub qsubW {
+    use Cwd ("cwd");
+    my ($cmd, $dir, $wdir, $jobID);
+    $cmd = shift @_;
+    $dir = shift @_;
+
+    if ($dir) {
+        die "Error. directory does not exist: $dir;" unless -d $dir;
+        $wdir = cwd();
+        chdir $dir;
+    }
+
+    print ("\n$cmd\n") unless $quiet;
+    chomp($jobID = `$cmd`);
+    die "Error; $cmd;" if $?;
+
+    print "jobID = $jobID\n" unless $quiet;
+    push @JOBID, $jobID;
+
+    chdir $wdir if $dir;
+}
+
+#=======================================================================
+# name - usage 
+# purpose - print usage information
+#=======================================================================
+sub usage {
+    print <<"EOF";
+
+usage: $script [options]
+  options:
+    -plots       run monthly plots program only; this requires that monthly means
+                 have already been created
+    -q           quiet mode; do not print qsub commands
+    -rc rcfile   name of alternate rc file; defaults to \$FVHOME/run/monthly_means.rc
+    -h           print usage information
+
+EOF
+exit;
+}

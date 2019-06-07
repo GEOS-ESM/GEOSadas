@@ -1,0 +1,25 @@
+#
+# Resource file for GEOS_ChemGridComp
+#
+#  19 Mar 2010 - Eric Nielsen - Initial
+#
+#.........................................................
+
+# Which CHEM children do you want to add?
+# ---------------------------------------
+  ENABLE_PCHEM:       .TRUE.
+  ENABLE_GOCART:      .TRUE.
+  ENABLE_GOCART_DATA: .FALSE.
+  ENABLE_GAAS:        .TRUE.
+  ENABLE_H2O:         .FALSE.
+  ENABLE_STRATCHEM:   .FALSE.
+  ENABLE_GMICHEM:     .FALSE.
+  ENABLE_CARMA:       .FALSE.
+  ENABLE_GEOSCHEM:    .FALSE.
+  ENABLE_MATRIX:      .FALSE.
+  ENABLE_MAM:         .FALSE.
+  ENABLE_MAM_DATA:    .FALSE.
+  ENABLE_ACHEM:       .FALSE.
+  ENABLE_TR:          .TRUE.
+  ENABLE_DNA:         .FALSE.
+  ENABLE_HEMCO:       .FALSE.

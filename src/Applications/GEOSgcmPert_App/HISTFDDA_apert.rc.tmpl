@@ -1,0 +1,135 @@
+#######################################################################
+#                 Create History List for Output
+#######################################################################
+ 
+EXPID:  @EXPID
+EXPDSC: @EXPDSC
+ 
+COLLECTIONS: 'bkg.eta'
+             'bkg.sfc'
+@4DVAR       'traj.lcv'
+              ::
+#                      --------------------------
+#                      Full Resolution Background
+#                      --------------------------
+
+  bkg.eta.format:     'CFIO' ,
+  bkg.eta.template:   '%y4%m2%d2_%h2z.nc4',
+  bkg.eta.ref_date:  >>>IOBBKGD<<< ,
+  bkg.eta.ref_time:  >>>IOBBKGT<<< ,
+  bkg.eta.end_date:  >>>IOEBKGD<<< ,
+  bkg.eta.end_time:  >>>IOEBKGT<<< ,
+  bkg.eta.frequency:  @ASYNFRQ ,
+  bkg.eta.duration:   @ASYNFRQ ,
+  bkg.eta.mode:       'instantaneous',
+  bkg.eta.fields:     'PHIS'     , 'SUPERDYNAMICS' , 'phis'         ,
+                      'SGH'      , 'SUPERDYNAMICS' , 'hs_stdv'      ,
+                      'LWI'      , 'SURFACE'       , 'lwi'          ,
+                      'TS'       , 'SURFACE'       , 'ts'           ,
+                      'PS'       , 'DYN'           , 'ps'           ,
+                      'DELP'     , 'DYN'           , 'delp'         ,
+                      'U'        , 'DYN'           , 'u'            ,
+                      'V'        , 'DYN'           , 'v'            ,
+                      'TV'       , 'DYN'           , 'tv'           ,
+                      'Q'        , 'MOIST'         , 'sphu'         ,
+                      'QCTOT'    , 'AGCM'          , 'qctot'        ,
+                      'O3PPMV'   , 'CHEMISTRY'     , 'ozone'        ,
+                      ::
+
+  bkg.sfc.format:     'CFIO' ,
+  bkg.sfc.template:   '%y4%m2%d2_%h2z.nc4',
+  bkg.sfc.ref_date:  >>>IOBBKGD<<< ,
+  bkg.sfc.ref_time:  >>>IOBBKGT<<< ,
+  bkg.sfc.end_date:  >>>IOEBKGD<<< ,
+  bkg.sfc.end_time:  >>>IOEBKGT<<< ,
+  bkg.sfc.frequency:  @ASYNFRQ ,
+  bkg.sfc.duration:   @ASYNFRQ ,
+  bkg.sfc.mode:       'instantaneous',
+  bkg.sfc.fields:     'PHIS'     , 'SUPERDYNAMICS' ,
+                      'US'       , 'DYN'           , 'UA'        ,  
+                      'VS'       , 'DYN'           , 'VA'        ,
+                      'TA'       , 'DYN'           ,
+                      'QA'       , 'DYN'           ,
+                      'TS'       , 'SURFACE'       , 'TSKIN'     ,
+                      'QS'       , 'SURFACE'       ,
+                      'U2M'      , 'SURFACE'       ,
+                      'V2M'      , 'SURFACE'       ,
+                      'T2M'      , 'SURFACE'       ,
+                      'Q2M'      , 'SURFACE'       ,
+                      'U10N'     , 'SURFACE'       , 'U10M'      ,
+                      'V10N'     , 'SURFACE'       , 'V10M'      ,
+                      'T10M'     , 'SURFACE'       ,
+                      'Q10M'     , 'SURFACE'       ,
+                      'U50M'     , 'DYN'           ,
+                      'V50M'     , 'DYN'           ,
+                      'SH'       , 'SURFACE'       , 'HFLUX'     ,
+                      'LHFX'     , 'SURFACE'       , 'EFLUX'     ,
+                      'TAUX'     , 'SURFACE'       , 'UFLUX'     ,
+                      'TAUY'     , 'SURFACE'       , 'VFLUX'     ,
+                      'SNOMAS'   , 'SURFACE'       , 'SNOWDP'    ,
+                      'WET1'     , 'SURFACE'       , 'GWETTOP'   ,
+                      'TSOIL1'   , 'SURFACE'       ,
+                      'FRLAND'   , 'SURFACE'       ,
+                      'FRLANDICE', 'SURFACE'       ,
+                      'FRLAKE'   , 'SURFACE'       ,
+                      'FROCEAN'  , 'SURFACE'       ,
+                      'LWI'      , 'SURFACE'       , 'ORO'       ,
+                      'COSZ'     , 'SOLAR'         ,
+                      'QHAT'     , 'SURFACE'       ,
+                      'THAT'     , 'SURFACE'       ,
+                      'VENT'     , 'SURFACE'       ,
+                      'GUST'     , 'SURFACE'       ,
+                      'CM'       , 'SURFACE'       ,
+                      'CQ'       , 'SURFACE'       ,
+                      'CT'       , 'SURFACE'       ,
+                      'D0'       , 'SURFACE'       , 'DISPH'    ,
+                      'Z0'       , 'SURFACE'       , 'Z0M'      ,
+                      ::
+
+#                 -------------------------------------
+#                 Reduced Resolution ADM/TLM Trajectory
+#                 -------------------------------------
+#                  ==> MUST BE AT THE END OF LIST <==
+
+ traj.lcv.format:     'CFIO' ,
+ traj.lcv.template:   '%y4%m2%d2_%h2%n2z.nc4',
+ traj.lcv.frequency:  003000 ,
+ traj.lcv.duration:   003000 ,
+ traj.lcv.resolution: @TRILNLON @TRILNLAT,
+ traj.lcv.mode:       'instantaneous',
+ traj.lcv.fields:     'U_DGRID;V_DGRID' , 'DYN'   , 'U;V'      ,
+                      'TH'         , 'DYN'        , 'PT'       ,
+                      'Q'          , 'MOIST'      , 'QV'       ,
+                      'DELP'       , 'DYN'        , 'DP'       ,
+                      'QITOT'      , 'AGCM'       , 'QI'       ,
+                      'QLTOT'      , 'AGCM'       , 'QL'       ,
+                      'O3PPMV'     , 'CHEMISTRY'  , 'O3'       ,
+                      'QCLSX0'     , 'MOIST'      , 'QLS'      ,
+                      'QCCNX0'     , 'MOIST'      , 'QCN'      ,
+                      'CLCNX0'     , 'MOIST'      , 'CFCN'     ,
+                      'PS'         , 'DYN'        , 'PS'       , 
+                      'PHIS'       , 'AGCM'       , 'PHIS'     ,
+                      'SGH'        , 'AGCM'       , 'HS_STDV'  ,
+                      'FRLAND'     , 'SURFACE'    , 'FRLAND'   , 
+                      'FROCEAN'    , 'SURFACE'    , 'FROCEAN'  ,
+                      'KCBL_moist' , 'MOIST'      , 'KCBL'     ,
+                      'TS_moist'   , 'MOIST'      , 'TS'       ,
+                      'KHl_moist'  , 'MOIST'      , 'KHL'      ,
+                      'KHu_moist'  , 'MOIST'      , 'KHU'      ,
+                      'VARFLT'     , 'AGCM'       , 'VARFLT'   ,
+                      'USTAR'      , 'SURFACE'    , 'USTAR'    ,
+                      'BSTAR'      , 'SURFACE'    , 'BSTAR'    ,
+                      'ZPBL'       , 'TURBULENCE' , 'ZPBL'     ,
+                      'CM'         , 'SURFACE'    , 'CM'       ,
+                      'CT'         , 'SURFACE'    , 'CT'       ,
+                      'CQ'         , 'SURFACE'    , 'CQ'       ,
+# Needed for radiation
+#                      'MCOSZ'      , 'SOLAR'      , 'COSZ'     ,
+#                      'SLRTP'      , 'SOLAR'      , 'SLR'      ,
+#                      'ALBVR'      , 'SURFACE'    , 'RGBUV'    ,
+#                      'ALBVF'      , 'SURFACE'    , 'RGFUV'    ,
+#                      'ALBNR'      , 'SURFACE'    , 'RGBIR'    ,
+#                      'ALBNF'      , 'SURFACE'    , 'RGFIR'    ,
+#                      'EMIS'       , 'SURFACE'    , 'EMIS'     ,
+#                      'DE_tlad'    , 'IRRAD'      , 'DELTIRD'  ,
+                      ::

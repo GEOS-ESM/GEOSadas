@@ -1,0 +1,60 @@
+These are the observation data types included in the prepqc file used by the SSI
+Chose the numeric type that you would like to extract from a prepqc file and
+create the corresponding kxlist.txt file that will be the input to the 
+prepbykx.x utility.
+
+e.g. of a kxlist file: suppose you want to create a prepqc file with mass types
+120 and surface wind types. Your kxlist.txt will then be simply
+
+120
+280
+282
+283
+285
+
+See below for more info.
+
+
+mass types
+kx(1)=120
+kx(2)=130
+kx(3)=131
+kx(4)=132
+kx(5)=133
+kx(6)=164
+kx(7)=165
+kx(8)=174
+kx(9)=175
+kx(10)=180
+kx(11)=181
+kx(12)=182
+
+wind types
+kx(1)=210 P
+kx(2)=220 R
+kx(3)=211 R
+kx(4)=223 P
+kx(5)=224 N
+kx(6)=230 A
+kx(7)=231 A
+kx(8)=232 A
+kx(9)=233 A
+kx(10)=242 C
+kx(11)=243 C
+kx(12)=245 C
+kx(13)=246 C
+kx(14)=252 C 
+kx(15)=253 C
+kx(16)=255 C
+kx(17)=280 S
+kx(18)=282 S
+kx(19)=283 S
+kx(20)=285 S
+
+R=SONDES
+A=AIRCRAFT
+C=WCLOUD TRACK
+S=SURFACE
+N=NEXRAD
+P=PAOBS AND PROF
+

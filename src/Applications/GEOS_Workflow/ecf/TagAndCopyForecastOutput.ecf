@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+%include <head.h>
+
+CWD=$(pwd)
+
+export TIME0=%TIME0%
+export WORKFLOW_DIR=%ECF_HOME%
+bash ${WORKFLOW_DIR}/tasks/TagAndCopyForecastOutput.sh
+
+cd $CWD
+
+%include <tail.h>

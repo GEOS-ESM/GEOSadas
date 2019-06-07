@@ -1,0 +1,332 @@
+# GSI_GridComp.rc
+#
+# !REVISION HISTORY
+#
+#  13Mar2009  Todling  Tranfer all filename templates from gsi.rc here
+#  28Sep2013  Todling  Remove obs table; automated
+#
+
+# Supported types: Uniform=0, Gaussian=1
+GSIGridType: 0
+
+# GSI grid information 
+
+#regular grid use:
+GEOS IM: @GCMNLON
+GEOS JM: @GCMNLAT
+GEOS KM: @NSIG
+GSI IM:  @GSINLON
+GSI JM:  @GSINLAT
+GSI LM:  @NSIG
+
+#Gaussian grid use:
+#GEOS IM: @JCAP
+#GEOS JM: @NLAT
+#GEOS KM: @NSIG
+#GSI IM:  @JCAP
+#GSI JM:  @NLAT
+#GSI LM:  @NSIG
+
+# NPEs along x and y
+NX:      @NXGSI
+NY:      @NYGSI
+ANA_NX:  @NXGSI
+ANA_NY:  @NYGSI
+ORIGIN_CENTER_LON: 0.0
+ORIGIN_CENTER_LAT: -90.0
+AgcmPert_ORIGIN_CENTER_LON: -180.0
+AgcmPert_ORIGIN_CENTER_LAT: -90.0
+
+BEG_DATE: >>>IOBBKGD<<< >>>IOBBKGT<<<
+END_DATE: >>>IOEBKGD<<< >>>IOEBKGT<<<
+JOB_SGMT: 0 @VARWINDOW
+
+RUN_DT:   @SECASYNFRQ
+
+BKG_FREQUENCY: @ASYNFRQ
+ANA_FREQUENCY: @VARWINDOW
+OBS_FREQUENCY: 060000
+
+ANALYSIS_INCREMENT: @ANAINC
+
+RECORD_ANALYSIS: >>>RECANA<<<
+RECORD_FREQUENCY: @ASYNFRQ
+RECORD_REF_TIME:  >>>ANATIME<<<
+RECORD_REF_DATE:  >>>ANADATE<<<
+
+# bkg file names building blocks and templates - used by aana
+
+expid: >>>EXPID<<<
+
+surface_bkg_filename:   %s.bkg.sfc.%y4%m2%d2_%h2z.>>>NCSUFFIX<<<
+surface_ana_filename:   %s.ana.sfc.%y4%m2%d2_%h2z.>>>NCSUFFIX<<<
+surface_inc_filename:   %s.inc.sfc.%y4%m2%d2_%h2z.>>>NCSUFFIX<<<
+chem_bkg_filename:      %s.cbkg.eta.%y4%m2%d2_%h2z.>>>NCSUFFIX<<<
+aero_bkg_filename:      NONE  # %s.abkg.eta.%y4%m2%d2_%h2z.>>>NCSUFFIX<<<
+ensemble_upabkg_filename:  %s.bkg.eta.%y4%m2%d2_%h2z.>>>NCSUFFIX<<<
+upper-air_bkg_filename: %s.bkg.eta.%y4%m2%d2_%h2z.>>>NCSUFFIX<<<
+upper-air_ana_filename: %s.ana.eta.%y4%m2%d2_%h2z.>>>NCSUFFIX<<<
+upper-air_inc_filename: %s.inc.eta.%y4%m2%d2_%h2z.>>>NCSUFFIX<<<
+upalcv_traj_filename: %s.traj.lcv.%y4%m2%d2_%h2%n2z.>>>NCSUFFIX<<<
+upaprs_ptrj_filename: %s.ptrj.prs.%y4%m2%d2_%h2%n2z.>>>NCSUFFIX<<<
+#forecast-bias_filename: %s.bias.eta.%y4%m2%d2_%h2z.>>>NCSUFFIX<<<
+#sfcexp_filename: %s.sfc_export.%y4%m2%d2_%h2z
+post-analysis_obs_filename: %s.ana.obs.%y4%m2%d2_%h2z.ods
+
+vars_anaeta_file: phis,ps,ts,frland,frlandice,frlake,frocean,frseaice,delp,u,v,tv,sphu,ozone,qitot,qltot,qrtot,qstot
+vars_bkgeta_file: phis,ps,ts,frland,frlandice,frlake,frocean,frseaice,u,v,tv,sphu,ozone,qitot,qltot,qrtot,qstot
+vars_bkgsfc_file: U10M,V10M,SNOWDP,GWETTOP,TSOIL1,Z0M,DCOOL,DWARM,TDROP,TS_FOUND,TDEL
+
+# used in read_guess
+
+tracers: 3.
+pdryini: 98.3161392
+vtid:    21.
+xncld:   1.
+
+SIGMAS:
+1.00000000  0.99733466
+0.99467099  0.99165040
+0.98863202  0.98521459
+0.98180002  0.97793972
+0.97408301  0.96973169
+0.96538502  0.96049106
+0.95560300  0.95011324
+0.94463098  0.93849069
+0.93235999  0.92551297
+0.91867799  0.91107142
+0.90347999  0.89506209
+0.88666302  0.87738937
+0.86813903  0.85797018
+0.84783000  0.83674008
+0.82568502  0.81365991
+0.80167699  0.78871876
+0.77581102  0.76194209
+0.74813300  0.73339593
+0.71872902  0.70318937
+0.68773103  0.67147696
+0.65531600  0.63845783
+0.62170500  0.60437369
+0.58715999  0.56950229
+0.55197400  0.53414822
+0.51646298  0.49863371
+0.48095500  0.46328700
+0.44577801  0.42843068
+0.41124901  0.39436883
+0.37765899  0.36137757
+0.34526899  0.32969791
+0.31430000  0.29952824
+0.28492799  0.27102205
+0.25728399  0.24428768
+0.23145400  0.21939002
+0.20748200  0.19635287
+0.18537199  0.17516564
+0.16509899  0.15578815
+0.14660800  0.13815479
+0.12982300  0.12218294
+0.11465500  0.10777701
+0.10100200  0.09483192
+0.08875600  0.08323913
+0.07780800  0.07288960
+0.06804900  0.06367428
+0.05937000  0.05548869
+0.05167100  0.04823432
+0.04485500  0.04181716
+0.03883100  0.03614972
+0.03351500  0.03115152
+0.02883000  0.02675009
+0.02470800  0.02287891
+0.02108400  0.01947701
+0.01790100  0.01648990
+0.01510700  0.01386962
+0.01265800  0.01157264
+0.01051100  0.00955999
+0.00863100  0.00779765
+0.00698500  0.00625461
+0.00554400  0.00490435
+0.00428400  0.00372380
+0.00318300  0.00269122
+0.00222000  0.00178715
+0.00137800  0.00099361
+0.00064200  0.00026640
+0.00000000
+
+
+#=================================
+
+
+MAPLROOT_COMPNAME: GSI_GRIDCOMP
+        ROOT_NAME: GSI_GRIDCOMP
+ROOT_CF: GSI_GridComp.rc
+FHIST_CF: FORWARD_HISTORY.rc
+BHIST_CF: BACKWARD_HISTORY.rc
+
+HEARTBEAT_DT: 1200
+NUM_SGMT:     1
+
+MAPL_ENABLE_TIMERS: NO
+MAPL_ENABLE_MEMUTILS: NO
+PRINTSPEC: 0  # (0: OFF, 1: IMPORT & EXPORT, 2: IMPORT, 3: EXPORT)
+
+#=================================
+
+
+# Model Resolution and Timestep Parameters
+# ----------------------------------------
+
+#          NX: @NX
+#          NY: @NY
+      AGCM_IM: @APERT_IM
+      AGCM_JM: @APERT_JM
+      AGCM_LM: @NSIG
+AGCM_GRIDNAME: PE@APERT_IMx@APERT_JM-CF
+
+DYCORE: FV3
+
+DYNAMICS_PERT_GRIDNAME: PE@APERT_IMx@APERT_JM-CF
+PHYSICS_PERT_GRIDNAME: PE@APERT_IMx@APERT_JM-CF
+
+AGCM_PERT_GRIDNAME: PC@GSINLONx@GSINLAT-DC
+
+DYNAMICS_PERT_IM: @APERT_IM
+DYNAMICS_PERT_JM: @APERT_JM
+DYNAMICS_PERT_LM: @NSIG
+DYNAMICS_PERT_NPX: @APERT_IM
+DYNAMICS_PERT_NPY: @APERT_IM # this *6 
+
+PHYSICS_PERT_IM: @GSINLON
+PHYSICS_PERT_JM: @GSINLAT
+PHYSICS_PERT_LM: @NSIG
+
+AGCM_PERT_IM: @APERT_IM
+AGCM_PERT_JM: @APERT_JM
+AGCM_PERT_LM: @NSIG
+
+SOLAR_DT: 3600 # SOLAR_PDT
+IRRAD_DT: 3600 # IRRAD_PDT
+
+SOLARAvrg: 0
+IRRADAvrg: 0
+
+# Comment out the following line to run with bi-linear transforms between cube and lat-lon grids
+TILEFILE: ExtData/agcmpert/DC0144xPC0091_CF0048x6C.til
+
+TRAJ_FILE::
+trajdir/>>>EXPID<<<.traj.lcv.%y4%m2%d2_%h2%n2z.>>>NCSUFFIX<<<
+::
+
+#Read trajectory at the beginning or on the fly
+MEMTRAJ:   1            # 0: trajectory thru I/O
+                        # 1: trajectory on memory
+
+#Frequency at which trajectory is read
+#TRAJ_FREQ: >>>PDT<<<    # RUN_DT or n times RUN_DT (in seconds)
+TRAJ_FREQ: 900    # RUN_DT or n times RUN_DT (in seconds)
+
+# Number of tracers
+# -----------------
+
+ncnst: 4          #With moist physics extra tracers dynamically added
+
+
+# FV3 options
+# -----------
+
+# Dyn core options are controlled from inputpert.nml/fvcorepert_layout_xxx.rc
+
+# hord_x_pert control the advection schemes used for perturbation variables only
+# kord_x_pert control the remapping for both perturbation and trajectory
+# split_damp turns on different damping for the perturbation variables only,
+#            when false it reverts to the values in fv_core_nml, otherwise the
+#            values in fv_core_pert_nml are used.
+
+# Notes:
+# When different schemes are used for the perturabtions compared to the trajectory it 
+# slows the code down (compared to using linear schemes throughout) but increases accuracy. 
+# For shorter window 4DVAR consider using the same values throughout and split_damp = .F.. 
+# For longer window impact and sensitivity calculations consider keeping the default 
+# trajectory calculations and adjusting only the perturbation calculations. 
+# Note that when using the less diffusive linear schemes for advection and remapping 
+# greater damping is generally required to maintain stability.
+
+fv_timers: 0          # Activate timers on internal FV routines
+CustomNSplit: 0       # User sets the number of n splits for the core
+
+# Options to perform dynamics test case.
+DynamicsTestCase: 0   # (ver 3)
+
+## ADJOINT CHECKPOINTING OPTIONS FOR FV3  ##
+
+#Global options
+CP_i: 0         # Starting iteration (0 or 1), 0 for no custom checkpointing
+CP_nm: 1        # Number of modules using custom checkpointing
+CP_gb: -0.1     # Estimated gigabytes per processor that is available
+
+#Dynamics options
+CP_dyn_ind: 1             # CP index for dynamical core
+CP_dyn_rep: 0             # Write reports on checkpointing at iter 1 and iter 2
+CP_dyn_test: 0            # 1: Turn on testing mode
+CP_dyn_chk_st_control: 1
+CP_dyn_chk_st_integer: 1
+CP_dyn_chk_st_real_r4: 1
+CP_dyn_chk_st_real_r8: 1
+CP_dyn_dim_st_control: 0
+CP_dyn_dim_st_integer: 0
+CP_dyn_dim_st_real_r4: 0
+CP_dyn_dim_st_real_r8: 0
+CP_dyn_dim_cp_control: 0
+CP_dyn_dim_cp_integer: 0
+CP_dyn_dim_cp_real_r4: 0
+CP_dyn_dim_cp_real_r8: 0
+ 
+# Component options and switches
+# ------------------------------
+
+DO_DYNAMICS: 1        # 0: Dynamics off
+                        1: Dynamics on (default)
+
+DO_TURBULENCE: 1      # 0: Boundary layer off
+                      # 1: Boundary layer on (default)
+
+DO_MOIST: 2           # 0: Do not do moist physics (default)
+                      # 1: Do moist physics (4DVAR & 6H Runs)
+                      # 2: Do moist physics (default: Obs Impacts & Sensitivity 12H-24H runs)
+                      # 3: Do tracer scavenging only (modify code for other tracers)
+                      #>3: Read moist variables (needed by rad), no moist calc
+
+DO_RADIATION: 0       # 0: Radiation off (default)
+                      # 1: Raditioan on, longwave and shortwave (DO_MOIST should be > 0)
+
+DO_GWAVEDRAG: 0       # 0: Gravity wave drag off (default)
+                      # 1: Gravity wave drag on
+
+DO_PHYS_D2A: 0        # 0: Dont regrid trajectory winds to a-grid (default)
+                      # 1: Regrid trajectory winds to a-grid
+
+# Adjoint and TLM options
+# -----------------------
+ADD_INCS:  -1
+PERT_PHASE: 0
+DOTP_TEST: 0
+
+# Time stepping
+# -------------
+CallsPerWindow: 24
+StepsPerCall: 1
+
+INTERPOLATE_SST: 1
+
+# AeroChem Climatology Environment (For DAS and GCM)
+# --------------------------------------------------
+    CHEM_METHOD: PCHEM
+   OX_RELAXTIME: 0.001      # Standard Options:  GCM: 0.001,     DAS: 0.000
+  OX_FRIENDLIES: ANALYSIS   # Standard Options:  GCM: ANALYSIS,  DAS: ANALYSIS:D
+YNAMICS:TURBULENCE:MOIST
+  CH4_RELAXTIME: 0.001
+  N2O_RELAXTIME: 0.001
+CFC11_RELAXTIME: 0.001
+CFC12_RELAXTIME: 0.001
+HCFC22_RELAXTIME: 0.001
+  H2O_RELAXTIME: 259200.
+     pchem_clim: species.data
+

@@ -1,0 +1,8 @@
+nobackup_path   = '/discover/nobackup/jgkim'
+build_path      = nobackup_path + '/GEOSadas-5_17/GEOSadas'
+work_path       = nobackup_path + '/avhrr'
+data_path       = nobackup_path + '/avhrr/NOAA_CLASS/avhrr_n15_orbit/2005'
+bufr_path       = nobackup_path + '/avhrr/NOAA_CLASS/avhrr_n15_bufr'
+which_satellite = 'n15'
+start_date      = '2005,09,02 00:00'
+end_date        = '2005,09,02 00:00'

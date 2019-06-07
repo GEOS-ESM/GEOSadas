@@ -1,0 +1,41 @@
+# perteng.rc.rc
+
+# History:
+# -------
+#
+#  02May2007  R.Gelaro  - Original code
+#  11Jan2008  Todling   - Converted to template
+#  04Mar2009  Todling   - Generalized filename extension
+#
+
+# Template for perturbation file name
+#  example: u000_c7218.fsens.eta.20060128_18z+20060130_00z-20060129_00z.NCSUFFIX
+# -----------------------------------
+#pert_template: %s.fpert_txe.eta.%y4%m2%d2_%h2z+%%y4%%m2%%d2_%%h2z-%%%%y4%%%%m2%%%%d2_%%%%h2z.>>>NCSUFFIX<<<
+ pert_template: >>>PERT_NAME<<<
+
+# Template for reference state file name
+#  example: u000_c7218.prog.eta.20060128_18z+20060129_00z.>>>NCSUFFIX<<<
+# --------------------------------------
+#ref_template: %s.prog.eta.%y4%m2%d2_%h2z+%%y4%%m2%%d2_%%h2z.>>>NCSUFFIX<<<
+ ref_template: >>>AREF_NAME<<<
+
+# Time increment between cases (hrs)
+# ----------------------------------
+ time_increment: 24
+#time_increment: >>>PERTINC<<<
+
+# Length of forward forecast (hrs)
+# --------------------------------
+ tau_forward: 24
+#tau_forward: 30
+#tau_forward: >>>TAUFWRD<<<
+
+# Length of backward (adjoint) forecast (hrs)
+# -------------------------------------------
+ tau_backward: 24
+#tau_backward: >>>TAUBWRD<<<
+
+vnorm: yes
+
+#ehrendorfer_errico_raedder_eps: 1.0

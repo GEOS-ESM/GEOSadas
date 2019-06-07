@@ -1,0 +1,4 @@
+# set fields below to desired resolution of B-error
+berror_nlon: 1152
+berror_nlat:  721
+berror_nlev:   72

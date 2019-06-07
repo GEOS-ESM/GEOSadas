@@ -1,0 +1,101 @@
+Hi Adam,
+
+  I put the tracker source files and script onto our anonymous ftp
+server (ftp.gfdl.noaa.gov, or 140.208.1.2).  Go to /pub/tpm/oshay/,
+where you'll find the tracker script and 2 directories, supvit.fd
+and gettrk.fd.  The supvit executable sort and updates TC vitals 
+records to eliminate duplicates, the gettrk executable is the
+tracker.
+
+  The tracker works by searching for a vortex initially at a location 
+specified by a 1-line "TC vitals" record that comes from NHC or JTWC.
+An example of a TC vitals record follows (I truncated it at 70 chars):
+
+  NHC  01E ALMA      20020528 0600 116N 1112W 286 041 0994 1009 0324 28 07
+
+  The tracker code is set up to track up to 15 storms, although I 
+don't believe it's ever had to track more than about 6 or 7 at a time
+operationally.
+
+  So basically, for the example above, the tracker starts looking for
+the storm at 29.4N, 76.2W, and if it finds it there (or within a 
+reasonable distance -- defined in the code) at the initial time, then
+it records its position, writes out a record in "atcfunix" format, 
+and then makes a guess for the next position at the next forecast 
+hour to start searching there.  An example of output in atcfunix 
+format for Alma follows:
+
+EP, 01, 2002052806, 03, AVNO, 000, 115N, 1111W,  21, 1007, XX,  34, NEQ, 0000, 0000, 0000, 0000
+EP, 01, 2002052806, 03, AVNO, 012, 120N, 1124W,  25, 1007, XX,  34, NEQ, 0000, 0000, 0000, 0000
+EP, 01, 2002052806, 03, AVNO, 024, 125N, 1138W,  25, 1007, XX,  34, NEQ, 0000, 0000, 0000, 0000
+EP, 01, 2002052806, 03, AVNO, 036, 129N, 1159W,  23, 1007, XX,  34, NEQ, 0000, 0000, 0000, 0000
+EP, 01, 2002052806, 03, AVNO, 048, 139N, 1168W,  23, 1007, XX,  34, NEQ, 0000, 0000, 0000, 0000
+EP, 01, 2002052806, 03, AVNO, 060, 150N, 1170W,  25, 1006, XX,  34, NEQ, 0000, 0000, 0000, 0000
+EP, 01, 2002052806, 03, AVNO, 072, 158N, 1168W,  25, 1007, XX,  34, NEQ, 0000, 0000, 0000, 0000
+EP, 01, 2002052806, 03, AVNO, 084, 167N, 1168W,  25, 1008, XX,  34, NEQ, 0000, 0000, 0000, 0000
+
+  If the tracker does not find a storm within a reasonable distance
+of the observed position, then the tracker will quit.  It will not 
+try to find the storm at any subsequent forecast hour.  For the AVN,
+I keep this initial distance at 275 km.  That error distance can 
+change throughout the course of a forecast, depending on the spread
+of parameter fix positions from the last several forecast hours.
+
+  Subroutine tracker is the real heart of the program.  This is the 
+routine that reads in the data at each forecast hour and calls the 
+tracking subroutine and all other related routines.  Basically, it 
+loops through for each forecast hour, reads in all the various data
+records for that time, and then it loops through for each storm to
+find the 7 different parameters that are used in obtaining the average
+fix position.  By the way, you can set a logical flag (calcparm) near 
+the beginning of the "ifhloop" loop in subroutine tracker to turn 
+on/off the tracking for various parameters.  Currently, they are all
+set to "on".
+
+  A major subroutine called from tracker is find_maxmin.  This routine
+is called for each parameter for which a fix is attempted to be made.
+The find_maxmin routine is the one which defines the geographic limits
+of the area to be searched with the barnes analysis, which is called 
+from this routine.
+
+  Subroutine barnes is the routine which gets the weighted value of 
+parameter at a particular grid point.
+
+  I believe that you told me you would not be using 
+GRIB data.  So, obviously you've got a lot of
+work to do to make it work for non-GRIB data.  Subroutine getdata will
+need to be changed.  The call to "getgb" needs to be wiped out -- it
+is a subroutine from the NCEP GRIB-reading library.  Basically, each
+call to getgb returns a single field of values at a single forecast 
+time.  All the stuff you see in there for bitmapchk, lbrdflag and 
+valid_pt will need to be modified;  valid_pt is a logical array that
+contains values letting you know if a gridpoint has valid data or not.
+This is an issue for regional grids only, such as for when we track 
+storms in the Eta or GFDL.  We need this because the barnes analysis
+may attempt to search points that are beyond the limits of the grid, 
+so before the tracker executable is called, I run an NCEP utility for
+these regional models that converts these regional grids onto slightly
+larger regional grids which have a "cushion" of non-valid, null data 
+points surrounding the real data grid.  Before I operate on any of the
+data, I check the value of valid_pt to see if it is a valid data point
+or not.  Other GRIB changes.... anywhere you see a variable with the
+names "gds" and "pds", they'll have to be changed.  The pds and gds 
+sections of a grib file are header sections that contain information 
+on the basic properties of the record, such as what variable it is, 
+what level, what initial time, what forecast valid time, what the grid 
+boundaries are, what the grid spacing is, etc....
+
+By the way, in both the supvit and gettrk source code, you can take
+out references to "w3tag*" routines -- they are NCEP operational
+accounting routines.  Also, the w3lib and bacio links in the makefiles 
+are for both the w3tag routines and for the grib-reading routines.
+
+Also, there is a call to a subroutine called "orders" in gettrk.
+This is a very fast sort routine, but it is also in an NCEP 
+library.  Fortunately, you do not really need this, as it is only
+called from a routine which pulls out the wind radii in each 
+quadrant of a storm.  You can comment out that code if you want.
+
+Good luck, and let me know what questions you have....
+
+Tim

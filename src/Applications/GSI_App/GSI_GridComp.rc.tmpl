@@ -1,0 +1,175 @@
+# GSI_GridComp.rc
+#
+# !REVISION HISTORY
+#
+#  13Mar2009  Todling  Tranfer all filename templates from gsi.rc here
+#  28Sep2013  Todling  Remove obs table; automated
+#
+
+# Supported types: Uniform=0, Gaussian=1
+GSIGridType: 0
+
+# GSI grid information 
+
+#regular grid use:
+GEOS IM: @GCMNLON
+GEOS JM: @GCMNLAT
+GEOS KM: @NSIG
+GSI IM:  @GSINLON
+GSI JM:  @GSINLAT
+GSI LM:  @NSIG
+
+#Gaussian grid use:
+#GEOS IM: @JCAP
+#GEOS JM: @NLAT
+#GEOS KM: @NSIG
+#GSI IM:  @JCAP
+#GSI JM:  @NLAT
+#GSI LM:  @NSIG
+
+# NPEs along x and y
+NX:      @NXGSI
+NY:      @NYGSI
+ANA_NX:  @NXGSI
+ANA_NY:  @NYGSI
+ORIGIN_CENTER_LON: 0.0
+ORIGIN_CENTER_LAT: -90.0
+
+BEG_DATE: >>>IOBBKGD<<< >>>IOBBKGT<<<
+END_DATE: >>>IOEBKGD<<< >>>IOEBKGT<<<
+JOB_SGMT: 0 @VARWINDOW
+
+RUN_DT:   @SECASYNFRQ
+
+BKG_FREQUENCY: @ASYNFRQ
+ANA_FREQUENCY: @VARWINDOW
+OBS_FREQUENCY: 060000
+
+ANALYSIS_INCREMENT: @ANAINC
+
+RECORD_ANALYSIS: >>>RECANA<<<
+RECORD_FREQUENCY: @ASYNFRQ
+RECORD_REF_TIME:  >>>ANATIME<<<
+RECORD_REF_DATE:  >>>ANADATE<<<
+
+# bkg file names building blocks and templates - used by aana
+
+expid: >>>EXPID<<<
+
+surface_bkg_filename:   %s.bkg.sfc.%y4%m2%d2_%h2z.>>>NCSUFFIX<<<
+surface_ana_filename:   %s.ana.sfc.%y4%m2%d2_%h2z.>>>NCSUFFIX<<<
+surface_inc_filename:   %s.inc.sfc.%y4%m2%d2_%h2z.>>>NCSUFFIX<<<
+chem_bkg_filename:      %s.cbkg.eta.%y4%m2%d2_%h2z.>>>NCSUFFIX<<<
+aero_bkg_filename:      NONE  # %s.abkg.eta.%y4%m2%d2_%h2z.>>>NCSUFFIX<<<
+ensemble_upabkg_filename:  %s.bkg.eta.%y4%m2%d2_%h2z.>>>NCSUFFIX<<<
+upper-air_bkg_filename: %s.bkg.eta.%y4%m2%d2_%h2z.>>>NCSUFFIX<<<
+upper-air_ana_filename: %s.ana.eta.%y4%m2%d2_%h2z.>>>NCSUFFIX<<<
+upper-air_inc_filename: %s.inc.eta.%y4%m2%d2_%h2z.>>>NCSUFFIX<<<
+upalcv_traj_filename: %s.traj.lcv.%y4%m2%d2_%h2%n2z.>>>NCSUFFIX<<<
+upaprs_ptrj_filename: %s.ptrj.prs.%y4%m2%d2_%h2%n2z.>>>NCSUFFIX<<<
+#forecast-bias_filename: %s.bias.eta.%y4%m2%d2_%h2z.>>>NCSUFFIX<<<
+#sfcexp_filename: %s.sfc_export.%y4%m2%d2_%h2z
+post-analysis_obs_filename: %s.ana.obs.%y4%m2%d2_%h2z.ods
+
+ensemble_upaprgb_filename: %s.prog.eta.%y4%m2%d2_%h2z.nc4
+forecast_errorB_filename: fsens.eta.nc4
+
+vars_anaeta_file: phis,ps,ts,frland,frlandice,frlake,frocean,frseaice,delp,u,v,tv,sphu,ozone,qitot,qltot,qrtot,qstot
+vars_bkgeta_file: phis,ps,ts,frland,frlandice,frlake,frocean,frseaice,u,v,tv,sphu,ozone,qitot,qltot,qrtot,qstot
+vars_bkgsfc_file: U10M,V10M,SNOWDP,GWETTOP,TSOIL1,Z0M,DCOOL,DWARM,TDROP,TS_FOUND,TDEL
+
+# used in read_guess
+
+tracers: 3.
+pdryini: 98.3161392
+vtid:    21.
+xncld:   1.
+
+SIGMAS:
+1.00000000  0.99733466
+0.99467099  0.99165040
+0.98863202  0.98521459
+0.98180002  0.97793972
+0.97408301  0.96973169
+0.96538502  0.96049106
+0.95560300  0.95011324
+0.94463098  0.93849069
+0.93235999  0.92551297
+0.91867799  0.91107142
+0.90347999  0.89506209
+0.88666302  0.87738937
+0.86813903  0.85797018
+0.84783000  0.83674008
+0.82568502  0.81365991
+0.80167699  0.78871876
+0.77581102  0.76194209
+0.74813300  0.73339593
+0.71872902  0.70318937
+0.68773103  0.67147696
+0.65531600  0.63845783
+0.62170500  0.60437369
+0.58715999  0.56950229
+0.55197400  0.53414822
+0.51646298  0.49863371
+0.48095500  0.46328700
+0.44577801  0.42843068
+0.41124901  0.39436883
+0.37765899  0.36137757
+0.34526899  0.32969791
+0.31430000  0.29952824
+0.28492799  0.27102205
+0.25728399  0.24428768
+0.23145400  0.21939002
+0.20748200  0.19635287
+0.18537199  0.17516564
+0.16509899  0.15578815
+0.14660800  0.13815479
+0.12982300  0.12218294
+0.11465500  0.10777701
+0.10100200  0.09483192
+0.08875600  0.08323913
+0.07780800  0.07288960
+0.06804900  0.06367428
+0.05937000  0.05548869
+0.05167100  0.04823432
+0.04485500  0.04181716
+0.03883100  0.03614972
+0.03351500  0.03115152
+0.02883000  0.02675009
+0.02470800  0.02287891
+0.02108400  0.01947701
+0.01790100  0.01648990
+0.01510700  0.01386962
+0.01265800  0.01157264
+0.01051100  0.00955999
+0.00863100  0.00779765
+0.00698500  0.00625461
+0.00554400  0.00490435
+0.00428400  0.00372380
+0.00318300  0.00269122
+0.00222000  0.00178715
+0.00137800  0.00099361
+0.00064200  0.00026640
+0.00000000
+
+# In the event that this is 4DVAR tell the adjoint we
+# are in the Observer so SetServices doesnt attempt
+# to generate a grid with insufficient information
+# ---------------------------------------------------
+PertObserverMode: 1
+
+# The following is to make the Split-Observer happy - avoid
+# having it complaint about missing MAPL stuff - this should
+# be removed when running the real observer (inside the GCM)
+# ----------------------------------------------------------
+    CHEM_METHOD: PCHEM
+   OX_RELAXTIME: 0.001      # Standard Options:  GCM: 0.001,     DAS: 0.000
+  OX_FRIENDLIES: ANALYSIS   # Standard Options:  GCM: ANALYSIS,  DAS: ANALYSIS:D
+YNAMICS:TURBULENCE:MOIST
+  CH4_RELAXTIME: 0.001
+  N2O_RELAXTIME: 0.001
+CFC11_RELAXTIME: 0.001
+CFC12_RELAXTIME: 0.001
+HCFC22_RELAXTIME: 0.001
+  H2O_RELAXTIME: 259200.
+     pchem_clim: species.data

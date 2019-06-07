@@ -1,0 +1,159 @@
+from_central:
+
+  GAAS_ANA: 1
+  ACFTBIAS: 0
+  OBSCLASS: "ncep_prep_bufr"
+  SPECRES: 62
+  
+atmens_global:
+
+  GID: g0613
+  EXPID: u000_C48
+  FVHOME: "$NOBACKUP/u000_C48"
+  FVROOT: "$NOBACKUP/code/gmao/adas/g5200p1pchakrab/Linux"
+  FVWORK: "$NOBACKUP/tmp.enswork"
+  FVBCS: $FVHOME/fvInput
+  FVSPOOL: "$FVHOME/spool"
+  IGNORE_0: 1
+  STRICT: 0
+  NCSUFFIX: nc4
+
+  ATMENS_DEBUG: 1
+  ATMENS_VERBOSE: 1
+  ATMENSLOC: "$FVHOME"
+  ATMENSETC: "$FVHOME/run/atmens"
+  ATMENS_VERBOSE: 1
+  ATMENSLOG: "atm_ens.log"
+  # 0 - does serial ensemble
+  # Otherwise, ensemble runs in parallel mode and in this case, the satellite
+  # bias correction files can be treated in either of the following two ways:
+  # 1 - bias estimates from current hybrid cycle
+  # 2 - bias estimates from previous hybrid cycle
+  ENSPARALLEL: 2
+
+  JOBMONITOR_MAXSLEEP_MIN: 180
+  JOBGEN_NCPUS_PER_NODE: 16 # TODO: Check - this should be 24/28??
+  JOBGEN_QOS: advda
+  JOBGEN_CONSTRAINT: hasw
+  TIMEFILE: simtimes_atmens.yaml
+
+  RSTSTAGE4AENS: "$FVHOME/atmens/RST" # date/time
+  HYBRIDGSI: $ATMENSLOC/atmens
+  STAGE4HYBGSI: $HYBRIDGSI/central
+
+  COMMAND:
+    - "export PATH=$PATH:$FVROOT/bin"
+    - "export PATH=$PATH:/discover/nobackup/projects/gmao/share/dasilva/opengrads/Contents"
+    - "source g5_modules.sh"
+    - "module list"
+
+atmens_ana:
+
+  TIMEINC: 360
+  ASYNBKG: 180
+  VAROFFSET: 180
+
+  # pchakrab: We probably don't need these
+  # SKIPANA: 0
+  # DO4DVAR: 0
+  # ACFTBIAS: 0
+  # # number of iterations for var loop
+  # NVAROUTER: 1
+  # # GSI-specifc
+  # SPECRES: 62
+  # # 1 - enable sfc-analysis, 0 - disables it (ISN'T IT THE OTHER WAY AROUND)
+  # NOSFCANA: 1
+  # DO_0HR_IMP: 0
+  # # Enable hurricane vortex relocation
+  # VTXRELOC: 1
+
+atmens_mpi:
+
+  MPI_COLL_REPRODUCIBLE: 1
+  SLURM_DISTRIBUTION: block
+  MPI_DISPLAY_SETTINGS: 1
+  MPI_COMM_MAX: 1024
+  MPI_GROUP_MAX: 1024
+  MPI_BUFS_PER_PROC: 256
+  # For some reason, PMI_RANK is randomly set and interferes
+  # with binarytile.x and other executables.
+  COMMAND:
+    - "unset PMI_RANK"
+
+atmens_setperts:
+
+  PERTS_WALLCLOCK: "1:00:00"
+  PERTS_QNAME: compute
+  PERTDIFF_NCPUS: 4
+
+atmens_recenter:
+
+  AENSADDINFLOC: addperts  # path relative to FVWORK
+  AENS_ADDINFLATION: 1     # apply additive inflation to each analysis member
+  AENS_DONORECENTER: 0
+  ADDINF_FACTOR: 0.35      # additive inflation coeff (seems small after mass-div fix)
+  RECENTER_WALLCLOCK: "1:00:00"
+  ENSRECENTER_NCPUS: 4
+  RECENTER_QNAME: compute
+  # AENS_RECENTER_DSTJOB: 4 (default is 0)
+
+atmens_obsvr:
+
+  OBSVR_QNAME: compute
+  OBSVR_WALLCLOCK: "0:45:00"
+  ENSGSI_NCPUS: 32
+  MPIRUN_ENSANA: "\"mpiexec_mpt -np $ENSGSI_NCPUS GSIsa.x\""
+
+atmens_aod: # GAAS and AERO EnKF
+
+  AENKFAERO_NCPUS: 192
+  ATMENKFAERO_QNAME: compute
+  ATMENKFAERO_WALLCLOCK: "1:00:00"
+  MPIRUN_ATMENKFAERO: "\"mpiexec_mpt -np $AENKFAERO_NCPUS enkf_aero.x\""
+  AENS_GAAS_OPT: 1  # 1 members use central GAAS
+                    # 2 analyze each member with PSAS
+                    # 3 do (2), add EnKF-based AOD analysis (off aod.or.concentrations)
+                    # 4 EnKF-based AOD analysis (off aod.or.concentrations)
+
+atmens_enkf:
+
+  AENKF_NCPUS: 96
+
+atmens_pert_energy:
+
+  AENSTAT_NCPUS: 4
+  AENSTAT_MPIRUN: "\"mpiexec_mpt -np $AENSTAT_NCPUS mp_stats.x\""
+  AENSTAT_WALLCLOCK: "0:30:00"
+  AENSTAT_QNAME: compute
+
+atmens_ana2gcm:
+
+  AENS_IAU_DSTJOB: 0 # non-zero value is causing issues
+  IAU_QNAME: compute
+  IAU_WALLCLOCK: "1:00:00"
+  ENSIAU_NCPUS: 24
+  MPIRUN_ENSIAU: "\"mpiexec_mpt -np $ENSIAU_NCPUS mkiau.x\""
+
+atmens_gcm:
+
+  AENS_GCM_DSTJOB: 0
+  AGCM_QNAME: compute
+  AGCM_WALLCLOCK: "1:00:00"
+  ENSGCM_NCPUS: 48
+  MPIRUN_ENSGCM: "\"mpiexec_mpt -np $ENSGCM_NCPUS GEOSgcm.x\""
+  RSTSTAGE4AENS: $ATMENSLOC/atmens/RST # TBD: location of mean-fcst restarts
+
+atmens_vtrack:
+
+  ENSVTRK_NCPUS: 1
+  VTRKFRQF: 360
+  VTXLEVS: "\"1000 925 850 700 600 500 400 300 250 200 150 100 70 50 30 20 10\""
+
+atmens_archive:
+
+  ATMENS4ARCH: $FVHOME # location where files to archive are held prior to archival
+  ARCHLOC: "$NOBACKUP/archive/g5200p1pchakrab"
+
+atmens_other:
+
+  MKL_CBWR: SSE4_2

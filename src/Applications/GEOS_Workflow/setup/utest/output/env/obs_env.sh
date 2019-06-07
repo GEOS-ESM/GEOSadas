@@ -1,0 +1,3 @@
+export OBSCLASS="ncep_1bamua_bufr,ncep_osbuv_bufr,ncep_prep_bufr,disc_airs_bufr,disc_amsua_bufr,ncep_mhs_bufr,ncep_1bhrs4_bufr,ncep_goesfv_bufr,ncep_mtiasi_bufr,ncep_gpsro_bufr,ncep_aura_omi_bufr,ncep_satwnd_bufr,ncep_atms_bufr,ncep_sevcsr_bufr,ncep_cris_bufr,ncep_ssmis_bufr,ncep_tcvitals,ncep_avcsam_bufr,ncep_avcspm_bufr"
+export OBSWINDOW=360
+export IGNORE_0=1

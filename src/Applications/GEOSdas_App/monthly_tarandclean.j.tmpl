@@ -1,0 +1,228 @@
+#!/bin/csh
+###############################################################################
+#__JOB_NAME__
+#__TIME__
+#__ACCOUNT__
+#__OUTPUT__
+#__PARTITION__
+#SBATCH --no-requeue
+#SBATCH --export=NONE
+#PBS -S /bin/csh
+#PBS -r n
+#PBS -j oe
+
+alias echo1  "unset echo; echo \!*; set echo"
+
+# job parameters
+#---------------
+echo
+if (__DO_TAR__) then
+    echo "-------------"
+    echo "Tar and Clean"
+    echo "-------------"
+else
+    echo "-----"
+    echo "Clean"
+    echo "-----"
+endif
+set echo
+set filestring = __FILESTRING__
+set yyyymm     = __YYYYMM__
+set rundir     = __RUNDIR__
+set workdir    = __WORKDIR__
+set do_tar     = __DO_TAR__
+set lastFLG    = __LASTFLG__
+unset echo
+echo
+
+# set job environment variables
+#------------------------------
+source $rundir/FVDAS_Run_Config
+set path = ( $rundir $FVROOT/bin $BASEDIR/$ARCH/bin $path )
+set echo
+set SUCCESS = 1
+
+# info file names
+#--------------------------------------
+# see notes in monthly_means.pl script
+#--------------------------------------
+set ftype = `echo $filestring:t:r:r | cut -d. -f2-`
+
+set IN_TAR_INFO = "$workdir/IN_TAR.$ftype"
+set OUT_TAR_INFO = "$workdir/OUT_TAR.$ftype"
+
+# do not tar if full tarfile already exists
+#------------------------------------------
+if ($do_tar) then
+    if (-e $IN_TAR_INFO) then
+        cat $IN_TAR_INFO
+        set in_tar_scope = `cat $IN_TAR_INFO`
+        if ($in_tar_scope == "full") then
+            echo1 "NO TARRING; full $ftype tarfile already exists"
+            set do_tar = 0
+        endif
+    endif
+endif
+
+# get name for output tarfile
+#----------------------------
+if ($do_tar) then
+    if (-e $OUT_TAR_INFO) then
+        cat $OUT_TAR_INFO
+        set out_tar_vals  = `cat $OUT_TAR_INFO`
+        set local_dir     = $out_tar_vals[1]  # where to write output tarfile
+        set remote_dir    = $out_tar_vals[2]  # location of archived input files
+        set out_tar_scope = $out_tar_vals[3]  # "full", "partial", or "empty" 
+
+        # name for full output tarfile
+        #-----------------------------
+        if ($out_tar_scope == "full") then
+            set output_tarfile = "$local_dir/$EXPID.$ftype.$yyyymm.tar"
+            echo1 "TARRING $ftype inputs to $output_tarfile"
+
+        # name for partial output tarfile
+        #--------------------------------
+        else if ($out_tar_scope == "partial") then
+            set output_tarfile = "$local_dir/$EXPID.$ftype.$yyyymm.partial.tar"
+            echo1 "TARRING $ftype inputs to $output_tarfile"
+
+        # no inputs; therefore no output tarfile
+        #---------------------------------------
+        else if ($out_tar_scope == "empty") then
+            echo1 "NO TARRING; No $EXPID.$ftype.$yyyymm inputs were found"
+            set do_tar = 0
+            set SUCCESS = 0
+
+        # unknown output tarfile type
+        #----------------------------
+        else
+            echo1 " ERROR. Incorrect out_tar_scope value: '$out_tar_scope'"
+            echo1 "(value should be 'full', 'partial', or 'empty')"
+            exit 91
+        endif
+
+    # cannot find output tarfile info
+    #--------------------------------
+    else
+        echo1 " ERROR. OUT_TAR_INFO not found: $OUT_TAR_INFO\n" \
+              "(probably no $EXPID.$ftype.$yyyymm inputs in archive)"
+        exit 92
+    endif
+endif
+
+# get list of workdir inputs
+#---------------------------
+chdir $workdir
+set suffix = $filestring:e
+
+set workdir_inputs = ( `ls $EXPID.$ftype.$yyyymm*.$suffix` )
+set workdir_status = $status
+
+if ($workdir_status) then
+    echo " Error. No workdir inputs found for $EXPID.$ftype.$yyyymm"
+    exit 93
+endif
+
+# tar inputs
+#-----------
+if ($do_tar) then
+
+    # get list of archived inputs
+    #----------------------------
+    set archive_inputs = ( $remote_dir/$EXPID.$ftype.$yyyymm*.$suffix )
+    set no_inputs_found = $status
+
+    if ($no_inputs_found) then
+        echo " Warning. No remote inputs found for $EXPID.$ftype.$yyyymm"
+    endif
+
+    #-------------------------------------------------------------------------
+    # NOTES:
+    # 1. There could be more workdir inputs than archive inputs if some of
+    #    the workdir inputs are from an input partial tarfile.
+    # 2. There should never be more archive inputs then workdir inputs.
+    # 3. If there are no archive inputs, then probably this job will just
+    #    re-create an already existing tarfile.
+    # 4. An archive input will differ from the workdir input if the workdir
+    #    input is from a partial tarfile, and the archive input was created
+    #    later and differs from the previous input. This case is flagged as
+    #    an error, since it would lead to the deletion of an archived input
+    #    that has not been tarred.
+    #-------------------------------------------------------------------------
+
+    # check equivalence between archive inputs and corresponding workdir inputs
+    #--------------------------------------------------------------------------
+    if (! $no_inputs_found) then
+        foreach archinput ($archive_inputs)
+
+            set workinput = $archinput:t
+            if (! -e $workinput) then
+                echo " Error. No corresponding workdir input found for $archinput"
+                exit 94
+            endif
+
+            diff $archinput $workinput >& /dev/null
+            if ($status) then
+                echo " Error. inputs not equal: $archinput != $workinput"
+                exit 95
+            endif
+        end
+    endif
+
+    # tar workdir inputs
+    #-------------------
+    tar cf $output_tarfile $workdir_inputs
+    if ($status) then
+        echo " Error while creating tarfile, $output_tarfile"
+        exit 96
+    endif
+
+    # check output tarfile
+    #---------------------
+    tar df $output_tarfile
+    if ($status) then
+        echo " Error. tarfile check failed for $output_tarfile"
+        exit 97
+    endif
+
+    # archive tarfile
+    #----------------
+    set ftype_arc = $workdir/$ftype.arc
+    grep $ftype $rundir/monthly.arc >! $ftype_arc
+    cat $ftype_arc
+
+    $FVROOT/bin/fvarchive -d $yyyymm -r $FVARCH -H $FVHOME -a $ftype_arc
+
+    # remove input files from archive
+    #--------------------------------
+    if (! $no_inputs_found) then
+        \rm -f $archive_inputs
+    endif
+
+endif
+
+# remove input files from workdir
+#--------------------------------
+\rm -f $workdir_inputs
+
+# if this is the last ftype, then remove workdir
+#-----------------------------------------------
+if ($lastFLG) then
+    cd $rundir
+    \rm -r $workdir
+endif
+
+# rename output file for successful run
+#--------------------------------------
+if ($?outfile && $SUCCESS) then
+   set outfile = `echo $outfile | sed -e "s|.FAILED||"`
+else
+   set yyyy = `echo $yyyymm | cut -c1-4`
+   set mm = `echo $yyyymm | cut -c5-6`
+
+   set listdir = "$FVHOME/etc/Y$yyyy/M$mm"
+   set outfile = "$listdir/$EXPID.tarandclean.$ftype.$yyyymm.log.$$.txt";
+endif
+$PBS_BIN/qalter -o $outfile $PBS_JOBID
+
+exit 0

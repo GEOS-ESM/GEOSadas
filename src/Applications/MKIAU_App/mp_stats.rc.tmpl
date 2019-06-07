@@ -1,0 +1,37 @@
+# MAPL required variables
+# -----------------------
+RUN_DT: 21600   # for now, must be set to 6-hrs
+MAPL_ENABLE_TIMERS: NO
+PRINTSPEC: 0  # (0: OFF, 1: IMPORT & EXPORT, 2: IMPORT, 3: EXPORT)
+
+
+# Model Resolution and Timestep Parameters
+# 4x4 is usually enough for any resolution
+# ----------------------------------------
+NX: @NX
+NY: @NY
+
+#AGCM_GRIDNAME: @AGCM_GRIDNAME
+
+MP_STATS_IM: @MP_STATS_IM
+MP_STATS_JM: @MP_STATS_JM
+MP_STATS_LM: @MP_STATS_LM
+
+VNORM: YES
+EPS_EER: 1.0
+
+# 01May2018: This feature needs revision ... (no longer functions as such)
+# Note: you can select a single (or multiple) level(s) from a file
+#       by specifying a table with levels named VERTGRIDNNN when NNN
+#       is the 3-digit number of levels; you should also reset 
+#       MP_STATS_LM to the number of levels you are extracting.
+#       Remember that native files written by the GCM have the variable
+#       lev (as in, ncdump -v lev) set to indexes, not pressure levels;
+#       but the pressure level files have pressures in the levs array.
+#       Also specify the options -usrlevs at command line.
+#
+#       E.g. follows for extracting two levels from file
+#VERTGRID002:
+#  1  500.
+#  2  820.
+

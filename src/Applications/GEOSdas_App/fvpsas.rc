@@ -1,0 +1,11 @@
+#
+# FVPSAS resource file.
+#
+# !REVISION HISTORY:
+#
+# 17Nov2003  Todling   Initial version.
+# 13Jul2007  Todling   Add trajectory files (4d-var)
+# 04Mar2009  RT/JCS    chage hdf suffixes to nc4
+# 13Mar2009  Todling   This is just a stub; see fvsetup     
+#
+#-----------------------------------------------------------------------------

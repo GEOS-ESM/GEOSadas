@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+#-----------------------------------------------------------------------
+#        NAME:	sif_convert
+#       USAGE:	sif_convert [global_satinfo.txt]
+#
+# DESCRIPTION:	convert satinfo.txt in an old format with integer
+#		sensor indicators to the new format with string
+#		satellite/instrument/sensor indicators.  The converted
+#		output data are sent to stdout.
+#
+#        USES:	sif_convert.x
+#-----------------------------------------------------------------------
+
+c=$(basename $(which $0))	# find command name
+d=$(dirname  $(which $0))	# locate the command
+
+#-- Try to locate associated executables
+convert=${d}/sif_convert.x	# locate sif_convert.x
+
+if [ ! -x ${convert} ]; then
+  echo "$c: not available, executable \"${convert}\"" 1>&2
+  exit 2
+fi
+
+#-- Check arguments
+if [ $# -eq 0 -o $# -gt 1 ]; then
+  echo "Usage: ${c} <global_satinfo.txt>" 1>&2
+  exit 1
+fi
+
+#-- Now, convert.
+( echo "&setup sorted=.false. /"
+  cat $1
+) | ${convert}
+#.

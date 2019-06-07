@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+%include <head.h>
+
+CWD=$(pwd)
+
+export NCPUS_GSI=%NCPUS_GSI%
+export NCPUS_SAC=%NCPUS_SAC%
+export WORKFLOW_DIR=%ECF_HOME%
+bash ${WORKFLOW_DIR}/tasks/DiagToOds.sh
+
+cd $CWD
+
+%include <tail.h>

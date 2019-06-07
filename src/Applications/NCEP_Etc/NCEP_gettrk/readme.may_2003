@@ -1,0 +1,5 @@
+In May 2003, a bug was uncovered that became apparent by 
+the switch to snow/frost.  The compiler didn't deal well
+with the fact that the arrays from my routines for w3lib
+were sized at 25 and 22, while the w3lib source had them
+sized at 200.

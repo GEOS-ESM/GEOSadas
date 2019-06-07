@@ -1,0 +1,40 @@
+
+# -------------------------------------
+# Regridding Resource File Information
+# -------------------------------------
+#
+#         Boundary Condition Tag: Icarus (Current)
+#                                 ...
+#                                 Fortuna-2_1
+#                                 Fortuna-2_0
+#                                 Fortuna-1_5
+#                                 Fortuna-1_4 (MERRA)
+#
+#          DYN_INTERNAL_RESTART_FILE: Full path filename for    fvcore_internal_rst
+#        MOIST_INTERNAL_RESTART_FILE: Full path filename for     moist_internal_rst
+#        CATCH_INTERNAL_RESTART_FILE: Full path filename for     catch_internal_rst
+#         LAKE_INTERNAL_RESTART_FILE: Full path filename for      lake_internal_rst
+#      LANDICE_INTERNAL_RESTART_FILE: Full path filename for   landice_internal_rst
+#    SALTWATER_INTERNAL_RESTART_FILE: Full path filename for saltwater_internal_rst
+#           AGCM_IMPORT_RESTART_FILE: Full path filename for        agcm_import_rst
+#        PCHEM_INTERNAL_RESTART_FILE: Full path filename for     pchem_internal_rst
+#       GOCART_INTERNAL_RESTART_FILE: Full path filename for    gocart_internal_rst
+#
+# ---------------------------------------------------------------------------------------------------
+
+# REQUIRED INPUT Restart Information
+# ----------------------------------
+                         BC_TAG: Icarus
+    CATCH_INTERNAL_RESTART_FILE: catch_internal_rst
+      DYN_INTERNAL_RESTART_FILE: fvcore_internal_rst
+   GOCART_INTERNAL_RESTART_FILE: gocart_internal_rst
+     LAKE_INTERNAL_RESTART_FILE: lake_internal_rst
+  LANDICE_INTERNAL_RESTART_FILE: landice_internal_rst
+    MOIST_INTERNAL_RESTART_FILE: moist_internal_rst
+    PCHEM_INTERNAL_RESTART_FILE: pchem_internal_rst
+SALTWATER_INTERNAL_RESTART_FILE: saltwater_internal_rst
+
+# OPTIONAL INPUT Restart Information (Leave BLANK if not desired)
+# ---------------------------------------------------------------
+#      AGCM_IMPORT_RESTART_FILE: @AGCM_IMPORT_RESTART_FILE
+

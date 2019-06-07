@@ -1,0 +1,253 @@
+#!/usr/bin/env python
+
+
+import os
+import sys
+import glob
+import math
+import ftplib
+import argparse
+import StringIO
+
+from datetime import datetime
+from datetime import timedelta
+
+
+def parse_args(ctlfiles):
+
+    p = argparse.ArgumentParser(
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description='''
+For a given GEOS-5 Forward Processing (fp) seamless collection name,
+return the full pathnames of files bracketing a specified time. A
+seamless collection is one that exists in both assimilation and
+forecast streams. This utility returns the most recent file names
+existing at the time of execution. If an assimilation file does not
+exist, a forecast file is returned instead.
+
+Output of this script is of the form:
+
+  alpha iso_time_1 iso_time_2
+  file1
+  file2
+
+where
+  iso_time_1&2 are the bracketing times
+  file1 and file2 are the locations of the bracketing files and
+  alpha is the coefficient of linear time interpolation such that
+     the linear interpolation is
+     file = alpha*file1 + (1-alpha)*file2
+        '''
+        )
+
+    p.add_argument(
+        'collection', 
+        help='GEOS-5 seamless collection name from Forward Processing system. ' \
+            'Valid collection names are:  %s'%', '.join(ctlfiles),
+        )
+    ex = datetime(2014,11,24,12,30,00).isoformat()
+    p.add_argument('datetime', help='date/time in ISO format (e.g. %s)' % ex)
+
+    return p.parse_args()
+
+
+def parse_isodate(isodate):
+    """
+    input: date/time in iso format, e.g. 2014-11-24T12:30:00
+    output: date/time datetime.datetime(2014,11,24,12,30,00)
+    """
+
+    errmsg = 'ERROR: datetime needs to be in the ISO format yyyy-mm-ddThh:MM:ss'
+
+    # checks for '-', 'T', ':'
+    if len(isodate)!=19:
+        sys.exit(errmsg)
+    if isodate[4]!='-':
+        sys.exit(errmsg)
+    if isodate[7]!='-':
+        sys.exit(errmsg)
+    if isodate[10]!='T':
+        sys.exit(errmsg)
+    if isodate[13]!=':':
+        sys.exit(errmsg)
+    if isodate[16]!=':':
+        sys.exit(errmsg)
+        
+    # convert year, month, day, hour, min, sec to int
+    try:
+        year = int(isodate[:4])
+        month = int(isodate[5:7])
+        day = int(isodate[8:10])
+        hour = int(isodate[11:13])
+        minute = int(isodate[14:16])
+        second = int(isodate[17:])
+    except:
+        sys.exit(errmsg)
+
+    return datetime(year,month,day,hour,minute,second)
+
+
+if __name__=="__main__":
+
+    # First check if we are logged into any NCCS resource
+    nodename = os.uname()[1]
+    if nodename.lower().startswith(('discover', 'dali')):
+        Location = 'NCCS'
+    else:
+        Location = 'Remote'
+
+    # Hard-coded paths
+    SEAMLESS_DIR = '/discover/nobackup/projects/gmao/gmao_ops/pub/fp/opendap/seamless'
+    SEAMLESS_URL_BASE = 'ftp.nccs.nasa.gov'
+    SEAMLESS_CTL_DIR = '/fp/opendap/seamless'
+
+    # For remote locations, connect to url_base and login
+    if Location=='Remote':
+        ftp = ftplib.FTP(SEAMLESS_URL_BASE)
+        rc = ftp.login(user='gmao_ops')
+    
+    # List of ctl files
+    if Location=='NCCS':
+        ctlfiles = [x.split('/')[-1].split('.')[0] for x in glob.glob(SEAMLESS_DIR+'/*.latest')]
+    elif Location=='Remote':
+        sfd = ftp.nlst(SEAMLESS_CTL_DIR)
+        ctlfiles = [x.split('.')[0] for x in sfd if '.latest' in x]
+    else:
+        errmsg = 'ERROR: Unknown location [%s]!' % Location
+        
+    # Parse cmd line args
+    # Assert that the input ctl file exists
+    # Convert the queried date/time from iso format to datetime
+    a = parse_args(ctlfiles)
+    assert a.collection in ctlfiles
+    try:
+        qDateTime = parse_isodate(a.datetime)
+    except (ValueError, TypeError):
+        ex = datetime(2014,11,24,12,30,00).isoformat()
+        errmsg = 'ERROR: datetime needs to be in the iso format, e.g. %s' % ex
+        sys.exit(errmsg)
+
+    toSeconds = {
+        'mn': 60,
+        'hr': 3600,
+        'dy': 86400
+        }
+
+    # Read ctlfile for the given collection
+    if Location=='NCCS':
+        with open(SEAMLESS_DIR+'/'+a.collection+'.latest', 'r') as fin:
+            ctlContent = fin.readlines()
+    elif Location=='Remote':
+        file2read = SEAMLESS_CTL_DIR + '/' + a.collection + '.latest'
+        tmpf = StringIO.StringIO()
+        rc = ftp.retrbinary('RETR %s' % file2read, tmpf.write)
+        ctlContent = tmpf.getvalue().strip().split('\n')
+        tmpf.close()
+    else:
+        errmsg = 'ERROR: Unknown location [%s]!' % Location
+
+    # Parse content of seamless ctl for dset
+    # and parse dset, the 2 CHSUB lines and tdef
+    chsub = list()
+    for line in ctlContent:
+        strpdline = line.strip()
+        if strpdline.lower().startswith('dset'):
+            dset = strpdline
+        if strpdline.lower().startswith('chsub'):
+            chsub.append(strpdline)
+        if strpdline.lower().startswith('tdef'):
+            kw_tdef, tnum, kw_linear, tstart, tincr = strpdline.split()
+            # tstart in datetime
+            try:
+                tstart = datetime.strptime(tstart, '%H:%MZ%d%b%Y')
+            except ValueError:
+                tstart = datetime.strptime(tstart, '%HZ%d%b%Y')
+            # tincr unit is required to be one of mn/hr/dy
+            unit = tincr[-2:]
+            assert unit in toSeconds
+            # tincr in seconds
+            tincr = int(tincr[:-2])*toSeconds[unit]
+
+    # some checks
+    assert len(chsub)==2
+    assert tincr
+    assert tstart
+    assert dset
+
+    # last time steps for assim and fcast from chsub lines
+    # -1 is for zero-based indexing
+    assim_last_step = int(chsub[0].split()[2]) - 1
+    fcast_last_step = int(chsub[1].split()[2]) - 1
+    # last available time
+    tend = tstart + timedelta(seconds=fcast_last_step*tincr)
+
+    # compute qStep where: tstart + qStep*tincr = qDateTime
+    # valid qStep = 0..fcast_last_step-1
+    # floor/ceiling are the bracketing values
+    qStep = (qDateTime-tstart).total_seconds()/tincr
+    brktStep = {
+        'floor': int(math.floor(qStep)),
+        'ceiling': int(math.ceil(qStep)),
+        }
+    brktDateTime = dict()
+    for key in ['floor', 'ceiling']:
+        brktDateTime[key] = tstart + timedelta(seconds=brktStep[key]*tincr)
+
+    # compute coeff for linear time interpolation
+    # and print it along with the bracketing times
+    if qStep<0: # qDateTime < tstart
+        alpha = -1.
+        print alpha, 'Unknown Unknown'
+        errmsg = 'ERROR: queried date/time [%s] is earlier than the first available ' \
+            'date/time [%s]' % (qDateTime.isoformat(), tstart.isoformat())
+        sys.exit(errmsg)
+    elif qStep>fcast_last_step:
+        alpha = -1.
+        print alpha, 'Unknown Unknown'
+        errmsg = 'ERROR: queried date/time [%s] is later than the last available ' \
+            'date/time [%s]' % (qDateTime.isoformat(), tend.isoformat())
+        sys.exit(errmsg)
+    else:
+        if brktStep['floor']==brktStep['ceiling']:
+            alpha = 1.0
+        else:
+            Nr = (brktDateTime['ceiling']-qDateTime).total_seconds()
+            Dr = (brktDateTime['ceiling']-brktDateTime['floor']).total_seconds()
+            alpha = Nr/Dr
+        print alpha, brktDateTime['floor'].isoformat(), brktDateTime['ceiling'].isoformat()
+        # print bracketing files
+        for key in ['floor', 'ceiling']:
+            iStep = brktStep[key]
+            iDateTime = brktDateTime[key]
+            if iStep<=assim_last_step:
+                datafile = dset.split()[1].replace('%ch', chsub[0].split()[3])
+            elif iStep>assim_last_step and iStep<=fcast_last_step:
+                datafile = dset.split()[1].replace('%ch', chsub[1].split()[3])
+            datafile = datafile.replace('%y4', '%04d' % iDateTime.year)
+            datafile = datafile.replace('%m2', '%02d' % iDateTime.month)
+            datafile = datafile.replace('%d2', '%02d' % iDateTime.day)
+            datafile = datafile.replace('%h2', '%02d' % iDateTime.hour)
+            datafile = datafile.replace('%n2', '%02d' % iDateTime.minute)
+            datafile = datafile.replace('//','/')
+            if Location=='Remote':
+                if '/forecast/' in datafile:
+                    datafile = datafile.split('/forecast/')[1]
+                    datafile = 'ftp://gmao_ops:@' + SEAMLESS_URL_BASE + '/fp/forecast/' + datafile
+                else:
+                    datafile = datafile.split('/das/')[1]
+                    datafile = 'ftp://gmao_ops:@' + SEAMLESS_URL_BASE + '/fp/das/' + datafile
+                # check if datafile exists at the remote location
+                relpath = datafile.split(SEAMLESS_URL_BASE)[1]
+                if len(ftp.nlst(relpath))==1:
+                    print datafile
+                else:
+                    raise Exception('File [%s] NOT found!' % datafile)
+            else:
+                if os.path.isfile(datafile):
+                    print datafile
+                else:
+                    raise Exception('File [%s] NOT found!' % datafile)
+
+    # Close ftp connection
+    if Location=='Remote':
+        ftp.close()

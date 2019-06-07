@@ -1,0 +1,532 @@
+#!/usr/bin/perl -w
+#
+# Vortex tracking control script.
+#
+# !REVISION HISTORY:
+#
+#  28Sep2005  Todling   Initial code
+#  25Oct2005  RT/Terry  Processing four vtx.mix files instead of three
+#  16Jun2006  Todling   Updated call to eta2prs (added ndt)
+#  26Jun2006  Todling   Bug fix: rid w/ yrange opt
+#  29Jun2006  Owens/RT  Dimensions in ctl files for lon grid were incorrect
+#  30Aug2006  Stassi    Modified code to conform to "use strict" pragma;
+#                       Enlarged default tracking window to [0,360], [-80,80];
+#                       Using parallel routines from Run_parallel module
+#  23May2007  RT/JS     Modified to work with eta2prs.x from GEOS_Utils
+#  25Feb2009  Owens     Modified to work with vtx.prs written directly from GCM
+#  01Mar2009  Owens     Do nothing when tcvitals not available
+#  13Mar2009  Todling   Generalized suffix of NC fileanme
+#  23Nov2009  Zhang/RT  Frequecy is now given in minutes
+#  17Jul2014  Sienkiewicz  Add '-underg' flag to eta2prs.x call
+#  02Sep2015  Todling   Mild changes to allow working with forecasts
+#------------------------------------------------------------------------------
+use strict;
+use Env;                 # make env vars readily available
+use FindBin;             # so we can find where this script resides
+use lib "$FindBin::Bin"; # make perl libraries available
+use File::Basename;      # for basename(), dirname()
+use Time::Local;         # time functions
+use Shell qw(cat rm);    # cat command
+use Round qw(round);
+use Run_parallel qw(parallel halt);
+use GMAO_utils qw(System);
+
+# global variables
+#-----------------
+my ($scriptname,$user,$quietzeit);
+my ($cmd,$rc,$trkdir);
+my ($fvroot,$fvwork);
+my ($trkctl,$xdfctl,$tcvitals);
+my ($vtxmix,$vtxprs,$ncsuffix);
+my ($nymdana,$nhmsana,$hhana);
+my ($nymde,$nhmse,$hhe,$varoffset);
+my (@xydef,$xyinc,$xbeg,$xend,$ybeg,$yend);
+my (@vtypes,$type);
+my $levs;
+
+# input options and arguments
+#----------------------------
+my ($help,$fcst,@fcsts,$frq,$fcsthrs,$debug,$rcfile,$trktyp,$vtrklog);
+my ($nymd,$nhms,$expid);
+my ($strict);
+
+$scriptname = basename($0);
+$user = getlogin();
+$quietzeit = 1;              #*** suppress zeit messages in parallelized routines
+
+# main program
+#-------------
+{
+    &init();
+
+    #-----------------------------------------------------------------
+    # PART I: Convert GCM output (vtx.mix) from eta to pressure levels
+    #-----------------------------------------------------------------
+    print " Will process the following forecast vtx files: @fcsts \n";
+    &parallel( \&convert_vtx_eta2prs, \@fcsts );
+
+    #---------------------------------------
+    # PART II:  Run vortex tracking programs
+    #---------------------------------------
+    make_xdfctl();          # grads control file from general template
+    make_trkctl ("$xyinc"); # grads control table file with region of interest
+
+    if ( ( ! -e $tcvitals ) || ( -z $tcvitals ) ) {
+        print " No TCVITALS file $tcvitals found, nothing more to do ... \n";
+        if ( $strict ) {
+          exit(1);
+        } else {
+          exit(0);
+        }
+    }
+
+    $cmd = "$fvroot/bin/vtrack_training "
+        .                 "$trkctl "
+        .                 "$xdfctl "
+        .                 "$trktyp "
+        .                 "$tcvitals "
+        .                 "$trkdir "
+        .                 "$frq "
+        .                 "$xyinc "
+        .                 "$xbeg "
+        .                 "$ybeg "
+        .                 "$nymdana "
+        .                 "$nhmsana "
+        .                 "$fcsthrs ";
+    print "${cmd}\n";
+    $rc = System($cmd,"$vtrklog","vtrack_training",$quietzeit);
+
+    #------------------------------
+    # PART III: Take care of output
+    #------------------------------
+    &wrapup;
+}
+
+#------------------------------------------------------------------------------------
+sub init {
+    use Getopt::Long    qw/ GetOptions /;
+    use Manipulate_time qw/ tick /;
+    use Run_parallel    qw/ init_parallel /;
+
+    my ($time,$NCPUS,$rc_ignore);
+    my $defxy;
+    my $hh;
+    my $frqhr;
+
+    # FVROOT is where the binaries have been installed
+    #-------------------------------------------------
+    $fvroot  = dirname($FindBin::Bin);
+    $fvroot  =~ s|/u/.realmounts/share|/share|; # portability across NAS machines
+    $fvwork = $ENV{FVWORK};
+    $levs   = $ENV{VTXLEVS};
+    $ncsuffix = $ENV{NCSUFFIX};
+    $varoffset = $ENV{VAROFFSET};
+
+    # Command line options
+    #---------------------
+    GetOptions( "h"        => \$help,
+                "fcst"     => \$fcst,
+                "fhr=s"    => \@fcsts,
+                "freq=s"   => \$frq,
+                "fcsthrs=s"=> \$fcsthrs,
+                "debug"    => \$debug,
+                "rc=s"     => \$rcfile,
+                "strict"   => \$strict,
+                "trktyp=s" => \$trktyp,
+                "log=s"    => \$vtrklog);
+
+    usage() if $help;
+
+    # Set defaults for selected arguments, if unspecified on command-line
+    #--------------------------------------------------------------------
+    ($vtrklog) || ($vtrklog = "$fvwork/trak.log");
+    ($trktyp)  || ($trktyp = "GDA");
+    ($frq)     || ($frq = "180");
+    ($fcsthrs) || ($fcsthrs = "9");
+
+    $frqhr = $frq / 60;
+    $hh = sprintf("%2.2d",0);
+    @fcsts = ( "$hh" );
+    while ( $hh < $fcsthrs ) {
+       $hh = $hh + $frqhr;
+       if ( $hh < 99 ) {
+          $hh = sprintf("%2.2d",$hh);
+       } else {
+          $hh = sprintf("%3.3d",$hh);
+       }
+       @fcsts = ( @fcsts,"$hh" );
+    }
+
+    # Check for required command-line arguments
+    #------------------------------------------
+    if ( scalar(@ARGV) < 3 ) {
+        print STDERR "missing argument; see usage";
+        usage();
+    } else {
+        $nymd  = shift(@ARGV);
+        $time  = shift(@ARGV);
+        $nhms  = sprintf("%6.6d",$time);
+        $expid = shift(@ARGV);
+    }
+
+    # Tick clock to initial trajectory time (previous analysis time)
+    #---------------------------------------------------------------
+    if ( $fcst ) {
+        $nymdana = $nymd;
+        $nhmsana = $nhms;
+    } else {
+        ($nymdana, $nhmsana) = ( tick($nymd,$nhms,-6*3600) );     # assumes ana-freq is 6hr
+    }
+    $hhana = substr($nhmsana,0,2);
+
+    # Check file containing location of storm(s)
+    #-------------------------------------------
+    if ( $fcst ) {
+       ($nymde, $nhmse) = ( tick($nymd,$nhms,3600*$fcsthrs) );
+       $hhe = substr($nhmse,0,2);
+       $tcvitals = "$fvwork/tcvitals.${nymdana}${hhana}+${nymde}${hhe}";
+    } else {
+       $tcvitals = "$fvwork/tcvitals.${nymdana}${hhana}";
+    }
+
+    if ( ( ! -e $tcvitals ) || ( -z $tcvitals ) ) {
+        print " No TCVITALS file $tcvitals found, nothing more to do ... \n";
+        exit(0);
+    }
+
+    # Define vtypes values
+    #---------------------
+    @vtypes = ( 'all', 'atcf', 'atcfunix', 'radii' );
+
+    # Default region for storm tracking
+    #----------------------------------
+    if ( $rcfile ) {
+        $xbeg = `echorc.x -rc $rcfile xrange_beg`; chomp($xbeg);
+        $xend = `echorc.x -rc $rcfile xrange_end`; chomp($xend);
+        $ybeg = `echorc.x -rc $rcfile yrange_beg`; chomp($ybeg);
+        $yend = `echorc.x -rc $rcfile yrange_end`; chomp($yend);
+    } else {
+        $xbeg =   0; $xend = 360;
+        $ybeg = -80; $yend =  80;
+    }
+
+
+    # Work in separate directory to avoid conflicts
+    #----------------------------------------------
+    $trkdir = "$fvwork/trk.$nymd.$nhms";
+
+    # Start with clean directory (unless in debug mode)
+    #--------------------------------------------------
+    if (-d $trkdir) {
+	unless ($debug) {
+            unlink glob "$trkdir/*";
+            unlink glob "$trkdir/.*";
+            rmdir $trkdir or die ">>> ERROR <<< removing directory $trkdir: $!";
+        }
+    }
+    unless (-d $trkdir) {
+	mkdir $trkdir or die ">>> ERROR <<< creating directory $trkdir: $!";
+	$rc_ignore = system("/bin/touch $trkdir/.no_archiving");
+	print "$trkdir created - running vtrack ...\n";
+    }
+    chdir("$trkdir");
+
+    # Figure out resolution of background and define resolution of grib file
+    #-----------------------------------------------------------------------
+    $vtxmix = "$fvwork/$expid.vtx.mix.${nymdana}_${hhana}z.$ncsuffix";  # original vtx.mix file from GCM
+    $vtxprs = "$fvwork/$expid.vtx.prs.${nymdana}_${hhana}z.$ncsuffix";  # original vtx.prs file from GCM
+    die ">>> ERROR <<< file does not exist: $vtxmix or $vtxprs\n" unless ( -e $vtxmix || -e $vtxprs );
+    $defxy  = `getgfiodim.x $vtxmix` if ( -e $vtxmix );
+    $defxy  = `getgfiodim.x $vtxprs` if ( -e $vtxprs );
+    @xydef  = split(/\s+/, $defxy);
+
+    # check resolution, after removing leading blank elements in array
+    #-----------------------------------------------------------------
+    while (@xydef && $xydef[0] eq "") { shift @xydef };
+
+    if ( $xydef[0] ==  72  ) { $xyinc = 5    };  # define resolution of grid file
+    if ( $xydef[0] == 144  ) { $xyinc = 2.5  };
+    if ( $xydef[0] == 288  ) { $xyinc = 1.25 };
+    if ( $xydef[0] == 540  ) { $xyinc = 0.666666667 };
+    if ( $xydef[0] == 576  ) { $xyinc = 0.625 };
+    if ( $xydef[0] == 1080 ) { $xyinc = 0.333333333 };
+    if ( $xydef[0] == 1152 ) { $xyinc = 0.3125 };
+    if ( $xydef[0] == 2304 ) { $xyinc = 0.15625 };
+    if ( $xydef[0] == 4608 ) { $xyinc = 0.078125 };
+    if ( $xydef[0] == 1000 ) { $xyinc = 0.36 };  # GEOS-4
+
+    # Check the number of CPUS and initialize the parallel routines
+    #--------------------------------------------------------------
+    ($NCPUS = $ENV{NCPUS}) || ($NCPUS = 4);
+    &init_parallel($NCPUS/4);
+}
+
+#------------------------------------------------------------------------------------
+sub convert_vtx_eta2prs {
+    use GMAO_utils qw(Assignfn System);
+    use Manipulate_time qw(tick);
+    use Run_parallel qw(halt);
+
+    my ($fhrsec,$fhr);
+    my ($nymdnow,$nhmsnow,$hhnow);
+    my ($tag,$vtxprs,$vtxprs00);
+
+    my @hours = @_;   #** get hours from input arguments
+
+    foreach $fhr ( @hours ) {
+
+        $fhrsec =  $fhr*3600;
+        ($nymdnow, $nhmsnow) = ( tick($nymdana,$nhmsana,$fhrsec) );
+        $hhnow = substr($nhmsnow,0,2);
+
+        # Input: original vtx.mix file from GCM
+        #--------------------------------------
+        $vtxmix = "$expid.vtx.mix.${nymdnow}_${hhnow}z.$ncsuffix";
+        Assignfn("$fvwork/$vtxmix" ,"$vtxmix") if ( -e "$fvwork/$vtxmix" );
+
+        # Output: corresponding pressure file
+        #------------------------------------
+	$tag = "$expid.vtx.prs";
+        $vtxprs   = "${tag}.${nymdnow}_${hhnow}z.$ncsuffix";
+        $vtxprs00 = "${tag}.${nymdnow}_${hhnow}00z.$ncsuffix";
+        Assignfn("$fvwork/$vtxprs" ,"$vtxprs") if ( -e "$fvwork/$vtxprs" );
+
+        # Convert gcm output
+        #-------------------
+        if ( ! -e $vtxprs ) {
+            print " $vtxprs being created with eta2prs.x ...\n";
+            $cmd = $fvroot . "/bin/eta2prs.x "
+                . " -underg "
+                . " -levs $levs "
+                . " -tag $tag "
+                . " -eta $vtxmix "
+                . " -nhms $nhmsnow "
+                . " -ndt $fhrsec ";
+            print " $cmd\n";
+            $rc = System($cmd,"$vtrklog","eta2prs.x");
+            if ($rc) { &halt(">>> ERROR <<< eta2prs.x rc=$rc",$rc) };
+
+	    # rename eta2prs output
+	    #----------------------
+            rename $vtxprs00, $vtxprs
+		or die ">>> ERROR <<< renaming $vtxprs00 to $vtxprs: $!";
+	    print "rename $vtxprs00, $vtxprs\n";
+
+	    # forecast
+            #---------
+            if ($fcst) {
+                if( $debug ) {
+                    Assignfn("$trkdir/$vtxprs","$fvwork/$vtxprs");
+                } else {
+                    rename $trkdir/$vtxprs, $fvwork/$vtxprs
+                        or die ">>> ERROR <<< renaming $vtxprs to $fvwork/$vtxprs: $!";
+                    print "rename $vtxprs, $fvwork/$vtxprs\n";
+                    Assignfn("$fvwork/$vtxprs","$trkdir/$vtxprs");
+                }
+            }
+        } else {
+            print " File $vtxprs already exists \n";
+        }
+
+    } # < end conversion to pressure >
+}
+
+#------------------------------------------------------------------------------------
+sub make_xdfctl {
+    use File::Copy "cp";
+    use Manipulate_time "token_resolve";
+    use GMAO_utils qw(Assignfn);
+
+    my ($hh1,$hrinc,$inchr);
+    my (@levs,$nlevs);
+    my ($dtgrads,$dtg,$tdef);
+    my ($xinc,$yinc);
+    my $vtxtmpl;
+
+    # Values needed in output ctl file
+    #---------------------------------
+    $dtgrads = token_resolve("%h2:%n2z%d2%mc%y4", $nymdana, $nhmsana);
+    $dtg     = token_resolve("%y4%m2%d2_%h2"    , $nymdana, $nhmsana);
+
+    @levs  = split(/\s+/, $levs);
+    $nlevs = scalar(@levs);
+    $tdef  = scalar(@fcsts);
+
+    $xinc = 360 / $xydef[0];
+    $yinc = 180 / ($xydef[1]-1);
+
+    if ( $#fcsts == 0 ) {
+        $hrinc = "06";
+    } else {
+        $inchr = $fcsts[1]-$fcsts[0];
+        $hrinc = "$inchr";
+    }
+
+    # Open input template and output ctl file
+    #----------------------------------------
+    $hh1 = substr($nhmsana,0,2);
+    $vtxtmpl = "vtx.ctl.tmpl";
+    $xdfctl  = "$expid.vtx.prs.${nymdana}_${hh1}z.xdf";
+    Assignfn("$fvwork/$vtxtmpl","$vtxtmpl");
+
+    open TMPL, "< $vtxtmpl" or die "unable to open $vtxtmpl: $!";
+    open CTL,  "> $xdfctl"  or die "unable to open $xdfctl: $!";
+
+    # Write ctl file
+    #---------------
+    foreach ( <TMPL> ) {
+        s/>>>EXPID<<</$expid/;
+        s/>>>DTGRADS<<</$dtgrads/;
+        s/>>>DTG<<</$dtg/;
+        s/>>>VTXLEVS<<</$levs/;
+        s/>>>TDEF<<</$tdef/;
+        s/>>>HRINC<<</${hrinc}hr/;
+        s/>>>XDEF<<</$xydef[0]/;
+        s/>>>YDEF<<</$xydef[1]/;
+        s/>>>NLEVS<<</$nlevs/;
+        s/>>>XINC<<</$xinc/;
+        s/>>>YINC<<</$yinc/;
+        s/>>>NCSUFFIX<<</$ncsuffix/;
+        print CTL or die ">>> ERROR <<< writing $_ to $xdfctl: $!";
+    }
+    print " created grads control table for track file: $xdfctl \n";
+
+    # Close files
+    #-------------
+    close TMPL;
+    close CTL;
+
+    # Move xdfctl file up to fvwork for archiving
+    #--------------------------------------------
+    if ($fcst) {
+        rename "$trkdir/$xdfctl", "$fvwork/$xdfctl"
+            or die ">>> ERROR <<< moving $xdfctl to $fvwork: $!";
+        Assignfn("$fvwork/$xdfctl","$trkdir/$xdfctl");
+    }
+}
+
+#------------------------------------------------------------------------------------
+sub make_trkctl {
+    use GMAO_utils qw(Assignfn);
+    my $trktmpl;
+    my ($xdef,$ydef);
+    my $xyinc = shift(@_);
+
+    # Values needed in output ctl file
+    #-------------------------------------------
+    $xdef = round( ( $xend - $xbeg ) / $xyinc );
+    $ydef = round( ( $yend - $ybeg ) / $xyinc );
+
+    # Open track ctl file template and track ctl file
+    #------------------------------------------------
+    $trkctl  = "vtrack.ctl";
+    $trktmpl = "vtrack.ctl.tmpl";
+    Assignfn("$fvwork/$trktmpl","$trktmpl");
+
+    open TMPL, "< $trktmpl" or die "unable to open $trktmpl: $!";
+    open CTL,  "> $trkctl"  or die "unable to open $trkctl: $!";
+
+    foreach ( <TMPL> ) {
+        s/>>>XDEF<<</$xdef/;
+        s/>>>LONB<<</$xbeg/;
+        s/>>>XYINC<<</$xyinc/;
+        s/>>>YDEF<<</$ydef/;
+        s/>>>LATB<<</$ybeg/;
+        print CTL or die ">>> ERROR <<< writing $_ to $trkctl: $!";
+    }
+    print " created grads control table for track file: $trkctl \n";
+
+    # Close files
+    #-------------
+    close TMPL;
+    close CTL;
+}
+
+#-----------------------------------------------------------------------
+#  name -wrapup
+#  purpose -
+#    This subroutine performs end-of-job wrap-up procedures.
+#-----------------------------------------------------------------------
+sub wrapup {
+    use Run_parallel qw(wrapup_parallel);
+    my ($trkout,$trkexp,$vtrklogexp);
+    my ($nymdb,$nhmsb,$hhb);
+
+    # Handle storage/naming of output files
+    #--------------------------------------
+
+    foreach $type ( @vtypes ) {
+	$trkout   = "trak.$trktyp.$type.${nymdana}${hhana}.txt";
+        if ( $fcst ) {
+         ($nymdb, $nhmsb) = ( tick($nymdana,$nhmsana,-$varoffset*60) );     # assumes ana-freq is 6hr
+          $hhb = substr($nhmsb,0,2);
+          $trkexp   = "$fvwork/$expid.trak.$trktyp.$type.${nymdb}${hhb}+${nymde}${hhe}.txt";
+        } else {
+          $trkexp   = "$fvwork/$expid.$trkout";
+        }
+	rename $trkout, $trkexp
+	    or warn ">>> ERROR <<< renaming $trkout to $trkexp: $!";
+	print "rename $trkout, $trkexp\n";
+    }
+
+    &wrapup_parallel;
+    exit;
+}
+
+#------------------------------------------------------------------------------------
+sub usage {
+
+   print <<"EOF";
+
+NAME
+     vtxreloc - Vortex Relocator Driving Script
+
+SYNOPSIS
+
+     vtxreloc [...options...]  nymd nhms expid
+
+DESCRIPTION
+
+     The following parameter are required
+
+     nymd       Date of starting point in trajectory (Year-month-day, e.g., 19990901)
+     mhms       Time of starting point in trajectory (Hour-minutes-seconds, e.g., 120000)
+     expid      Experiment ID (name)
+
+
+OPTIONS
+
+ -h            prints this usage notice
+
+ -fhr          forecast hour (either 03, 06 or 09 for corresponding hr fcst);
+               default: process all three forecast hours.
+
+ -freq         forecast frequency (3=every 3hr, 6=every 6hr, etc)
+
+ -fcsthrs      length of forecast 
+
+ -debug        will not remove working dir if present
+
+ -rc           resource control file
+
+ -fcst         use when invoking this in forecast mode
+
+ -trktyp       track type: either FV5/FG5 (fcst more) or GDA (DAS mode); default (GDA)
+
+ -log          name of log file; default: trak.log
+
+ENVIRONMENT
+
+  FVWORK       directory where input files (bkg.eta,bkg.sfc,tcvitasl,track) are located
+  VTXLEVS      pressure levels to convert vtx.mix file onto
+  NCSUFFIX     suffix for NC filename extension (hdf or nc4)
+  VAROFFSET    offset min from first synoptic time
+
+AUTHOR
+      R. Todling (todling\@gmao.gsfc.nasa.gov), NASA/GSFC/GMAO
+
+EOF
+
+  exit(1)
+
+}

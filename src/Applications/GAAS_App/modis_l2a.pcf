@@ -1,0 +1,25 @@
+# MODIS_L2A  processing: NNR v3 for MODIS C6
+#
+# GEOS-5 FP 
+#
+#..................................................................................
+
+MODIS_L2A_VERBOSE         = YES
+
+MODIS_L2A_EXPID           =  ${EXPID}
+MODIS_L2A_IDENTS          = mydl,mydo,mydd,modl,modo,modd
+MODIS_L2A_COLLECTION      = 061,061,061,061,061,061
+
+MODIS_L2A_L2_DIR          = ${FVWORK}
+MODIS_L2A_OUT_DIR         = ${FVWORK}
+
+MODIS_L2A_OVERWRITE       = YES
+MODIS_L2A_OUT_TEMPLATE    = '%s.%prod_L%leva.%algo.%y4%m2%d2_%h2%n2z.%ext'
+MODIS_L2A_RESOLUTION      = e
+
+MODIS_L2A_AER_X           = %s.gaas_bkg.sfc.%y4%m2%d2_%h2z.nc4
+
+MODIS_L2A_NN_FILE         = ExtData/g5chem/x/NN/nnr_003.%ident_Tau.net
+MODIS_L2A_BLANK_ODS       = ExtData/g5chem/x/blank_syn8.ods
+
+#END MODIS_L2A  processing

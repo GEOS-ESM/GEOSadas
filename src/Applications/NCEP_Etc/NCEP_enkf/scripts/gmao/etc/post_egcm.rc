@@ -1,0 +1,12 @@
+ 
+COLLECTIONS::
+             'bkg.eta'
+             'bkg.sfc'
+             'cbkg.eta'
+             'abkg.eta'
+             'gaas_bkg.sfc'
+#            'prog.eta'
+#            'tavg1_2d_slv_Nx'
+#            'inst1_2d_asm_Nx'
+             'inst1_2d_ocn_Nx'
+              ::

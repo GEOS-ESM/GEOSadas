@@ -1,0 +1,13 @@
+
+# Filename template for energy density fields
+ene_fname_template: %s.aene.err.%y4%m2%d2_%h2z.nc4
+
+# Index for level encompassing troposphere and low stratosphere
+ene_threshold_level_index: 40
+
+# Preset energy threshold (learned from experience)
+# Refers to troposphere/low stratosphere
+ene_threshold: 1.1
+
+# desirable level of inflation
+desirable_inflation_factor: 0.3

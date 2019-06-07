@@ -1,0 +1,173 @@
+#!/bin/csh -fx
+#
+# Vortex track-training control script.
+#
+# !REVISION HISTORY:
+#
+#  28Sep2005  Todling   Initial code
+#  23Nov2009  Zhang/RT  - New lats4d script 
+#                       - use re2 in place of regrid2
+#                       - frequency in minutes
+#  01Sep2015  Todling   Better logics to handle times of calculation
+#
+
+ setenv ETC $FVROOT/etc
+ setenv LIB $FVROOT/lib
+ echo "pointing to etc under: $ETC"
+ setenv WTMP `basename $0`.$$
+ echo "wtmp $WTMP" 
+                              
+# Check Usage
+# ===========
+
+  if ( $#argv != 12 ) then 
+
+    echo "Usage: vtrack_training [forecast] [model id] [vitals] [dest] [ffreq]"
+
+    echo ""
+    echo "where"
+    echo ""
+    echo "trkctl   - name of GRADS table for lats4d output."
+    echo "forecast - name of GRADS readable forecast file."
+    echo "model id - model identifier (4-characters)."
+    echo "vitals   - name of file containing TC Vitals record(s)."
+    echo "dest     - destination directory for track output."
+    echo "ffreq    - fcst output available freq, e.g., 3 for 3hrs, or 6 for 6hrs."
+    echo "xyinc    - 4(x4), 2(x2), 1(x1), 0.5(x0.5), .25(x.25)"
+    echo "xbeg     - begin longitude of region of interest"
+    echo "ybeg     - begin latitude  of region of interest"
+    echo "nymd     - yyyymmdd date"
+    echo "nhms     - hhmmss   time"
+    echo "fcsthrs  - length of forecast in hours"
+    echo ""
+ 
+    exit 1
+  else
+
+    set trkctl   = $1
+    set forecast = $2
+    set atcfout  = $3
+    set vitals   = $4
+    set odir     = $5
+    set ffreq    = $6
+    set xyinc    = $7
+    set xbeg	 = $8
+    set ybeg	 = $9
+    set nymd	 = $10
+    set nhms	 = $11
+    set fcsthrs  = $12
+
+    setenv ATCFNAME `echo $3 | tr '[a-z]' '[A-Z]'`
+
+  endif
+
+# Extract date/time info from file.
+# =================================
+
+  set year  = `echo $nymd  | cut -c1-4`
+  set month = `echo $nymd  | cut -c5-6`
+  set day   = `echo $nymd  | cut -c7-8`
+  set hour  = `echo $nhms  | cut -c1-2`
+  set cc    = `echo $nymd  | cut -c1-2`
+  set yy    = `echo $nymd  | cut -c3-4`
+
+  set hh = $hour
+
+# Create TC vitals records for this forecast.
+# ===========================================
+
+  echo "$vitals"
+  /bin/cp $vitals $WTMP.vitals
+
+  set n_cyclones=`cat $WTMP.vitals | wc -l` 
+  echo "Number of cyclones: $n_cyclones"
+
+  if ( ! -f "$WTMP.vitals" || "$n_cyclones" == 0 ) then
+    echo "No tropical cyclones in vitals file"
+    exit 0
+  endif
+
+# Convert input file to GRIB format for ingest by tracker.
+# ========================================================
+
+  cd $odir
+
+  ln -sf $ETC/grib.fv5.table .
+  set nflds = 12   # 3 2-d fields (slp,us,vs) and 3 3-d fields at 3 levs)
+  lats4d.sh  -i       $forecast  \
+             -o       $WTMP \
+             -table   grib.fv5.table \
+             -func    "''re2(@,$xyinc,$xyinc,bl_p1,$xbeg,$ybeg)''" \
+             -de      $trkctl \
+             -format  grads_grib \
+             -vars    slp us vs hght u v \
+             -levs    850 700 500 \
+             -ftype   xdf
+
+  if ($status) exit 2
+
+# Construct list of forecast times to estimate track
+# --------------------------------------------------
+@ frq = $ffreq / 60 # frequency in hours
+set myhh  = `echo 0 |awk '{printf "%02d", $1}'`
+set list = ( "$myhh" );
+while ( $myhh < $fcsthrs )
+   @ myhh = $myhh + $frq;
+   if ( $myhh < 99 ) then
+     set myhh  = `echo $myhh |awk '{printf "%02d", $1}'`
+   else
+     set myhh  = `echo $myhh |awk '{printf "%03d", $1}'`
+   endif
+   set list = ( $list,"$myhh" );
+end # while
+set itmphrs = ( $list,99 );
+
+
+# Set up namelist for tracker.
+# ============================
+
+  echo "&model"            > $WTMP.namelist
+  echo "nquant=$nflds"    >> $WTMP.namelist
+  echo "grdspc=$xyinc /"  >> $WTMP.namelist
+  echo "&datein"          >> $WTMP.namelist
+  echo "inp%bcc=$cc"      >> $WTMP.namelist
+  echo "inp%byy=$yy"      >> $WTMP.namelist
+  echo "inp%bmm=$month"   >> $WTMP.namelist
+  echo "inp%bdd=$day"     >> $WTMP.namelist
+  echo "inp%bhh=$hour"    >> $WTMP.namelist
+  echo "inp%model=1"      >> $WTMP.namelist
+  echo "/"                >> $WTMP.namelist
+  echo "&fhlist"          >> $WTMP.namelist
+  echo "itmphrs = $itmphrs " >> $WTMP.namelist
+  echo "/"                       >> $WTMP.namelist
+  echo "&atcfinfo"               >> $WTMP.namelist
+  echo "atcfnum=72"              >> $WTMP.namelist
+  echo "atcfname= '$ATCFNAME' "  >> $WTMP.namelist
+  echo "/"                       >> $WTMP.namelist
+
+# Execute Vortex Tracker
+# ======================
+
+  pwd
+  ln -s -f $WTMP.grb                           fort.11
+  ln -s -f $WTMP.vitals                        fort.12
+  ln -s -f $WTMP.grb                           fort.31
+                                                                                
+  mkdir -p $odir
+                                                                                
+  echo "Tracking the following cyclones:"
+  echo ""
+  cat $WTMP.vitals
+  which gettrk.x
+  echo "gettrk.x < $WTMP.namelist"
+# gettrk.x < $WTMP.namelist > $odir/trak.${atcfout}.history.${nymd}${hh}
+  gettrk.x < $WTMP.namelist 
+                                                                                
+  \mv fort.61 $odir/trak.${atcfout}.all.${nymd}${hh}.txt
+  \mv fort.62 $odir/trak.${atcfout}.atcf.${nymd}${hh}.txt
+  \mv fort.63 $odir/trak.${atcfout}.radii.${nymd}${hh}.txt
+  \mv fort.64 $odir/trak.${atcfout}.atcfunix.${nymd}${hh}.txt
+
+  \rm -f fort.11 fort.12 fort.31
+
+exit 0

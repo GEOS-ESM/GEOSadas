@@ -1,0 +1,132 @@
+#!/bin/csh
+###########################################
+#__JOB_NAME__
+#__TIME__
+#__ACCOUNT__
+#__OUTPUT__
+#SBATCH --no-requeue
+#SBATCH --export=NONE
+#PBS -S /bin/csh
+#PBS -r n
+#PBS -j oe
+###########################################
+# THE FOLLOWING LINES SHOULD AGREE
+# (if you change one, then check consistency)
+#==========================================
+#__NODES__
+#__PER_NODE__
+__PROCESSORS__
+###########################################
+
+# job parameters
+#---------------
+echo
+echo "------------------------"
+echo "Monthly Means Processing"
+echo "------------------------"
+set echo
+set filestring = __FILESTRING__
+set htype      = __HOURTYPE__
+set yyyymm     = __YYYYMM__
+set rundir     = __RUNDIR__
+set workdir    = __WORKDIR__
+set do_dmput   = __DO_DMPUT__
+unset echo
+echo
+
+set hourtypeFLG = ""
+if ("H$htype" != "H") set hourtypeFLG = "-T $htype"
+
+set dmputFLG = ""
+if ($do_dmput) set dmputFLG = "-p"
+ 
+# set job environment variables
+#------------------------------
+source $rundir/FVDAS_Run_Config
+set path = ( $FVHOME/run $FVROOT/bin $BASEDIR/$ARCH/bin $path )
+
+set echo
+setenv MONTHLY_X "$FVROOT/bin/time_ave.x"
+
+# set variables, if not specified
+#--------------------------------
+if ( ! $?workdir ) set workdir = `cat $FVHOME/.MMWORK.$yyyymm`
+chdir $workdir
+
+# set send_mail option
+#---------------------
+set send_mail = 0
+set mail_users = ( "steven.pawson" "nicole.brubaker" "steven.bloom" "gary.partyka" "derek.vanpelt" )
+
+# set flag for monitoring location
+#---------------------------------
+set monitorlocFLG = "-m $FVDOLMS"
+set monitorlocFLG = ""
+
+# set MPI run command
+#--------------------
+#-set mpi_run = `which mpirun` 
+set mpi_run = "$FVROOT/bin/esma_mpirun"
+setenv MPIRUN_MM "$mpi_run -np $num_processors"
+
+# record job start in log
+#------------------------
+$ERR -E 0 -D "$EXPID NOTICE: Monthly Means job has begun processing for $yyyymm"
+
+# command to calculate monthly means
+#-----------------------------------
+monthly_means.pl -L -l -v $dmputFLG $monitorlocFLG \
+   -H $FVHOME \
+   -R $FVROOT \
+   -D $yyyymm \
+   -f $filestring $hourtypeFLG \
+   -w $workdir
+@ exit_status += $status 
+
+# check status
+#-------------
+if ( $exit_status ) then
+    $ERR -E 5 -D "$EXPID FATAL ERROR: Monthly Means job has FAILED for $yyyymm"
+    exit 1
+endif
+
+# rename output file for successful run
+#--------------------------------------
+if ($?outfile) then
+    set outfile = `echo $outfile | sed -e "s|.FAILED||"`
+else
+    set yyyy = `echo $yyyymm | cut -c1-4`
+    set mm = `echo $yyyymm | cut -c5-6`
+    set ftype = `echo $filestring:t:r:r | cut -d. -f2-`
+
+    set listdir = "$FVHOME/etc/Y$yyyy/M$mm"
+    set outfile = "$listdir/$EXPID.means.$ftype.$yyyymm.log.$$.txt";
+endif
+$PBS_BIN/qalter -o $outfile $PBS_JOBID
+
+# send mail if needed
+#--------------------
+if ( $send_mail ) then
+    cat <<EOF > temp_file
+
+***************************************************************
+
+      $yyyymm Monthly Means for $EXPID are ready
+ see: $FVARCH/$EXPID
+
+***************************************************************
+
+EOF
+    set mail_cmd = "/usr/bin/Mail -r oa@gmao.gsfc.nasa.gov -R oa@gmao.gsfc.nasa.gov"
+    cat temp_file
+    goto skip2here
+    foreach mail_user ( $mail_users )
+        $mail_cmd -s "$EXPID $yyyymm Monthly Means Ready"  ${mail_user}.gsfc.nasa.gov < temp_file
+    end
+    $mail_cmd -s "$EXPID $yyyymm Monthly Means Ready"  oa@gmao.gsfc.nasa.gov < temp_file
+    skip2here:
+endif
+
+# successful exit
+#----------------
+$ERR -E 0 -D "$EXPID SUCCESS: Monthly Means job has completed processing for $yyyymm"
