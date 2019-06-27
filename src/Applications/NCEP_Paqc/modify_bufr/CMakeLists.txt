@@ -1,10 +1,7 @@
 
-add_executable (change_said.x change_said.f)
-target_link_libraries (change_said.x PUBLIC NCEP_bufr_r4i4)
+ecbuild_add_executable (TARGET change_said.x SOURCES change_said.f LIBS NCEP_bufr_r4i4)
 
-add_executable (fix_ascat.x fix_ascat.f)
-target_link_libraries (fix_ascat.x PUBLIC NCEP_bufr_r4i4)
+ecbuild_add_executable (TARGET fix_ascat.x SOURCES fix_ascat.f LIBS NCEP_bufr_r4i4)
 
-add_executable (explode.x explode.f)
-target_link_libraries (explode.x PUBLIC NCEP_bufr_r4i4)
+ecbuild_add_executable (TARGET explode.x SOURCES explode.f LIBS NCEP_bufr_r4i4)
 

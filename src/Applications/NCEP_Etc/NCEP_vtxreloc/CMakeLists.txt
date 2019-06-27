@@ -30,10 +30,11 @@ if (EXTENDED_SOURCE)
   set_target_properties (${this} PROPERTIES COMPILE_FLAGS ${EXTENDED_SOURCE})
 endif()
 
-add_executable (relocate_mv_nvortex.x main.F90)
-target_link_libraries (relocate_mv_nvortex.x PUBLIC ${this} NCEP_w3_r8i4 NCEP_sp_r8i4)
+ecbuild_add_executable (TARGET relocate_mv_nvortex.x SOURCES main.F90 LIBS ${this} NCEP_w3_r8i4 NCEP_sp_r8i4)
 
 string(REPLACE " " ";" tmp ${FREAL8})
 foreach(flag ${tmp})
   target_compile_options (relocate_mv_nvortex.x PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:${flag}>)
 endforeach()
+
+install(FILES vtxreloc DESTINATION bin)

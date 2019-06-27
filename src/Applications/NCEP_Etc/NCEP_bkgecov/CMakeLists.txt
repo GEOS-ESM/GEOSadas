@@ -12,5 +12,8 @@ set (SRCS
 
 esma_add_library (${this}
   SRCS ${SRCS}
-  DEPENDENCIES NCEP_bacio_r4i4 NCEP_w3_r4i4 NCEP_sp_r4i4 GMAO_gfio_r8 GMAO_hermes GMAO_transf
+  DEPENDENCIES NCEP_bacio_r4i4 NCEP_w3_r4i4 NCEP_sp_r4i4 GMAO_gfio_r8 GMAO_hermes GMAO_transf ${MKL_LIBRARIES}
 )
+
+#ecbuild_add_executable(TARGET calcstats.x SOURCES statsmain.F90 LIBS ${this} ${MKL_LIBRARIES})
+#ecbuild_add_executable(TARGET write_berror_global.x SOURCES write_berror_global.f90 LIBS ${this} ${MKL_LIBRARIES})
