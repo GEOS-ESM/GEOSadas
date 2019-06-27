@@ -1,6 +1,18 @@
 set (BINS mkiau mp_stats pod rstupd updAincWpert mp_dyn_stats stochphysics)
 
+if (FV_PRECISION MATCHES R4)
+  set (GFDL_fms GFDL_fms_r4)
+else ()
+  set (GFDL_fms GFDL_fms_r8)
+endif ()
+  
+set (LIBS
+  NCEP_w3_r4i4 GMAO_gfio_r8 MAPL_cfio_r4 MAPL_Base GMAO_hermes fvgcm ${GFDL_fms} ${MKL_LIBRARIES}
+  FVdycoreCubed_GridComp GMAO_stoch GEOSmkiau_GridComp GEOSmoist_GridComp GEOSchem_GridComp) #iau_stubs.F90)
+
 foreach (bin ${BINS})
-  add_executable (${bin}.x  ${bin}.F90 ) #iau_stubs.F90)
-  target_link_libraries (${bin}.x NCEP_w3_r4i4 GMAO_gfio_r8 MAPL_cfio_r4 MAPL_Base GMAO_hermes fvgcm ${MKL_LIBRARIES} FVdycoreCubed_GridComp GMAO_stoch GEOSmkiau_GridComp GEOSmoist_GridComp GEOSchem_GridComp GFDL_fms_r8)
+  ecbuild_add_executable (
+    TARGET ${bin}.x
+    SOURCES ${bin}.F90
+    LIBS ${LIBS})
 endforeach()

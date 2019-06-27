@@ -40,5 +40,8 @@ esma_add_library(${this}
   DEPENDENCIES NCEP_bufr_r8i8
   )
 
-add_executable (read_prepbufr.x read_prepbufr.f)
-target_link_libraries (read_prepbufr.x PUBLIC ${this})
+ecbuild_add_executable (
+  TARGET read_prepbufr.x
+  SOURCES read_prepbufr.f
+  LIBS ${this})
+

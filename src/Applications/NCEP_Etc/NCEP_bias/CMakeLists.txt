@@ -10,6 +10,8 @@ esma_add_library (${this}
   )
 
 foreach (prog init_coeffs main sac_convert sbc_convert sif_convert write_biascr_option testtbl)
-  add_executable (${prog}.x ${prog}.f90)
-  target_link_libraries (${prog}.x PUBLIC ${this})
+  ecbuild_add_executable (
+    TARGET ${prog}.x
+    SOURCES ${prog}.f90
+    LIBS ${this})
 endforeach()
