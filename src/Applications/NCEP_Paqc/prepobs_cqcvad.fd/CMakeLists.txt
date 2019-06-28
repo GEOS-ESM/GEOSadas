@@ -7,5 +7,7 @@ if (CMAKE_Fortran_COMPILER_ID MATCHES Intel)
    string (REPLACE "${NO_ALIAS}" "" CMAKE_Fortran_FLAGS_RELEASE ${CMAKE_Fortran_FLAGS_RELEASE})
 endif ()
 
-add_executable (cqcvad.x cqcvad.f)
-target_link_libraries (cqcvad.x PUBLIC NCEP_bufr_r4i4 NCEP_w3_r4i4)
+ecbuild_add_executable (
+  TARGET cqcvad.x
+  SOURCES cqcvad.f
+  LIBS NCEP_bufr_r4i4 NCEP_w3_r4i4)

@@ -7,8 +7,11 @@ if (CMAKE_Fortran_COMPILER_ID MATCHES Intel)
    string (REPLACE "${NO_ALIAS}" "" CMAKE_Fortran_FLAGS_RELEASE ${CMAKE_Fortran_FLAGS_RELEASE})
 endif ()
 
-add_executable (acarsqc.x acarsqc.f)
-target_link_libraries (acarsqc.x PUBLIC NCEP_bufr_r4i4 NCEP_w3_r4i4 NCEP_bacio_r4i4)
 if (EXTENDED_SOURCE)
   set_target_properties (acarsqc.x PROPERTIES COMPILE_FLAGS ${EXTENDED_SOURCE})
 endif()
+
+ecbuild_add_executable (
+  TARGET acarsqc.x
+  SOURCES acarsqc.f
+  LIBS NCEP_bufr_r4i4 NCEP_w3_r4i4 NCEP_bacio_r4i4)
