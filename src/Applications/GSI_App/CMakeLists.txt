@@ -1,3 +1,8 @@
+# This is equivalent to FOPT=$(FOPT3) in GNU Make
+if (CMAKE_Fortran_COMPILER_ID MATCHES Intel)
+   set (CMAKE_Fortran_FLAGS_RELEASE "${FOPT3} ${BIG_ENDIAN} ${BYTERECLEN} ${FP_MODEL_STRICT} ${ALIGNCOM}")
+endif ()
+
 add_executable (gsi.x gsimain.F90)
 target_link_libraries (gsi.x PUBLIC GSI_GridComp NCEP_bufr_r8i4 NCEP_w3_r8i4 GMAO_mpeu)
 
