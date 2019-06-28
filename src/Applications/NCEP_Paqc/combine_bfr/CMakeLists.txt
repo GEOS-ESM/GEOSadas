@@ -1,4 +1,3 @@
-
 ecbuild_add_executable (
   TARGET combfr.x
   SOURCES combfr.f
@@ -23,7 +22,6 @@ ecbuild_add_executable (
   TARGET chkbufr.x
   SOURCES chkbufr.f
   LIBS NCEP_bufr_r4i4 GMAO_mpeu)
-
 
 ecbuild_add_executable (
   TARGET cp_2ssi.x

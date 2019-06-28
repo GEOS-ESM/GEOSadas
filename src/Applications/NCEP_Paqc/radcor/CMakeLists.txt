@@ -40,8 +40,9 @@ esma_add_library(${this}
   DEPENDENCIES NCEP_bufr_r8i8
   )
 
+ecbuild_add_executable (TARGET raobcore.x SOURCES raobcore.f LIBS ${this})
+ecbuild_add_executable (TARGET hradcor.x SOURCES hradcor.f LIBS ${this})
 ecbuild_add_executable (
   TARGET read_prepbufr.x
   SOURCES read_prepbufr.f
   LIBS ${this})
-

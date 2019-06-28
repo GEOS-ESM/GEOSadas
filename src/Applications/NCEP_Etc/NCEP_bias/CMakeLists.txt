@@ -9,9 +9,15 @@ esma_add_library (${this}
   DEPENDENCIES GSI_GridComp GMAO_mpeu
   )
 
-foreach (prog init_coeffs main sac_convert sbc_convert sif_convert write_biascr_option testtbl)
+foreach (prog init_coeffs sac_convert sbc_convert sif_convert write_biascr_option)
   ecbuild_add_executable (
     TARGET ${prog}.x
     SOURCES ${prog}.f90
     LIBS ${this})
 endforeach()
+
+ecbuild_add_executable (TARGET sac.x SOURCES main.f90 LIBS ${this})
+
+install (
+   FILES sac.pl sac_convert sbc_convert sif_convert
+   DESTINATION bin)

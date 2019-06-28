@@ -1,4 +1,3 @@
-
 ecbuild_add_executable (
   TARGET change_said.x
   SOURCES change_said.f
@@ -13,4 +12,3 @@ ecbuild_add_executable (
   TARGET explode.x
   SOURCES explode.f
   LIBS NCEP_bufr_r4i4)
-
