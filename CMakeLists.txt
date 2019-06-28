@@ -2,16 +2,6 @@ cmake_minimum_required (VERSION 3.13)
 cmake_policy (SET CMP0053 NEW)
 cmake_policy (SET CMP0054 NEW)
 
-# Invoke checkout_ externals, but only the first time we
-# configure.  
-if (NOT SKIP_MANAGE_EXTERNALS)
-  execute_process (
-    COMMAND "checkout_externals"
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    )
-endif ()
-set(SKIP_MANAGE_EXTERNALS ON CACHE BOOL "Set to skip manage externals step")
-
 project (
   GEOSadas
   VERSION 5.3
