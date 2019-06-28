@@ -1,3 +1,7 @@
+if (CMAKE_Fortran_COMPILER_ID MATCHES Intel)
+   set (CMAKE_Fortran_FLAGS_RELEASE "-O2 -convert big_endian -list -fp-model strict -assume noold_ldout_format -assume byterecl")
+endif ()
+
 ecbuild_add_executable (
   TARGET tranavhrr.x
   SOURCES tranavhrr.f90 avhrr.f90 func.f90 w3trnarg.f

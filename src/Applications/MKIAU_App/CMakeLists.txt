@@ -1,5 +1,9 @@
 set (BINS mkiau mp_stats pod rstupd updAincWpert mp_dyn_stats stochphysics)
 
+if (CMAKE_Fortran_COMPILER_ID MATCHES Intel)
+   set (CMAKE_Fortran_FLAGS_RELEASE "${FOPT3} ${TRACEBACK} ${ALIGNCOM}")
+endif ()
+
 if (FV_PRECISION MATCHES R4)
   set (GFDL_fms GFDL_fms_r4)
 else ()

@@ -4,6 +4,11 @@ set (SRCS
   aod_util.F90  m_ana.F90  m_duplicate.F  m_obs.F90  m_simul.F90  m_sqc.F90
   )
 
+# This is equivalent to FOPT=$(FOPT3) in GNU Make
+if (CMAKE_Fortran_COMPILER_ID MATCHES Intel)
+   set (CMAKE_Fortran_FLAGS_RELEASE "${FOPT3} ${ALIGNCOM}")
+endif ()
+
 esma_add_library(${this}
   SRCS ${SRCS}
   DEPENDENCIES GMAO_psas GMAO_ods GMAO_hermes Chem_Base)
