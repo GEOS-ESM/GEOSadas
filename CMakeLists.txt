@@ -22,10 +22,10 @@ set (F2PY_SUFFIX .so)
 
 set (FV_PRECISION R4)
 
-# Set the default build type to release with debug info
+# Set the default build type to release
 if (NOT CMAKE_BUILD_TYPE)
-  message (STATUS "Setting build type to 'Debug' as none was specified.")
-  set (CMAKE_BUILD_TYPE Debug CACHE STRING "Choose the type of build." FORCE)
+  message (STATUS "Setting build type to 'Release' as none was specified.")
+  set (CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
   # Set the possible values of build type for cmake-gui
   set_property (CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
     "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
