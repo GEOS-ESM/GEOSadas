@@ -7,12 +7,16 @@ if (case MATCHES "aero")
     gridio_aergeos5.f90
     smooth_geos5.f90
     )
+  ecbuild_add_executable(TARGET enkf_aero.x SOURCES enkf_main.f90 LIBS GSI_GridComp ${this})
 elseif (case MATCHES "geos")
   set (XSRCS
     gridinfo_geos5.f90
     gridio_geos5.f90
     smooth_geos5.f90
     )
+  ecbuild_add_executable(TARGET ene_adaptinf.x SOURCES ene_adaptinf.f90 LIBS GSI_GridComp)
+  ecbuild_add_executable(TARGET enkf_obs2ods.x SOURCES enkf_obs2ods.F90 LIBS GSI_GridComp GMAO_ods)
+  ecbuild_add_executable(TARGET enkf_geos.x SOURCES enkf_main.f90 LIBS GSI_GridComp ${this})
 elseif (case MATCHES "gfs")
   set (XSRCS
     gridinfo_gfs.f90

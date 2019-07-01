@@ -22,6 +22,6 @@ endif ()
   #set_target_properties (gettrk.x PROPERTIES COMPILE_FLAGS ${EXTENDED_SOURCE})
 #endif()
 
-#install(
-   #FILES vtrack vtrack_training
-   #DESTINATION bin)
+install(
+   PROGRAMS vtrack vtrack_training
+   DESTINATION bin)
