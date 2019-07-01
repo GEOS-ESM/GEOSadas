@@ -48,7 +48,7 @@ module m_hurrmess
 
       integer,parameter:: len_message = len('Excluded')
       character(len=len_message),dimension(0:6),parameter :: stat_names = &
-        (/ "Normal", "NoTrack", "Excluded", "Bogus", "TooClose", "TooWide", "ZGT500m" /)
+        [ character(len_message) :: "Normal", "NoTrack", "Excluded", "Bogus", "TooClose", "TooWide", "ZGT500m" ]
 
       integer,parameter :: NST=10
 
