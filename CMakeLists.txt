@@ -48,3 +48,16 @@ include_directories(${MPI_Fortran_INCLUDE_PATH})
 # Recursively build source tree
 add_subdirectory (src)
 
+# Need to copy modules.NCCS to install/bin
+
+get_filename_component(NCCS_MODULEFILE @modules/modules.NCCS REALPATH)
+install(
+   FILES ${NCCS_MODULEFILE}
+   DESTINATION bin
+   RENAME modules.NCCS
+   )
+
+foreach (conf_file BASEDIR.rc SITE.rc)
+   configure_file(${conf_file}.in ${conf_file} @ONLY)
+   install(FILES ${CMAKE_BINARY_DIR}/${conf_file} DESTINATION etc)
+endforeach ()

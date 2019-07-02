@@ -63,6 +63,11 @@ set (SRCS
   ${XSRCS}
   )
 
+if (CMAKE_Fortran_COMPILER_ID MATCHES Intel)
+   set (CMAKE_Fortran_FLAGS_RELEASE "${FOPT1} ${TRACEBACK} ${FPE0}")
+endif ()
+
+
 esma_add_library (${this}
   SRCS ${SRCS}
   DEPENDENCIES GSI_GridComp NCEP_sp_r8i4 NCEP_w3_r8i4 NCEP_bacio_r4i4 NCEP_nemsio NCEP_bufr_r8i4 GMAO_gfio_r8 GMAO_ods Chem_Shared
