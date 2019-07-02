@@ -15,6 +15,6 @@ esma_add_library (${this}
   )
 
 ecbuild_add_executable (
-  TARGET syndat_sindata.x
+  TARGET syndat_syndata.x
   SOURCES syndata.f
   LIBS ${this})

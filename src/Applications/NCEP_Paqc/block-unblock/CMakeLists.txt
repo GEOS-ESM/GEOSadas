@@ -18,3 +18,7 @@ ecbuild_add_executable (
   SOURCES block_09.F
   DEFINITIONS UNBLOCK
   LIBS NCEP_bufr_r4i4)
+
+ecbuild_add_executable (
+  TARGET reblock
+  SOURCES reblock.c)
