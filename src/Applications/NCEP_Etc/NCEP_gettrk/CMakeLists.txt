@@ -22,6 +22,14 @@ endif ()
   #set_target_properties (gettrk.x PROPERTIES COMPILE_FLAGS ${EXTENDED_SOURCE})
 #endif()
 
-install(
+install (
    PROGRAMS vtrack vtrack_training
    DESTINATION bin)
+
+file (GLOB ctl_files *.ctl)
+file (GLOB rc_files *.rc)
+file (GLOB table_files *.table)
+install (
+   FILES ${ctl_files} ${rc_files} ${table_files} vtx.ctl.tmpl vtrack.ctl.tmpl
+   DESTINATION etc
+   )

@@ -23,8 +23,31 @@ set(extraperlscripts
 file(GLOB perlscripts *.pl)
 file(GLOB pythonscripts *.py)
 file(GLOB pmscripts *.pm)
-    
 
 install (
-   FILES ${dasscripts} ${extraperlscripts} ${perlscripts} ${pmscripts} ${pythonscripts}
+   PROGRAMS ${dasscripts} ${extraperlscripts} ${perlscripts} ${pmscripts} ${pythonscripts}
    DESTINATION bin )
+
+file(GLOB rc_files *.rc)
+file(GLOB nml_files *.nml)
+
+install (
+   FILES ${rc_files} ${nml_files}
+   DESTINATION etc
+   )
+
+install (
+   FILES testsuites/runjob.README
+   DESTINATION bin
+   )
+
+file(GLOB testsuite_files testsuites/*.input)
+install (
+   FILES ${testsuite_files}
+   DESTINATION etc/testsuites
+   )
+
+install (
+   PROGRAMS testsuites/runjob.pl testsuites/checkinput.pl
+   DESTINATION bin
+   )

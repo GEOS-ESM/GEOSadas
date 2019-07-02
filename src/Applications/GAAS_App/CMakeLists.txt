@@ -23,3 +23,12 @@ if (EXTENDED_SOURCE)
   set_target_properties (${this} PROPERTIES COMPILE_FLAGS ${EXTENDED_SOURCE})
   set_target_properties (ana_aod.x PROPERTIES COMPILE_FLAGS ${EXTENDED_SOURCE})
 endif()
+
+file(GLOB rc_files *.rc)
+file(GLOB pcf_files *.pcf)
+file(GLOB tmpl_files *.tmpl)
+
+install (
+   FILES ${rc_files} ${pcf_files} ${tmpl_files}
+   DESTINATION etc
+   )
