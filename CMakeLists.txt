@@ -36,9 +36,6 @@ include (esma)
 
 ecbuild_declare_project()
 
-message("SITE is ${SITE}")
-
-
 # Generic DFLAGS
 # These should be relocated and/or eliminated.
 add_definitions(-Dsys${CMAKE_SYSTEM_NAME} -DESMA64)
@@ -50,12 +47,14 @@ add_subdirectory (src)
 
 # Need to copy modules.NCCS to install/bin
 
-get_filename_component(NCCS_MODULEFILE @modules/modules.NCCS REALPATH)
-install(
-   FILES ${NCCS_MODULEFILE}
-   DESTINATION bin
-   RENAME modules.NCCS
-   )
+if (${GEOS_SITE} MATCHES NCCS)
+   get_filename_component(NCCS_MODULEFILE @env/modules.NCCS REALPATH)
+   install(
+      FILES ${NCCS_MODULEFILE}
+      DESTINATION bin
+      RENAME modules.NCCS
+      )
+endif ()
 
 foreach (conf_file BASEDIR.rc SITE.rc)
    configure_file(${conf_file}.in ${conf_file} @ONLY)
