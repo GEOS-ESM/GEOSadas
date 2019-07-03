@@ -30,8 +30,6 @@ set (F2PY_SUFFIX .so)
 set (FV_PRECISION R4)
 
 list (APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/@cmake")
-set (BUILD_SHARED_LIBS OFF)
-set (ECBUILD_2_COMPAT_VALUE OFF)
 include (esma)
 
 ecbuild_declare_project()
