@@ -23,7 +23,7 @@ which obtains the latest `git`, `CMake`, and `manage_externals` modules. (*NOTE*
 #### Cloning
 
 ```
-git clone git@developer.nasa.gov:GEOSproto/GEOSadas.git
+git clone git@github.com:GEOS-ESM/GEOSadas.git
 ```
 
 #### Checkout externals
@@ -36,7 +36,7 @@ checkout_externals
 
 #### Load Compiler, MPI Stack, and Baselibs
 ```
-module load ./@modules/modules.NCCS
+source @env/g5_modules
 ```
 
 #### Create Build Directory
