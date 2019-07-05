@@ -16,7 +16,7 @@ Now load the `GEOSenv` module:
 ```
 module load GEOSenv
 ```
-which obtains the latest `git`, `CMake`, and `manage_externals` modules. (*NOTE*: This also loads the `other/python/GEOSpyD/Ana2019.03_py2.7` module as the stock Python on SLES11 discover it too old.)
+which obtains the latest `git`, `CMake`, and `manage_externals` modules.
 
 ### Obtain the Model
 
