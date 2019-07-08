@@ -24,5 +24,7 @@ endforeach()
 ecbuild_add_executable (TARGET sac.x SOURCES main.f90 LIBS ${this})
 
 install (
-   FILES sac.pl sac_convert sbc_convert sif_convert
+   PROGRAMS sac.pl sac_convert sbc_convert sif_convert
    DESTINATION bin)
+
+install (FILES sac.nl.tmpl DESTINATION etc)

@@ -5,3 +5,5 @@ if (EXTENDED_SOURCE)
   set_target_properties (convert_cft.x PROPERTIES COMPILE_FLAGS ${EXTENDED_SOURCE})
   set_target_properties (cft_update.x PROPERTIES COMPILE_FLAGS ${EXTENDED_SOURCE})
 endif()
+
+install (FILES gmao_acft_bias.parm DESTINATION etc)

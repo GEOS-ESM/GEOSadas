@@ -1,3 +1,5 @@
+add_subdirectory(testsuites)
+
 set(dasscripts
     FixUnblocked.csh  
     fix_gocart_rc.csh 
@@ -13,12 +15,25 @@ set(dasscripts
     read_HIST.csh )
 
 set(extraperlscripts
-    fcst_convert
     fvarchive 
-    fvsavecf 
     fvsetup 
     fvconvert
-    monthly_means.pl.tmpl)
+    monthly_means.pl.tmpl
+    )
+
+set(misc_etc
+   monthly.yyyymm.pl.tmpl
+   monthly_tarandclean.j.tmpl
+   monthly_prefetch.j.tmpl
+   monthly_means.j.tmpl
+   monthly_plots.j.tmpl
+   ncep_ana.tbl
+   ncep_diag.tbl
+   ncep_prog.tbl
+   noreplay.acq
+   plots_transfer.csh.tmpl
+   )
+
 
 file(GLOB perlscripts *.pl)
 file(GLOB pythonscripts *.py)
@@ -32,22 +47,18 @@ file(GLOB rc_files *.rc)
 file(GLOB nml_files *.nml)
 
 install (
-   FILES ${rc_files} ${nml_files}
+   FILES ${rc_files} ${nml_files} ${misc_etc}
    DESTINATION etc
    )
 
-install (
-   FILES testsuites/runjob.README
-   DESTINATION bin
+set (perlscripts_with_dasperl
+   fcst_convert
+   fvsavecf
    )
 
-file(GLOB testsuite_files testsuites/*.input)
-install (
-   FILES ${testsuite_files}
-   DESTINATION etc/testsuites
-   )
+set (DASPERL /usr/bin/perl)
+foreach (script ${perlscripts_with_dasperl})
+   configure_file(${script} ${script} @ONLY)
+   install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/${script} DESTINATION bin)
+endforeach ()
 
-install (
-   PROGRAMS testsuites/runjob.pl testsuites/checkinput.pl
-   DESTINATION bin
-   )

@@ -2,3 +2,5 @@
 /@cmake
 /@modules
 /@env
+/BUILD
+parallel_build.o*

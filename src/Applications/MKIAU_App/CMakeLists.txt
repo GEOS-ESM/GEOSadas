@@ -21,3 +21,6 @@ foreach (bin ${BINS})
      LIBS NCEP_w3_r4i4 GMAO_gfio_r8 MAPL_cfio_r4 MAPL_Base GMAO_hermes fvgcm ${MKL_LIBRARIES} FVdycoreCubed_GridComp GMAO_stoch GEOSmkiau_GridComp GEOSmoist_GridComp GEOSchem_GridComp GFDL_fms_r8 
      )
 endforeach()
+
+file (GLOB rc_tmpl_files *.rc.tmpl)
+install (FILES ${rc_tmpl_files} DESTINATION etc)

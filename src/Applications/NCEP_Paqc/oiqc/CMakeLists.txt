@@ -7,4 +7,10 @@ ecbuild_add_executable(
   SOURCES oiqcbufr.f
   LIBS NCEP_bufr_r4i4 NCEP_w3_r4i4 ${MPI_Fortran_LIBRARIES})
 
-install(FILES gmao_prepqc prepqc.pl prepqc_daemon.pl DESTINATION bin)
+install(PROGRAMS gmao_prepqc prepqc.pl DESTINATION bin)
+
+set (DASPERL /usr/bin/perl)
+configure_file(prepqc_daemon.pl prepqc_daemon.pl @ONLY)
+install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/prepqc_daemon.pl DESTINATION bin)
+
+install(FILES prepobs_oiqc.oberrs DESTINATION etc)
