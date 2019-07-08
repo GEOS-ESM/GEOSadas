@@ -49,4 +49,4 @@ foreach(flag ${tmp})
   target_compile_options (relocate_mv_nvortex.x PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:${flag}>)
 endforeach()
 
-install(FILES vtxreloc DESTINATION bin)
+install(PROGRAMS vtxreloc DESTINATION bin)

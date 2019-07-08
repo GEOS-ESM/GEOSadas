@@ -16,3 +16,5 @@ if (EXTENDED_SOURCE)
   set_target_properties (acarsqc.x PROPERTIES COMPILE_FLAGS ${EXTENDED_SOURCE})
 endif()
 
+file(GLOB parm_files *.parm)
+install(FILES ${parm_files} DESTINATION etc)

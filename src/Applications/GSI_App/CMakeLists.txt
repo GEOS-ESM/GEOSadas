@@ -18,4 +18,28 @@ ecbuild_add_executable (
   SOURCES gsidiag_bin2txt.f90 gauss_lat_nmc.f
   LIBS GEOSaana_GridComp NCEP_bufr_r8i4 NCEP_w3_r8i4)
 
-install(FILES fvssi fvssisetup DESTINATION bin) 
+install(PROGRAMS fvssi  DESTINATION bin) 
+
+set (DASPERL /usr/bin/perl)
+configure_file(fvssisetup fvssisetup @ONLY)
+install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/fvssisetup DESTINATION bin)
+
+set (etcfiles
+   GSI_GridComp.rc.tmpl
+   GSI_GridComp_1.rc.tmpl
+   GSI_GridComp_2.rc.tmpl
+   kxinfo.txt
+   kxlist.txt
+   prepobs_prep.bufrtable
+   )
+
+install (
+   FILES ${etcfiles}
+   DESTINATION etc
+   )
+
+install (
+   FILES GSI_GridComp.rc.tmpl
+   DESTINATION etc
+   RENAME OBS_GridComp.rc.tmpl
+   )

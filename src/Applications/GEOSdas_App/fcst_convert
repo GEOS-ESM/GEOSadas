@@ -1,4 +1,4 @@
-#!@DASPERL
+#!@DASPERL@
 #
 # Script for driving post-processing of fvDAS forecast
 # data for distribution to NCEP.

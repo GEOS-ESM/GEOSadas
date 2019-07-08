@@ -54,6 +54,12 @@ else if (($node =~ pfe*)      \
    setenv SITE nas
 endif
 
+# if batch, then skip over job submission
+#----------------------------------------
+if ($?Parallel_build_bypass_flag) then
+   goto build
+endif
+
 # change to src directory, if not already there
 #----------------------------------------------
 if ($name != $name:t) then
@@ -62,12 +68,6 @@ if ($name != $name:t) then
 endif
 set srcdir = `pwd`
 setenv ESMADIR $srcdir
-
-# if batch, then skip over job submission
-#----------------------------------------
-if ($?Parallel_build_bypass_flag) then
-   goto build
-endif
 
 # set defaults
 #-------------
@@ -292,12 +292,14 @@ endif
 #                            JOB SUBMISSION
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-# set environment variables
-#--------------------------
-source $ESMADIR/@env/g5_modules
-setenv Pbuild_source_directory $ESMADIR/BUILD
-setenv Parallel_build_bypass_flag
-set jobname = "parallel_build"
+if (! -d $ESMADIR/@cmake) then
+   if ($?PBS_JOBID || $?SLURM_JOBID) then
+      echo " checkout_externals must be run!"
+      echo " This requires internet access but you are on a compute node"
+      echo " Please run from a head node"
+      exit 1
+   endif
+endif
 
 #========
 # intro
@@ -312,16 +314,16 @@ echo ""
 # Run checkout_externals
 # ----------------------
 if (! -d $ESMADIR/@cmake) then
-   if ($?PBS_JOBID || $?SLURM_JOBID) then
-      echo " checkout_externals must be run!"
-      echo " This requires internet access but you are on a compute node"
-      echo " Please run from a head node"
-      exit 1
-   else
-      echo " Running checkout_externals"
-      checkout_externals
-   endif
+   echo " Running checkout_externals"
+   checkout_externals
 endif
+
+# set environment variables
+#--------------------------
+source $ESMADIR/@env/g5_modules
+setenv Pbuild_source_directory $ESMADIR/BUILD
+setenv Parallel_build_bypass_flag
+set jobname = "parallel_build"
 
 # Make the BUILD directory
 # ------------------------

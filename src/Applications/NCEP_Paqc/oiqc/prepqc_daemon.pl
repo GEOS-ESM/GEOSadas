@@ -1,4 +1,4 @@
-#!@DASPERL
+#!@DASPERL@
 #
 # This daemon is responsible for doing QC on the MERRA observing system while the GCM 
 # is still running. The daemon looks for a file called prepqc_trigger that is created

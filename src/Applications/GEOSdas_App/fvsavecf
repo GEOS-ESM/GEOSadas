@@ -1,4 +1,4 @@
-#!@DASPERL
+#!@DASPERL@
 #
 # Script for saving fvPSAS experiment configurationfiles on Mass Storage.
 # See usage() for more info.

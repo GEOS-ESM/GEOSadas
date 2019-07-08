@@ -63,8 +63,8 @@ sub init {
     # these values are set during build
     #----------------------------------
     $CVSTAG  = "__CVSTAG__";
-    $ESMABIN = "__ESMABIN__";
-    $ESMATST = "__ESMATST__";
+    $ESMABIN = "@ESMABIN@";
+    $ESMATST = "@ESMATST@";
     die ">> Error << $ESMABIN is not a directory;" unless -d $ESMABIN;
 
     # get runtime options

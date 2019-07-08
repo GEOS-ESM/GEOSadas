@@ -13,11 +13,17 @@ esma_add_library(${this}
   SRCS ${SRCS}
   DEPENDENCIES GMAO_psas GMAO_ods GMAO_hermes Chem_Base)
 
-file(GLOB pythonscripts *.py)
 
 ecbuild_add_executable(TARGET ana_aod.x SOURCES ana_aod.F LIBS ${this} GMAO_gfio_r4 Chem_Base Chem_Shared) 
 ecbuild_add_executable(TARGET mpana_aod.x SOURCES mpana_aod.F90 LIBS ${this} GMAO_gfio_r4 Chem_Base Chem_Shared) 
-install(FILES ${pythonscripts} get_aero_obs.csh run_gaas_ana.csh DESTINATION bin)
+
+set(pythonscripts modis_l2a.py mxd04_l2a.py avhrr_l2a.py patmosx_l2a.py aod_data.py)
+install(PROGRAMS ${pythonscripts} get_aero_obs.csh run_gaas_ana.csh DESTINATION bin)
+
+install(
+   FILES mxd04_nnr.py avhrr_nnr.py
+   DESTINATION lib/Python
+   )
 
 if (EXTENDED_SOURCE)
   set_target_properties (${this} PROPERTIES COMPILE_FLAGS ${EXTENDED_SOURCE})
