@@ -42,24 +42,7 @@ include_directories(${MPI_Fortran_INCLUDE_PATH})
 
 # Recursively build source tree
 add_subdirectory (src)
-
-# Copy modules.NCCS to install/bin but needs special treatment as a 
-# symlink
-if (${GEOS_SITE} MATCHES NCCS)
-   get_filename_component(NCCS_MODULEFILE @env/modules.NCCS REALPATH)
-   install(
-      FILES ${NCCS_MODULEFILE}
-      DESTINATION bin
-      RENAME modules.NCCS
-      )
-endif ()
-
-foreach (g5modulefile g5_modules g5_modules.sh)
-   install (
-      PROGRAMS @env/${g5modulefile}
-      DESTINATION bin
-      )
-endforeach ()
+add_subdirectory (@env)
 
 foreach (conf_file BASEDIR.rc SITE.rc)
    configure_file(${conf_file}.in ${conf_file} @ONLY)
