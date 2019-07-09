@@ -18,35 +18,47 @@ module load GEOSenv
 ```
 which obtains the latest `git`, `CMake`, and `manage_externals` modules.
 
-### Obtain the Model
+### Single Step Building of the Model
 
-#### Cloning
+If all you wish is to build the model, you can run `parallel_build.csh` from a head node. Doing so will checkout all the external repositories of the model and build it. When done, the resulting model will be found in `BUILD/install` with setup scripts like `gcm_setup` and `fvsetup` in `BUILD/install/bin`.
+
+#### Debug Version of GEOS
+
+To obtain a debug version, you can run `parallel_build.csh -debug` which will build with debugging flags.
+
+### Multiple Steps for Building the Model
+
+The steps detailed below are essentially those that `parallel_build.csh` performs for you. Either method should yield identical builds.
+
+#### Obtain the Model
+
+##### Cloning
 
 ```
 git clone git@github.com:GEOS-ESM/GEOSadas.git
 ```
 
-#### Checkout externals
+##### Checkout externals
 ```
 cd GEOSadas
 checkout_externals
 ```
 
-### Build the Model
+#### Build the Model
 
-#### Load Compiler, MPI Stack, and Baselibs
+##### Load Compiler, MPI Stack, and Baselibs
 ```
 source @env/g5_modules
 ```
 
-#### Create Build Directory
+##### Create Build Directory
 We currently do not allow in-source builds of GEOSadas. So we must make a directory:
 ```
 mkdir BUILD
 ```
 The advantages of this is that you can build both a Debug and Release version with the same clone if desired.
 
-#### Run CMake
+##### Run CMake
 CMake generates the Makefiles needed to build the model.
 ```
 cd BUILD
@@ -58,7 +70,7 @@ This (when installed) will install to a directory inside your `BUILD` directory.
 ```
 and CMake will install there.
 
-#### Build and Install with Make
+##### Build and Install with Make
 ```
 make -j6 install
 ```
