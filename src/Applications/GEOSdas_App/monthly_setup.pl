@@ -176,7 +176,7 @@ sub write_plotfiles {
         
     # write gcm_moveplot.j; copy gcm_quickplot.csh
     #---------------------------------------------
-    $GEOSgcm_App = dirname($FVROOT) ."/src/Applications/GEOSgcm_App";
+    $GEOSgcm_App = "$FVROOT/bin";
 
     $infile = "$GEOSgcm_App/gcm_moveplot.j";
     $outfil = "$run_mp_dir/plot/gcm_moveplot.j";

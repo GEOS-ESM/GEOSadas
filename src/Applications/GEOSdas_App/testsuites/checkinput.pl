@@ -62,7 +62,7 @@ sub init {
 
     # these values are set during build
     #----------------------------------
-    $CVSTAG  = "__CVSTAG__";
+    $CVSTAG  = "@GIT_TAG_OR_REV@";
     $ESMABIN = "@ESMABIN@";
     $ESMATST = "@ESMATST@";
     die ">> Error << $ESMABIN is not a directory;" unless -d $ESMABIN;

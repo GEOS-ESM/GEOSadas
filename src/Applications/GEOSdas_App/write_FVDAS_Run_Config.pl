@@ -137,7 +137,7 @@ sub init {
     chomp($qalter = `which qalter`);
     $PBS_BIN = dirname($qalter);
     $FCSTID    = "f" . substr($EXPID, 1, 1000);
-    $GEOSUTIL  = dirname($FVROOT) ."/src/GMAO_Shared/GEOS_Util";
+    $GEOSUTIL  = $FVROOT;
 
     # hard-coded values for OPS (until further guidance given)
     #---------------------------------------------------------
