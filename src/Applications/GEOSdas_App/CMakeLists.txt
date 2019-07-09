@@ -62,3 +62,14 @@ foreach (script ${perlscripts_with_dasperl})
    install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/${script} DESTINATION bin)
 endforeach ()
 
+# MAT The DAS seems to require VERSION and CVSTAG
+
+# The version is easy as we set that in the project
+configure_file(VERSION.in VERSION @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/VERSION DESTINATION etc)
+
+# CVSTAG is set and used in testsuites/
+
+if (EXISTS /etc/SuSE-release)
+   install(FILES /etc/SuSE-release DESTINATION etc)
+endif ()

@@ -799,7 +799,6 @@ sub defaults {
   @gaas_files = qw ( GAAS_AerRegistry.rc
                      GAAS_AodRegistry.rc
                      GAAS_GridComp.rc
-                     GAAS_History___.rc
                      GAAS_Mie.rc
                      GAAS_Registry.rc
                      ana.rc.tmpl
@@ -830,28 +829,23 @@ sub defaults {
                      BC_GridComp.rc
                      BC_GridComp_ExtData-clim.rc
                      BC_GridComp_ExtData.rc
-                     BC_History___.rc
                      BC_Registry.rc
                      BRC_GridComp---full.rc
                      BRC_GridComp.rc
                      BRC_GridComp_ExtData.rc
                      BRC_Registry.rc
-                     CARMA_History___.rc
                      CARMAchem_GridComp_ExtData.rc
                      CARMAchem_MieRegistry.rc
                      CARMAchem_Registry.rc
                      CFC_GridComp.rc
                      CFC_GridComp_ExtData.rc
-                     CFC_History___.rc
                      CFC_Registry.rc
                      CH4_GridComp---animls.rc
                      CH4_GridComp.rc
                      CH4_GridComp_ExtData.rc
-                     CH4_History___.rc
                      CH4_Registry.rc
                      CO2_GridComp.rc
                      CO2_GridComp_ExtData.rc
-                     CO2_History___.rc
                      CO2_Registry.rc 
                      CO_GridComp---bbae.rc
                      CO_GridComp---bbaf.rc
@@ -872,7 +866,6 @@ sub defaults {
                      CO_GridComp.rc
                      CO_GridComp_ExtData-clim.rc
                      CO_GridComp_ExtData.rc
-                     CO_History___.rc
                      CO_Registry.rc
                      Chem_AerRegistry.rc
                      Chem_ExtRegistry.rc
@@ -887,15 +880,12 @@ sub defaults {
                      DU_GridComp.rc
                      DU_GridComp---full.rc
                      DU_GridComp_ExtData.rc
-                     DU_History___.rc
                      DU_Registry.rc
-                     Deposition_Registry___.rc 
                      GEOSCHEMchem_ExtData.rc
                      GEOSCHEMchem_GridComp.rc
                      GEOSCHEMchem_Registry.rc
                      GEOSachem_ExtData.rc
                      GEOSachem_Registry.rc
-                     GMICHEM_History___.rc
                      GMI_ExtData.rc
                      GMI_GridComp.rc
                      GMI_Registry.rc
@@ -911,17 +901,14 @@ sub defaults {
                      HEMCOgocart_Spec.rc
                      MAM7_ExtData.rc
                      MAMchem_GridComp.rc
-                     MAMchem_History___.rc
                      MAMchem_Registry.rc
                      NI_GridComp---full.rc
                      NI_GridComp.rc
                      NI_GridComp_ExtData-clim.rc
                      NI_GridComp_ExtData.rc
-                     NI_History___.rc
                      NI_Registry.rc
                      O3_GridComp.rc
                      O3_GridComp_ExtData.rc
-                     O3_History___.rc
                      O3_Registry.rc
                      OC_GridComp---bbbo.rc
                      OC_GridComp---bbnb.rc
@@ -929,9 +916,7 @@ sub defaults {
                      OC_GridComp.rc
                      OC_GridComp_ExtData-clim.rc
                      OC_GridComp_ExtData.rc
-                     OC_History___.rc
                      OC_Registry.rc
-                     Reactions_Registry___.rc 
                      Rn_GridComp---Afri.rc
                      Rn_GridComp---Asia.rc
                      Rn_GridComp---Aust.rc
@@ -941,22 +926,18 @@ sub defaults {
                      Rn_GridComp---full.rc
                      Rn_GridComp.rc
                      Rn_GridComp_ExtData.rc
-                     Rn_History___.rc
                      Rn_Registry.rc
                      SC_GridComp.rc
                      SC_Registry.rc
                      SS_GridComp.rc
                      SS_GridComp---full.rc
-                     SS_History___.rc
                      SS_Registry.rc
                      StratChem_ExtData.rc
-                     StratChem_History___.rc
                      SU_GridComp---full.rc
                      SU_GridComp---volc.rc
                      SU_GridComp.rc
                      SU_GridComp_ExtData-clim.rc
                      SU_GridComp_ExtData.rc
-                     SU_History___.rc
                      SU_Registry.rc 
                      TR_ExtData.rc
                      TR_ExtData.rc
@@ -8319,7 +8300,7 @@ print  SCRIPT <<"EOF";
 
 # Until a better handle of GEOS_Util is agreed upon (should not refer to things in src)
 # -------------------------------------------------------------------------------------
-  setenv GEOSUTIL \$FVROOT/../src/GMAO_Shared/GEOS_Util
+  setenv GEOSUTIL \$FVROOT
   \$GEOSUTIL/plots/configure
   source .quickplotrc
  

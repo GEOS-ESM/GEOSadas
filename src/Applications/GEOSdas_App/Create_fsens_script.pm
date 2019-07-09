@@ -134,7 +134,7 @@ EOF
 
 # Until a better handle of GEOS_Util is agreed upon (should not refer to things in src)
 # -------------------------------------------------------------------------------------
-  setenv GEOSUTIL \$FVROOT/../src/GMAO_Shared/GEOS_Util
+  setenv GEOSUTIL \$FVROOT
   \$GEOSUTIL/plots/configure
   source .quickplotrc
 
