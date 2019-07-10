@@ -6,12 +6,20 @@ endif ()
 ecbuild_add_executable (
   TARGET gsi.x
   SOURCES gsimain.F90
-  LIBS GSI_GridComp NCEP_bufr_r8i4 NCEP_w3_r8i4 GMAO_mpeu)
+  LIBS GEOSaana_GridComp GSI_GridComp GEOSgsi_Coupler 
+       NCEP_crtm NCEP_sfcio NCEP_bufr_r8i4 NCEP_nemsio NCEP_bacio_r4i4 NCEP_gfsio
+       NCEP_sp_r8i4 NCEP_w3_r8i4 nc_diag_read nc_diag_write)
 
 ecbuild_add_executable (
   TARGET GSIsa.x
   SOURCES GSIsa.F90
-  LIBS GEOSaana_GridComp NCEP_bufr_r8i4 NCEP_w3_r8i4 MAPL_Base GMAO_mpeu)
+  LIBS GEOSaana_GridComp GSI_GridComp GEOSgsi_Coupler NCEP_sigio fvgcm NCEP_crtm
+       GMAO_transf GMAO_hermes GMAO_gfio_r8 GEOSagcmPert_GridComp
+       GEOS_PertShared GEOSphysicsPert_GridComp GEOSradiationPert_GridComp GEOSgwdPert_GridComp
+       GEOSmoistPert_GridComp GEOSturbulencePert_GridComp GEOSsurfacePert_GridComp GEOSchemPert_GridComp
+       GEOSpchemPert_GridComp fvdycorepert Tapenade GEOSdynamicsPert_GridComp Chem_Base MAPL_Base
+       GMAO_pFIO NCEP_gfsio NCEP_nemsio NCEP_bacio_r4i4 NCEP_bufr_r8i4 NCEP_w3_r8i4 NCEP_sp_r8i4
+       NCEP_sfcio MAPL_cfio_r4 GMAO_mpeu nc_diag_read nc_diag_write)
 
 ecbuild_add_executable (
   TARGET gsidiag_bin2txt.x

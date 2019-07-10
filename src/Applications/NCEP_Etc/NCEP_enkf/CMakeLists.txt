@@ -7,16 +7,16 @@ if (case MATCHES "aero")
     gridio_aergeos5.f90
     smooth_geos5.f90
     )
-  ecbuild_add_executable(TARGET enkf_aero.x SOURCES enkf_main.f90 LIBS GSI_GridComp ${this})
+ ecbuild_add_executable(TARGET enkf_aero.x SOURCES enkf_main.f90 LIBS GSI_GridComp_with_stubs ${this})
 elseif (case MATCHES "geos")
   set (XSRCS
     gridinfo_geos5.f90
     gridio_geos5.f90
     smooth_geos5.f90
     )
-  ecbuild_add_executable(TARGET ene_adaptinf.x SOURCES ene_adaptinf.f90 LIBS GSI_GridComp)
-  ecbuild_add_executable(TARGET enkf_obs2ods.x SOURCES enkf_obs2ods.F90 LIBS GSI_GridComp GMAO_ods)
-  ecbuild_add_executable(TARGET enkf_geos.x SOURCES enkf_main.f90 LIBS GSI_GridComp ${this})
+ ecbuild_add_executable(TARGET ene_adaptinf.x SOURCES ene_adaptinf.f90 LIBS GSI_GridComp_with_stubs )
+ ecbuild_add_executable(TARGET enkf_obs2ods.x SOURCES enkf_obs2ods.F90 LIBS GSI_GridComp_with_stubs GMAO_ods)
+ ecbuild_add_executable(TARGET enkf_geos.x SOURCES enkf_main.f90 LIBS GSI_GridComp_with_stubs ${this})
 elseif (case MATCHES "gfs")
   set (XSRCS
     gridinfo_gfs.f90
@@ -70,7 +70,7 @@ endif ()
 
 esma_add_library (${this}
   SRCS ${SRCS}
-  DEPENDENCIES GSI_GridComp NCEP_sp_r8i4 NCEP_w3_r8i4 NCEP_bacio_r4i4 NCEP_nemsio NCEP_bufr_r8i4 GMAO_gfio_r8 GMAO_ods Chem_Shared
+  DEPENDENCIES GSI_GridComp_with_stubs NCEP_sp_r8i4 NCEP_w3_r8i4 NCEP_bacio_r4i4 NCEP_nemsio NCEP_bufr_r8i4 GMAO_gfio_r8 GMAO_ods Chem_Shared
   )
 
 add_subdirectory(scripts)

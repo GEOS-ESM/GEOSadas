@@ -11,7 +11,7 @@ endif ()
 
 esma_add_library (${this}
   SRCS ${SRCS}
-  DEPENDENCIES GSI_GridComp GMAO_mpeu
+  DEPENDENCIES GSI_GridComp_with_stubs GMAO_mpeu
   )
 
 foreach (prog init_coeffs sac_convert sbc_convert sif_convert write_biascr_option)
