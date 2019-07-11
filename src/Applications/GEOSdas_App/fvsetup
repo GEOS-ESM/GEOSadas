@@ -7132,7 +7132,7 @@ if ( $fvchem && $lm > 2 ) {
  $ncpus_idf = $ncpus_iau;
 
 # Set NCPUS for PSAS-AOD analysis (wired)
- $ncpus_aod = 28;
+ $ncpus_aod = 1;
 
  open(SCRIPT,">$fvhome/run/$jobn.j") or
  die ">>> ERROR <<< cannot write $fvhome/run/$jobn.j";
@@ -7226,6 +7226,7 @@ print SCRIPT <<"EOF";
   setenv NCPUS_GSI   $ncpus_gsi   # Number of CPUs to run GSI
   setenv NCPUS_GPERT $ncpus_gpert # Number of CPUs to run gcmPERT
   setenv NCPUS_AOD   $ncpus_aod   # Number of CPUs to run PSAS-AOD
+  setenv GAAS_RUN_SLURM 1 # 1 = force GAAS/AOD to run in its own SLURM job, 0 = allow geosdas.csm to decide
 EOF
 if ($ncpus_per_node) {
 print SCRIPT <<"EOF";
