@@ -46,6 +46,8 @@ cat $aod_modis_pcf
 cat $aod_avhrr_pcf
 cat $AODWORK/ana.rc
 
+set ANAAODX = `which ana_aod.x`
+
 # external data directory
 #------------------------
 if ( !($?EXTDATA) ) then
@@ -66,6 +68,8 @@ else
        setenv AOD_NODEFILE 
    endif
 endif
+
+if ( $NCPUS_AOD == 1 ) setenv AOD_NODEFILE
 setenv MPIRUN "$AOD_NODEFILE $MPIRUN_AOD -np $NCPUS_AOD"
 
 # loop for two time steps
@@ -117,7 +121,7 @@ foreach time_offset ( 000000 030000 )
    #--------------
    if (-e ANAAOD_EGRESS) /bin/rm ANAAOD_EGRESS
    set flags = "-a $aod_a -d $aod_d -f $aod_f -k $aod_k"
-   ana_aod.x -v -x $EXPID $flags -o $ods_a $aer_f
+   $MPIRUN $ANAAODX -v -x $EXPID $flags -o $ods_a $aer_f
    if (! -e ANAAOD_EGRESS) then
       @ errcnt = $errcnt + 1
    endif

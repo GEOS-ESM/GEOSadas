@@ -3,12 +3,15 @@ if (CMAKE_Fortran_COMPILER_ID MATCHES Intel)
    set (CMAKE_Fortran_FLAGS_RELEASE "${FOPT3} ${BIG_ENDIAN} ${BYTERECLEN} ${FP_MODEL_STRICT} ${ALIGNCOM}")
 endif ()
 
-ecbuild_add_executable (
-  TARGET gsi.x
-  SOURCES gsimain.F90
-  LIBS GEOSaana_GridComp GSI_GridComp GEOSgsi_Coupler 
-       NCEP_crtm NCEP_sfcio NCEP_bufr_r8i4 NCEP_nemsio NCEP_bacio_r4i4 NCEP_gfsio
-       NCEP_sp_r8i4 NCEP_w3_r8i4 nc_diag_read nc_diag_write)
+#####################################################################################
+# # Currently not installed in GNU Make                                             #
+# ecbuild_add_executable (                                                          #
+#   TARGET gsi.x                                                                    #
+#   SOURCES gsimain.F90                                                             #
+#   LIBS GEOSaana_GridComp GSI_GridComp GEOSgsi_Coupler                             #
+#        NCEP_crtm NCEP_sfcio NCEP_bufr_r8i4 NCEP_nemsio NCEP_bacio_r4i4 NCEP_gfsio #
+#        NCEP_sp_r8i4 NCEP_w3_r8i4 nc_diag_read nc_diag_write)                      #
+#####################################################################################
 
 ecbuild_add_executable (
   TARGET GSIsa.x
