@@ -6,7 +6,7 @@ set (SRCS
 
 # This is equivalent to FOPT=$(FOPT3) in GNU Make
 if (CMAKE_Fortran_COMPILER_ID MATCHES Intel)
-   set (CMAKE_Fortran_FLAGS_RELEASE "${FOPT3} ${ALIGNCOM}")
+   set (CMAKE_Fortran_FLAGS_RELEASE "${FOPT3} ${BIG_ENDIAN} ${ALIGNCOM}")
 endif ()
 
 esma_add_library (${this}
