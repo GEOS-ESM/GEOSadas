@@ -55,3 +55,17 @@ ecbuild_add_executable (
   TARGET read_prepbufr.x
   SOURCES read_prepbufr.f
   LIBS ${this})
+
+
+foreach (target ${this} raobcore.x hradcor.x read_prepbufr.x)
+   string(REPLACE " " ";" tmp ${FREAL8})
+   foreach (flag ${tmp})
+      target_compile_options (${target} PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:${flag}>)
+   endforeach ()
+
+   string(REPLACE " " ";" tmp ${FINT8})
+   foreach (flag ${tmp})
+      target_compile_options (${target} PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:${flag}>)
+   endforeach ()
+endforeach ()
+

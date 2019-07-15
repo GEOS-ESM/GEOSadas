@@ -17,7 +17,7 @@ set (SRCS modules.f BOUND.f fft99.f sig_p_convt1.f SEPAR.f WNLIT.f
   )
 
 if (CMAKE_Fortran_COMPILER_ID MATCHES Intel)
-   string (REPLACE "${FOPT3}" "${FOPT2}" CMAKE_Fortran_FLAGS_RELEASE ${CMAKE_Fortran_FLAGS_RELEASE})
+   string (REPLACE "${FOPT3}" "${FOPT2} ${BIG_ENDIAN}" CMAKE_Fortran_FLAGS_RELEASE ${CMAKE_Fortran_FLAGS_RELEASE})
    string (REPLACE "${FPE0}" "" CMAKE_Fortran_FLAGS_RELEASE ${CMAKE_Fortran_FLAGS_RELEASE})
    string (REPLACE "${OPTREPORT0}" "" CMAKE_Fortran_FLAGS_RELEASE ${CMAKE_Fortran_FLAGS_RELEASE})
    string (REPLACE "${FTZ}" "" CMAKE_Fortran_FLAGS_RELEASE ${CMAKE_Fortran_FLAGS_RELEASE})

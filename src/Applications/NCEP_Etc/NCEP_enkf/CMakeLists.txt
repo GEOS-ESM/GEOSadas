@@ -64,7 +64,7 @@ set (SRCS
   )
 
 if (CMAKE_Fortran_COMPILER_ID MATCHES Intel)
-   set (CMAKE_Fortran_FLAGS_RELEASE "${FOPT1} ${TRACEBACK} ${FPE0}")
+   set (CMAKE_Fortran_FLAGS_RELEASE "${FOPT1} ${TRACEBACK} ${BIG_ENDIAN} ${FPE0} ${ALIGNCOM}")
 endif ()
 
 
