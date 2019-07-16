@@ -39,19 +39,21 @@ set NCPUs_min = 6
 #=====================
 # determine the site 
 #=====================
-setenv SITE undetermined
-
 set node = `uname -n`
 if ( ($node == dirac)   \
   || ($node =~ borg*)   \
   || ($node =~ warp*)   \
   || ($node =~ discover*)) then
-   setenv SITE nccs
+   setenv SITE NCCS
 
 else if (($node =~ pfe*)      \
       || ($node =~ bridge*)   \
       || ($node =~ r[0-9]*i[0-9]*n[0-9]*)) then
-   setenv SITE nas
+   setenv SITE NAS
+
+else
+   setenv SITE UNKNOWN
+   set NCPUs_min = 1
 endif
 
 # if batch, then skip over job submission
@@ -144,7 +146,7 @@ while ($#argv)
    #------------------------------------------
    if ("$1" == "-q") then
       shift; if (! $#argv) goto usage
-      if ($SITE == nccs) then
+      if ($SITE == NCCS) then
          setenv queue "--qos=$1"
       else
          setenv queue "-q $1"
@@ -190,13 +192,13 @@ endif
 # default nodeTYPE
 #-----------------
 if (! $?nodeTYPE) then
-   if ($SITE == nccs) set nodeTYPE = "Haswell"
-   if ($SITE == nas)  set nodeTYPE = "Broadwell"
+   if ($SITE == NCCS) set nodeTYPE = "Haswell"
+   if ($SITE == NAS)  set nodeTYPE = "Broadwell"
 endif
 
 # at NCCS
 #--------
-if ($SITE == nccs) then
+if ($SITE == NCCS) then
    set nT = `echo $nodeTYPE| tr "[A-Z]" "[a-z]" | cut -c1-4 `
    if (($nT != hasw)) then
       echo "ERROR. Unknown node type at NCCS: $nodeTYPE"
@@ -209,7 +211,7 @@ endif
 
 # at NAS
 #-------
-if (($node =~ pfe*) || ($node =~ bridge*) ) then
+if ( $SITE == NAS ) then
    set nT = `echo $nodeTYPE | cut -c1-3 | tr "[A-Z]" "[a-z]"`
    if (($nT != san) && ($nT != ivy) && ($nT != has) && ($nT != bro) && ($nT != sky)) then
       echo "ERROR. Unknown node type at NAS: $nodeTYPE"
@@ -238,6 +240,13 @@ if (($node =~ pfe*) || ($node =~ bridge*) ) then
    endif
    echo "TMPDIR: $tmpdir"
 
+endif
+
+if ($SITE == UNKNOWN) then
+   echo ""
+   @ NCPUS_DFLT = `cat /proc/cpuinfo  | grep processor | wc -l`
+   echo "Unknown site. Detected $NCPUS_DFLT cores and setting interactive build"
+   set interactive = 1
 endif
 
 # developer's debug
@@ -321,17 +330,24 @@ endif
 # set environment variables
 #--------------------------
 source $ESMADIR/@env/g5_modules
-setenv Pbuild_source_directory $ESMADIR/BUILD
+setenv Pbuild_source_directory  $ESMADIR
+if ($debug) then
+   setenv Pbuild_build_directory   $ESMADIR/build-Debug
+   setenv Pbuild_install_directory $ESMADIR/install-Debug
+else
+   setenv Pbuild_build_directory   $ESMADIR/build
+   setenv Pbuild_install_directory $ESMADIR/install
+endif
 setenv Parallel_build_bypass_flag
 set jobname = "parallel_build"
 
 # Make the BUILD directory
 # ------------------------
-if (! -d $Pbuild_source_directory) then
-   echo "Making BUILD directory: $Pbuild_source_directory"
-   mkdir -p $Pbuild_source_directory
+if (! -d $Pbuild_build_directory) then
+   echo "Making build directory: $Pbuild_build_directory"
+   mkdir -p $Pbuild_build_directory
    if ($status) then
-      echo ">> Error << mkdir $Pbuild_source_directory "
+      echo ">> Error << mkdir $Pbuild_build_directory "
       exit
    endif
 endif
@@ -339,11 +355,10 @@ endif
 #===========================
 # query for number of CPUs
 #===========================
-if ( ($node =~ discover*) || ($node =~ dali*) \
-  || ($node =~ pfe*)      || ($node =~ bridge*) ) then
+if ( ($SITE == NCCS) || ($SITE == NAS) ) then
 
-   # use set number of CPUs on discover/dali and pleiades
-   #-----------------------------------------------------
+   # use set number of CPUs on NCCS or NAS
+   #--------------------------------------
    @ ncpus_val  = $NCPUS_DFLT
    @ numjobs_val  = $ncpus_val - 2  # save some CPUs for memory
    if ($numjobs_val > 14) @ numjobs_val = 14
@@ -390,7 +405,7 @@ setenv numjobs $numjobs_val
 #=================================================
 # check for LOG and info files from previous build
 #=================================================
-setenv bldlogdir $Pbuild_source_directory/$BUILD_LOG_DIR
+setenv bldlogdir $Pbuild_build_directory/$BUILD_LOG_DIR
 setenv cmakelog  $bldlogdir/CLOG
 setenv buildlog  $bldlogdir/LOG
 setenv buildinfo $bldlogdir/info
@@ -402,7 +417,7 @@ if ($status == 0) then
       echo ''
       echo 'Previous build detected - Do you want to clean?'
       echo '(c)     clean: runs "make clean"'
-      echo '(r) realclean: removes BUILD directory and re-runs CMake'
+      echo '(r) realclean: removes build directory and re-runs CMake'
       echo '(n)  no clean'
       echo ''
       echo -n 'Select (c,r,n) <<c>> '
@@ -420,7 +435,7 @@ if ($status == 0) then
       echo  "make clean before rebuild"
    else if ("$do_clean" == "r") then
       setenv cleanFLAG realclean
-      echo  "remove BUILD directory and re-run CMake before rebuild"
+      echo  "remove build directory and re-run CMake before rebuild"
    else
       echo "No clean before rebuild"
    endif 
@@ -431,12 +446,14 @@ endif
 #==============
 echo ""
 echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-echo "LOG and info will be written to the BUILD/$BUILD_LOG_DIR directory."
+echo "LOG and info will be written to the $bldlogdir directory."
 echo "Do the following to check the status/success of the build:"
 echo ""
-echo "  cd BUILD/$BUILD_LOG_DIR"
+echo "  cd $bldlogdir"
 echo ""
 echo "Note: Check the latest version of LOG for the most recent build info."
+echo ""
+echo " The installation will be in $Pbuild_install_directory when complete."
 echo ""
 
 # build if interactive
@@ -450,9 +467,9 @@ endif
 #=============
 set groupflag = ""
 if ("$account" != "") then
-   if ($SITE == nas) then
+   if ($SITE == NAS) then
       set groupflag = "-W group_list=$account"
-   else if ($SITE == nccs) then
+   else if ($SITE == NCCS) then
       set groupflag = "--account=$account"
    endif
 else if (-e `which getsponsor` && (! $interactive)) then
@@ -485,9 +502,8 @@ else if (-e `which getsponsor` && (! $interactive)) then
 endif
 
 if ($interactive) then
-   @ numjobs = $numjobs - 2
    goto build
-else if ( $SITE == nas ) then
+else if ( $SITE == NAS ) then
    if ("$walltime" == "") setenv walltime "1:00:00"
    set echo
    qsub  $groupflag $queue     \
@@ -500,7 +516,7 @@ else if ( $SITE == nas ) then
    unset echo
    sleep 1
    qstat -a | grep $USER
-else if ( $SITE == nccs ) then
+else if ( $SITE == NCCS ) then
    if ("$walltime" == "") setenv walltime "1:00:00"
    set echo
    sbatch $groupflag $queue    \
@@ -527,14 +543,13 @@ build:
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #                             BUILD SYSTEM
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-set BUILDDIR = $Pbuild_source_directory
-chdir $BUILDDIR
+chdir $Pbuild_build_directory
 
 setenv ARCH `uname -s`
 
 if ( $cleanFLAG == "realclean" ) then
-   rm -rf $Pbuild_source_directory
-   mkdir -p $Pbuild_source_directory
+   rm -rf $Pbuild_build_directory
+   mkdir -p $Pbuild_build_directory
 endif
 
 #=================================================
@@ -623,7 +638,7 @@ if ( $cleanFLAG == "clean" ) then
     time >> $buildinfo
 endif
 
-set cmd1 = "cmake $ESMADIR -DBASEDIR=${BASEDIR}/${ARCH} $debug"
+set cmd1 = "cmake $ESMADIR -DCMAKE_INSTALL_PREFIX=$Pbuild_install_directory -DBASEDIR=${BASEDIR}/${ARCH} -DCMAKE_Fortran_COMPILER=ifort $debug"
 set cmd2 = "make --jobs=$numjobs install $verbose"
 echo1 "" 
 echo1 ""
@@ -641,9 +656,10 @@ set buildstatus = $status
 
 echo1 "build complete; status = $buildstatus"
 date1
-echo1 "Your build is located in $Pbuild_source_directory/install"
+echo1 "Your build is located in $Pbuild_build_directory"
 echo1 ""
-echo1 "You can find setup scripts in $Pbuild_source_directory/install/bin"
+echo1 "Your installation is located in $Pbuild_install_directory"
+echo1 "You can find setup scripts in $Pbuild_install_directory/bin"
 echo1 "--------------------------------------"
 time >> $buildinfo
 echo1 ""
