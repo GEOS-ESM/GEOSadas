@@ -3,6 +3,6 @@
 /@modules/
 /@env/
 /BUILD/
-/build/
-/install/
+/build*/
+/install*/
 parallel_build.o*
