@@ -543,14 +543,17 @@ build:
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #                             BUILD SYSTEM
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-chdir $Pbuild_build_directory
-
-setenv ARCH `uname -s`
 
 if ( $cleanFLAG == "realclean" ) then
    rm -rf $Pbuild_build_directory
+   rm -rf $Pbuild_install_directory
+
    mkdir -p $Pbuild_build_directory
 endif
+
+chdir $Pbuild_build_directory
+
+setenv ARCH `uname -s`
 
 #=================================================
 # create $BUILD_LOG_DIR, plus LOG and info files
