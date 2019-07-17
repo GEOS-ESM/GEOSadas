@@ -331,7 +331,7 @@ endif
 #--------------------------
 source $ESMADIR/@env/g5_modules
 setenv Pbuild_source_directory  $ESMADIR
-if ($debug) then
+if ($?debug) then
    setenv Pbuild_build_directory   $ESMADIR/build-Debug
    setenv Pbuild_install_directory $ESMADIR/install-Debug
 else
