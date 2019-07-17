@@ -1,15 +1,32 @@
 # GEOS ADAS Fixture
 
-## How to build GEOS ADAS on Discover
+## How to build GEOS ADAS
 
 ### Preliminary Steps
 
 #### Load Build Modules
 
 In your `.bashrc` or `.tcshrc` or other rc file add a line:
+
+##### NCCS (SLES11)
+
 ```
 module use -a /discover/nobackup/projects/gmao/sit/modulefiles-SLES11
 ```
+
+##### NAS
+```
+module use -a /nobackup/gmao_SIteam/modulefiles
+```
+
+##### GMAO Desktops
+On the GMAO desktops, the SI Team modulefiles should automatically be
+part of running `module avail` but if not, they are in:
+
+```
+module use -a /ford1/share/gmao_SIteam/modulefiles
+```
+
 Also do this in any interactive window you have. This allows you to get module files needed to correctly checkout and build the model.
 
 Now load the `GEOSenv` module:
