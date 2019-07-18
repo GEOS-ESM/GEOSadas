@@ -41,10 +41,6 @@ add_definitions(${MPI_Fortran_COMPILE_FLAGS})
 include_directories(${MPI_Fortran_INCLUDE_PATH})
 
 # Recursively build source tree
-add_subdirectory (src)
 add_subdirectory (@env)
+add_subdirectory (src)
 
-foreach (conf_file BASEDIR.rc SITE.rc)
-   configure_file(${conf_file}.in ${conf_file} @ONLY)
-   install(FILES ${CMAKE_BINARY_DIR}/${conf_file} DESTINATION etc)
-endforeach ()
