@@ -16,15 +16,24 @@ if(GIT_FOUND)
    #message("Current revision is ${Project_WC_REVISION_HASH}")
    #message("Current tag is ${Project_WC_LATEST_TAG}")
    #message("git found: ${GIT_EXECUTABLE}")
+   if (NOT "${Project_WC_LATEST_TAG}" STREQUAL "")
+      execute_process(
+         COMMAND ${GIT_EXECUTABLE} merge-base --is-ancestor ${Project_WC_LATEST_TAG} ${Project_WC_REVISION_HASH}
+         RESULT_VARIABLE is_latest_tag_an_ancestor
+         )
+      if (is_latest_tag_an_ancestor EQUAL 0)
+         #message("Tag ${Project_WC_LATEST_TAG} is an ancestor of ${Project_WC_REVISION_HASH}")
+         #message("Setting GIT_TAG_OR_REV to ${Project_WC_REVISION_HASH}")
+         set (GIT_TAG_OR_REV ${Project_WC_REVISION_HASH})
+      elseif (is_latest_tag_an_ancestor EQUAL 1)
+         #message("Tag ${Project_WC_REVISION_HASH} is an ancestor of ${Project_WC_LATEST_TAG}")
+         #message("Setting GIT_TAG_OR_REV to ${Project_WC_LATEST_TAG}")
+         set (GIT_TAG_OR_REV ${Project_WC_LATEST_TAG})
+      else ()
+         message(FATAL_ERROR "This should not be reached")
+      endif ()
+   endif ()
 endif()
-
-# And then fill a variable with either the tag if found or hash
-if (NOT "${Project_WC_LATEST_TAG}" STREQUAL "")
-   set (GIT_TAG_OR_REV "${Project_WC_LATEST_TAG}")
-else ()
-   set (GIT_TAG_OR_REV "${Project_WC_REVISION_HASH}")
-endif ()
-#message("Current tag or rev is ${GIT_TAG_OR_REV}")
 
 configure_file(CVSTAG.in CVSTAG @ONLY)
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/CVSTAG DESTINATION etc)
