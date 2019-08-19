@@ -1,7862 +1,1691 @@
-C$$$  MAIN PROGRAM DOCUMENTATION BLOCK
-C
-C MAIN PROGRAM: PREPOBS_PREPACQC
-C   PRGMMR: KEYSER           ORG: NP22        DATE: 2008-07-30
-C
-C ABSTRACT: READS IN PREPBUFR FILE CONTAINING ALL PREPROCESSED DATA
-C   TYPES. {ONLY BUFR TABLE A ENTRY MESSAGES "AIRCFT  " ARE OPERATED
-C   ON.}  SORTS BY STATION ID, DOES TRACK CHECKING, AND AGGRAGATES OBS
-C   BY POSITION (CALLED A 'STACK').  DOES QUALITY CONTROL BY MAKING
-C   TRACK CHECKS ON FLIGHTS, REMOVING DUPLICATES, COMPARING COLOCATED
-C   OBSERVATIONS, AND, IF REQUESTED, FORMING SUPEROBS OF THOSE WINDS
-C   PASSING THE QUALITY CHECKS.  A SERIES OF NEW PREPBUFR QUALITY MARKS
-C   ARE ATTACHED TO EACH OBSERVATION (SEE REMARKS).  FINALLY: WRITES
-C   STACKED EVENTS (CONSISTING OF THE UPDATED PREPBUFR QUALITY MARKS)
-C   ONTO THE EXISTING PREPBUFR DATA FOR THOSE OBS WHICH ARE NOT
-C   ORIGINALLY "BAD".  IN ALL CASES, THE NEW FILE CONTAINS ALL OF THE
-C   ORIGINAL OBSERVATIONAL DATA (P-ALT, TEMP, WIND) MINUS THE
-C   DUPLICATES AND THOSE OUTSIDE THE DESIRED TIME WINDOW.  IF
-C   APPLICABLE, ADDITIONAL SUPEROBS WILL BE ADDED.  OBSERVATIONS THAT
-C   ARE USED TO GENERATE A SUPEROB ARE FLAGGED IN THE WIND AND
-C   TEMPERATURE QUALITY MARKERS TO ENSURE THAT THEY ARE OMITTED FROM
-C   THE ANALYSIS SCHEME.  AIREP/PIREP AND SUPEROB REPORTS OVER
-C   CONTINENTAL U.S. AND SURROUNDING ENVIRONS MAY ALSO BE FLAGGED AND
-C   EXCLUDED FROM ANALYSIS SCHEME IF REQUESTED.
-C
-C PROGRAM HISTORY LOG:
-C 1989-04-01  P. JULIAN (W/NMC00) -- ORIGINAL AUTHOR
-C 1990-03-29  P. JULIAN    -- MODIFIED TO HONOR SDM/QCAIRCFT PURGE FOR
-C             STACKED OBSERVATIONS (OBS. INCRMENT CHECK)
-C 1990-04-16  P. JULIAN    -- MODIFIED TO PACK SUPEROBS ONE AT A
-C             TIME ON SINGLE LEVELS ONLY
-C 1990-06-14  D. A. KEYSER -- INCLUDED PROCESSING OF TEMP; CORRECTED
-C             ERROR LEADING TO LOSS OF SOME OBS. IN REPACKING; COR-
-C             RECTED TO HONOR ALL SDM/QCAIRCFT PURGES FOR STACKED
-C             OBS. AND ALL SDM KEEPS FOR ISOLATED OBS.; CORRECTED
-C             SLIGHT ERROR IN LAT/LON IN OUTPUT FILE FOR SOME OBS.
-C 1990-07-03  D. A. KEYSER -- SOME OMIT Q.M. INCORRECTLY CHGED, FIXED;
-C             ALT. CORRESP. TO PRESS. OF 300 & 200 MB FOR REGRESS.
-C             CALC. OF SUPEROBS OFF SLIGHTLY, FIXED; ADDED 1 TO
-C             OUTPUT TIME FOR MULT. SUPEROBS IN SAME STACK W/ SAME
-C             ORIG. TIME (SO OI WON'T TOSS AS DUPLICATES)
-C 1990-09-18  D. A. KEYSER -- MINOR ERROR IN LOGIC CORRECTED, SOME ORIG.
-C             REPORTS WERE BEING GIVEN 'O' Q. MARK BY MISTAKE
-C 1990-11-08  D. A. KEYSER -- INCREASED ARRAY SIZES FROM 2000 TO 8000
-C             TO ALLOW FOR ACARS REPORTS WHICH CAN HAVE .GT. 2000
-C             REPORTS IN THE 'AIRCAR' FILE ***OVER-RIDDEN**
-C 1991-02-26  G. J. DIMEGO -- ADDED FT05 INPUT FOR VARIABLE WINDOW
-C             AND A VARIABLE TIME-INCREMENT FOR MULTI-LEVEL SUPROBS
-C             AND ADDED CALL TO QSORT TO ENSURE ASCENDING LATITUDE
-C 1991-12-04  D. A. KEYSER -- ALL ASDAR REPORTS NOW CONSIDERED ISO-
-C             LATED OBS. AND CANNOT BE USED TO FORM A SUPEROB,
-C             PRIOR TO CHANGE ASDAR REPORTS COULD BE SUPEROBED
-C 1992-09-02  D. A. KEYSER -- THE SDM/QCAIRCFT PURGE FLAG IS NOW
-C             OBTAINED IN THE FIRST POSITION OF THE Q. M. WORD RATHER
-C             THAN THE FOURTH POSITION
-C 1993-01-05  P. JULIAN-- THIS VERSION CONSIDERABLY REVISED OVER THAT
-C             ABOVE. NEW SUBPROGRAMS ADDED TO DO TRACK CHECK. TEMPS
-C             ARE NOW QC'D WITH NEW SUBPROGRAM. ENTIRE NEW SET OF
-C             ON29(REVISED) Q MARKS USED. SEE OFFICE NOTE XXX FOR
-C             DETAILS-ALSO DOCBLOCKS IN SUBPROGRAMS
-C 1993-06-05  P. JULIAN-- THIS VERSION REVISED TO PRODUCE CODE FOR
-C             EITHER HDS OR CRAY. SORT ROUTINES ARE LOCAL.
-C 1994-01-01  P. JULIAN-- THIS VERSION REVISED TO PRODUCE CODE FOR
-C             OPERATIONAL USE. QUAL MARKS REVISED ONCE AGAIN
-C 1994-08-25  D. A. KEYSER -- STREAMLINED CODE, EXPANDED COMMENTS AND
-C             DOCBLOCKS, REVISED TO MAKE MACHINE INDEPENDENT; ADDED
-C             REPACKING OF ORIGINAL RESERVE CHARACTER INFO PLUS OTHER
-C             META-DATA IN ON29 CATEGORY 8 FOR NON-SUPEROBED REPORTS;
-C             ADDED ABILITY TO I/O A PREPBUFR FILE AND ADD STACKED
-C             EVENTS CONSISTING OF UPDATED WIND AND TEMPERATURE
-C             QUALITY MARKERS; SEVERAL ERRORS DETECTED AND CORRECTED
-C 1995-02-10  D. A. KEYSER -- MINOR CHANGE TO ALLOW WAYPOINT CORRECTED
-C             LAT/LON TO BE CARRIED BACK TO CALLING SUBROUTINE FOR
-C             WAYPOINT CALL REASON # 3 (WASN'T BEING DONE BEFORE);
-C             WAYPOINT CALL IN MAIN FOR ISOLATED REPORTS ALSO WAS NOT
-C             RESETTING LAT/LON AND TAGS WHEN WAYPOINT CORR. MADE;
-C             ADDED COND. CODE 24 IF NO. RPTS. IN A TRACK EXCEEDS
-C             PARAMETER "ITMX", THIS IS BUMPED UP FROM 40 TO 500;
-C             PARAMETER "ISMX" IS BUMPED UP FROM 64 TO 128
-C 1995-03-27  D. A. KEYSER -- ASDAR/AMDAR TMP/WND RPTS NOT FLAGGED BY
-C             OTHER CHKS NOW GET "GOOD" Q.M. (& FOR INIDST=2, NEW RSN.
-C             CODE 28) REGARDLESS OF SCALED VECTOR INCR. (BEFORE Q.M.
-C             BASED ON S.V. INCR.); ALL ASDAR/AMDAR RPTS IN A TRACK W/
-C             AVG. INCR. > 70 KTS AMONGST > 14 RPTS. GET FLAGGED WIND
-C             (& LATER TEMP) (& FOR INIDST=2, NEW RSN. CODE 27); ADDED
-C             NEW SUBR. CMDDFF (WIND U/V TO SPD/DIR); FOR INIDST=2,
-C             STORES FORECAST(GUESS) P-ALT, WIND DIR, WIND SPEED & TEMP
-C             FOR EACH DECODED RPT (DIR/SPEED OBTAINED FROM FCST U/V);
-C             FOR INIDST=2 & DOSPOB=T: SUPEROBS NOW CONTAIN S-OBED FCST
-C             P-ALT, WIND DIR, WIND SPEED & TEMP (IF AVAIL. FROM INDIV.
-C              RPTS MAKING UP SUPEROBS), FCST INFO. THEN ENCODED IN BUFR
-C             ALONG W/ REST OF S-OB DATA (FCST DIR/SPEED CONV. TO U/V);
-C             N-LIST SWITCHES "JAMASS" & "JAWIND" NOW 6-WORD ARRAYS,
-C             REPORTS CAN NOW BE EXCLUDED FROM OUTPUT ACCORDING TO
-C             LAT. BAND; N-LIST SWITCH "FLAGUS"(LOGICAL) REPLACED BY
-C             "IFLGUS"(INTEGER), WHERE IFLGUS=0(1) EQUATES TO
-C             FLAGUS=F(T) AND NEW CHOICE IFLGUS=2 MEANS EXCLUDE RPTS
-C             OVER U.S. FROM OUTPUT RATHER THAN JUST FLAGGING
-C 1995-04-26  D. A. KEYSER -- CORRECTED PROBLEM IN SUPEROBING GUESS
-C             (OCCASIONALLY OCCURRED); ALL ASDAR/AMDAR RPTS IN A TRACK
-C             W/ > 14 RPTS GET FLAGGED WIND (& LATER TEMP) IF > 9 RPTS
-C             HAVE WIND INCR. > 50 KNOTS (CHANGE FROM PREVIOUS TEST,
-C             SEE PREVIOUS HISTORY LOG); ADDED 300 TO REASON CODES
-C             TO PREPARE FOR NEW BUFR USER TABLE, ORIGINAL REASON
-C             CODE VALUES ARE STILL ENCODED INTO BUFR DUE TO 8-BIT
-C             LIMIT IN CURRENT USER TABLE; PROGRAM CODE STILL ENCODED
-C             INTO BUFR BUT ITS VALUE HARDWIRED TO 7 (IN PREP. FOR
-C             NEW BUFR USER TABLE WHICH WILL NO LONGER HAVE PGM CODE)
-C 1995-05-30  D. A. KEYSER -- ADDED PARAMETER NAME "LSIZE" FOR MAX.
-C             NO. OF LAT/LON CORRECTIONS IN WAYPOINT FILE, ADDED
-C             COND. CODE 25 IF PARAMETER NAME "LSIZE" IS EXCEEDED;
-C             IN SUBR. INDEXF/INDEXC, TESTS FOR < 2 ELEMENTS IN SORT
-C             LIST, IF SO RETURNS W/O SORTING (BUT FILLS INDX ARRAY);
-C             THE INPUT TIME WINDOW IS NOW SET TO THE LARGER OF 3-HRS
-C             15-MIN OR INPUT NAMELIST SWITCH "WINDOW" PLUS 15-MIN,
-C             ALLOWING THE TRACK CHECKING TO DE DONE PROPERLY
-C             (PREVIOUSLY THIS WAS SET TO "WINDOW" PLUS 15-MIN., BUT
-C             THIS COULD ADVERSELY AFFECT THE TRACK CHECK FOR SMALL
-C             OUTPUT TIME WINDOWS); RECEIPT TIME TEST CHANGED TO CHECK
-C             FOR DATA WITH RECEIPT TIME OUTSIDE THE RANGE OF REPORT
-C             TIME MINUS 1-HOUR TO REPORT TIME PLUS 11.99 HOURS (SUCH
-C             REPORTS ARE SKIPPED), BEFORE ONLY TESTED FOR RECEIPT
-C             TIME OUTSIDE RANGE OF REPORT TIME MINUS 1-HOUR; ADDED
-C             NAMELIST SWITCH "RCPTST", IF FALSE THEN THE RECEIPT TIME
-C             TEST IS NOT PERFORMED
-C 1995-07-06  D. A. KEYSER -- ADDED CHECK FOR ALL REPORTS WITH
-C             ALTITUDE BETWEEN 2000 & 5000 FT., IF TEMPERATURE DIFFERS
-C             FROM GUESS BY > 25 DEG. C THE WIND AND TEMPERATURE ARE
-C             FLAGGED AS BAD (AND ARE ASSIGNED THE NEW REASON CODE
-C             "302" FOR OUTPUT TO PREPBUFR FILE) {REPORT IS FLAGGED
-C             HERE BECAUSE A "0" DIGIT HAS PROBABLY BEEN DROPPED FROM
-C             THE TRUE ALTITUDE BETWEEN 20,000 & 50,000 FT.}; FIXED
-C             TIME WINDOW CHECK TO HANDLE REPORTS IN FILES THAT HAVE
-C             A TIME OF 0100 TO 0500 UTC (SIMILAR TO WHAT OCCURS FOR
-C             0000 UTC FILE TIME); REPORTS IN A STACK OF TWO NOW GET
-C             TEMPERATURE AND WIND FLAGGED AS BAD (AND ARE ASSIGNED
-C             THE NEW REASON CODE "329" FOR OUTPUT TO PREPBUFR
-C             FILE) IF THE SCALED VECTOR WIND INCREMENT IS LARGE
-C             (IN THE RANGE 'V' TO 'Z'), A SUPEROB IS NEVER STORED;
-C             IN SUBR. IDSORT, NO LONGER SETS CHAR. ' ' TO '0' IN
-C             WORKING STNID ARRAY PRIOR TO IDSORT (WAS BREAKING-UP
-C             SOME TRACKS AND WAS NEVER NEEDED FOR ANY OTHER REASON);
-C             ASDAR/AMDAR REPORTS NOW GET TEMPERATURE AND WIND Q.
-C             MARKS SET TO "SUSPECT" (AND ARE ASSIGNED THE NEW REASON
-C             CODE "330" FOR OUTPUT TO PREPBUFR FILE) IF THE
-C             PHASE OF FLIGHT INDICATOR IS MISSING (INDICATES A
-C             PROBABLE "BANKING" AIRCRAFT WITH SUSPECT DATA QUALITY)
-C 1995-11-08  D. A. KEYSER -- INCREASED THE SIZE OF PARAMETER "LSIZE"
-C             FROM 26 TO 50
-C 1996-01-26  D. A. KEYSER -- CORRECTED DIVIDE-BY-ZERO POSSIBILITY IN
-C             THE CALCULATION OF MULTIPLE CORRELATIONS IN SUBROUTINE
-C             'SUPROB'
-C 1996-10-18  D. A. KEYSER -- NOW CLOSES INPUT BUFR DATA SET AFTER ALL
-C             REPORTS HAVE BEEN READ IN BY SUBR. IBUFR, UPDATED BUFRLIB
-C             CAUSES PGM TO ABORT WITH CALL TO OPENBF IN SUBR. OBUFR
-C             W/O THIS FIX
-C 1996-12-10  D. A. KEYSER -- INCREASED THE SIZE OF PARAMETERS "IRMX"
-C             FROM 5000 TO 10000, "ISMX" FROM 500 TO 1000, "ISUP" FROM
-C             250 TO 500, AND "ITMX" FROM 500 TO 1000 - ALL TO 
-C             ACCOUNT FOR INCREASED NUMBER OF REPORTS PROCESSED BY NEW
-C             UNIX DECODERS
-C 1997-06-03  D. A. KEYSER -- FOR INPUT PREPBUFR FORMAT, ASDAR/AMDAR
-C             REPORTS ARE NOW IDENTIFIED BY "TYP" OF 131/231 RATHER
-C             THAN BY A 'Z' IN 6'TH POSITION OF STNID SINCE STNID IN
-C             PREPBUFR NOW CONTAINS ACTUAL ASDAR/AMDAR STNID (UP TO
-C             8-CHARACTERS, NO LONGER 'Z' IN 6'TH POS. OF STNID)
-C 1998-02-17  D. A. KEYSER -- REMOVED LOGIC PERTAINING TO INPUT AND
-C             OUTPUT IN OFFICE NOTE 29 FORMAT (OBSOLETE); IMPROVED
-C             PRINT IN SDMACQC FILE IN UNIT 52
-C 1998-10-07  D.A. KEYSER -- PROGRAM NOW Y2K AND FORTRAN 90 COMPLIANT
-C 1999-08-23  D.A. KEYSER -- MODIFIED TO RUN ON IBM SP MACHINE; ADDED
-C             HIGHER ORDERS IN CHARACTER SORTS TO HOPEFULLY ALWAYS
-C             GIVE SAME SORT ORDER REGARDLESS OF INPUT REPORT ORDER;
-C             CHANGED ALL TAGS AND QMARKS THAT WERE BLANK (' ') TO '-'
-C             TO IMPROVE STDOUT PRINT APPEARANCE
-C 1999-09-23  D. A. KEYSER -- INCREASED THE SIZE OF PARAMETERS "IRMX"
-C             FROM 10000 TO 20000, "ISMX" FROM 1000 TO 2000, "ISUP"
-C             FROM 500 TO 1000, AND "ITMX" FROM 1000 TO 2000 - ALL TO
-C             ACCOUNT FOR INCREASED NUMBER OF AMDAR/ASDAR REPORTS
-C             NOW BEING DECODED
-C 1999-09-26  D. A. KEYSER -- CHANGES TO MAKE CODE MORE PORTABLE
-C 2002-11-20  D. A. KEYSER -- REMOVED ASSUMPTION THAT AN SDM PURGE ON
-C             TEMP ONLY ALSO RESULTS IN AN SDM PURGE ON WIND, BUT STILL
-C             ASSUMES THAT AN SDM PURGE ON WIND ONLY ALSO MEANS AN SDM
-C             PURGE ON TEMP (VIA ACTIONS TAKEN BY PREVIOUS
-C             PREPOBS_PREPDATA PROGRAM), ONLY REPORTS WITH SDM PURGE ON
-C             WIND ARE REMOVED FROM ANY SUBSEQUENT Q.C.; THERE IS ALSO
-C             NO LONGER ANY RELATIONSHIP BETWEEN AN SDM KEEP ON WIND
-C             VS. A KEEP ON TEMP - THEY ARE INDENDENDENT OF EACH OTHER
-C             AND FULL Q.C. IS STILL PERFORMED ON REPORTS WITH A KEEP
-C             FLAG ON EITHER, ALTHOUGH THE ORIGINAL KEEP FLAGS ARE
-C             STILL HONORED
-C 2004-11-16  D. A. KEYSER -- MAXIMUM TEMPERATURE OVER WHICH TEMP IS
-C             FLAGGED FOR NON-USE BY ASSIMILATION IS CHANGED FROM 12
-C             TO 32 DEG. C (EVENT REASON CODE 303), THIS WILL ALLOW
-C             REASONABLE LOW-LEVEL TEMPS TO BE ASSIMILATED; NOW CALLS
-C             BUFRLIB ROUTINE "UFBQCD" TO GET PROGRAM CODE FOR THIS
-C             Q.C. STEP ("PREPACQC") RATHER THAN HARDWIRING IT TO 7
-C             AS BEFORE
-C 2005-01-25  D. A. KEYSER -- INCREASED THE SIZE OF PARAMETERS "IRMX"
-C             FROM 20000 TO 40000, "ISMX" FROM 2000 TO 4000, "ISUP"
-C             FROM 1000 TO 2000, AND "ITMX" FROM 2000 TO 4000 - ALL TO
-C             ACCOUNT FOR INCREASED NUMBER OF AMDAR/ASDAR REPORTS
-C             NOW BEING DECODED AND TO ACCOUNT FOR THE NEW INCLUSION
-C             OF E-ADAS REPORTS
-C 2007-08-16  D. A. KEYSER -- INCREASED THE SIZE OF PARAMETERS "IRMX"
-C             FROM 40000 TO 80000, "ISMX" FROM 4000 TO 8000, "ISUP"
-C             FROM 2000 TO 4000, AND "ITMX" FROM 4000 TO 8000 - ALL TO
-C             ACCOUNT FOR INCREASED NUMBER OF REPORTS NOW BEING DECODED
-C             DUE TO THE NEW INCLUSION OF TAMDAR AND CANADIAN AMDAR
-C             REPORTS
-C 2007-10-17  D. A. KEYSER -- CHECKS TO SEE IF PARAMETER "ITRKL" IS
-C             EXCEEDED IN A NUMBER OF TRACK CHECK TESTS, IF SO STOPS
-C             ABNORMALLY WITH CONDITION CODES 26-30 (DEPENDING ON WHAT
-C             CAUSES "ITRKL" TO BE EXCEEDED), BEFORE COULD RUN TO
-C             COMPLETION BUT CLOBBER MEMORY OR MAYBE SEG FAULT;
-C             INCREASED THE SIZE OF PARAMETER "ITRKL" FROM 20 TO 500 -
-C             TO PREVENT ARRAYS OVERFLOWS IN NEARLY EVERY PRODUCTION
-C             RUN; INCREASED SIZE OF ARRAY "IPTTRK" FROM 5 TO PARAMETER
-C             "ITRKL" (NOW 500) (THIS HOLDS POINTER TO REPORTS IN A
-C             TRACK WITH LARGE POSITION ERRORS), BEFORE THE VALUE OF 5
-C             WAS OFTEN EXCEEDED AND MEMORY WAS UNKNOWINGLY BEING
-C             CLOBBERED; ANY REPORTS WITH ID "UNKNOWN" ARE NOT
-C             CONSIDERED FOR TRACK CHECKING (THIS WAS PLACED ON SOME
-C             REPORTS IN REANALYSIS WHEN NO ID WAS PRESENT - SINCE
-C             THESE ARE NOT NORMALLY PART OF THE SAME FLIGHT THEY
-C             CANNOT BE TRACK CHECKED); CHANGES TO TREAT TAMDAR AND
-C             CANADIAN AMDAR REPORTS THE SAME AS ASDAR/AMDAR REPORTS
-C 2008-07-30  D. A. KEYSER -- RECEIPT TIME TEST IS NO LONGER DONE FOR
-C             TAMDAR REPORTS (REGARDLESS OF SWITCH "RCPTST" BECAUSE
-C             TAMDAR REPORTS CAN BE RESENT MANY TIMES OVER AND THE
-C             RECEIPT TIME FOR VERY LATE (E.G., T-12 NDAS) RUNS MAY
-C             INCORRECTLY DISPLAY WHAT LOOKS LIKE A "STRANGE" RECEIPT
-C             TIME); IN RESPONSE TO CHANGE FROM SINGLE LEVEL TO
-C             DELAYED REPLICATION FOR "AIRCFT" REPORT LEVEL DATA NOW IN
-C             PREPBUFR FILE (IN PREPARATION FOR NRL AIRCRAFT QC PROGRAM
-C             WHICH WILL REPLACE THIS PROGRAM AND CAN GENERATE AIRCRAFT
-C             "PROFILES"), RECEIPT TIME (RCT) (WHICH IS NOW PART OF
-C             LEVEL DATA) IS NO LONGER RETRIEVED IN SAME CALL TO UFBINT
-C             AS REMAINING SINGLE-LEVEL HEADER DATA (TO AVOID BUFRLIB
-C             ERROR) (ALL LEVEL DATA HERE STILL HAS JUST ONE
-C             REPLICATION AT THIS POINT); PRIOR TO WRITING OUT EVENT,
-C             TESTS ORIG. T & W QM'S - IF > 3, WILL NOT WRITE OUT EVENT
-C             (HONORS ORIGINAL T & W QM'S IF BAD), THIS NEEDED BECAUSE
-C             TAMDAR AND CANADIAN AMDAR CURRENTLY HAVE T & W QM=9
-C             COMING IN (MISSING OBS ERROR) WHICH CODE WAS IGNORING
-C             (AND WRITING OUT EVENT WITH GOOD QM MOST OF THE TIME -
-C             THIS CAUSED OIQC TO USE THESE OBS IN ITS DECISION MAKING
-C             PROCESS - THESE OBS ARE CURRENTLY ONLY MONITORED BY GSI
-C             AND SHOULD NOT BE CONSIDERED BY OIQC)
-C
-C
-C USAGE:
-C   INPUT FILES:
-C     UNIT 05  - NAMELIST INPUT
-C     UNIT 14  - PREPBUFR FILE CONTAINING ALL DATA
-C     UNIT 15  - SEQUENTIAL FILE HOLDING FIXED FIELDS: N.H. 1 DEG.
-C                LAT/LON GRID LAND/SEA INDICATOR; S.H. 2.5 DEG.
-C                LAT/LON GRID LAND/SEA INDICATOR; N.H. CONUS 1 DEG
-C                LAT/LON YES/NO INDICATOR
-C     UNIT 23  - TEXT FILE CONTAINING WAYPOINT CORRECTIONS
-C                (READ IN WHEN NAMELIST SWITCH WAYPIN=.TRUE.)
-C
-C   OUTPUT FILES:
-C     UNIT 06  - PRINTOUT
-C     UNIT 52  - TEXT FILE FOR SDM PERUSAL (LIST OF ISOLATED REPORTS
-C              - THAT ARE FLAGGED FOR NON-USE BY THIS PROGRAM AS WELL
-C              - AS THOSE WITH LARGE INCREMENTS)
-C     UNIT 53  - TEXT FILE FOR SDM PERUSAL (LIST OF STACKED REPORTS
-C              - WITH AVERAGE VECTOR WIND INCREMENT .GT. NAMELIST
-C              - VARIABLE 'STCLIM', ALSO LIST OF STACKED REPORTS WITH
-C              - AT LEAST ONE REPORT IN STACK CONTAINING SDM KEEP FLAG
-C                ON WIND AND/OR TEMP)
-C     UNIT 61  - PREPBUFR FILE CONTAINING ALL DATA (NOW WITH ACFT QC)
-C
-C   SUBPROGRAMS CALLED:
-C     UNIQUE:    - SUPROB   SHEAR    AVEROB   RPACKR   STATS
-C                - INDEXF   LAPSE    INDEXC   TRKCHK   WAYPT
-C                - ACOUNT   PRELIM   IDSORT   FORSDM   NOEQ2
-C                - CHOOSE   AVEDIR   DBUFR    IBUFR    OBUFR
-C                  SUBFR    CMDDFF
+c$$$ Main Program Documentation Block
+c   BEST VIEWED WITH 94-CHARACTER WIDTH WINDOW
+c
+c Main Program: PREPOBS_PREPACQC
+c   Programmer: D. Keyser       Org: NP22       Date: 2016-12-09
+c
+c Abstract: Performs the NRL aircraft data quality control on all types of reports (AIREP,
+c   PIREP, AMDAR, TAMDAR, MDCRS).  Replaces the previous routine of the same name originally
+c   written by Paul Julian (which was less comprehensive and did not handle MDCRS reports).
+c   It reads in a PREPBUFR file containing all reports, pulls out "AIRCAR" and "AIRCFT"
+c   reports, merges the mass and wind pieces, translates information into NRL "standards" and
+c   stores in internal memory.  These are then passed into the NRL quality control kernel
+c   (acftqc_obs).  Once the NRL quality control is completed, translates information back to
+c   NCEP/PREPBUFR "standards" and encodes the updated information into the full PREPBUFR file
+c   as "events" with new NRLACQC reason codes.  The events consist of quality mark changes,
+c   although NRLACQC can also remove duplicate reports and rehabilitate (update) the report
+c   time, latitude and longitude for some AIREP reports.  An option is to also generate a
+c   PREPBUFR-like profiles file containing only aircraft reports in "raob-lookalike"
+c   profiles (merged mass and wind data).  These can be used for air quality and verification
+c   codes.
+c
+c Program History Log:
+c 2010-11-15  S. Bender  -- Original Author
+c 2012-05-08  D. Keyser  -- Prepared for operational implementation
+c 2012-11-20  J. Woollen -- Initial port to WCOSS
+c 2012-12-11  S. Hsiao   -- Increased maximum number of merged reports that can be processed
+c                           "max_reps" from 150K to 155K to handle increase in MDCRS reports
+c 2013-02-07  D. Keyser  -- Interface with input PREPBUFR file will now store pressure and
+c                           pressure-altitude only from the first (mass) piece of a mass/wind
+c                           piece pair rather than re-store it again from the second (wind)
+c                           piece - even though they "should" be the same in both pieces (see
+c                           % below for exception), there can be rare cases when at least
+c                           pressure-altitude is missing in the wind piece (due to a bug in
+c                           PREPDATA where unreasonably-high winds are set to missing and an
+c                           "empty" wind piece is still encoded into PREPBUFR, this can lead
+c                           to floating point exception errors in construction of profiles
+c                           {note that pressure & pressure-altitude from reports with only a
+c                           wind piece will be read since it is the first (only) piece of the
+c                           report}: % - there can be cases where the pressure qualty mark
+c                           (PQM) is different in the mass piece vs. the wind piece (e.g.,
+c                           when it is set to 10 for reports near tropical systems by
+c                           SYNDATA), so it is better to pick up PQM from the mass report for
+c                           use in the merged mass/wind profiles, an added benefit of this
+c                           change; increased maximum number of merged reports that can be
+c                           processed "max_reps" from 155K to 185K to handle future increase
+c                           all types of aircraft rpts; if the total number of merged (mass
+c                           + wind piece) aircraft-type reports read in from PREPBUFR file is
+c                           at least 90% of the maximum allowed, print diagnostic warning
+c                           message to production joblog file prior to returning from
+c                           subroutine INPUT_ACQC; if the maximum number of merged reports
+c                           that can be processed ("max_reps") is exceeded when updating
+c                           reports in PREPBUFR file with QC changes in subroutine
+c                           OUTPUT_ACQC_NOPROF, program will no longer stop with r.c. 31, as
+c                           though there is an indexing error, instead all original reports
+c                           above "max_reps" will be written out without any QC and a message
+c                           will be printed to stdout (a diagnostic will have already been
+c                           sent to the production joblog file in this case when reports were
+c                           first read in by subroutine INPUT_ACQC)
+c 2013-02-07  D. Keyser  -- Final changes to run on WCOSS: Set BUFRLIB missing (BMISS) to
+c                           10E8 rather than 10E10 to avoid integer overflow; use formatted
+c                           print statements where previously unformatted print was > 80
+c                           characters
+c 2014-03-06  D. Keyser  -- Moved BUFRLIB routine OPENMB call in subroutine
+c                           output_acqc_noprof to after time window and geographic domain
+c                           checks to prevent creation of an empty, but open, BUFR message
+c                           (type AIRCAR) in (rare) cases where absolutely no aircraft
+c                           reports pass these checks (would cause a BUFRLIB abort due to
+c                           previous message being open when attempting to copy first non-
+c                           aircraft message from input to output PREPBUFR file
+c 2014-07-18  D. Keyser  --
+c                 - Increased maximum number of flights that can be processed "maxflt" from
+c                   5000 to 7500 to account for increase in aircraft reports.
+c                 - Increased maximum number of merged reports that can be processed
+c                   "max_reps" from 185K to 220K to handle future increase in all types of
+c                   aircraft reports.
+c                 - If subroutine acftobs_qc returns abnormally to main program due to the
+c                   maximum value for number of flights calculated at some point during its
+c                   processing exceeding the allowed limit ("maxflt"), no longer stop with
+c                   r.c. 98.  Instead continue on with processing and post a diagnostic
+c                   warning message to the production joblog file.  The assumption is that
+c                   the resultant PREPBUFR file may not contain fully QC'd aircraft data,
+c                   especially if the actual number of flights calculated greatly exceeds
+c                   "maxflt" (since obs in flights above the "maxflt" limit may partially be
+c                   skipped over in the QC process), but the vast majority should be QC'd,
+c                   and all reports originally in the PREPBUFR file will be at least be
+c                   retained. (Note that a gradual increase will trigger a warning in the
+c                   production joblog now when numbers get too close to the limit - see
+c                   change to subroutine acftobs_qc below).
+c                 - Increased format width from I5 to I6 in all places where aircraft obs
+c                   index is listed out (since there now can be > 99999 reports).
+c                 - Subroutine acftobs_qc and its child subroutines:
+c                    - Keep track of maximum value for number of flights calculated at some
+c                      point during the processing of subroutine acftobs_qc.  If, at the end
+c                      of acftobs_qc, this value is at least 90% of the allowed limit
+c                      ("maxflt", set in the main program), post a diagnostic warning message
+c                      to the production joblog file prior to exiting from acftobs_qc.
+c                    - In subr. do_flt and do_reg, return (abnormally) immediately if
+c                      "maxflt" is exceeded rather than waiting to test for this at end of
+c                      do_flt and do_reg and then return (abnormally).  Prior to return
+c                      subtract 1 from number of flights so it will remain at "maxflt". The
+c                      immediate return avoids clobbering of memory in these cases.
+c                    - In subr. reorder, where any new flight exceeding "maxflt" replaces the
+c                      previous flight at index "maxflt" in the arrays to avoid an array
+c                      overflow (done in two places in original NRL version), post diagnostic
+c                      warning message to the production joblog file (found a third instance
+c                      where this needs to be done in subr. reorder - original NRL version
+c                      did not trap it and arrays limited to length "maxflt" would have
+c                      overflowed).
+c                    - If "maxflt" is exceeded in subr. dupchk (1 place possible) or in subr.
+c                      do_flt (2 places possible), the abnormal return back to subr.
+c                      acftobs_qc results in subr. acftobs_qc now continuing on but setting a
+c                      flag for "maxflt_exceeded".  Prior to this, subr.  acftobs_qc itself
+c                      immediately performed an abnormal return back to main program in such
+c                      cases resulting in no more NRL QC processing.  Now NRL QC processing
+c                      will continue on to the end of subr. acftobs_qc where the abnormal
+c                      return back to the main program will be triggered by the
+c                      "maxflt_exceeded" flag.
+c                    - There is one, apparently rare, condition where "maxflt" could be
+c                      exceeded in subr. acft_obs itself (within logic which generates master
+c                      list of tail numbers and counts).  Since it can't be determined if
+c                      continuing on without processing (QC'ing) any more data would yield
+c                      acceptable results, the program now immediately stops with condition
+c                      code 98 and a diagnostic warning message is posted to the production
+c                      joblog file noting that "maxflt" needs to be increased.  Prior to this
+c                      it returned to the main program where it also immediately stopped with
+c                      condition code 98 (so no real change in what happens here, just where
+c                      it happens).
+c 2014-09-03  D. Keyser  -- If no aircraft reports of any type are read from input PREPBUFR
+c                      file by subr. input_acqc, no further processing is performed in this
+c                      subr. other than the usual stdout print summary at its end.  After its
+c                      return back to the calling main program, the main program also, in
+c                      this case, does no further processing.  Instead the main program stops
+c                      with condition code 4 (to alert executing script prepobs_prepacqc.sh)
+c                      after printing a diagnostic message to stdout.
+c 2014-12-09  J. Purser/Y. Zhu     -- Added new namelist switches "l_mandlvl" and "tsplines",
+c                      used by subroutine sub2mem_mer to modify the calculation of vertical
+c                      velocity rate in the profiles {l_mandlvl=F excludes interpolation to
+c                      mandatory levels; tsplines=T calculates vertical velocity rate using
+c                      Jim Purser's tension-spline interpolation utility (source in-lined in
+c                      this program at this time) to get continuous gradient results in a
+c                      profile and mitigate missing time information; tsplines=F uses finite-
+c                      difference method to obtain vertical velocity rate, calculated for
+c                      both ascents and descents using the nearest neighboring pair which are
+c                      at least one minute apart (before, only finite-difference method was
+c                      used to obtain vertical velocity rate and it could only be calculated
+c                      for descents).
+c 2014-12-12  D. Keyser  -- Printout from vertical velocity rate calculation information for
+c                      QC'd merged aircraft reports written to profiles PREPBUFR-like file is
+c                      written to unit 41 rather than stdout.
+c 2015-03-16  D. Keyser  --
+c                 - Increased maximum number of merged reports that can be processed
+c                   "max_reps" from 220K to 300K to handle future increase in all types of
+c                   aircraft reports.
+c                 - In subr. output_acqc_prof, fixed a bug which, for cases where the maximum
+c                   number of merged reports that can be processed ("max_reps") is exceeded,
+c                   prevented any original reports above "max_reps" from being written out
+c                   (without any QC).
+c 2015-04-17  J. Purser   -- Updates to tension-spline interpolation utility pspl:
+c                   In April 2015 some significant changes were made to pspl.f90 to improve
+c                   the robustness of the algorithm and the usefulness of the energy
+c                   diagnostic:
+c                       1) The allowance of B iterations was increased from 40 to 80 owing to
+c                          a single failure in a parallel run (where 43 iterations were
+c                          required) (and the halfgate parameter was increased to 30 for all
+c                          data in the parallels, which also increases robustness).
+c                       2) There was included an explicit energy check at each A iteration to
+c                          force an exit when this energy fails to decrease. This change was
+c                          prompted by a single failure in a parallel run (courtesy Russ
+c                          Treadon) in which the A and B iterations flip-flopped at zero
+c                          energy change in a case of grazing contact with a gatepost.
+c                       3) The energy is now normalized by the energy that would be computed
+c                          from a spline that fits only the first and last gateposts. The
+c                          renormalized energy diagnostic tells how sinuous the final profile
+c                          is -- very large values are indiciative of a halfgate chosen to be
+c                          too narrow for the given profile data.
+c                       4) The normalized time data are now handled as integer arrays instead
+c                          of reals in those parts of the code dealing with the combinatorics
+c                          of routes.  This is just better coding practice.
+c 2015-04-17  Y. Zhu -- Updates to subroutine sub2mem_mer:
+c                       1) Subroutine is more robust.  If there is an error in the generation
+c                          of vertical velocity rate in the tension-spline interpolation
+c                          utility pspl (called in this subroutine), this subroutine (and thus
+c                          the program itself) will no longer abort (with either c. code 62,
+c                          63 or 64 depending upon which routine inside pspl generated the
+c                          error) but will instead revert to the finite difference method for
+c                          calculating vertical velocity rate.
+c                       2) Previously, halfgate was set to be 30 for the data profiles that
+c                          don't have second information in time, but a tighter value of 10
+c                          for the data profiles that do have second information in time. Now
+c                          halfgate is relaxed to be 30 for the data profiles that do have
+c                          complete time information. 
+c 2016-10-11 M.Sienkiewicz Added a namelist variable and additional code to allow use of an
+c                          alternate BUFR table definition file when generating the profile file.
+c                          (Solves a problem with mixed BUFR files used for input.)
+c 2016-11-09  C. Hill -----
+c                 - Increased the maximum number of flights that can be processed, "MAXFLT",
+c                   from 7500 to 12500 to resolve >90% warning.
+c 2016-12-09  D. Keyser  --
+c                 - Nomenclature change: replaced "MDCRS/ACARS" with just "MDCRS".
+c                 - New LATAM AMDARs contain an encrypted flight number (in addition to a tail
+c                   number, all other AMDARs have only a tail number which is copied into
+c                   flight number). Read this in and use in QC processing.
+c                   BENEFIT: Improves track-checking and other QC for LATAM AMDARs.
+c                 - Since "ACARS" as referred to in NRL QC kernal (acftobs_qc.f) is not used
+c                   there and we earlier decided to use this to provide a separate category
+c                   for TAMDARs in the NRL QC kernal (for stratifying statistics), all
+c                   printout in acftobs_qc.f changes the term "ACARS" to "TAMDAR".  In
+c                   addition, all comments now refer to "TAMDAR" instead of "ACARS".
+c                 - Variables holding latitude and longitude data (including arrays "alat" and
+c                   "alon" passed between subroutines) now double precision. XOB and YOB in
+c                   PREPBUFR file now scaled to 10**5 (was 10**2) to handle new v7 AMDAR and
+c                   MDCRS reports which have this higher precision.
+c                   BENEFIT: Retains exact precison here. Improves QC processing.
+c                      - Note: QC here can be improved further by changing logic in many
+c                              places to account for the increased precision. This needs to be
+c                              investigated.  For now, locations in code where this seems
+c                              possible are noted by the spanning comments:
+c                    ! vvvv DAK-future change perhaps to account for incr. lat/lon precision
+c                    ! ^^^^ DAK-future change perhaps to account for incr. lat/lon precision
+c                      - The format for all print statements containing latitude and longitude
+c                        changed to print to 5 decimal places.
+c
+c Usage:
+c   Input files:
+c     Unit 05  - Standard input (namelist)
+c     Unit 11  - PREPBUFR file containing all obs, prior to any processing by this program
+c     Unit 12  - file with external table for profile output (if needed)
+c
+c   Output files:
+c     Unit 06  - Standard output print
+c     Unit 08  - Text file containing full log of all NRL QC information
+c     Unit 30  - Text file containing duplicate data check information
+c     Unit 31  - Text file containing spike data check information
+c     Unit 32  - Text file containing invalid data check information
+c     Unit 33  - Text file containing stuck data check information
+c     Unit 34  - Text file containing gross check information
+c     Unit 35  - Text file containing position check information
+c     Unit 36  - Text file containing ordering check information
+c     Unit 37  - Text file containing suspect data check information
+c     Unit 38  - Text file containing reject list information
+c     Unit 41  - Text file containing vertical velocity rate calculation information for QC'd
+c                merged aircraft reports written to profiles PREPBUFR-like file
+c     Unit 51  - Text file containing sorted listing of all single-level QC'd aircraft
+c                reports written back to full PREPBUFR file
+c     Unit 52  - Text file containing sorted listing of all QC'd merged aircraft reports
+c                written to profiles PREPBUFR-like file
+c     Unit 61  - PREPBUFR file identical to input except containing NRLACQC events
+c     Unit 62  - PREPBUFR-like file containing merged (mass and wind) profile reports
+c                (always) and single(flight)-level reports not part of any profile (when
+c                l_prof1lvl=T) with NRLACQC events
+c
+c   Subprograms called:
+c     Unique:    - ACFTOBS_QC        PR_WORKDATA INDEXC             DUPCHEK_QC
+c                - REORDER           DO_FLT      DO_REG             INNOV_QC
+c                - BENFORD_QC        INVALID_QC  STK_VAL_QC         GRCHEK_QC
+c                - POSCHEK_QC        ORDDUP_QC   ORDCHEK_QC         SUSPECT_QC
+c                - REJLIST_QC        P2HT_QC     HT2FL_QC           P_DDTG
+c                - SPIKE_QC          SLEN        INSTY_OB_FUN       C_INSTY_OB
+c                - GCIRC_QC          INDEXC40    INPUT_ACQC         OUTPUT_ACQC_NOPROF
+c                - OUTPUT_ACQC_PROF  SUB2MEM_MER SUB2MEM_UM         TRANQCFLAGS
 C     LIBRARY:
-C       W3LIB :  - W3FI04   ERREXIT
-C       BUFRLIB: - DATELEN  OPENBF   READMG   READSB   UFBINT
-C                - CLOSBF   OPENMB   UFBCPY   WRITSB   UFBCNT
-C                - COPYMG   UFBQCD   CLOSMG
-C
-C   EXIT STATES:
-C     COND =   0 - SUCCESSFUL RUN
-C     COND =  04 - NO REPORTS WERE PROCESSED (NO "AIRCFT" TABLE A
-C                  MESSAGES FOUND)
-C     COND =  20 - THE NUMBER OF AIRCRAFT REPORTS IN THE INPUT FILE
-C                - EXCEEDS THE MAXIMUM LIMIT SET BY THIS PROGRAM,
-C                - MUST INCREASE THE SIZE OF PARAMETER NAME "IRMX"
-C     COND =  21 - THE NUMBER OF AIRCRAFT REPORTS IN A STACK OF CO-
-C                - LOCATED OBSERVATIONS EXCEEDS THE MAXIMUM LIMIT
-C                - SET BY THIS PROGRAM, MUST INCREASE THE SIZE OF
-C                - PARAMETER NAME "ISMX"
-C     COND =  22 - CHARACTERS ON THIS MACHINE ARE NEITHER ASCII NOR
-C                - EBCDIC
-C     COND =  23 - THE NUMBER OF SUPEROBED AIRCRAFT REPORTS GENERATED
-C                - EXCEEDS THE MAXIMUM LIMIT SET BY THIS PROGRAM,
-C                - MUST INCREASE THE SIZE OF PARAMETER NAME "ISUP"
-C                - (ONLY APPL. FOR NAMELIST SWITCH DOSPOB = TRUE)
-C     COND =  24 - THE NUMBER OF AIRCRAFT REPORTS IN A SINGLE TRACK
-C                - (FOR CHECKING) EXCEEDS THE MAXIMUM LIMIT SET BY
-C                - THIS PROGRAM, MUST INCREASE THE SIZE OF PARAMETER
-C                - NAME "ITMX"
-C     COND =  25 - THE NUMBER OF LATITUDE/LONGITUDE CORRECTIONS IN
-C                - THE EXTERNAL WAYPOINT CORRECTION FILE EXCEEDS THE
-C                - MAXIMUM LIMIT SET BY THIS PROGRAM, MUST INCREASE
-C                - THE SIZE OF PARAMETER NAME "LSIZE"
-C     COND =  26 - THE NUMBER OF REPORTS IN THE POINTER SUMMARY FOR A
-C                - TRACK EXCEEDS THE MAXIMUM LIMIT SET BY THIS PROGRAM,
-C                - MUST INCREASE THE SIZE OF PARAMETER NAME "ITRKL"
-C     COND =  27 - THE NUMBER OF REPORTS WITH ADJUSTABLE CONSTANTS FOR
-C                - AIRCRAFT GROUND SPEED LIMITS IN A TRACK EXCEEDS THE
-C                - MAXIMUM LIMIT SET BY THIS PROGRAM, MUST INCREASE THE
-C                - SIZE OF PARAMETER NAME "ITRKL"
-C     COND =  28 - THE NUMBER OF POINTERS FOR NON-ADJACENT REPORTS IN A
-C                - TRACK EXCEEDS THE MAXIMUM LIMIT SET BY THIS PROGRAM,
-C                - MUST INCREASE THE SIZE OF PARAMETER NAME "ITRKL"
-C     COND =  29 - THE NUMBER OF DUPLICATE TYPES IN A TRACK EXCEEDS THE
-C                - MAXIMUM LIMIT SET BY THIS PROGRAM, MUST INCREASE THE
-C                - SIZE OF PARAMETER NAME "ITRKL"
-C     COND =  30 - THE NUMBER OF REPORTS IN A TRACK WITH LARGE POSTION
-C                - ERRORS EXCEEDS THE  MAXIMUM LIMIT SET BY THIS
-C                - PROGRAM, MUST INCREASE THE SIZE OF PARAMETER NAME
-C                - "ITRKL"
-C     COND =  70 - THE NUMBER OF LEVELS IN A DECODED REPORT'S HEADER
-C                - AND/OR OBS. AND/OR FCST LVL IS NOT 1
-C
-C REMARKS: SEE COMMENT CARDS FOLLOWING DOCBLOCK.
-C     COMPLETE WRITE-UP CAN BE FOUND IN OFFICE NOTE 358.  NOTE THAT
-C     ALL WIND SPEEDS HERE ARE IN KNOTS??.  THE FOLLOWING DESCRIBE
-C     THE COMMON BLOCKS IN THIS PROGRAM:
-C       /ALLDAT/ -- CONTAINS ARRAYS FOR ALL AIRCRAFT OBSERVATIONS
-C       /SUMDAT/ -- CONTAINS ARRAYS FOR ONLY GROUP OF STACKED OBS.
-C     ARRAY ISTCPT:
-C                -- KEEPS SERIAL COUNT OF OBS. IN STACK, WITH THE
-C                -- INTEGER COUNT REPLACED BY 0 FOR A REJECTED
-C                -- REPORT AND -1 FOR A REPORT NOT TREATED BECAUSE
-C                -- OF ALTITUDE OR OTHER REASONS. ARRAY IFLEPT DOES
-C                -- THE SAME THING HOWEVER THE INDEXING IS WITH
-C                -- RESPECT TO THE NUMBER IN THE STACK FOR ISTCPT
-C
-C     THE POSSIBLE OUTPUT QUALITY MARKERS ARE DEFINED AS FOLLOWS:
-C       (WHERE: 'T' IS TEMPERATURE, 'W' IS WIND)
-C
-C                                                      PREPBUFR
-C    ORIGINAL SDM KEEP FLAG MAINTAINED (T/W) .........      0
-C    CHECKED BY THIS PROGRAM AND GOOD (T/W) ..........      1
-C    ORIGINAL DATA NOT CHECKED BY THIS PROGRAM (T/W) .      2
-C    ORIGINAL DATA MISSING (T/W) .....................     15
-C    CHECKED BY THIS PROGRAM AND SUSPECT (T/W) .......      3
-C    CHECKED BY THIS PROGRAM AND BAD/FAILED (T/W) ....     13
-C    OMIT FLAG -- USED TO GENERATE SUPEROB (T/W) .....     10
-C    ORIGINAL SDM PURGE FLAG MAINTAINED (T/W) ........     14
-C    NEW SUPEROBED REPORT (STNID IS 'SUPROB') (T/W) ..      1
-C    FLAGGED REPORT OVER CONTINENTAL U.S. (T/W) ......     15
-C
-C
-C ATTRIBUTES:
-C   LANGUAGE: FORTRAN 90
-C   MACHINE:  IBM-SP
-C
-C$$$
-CC
-C   ***** VARIABLES IN NAMELIST INPUT READ IN MAIN PROGRAM *****
-CC
-C    INIDST - TYPE OF INPUT FILE
-C              INIDST = 2 ---> PREPBUFR FILE IN UNIT 14 (ONLY CHOICE!)
-C    DOSPOB - SWITCH TO FORM SUPEROBS
-C              DOSPOB=.TRUE. ---> FORM SUPEROBS                (DEFAULT)
-C              DOSPOB=.FALSE. --> DO NOT FORM SUPEROBS
-C    DOACRS - RUN WITH ACARS AIRCRAFT FILE
-C              DOACRS=.TRUE. ---> RUN WITH ACARS FILE
-C              DOACRS=.FALSE. --> DO NOT RUN WITH ACARS FILE   (DEFAULT)
-C         (NOTE: THIS SWITCH NOT INVOKED -- CAN NOT RUN W/ ACARS FILE)
-C    WINDOW - TIME WINDOW FOR REPORTS TO BE OUTPUT BY THIS PROGRAM (IF
-C             WINDOW=X, TIME WINDOW IS +/- X HOURS OF CYCLE TIME)
-C                                    (DEFAULT=3.00, 6-HOUR TOTAL WINDOW)
-C         {NOTE: THE MAXIMUM VALUE FOR WINDOW IS 5.75 (5-HOURS,
-C                45-MINUTES; ANYTHING LARGER WILL RESULT IN ERROR!}
-C         (NOTE: FOR INPUT, THE TIME WINDOW IS SET TO THE LARGER OF
-C                3-HOURS 15-MINUTES OR "WINDOW" PLUS 15-MINUTES.
-C                THIS ALLOWS THE TRACK CHECKING TO BE DONE PROPERLY.
-C                ON OUTPUT, THE VALUE OF "WINDOW" IS USED - ALL
-C                REPORTS OUTSIDE WINDOW ARE OMITTED FROM OUTPUT)
-C    TIMINC - TIME INCREMENT (IN HOURS/100) ADDED TO EACH OCCURRENCE
-C             OF A MULTI-LEVEL SUPEROB (STARTING WITH ORIGINAL TIME)
-C             TO PREVENT RGL/OI FROM TOSSING AS DUPLICATES
-C         (NOTE: IF TIMINC=10., PREVENTS UNIFIED FERR CODE FROM RE-
-C                CONSTRUCTING A PROFILE)
-C                   (DEFAULT=1.00, ADD ONE-HUNDREDTH OF AN HOUR TO EACH)
-C    RCPTST - SWITCH TO PERFORM THE RECEIPT-TIME TEST
-C              RCPTST=.TRUE. ---> PERFORM THE TEST             (DEFAULT)
-C              RCPTST=.FALSE. --> DO NOT PERFORM THE TEST
-C         (NOTE 1: THE RECEIPT TIME TEST CHECKS FOR REPORTS WITH A
-C                  STRANGE RECEIPT TIME COMPARED TO THE REPORT TIME -
-C                  MAY BE YESTERDAY'S REPORT PROCESSED TODAY --
-C                  IF THE RECEIPT TIME IS OUTSIDE THE RANGE OF REPORT
-C                  TIME MINUS 1-HOUR TO REPORT TIME PLUS 11.99 HOURS,
-C                  THE REPORT IS SKIPPED SINCE ITS VALIDITY IS IN
-C                  QUESTION)
-C         (NOTE 2: THIS TEST IS NOT DONE FOR TAMDAR REPORTS BECAUSE
-C                  THEY ARE RESENT MANY TIMES OVER AND THE RECEIPT TIME
-C                  FOR VERY LATE (E.G., T-12 NDAS) RUNS MAY INCORRECTLY
-C                  DISPLAY WHAT LOOKS LIKE A STRANGE RECEIPT TIME)
-C    STCLIM - LIMIT FOR THE AVERAGE VECTOR WIND INCREMENT IN STACK FOR
-C             WHICH SDM PRINT TO UNIT 53 OCCURS (KNOTS)   (DEFAULT=41.9)
-C    WAYPIN - SWITCH FOR INPUT WAYPOINT CORRECTION INFORMATION
-C              WAYPIN=.TRUE. ---> FROM EXTERNAL FILE (UNIT 23)
-C              WAYPIN=.FALSE. --> FROM INTERNAL DATA STATEMNTS (DEFAULT)
-CC
-C  N O T E -- THE FOLLOWING 6-WORD ARRAYS REFER TO SIX LATITUDE
-C              BANDS: -90 TO -70, -70 TO -20, -20 TO 0, 0 TO 20,
-C                      20 TO  70,  70 TO  90 DEGREES (N +)
-CC
-C    JAMASS - PROCESS AIRCRAFT MASS REPORTS ON OUTPUT?
-C              JAMASS = 0    ---> YES, PROCESS MASS REPORTS
-C              JAMASS = 9999 ---> NO, DO NOT PROCESS MASS REPORTS
-C                                             (DEFAULT = JAMASS(6)/6*0/)
-C    JAWIND - PROCESS AIRCRAFT WIND REPORTS ON OUTPUT?
-C              JAWIND = 0    ---> YES, PROCESS WIND REPORTS
-C              JAWIND = 9999 ---> NO, DO NOT PROCESS WIND REPORTS
-C                                             (DEFAULT = JAWIND(6)/6*0/)
-CC
-C    IFLGUS -  WHEN IFLGUS = 1 OR 2 --->  WILL DO THE FOLLOWING TO
-C              CONVENTIONAL AIREP/PIREP AIRCRAFT REPORTS OVER CONUS:
-C              IF THERE ARE AT LEAST TWO TABLE A ENTRY 'AIRCAR' BUFR
-C              MESSAGES READ IN PRIOR TO READING IN THE FIRST "AIRCFT"
-C              BUFR MESSAGE:
-C                1) WILL EXCLUDE SUCH RPTS FROM SDM LISTING IN UNIT 52
-C                2) IF IFLGUS = 1: WILL FLAG SUCH RPTS FOR NON-USE BY
-C                    ANALYSIS BY SETTING TEMPERATURE AND WIND QUALITY
-C                    MARKERS TO 15
-C                   IF IFLGUS = 2; WILL EXCLUDE SUCH RPTS FROM BEING
-C                    OUTPUT
-C           -  WHEN IFLGUS = 0 --->  REPORTS ARE NOT CHECKED FOR
-C              GEOGRAPHICAL LOCATION
-C                                                  (DEFAULT: IFLGUS = 1)
-C    FWRITE - SWITCH TO GET STANDARD OUTPUT PRINTOUT OF FINAL LISTING
-C             OF ORIGINAL REPORTS IN AIRCFT FILE WITH NEW Q. MARKS
-C              FWRITE=.TRUE. ---> PRODUCE PRINTOUT
-C              FWRITE=.FALSE. --> NO PRINTOUT                  (DEFAULT)
-C    SWRITE - SWITCH TO GET STANDARD OUTPUT PRINTOUT FOR STATISTICS
-C              SWRITE=.TRUE. ---> PRODUCE PRINTOUT
-C              SWRITE=.FALSE. --> NO PRINTOUT                  (DEFAULT)
-C    IWRITE - SWITCH TO GET STANDARD OUTPUT PRINTOUT OF INPUT LISTING
-C             OF ORIGINAL REPORTS IN AIRCFT FILE BEFORE IDSORT, AFTER
-C             IDSORT, AND AFTER TRACK CHECK
-C              IWRITE=.TRUE. ---> PRODUCE PRINTOUT
-C              IWRITE=.FALSE. --> NO PRINTOUT                  (DEFAULT)
-C    EWRITE - SWITCH TO GET STANDARD OUTPUT PRINTOUT OF "EVENTS"
-C             (WHEN A BUFR EVENT OCCURS, I.E. CHANGING A QUALITY MARK)
-C              EWRITE=.TRUE. ---> PRODUCE PRINTOUT
-C              EWRITE=.FALSE. --> NO PRINTOUT                  (DEFAULT)
-CCCCC
-      PROGRAM PREPOBS_PREPACQC
-C
-C PARAMETER NAME "IRMX" THROUGHOUT THIS PROGRAM SETS THE MAXIMUM
-C  NUMBER OF ACFT RPTS THAN CAN BE UNPACKED FROM THE INPUT FILE CHOSEN
-C PARAMETER NAME "ISMX" THROUGHOUT THIS PROGRAM SETS THE MAXIMUM
-C  NUMBER OF ACFT RPTS THAT CAN BE TREATED IN A STACK
-      PARAMETER (IRMX= 80000, ISMX= 8000)
-C PARAMETER NAME "ISUP" THROUGHOUT THIS PROGRAM SETS THE MAXIMUM
-C  NUMBER OF SUPEROBED REPORTS THAT CAN BE PROCESSED
-      PARAMETER (ISUP= 4000)
-C PARAMETER NAME "ISIZE" THROUGHOUT THIS PROGRAM SETS THE NUMBER OF
-C  VARIABLES THAT ARE AFFECTED BY THE SORTS ID IDSORT AND TRKCHK
-C  (EXCLUDING STATION ID AND THE TAGS WHICH ARE IN SEPARATE ARRAYS)
-      PARAMETER (ISIZE= 16)
-      LOGICAL  FWRITE,SWRITE,IWRITE,EWRITE,DOSPOB,DOACRS,WAYPIN,RCPTST
-      CHARACTER*1  CF,QCACMK(15),PF
-      CHARACTER*4  SSMARK
-      CHARACTER*5  SPEC5,SPEC6,QMARKI
-      CHARACTER*8  ACID,SAID,IDENT,AAID(IRMX)
-      CHARACTER*14  TAG,CTAG(IRMX),STAG(IRMX)
-      INTEGER  IDATA(1608),NNQM(15),IDSTR(400,2)
-      REAL  RDATA(1608)
-      COMMON/OUTPUT/KNTOUT(5)
-      COMMON/SUMDAT/ISTCPT(ISMX),SAID(ISMX),SLAT(ISMX),SLON(ISMX),
-     $ SHGT(ISMX),STIM(ISMX),SSPD(ISMX),SDIR(ISMX),STMP(ISMX),
-     $ KBAD(ISMX),NUMORG,SSPDF(ISMX),SDIRF(ISMX),STMPF(ISMX),SHGTF(ISMX)
-      COMMON/ALLDAT/IFLEPT(IRMX),ACID(IRMX),ALAT(IRMX),ALON(IRMX),
-     $ AALT(IRMX),TIME(IRMX),ASPD(IRMX),ADIR(IRMX),TBASE,
-     $ ATMP(IRMX),TAG(IRMX),IRTM(IRMX),INTP(IRMX),KNTINI(IRMX),
-     $ ITEVNT(IRMX),IWEVNT(IRMX),ATMPF(IRMX),AALTF(IRMX),ASPDF(IRMX),
-     $ ADIRF(IRMX)
-      COMMON/CMPNTS/U(ISMX),V(ISMX),UF(ISMX),VF(ISMX)
-      COMMON/ACCONT/KQM2F(15),KISO(15),KNQM(15),KSDM(2),KT,KTYPS(9)
-      COMMON/INPT/DOSPOB,DOACRS,TMAXO,TMINO,TIMINC,WAYPIN,INIDST,IFLGUS,
-     $ JAMASS(6),JAWIND(6),RCPTST
-      COMMON/TSTACAR/KTACAR
-      COMMON/STWRIT/SWRITE,EWRITE,IWRITE
-      COMMON/MASK/GDNH(362,91),GDSH(145,37),GDUS(362,91)
-      COMMON/XXXXX/AAID,JARRAY(IRMX,ISIZE),CTAG,KARRAY(IRMX,ISIZE),STAG
-      COMMON/CBUFR/IDENT,IRCTME,RDATA,KIX,QMARKI,CF,PF
-      COMMON/SUPOBS/SSLAT(ISUP),SSLON(ISUP),SSTIM(ISUP),SSHGT(ISUP),
-     $ SSTMP(ISUP),SSDIR(ISUP),SSSPD(ISUP),SSHGTF(ISUP),SSTMPF(ISUP),
-     $ SSDIRF(ISUP),SSSPDF(ISUP),SSMARK(ISUP)
-      COMMON/STDATE/IDATE(5)
-      COMMON/WORD/ICHTP
-      NAMELIST/INPUT/DOSPOB,DOACRS,WINDOW,TIMINC,STCLIM,WAYPIN,INIDST,
-     $ FWRITE,SWRITE,IWRITE,EWRITE,IFLGUS,JAMASS,JAWIND,RCPTST
-      EQUIVALENCE  (RDATA,IDATA)
-      DATA  XMSG/99999./,ITOL/55/,QCACMK/'Q','R','S','T','U','V','W',
-     $ 'X','Y','Z','C','P','H','-','D'/
-      CALL W3TAGB('PREPOBS_PREPACQC',2008,0212,0087,'NP22')
+c       SYSTEM:  - SYSTEM
+c       W3NCO:   - ERREXIT    W3TAGB     W3TAGE     W3MOVDAT   MOVA2I     W3FI04
+c       W3EMC:   - W3FC05     ORDERS
+c       BUFRLIB: - IREADMG    IREADSB    UFBINT     UFBSEQ     UFBEVN     READNS     IBFMS
+c                - COPYMG     OPENMB     UFBCPY     WRITSB     WRITLC     CLOSMG     DATELEN
+c                - OPENBF     CLOSBF     UFBQCD     SETBMISS   GETBMISS
+c                
+c   Exit states:
+c     Cond =   0 - successful run
+c              4 - no aircraft reports of any type read in
+c             23 - unexpected return code from readns; problems reading BUFR file
+c             31 - indexing problem encountered when trying to match QC'd data in arrays to
+c                  mass and wind pieces in original PREPBUFR file (subroutine
+c                  output_acqc_noprof)
+c             59 - nlvinprof is zero coming into subroutine sub2mem_mer (should never
+c                  happen!)
+c             61 - index "j is .le. 1 meaning "iord" array underflow (should never happen!)
+c                  (subroutine sub2mem_mer)
+c             69 - row number for input data matrix is outside range of 1-34 (subroutine
+c                  tranQCflags)
+c             79 - characters on this machine are not ASCII, conversion of quality flag to
+c                  row number in subroutine tranQCflags cannot be made
+c             98 - too many flights in input PREPBUFR file, must increase size of parameter
+c                  "maxflt" (in some places code continues but in this case can't be sure
+c                  continuing on w/o processing any more data would turn out ok)
+calloc        99 - unable to allocate one or more array
+c
+c   Remarks:
+c      Input Namelist switches (namelist &nrlacqcinput)):
+c            trad           - time window radius in hours for outputting reports (if l_otw=T)
+c                             (default=3.0)
+c            l_otw          - logical:
+c                                 TRUE  - eliminate reports outside the time window radius
+c                                         +/- trad when writing out reports
+c                                   
+c                                 FALSE - DO NOT eliminate reports outside the time window
+c                                         radius +/- trad when writing out reports
+c                                 (default=FALSE)
+c            l_nhonly       - logical:
+c                                 TRUE  - eliminate reports outside tropics & N. Hemisphere
+c                                         when writing out reports
+c                                 FALSE - DO NOT eliminate reports outside tropics & N.
+c                                         Hemisphere when writing out reports
+c                                 (default=FALSE)
+c            l_doprofiles   - logical:
+c                                 TRUE  - create merged raob lookalike QC'd profiles from
+c                                         aircraft ascents and descents (always) and output
+c                                         these as well as QC'd merged single(flight)-level
+c                                         aircraft reports not part of any profile (when
+c                                         l_prof1lvl=T) to a PREPBUFR-like file
+c                                         **CAUTION: Will make code take quite a bit longer
+c                                                    to run!
+c                                 FALSE - SKIP creation of merged raob lookalike QC'd
+c                                         profiles from aircraft ascents and descents into
+c                                         PREPBUFR-like file
+c                                 (default=FALSE)
+c            l_allev_pf     - logical:
+c                                 TRUE  - process latest (likely NRLACQC) events plus all
+c                                         prior events into profiles PREPBUFR-like file
+c                                         **CAUTION: More complete option, but will make code
+c                                                    take longer to run!
+c                                 FALSE - process ONLY latest (likely NRLACQC) events into
+c                                         profiles PREPBUFR-like file
+c                                 (Note 1: Hardwired to FALSE if l_doprofiles=FALSE)
+c                                 {Note 2: All pre-existing events plus latest (likely
+c                                          NRLACQC) events are always encoded into full
+c                                          PREPBUFR file}
+c                                 (default=FALSE)
+c            l_prof1lvl     - logical:
+c                                 TRUE  - encode merged single(flight)-level aircraft reports
+c                                         with NRLACQC events that are not part of any
+c                                         profile into PREPBUFR-like file, along with merged
+c                                         profiles from aircraft ascents and descents
+c                                         **CAUTION: Will make code take a bit longer to run!
+c                                 FALSE - DO NOT encode merged single(flight)-level aircraft
+c                                         reports with NRLACQC events that are not part of
+c                                         any profile into PREPBUFR-like file
+c                                         - only merged profiles from aircraft ascents and
+c                                         descents will be encoded into this file
+c                                 (Note:  Applicable only when l_doprofiles=TRUE)
+c                                 (default=FALSE)
+c            l_mandlvl      - logical:
+c                                 TRUE  - interpolate obs data to mandatory levels in profile
+c                                         generation
+c                                 FALSE - DO NOT interpolate obs data to mandatory levels in
+c                                         profile generation
+c                                 (Note:  Applicable only when l_doprofiles=TRUE)
+c                                 (default=TRUE)
+c            tsplines       - logical:
+c                                 TRUE  - use Jim Purser's tension-spline interpolation
+c                                         utility to generate aircraft vertical velocity rate
+c                                         in profile generation
+c                                 FALSE - use finite-difference method based on nearest
+c                                         neighboring pair of obs which are at least one
+c                                         minute apart to generate aircraft vertical velocity
+c                                         rate in profile generation
+c                                 (Note:  Applicable only when l_doprofiles=TRUE)
+c                                 (default=TRUE)
+c
+c Attributes:
+c   Language: FORTRAN 90
+c   Machine:  NCEP WCOSS
+c
+c$$$
+      program prepobs_prepacqc 
 
-      PRINT 2111
- 2111 FORMAT('1',19X,'*****  WELCOME TO THE AIRCRAFT QUALITY CONTROL ',
-     $'PROGRAM PREPACQC -- VERSION 30 JUL 2008  *****'/)
-C CALL W3FI04 TO DETERMINE MACHINE WORD LENGTH (BYTES)
-C  AND TO TEST FOR ASCII(ICHTP=0) OR EBCDIC(ICHTP=1) CHARACTERS
-      CALL W3FI04(IENDN,ICHTP,LW)
-      PRINT 2213, LW, ICHTP, IENDN
- 2213 FORMAT(/' ---> CALL TO W3FI04 RETURNS: LW = ',I3,', ICHTP = ',I3,
-     $ ', IENDN = ',I3/)
-      IF(ICHTP.GT.1)  THEN
-C-----------------------------------------------------------------------
-C CHARACTERS ON THIS MACHINE ARE NEITHER ASCII OR EBCDIC!! -- STOP 22
-         PRINT 217
-  217    FORMAT(/5X,'++ CHARACTERS ON THIS MACHINE ARE NEITHER ASCII',
-     $    ' NOR EBCDIC - STOP 22'/)
-      CALL W3TAGE('PREPOBS_PREPACQC')
-      CALL ERREXIT(22)
-C-----------------------------------------------------------------------
-      END IF
-      RAD = 3.14159/180.
-C INITIALIZE CONSTANTS FOR ACCOUNTING
-      KT     = 0
-      KSDM   = 0
-      ICNT1  = 0
-      ICNT2  = 0
-      ICNT3  = 0
-      ICNT45 = 0
-      ICNT69 = 0
-      ICNTX  = 0
-      KDUP   = 0
-      KTACAR = 0
-      KQM2F  = 0
-      KISO   = 0
-      KNQM   = 0
-      NNQM   = 0
-      KTYPS  = 0
-      CALL SETBMISS(10E8_8)
-C READ IN NAMELIST, FIRST SET-UP ANY DEFAULTS
-      WINDOW = 3.00
-      TIMINC = 1.00
-      RCPTST = .TRUE.
-      STCLIM = 41.9
-      DOSPOB = .TRUE.
-      DOACRS = .FALSE.
-      WAYPIN = .FALSE.
-      IFLGUS = 1
-      FWRITE = .FALSE.
-      SWRITE = .FALSE.
-      IWRITE = .FALSE.
-      EWRITE = .FALSE.
-      JAMASS = 0
-      JAWIND = 0
-      READ(5,INPUT,END=9222)
-      INIDST = 2
- 9222 CONTINUE
-      IF(DOSPOB)  PRINT 2112
- 2112 FORMAT(40X,'> > > > >   SUPEROBS WILL BE GENERATED   < < < < <'/)
-      IF(.NOT.DOSPOB)  PRINT 2113
- 2113 FORMAT(38X,'> > > > >   SUPEROBS WILL NOT BE GENERATED   ',
-     $ '< < < < <'/)
-      CALL DBUFR(IDATEP)
-      IDATE(1) = IDATEP/1000000
-      IDATE(2) = MOD((IDATEP/10000),100)
-      IDATE(3) = MOD((IDATEP/100),100)
-      IDATE(4) = MOD(IDATEP,100)
-      LATEST = 9999
-      IDATE(5) = 0
-      KOUNT  = 0
-      KNTIN  = 0
-      KNTOUT = 0
-      TBASE = REAL(IDATE(4) * 100.)
-      IF(NINT(TBASE).LT.600)  TBASE = TBASE + 2400.
-C THE TIME WINDOW UPON INPUT IS SET TO THE LARGER OF 3-HRS 15-MIN OR
-C  "WINDOW" PLUS 15-MINUTES.  REMOVE ALL REPORTS OUTSIDE THIS TIME
-C  WINDOW.  (THE LARGER INPUT TIME WINDOW ALLOWS THE TRACK CHECKING TO
-C  BE DONE PROPERLY.)
-      TWNDOW = AMAX1(((WINDOW*100.)+25.0),325.)
-      TMAX = TBASE + TWNDOW
-      TMIN = TBASE - TWNDOW
-      TMAXO = TBASE + (WINDOW * 100.)
-      TMINO = TBASE - (WINDOW * 100.)
-      PRINT 1111, IDATE,TBASE,TMIN,TMAX,TMINO,TMAXO,TIMINC,LATEST
- 1111 FORMAT(39X,'===> OPERATIONAL AIRCFT FILE HAS DATE: ',I6,4I4,/,
-     $ 41X,'===> TIME BASE IS ',F8.0,/,
-     $ 41X,'===> INPUT  TIME WINDOW IS ',F8.0,' TO ',F8.0,/,
-     $ 41X,'===> OUTPUT TIME WINDOW IS ',F8.0,' TO ',F8.0,/,
-     $ 41X,'===> TIME INCREMENT IS ',F5.2,' HOURS/100',/,
-     $ 41X,'===> LATEST AIRCRAFT REPORT AT',I5,' HOURS',//)
-      WRITE(6,INPUT)
-C READ IN N.H. CONUS MASK (1 DEG GRID); IF MASK > 0 THEN GRID LOCATED
-C  HERE -- THIS IS NEEDED LATER IN PROGRAM
-      PRINT 101
-  101 FORMAT(/1X,'**** OPEN UNIT 15 TO GET CONUS GRID FOR LOCATION ',
-     $ 'CHECKS ****'/)
-      READ(15,ERR=8814)  GDNH
-      READ(15,ERR=8814)  GDSH
-      READ(15,ERR=8814)  GDUS
-      GO TO 8812
-C-----------------------------------------------------------------------
- 8814 CONTINUE
-C PROBLEM W/ READ; INIT. GDUS ARRAY TO 0 - (HAVE TO ASSUME ALL N.H. OBS.
-C  ARE OUTSIDE OF CONUS REGION)
-      GDUS = 0.0
-      PRINT 102
-  102 FORMAT(/'  +++> TROUBLE READING U.S. MASK FILE; ASSUME ALL N.H. ',
-     $ 'DATA OUTSIDE CONUS REGION IN ANY CONUS TEST'/)
-C-----------------------------------------------------------------------
- 8812 CONTINUE
-       IF(IWRITE)  PRINT 6176
- 6176 FORMAT(/' LISTING OF ORIGINAL DATA BEFORE IDSORT----'/9X,'ACID',
-     $ 8X,'LAT    WLON    UTC   ALT   TEMP  WDIR  WSPD    -----TAGS',
-     $ '-----   ITYPE  RPTIME  KNTINI  GALT GTEMP  GDIR  GSPD'/)
-    5 CONTINUE
-      ALTF = XMSG
-      DIRF = XMSG
-      SPDF = XMSG
-      TMPF = XMSG
-C***********************************************************************
-C                     READ IN NEXT AIRCRAFT REPORT
-C***********************************************************************
-      IY = 43
-      SPEC5 = '----'
-      SPEC6 = '----'
-      CALL IBUFR(ALTF,DIRF,SPDF,TMPF,*2)
-      SPEC5(3:3) = PF
-      SPEC6(3:3) = CF
-      KOUNT = KOUNT + 1
-      KNTIN = KNTIN + 1
-      KNTINI(KOUNT) = KNTIN
-      IF(KOUNT.GT.IRMX)  THEN
-C***********************************************************************
-C FATAL ERROR: THERE ARE MORE RPTS IN INPUT FILE THAN "IRMX" -- STOP 20
-         PRINT 53, IRMX
-   53 FORMAT(/' THERE ARE MORE THAN',I5,' AIRCRAFT REPORTS IN INPUT ',
-     $ 'FILE -- MUST INCREASE SIZE OF PARAMETER NAME "IRMX" - STOP 20'/)
-      CALL W3TAGE('PREPOBS_PREPACQC')
-      CALL ERREXIT(20)
-C***********************************************************************
-      END IF
-      TAG(KOUNT)(12:12) = '-'
-      ALAT(KOUNT) = RDATA(1)
-      ALON(KOUNT) = RDATA(2)
-      INTP(KOUNT) = IDATA(8)
-      IF(NINT(ALON(KOUNT)).EQ.36000)  ALON(KOUNT) = 0.0
-C IF MISSING OR UNREASONABLE LAT/LON (SET LATTER TO MISSING), SET POS.
-C  12 OF TAG TO '@' TO MARK THEM (AT END OF SORT, ISOLATED)
-      IF(NINT(ALAT(KOUNT)).GT.9000.OR.NINT(ALAT(KOUNT)).LT.-9000)  THEN
-CVVVVV%%%%%
-         PRINT *,'~~~~~ HERE IS A MISSING/UNREASONABLE LAT SET TO MSG!!'
-CAAAAA%%%%%
-         ALAT(KOUNT) = XMSG
-         TAG(KOUNT)(12:12) = '@'
-      ELSE
-         ALAT(KOUNT) = ALAT(KOUNT) * .01
-      END IF
-      IF(NINT(ALON(KOUNT)).GT.36000.OR.NINT(ALON(KOUNT)).LT.0)  THEN
-CVVVVV%%%%%
-         PRINT *,'~~~~~ HERE IS A MISSING/UNREASONABLE LON SET TO MSG!!'
-CAAAAA%%%%%
-         ALON(KOUNT) = XMSG
-         TAG(KOUNT)(12:12) = '@'
-      ELSE
-         ALON(KOUNT) = ALON(KOUNT) * .01
-      END IF
-      ACID(KOUNT) = IDENT
-      TIME(KOUNT) = RDATA(4)
-CVVVVV%%%%%
-      IF(NINT(TIME(KOUNT)).GT.2400.OR.NINT(TIME(KOUNT)).LT.0)
-     $ PRINT *,'~~~~~ HERE IS A MISSING/UNREASONABLE TIME, TOSSED?'
-CAAAAA%%%%%
-      IRTM(KOUNT) = IRCTME
-C DO A TIME CHECK ON REPORT -- IF OUTSIDE EXPANDED INPUT WINDOW TOSS IT
-      ITIME = NINT(TIME(KOUNT))
-      IF(NINT(TBASE).GT.2300.AND.NINT(TIME(KOUNT)).LE.
-     $ (IDATE(4)*100)+600)  TIME(KOUNT) = TIME(KOUNT) + 2400.
-      IF(TIME(KOUNT).LT.TMIN.OR.TIME(KOUNT).GT.TMAX)  THEN
-C SKIP REPORTS OUTSIDE REQUESTED TIME WINDOW
-CCCCCC  PRINT 9002,KOUNT,ACID(KOUNT),ALAT(KOUNT),ALON(KOUNT),TIME(KOUNT)
-C9002 FORMAT(/' ##########: MAIN; REPORTS OUTSIDE TIME WINDOW SKIPPED.',
-CCCCC$ I5,2X,A8,2F8.2,F6.0)
-         KOUNT = KOUNT - 1
-         GO TO 5
-      END IF
-      IF(RCPTST.AND.IRCTME.LE.2400.AND.MOD(KIX,10).NE.4)  THEN
-C FOR ALL TYPES EXCEPT TAMDAR, CHECK FOR DATA WITH STRANGE RECEIPT TIME
-C  COMPARED TO REPORT TIME - MAY BE YESTERDAY'S REPORT PROCESSED TODAY
-C  -- IF THE RECEIPT TIME IS OUTSIDE THE RANGE OF REPORT TIME MINUS
-C  1-HOUR TO REPORT TIME PLUS 11.99 HOURS, SKIP THE REPORT AS WE CAN'T
-C  DETERMINE ITS VALIDITY {THIS TEST IS NOT DONE FOR TAMDAR REPORTS
-C  BECAUSE THEY ARE RESENT MANY TIMES OVER AND THE RECEIPT TIME FOR
-C  VERY LATE (E.G., T-12 NDAS) RUNS MAY INCORRECTLY DISPLAY WHAT LOOKS
-C  LIKE A STRANGE RECEIPT TIME}
-         IF(ITIME.LT.100)  ITIME = ITIME + 2400
-         IETIME = ITIME -  100
-         ILTIME = ITIME + 1199
-         IF(IRCTME.LT.IETIME.OR.IRCTME.GT.ILTIME)  THEN
-C RECEIPT TIME IS OUTSIDE EXPECTED RANGE, BUT MAY BE AROUND 00Z SO ADD
-C  2400 TO RECEIPT TIME AND TEST AGAIN
-            IRCTMN = IRCTME + 2400
-            IF(IRCTMN.LT.IETIME.OR.IRCTMN.GT.ILTIME)  THEN
-C RECEIPT TIME IS STILL OUTSIDE EXPECTED RANGE, SKIP REPORT
-CVVVVV%%%%%
-           PRINT *,'~~~~~ THE STRANGE RECEIPT TIME DIFF. HAS OCCURRED!!'
-CAAAAA%%%%%
-               PRINT 9393, KOUNT,ACID(KOUNT),ALAT(KOUNT),ALON(KOUNT),
-     $          TIME(KOUNT),IRCTME,SPEC6(3:3)
- 9393 FORMAT(/' ##########: SKIP RPTS WHERE OBS. & RCPT. TIME ARE INCON'
-     $,'SISTENT  ',I5,2X,A8,2F8.2,F6.0,'; REC. TIME',I5,'; CAFB? ',A1)
-               KOUNT = KOUNT - 1
-               GO TO 5
-            END IF
-         END IF
-      END IF
-      AALT(KOUNT) = RDATA(IY)
-      ADIR(KOUNT) = RDATA(IY+3)
-      ASPD(KOUNT) = RDATA(IY+4)
-      ATMP(KOUNT) = RDATA(IY+1)
-C FILL IN FCST VALUES FOR ALT, DIR, SPD & TMP
-      AALTF(KOUNT) = ALTF
-      ADIRF(KOUNT) = DIRF
-      ASPDF(KOUNT) = SPDF
-      ATMPF(KOUNT) = TMPF
-      ITEVNT(KOUNT) = 0
-      IWEVNT(KOUNT) = 0
-C***********************************************************************
-C***********************************************************************
-C  INPUT AIRCFT TABLE A ENTRY MESSAGE QUALITY MARKER SITUATION -
-C   (P-ALTITUDE, TEMPERATURE. MOISTURE AND WIND)
-C
-C     WILL CONTAIN VALUE OF 14 IF SDM HAS PURGED
-C     ELSE WILL CONTAIN VALUE OF 0 IF SDM KEEPS
-C     ELSE WILL CONTAIN DEFAULT VALUE OF 2
-C     ELSE WILL CONTAIN A VALUE OF 15 IF DATA ARE MISSING
-C
-C  OTHER INPUT REPORT INFORMATION AS INDICATED:
-C
-C    +++ CONTAINS PROPER AIRCRAFT FLIGHT NUMBER (UP TO EIGHT CHARACTERS)
-C    +++ CONTAINS SCALED VECTOR WIND INCREMENT (USES ASSIMILATING
-C        FORECAST DIRECTLY, ASSUMING FCST U AND V ARE IN BUFR DATA)
-C    +++ CONTAINS CARSWELL-TINKER INDICATOR (AS REPORT SUBTYPE)
-C    +++ CONTAINS RECEIPT TIME (HOURS)
-C    +++ CONTAINS INSTRUMENT TYPE
-C
-C
-C  OUTPUT QUALITY MARKER SITUATION - SEE DOCBLOCK REMARKS
-C   (P-ALTITUDE, TEMPERATURE. MOISTURE AND WIND)
-C
-C
-C  EVENTS WRITTEN BY THIS PROGRAM INTO OUTPUT PREPBUFR FILE:
-C    NOTE: AN EVENT CAN ONLY CHANGE A VARIABLE'S QUALITY MARKER,
-C          THE OBSERVED VARIABLE ITSELF IS NEVER CHANGED.
-C          IF THE OBSERVED VARIABLE IS MISSING, THE EVENT IS
-C          NOT ACTIVE.
-C                                                              VARIABLE
-C EVENT SUBR.    MEANING                                      QUAL. MARK
-C ----- ------   -------------------------------------------- ----------
-C  301  MAIN     CARSWELL/TINKER CONVERTED PIREP REPORT        TEMP = 13
-C                (ID=XX999). TEMPERATURE AND/OR WIND           WIND = 13
-C                CONSIDERED BAD.
-C  302  MAIN     REPORT WITH ALTITUDE BETWEEN 2000 & 5000 FT.  TEMP = 13
-C                WITH TEMPERATURE THAT DIFFERS FROM GUESS      WIND = 13
-C                BY > 25 DEG. C {PROBABLY DUE TO "0" DIGIT
-C                DROPPED FROM REPORTED ALTITUDE (TRUE
-C                ALTITUDE BETWEEN 20,000 & 50,000 FT.)}
-C                TEMPERATURE AND/OR WIND CONSIDERED BAD.
-C  303  MAIN     REPORT WITH NON-MISSING TEMPERATURE GREATER   TEMP = 13
-C                THAN MAXIMUM LIMIT (12 DEG. C PRIOR TO
-C                ??/??/2005, 32 DEG. C AFTER THIS DATE).
-C                TEMPERATURE CONSIDERED BAD.
-C  304  MAIN     REPORT WITH CALM WIND NOT FROM A DIRECTION    WIND = 13
-C                OF 360 DEG.  WIND CONSIDERED BAD.
-C  305  MAIN     PIREP REPORT (ID=P...P) WITH VECTOR WIND      TEMP = 13
-C                INCREMENT GREATER THAN 20 KNOTS, OR WITH      WIND = 13
-C                UNKNOWN VECTOR WIND INCREMENT.  TEMPERATURE
-C                AND/OR WIND CONSIDERED BAD.
-C  306  MAIN     REPORT WITH A CALM WIND IN A STACK OF LESS    WIND = 13
-C                THAN 7 CO-LOCATED REPORTS WITH LESS THAN 4
-C                REPORTS HAVING A CALM WIND.  WIND CONSIDERED
-C                BAD.
-C  307  TRKCHK   MID- OR HIGH-LEVEL ASDAR/AMDAR/TAMDAR REPORT  WIND = 13
-C                IN A TRACK WITH AN UNREASONABLE GROUND SPEED
-C                AND VECTOR WIND INCREMENT GREATER THAN 70
-C                KNOTS. WIND CONSIDERED BAD.
-C  308  TRKCHK   THIS ONE OF A PAIR OF AIREP/PIREP REPORTS     WIND = 13
-C                IN A TRACK IS DETERMINED TO BE A TYPE 2A
-C                DUPLICATE.  WIND CONSIDERED BAD.
-C  309  TRKCHK   THIS ONE OF A PAIR OF AIREP/PIREP REPORTS     WIND = 13
-C                IN A TRACK IS DETERMINED TO HAVE A TYPE 3
-C                ERROR.  WIND CONSIDERED BAD.
-C  310  TRKCHK   THIS ONE OF SEVERAL (> 2) AIREP/PIREP         WIND = 13
-C                REPORTS IN A TRACK IS DETERMINED TO HAVE A
-C                TYPE 3 ERROR.  WIND CONSIDERED BAD.
-C  311  TRKCHK   THIS ONE OF SEVERAL (> 2) AIREP/PIREP         WIND = 13
-C                REPORTS IN A TRACK IS DETERMINED TO BE A
-C                TYPE 2B DUPLICATE.  WIND CONSIDERED BAD.
-C  312  TRKCHK   THIS ONE OF SEVERAL (> 2) AIREP/PIREP         WIND = 13
-C                REPORTS IN A TRACK IS DETERMINED TO BE A
-C                TYPE 2A DUPLICATE.  WIND CONSIDERED BAD.
-C  313  TRKCHK   THIS LAST OF SEVERAL (> 2) AIREP/PIREP        WIND = 13
-C                REPORTS IN A TRACK IS DETERMINED TO IN
-C                ERROR.  WIND CONSIDERED BAD.
-C  314  TRKCHK   THIS ONE OF SEVERAL (> 2) AIREP/PIREP         WIND = 13
-C                REPORTS IN A TRACK IS DETERMINED TO BE A
-C                TYPE 3 DUPLICATE.  WIND CONSIDERED BAD.
-C  315  AVEROB,  REPORT IS USED TO GENERATE A SUPEROB          TEMP = 10
-C       SUPROB,  REPORT.  TEMPERATURE AND/OR WIND ARE FLAGGED  WIND = 10
-C       NOEQ2    FOR NON-USE BY ANALYSIS.
-C  316  RPACKR   ISOLATED AIREP/PIREP REPORT WITH VECTOR WIND  TEMP = 13
-C                INCREMENT GREATER THAN 50 KNOTS. TEMPERATURE  WIND = 13
-C                AND/OR WIND CONSIDERED BAD.
-C  317  RPACKR   ISOLATED AIREP/PIREP REPORT WITH VECTOR WIND  TEMP =  1
-C                INCREMENT LESS THAN 21 KNOTS.  TEMPERATURE    WIND =  1
-C                AND/OR WIND CONSIDERED GOOD.
-C  318  RPACKR   ISOLATED AIREP/PIREP REPORT WITH VECTOR WIND  TEMP =  3
-C                INCREMENT GREATER THAN 20 KNOTS BUT LESS      WIND =  3
-C                THAN 51 KNOTS.  TEMPERATURE AND/OR WIND
-C                CONSIDERED SUSPECT.
-C  319  RPACKR,  REPORT (ISOLATED OR STACKED) WITH A WIND      TEMP = 13
-C       PRELIM   THAT HAS FAILED ONE OR MORE CHECKS AND IS
-C                CONSIDERED BAD.  TEMPERATURE CONSIDERED BAD.
-C  320  RPACKR   REPORT IN A STACK OF CO-LOCATED REPORTS WITH  TEMP =  1
-C                A TEMPERATURE AND/OR WIND THAT HAS PASSED     WIND =  1
-C                ALL CHECKS.  TEMPERATURE AND/OR WIND
-C                CONSIDERED GOOD.
-C  321  PRELIM   REPORT IN A STACK OF CO-LOCATED REPORTS WITH  WIND = 13
-C                A WIND THAT HAS FAILED THE WIND SHEAR CHECK.
-C                WIND CONSIDERED BAD.
-C  322  PRELIM   REPORT IN A STACK OF CO-LOCATED REPORTS WITH  TEMP = 13
-C                A TEMPERATURE THAT HAS FAILED THE LAPSE
-C                CHECK.  TEMPERATURE CONSIDERED BAD.
-C  323  SUPROB   REPORT IN A STACK OF CO-LOCATED REPORTS THAT  TEMP = 13
-C                IS AVAILABLE TO BE USED TO GENERATE A         WIND = 13
-C                SUPEROB REPORT.  HOWEVER, IT'S WIND HAS
-C                FAILED ONE OR MORE CHECKS AND IT IS NOT USED
-C                TO GENERATE A SUPEROB.  TEMPERATURE AND/OR
-C                WIND CONSIDERED BAD.
-C  324  NOEQ2    THIS ONE OF A PAIR OF CO-LOCATED REPORTS HAS  TEMP = 13
-C                A VECTOR WIND INCREMENT GREATER THAN 50       WIND = 13
-C                KNOTS AND CONTAINS A SUSPECTED TRACK CHECK
-C                ERROR.  TEMPERATURE AND/OR WIND CONSIDERED
-C                BAD.
-C  325  OBUFR,   AIREP/PIREP OR SUPEROB REPORT OVER THE        TEMP = 15
-C       SBUFR    CONTINENTAL U.S. OR SURROUNDING ENVIRONS      WIND = 15
-C                WHEN NAMELIST SWITCH IFLGUS = 1 AND THERE
-C                ARE AT LEAST TWO "AIRCAR" TABLE A BUFR
-C                MESSAGES READ IN PREVIOUSLY.  TEMPERATURE
-C                AND/OR WIND ARE FLAGGED FOR NON-USE BY
-C                ANALYSIS.
-C  326  SBUFR    SUPEROB REPORT THAT HAS BEEN GENERATED BY     TEMP =  1
-C                THIS PROGRAM.  TEMPERATURE AND/OR WIND        WIND =  1
-C                CONSIDERED GOOD.
-C  327  TRKCHK   IN A TRACK CONTAINING AT LEAST 15 ASDAR/      WIND = 13
-C                AMDAR/TAMDAR REPORTS, THERE ARE AT LEAST 10
-C                REPORTS WITH A VECTOR WIND INCREMENT GREATER
-C                THAN 50 KNOTS.  WIND CONSIDERED BAD.
-C  328  RPACKR   ISOLATED ASDAR/AMDAR/TAMDAR REPORT WITH A     TEMP =  1
-C                TEMPERATURE AND/OR WIND THAT HAS PASSED ALL   WIND =  1
-C                CHECKS.  TEMPERATURE AND/OR WIND CONSIDERED
-C                GOOD.
-C  329  RPACKR   AIREP/PIREP REPORT IN A STACK OF ONLY TWO     TEMP = 13
-C                CO-LOCATED REPORTS WITH VECTOR WIND           WIND = 13
-C                INCREMENT GREATER THAN 50 KNOTS.
-C                TEMPERATURE AND/OR WIND CONSIDERED BAD.
-C  330  RPACKR   ISOLATED ASDAR/AMDAR/TAMDAR REPORT WITH A     TEMP =  3
-C                MISSING PHASE OF FLIGHT INDICATOR             WIND =  3
-C                (PROBABLY BANKING).  TEMPERATURE AND/OR
-C                WIND CONSIDERED SUSPECT.
-C
-C
-C***********************************************************************
-C
-C  EACH REPORT CARRIES WITH IT IN THIS PROGRAM THE FOLLOWING 'TAG' INFO:
-C
-C    BYTE  1 : WILL CONTAIN 'P' IF SDM HAS PURGED WIND (IN WHICH CASE
-C              PREVIOUS PREPDATA CODE HAS ALSO PURGED TEMP)
-C              (NOTE: NO LONGER SET TO 'P' IF SDM HAS PURGED TEMP BUT
-C                     NOT WIND)
-C ** NO LONGER!!   : ELSE WILL CONTAIN 'H' IF SDM KEEPS
-C            : ELSE WILL CONTAIN THE ON29 FORM OF SCALED OBSERVED
-C               VECTOR INCREMENT ('Q' - 'Z') IF INCREMENT COULD BE
-C               PRODUCED
-C            : ELSE WILL CONTAIN 'C' (OLD ON29 MARKER FOR
-C               'INSTANTANEOUS SPOT WIND USED')
-C            : ELSE WILL CONTAIN '-' IF WAYPOINT CORRECTION IS MADE
-C            : ELSE WILL CONTAIN 'D' IF THIS REPORT IS A DUPLICATE
-C    BYTE  2 : +++ FINAL TEMPERATURE QUALITY MARKER (ON29 FORM)
-C                   (NOTE: ON29 MARKER " " CHANGED TO "-" HERE)
-C    BYTE  3 : +++ TRACK CHECK INDICATOR
-C            : WILL CONTAIN 'E' IF SUSPECTED TRACK CHECK ERROR
-C            : ELSE WILL BE '-'
-C    BYTE  4 : +++ FINAL WIND QUALITY MARKER (ON29 FORM)
-C                   (NOTE: ON29 MARKER " " CHANGED TO "-" HERE)
-C    BYTE  5 : +++ ON29 FORM OF ORIGINAL SCALED VECTOR INCREMENT VALUE
-C            : WILL CONTAIN 'Q' - 'Z' IF INCREMENT COULD BE PRODUCED
-C            : ELSE  WILL CONTAIN 'N' IF NOT CALUCLATED
-C    BYTE  6 : +++ ASDAR/AMDAR/TAMDAR TEMPERATURE PRECISION
-C            : WILL CONTAIN '0' IF LOW PRECISION
-C            : WILL CONTAIN '1' IF HIGH PRECISION
-C            : ELSE WILL BE '-' IF ASDAR/AMDAR/TAMDAR T. PRECISION NOT
-C               REPORTED, OR IF NOT AN ASDAR/AMDAR/TAMDAR REPORT
-C    BYTE  7 : +++ ASDAR/AMDAR/TAMDAR/CARSWELL-TINKER INDICATOR
-C            : WILL CONTAIN 'Z' IF ASDAR/AMDAR/TAMDAR REPORT
-C            : ELSE WILL CONTAIN 'C' IF CARSWELL-TINKER REPORT
-C            : ELSE  WILL BE '-' IF NONE OF THE ABOVE
-C    BYTE  8 : +++ ASDAR/AMDAR/TAMDAR TURBULENCE INDICATOR
-C            : WILL CONTAIN '0' IF NO TURBULENCE
-C            : WILL CONTAIN '1' IF LIGHT TURBULENCE
-C            : WILL CONTAIN '2' IF MODERATE TURBULENCE
-C            : WILL CONTAIN '3' IF SEVERE TURBULENCE
-C            : ELSE WILL BE '-' IF NONE OF ABOVE OR AIREP/PIREP REPORT
-C    BYTE  9 : +++ CORRECTED WAYPOINT LOCATION INDICATOR
-C            : WILL CONTAIN 'C' IF LAT/LON CHANGED (CORRECTED)
-C            : ELSE  WILL BE '-'
-C    BYTE 10 : +++ ASDAR/AMDAR/TAMDAR PHASE OF FLIGHT INDICATOR
-C            : WILL CONTAIN '0' - '2' IF RESERVED
-C            : WILL CONTAIN '3' IF LEVEL FLIGHT, ROUTINE OBSERVATION
-C            : WILL CONTAIN '4' IF LEVEL FLIGHT, HIGHEST WND ENCOUNTERED
-C            : WILL CONTAIN '5' IF ASCENDING
-C            : WILL CONTAIN '6' IF DESCENDING
-C            : WILL CONTAIN '7' IF MISSING (PROBABLY BANKING)
-C            : ELSE  WILL CONTAIN '9' IF AIREP/PIREP REPORT
-C    BYTE 11 : +++ CURRENTLY NOT USED AND SET TO '-'
-C    BYTE 12 : +++ ISOLATED REPORT INDICATOR
-C            : WILL CONTAIN 'I' IF AN ISOLATED REPORT
-C            : ELSE  WILL BE '-'
-C    BYTE 13 : +++ NUMERICAL VALUE FOR TEMPERATURE QUALITY MARKER
-C            : LOWER NUMBER ALWAYS SUPERCEDES HIGHER NUMBER (SEE && )
-C    BYTE 14 : +++ NUMERICAL VALUE FOR WIND QUALITY MARKER
-C            : LOWER NUMBER ALWAYS SUPERCEDES HIGHER NUMBER (SEE && )
-C
-C   &&  -  '0' -- DUPLICATE ('D') ('D' IS ONLY STORED IN POS. 1 OF TAG)
-C          '1' -- PURGE     ('P')   -- OR --
-C                 KEEP      ('H')
-C          '2' -- DATA ARE MISSING
-C          '3' -- BAD       ('F')
-C          '4' -- OMIT      ('O')
-C          '5' -- SUSPECT   ('Q')
-C          '6' -- GOOD      ('A')
-C          '7' -- CANNOT BE CHECKED/UNTREATABLE OR NOT CHECKED (' ' OR
-C                   '-')
-C          '8' -- INITIAL VALUE
-C
-C
-      TAG(KOUNT)(2:4) = '---'
-      TAG(KOUNT)(6:9) = '----'
-      TAG(KOUNT)(11:11) = '-'
-      TAG(KOUNT)(10:10) = SPEC5(3:3)
+      implicit none
 
-      IF((MOD(KIX,10).EQ.1.OR.MOD(KIX,10).EQ.4.OR.MOD(KIX,10).EQ.5))THEN
+c ------------------------------
+c Parameter statements/constants
+c ------------------------------
+      integer    inlun                ! input unit number (for pre-prepacqc PREPBUFR file
+                                      !  containing all obs)
+      parameter (inlun = 11)
 
-C AMDAR/ASDAR/TAMDAR
+      integer    extbl                ! unit number for external table file (if used)
+      parameter (extbl = 12)
 
-         TAG(KOUNT)(3:3)   = 'Z'
-         TAG(KOUNT)(6:6)   = SPEC5(4:4)
-         TAG(KOUNT)(7:7)   = 'Z'
-         TAG(KOUNT)(8:8)   = QMARKI(3:3)
-      ELSE  IF(SPEC6(3:3).EQ.'C')  THEN
+      integer    outlun               ! output unit number for post-PREPACQC PREPBUFR file
+                                      !  with added NRLACQC events
+      parameter (outlun=61)
 
-C TINKER (CARSWELL)
+      integer    proflun              ! output unit number for post-PREPACQC PREPBUFR-like
+                                      !  file containing merged profile reports (always) and
+      parameter (proflun=62)
 
-         TAG(KOUNT)(7:7) = 'C'
-      END IF
+      integer    max_reps             ! maximum number of input merged (mass + wind piece)
+                                      !  aircraft-type reports allowed
+      parameter (max_reps = 300000)
 
-      TAG(KOUNT)(13:14) = '88'
-      TAG(KOUNT)(5:5) = 'N'
-      IF(QMARKI(4:4).GE.'Q'.AND.QMARKI(4:4).LE.'Z')
-     $ TAG(KOUNT)(5:5) = QMARKI(4:4)
-      TAG(KOUNT)(1:1) = QMARKI(4:4)
-      IF(QMARKI(1:1).EQ.'P')  THEN
-         TAG(KOUNT)(1:1) = 'P'
-C IF SDM PURGE FLAG ON WIND, WIND Q.M. IS 'P'
-C  (NOTE: IN THIS CASE PREVIOUS PREPOBS_PREPDATA PROGRAM HAS ALSO
-C         PURGED TEMP, SO ITS Q.M. WILL ALSO BE SET TO 'P' FURTHER DOWN)
-         IF(QMARKI(5:5).NE.'P')  THEN !shouldn't happen (see NOTE above)
-            PRINT 9029, KOUNT,ACID(KOUNT),ALAT(KOUNT),ALON(KOUNT),
-     $       TIME(KOUNT),TAG(KOUNT)
- 9029 FORMAT(/' ##########:  SDM PURGE FLAG ON WIND, WIND Q.M. IS "P".',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-         ELSE  ! should ALWAYS happen (see NOTE above)
-            PRINT 90291, KOUNT,ACID(KOUNT),ALAT(KOUNT),ALON(KOUNT),
-     $       TIME(KOUNT),TAG(KOUNT)
-90291 FORMAT(/' ##########:  SDM PURGE FLAG ON WIND & TEMP, Q.M.s "P".',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-         END IF
-C  SET POS. 12 OF TAG TO '@' TO MARK PURGE FLAG
-         TAG(KOUNT)(12:12) = '@'
-         TAG(KOUNT)(4:4) = 'P'
-         TAG(KOUNT)(14:14) = '1'
-      ELSE  IF(QMARKI(1:1).EQ.'H')  THEN
-C IF SDM KEEP FLAG ON WIND, WIND Q.M. IS 'H'
-         PRINT 9027, KOUNT,ACID(KOUNT),ALAT(KOUNT),ALON(KOUNT),
-     $    TIME(KOUNT),TAG(KOUNT)
- 9027 FORMAT(/' ##########:  SDM KEEP  FLAG ON WIND, WIND Q.M. IS "H".',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-         TAG(KOUNT)(4:4) = 'H'
-         TAG(KOUNT)(14:14) = '1'
-      END IF
-      IF(QMARKI(5:5).EQ.'P')  THEN
-C IF SDM PURGE FLAG ON TEMP, TEMP Q.M. IS 'P'
-C  (NOTE: IF ONLY SDM PURGE FLAG ON WIND, PREVIOUS PREPOBS_PREPDATA
-C         PROGRAM WILL ALSO SET TEMP Q.M. AS SDM PURGE)
-         IF(QMARKI(1:1).NE.'P')  PRINT 90292, KOUNT,ACID(KOUNT),
-     $    ALAT(KOUNT),ALON(KOUNT),TIME(KOUNT),TAG(KOUNT)
-90292 FORMAT(/' ##########:  SDM PURGE FLAG ON TEMP, TEMP Q.M. IS "P".',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-         TAG(KOUNT)(2:2) = 'P'
-         TAG(KOUNT)(13:13) = '1'
-      ELSE  IF(QMARKI(5:5).EQ.'H')  THEN
-C IF SDM KEEP FLAG ON TEMP, TEMP Q.M. IS 'H'
-         PRINT 90271, KOUNT,ACID(KOUNT),ALAT(KOUNT),ALON(KOUNT),
-     $    TIME(KOUNT),TAG(KOUNT)
-90271 FORMAT(/' ##########:  SDM KEEP  FLAG ON TEMP, TEMP Q.M. IS "H".',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-         TAG(KOUNT)(2:2) = 'H'
-         TAG(KOUNT)(13:13) = '1'
-      END IF
-      IF(TAG(KOUNT)(1:1).NE.'P')  THEN
-         IF(ATMP(KOUNT).GE.XMSG)  THEN
-C IF TEMPERATURE OR WIND IS MISSING KEEP QUALITY MARKERS EQUAL TO '-'
-            IF(TAG(KOUNT)(13:13).GT.'2')  TAG(KOUNT)(13:13) = '2'
-         ELSE  IF(ATMPF(KOUNT).LT.XMSG)  THEN
-C IF GUESS TEMP. AVAILABLE, CHECK TEMP. OF RPTS WITH ALT. BETWEEN 2000
-C  AND 5000 FT. - IF NOT W/I 25 DEG. C OF GUESS TEMP. FLAG THE RPT; SET
-C  POS. 12 OF TAG TO '@' TO MARK THEM
-C  (NOTE: DONE TO FLAG RPTS THAT ARE ACTUALLY AT AN ALT. BETWEEN 20,000
-C         AND 50,000 FT. BUT ARE REPORTED WITH A '0' DIGIT DROPPED)
-            IF((AALT(KOUNT).GT.609..AND.AALT(KOUNT).LT.1524.).AND.
-     $         (ABS(ATMP(KOUNT)-ATMPF(KOUNT)).GT.250.))  THEN
-               TAG(KOUNT)(12:12) = '@'
-CVVVVV%%%%%
-           PRINT *,'~~~~~ HERE IS A RPT WITH INCORRECT? ALTITUDE!!'
-CAAAAA%%%%%
-               IF(TAG(KOUNT)(13:13).GT.'3')  THEN
-                  IF(EWRITE)  PRINT 9902, KOUNT,ACID(KOUNT),ALAT(KOUNT),
-     $             ALON(KOUNT),TIME(KOUNT),TAG(KOUNT)
- 9902 FORMAT(/' #EVENT 302: "0" DIGIT DROPPED FROM ALT.?, TEMP QM "F" ',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-                  TAG(KOUNT)(2:2) = 'F'
-                  TAG(KOUNT)(13:13) = '3'
-                  ITEVNT(KOUNT) = 302
-               END IF
-               IF(TAG(KOUNT)(14:14).GT.'3')  THEN
-                  IF(EWRITE)  PRINT 8902, KOUNT,ACID(KOUNT),ALAT(KOUNT),
-     $             ALON(KOUNT),TIME(KOUNT),TAG(KOUNT)
- 8902 FORMAT(/' #EVENT 302: "0" DIGIT DROPPED FROM ALT.?, WIND QM "F" ',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-                  TAG(KOUNT)(4:4) = 'F'
-                  TAG(KOUNT)(14:14) = '3'
-                  IWEVNT(KOUNT) = 302
-               END IF
-            END IF
-         END IF
-         IF(ASPD(KOUNT).GE.XMSG.OR.ADIR(KOUNT).GE.XMSG)  THEN
-            IF(TAG(KOUNT)(14:14).GT.'2')  TAG(KOUNT)(14:14) = '2'
-         END IF
-         IF(TAG(KOUNT)(13:13).GT.'3'.AND.ATMP(KOUNT).GT.320.)  THEN
-C FLAG TEMPERATURES GREATER THAN MAXIMUM LIMIT (GROSS CLIMATOLOGICAL
-C  CHECK - LIMIT CHANGED FROM 12 TO 32 DEG. C ON ??/??/2005)
-            IF(EWRITE)  PRINT 9004, KOUNT,ACID(KOUNT),ALAT(KOUNT),
-     $       ALON(KOUNT),TIME(KOUNT),TAG(KOUNT)
- 9004 FORMAT(/' #EVENT 303: TEMPERATURE > 32.0 C, TEMP Q.M. SET TO "F"',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-            TAG(KOUNT)(2:2) = 'F'
-            TAG(KOUNT)(13:13) = '3'
-            ITEVNT(KOUNT) = 303
-         END IF
-         IF(TAG(KOUNT)(14:14).GT.'3'.AND.ASPD(KOUNT).EQ.0..AND.
-     $    ADIR(KOUNT).NE.360.)  THEN
-C FLAG CALM WINDS THAT ARE NOT ASSIGNED A DIRECTION OF 360 DEGREES
-            IF(EWRITE)  PRINT 9005, KOUNT,ACID(KOUNT),ALAT(KOUNT),
-     $       ALON(KOUNT),TIME(KOUNT),TAG(KOUNT)
- 9005 FORMAT(/' #EVENT 304: CALM WIND NOT FROM 360, WIND Q.M. SET "F".',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-            TAG(KOUNT)(4:4) = 'F'
-            TAG(KOUNT)(14:14) = '3'
-            IWEVNT(KOUNT) = 304
-         END IF
-         IF(ACID(KOUNT).EQ.'XX999   ')  THEN
-C FLAG CARSWELL-TINKER CONVERTED PIREPS; SET POS. 12 OF TAG TO '@' TO
-C  MARK THEM
-            TAG(KOUNT)(12:12) = '@'
-            IF(TAG(KOUNT)(13:13).GT.'3')  THEN
-               IF(EWRITE)  PRINT 9001, KOUNT,ACID(KOUNT),ALAT(KOUNT),
-     $          ALON(KOUNT),TIME(KOUNT),TAG(KOUNT)
- 9001 FORMAT(/' #EVENT 301: CARSWELL-TINKER PIREP(XX999), TEMP QM "F" ',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-               TAG(KOUNT)(2:2) = 'F'
-               TAG(KOUNT)(13:13) = '3'
-               ITEVNT(KOUNT) = 301
-            END IF
-            IF(TAG(KOUNT)(14:14).GT.'3')  THEN
-               IF(EWRITE)  PRINT 8001, KOUNT,ACID(KOUNT),ALAT(KOUNT),
-     $          ALON(KOUNT),TIME(KOUNT),TAG(KOUNT)
- 8001 FORMAT(/' #EVENT 301: CARSWELL-TINKER PIREP(XX999), WIND QM "F" ',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-               TAG(KOUNT)(4:4) = 'F'
-               TAG(KOUNT)(14:14) = '3'
-               IWEVNT(KOUNT) = 301
-            END IF
-         ELSE  IF(ACID(KOUNT)(1:1).EQ.'P'.AND.ACID(KOUNT)(6:8).EQ.
-     $    'P  '.AND.((TAG(KOUNT)(5:5).GE.'S'.AND.TAG(KOUNT)(5:5).LE.'Z')
-     $    .OR.TAG(KOUNT)(5:5).EQ.'N'))  THEN
-C FLAG OTHER PIREPS IF INCR. MARKER 'S-Z' OR 'N'; SET POS. 12 OF TAG TO
-C  '@' TO MARK THEM
-            TAG(KOUNT)(12:12) = '@'
-            IF(TAG(KOUNT)(13:13).GT.'3')  THEN
-               IF(EWRITE)  PRINT 9006, KOUNT,ACID(KOUNT),ALAT(KOUNT),
-     $          ALON(KOUNT),TIME(KOUNT),TAG(KOUNT)
- 9006 FORMAT(/' #EVENT 305: PIREP W/ LG OR N/A INCR., TEMP Q.M. IS "F"',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-               TAG(KOUNT)(2:2) = 'F'
-               TAG(KOUNT)(13:13) = '3'
-               ITEVNT(KOUNT) = 305
-            END IF
-            IF(TAG(KOUNT)(14:14).GT.'3')  THEN
-               IF(EWRITE)  PRINT 8006, KOUNT,ACID(KOUNT),ALAT(KOUNT),
-     $          ALON(KOUNT),TIME(KOUNT),TAG(KOUNT)
- 8006 FORMAT(/' #EVENT 305: PIREP W/ LG OR N/A INCR., WIND Q.M. IS "F"',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-               TAG(KOUNT)(4:4) = 'F'
-               TAG(KOUNT)(14:14) = '3'
-               IWEVNT(KOUNT) = 305
-            END IF
-         END IF
-      END IF
-      IF(IWRITE)  THEN
-      PRINT 6177, KOUNT,ACID(KOUNT),ALAT(KOUNT),ALON(KOUNT),
-     $ NINT(TIME(KOUNT)),NINT(AALT(KOUNT)),NINT(ATMP(KOUNT)),
-     $ NINT(ADIR(KOUNT)),NINT(ASPD(KOUNT)),TAG(KOUNT),INTP(KOUNT),
-     $ IRTM(KOUNT),KNTINI(KOUNT),NINT(AALTF(KOUNT)),NINT(ATMPF(KOUNT)),
-     $ NINT(ADIRF(KOUNT)),NINT(ASPDF(KOUNT))
- 6177    FORMAT(' ',I5,2X,A8,1X,2F8.2,I6,I7,3I6,3X,'"',A14,'"',I6,2I8,
-     $    I7,3I6)
-      END IF
-C NOW GO BACK AND READ IN NEXT REPORT
-      GO TO 5
-C***********************************************************************
-    2 CONTINUE
-C ALL MESSAGES READ IN -- FINISHED READING IN REPORTS
-      PRINT 812, KOUNT
-  812 FORMAT(/' ALL MESSAGES READ IN PREPBUFR FILE -- KOUNT= ',I9)
-      NFILE = KOUNT
-      IF(KOUNT.EQ.0)  GO TO 6000
-C***********************************************************************
-C                   SORT BY AIRCRAFT STATION ID
-C***********************************************************************
-      CALL IDSORT(NFILE,NASDAR,NEXCLD)
-      IF(IWRITE)  THEN
-         PRINT 2177
- 2177 FORMAT(/' LISTING OF ORIGINAL DATA AFTER IDSORT----'/9X,'ACID',
-     $ 8X,'LAT    WLON    UTC   ALT   TEMP  WDIR  WSPD    -----TAGS',
-     $ '-----   ITYPE  RPTIME  KNTINI  GALT GTEMP  GDIR  GSPD'/)
-         DO K = 1,KOUNT
-      PRINT 6177, K,ACID(K),ALAT(K),ALON(K),NINT(TIME(K)),NINT(AALT(K)),
-     $ NINT(ATMP(K)),NINT(ADIR(K)),NINT(ASPD(K)),TAG(K),INTP(K),IRTM(K),
-     $ KNTINI(K),NINT(AALTF(K)),NINT(ATMPF(K)),NINT(ADIRF(K)),
-     $ NINT(ASPDF(K))
-         ENDDO
-      END IF
-      PRINT 6122, KOUNT,NFILE,NASDAR,NEXCLD
- 6122 FORMAT(/' AFTER ID SORT- KOUNT=',I7,', NFILE=',I7,', NASDAR=',I7,
-     $ ', NEXCLD=',I7/)
-C***********************************************************************
-C                         TRACK CHECK
-C***********************************************************************
-C CALL TRACK CHECK WITH NASDAR, NEXCLD (ASDAR/AMDAR/TAMDAR ARE NEXT TO
-C  LAST IN SORTED ARRAY, REPORTS EXCLUDED FROM ALL CHECKS ARE LAST
-C  SORTED ARRAY)
-C CALL TRACK CHECK WITH NFILE=KOUNT, RETURNS NEW KOUNT (NO DUPS)
-      CALL TRKCHK(KOUNT,NASDAR,NEXCLD)
-C***********************************************************************
-C HERE, TAG(KOUNT)(3:3) NOW CONTAINS '-' OR 'E' FOR SUSPECTED TRKCHK ERR
-C DO CENSUS ON INCREMENTS
-      DO K = 1,KOUNT
-         IF(TIME(K).GE.TMINO.AND.TIME(K).LE.TMAXO)  THEN
-            DO M = 1,15
-               IF(TAG(K)(1:1).EQ.QCACMK(M))  THEN
-                  NNQM(M) = NNQM(M) + 1
-                  GO TO 618
-               END IF
-            ENDDO
-         END IF
-  618    CONTINUE
-      ENDDO
-C INITIALIZE SDM LOOKAT FILE FOR FLAGGED ISOLATED REPORTS -- UNIT 52
-      WRITE(52,15) (IDATE(I),I=1,4)
-   15 FORMAT(/' SDM AIRCRAFT QC CHECK FILE FOR ',I6,3I4)
-      WRITE(52,45) LATEST
-   45 FORMAT(' LATEST A/C REPORT AT ',I4/)
-      WRITE(52,16)
-   16 FORMAT(' ISOLATED REPORTS TOSSED (WIND QM=F), OR WITH LARGE ',
-     $ 'INCREMENTS (.GE. 50 KNOTS)'/
-     $ ' (SUSPECT QM=Q, GOOD QM=A)'/
-     $ ' (NOTE1: AMDAR/ASDAR/TAMDAR ARE NEVER FLAGGED AS BAD DUE ONLY ',
-     $ ' TO LARGE INCREMENTS)'/
-     $ ' (NOTE2: DOES NOT INCLUDE REPORTS MARKED FOR EXCLUSION BY ',
-     $ 'THIS PROGRAM - THESE ARE'/
-     $ '         NOT CONSIDERED CANDIDATES FOR RETENTION)'/
-     $ ' (NOTE3: REPORTS WITH BAD TEMP QM BUT NON-BAD WIND QM ARE NOT',
-     $ ' LISTED HERE UNLESS'/
-     $ '         THEY HAVE A LARGE INCREMENT (.GE. 50 KNOTS))'//
-     $ '  SDMEDIT CAN BE USED TO MARK THESE FOR RETENTION (KEEP FLAG) ',
-     $ 'IN LATER RUNS'//)
-      WRITE(52,17)
-   17 FORMAT(/'   AC',8X,'LAT     LON     UTC    ALT   TEMP  WDIR ',
-     $ '  WSPD    INCR   SDM  WND  TMP'/' IDENT',30X,'(MB)   (C)',8X,
-     $ '(KNTS)  (KNTS) FLAG? QM   QM'/' --------   -----  -------  ',
-     $ '-----  -----  ----- -----  -----   ----   ---  ---  ---'/)
-C INITIALIZE SDM LOOKAT FILE FOR STACKED REPORTS W/ AVERAGE VECTOR WIND
-C  INCREMENT EXCEEDING 'STCLIM' VALUE AND FOR STACKED REPORTS WITH AT
-C  LEAST ONE REPORT CONTAINING SDM KEEP FLAG ON WIND AMD/OR TEMP --
-C  UNIT 53
-      WRITE(53,15) (IDATE(I),I=1,4)
-      WRITE(53,6)
-    6 FORMAT(' ??? STACK, EVALUATE AND USE SDMEDIT -'/'  STACKS WITH ',
-     $ 'AT LEAST ONE REPORT CONTAINING SDM KEEP FLAG ON WIND AND/OR ',
-     $ 'TEMP ALSO HERE')
-      WRITE(53,17)
-C INITIALIZE FOR STACK DETERMINATION
-C NOTE: THE FINAL SORT IS SET-UP S. T. AIREPS/PIREPS ARE FIRST, FOLLOWED
-C  BY ASDARS/AMDARS/TAMDARS, AND THEN AT THE END ALL EXLCUDED REPORTS
-C  -- ONLY THE NON-EXCLUDED AIREP/PIREP REPORTS ARE CHECKED FOR STACKS
-      K = 1
-      INDX = 2
-      NCUM = 2
-      IFLEPT(1) = 1
-      IFLEPT(KOUNT+1) = 1
-      KDUP = NFILE - KOUNT
-   94 CONTINUE
-C FIND COLOCATED OBS- THRU ENTIRE FILE (TOLERANCE IS .55 DEG. LAT/LON)
-      IQ1 = NINT(ABS(ALAT(INDX)-ALAT(INDX-1)) * 100.)
-      IQ2 = NINT(ABS(ALON(INDX)-ALON(INDX-1)) * 100.)
-      IF(IQ1.LE.ITOL.AND.(IQ2.LE.ITOL.OR.IQ2.GE.36000-ITOL))  THEN
-C THIS IS A STACK
-         IF(NCUM.GT.ISMX)  THEN
-C***********************************************************************
-C FATAL ERROR: THERE ARE MORE REPORTS IN A STACK THAN "ISMX" -- STOP 21
-            PRINT 63, ISMX
-   63 FORMAT(/' THERE ARE MORE THAN',I5,' AIRCRAFT REPORTS IN A STACK',
-     $ ' -- MUST INCREASE SIZE OF PARAMETER NAME "ISMX" - STOP 21'/)
-            CALL W3TAGE('PREPOBS_PREPACQC')
-            CALL ERREXIT(21)
-C***********************************************************************
-         END IF
-         IFLEPT(INDX) = NCUM
-         NCUM = NCUM + 1
-      ELSE
-C THIS IS NOT A STACK
-         IFLEPT(INDX) = 1
-         NCUM = 2
-      END IF
-      IF(INDX.LT.KOUNT-NASDAR-NEXCLD)  THEN
-         INDX = INDX + 1
-         GO TO 94
-      END IF
-C ALL ASDAR/AMDAR/TAMDAR AND EXCLUDED REPORTS ARE TREATED AS ISOLATED
-      IFLEPT(INDX+1:INDX+NASDAR+NEXCLD) = 1
-C ARRANGE STACK - INDX RUNS FROM 1 TO KOUNT WHILE COUNTER FOR
-C  ISTCPT RUNS FROM 1 TO NUM FOR EACH COLOCATED SET
-      NUM = 1
-      JARRAY = 0
-      CTAG = '--------------'
-      AAID = '        '
-      DO INDX = 1,KOUNT
-         IF(IFLEPT(INDX).EQ.1.AND.IFLEPT(INDX+1).EQ.1)  THEN
-C-----------------------------------------------------------------------
-C                    THIS IS AN ISOLATED OBSERVATION
-C    (NOTE:  NO FLAGGING IS DONE FOR CALM WINDS WHEN OBS. IS ISOLATED)
-C-----------------------------------------------------------------------
-            TAG(INDX)(12:12) = 'I'
-            SLAT(1) = ALAT(INDX)
-            SLON(1) = ALON(INDX)
-            SAID(1) = ACID(INDX)
-            SHGT(1) = AALT(INDX)
-            STIM(1) = TIME(INDX)
-            SDIR(1) = ADIR(INDX)
-            SSPD(1) = ASPD(INDX)
-            STMP(1) = ATMP(INDX)
-            SHGTF(1) = AALTF(INDX)
-            SDIRF(1) = ADIRF(INDX)
-            SSPDF(1) = ASPDF(INDX)
-            STMPF(1) = ATMPF(INDX)
-            ISTCPT(1) = 1
-            IF(TAG(INDX)(1:1).GE.'W'.AND.TAG(INDX)(1:1).LE.'Z'.AND.
-     $       INDX.LE.KOUNT-NASDAR-NEXCLD)  THEN
-C IF LARGE VECTOR WIND INCREMENT (W - Z) AND NON-EXCLUDED AIREP/PIREP
-C  REPORT, CALL WAYPOINT TO SEE IF LOCATION NEEDS TO BE CHANGED
-               JARRAY(INDX,1) = NINT(ALAT(INDX)*100.)
-               JARRAY(INDX,2) = NINT(ALON(INDX)*100.)
-               CTAG(INDX) = TAG(INDX)
-               AAID(INDX) = ACID(INDX)
-               CALL WAYPT(INDX,INDX,NCHNGD)
-               IF(NCHNGD.EQ.1)  THEN
-                  ALAT(INDX) = JARRAY(INDX,1) * .01
-                  ALON(INDX) = JARRAY(INDX,2) * .01
-                  TAG(INDX) = CTAG(INDX)
-CVVVVV%%%%%
-         PRINT *,'~~~~~ WAYPT ERROR FROM CALL IN MAIN'
-CAAAAA%%%%%
-C SUBR. WAYPT HAS CHANGED LOCATION OF THIS REPORT AND HAS UPGRADED THE
-C  INCREMENT MARKER TO " " (SUSPECT)
-                  PRINT 5768,INDX,ACID(INDX),ALAT(INDX),ALON(INDX),
-     $             ADIR(INDX),ASPD(INDX),TAG(INDX),INDX
- 5768 FORMAT(' IN MAIN: WAYPT CALL ',I5,2X,A8,2F8.2,F6.0,F6.1,2X,'"',
-     $ A14,'"'/5X,' -- TAG(',I5,')(1:1) CHANGED TO "-"'/)
-               END IF
-            END IF
-C CALL RPACKR
-            CALL RPACKR(1,1,INDX)
-C CALL FORSDM TO ALERT SDM TO FLAGGED ISOLATED REPORTS OR ISOLATED
-C  REPORTS WITH LARGE INCREMENTS (SKIP EXCLUDED REPORTS AT END OF THE
-C  LIST, BUT INCLUDE ASDARS/AMDARS/TAMDARS)
-            IF(INDX.LE.KOUNT-NEXCLD)  CALL FORSDM(INDX)
-            ICNT1 = ICNT1 + 1
-C-----------------------------------------------------------------------
-         ELSE  IF(IFLEPT(INDX).EQ.1.AND.IFLEPT(INDX+1).EQ.2)  THEN
-C CONTINUE, THERE ARE AT LEAST TWO
-            U(1) = -SIN(ADIR(INDX)*RAD) * ASPD(INDX)
-            V(1) = -COS(ADIR(INDX)*RAD) * ASPD(INDX)
-            UF(1) = XMSG
-            VF(1) = XMSG
-            IF(AMAX1(ADIRF(INDX),ASPDF(INDX)).LE.XMSG)  THEN
-               UF(1) = -SIN(ADIRF(INDX)*RAD) * ASPDF(INDX)
-               VF(1) = -COS(ADIRF(INDX)*RAD) * ASPDF(INDX)
-            END IF
-C JNDX SAVES THE STARTING POINT OF THE STAC
-            JNDX = INDX
-C-----------------------------------------------------------------------
-         ELSE  IF(IFLEPT(INDX).GT.1.AND.IFLEPT(INDX+1).GT.1)  THEN
-C CONTINUE, THERE ARE STILL MORE
-            NUM = IFLEPT(INDX)
-            U(NUM) = -SIN(ADIR(INDX)*RAD) * ASPD(INDX)
-            V(NUM) = -COS(ADIR(INDX)*RAD) * ASPD(INDX)
-            UF(NUM) = XMSG
-            VF(NUM) = XMSG
-            IF(AMAX1(ADIRF(INDX),ASPDF(INDX)).LE.XMSG)  THEN
-               UF(NUM) = -SIN(ADIRF(INDX)*RAD) * ASPDF(INDX)
-               VF(NUM) = -COS(ADIRF(INDX)*RAD) * ASPDF(INDX)
-            END IF
-         ELSE  IF(IFLEPT(INDX).GT.1.AND.IFLEPT(INDX+1).EQ.1)  THEN
-C THERE IT IS FINISHED ---
-C-----------------------------------------------------------------------
-C                 THIS IS A STACK OF 'NUM' OBSERVATIONS
-C-----------------------------------------------------------------------
-            NUM = IFLEPT(INDX)
-            NUMORG = NUM
-            U(NUM) = -SIN(ADIR(INDX)*RAD) * ASPD(INDX)
-            V(NUM) = -COS(ADIR(INDX)*RAD) * ASPD(INDX)
-            UF(NUM) = XMSG
-            VF(NUM) = XMSG
-            IF(AMAX1(ADIRF(INDX),ASPDF(INDX)).LE.XMSG)  THEN
-               UF(NUM) = -SIN(ADIRF(INDX)*RAD) * ASPDF(INDX)
-               VF(NUM) = -COS(ADIRF(INDX)*RAD) * ASPDF(INDX)
-            END IF
-            DO K = 1,NUM
-               KNDX = JNDX - 1 + K
-               SLAT(K) = ALAT(KNDX)
-               SLON(K) = ALON(KNDX)
-               SAID(K) = ACID(KNDX)
-               SHGT(K) = AALT(KNDX)
-               STIM(K) = TIME(KNDX)
-               SDIR(K) = ADIR(KNDX)
-               SSPD(K) = ASPD(KNDX)
-               STMP(K) = ATMP(KNDX)
-               SHGTF(K) = AALTF(KNDX)
-               SDIRF(K) = ADIRF(KNDX)
-               SSPDF(K) = ASPDF(KNDX)
-               STMPF(K) = ATMPF(KNDX)
-               ISTCPT(K) = K
-               KBAD(K)   = K
-            ENDDO
-C NOTE THAT AT THIS POINT ISTCPT ARRAY IS JUST DIGITAL COUNT
-C
-C CHECK FOR DUPLICATE REPORTS IN THE STACK MISSED BY DECODER
-C AND TRKCHK ROUTINE
-            IK = 0
-            KNUM = NUM
-            DO I = 1,NUM-1
-               DO J = I+1,NUM
-                  IF(SAID(I).EQ.SAID(J))  THEN
-                     IK = IK + 1
-                     IDSTR(IK,1) = I
-                     IDSTR(IK,2) = J
-                     IF(IK.GE.400)  THEN
-                        PRINT 445
-  445 FORMAT(/' ** IN DUPL. CHECK A STACK W/ .GT. 400 DUPL. ACID"S ',
-     $ 'FOUND -- MUST BUMP-UP ARRAY -- NO MORE DUPL. CAN BE CHECKED!!'/)
-                        GO TO 1191
-                     END IF
-                  END IF
-               ENDDO
-            ENDDO
- 1191       CONTINUE
-            IF(IK.GT.0)  THEN
-               DO K = 1,IK
-                  KNDX = JNDX - 1 + IDSTR(K,1)
-                  LNDX = JNDX - 1 + IDSTR(K,2)
-                  IHGT1 = AALT(KNDX)
-                  IHGT2 = AALT(LNDX)
-                  ISPD1 = ASPD(KNDX)
-                  ISPD2 = ASPD(LNDX)
-                  IDIR1 = ADIR(KNDX)
-                  IDIR2 = ADIR(LNDX)
-      IF(IHGT1.EQ.IHGT2.AND.ISPD1.EQ.ISPD2.AND.IDIR1.EQ.IDIR2)  THEN
-                     L = IDSTR(K,1)
-                     M = IDSTR(K,2)
-                     IFLEPT(KNDX) = 0
-                     ISTCPT(L) = 0
-                     KDUP = KDUP + 1
-                     IF(EWRITE)  PRINT 9003, KNDX,ACID(KNDX),
-     $                ALAT(KNDX),ALON(KNDX),TIME(KNDX),TAG(KNDX)
- 9003 FORMAT(/' #EVENT ###: STACK DUPLICATE, TEMP/WIND Q.M. SET TO "D"',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-C ASSIGN 'D' TO POS. 1 OF TAG TO INDICATE DUPLICATE (RPACKR WILL DELETE)
-                     TAG(KNDX)(1:1) = 'D'
-                     TAG(KNDX)(13:13) = '0'
-                     TAG(KNDX)(14:14) = '0'
-                     KNUM = KNUM - 1
-                     PRINT 5382, L,KNDX,SAID(L),SHGT(L),STIM(L),
-     $                SDIR(L),SSPD(L),ALAT(KNDX),ALON(KNDX),NUM
-                     PRINT 5383, M,LNDX,SAID(M),SHGT(M),STIM(M),
-     $                SDIR(M),SSPD(M),ALAT(LNDX),ALON(LNDX),KNUM
- 5382 FORMAT(' **DUP CHKR THROWS ',2I5,2X,A8,',AALT=',F7.0,', TIME=',
-     $ F7.0,', DIR=',F5.0,', SPD=',F5.1,', LAT/LON=',2F7.2,' NUM=',I3)
- 5383 FORMAT('   THE OTHER IS    ',2I5,2X,A8,',AALT=',F7.0,', TIME=',
-     $ F7.0,', DIR=',F5.0,', SPD=',F5.1,', LAT/LON=',2F7.2,' KNUM=',I3)
-                  END IF
-               ENDDO
-               IF(KNUM.EQ.1)  THEN
-C IF ALL DUPL. BUT ONE ARE REMOVED, THIS REPORT NOW TREATED AS ISOLATED
-                  TAG(JNDX+1)(12:12) = 'I'
-                  CALL RPACKR(1,1,JNDX+1)
-                  GO TO 19
-               END IF
-            END IF
-C COUNT CALMS
-            KNUM = 0
-            DO KNDX = JNDX,JNDX+NUM-1
-               IF(ASPD(KNDX).EQ.0.0)  KNUM = KNUM + 1
-            ENDDO
-            IF(KNUM.LE.3.AND.NUM.LE.6)  THEN
-C IF NUMBER OF CALMS IN STACK (KNUM) < 3 THEN FLAG WINDS
-               DO K = 1,NUM
-                  KNDX = K + JNDX - 1
-                  IF(ASPD(KNDX).EQ.0.0)  THEN
-                     IFLEPT(KNDX) = 0
-                     IF(TAG(KNDX)(14:14).GT.'3')  THEN
-                        IF(EWRITE)  PRINT 9007, KNDX,ACID(KNDX),
-     $                   ALAT(KNDX),ALON(KOUNT),TIME(KNDX),TAG(KNDX)
- 9007 FORMAT(/' #EVENT 306: # CALMS IN STACK < 3, WIND Q.M. SET TO "F"',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-                        TAG(KNDX)(4:4) = 'F'
-                        TAG(KNDX)(14:14) = '3'
-                        IWEVNT(KNDX) = 306
-                     END IF
-                  END IF
-                  ISTCPT(K) = IFLEPT(KNDX)
-               ENDDO
-            END IF
-            LOALT = 0
-            DO I = 1,NUM
-               KNDX = JNDX + I - 1
-               IF(AALT(KNDX).LT.8400.)  THEN
-                  IFLEPT(KNDX) = -1
-                  ISTCPT(I) = -1
-                  LOALT = LOALT + 1
-               END IF
-            ENDDO
-C CALLS TO APPROPRIATE ROUTINES
-            NTOTL = NUM
-            IF(NUM.EQ.2)  THEN
-               CALL PRELIM(NUM,JNDX,LOALT,KNUM,STCLIM)
-               IF(DOSPOB)  CALL NOEQ2(NUM,JNDX,NTOTL)
-               CALL RPACKR(NUM,NTOTL,JNDX)
-               ICNT2 = ICNT2 + 1
-               NUM = 1
-            ELSE
-               CALL PRELIM(NUM,JNDX,LOALT,KNUM,STCLIM)
-               IF(DOSPOB)  CALL SUPROB(NUM,JNDX,NTOTL,LOALT,KNUM)
-C CALL RPACKR
-               CALL RPACKR(NUM,NTOTL,JNDX)
-C DO CENSUS ON #S AT POINTS-BOOKEEPING
-               IF(NUM.GT.10)  THEN
-                  ICNTX = ICNTX + 1
-               ELSE  IF(NUM.GT.5)  THEN
-                  ICNT69 = ICNT69 + 1
-               ELSE IF(NUM .GT. 3) THEN
-                  ICNT45 = ICNT45+ 1
-               ELSE
-                  ICNT3 = ICNT3 + 1
-               END IF
-               NUM = 1
-            END IF
-C---------------------------------------------------------------------
-         END IF
-   19    CONTINUE
-      ENDDO
- 6000 CONTINUE
-C-----------------------------------------------------------------------
-C         PACK Q.C'ED AND SUPEROBED (DOSPOB=T) OBSERVATIONS
-C                       INTO PREPBUFR FILE
-C-----------------------------------------------------------------------
-      CALL OBUFR(KOUNT)
-C-----------------------------------------------------------------------
-C           ALL REPORTS HAVE BEEN PROCESSED -- WE ARE DONE
-C-----------------------------------------------------------------------
-      PRINT 8926, KNTOUT(1),KNTOUT(2),KNTOUT(4),KNTOUT(5)
- 8926 FORMAT(/5X,'@@@@@  ALL REPORTS PROCESSED: NUMBER OF ORIGINAL ',
-     $ '"AIRCFT" MASS RPTS COPIED TO OUTPUT FILE =',I5/35X,'NUMBER OF ',
-     $ 'ORIGINAL "AIRCFT" WIND REPORTS COPIED TO OUTPUT FILE =',I5/35X,
-     $ 'NUMBER OF SUPEROB MASS RPTS WRITTEN TO OUTPUT FILE =',I5/35X,
-     $ 'NUMBER OF SUPEROB WIND RPTS WRITTEN TO OUTPUT FILE =',I5)
-      IF(FWRITE)  THEN
-         PRINT 8923
- 8923 FORMAT(//26X,'>>>>>  ORIGINAL LISTING OF AIRCRAFT REPORTS NOW ',
-     $'WITH NEW QUALITY MARKS  <<<<<'//'   K   STNID    TIME   LAT    ',
-     $ 'LON    ALT  TEMP  DIR  SPD  Q.M.  -----TAGS-----  ITYP RCTME ',
-     $ 'KINI  TEVN WEVN  GALT GTEMP  GDIR  GSPD'/16X,'UTC',10X,'WEST',
-     $ 5X,'M   C*10  DEG  KTS',8X,14('-'),8X,'UTC',21X,'M   C*10   DEG',
-     $ '   KTS'/)
-         KNT = 0
-         DO K = 1,KOUNT
-            IF(TAG(K)(1:1).EQ.'D')  GO TO 200
-            KNT = KNT + 1
-      PRINT 6111, KNT,ACID(K),NINT(TIME(K)),ALAT(K),ALON(K),
-     $ NINT(AALT(K)),NINT(ATMP(K)),NINT(ADIR(K)),NINT(ASPD(K)),
-     $ TAG(K)(2:2),TAG(K)(4:4),TAG(K),INTP(K),IRTM(K),KNTINI(K),
-     $ ITEVNT(K),IWEVNT(K),NINT(AALTF(K)),NINT(ATMPF(K)),NINT(ADIRF(K)),
-     $ NINT(ASPDF(K))
- 6111 FORMAT(' ',I5,1X,A8,I5,2F7.2,2I6,2I5,2X,A1,1X,A1,2X,'"',A14,'"',
-     $ I4,2I6,2I5,I7,3I6)
-  200       CONTINUE
-         ENDDO
-         IF(KNTOUT(3).GT.0)  THEN
-            PRINT 9925
- 9925 FORMAT(//35X,'>>>>>  LISTING OF NEW SUPEROB REPORTS IN AIRCFT ',
-     $ 'FILE  <<<<<'//5X,'K  STNID',5X,'TIME',6X,'LAT',6X,'LON     ALT',
-     $ 7X,'TEMP    DIR   SPEED   QUAL   GESS:  ALT',6X,'TEMP    DIR   ',
-     $ ' SPEED   INCR'/18X,'UTC',15X,'WEST    METERS    DEG.C    DEG. ',
-     $ ' KNOTS   MARKS   -->  METERS   DEG.C    DEG.   KNOTS  -T--W-'/)
-            KNT = 0
-            DO K = 1,KNTOUT(3)
-               IF(SSMARK(K)(3:4).EQ.'FF')  GO TO 202
-               KNT = KNT + 1
-               TEMP = XMSG
-               IF(SSTMP(K).LT.XMSG)  TEMP = SSTMP(K)/10.
-               TMPF = XMSG
-               IF(SSTMPF(K).LT.XMSG)  TMPF = SSTMPF(K)/10.
-               PRINT 6113, KNT,SSTIM(K),SSLAT(K),SSLON(K),SSHGT(K),TEMP,
-     $          SSDIR(K),SSSPD(K),SSMARK(K)(1:1),SSMARK(K)(2:2),
-     $          SSHGTF(K),TMPF,SSDIRF(K),SSSPDF(K),SSMARK(K)(3:3),
-     $          SSMARK(K)(4:4)
- 6113 FORMAT(1X,I5,'  SUPROB',F9.0,2F9.2,F9.0,F10.2,F7.0,F7.1,4X,A1,1X,
-     $ A1,6X,F9.0,F9.2,F7.0,F8.1,3X,A1,2X,A1)
-  202          CONTINUE
-            ENDDO
-         END IF
-      END IF
-      PRINT 5001, NFILE,ICNT1,ICNT2,ICNT3,ICNT45,ICNT69,ICNTX,KDUP
- 5001 FORMAT(//' ORIGINAL DATA (WITHIN EXPANDED INPUT TIME WINDOW)'/
-     $ ' TOTAL KOUNTS =',I6,'; =1 -',I6,'; =2 -',I5,'; =3 -',I5,
-     $ '; =4,5 -',I5,'; =6-9 -',I5,'; .GT. 10 -',I5,'# DUPS -',I5)
-      PRINT 5012, KTYPS
- 5012 FORMAT(/' #TYPE1A ',I2,' #TYPE1B ',I2,' #TYPE?? ',I2,' #TYPE1D ',
-     $ I2,' #TYPE2A ',I2,' #TYPE2B ',I2,' #TYPE3 ',I2,10X,I2,' TIME ',
-     $ 'TAGS',I2)
-      PRINT 5014, QCACMK
- 5014 FORMAT(//' ORIGINAL DATA (WITHIN OUTPUT TIME WINDOW)'/14X,
-     $ 15(5X,A1)/)
-      PRINT 5331, NNQM
- 5331 FORMAT(' TOTAL QM #S = ',15I6)
-      PRINT 5337, KISO
- 5337 FORMAT(' ISOLA QM #S = ',15I6)
-      PRINT 5338, KNQM
- 5338 FORMAT(' STACK QM #S = ',15I6)
-      PRINT 5011, KQM2F
- 5011 FORMAT(' STACK WND QM=F',15I6/)
-      PRINT 5013, KSDM,KT
- 5013 FORMAT(' STACK: NO. SDM (ONLY) PURGES',I5,'; NO. SDM KEEPS',I5,
-     $ '; NO. BAD TEMPS/NON-BAD WINDS',I5/10X,'(WIND AND/OR TEMP)'/)
-      END FILE 52
-      REWIND 52
-      END FILE 53
-      REWIND 53
-      PRINT 5015
- 5015 FORMAT(/49X,'************PROGRAM COMPLETED *********')
-      CALL W3TAGE('PREPOBS_PREPACQC')
-      STOP
-      END
-C$$$  SUBPROGRAM DOCUMENTATION BLOCK
-C                .      .    .                                       .
-C SUBPROGRAM:    TRKCHK      COMPLETE TRACK CHECK FOR ALL FLIGHTS
-C   PRGMMR: D. A. KEYSER     ORG: NP22       DATE: 2007-10-17
-C
-C ABSTRACT: PERFORMS COMPLETE TRACK CHECK FOR ALL AIRCRAFT FLIGHTS
-C   WITH TWO OR MORE REPORTS.  USING REPORTS ALREADY SORTED BY STATION
-C   (FLIGHT) ID, CALULATES GROUND SPEED AND OTHER LOGICAL QUANTITIES
-C   TO ENTER DECISION MAKING ALGORITHM FOR CHOOSING BAD REPORTS. THESE
-C   OBSERVATIONS ARE FLAGGED.  DUPLICATE REPORTS ARE ELIMINATED.
-C
-C PROGRAM HISTORY LOG:
-C 1993-01-05  P. JULIAN (W/NMC00) -- ORIGINAL AUTHOR
-C 1994-08-25  D. A. KEYSER -- STREAMLINED CODE, EXPANDED COMMENTS AND
-C             DOCBLOCKS, REVISED TO MAKE MACHINE INDEPENDENT
-C 1995-02-10  D. A. KEYSER -- ADDED COND. CODE 24 IF NO. RPTS. IN A
-C             TRACK EXCEEDS PARAMETER "ITMX", THIS IS BUMPED UP FROM
-C             40 TO 500
-C 1995-03-27  D. A. KEYSER -- ALL ASDAR/AMDAR RPTS IN A TRACK W/ AVG.
-C             INCR. > 70 KTS AMONGST > 14 RPTS. GET FLAGGED WIND (&
-C             LATER TEMP) (& FOR INIDST=2, NEW RSN. CODE 27)
-C 1995-04-26  D. A. KEYSER -- ALL ASDAR/AMDAR RPTS IN A TRACK W/ > 14
-C             RPTS GET FLAGGED WIND (& LATER TEMP) IF > 9 RPTS HAVE
-C             WIND INCR. > 50 KNOTS (CHANGE FROM PREVIOUS TEST, SEE
-C             PREVIOUS HISTORY LOG)
-C 1999-08-23  D.A. KEYSER -- ADDED HIGHER ORDERS IN CHARACTER SORTS
-C             TO HOPEFULLY ALWAYS GIVE SAME SORT ORDER REGARDLESS OF
-C             INPUT REPORT ORDER
-C 2007-10-17  D. A. KEYSER -- CHECKS TO SEE IF PARAMETER "ITRKL" IS
-C             EXCEEDED IN A NUMBER OF TRACK CHECK TESTS, IF SO STOPS
-C             ABNORMALLY WITH CONDITION CODES 26-30 (DEPENDING ON WHAT
-C             CAUSES "ITRKL" TO BE EXCEEDED), BEFORE COULD RUN TO
-C             COMPLETION BUT CLOBBER MEMORY OR MAYBE SEG FAULT;
-C             INCREASED THE SIZE OF PARAMETER "ITRKL" FROM 20 TO 500 -
-C             TO PREVENT ARRAYS OVERFLOWS IN NEARLY EVERY PRODUCTION
-C             RUN; INCREASED SIZE OF ARRAY "IPTTRK" FROM 5 TO PARAMETER
-C             "ITRKL" (NOW 500) (THIS HOLDS POINTER TO REPORTS IN A
-C             TRACK WITH LARGE POSITION ERRORS), BEFORE THE VALUE OF 5
-C             WAS OFTEN EXCEEDED AND MEMORY WAS UNKNOWINGLY BEING
-C             CLOBBERED; ANY REPORTS WITH ID "UNKNOWN" ARE NOT
-C             CONSIDERED FOR TRACK CHECKING (THIS WAS PLACED ON SOME
-C             REPORTS IN REANALYSIS WHEN NO ID WAS PRESENT - SINCE
-C             THESE ARE NOT NORMALLY PART OF THE SAME FLIGHT THEY
-C             CANNOT BE TRACK CHECKED); CHANGES TO TREAT TAMDAR AND
-C             CANADIAN AMDAR REPORTS THE SAME AS ASDAR/AMDAR REPORTS
-C
-C USAGE:    CALL TRKCHK(NFILE,NASDAR,NEXCLD)
-C   INPUT ARGUMENT LIST:
-C     NFILE    - NUMBER OF OBSERVATIONS TO BE TREATED
-C     NASDAR   - NUMBER OF ASDAR/AMDAR/TAMDAR REPORTS
-C     NEXCLD   - NUMBER OF EXCLUDED REPORTS AT END OF SORT
-C
-C   OUTPUT ARGUMENT LIST:
-C     NFILE    - NUMBER OF OBSERVATIONS AFTER DUPLICATES REMOVED
-C
-C   OUTPUT FILES:
-C     UNIT 06  - PRINTOUT
-C
-C REMARKS: CALLED BY MAIN PROGRAM.
-C
-C ATTRIBUTES:
-C   LANGUAGE: FORTRAN 90
-C   MACHINE:  IBM-SP
-C
-C$$$
-      SUBROUTINE TRKCHK(NFILE,NASDAR,NEXCLD)
-      PARAMETER (IRMX= 80000, ISMX= 8000)
-      PARAMETER (ISIZE= 16)
-C PARAMETER NAME "ITMX" IN THIS SUBROUTINE (ONLY) SETS THE MAXIMUM
-C  NUMBER OF ACFT RPTS THAT CAN BE CHECKED IN A SINGLE TRACK
-      PARAMETER (ITMX= 8000)
-C PARAMETER NAME "ITRKL" IN THIS SUBROUTINE (ONLY) SETS THE FOLLOWING:
-C     THE MAXIMUM NUMBER OF REPORTS IN THE POINTER SUMMARY FOR A TRACK
-C     THE MAXIMUM NUMBER OF REPORTS WITH ADJUSTABLE CONSTANTS FOR
-C       AIRCRAFT GROUND SPEED LIMITS IN A TRACK
-C     THE MAXIMUM NUMBER OF POINTERS FOR NON-ADJACENT REPORTS IN A
-C       TRACK
-C     THE MAXIMUM NUMBER OF DUPLICATE TYPES IN A TRACK
-C     THE MAXIMUM NUMBER OF REPORTS IN A TRACK WITH LARGE POSTION
-C       ERRORS
-      PARAMETER (ITRKL= 1000)
-      LOGICAL  LOGLAT,LOGTME,LOGLT1,LOGWND,DUP,LOGTRK,LOGALT,NEW,LOGLON,
-     $ LOGLO,LOGTMP,LOGGT3,LOGHI,LPOS25,TRACE,LUTCEQ,LLATEQ,LLONEQ,
-     $ LVAREQ,EWRITE,IWRITE
-      CHARACTER*1  TOSLIM,CTG,CH1(9)
-      CHARACTER*8  ACID,SAAID(IRMX),AAID(IRMX),TYPE(ITRKL)
-      CHARACTER*14  TAG,CTAG(IRMX),STAG(IRMX)
-      CHARACTER*32  CARRAY(IRMX)
-      INTEGER  IPTNAD(ITRKL),JPTNAD(ITRKL),IPTADJ(ITRKL),IPTTRK(ITRKL),
-     $ DTKNT,IARRAY(ISMX),INDR(IRMX),ICH1(9)
-      REAL  AVESPD(ITMX),DELPOS(ITMX),DELLAT(ITMX),DELLON(ITMX)
-      COMMON/STWRIT/SWRITE,EWRITE,IWRITE
-      COMMON/XXXXX/AAID,JARRAY(IRMX,ISIZE),CTAG,KARRAY(IRMX,ISIZE),STAG
-      COMMON/ACCONT/KQM2F(15),KISO(15),KNQM(15),KSDM(2),KT,KTYPS(9)
-      COMMON/ALLDAT/IFLEPT(IRMX),ACID(IRMX),ALAT(IRMX),ALON(IRMX),
-     $ AALT(IRMX),TIME(IRMX),ASPD(IRMX),ADIR(IRMX),TBASE,
-     $ ATMP(IRMX),TAG(IRMX),IRTM(IRMX),INTP(IRMX),KNTINI(IRMX),
-     $ ITEVNT(IRMX),IWEVNT(IRMX),ATMPF(IRMX),AALTF(IRMX),ASPDF(IRMX),
-     $ ADIRF(IRMX)
-      DATA CH1  /'Q','R','S','T','U','V','W','X','Y'/
-      DATA ICH1 / 5, 15, 25, 35, 45, 55, 65, 75, 85 /
-      KOUNT = NFILE
-      TRACE = .TRUE.
-      TRACE = .FALSE.
-      DG2RAD = (4.0 * ATAN(1.0))/180.
-C TRANSFER ORIGINAL DATA TO TEMPORARY ARRAYS TO HOLD FOR RE-ARRANGING
-C  (ORIGINAL DATA HAS BEEN SORTED BY FLIGHT ID, WITH ASDARS/AMDARS/
-C   TAMDARS LAST)
-      AAID(1:NFILE)           = ACID(1:NFILE)
-      SAAID(1:NFILE)          = AAID(1:NFILE)
-      JARRAY(1:NFILE,1)       = NINT(ALAT(1:NFILE)*100.)
-      JARRAY(1:NFILE,2)       = NINT(ALON(1:NFILE)*100.)
-      JARRAY(1:NFILE,3)       = NINT(AALT(1:NFILE))
-      JARRAY(1:NFILE,4)       = NINT(TIME(1:NFILE))
-      JARRAY(1:NFILE,5)       = NINT(ATMP(1:NFILE))
-      JARRAY(1:NFILE,6)       = NINT(ADIR(1:NFILE))
-      JARRAY(1:NFILE,7)       = NINT(ASPD(1:NFILE))
-      JARRAY(1:NFILE,8)       = INTP(1:NFILE)
-      JARRAY(1:NFILE,9)       = IRTM(1:NFILE)
-      JARRAY(1:NFILE,10)      = KNTINI(1:NFILE)
-      JARRAY(1:NFILE,11)      = ITEVNT(1:NFILE)
-      JARRAY(1:NFILE,12)      = IWEVNT(1:NFILE)
-      JARRAY(1:NFILE,13)      = NINT(AALTF(1:NFILE))
-      JARRAY(1:NFILE,14)      = NINT(ADIRF(1:NFILE))
-      JARRAY(1:NFILE,15)      = NINT(ASPDF(1:NFILE))
-      JARRAY(1:NFILE,16)      = NINT(ATMPF(1:NFILE))
-      KARRAY(1:NFILE,:) = JARRAY(1:NFILE,:)
-      CTAG(1:NFILE)           = TAG(1:NFILE)
-      STAG(1:NFILE)           = CTAG(1:NFILE)
-      NAIREP = NFILE - NASDAR - NEXCLD
-      PRINT 501, KOUNT,NASDAR,NAIREP,NEXCLD
-  501 FORMAT(1X,128('*')/43X,'AIRCRAFT TRACK CHECK SORT - NCEP ',
-     $ 'WASHINGTON'/128('*')//' FILE KOUNT=',I6,' # AMDAR/ASDAR/',
-     $ 'TAMDAR=',I6,' # AIREP/PIREP=',I6,' # EXCLUDED=',I6)
-CCCCC PRINT 502
-CC502 FORMAT(' LISTING OF IDSORTED DATA ENTERING TRKCHK----'/9X,'ACID',
-cvvvvv a
-Cxxxx$ 7X,' LAT     WLON      UTC    ALT     TEMP    WDIR    WSPD',6X,
-CCCCC$ 8X,' LAT     WLON      UTC    ALT     TEMP    WDIR    WSPD',6X,
-caaaaa a
-CCCCC$ ' TAGS  ',13X,'I.TYPE  RCPT. TIME  KNTINI'/)
-CCCCC DO J = 1,KOUNT
-CCCCC    SARRY1 = 99999.
-CCCCC    IF(JARRAY(J,1).LT.99999)  SARRY1 = JARRAY(J,1) * 0.01
-CCCCC    SARRY2 = 99999.
-CCCCC    IF(JARRAY(J,2).LT.99999)  SARRY2 = JARRAY(J,2) * 0.01
-CCCCC    PRINT 331, J,AAID(J),SARRY1,SARRY2,JARRAY(J,4),JARRAY(J,3),
-CCCCC$    JARRAY(J,5),JARRAY(J,6),JARRAY(J,7),CTAG(J),JARRAY(J,8),
-CCCCC$    JARRAY(J,9),JARRAY(J,10)
-CC    ENDDO
-      PRINT 574
-  574 FORMAT(/' ----------------------------------')
-C***********************************************************************
-C      DETERMINE TRACK FOR EACH ASDAR/AMDAR/TAMDAR FLIGHT ID
-C***********************************************************************
-      PRINT 2521
- 2521 FORMAT(' ====> ASDAR/AMDAR/TAMDAR REPORTS CURRENTLY NOT TRACK ',
-     $ 'CHECKED'/)
-      PRINT 574
-      NTRK = 0
-      ITRK = NAIREP + 1
-   65 CONTINUE
-      IF(ITRK.LT.NFILE-NEXCLD)  THEN
-         JTRK = ITRK + NTRK + 1
-         IBEG = ITRK
-         IF(AAID(ITRK).EQ.AAID(JTRK))  THEN
-C FLIGHT ID'S MATCH - RECORD STARTING POINT AS IBEG
-            NTRK = NTRK + 1
-            GO TO 65
-         ELSE
-C END OF TRACK, STORE LAST INDEX
-            IEND = JTRK - 1
-            ITRK = IEND + 1
-            IF(NTRK.NE.0)  NTRK = NTRK + 1
-            LTRK = NTRK
-         END IF
-         IF(TRACE)  PRINT 8810, ITRK,JTRK,NTRK,IBEG,IEND
- 8810    FORMAT(' TRKEND- ITRK,JTRK,NTRK,IBEG,IEND ',5I5)
-C TO GET REASONABLE GROUND SPEED CHECKS TAKE EVERY OTHER REPORT
-         DO LREP = 1,2
-            LBEG = IBEG + (LREP - 1)
-            DO L = LBEG,IEND-2,2
-               K = L - IBEG + 1
-               IF(K.GT.ITMX)  GO TO 9999
-               IF(JARRAY(L,3).LT.8000)  GO TO 221
-               LOGTRK = (CTAG(L)(5:5).GE.'X'.AND.CTAG(L)(5:5).LE.'Z')
-               DELPOS(K) = 0.0
-               DELLAT(K) = 0.0
-               DELLON(K) = 0.0
-               QCOS = COS((JARRAY(L,1)+JARRAY(L+2,1))*0.005*DG2RAD)
-               QDELT = IABS(JARRAY(L,4)-JARRAY(L+2,4)) * 0.01
-               IF(QDELT.EQ.0.0)  QDELT = 0.001
-               DELLON(K) = IABS(JARRAY(L,2)-JARRAY(L+2,2)) * 0.01
-               DELLON(K) = AMIN1(DELLON(K),360.-DELLON(K))
-               DELLAT(K) = IABS(JARRAY(L,1)-JARRAY(L+2,1)) * 0.01
-C UNITS FOR POSTION DIFFERENCE- DEGREES
-               DELPOS(K) = SQRT(DELLAT(K)**2 + (DELLON(K)*QCOS)**2)
-               RDELT = 999.
-               IF(QDELT.GT.0.0)  RDELT = 1./QDELT
-C UNITS FOR APPARENT AVERAGE SPEED- KNOTS
-               AVESPD(K) = DELPOS(K) * RDELT * 65.3
-C LPOS25=T INDICATES UNREASONABLE GROUND SPEED FOR ASDAR/AMDAR/TAMDAR
-C  OBS.
-               LPOS25 = (AVESPD(K).LT.250..OR.AVESPD(K).GT.770.)
-               IF(LOGTRK.OR.LPOS25)  THEN
-       PRINT 534,  AAID(L),JARRAY(L,1),JARRAY(L,2),JARRAY(L,4),
-     $  JARRAY(L,3),JARRAY(L,5),JARRAY(L,6),JARRAY(L,7),CTAG(L),
-     $  DELPOS(K),AVESPD(K)
-  534 FORMAT(' $$$$$ POSSIBLE ASDAR/AMDAR/TAMDAR ERROR: ',A8,6I7,I5,
-     $ '  "',A14,'"/ ',F7.1,F9.1)
-                  IF(LOGTRK.AND.LPOS25.AND.CTAG(L)(14:14).GT.'3')  THEN
-CVVVVV%%%%%
-         PRINT *,'~~~~~ SEE BELOW: EVENT 307                  '
-CAAAAA%%%%%
+cvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+c replace above with this in event of future switch to dynamic memory allocation
 
-       IF(EWRITE)  PRINT 9008, L,AAID(L),REAL(JARRAY(L,1))*.01,
-     $  REAL(JARRAY(L,2))*.01,REAL(JARRAY(L,4)),CTAG(L)
- 9008 FORMAT(/' #EVENT 307: TRKCHK; ASDR QM X-Z & BAD G.SPD, WND QM F',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-                     CTAG(L)(4:4) = 'F'
-                     STAG(L)(4:4) = 'F'
-                     CTAG(L)(14:14) = '3'
-                     STAG(L)(14:14) = '3'
-                     JARRAY(L,12) = 307
-                     KARRAY(L,12) = 307
-                  END IF
-               END IF
-  221          CONTINUE
-            ENDDO
-         ENDDO
-C----------------------------------------------------------------------
-         QSUM  = 0.0
-         IQNUM = 0
-         QSUM1 = 0.0
-         JQNUM = 0
-         DO L = IBEG,IEND
-C CALCULATE AVERAGE VECTOR INCREMENT FOR TRACK (QSUM) AMONGST THOSE OBS.
-C  WITH A SCALED INCREMENT CHARACTER Q-Z
-            IF(CTAG(L)(5:5).GE.'Q'.AND.CTAG(L)(5:5).LE.'Z')  THEN
-               CTG = CTAG(L)(5:5)
-               SCALE = 95.0
-               DO I=1,9
-                  IF(CTG.EQ.CH1(I)) THEN
-                     SCALE = ICH1(I)
-                     EXIT
-                  END IF
-               ENDDO
-               IQNUM = IQNUM + 1
-               QSUM = QSUM + SCALE
-               IF(CTAG(L)(5:5).GE.'V')  THEN
-C CALCULATE AVERAGE VECTOR INCREMENT FOR TRACK (QSUM1) AMONGST THOSE
-C  OBS. WITH SCALED INCREMENT > 50 KNOTS
-                  JQNUM = JQNUM + 1
-                  QSUM1 = QSUM1 + SCALE
-               END IF
-            END IF
-         ENDDO
-         IF(IQNUM.GT.14)  THEN
-            QSUM = QSUM/IQNUM
-CVVVVV%%%%%
-            PRINT 5678, IBEG,IEND,IQNUM,QSUM+SIGN(.0005,QSUM)
- 5678 FORMAT(' ~~~~~ FOR ASDAR/AMDAR/TAMDAR TRK BEG AT',I6,' AND ',
-     $ 'ENDING AT',I6,' THERE ARE',I4,' RPTS W/ INCR., MEAN IS',F7.1)
-CAAAAA%%%%%
-            IF(JQNUM.GT.9)  THEN
-               QSUM1 = QSUM1/JQNUM
-CVVVVV%%%%%
-            PRINT 5679, JQNUM,QSUM1
- 5679 FORMAT(' ~~~~~ $$ A L S O   FOR THIS ASDAR/AMDAR/TAMDAR TRK, ',
-     $ 'THERE ARE',I4,' RPTS W/ INCR. > 50 KNOTS, MEAN INCR. IS',F7.1)
-CAAAAA%%%%%
-C IF > 14 REPORTS IN TRACK AND AMONGST THESE > 9 HAVE VECTOR INCREMENT
-C  > 50 KNOTS, ASSUME ENTIRE FLIGHT IS BAD (FLAG ALL WINDS IN TRACK)
-               PRINT 574
-CVVVVV%%%%%
-               PRINT *,'~~~~~ SEE BELOW: LARGE TRACK INCR. IN ASDAR',
-     $          'AMDAR/TAMDAR'
-CAAAAA%%%%%
-               PRINT 520
-  520 FORMAT(' --> FOLLOWING TRACK HAS > 14 REPORTS WITH > 9 HAVING ',
-     $ 'WIND INCR. > 50 KTS, ALL WINDS FLAGGED!!'/)
-               DO L = IBEG,IEND
-                  IF(CTAG(L)(14:14).GT.'3')  THEN
-                     IF(EWRITE)  PRINT 9027, L,AAID(L),REAL(JARRAY(L,1))
-     $             *.01,REAL(JARRAY(L,2))*.01,REAL(JARRAY(L,4)),CTAG(L)
- 9027 FORMAT(/' #EVENT 327: TRKCHK; ASDR TRK>14,>9 INCR>50KT,WND QM F',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-                     CTAG(L)(4:4) = 'F'
-                     STAG(L)(4:4) = 'F'
-                     CTAG(L)(14:14) = '3'
-                     STAG(L)(14:14) = '3'
-                     JARRAY(L,12) = 327
-                     KARRAY(L,12) = 327
-                  END IF
-                  PRINT 9520, L,AAID(L),REAL(JARRAY(L,1))*.01,
-     $             REAL(JARRAY(L,2))*.01,REAL(JARRAY(L,4)),CTAG(L)
- 9520             FORMAT(5X,I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-               ENDDO
-               PRINT 574
-            END IF
-         END IF
-C----------------------------------------------------------------------
-         NTRK = 0
-         GO TO 65
-      END IF
-      PRINT 574
-C***********************************************************************
-C        DETERMINE TRACK FOR EACH NON-EXCLUDED AIREP/PIREP FLIGHT ID
-C***********************************************************************
-      PRINT 2520
- 2520 FORMAT(' ====> BEGIN TRACK CHECKING OF AIREP/PIREP REPORTS'/)
-      PRINT 574
-      NTRK = 0
-      ITRK = 1
-   66 CONTINUE
-      IF(ITRK.LT.NAIREP)  THEN
-         JTRK = ITRK + NTRK + 1
-         IBEG = ITRK
-         IF(AAID(ITRK).EQ.AAID(JTRK))  THEN
-C FLIGHT ID'S MATCH - RECORD STARTING POINT AS IBEG
-            NTRK = NTRK + 1
-            GO TO 66
-         ELSE
-C END OF TRACK, STORE LAST INDEX
-            IEND = JTRK - 1
-            IF(IEND-IBEG.GT.ITMX)  GO TO 9999
-            ITRK = IEND + 1
-            IF(NTRK.NE.0)  NTRK = NTRK + 1
-            LTRK = NTRK
-         END IF
-         IF(TRACE)  PRINT 8810,ITRK,JTRK,NTRK,IBEG,IEND
-C INITITIALIZE VARIABLES
-         LOGTRK = .FALSE.
-         LOGTME = .FALSE.
-         LOGLT1 = .FALSE.
-         LPOS25 = .FALSE.
-         DUP    = .FALSE.
-         TOSLIM = 'S'
-         NAPTS = 0
-         NPTRS = 0
-         NTYPS = 0
-         NTRKP = 0
-         TYPE = '        '
-C-----------------------------------------------------------------------
-C                         CHECK PAIRS -- LTRK = 2
-C-----------------------------------------------------------------------
-         IF(LTRK.EQ.2)  THEN
-            II = IBEG
-            IF(AAID(II)(4:4).EQ.' '.OR.AAID(II)(1:4).EQ.'AIRC'.OR.
-     $       AAID(II)(1:5).EQ.'COA16'.OR.AAID(II)(1:7).EQ.'UNKNOWN')THEN
-C CERTAIN RPTS (E.G, 3 CHAR ID,"AIRCFT", "UNKNOWN") ARE NOT CONSIDERED
-C  FOR THE TRACK CHECK
-               PRINT 8866, ITRK,LTRK,IBEG,IEND,AAID(II)
- 8866          FORMAT(' SKIP IN TRKCHK ',4I5,2X,' ACID ',A8)
-               NTRK = 0
-               GO TO 66
-            END IF
-            LOGLAT = (JARRAY(II,1).EQ.JARRAY(II+1,1))
-            LOGLON = (JARRAY(II,2).EQ.JARRAY(II+1,2))
-            LOGALT = (JARRAY(II,3).EQ.JARRAY(II+1,3))
-            LOGTMP = (JARRAY(II,5).EQ.JARRAY(II+1,5))
-            LOGWND = ((JARRAY(II,6).EQ.JARRAY(II+1,6)).AND.
-     $       (JARRAY(II,7).EQ.JARRAY(II+1,7)))
-            QCOS = COS((JARRAY(II,1)+JARRAY(II+1,1))*0.005*DG2RAD)
-            QDELT = IABS(JARRAY(II,4)-JARRAY(II+1,4))*0.01
-            LOGTME = (QDELT.LT.0.04)
-            DELPOS(1) = SQRT(((JARRAY(II,1)-JARRAY(II+1,1))*0.01)**2+
-     $       ((JARRAY(II,2)-JARRAY(II+1,2))*QCOS*0.01)**2)
-            RDELT = 999.
-            AVESPD(1) = -9999.9
-            IF(QDELT.GT.0.0)  THEN
-               RDELT = 1./QDELT
-               AVESPD(1) = DELPOS(1) * RDELT * 65.3
-            END IF
-            IF(QDELT.GT.4.0.AND.DELPOS(1).GT.40.)  THEN
-      PRINT 301, IBEG,AAID(IBEG),JARRAY(IBEG,1),JARRAY(IBEG,2),
-     $ JARRAY(IBEG,4),JARRAY(IBEG,3),JARRAY(IBEG,5),JARRAY(IBEG,6),
-     $ JARRAY(IBEG,7),CTAG(IBEG),DELPOS(1),AVESPD(1)
-      PRINT 301, IEND,AAID(IEND),JARRAY(IEND,1),JARRAY(IEND,2),
-     $ JARRAY(IEND,4),JARRAY(IEND,3),JARRAY(IEND,5),JARRAY(IEND,6),
-     $ JARRAY(IEND,7),CTAG(IEND)
-  301 FORMAT(' PROB 2 FLIGHTS',I5,2X,A8,6I8,2X,I3,3X,'"',A14,'"',3X,
-     $ 2F8.1)
-            END IF
-C UNITS FOR APPARENT AVERAGE SPEED- KNOTS
-            LOGTRK = (DELPOS(1).GT.15.0.AND.AVESPD(1).GT.770.)
-C CALIBRATION CONSTANTS   <2.0 DEGREES FOR SEPARATION ADJACENT REPORTS
-C CALIBRATION CONSTANTS  >25.0 DEGREES FOR SEPARATION ADJACENT REPORTS
-            IF(DELPOS(1).LE.2.0)  THEN
-               LOGLT1 = .TRUE.
-            ELSE  IF(DELPOS(1).GE.25.)  THEN
-               LPOS25 = .TRUE.
-               CALL WAYPT(IBEG,IEND,NCHNGD)
-               IF(NCHNGD.GT.0)  THEN
-CVVVVV%%%%%
-         PRINT *,'~~~~~ WAYPT(1) ERROR FOR PAIR IN TRACK CHECK'
-CAAAAA%%%%%
-                  PRINT *, 'WAYPOINT(1) HAS CHANGED REPORT LOCATION'
-              DELPOS(1) = SQRT(((JARRAY(II,1)-JARRAY(II+1,1))*0.01)**2+
-     $         ((JARRAY(II,2)-JARRAY(II+1,2))*QCOS*0.01)**2)
-                  IF(DELPOS(1).LE.2.0)  THEN
-                     LPOS25 = .FALSE.
-                     LOGLT1 = .TRUE.
-                  END IF
-               END IF
-            END IF
-C TIMES MATCH
-CCCCC       PRINT 223, IBEG,IEND,DELPOS(1),AVESPD(1),LOGTRK
-CC223       FORMAT(' NTRK=2 DBG',2(I5,1X),2(1X,F8.1),1X,L1)
-            IF(CTAG(II)(5:5).EQ.'N'.OR.CTAG(II+1)(5:5).EQ.'N') GO TO 812
-            IF(LOGLT1.AND.LOGALT.AND.LOGWND)  THEN
-C TYPE IS DUPLICATE, PLACE 'D' IN POSITION 1 OF TAG
-               KTYPS(1) = KTYPS(1) + 1
-               NTYPS = NTYPS + 1
-               IF(NTYPS.GT.ITRKL)  THEN
-C.......................................................................
-C FATAL ERROR: THERE ARE MORE DUPLICATE TYPES IN THIS TRACK THAN THE
-C  LIMIT "ITRKL" -- STOP 29
-                  PRINT 52, ITRKL
-   52 FORMAT(/' THERE ARE MORE THAN',I5,' DUPLICATE TYPES IN THIS ',
-     $ 'TRACK -- MUST INCREASE SIZE OF PARAMETER NAME "ITRKL" - STOP ',
-     $ '29'/)
-                  CALL W3TAGE('PREPOBS_PREPACQC')
-                  CALL ERREXIT(29)
-C.......................................................................
-               END IF
-               TYPE(NTYPS) = 'TYPE 1A '
-               DUP = .TRUE.
-               CALL CHOOSE(II,II+1,TOSLIM,DUP,IWHICH,MAYBE,NEW)
-               IF(IWHICH.GT.0.AND.CTAG(IWHICH)(14:14).GT.'0')  THEN
-                  IF(EWRITE)  PRINT 9009, IWHICH,AAID(IWHICH),
-     $            REAL(JARRAY(IWHICH,1))*.01,REAL(JARRAY(IWHICH,2))*.01,
-     $            REAL(JARRAY(IWHICH,4)),CTAG(IWHICH)
- 9009 FORMAT(/' #EVENT ###: TRKCHK; NTRK=2 TYPE 1A DUP, WND QM SET "D"',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-                  CTAG(IWHICH)(1:1) = 'D'
-                  CTAG(IWHICH)(13:13) = '0'
-                  CTAG(IWHICH)(14:14) = '0'
-               END IF
-               PRINT 673, IBEG,IEND,CTAG(IBEG),CTAG(IEND)
-  673 FORMAT(' NTRK=2 TYPE 1A DUP',2(I5,1X),1X,'"',A14,'"/"',A14,'"')
-C TYPE IS NOT A STRICT DUPLICATE, PLACE 'F' IN POSITION 4 OF Q.M. WORD
-            ELSE  IF(LOGLAT.AND.LOGLON)  THEN
-               KTYPS(5) = KTYPS(5) + 1
-               NTYPS = NTYPS + 1
-               IF(NTYPS.GT.ITRKL)  THEN
-C.......................................................................
-C FATAL ERROR: THERE ARE MORE DUPLICATE TYPES IN THIS TRACK THAN THE
-C  LIMIT "ITRKL" -- STOP 29
-                  PRINT 52, ITRKL
-                  CALL W3TAGE('PREPOBS_PREPACQC')
-                  CALL ERREXIT(29)
-C.......................................................................
-               END IF
-               TYPE(NTYPS) = 'TYPE 2A '
-               DUP = .TRUE.
-               CALL CHOOSE(II,II+1,TOSLIM,DUP,IWHICH,MAYBE,NEW)
-               IF(IWHICH.GT.0.AND.CTAG(IWHICH)(14:14).GT.'3')  THEN
-                  IF(EWRITE)  PRINT 9010, IWHICH,AAID(IWHICH),
-     $            REAL(JARRAY(IWHICH,1))*.01,REAL(JARRAY(IWHICH,2))*.01,
-     $            REAL(JARRAY(IWHICH,4)),CTAG(IWHICH)
- 9010 FORMAT(/' #EVENT 308: TRKCHK; NTRK=2 TYPE 2A DUP, WND QM SET "F"',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-                  CTAG(IWHICH)(4:4) = 'F'
-                  CTAG(IWHICH)(14:14) = '3'
-                  JARRAY(IWHICH,12) = 308
-               END IF
-               PRINT 373, IBEG,IEND,CTAG(IBEG),CTAG(IEND)
-  373 FORMAT(' NTRK=2 TYPE 2  DUP',2(I5,1X),1X,'"',A14,'"/"',A14,'"')
-            ELSE  IF(LOGTME.AND.(LOGTMP.OR.LOGALT).AND.LOGWND)  THEN
-               KTYPS(2) = KTYPS(2) + 1
-               NTYPS = NTYPS + 1
-               IF(NTYPS.GT.ITRKL)  THEN
-C.......................................................................
-C FATAL ERROR: THERE ARE MORE DUPLICATE TYPES IN THIS TRACK THAN THE
-C  LIMIT "ITRKL" -- STOP 29
-                  PRINT 52, ITRKL
-                  CALL W3TAGE('PREPOBS_PREPACQC')
-                  CALL ERREXIT(29)
-C.......................................................................
-               END IF
-               TYPE(NTYPS) = 'TYPE 1B '
-               DUP = .TRUE.
-               CALL CHOOSE(II,II+1,TOSLIM,DUP,IWHICH,MAYBE,NEW)
-               IF(IWHICH.GT.0.AND.CTAG(IWHICH)(14:14).GT.'0')  THEN
-                  IF(EWRITE)  PRINT 9011, IWHICH,AAID(IWHICH),
-     $            REAL(JARRAY(IWHICH,1))*.01,REAL(JARRAY(IWHICH,2))*.01,
-     $            REAL(JARRAY(IWHICH,4)),CTAG(IWHICH)
- 9011 FORMAT(/' #EVENT ###: TRKCHK; NTRK=2 TYPE 1B DUP, WND QM SET "D"',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-                  CTAG(IWHICH)(1:1) = 'D'
-                  CTAG(IWHICH)(13:13) = '0'
-                  CTAG(IWHICH)(14:14) = '0'
-               END IF
-            END IF
-C CHECK FOR DELPOS AND LOGTRK
-            IF(LPOS25.AND.LOGWND.AND.LOGALT.AND.(LOGTMP.OR.LOGTME))THEN
-               CALL WAYPT(IBEG,IEND,NCHNGD)
-               IF(NCHNGD.GT.0)  THEN
-CVVVVV%%%%%
-         PRINT *,'~~~~~ WAYPT(2) ERROR FOR PAIR IN TRACK CHECK'
-CAAAAA%%%%%
-                  PRINT *, 'WAYPOINT(2) HAS CHANGED REPORT LOCATION'
-                  KTYPS(6) = KTYPS(6) + 1
-CSKIP             NTYPS = NTYPS + 1
-                  IF(NTYPS.GT.ITRKL)  THEN
-C.......................................................................
-C FATAL ERROR: THERE ARE MORE DUPLICATE TYPES IN THIS TRACK THAN THE
-C  LIMIT "ITRKL" -- STOP 29
-                     PRINT 52, ITRKL
-                     CALL W3TAGE('PREPOBS_PREPACQC')
-                     CALL ERREXIT(29)
-C.......................................................................
-                  END IF
-                  TYPE(NTYPS) = 'TYPE 2B '
-               END IF
-               DELPOS(1) = SQRT(((JARRAY(II,1)-JARRAY(II+1,1))*0.01)**2
-     $          +((JARRAY(II,2)-JARRAY(II+1,2))*QCOS*0.01)**2)
-               IF(DELPOS(1).LE.2.0)  THEN
-                  LOGLT1 = .TRUE.
-               ELSE  IF(DELPOS(1).GE.15.)  THEN
-                  LPOS25 = .TRUE.
-               END IF
-               IF(LPOS25)  THEN
-                  LOGTRK = .TRUE.
-                  DUP = .FALSE.
-                  CALL CHOOSE(II,II+1,TOSLIM,DUP,IWHICH,MAYBE,NEW)
-                  IF(NEW)  THEN
-                     KTYPS(7) = KTYPS(7) + 1
-                     NTYPS = NTYPS + 1
-                     IF(NTYPS.GT.ITRKL)  THEN
-C.......................................................................
-C FATAL ERROR: THERE ARE MORE DUPLICATE TYPES IN THIS TRACK THAN THE
-C  LIMIT "ITRKL" -- STOP 29
-                        PRINT 52, ITRKL
-                        CALL W3TAGE('PREPOBS_PREPACQC')
-                        CALL ERREXIT(29)
-C.......................................................................
-                     END IF
-                     TYPE(NTYPS) = 'TYPE 3  '
-                     IF(IWHICH.GT.0)  THEN
-                        IF(CTAG(IWHICH)(14:14).GT.'3') THEN
-                           IF(EWRITE)  PRINT 9012, IWHICH,AAID(IWHICH),
-     $            REAL(JARRAY(IWHICH,1))*.01,REAL(JARRAY(IWHICH,2))*.01,
-     $            REAL(JARRAY(IWHICH,4)),CTAG(IWHICH)
- 9012 FORMAT(/' #EVENT 309: TRKCHK; NTRK=2 TYPE 3     , WND QM SET "F"',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-                           CTAG(IWHICH)(4:4) = 'F'
-                           CTAG(IWHICH)(14:14) = '3'
-                           JARRAY(IWHICH,12) = 309
-                        END IF
-                    ELSEIF(MAYBE.GT.0.AND.CTAG(MAYBE)(14:14).GT.'3')THEN
-                       IF(EWRITE)  PRINT 9012, MAYBE,AAID(MAYBE),
-     $              REAL(JARRAY(MAYBE,1))*.01,REAL(JARRAY(MAYBE,2))*.01,
-     $              REAL(JARRAY(MAYBE,4)),CTAG(MAYBE)
-                        CTAG(MAYBE)(4:4) = 'F'
-                        CTAG(MAYBE)(14:14) = '3'
-                        JARRAY(MAYBE,12) = 309
-                     END IF
-                  END IF
-               END IF
-      PRINT 433, IBEG,IEND,DELPOS(1),CTAG(IBEG),CTAG(IEND)
-  433 FORMAT(' NTRK=2 ERR',2(I5,1X),F5.1,1X,'"',A14,'"/"',A14,'"')
-            END IF
-            IF(LOGTRK)  THEN
-               TOSLIM = 'U'
-               DUP = .FALSE.
-               CALL CHOOSE(II,II+1,TOSLIM,DUP,IWHICH,MAYBE,NEW)
-               IF(NEW)  THEN
-                  KTYPS(7) = KTYPS(7) + 1
-                  NTYPS = NTYPS + 1
-                  IF(NTYPS.GT.ITRKL)  THEN
-C.......................................................................
-C FATAL ERROR: THERE ARE MORE DUPLICATE TYPES IN THIS TRACK THAN THE
-C  LIMIT "ITRKL" -- STOP 29
-                     PRINT 52, ITRKL
-                     CALL W3TAGE('PREPOBS_PREPACQC')
-                     CALL ERREXIT(29)
-C.......................................................................
-                  END IF
-                  TYPE(NTYPS) = 'TYPE 3  '
-                  IF(IWHICH.GT.0)  THEN
-                     IF(CTAG(IWHICH)(14:14).GT.'3')  THEN
-                        IF(EWRITE)  PRINT 9012, IWHICH,AAID(IWHICH),
-     $            REAL(JARRAY(IWHICH,1))*.01,REAL(JARRAY(IWHICH,2))*.01,
-     $            REAL(JARRAY(IWHICH,4)),CTAG(IWHICH)
-                        CTAG(IWHICH)(4:4) = 'F'
-                        CTAG(IWHICH)(14:14) = '3'
-                        JARRAY(IWHICH,12) = 309
-                     END IF
-                  ELSE IF(MAYBE.GT.0.AND.CTAG(MAYBE)(14:14).GT.'3') THEN
-                    IF(EWRITE)  PRINT 9012, MAYBE,AAID(MAYBE),
-     $              REAL(JARRAY(MAYBE,1))*.01,REAL(JARRAY(MAYBE,2))*.01,
-     $              REAL(JARRAY(MAYBE,4)),CTAG(MAYBE)
-                     CTAG(MAYBE)(4:4) = 'F'
-                     CTAG(MAYBE)(14:14) = '3'
-                     JARRAY(MAYBE,12) = 309
-                  END IF
-               END IF
-            END IF
-            IF(LPOS25.OR.LOGTME.OR.LOGWND.OR.LOGTRK.OR.DUP)  THEN
-      PRINT 302, IBEG, AAID(IBEG),JARRAY(IBEG,1),JARRAY(IBEG,2),
-     $ JARRAY(IBEG,4),JARRAY(IBEG,3),JARRAY(IBEG,5),JARRAY(IBEG,6),
-     $ JARRAY(IBEG,7),CTAG(IBEG),DELPOS(1),AVESPD(1)
-      PRINT 302, IEND, AAID(IEND),JARRAY(IEND,1),JARRAY(IEND,2),
-     $ JARRAY(IEND,4),JARRAY(IEND,3),JARRAY(IEND,5),JARRAY(IEND,6),
-     $ JARRAY(IEND,7),CTAG(IEND)
-  302          FORMAT(' ',I5,2X,A8,6I8,2X,I3,3X,'"',A14,'"',3X,2F8.1)
-               PRINT 300, TYPE(1)
-  300          FORMAT(' TYPE ',A8)
-               PRINT 634
-            END IF
-  812       CONTINUE
-C-----------------------------------------------------------------------
-C                 ELSE LOOK AT SEQUENCE FOR LTRK GT 2
-C-----------------------------------------------------------------------
-         ELSE  IF(LTRK.GT.2)  THEN
-            LUTCEQ = .FALSE.
-            LLATEQ = .FALSE.
-            LLONEQ = .FALSE.
-            LVAREQ = .FALSE.
-            LOGTRK = .FALSE.
-            NCHNGD = 0
-C PRELIMINARY LOOP TO CHECK FOR POSSIBLE TWO FLIGHTS AND WAYPOINT
-C  ERRORS - CHECK ADJACENT REPORTS IN LONGITUDE SORT - CALCULATE
-C  DIFFERENCES IN VARIABLES AND COMPUTE AVERAGE SPEED
-C NO POINTERS SET: COUNTER ON TIME INTERVALS SET
-            DTKNT = 0
-            DO L = IBEG,IEND-1
-               IF(AAID(L)(4:4).EQ.' '.OR.AAID(L)(1:4).EQ.'AIRC'.OR.
-     $         AAID(L)(1:5).EQ.'COA16'.OR.AAID(L)(1:7).EQ.'UNKNOWN')THEN
-C CERTAIN RPTS (E.G, 3 CHAR ID,"AIRCFT", "UNKNOWN") ARE NOT CONSIDERED
-C  FOR THE TRACK CHECK
-                  PRINT 8866, ITRK,LTRK,IBEG,IEND,AAID(L)
-                  NTRK = 0
-                  GO TO 66
-               END IF
-               K = L - IBEG + 1
-               DELPOS(K) = 0.0
-               DELLAT(K) = 0.0
-               DELLON(K) = 0.0
-               QCOS = COS((JARRAY(L,1)+JARRAY(L+1,1))*0.005 *DG2RAD)
-               QDELT = IABS(JARRAY(L,4)-JARRAY(L+1,4))*0.01
-C ADJUSTABLE CONSTANT FOR TIME DIFF BETWEEN SUCCESSIVE REPORTS = 2.5 HRS
-               IF(QDELT.GT.2.5)  DTKNT = DTKNT + 1
-               DELLON(K) = IABS(JARRAY(L,2)-JARRAY(L+1,2)) * 0.01
-               DELLON(K) = AMIN1(DELLON(K),360.-DELLON(K))
-               DELLAT(K) = IABS(JARRAY(L,1)-JARRAY(L+1,1)) * 0.01
-C UNITS FOR POSTION DIFFERENCE- DEGREES
-               DELPOS(K) = SQRT(DELLAT(K)**2 + (DELLON(K)*QCOS)**2)
-               RDELT = 999.
-               IF(QDELT.GT.0.0)  RDELT = 1./QDELT
-C UNITS FOR APPARENT AVERAGE SPEED- KNOTS
-               AVESPD(K) = DELPOS(K) * RDELT * 65.3
-               IF(DELLON(K).GT.11.0.AND.AVESPD(K).GT.770..AND.K.EQ.1)
-     $          PRINT 510, K,DELLON(K),AVESPD(K)
-  510 FORMAT(' $$$$$POSSIBLE CORRECTABLE ERROR IN LON ',I3,2F8.1)
-               IF(DELLON(K).GT.15..AND.AVESPD(K).GT.770.) LOGTRK=.TRUE.
-            ENDDO
-            DELPOS(LTRK) = -9999.9
-            AVESPD(LTRK) = -9999.9
-            IF(LOGTRK)  THEN
-               CALL WAYPT(IBEG,IEND,NCHNGD)
-               PRINT 544, IBEG,IEND
-  544          FORMAT(' WAYPOINT(3) CALL AT ',2I6)
-            END IF
-            IF(DTKNT.GT.0)  PRINT 669, IBEG,IEND,DTKNT
-  669       FORMAT(' POSSIBLE TWO FLIGHTS AT ',2I5,' DTKNT ',I3)
-C POSSIBLE TWO OR MORE FLIGHTS IN AIR DURING SIX-HOUR TIME BLOCK
-            IF(DTKNT.GT.1.OR.NCHNGD.GT.0)  THEN
-               IF(NCHNGD.GT.0)
-     $          PRINT *, 'WAYPOINT(3) HAS CHANGED REPORT LOCATION'
-CVVVVV%%%%%
-               IF(NCHNGD.GT.0)
-     $   PRINT *,'~~~~~ WAYPT(3) ERROR FOR .GT. 2 IN TRACK CHECK'
-CAAAAA%%%%%
-               PRINT 4442, ITRK,JTRK,IBEG,IEND,DTKNT,NCHNGD
- 4442          FORMAT(' ITRK',I5,' JTRK ',I5,' IBEG,IEND ',2I6,
-     $          ' DTKNT ',I3,' NCHNGD ',I2)
-               DO I = 1,LTRK
-                  K = IBEG + I - 1
-                  IARRAY(I) = KARRAY(K,4)
-CCCCC             PRINT 387, LTRK,I,K,SAAID(K),IARRAY(I)
-CC387             FORMAT(' DBG ',3I6,2X,'; ID=',A8,'; TIME=',I8)
-               ENDDO
-               IF(LTRK.GT.0)  CALL INDEXF(LTRK,IARRAY,INDR)
-               DO J = 1,LTRK
-                  K = IBEG - 1 + J
-                  L = IBEG - 1 + INDR(J)
-                  AAID(K) = SAAID(L)
-                  CTAG(K) = STAG(L)
-                  JARRAY(K,:) = KARRAY(L,:)
-CCCCC             PRINT 388, J,K,L,AAID(K),JARRAY(K,4)
-CC388             FORMAT(' DBG J K L ',3I6,2X,'; ID=',A8,'; TIME=',I8)
-               ENDDO
-               DTKNT = 0
-               DO L = IBEG,IEND-1
-                  K = L - IBEG + 1
-                  DELPOS(K) = 0.0
-                  DELLAT(K) = 0.0
-                  DELLON(K) = 0.0
-                  QCOS = COS((JARRAY(L,1)+JARRAY(L+1,1))*0.005 *DG2RAD)
-                  QDELT = IABS(JARRAY(L,4)-JARRAY(L+1,4))*0.01
-C ADJUSTABLE CONSTANT FOR TIME DIFF BETWEEN SUCCESSIVE REPORTS = 2.5 HRS
-                  IF(QDELT.GT.2.5)  DTKNT = DTKNT + 1
-                  DELLON(K) = IABS(JARRAY(L,2)-JARRAY(L+1,2)) * 0.01
-                  DELLON(K) = AMIN1(DELLON(K),360.-DELLON(K))
-                  DELLAT(K) = IABS(JARRAY(L,1)-JARRAY(L+1,1)) * 0.01
-C UNITS FOR POSTION DIFFERENCE- DEGREES
-                  DELPOS(K) = SQRT(DELLAT(K)**2 + (DELLON(K)*QCOS)**2)
-                  RDELT = 999.
-                  IF(QDELT.GT.0.0)  RDELT = 1./QDELT
-C UNITS FOR APPARENT AVERAGE SPEED- KNOTS
-                  AVESPD(K) = DELPOS(K) * RDELT * 65.3
-               IF(DELLON(K).GT.15..AND.AVESPD(K).GT.770.)LOGTRK=.TRUE.
-               ENDDO
-               DELPOS(LTRK) = -9999.9
-               AVESPD(LTRK) = -9999.9
-            END IF
-            TYPE = '        '
-            JPTNAD = 0
-            IPTNAD = 0
-            IPTTRK = 0
-C FIND POINTERS FOR NON-ADJACENT REPORTS
-            IF(TRACE)  PRINT 8888,LTRK,IBEG,IEND
- 8888       FORMAT(' TRACE AT 211 ',3(1X,I6))
-            DO L = IBEG,IEND-2  ! Formerly DO LOOP 211
-               DO M = L+2,IEND
-                  IF(JARRAY(L,4).EQ.JARRAY(M,4))  LUTCEQ = .TRUE.
-                  IF(JARRAY(L,1).EQ.JARRAY(M,1))  LLATEQ = .TRUE.
-                  IF(JARRAY(L,2).EQ.JARRAY(M,2))  LLONEQ = .TRUE.
-      IF((JARRAY(L,5).EQ.JARRAY(M,5)).AND.(JARRAY(L,6).EQ.JARRAY(M,6))
-     $ .AND.(JARRAY(L,7).EQ.JARRAY(M,7)).AND.(JARRAY(L,4).EQ.
-     $ JARRAY(M,4)).AND.(JARRAY(L,3).EQ.JARRAY(M,3)))  THEN
-                     LVAREQ = .TRUE.
-                     NPTRS = NPTRS + 1
-                     IF(NPTRS.GT.ITRKL)  THEN
-C.......................................................................
-C FATAL ERROR: THERE ARE MORE POINTERS FOR NON-ADJACENT REPORTS IN THIS
-C  TRACK THAN THE LIMIT "ITRKL" -- STOP 28
-                        PRINT 51, ITRKL
-   51 FORMAT(/' THERE ARE MORE THAN',I5,' POINTERS FOR NON-ADJACENT ',
-     $ 'REPORTS IN THIS TRACK -- MUST INCREASE SIZE OF PARAMETER NAME ',
-     $ '"ITRKL" - STOP 28'/)
-                        CALL W3TAGE('PREPOBS_PREPACQC')
-                        CALL ERREXIT(28)
-C.......................................................................
-                     END IF
-                     IPTNAD(NPTRS) = L
-                     JPTNAD(NPTRS) = M
-                     IF(TRACE)  PRINT 756, LLATEQ,LLONEQ,LVAREQ,
-     $                IPTNAD(NPTRS),JPTNAD(NPTRS)
- 756  FORMAT('DBUG- NONADJ  LOGICALS ',3(L1,1X),3X,'POINTERS ',2X,2I8)
-                  END IF
-               ENDDO
-            ENDDO
-            IF(NPTRS.EQ.1)  THEN
-               I1 = IPTNAD(1)
-               I2 = JPTNAD(1)
-               DUP = .TRUE.
-               CALL CHOOSE(I1,I2,TOSLIM,DUP,IWHICH,MAYBE,NEW)
-               IF(IWHICH.GT.0.AND.CTAG(IWHICH)(14:14).GT.'0')  THEN
-                  IF(EWRITE)  PRINT 9013, IWHICH,AAID(IWHICH),
-     $            REAL(JARRAY(IWHICH,1))*.01,REAL(JARRAY(IWHICH,2))*.01,
-     $            REAL(JARRAY(IWHICH,4)),CTAG(IWHICH)
- 9013 FORMAT(/' #EVENT ###: TRKCHK; NTRK>2 TYPE 1D DUP, WND QM SET "D"',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-                  CTAG(IWHICH)(1:1) = 'D'
-                  CTAG(IWHICH)(13:13) = '0'
-                  CTAG(IWHICH)(14:14) = '0'
-               END IF
-               NTYPS = NTYPS + 1
-               IF(NTYPS.GT.ITRKL)  THEN
-C.......................................................................
-C FATAL ERROR: THERE ARE MORE DUPLICATE TYPES IN THIS TRACK THAN THE
-C  LIMIT "ITRKL" -- STOP 29
-                  PRINT 52, ITRKL
-                  CALL W3TAGE('PREPOBS_PREPACQC')
-                  CALL ERREXIT(29)
-C.......................................................................
-               END IF
-               TYPE(NTYPS) = 'TYPE 1D '
-               KTYPS(4) = KTYPS(4) + 1
-            END IF
-            IF(NPTRS.GT.1)  PRINT 719, NPTRS
-  719       FORMAT(' WARNING, NPTRS = ',I4)
-            IF(TRACE)  PRINT 8889, LTRK,IBEG,IEND
- 8889       FORMAT(' TRACE AT 213 ',3(1X,I6))
-            IPTADJ = 0
-            NPRNT  = 0
-C BIG LOOP TO FIND BADDIES
-            IF(TRACE)  PRINT 8890, LTRK,IBEG,IEND
- 8890       FORMAT(' TRACE AT 216 ',3(1X,I6))
-            DO L = IBEG,IEND-1 ! Formerly DO LOOP 216
-               K = L - IBEG + 1
-               LOGTRK = .FALSE.
-               TOSLIM = 'S'
-C THIS IS A LIST OF NON-UNIQUE IDS
-               IF(AAID(L)(1:5).EQ.'AIRCF')  GO TO 216
-               DQLAT = ABS(JARRAY(L,1) - JARRAY(L+1,1))
-               LOGLAT = (DQLAT.LT..03)
-               DQLON = ABS(JARRAY(L,2) - JARRAY(L+1,2))
-               LOGLON = (DQLON.LT..03)
-               LOGALT = (JARRAY(L,3).EQ.JARRAY(L+1,3))
-               LOGTMP = (JARRAY(L,5).GT.999.OR.JARRAY(L+1,5).GT.999
-     $          .OR.JARRAY(L,5).EQ.JARRAY(L+1,5))
-               LOGWND = ((JARRAY(L,6).EQ.JARRAY(L+1,6)).AND.
-     $          (JARRAY(L,7).EQ.JARRAY(L+1,7)))
-               QDELT = IABS(JARRAY(L,4)-JARRAY(L+1,4))*0.01
-               LOGTME = (QDELT.LT.0.20.AND.AVESPD(K).GT.770.)
-               LOGGT3 = (QDELT.GT.3.01)
-               LOGLT1 = (DELPOS(K).LE.1.1)
-               LOGLO = (JARRAY(L,3).LT.8000)
-               LOGHI = (JARRAY(L,3).GT.13411)
-               LOGEQ = 0
-               IF(LOGTMP)  LOGEQ = LOGEQ + 1
-               IF(LOGTME)  LOGEQ = LOGEQ + 1
-               IF(LOGALT)  LOGEQ = LOGEQ + 1
-               IF(.NOT.LOGLO.AND..NOT.LOGHI)  THEN
-C ADJUSTABLE CONSTANTS FOR AIRCRAFT GROUND SPEED LIMITS
-                  IF(AVESPD(K).GT.770.0.OR.AVESPD(K).LT.200.0)  THEN
-                     NAPTS = NAPTS + 1
-                     IF(NAPTS.GT.ITRKL)  THEN
-C.......................................................................
-C FATAL ERROR: THERE ARE MORE REPORTS WITH ADJUSTABLE CONSTANTS FOR
-C  AIRCRAFT GROUND SPEED LIMITS IN THIS TRACK THAN THE LIMIT "ITRKL" --
-C  STOP 27
-                        PRINT 50, ITRKL
-   50 FORMAT(/' THERE ARE MORE THAN',I5,' REPORTS WITH ADJUSTABLE ',
-     $ 'CONSTANTS FOR AIRCRAFT GROUND SPEED LIMITS IN THIS TRACK -- ',
-     $ 'MUST INCREASE SIZE OF PARAMETER NAME "ITRKL" - STOP 27'/)
-                        CALL W3TAGE('PREPOBS_PREPACQC')
-                        CALL ERREXIT(27)
-C.......................................................................
-                     END IF
-                     IPTADJ(NAPTS) = L
-                     LOGTRK = .TRUE.
-                  END IF
-               ELSE  IF(LOGHI)  THEN
-                  IF(AVESPD(K).GT.1450.0.OR.AVESPD(K).LT.500.0)  THEN
-                     NAPTS = NAPTS + 1
-                     IF(NAPTS.GT.ITRKL)  THEN
-C.......................................................................
-C FATAL ERROR: THERE ARE MORE REPORTS WITH ADJUSTABLE CONSTANTS FOR
-C  AIRCRAFT GROUND SPEED LIMITS IN THIS TRACK THAN THE LIMIT "ITRKL" --
-C  STOP 27
-                        PRINT 50, ITRKL
-                        CALL W3TAGE('PREPOBS_PREPACQC')
-                        CALL ERREXIT(27)
-C.......................................................................
-                     END IF
-                     IPTADJ(NAPTS) = L
-                     LOGTRK = .TRUE.
-                  END IF
-               END IF
-C START DECISION MAKING
-C TUNING HERE- CHECK INCREMENT .GE. 'T' AS BAD
-               IF(LOGLT1.AND.LOGWND.AND.LOGEQ.GE.2)  THEN
-C CLASS 1 (SIMPLE) DUPLICATE, PLACE 'D' IN POSITION 1 OF TAG
-                  DUP = .TRUE.
-                  CALL CHOOSE(L,L+1,TOSLIM,DUP,IWHICH,MAYBE,NEW)
-                  IF(IWHICH.GT.0.AND.CTAG(IWHICH)(14:14).GT.'0')  THEN
-                     IF(EWRITE)  PRINT 9014, IWHICH,AAID(IWHICH),
-     $            REAL(JARRAY(IWHICH,1))*.01,REAL(JARRAY(IWHICH,2))*.01,
-     $            REAL(JARRAY(IWHICH,4)),CTAG(IWHICH)
- 9014 FORMAT(/' #EVENT ###: TRKCHK; NTRK>2 TYPE 1A DUP, WND QM SET "D"',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-                     CTAG(IWHICH)(1:1) = 'D'
-                     CTAG(IWHICH)(13:13) = '0'
-                     CTAG(IWHICH)(14:14) = '0'
-                  END IF
-                  IF(NEW)  THEN
-                     PRINT 721, IWHICH,MAYBE
-  721                FORMAT(' 1A- IWHICH,MAYBE ',2I5)
-                     KTYPS(1) = KTYPS(1) + 1
-                     NTYPS = NTYPS + 1
-                     IF(NTYPS.GT.ITRKL)  THEN
-C.......................................................................
-C FATAL ERROR: THERE ARE MORE DUPLICATE TYPES IN THIS TRACK THAN THE
-C  LIMIT "ITRKL" -- STOP 29
-                        PRINT 52, ITRKL
-                        CALL W3TAGE('PREPOBS_PREPACQC')
-                        CALL ERREXIT(29)
-C.......................................................................
-                     END IF
-                     TYPE(NTYPS) = 'TYPE 1A '
-                  END IF
-               ELSE IF(LOGWND.AND.LOGALT.AND.LOGTMP.AND.LOGTME)  THEN
-C COME HERE IF NOT A STRICT DUPLICATE -- POSSIBLE POSITION ERROR
-                  CTAG(L)(3:3) = 'E'
-                  CTAG(L+1)(3:3) = 'E'
-                  DUP = .TRUE.
-                  CALL CHOOSE(L,L+1,TOSLIM,DUP,IWHICH,MAYBE,NEW)
-                  IF(IWHICH.GT.0.AND.CTAG(IWHICH)(14:14).GT.'0')  THEN
-                     IF(EWRITE)  PRINT 9015, IWHICH,AAID(IWHICH),
-     $            REAL(JARRAY(IWHICH,1))*.01,REAL(JARRAY(IWHICH,2))*.01,
-     $            REAL(JARRAY(IWHICH,4)),CTAG(IWHICH)
- 9015 FORMAT(/' #EVENT ###: TRKCHK; NTRK>2 TYPE 1B DUP, WND QM SET "D"',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-                     CTAG(IWHICH)(1:1) = 'D'
-                     CTAG(IWHICH)(13:13) = '0'
-                     CTAG(IWHICH)(14:14) = '0'
-                  END IF
-                  IF(NEW)  THEN
-                     PRINT 722, IWHICH,MAYBE
-  722                FORMAT(' 1B- IWHICH,MAYBE ',2I5)
-                     KTYPS(2) = KTYPS(2) + 1
-                     NTYPS = NTYPS + 1
-                     IF(NTYPS.GT.ITRKL)  THEN
-C.......................................................................
-C FATAL ERROR: THERE ARE MORE DUPLICATE TYPES IN THIS TRACK THAN THE
-C  LIMIT "ITRKL" -- STOP 29
-                        PRINT 52, ITRKL
-                        CALL W3TAGE('PREPOBS_PREPACQC')
-                        CALL ERREXIT(29)
-C.......................................................................
-                     END IF
-                     TYPE(NTYPS) = 'TYPE 1B '
-                  END IF
-               ELSE  IF(LOGTME.AND..NOT.LOGLT1.AND..NOT.LOGWND.AND.
-     $          .NOT.LOGTRK)  THEN
-                  DUP = .FALSE.
-                  TOSLIM = 'V'
-                  CALL CHOOSE(L,L+1,TOSLIM,DUP,IWHICH,MAYBE,NEW)
-                  IF(NTYPS+1.GT.ITRKL)  THEN
-C.......................................................................
-C FATAL ERROR: THERE ARE MORE DUPLICATE TYPES IN THIS TRACK THAN THE
-C  LIMIT "ITRKL" -- STOP 29
-                     PRINT 52, ITRKL
-                     CALL W3TAGE('PREPOBS_PREPACQC')
-                     CALL ERREXIT(29)
-C.......................................................................
-                  END IF
-                  IF(IWHICH.GT.0)  THEN
-                     IF(CTAG(IWHICH)(14:14).GT.'3')  THEN
-                        IF(EWRITE)  PRINT 9016, IWHICH,AAID(IWHICH),
-     $            REAL(JARRAY(IWHICH,1))*.01,REAL(JARRAY(IWHICH,2))*.01,
-     $            REAL(JARRAY(IWHICH,4)),CTAG(IWHICH)
- 9016 FORMAT(/' #EVENT 310: TRKCHK; NTRK>2 TYPE 3     , WND QM SET "F"',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-                        CTAG(IWHICH)(4:4) = 'F'
-                        CTAG(IWHICH)(14:14) = '3'
-                        JARRAY(IWHICH,12) = 310
-                     END IF
-                     KTYPS(7) = KTYPS(7) + 1
-                     NTYPS = NTYPS + 1
-                     TYPE(NTYPS) = 'TYPE 3  '
-                  ELSE
-                     KTYPS(9) = KTYPS(9) + 1
-                     NTYPS = NTYPS + 1
-                     TYPE(NTYPS) = 'TIME TAG'
-                  END IF
-      ELSE  IF(LOGTME.AND.LOGALT.AND.LOGWND.AND.(LOGLAT.OR.LOGLON))THEN
-                  CTAG(L)(3:3) = 'E'
-                  CTAG(L+1)(3:3) = 'E'
-                  DUP = .TRUE.
-                  CALL CHOOSE(L,L+1,TOSLIM,DUP,IWHICH,MAYBE,NEW)
-                  IF(IWHICH.GT.0.AND.CTAG(IWHICH)(14:14).GT.'3')  THEN
-                     IF(EWRITE)  PRINT 9017, IWHICH,AAID(IWHICH),
-     $            REAL(JARRAY(IWHICH,1))*.01,REAL(JARRAY(IWHICH,2))*.01,
-     $            REAL(JARRAY(IWHICH,4)),CTAG(IWHICH)
- 9017 FORMAT(/' #EVENT 311: TRKCHK; NTRK>2 TYPE 2B DUP, WND QM SET "F"',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-                     CTAG(IWHICH)(4:4) = 'F'
-                     CTAG(IWHICH)(14:14) = '3'
-                     JARRAY(IWHICH,12) = 311
-                  END IF
-                  IF(NEW)  THEN
-                     PRINT 723, IWHICH,MAYBE
-  723                FORMAT(' 2B- IWHICH,MAYBE ',2I5)
-                     KTYPS(6) = KTYPS(6) + 1
-                     NTYPS = NTYPS + 1
-                     IF(NTYPS.GT.ITRKL)  THEN
-C.......................................................................
-C FATAL ERROR: THERE ARE MORE DUPLICATE TYPES IN THIS TRACK THAN THE
-C  LIMIT "ITRKL" -- STOP 29
-                        PRINT 52, ITRKL
-                        CALL W3TAGE('PREPOBS_PREPACQC')
-                        CALL ERREXIT(29)
-C.......................................................................
-                     END IF
-                     TYPE(NTYPS) = 'TYPE 2B '
-                  END IF
-               ELSE  IF(LOGTME.AND.LOGALT.AND.LOGTMP.AND.LOGLT1)  THEN
-                  CTAG(L)(3:3) = 'E'
-                  CTAG(L+1)(3:3) = 'E'
-                  DUP = .TRUE.
-                  CALL CHOOSE(L,L+1,TOSLIM,DUP,IWHICH,MAYBE,NEW)
-                  IF(IWHICH.GT.0.AND.CTAG(IWHICH)(14:14).GT.'3')  THEN
-                     IF(EWRITE)  PRINT 9017, IWHICH,AAID(IWHICH),
-     $            REAL(JARRAY(IWHICH,1))*.01,REAL(JARRAY(IWHICH,2))*.01,
-     $            REAL(JARRAY(IWHICH,4)),CTAG(IWHICH)
-                     CTAG(IWHICH)(4:4) = 'F'
-                     CTAG(IWHICH)(14:14) = '3'
-                     JARRAY(IWHICH,12) = 311
-                  END IF
-                  IF(NEW)  THEN
-                     PRINT 723, IWHICH,MAYBE
-                     KTYPS(6) = KTYPS(6) + 1
-                     NTYPS = NTYPS + 1
-                     IF(NTYPS.GT.ITRKL)  THEN
-C.......................................................................
-C FATAL ERROR: THERE ARE MORE DUPLICATE TYPES IN THIS TRACK THAN THE
-C  LIMIT "ITRKL" -- STOP 29
-                        PRINT 52, ITRKL
-                        CALL W3TAGE('PREPOBS_PREPACQC')
-                        CALL ERREXIT(29)
-C.......................................................................
-                     END IF
-                     TYPE(NTYPS) = 'TYPE 2B '
-                  END IF
-               ELSE  IF(LOGLAT.AND.LOGLON.AND..NOT.LOGGT3)  THEN
-                  DUP = .TRUE.
-                  CALL CHOOSE(L,L+1,TOSLIM,DUP,IWHICH,MAYBE,NEW)
-                  CTAG(IWHICH)(3:3) = 'E'
-                  IF(IWHICH.GT.0.AND.CTAG(IWHICH)(14:14).GT.'3')  THEN
-                     IF(EWRITE)  PRINT 9018, IWHICH,AAID(IWHICH),
-     $            REAL(JARRAY(IWHICH,1))*.01,REAL(JARRAY(IWHICH,2))*.01,
-     $            REAL(JARRAY(IWHICH,4)),CTAG(IWHICH)
- 9018 FORMAT(/' #EVENT 312: TRKCHK; NTRK>2 TYPE 2A DUP, WND QM SET "F"',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-                     CTAG(IWHICH)(4:4) = 'F'
-                     CTAG(IWHICH)(14:14) = '3'
-                     JARRAY(IWHICH,12) = 312
-                  END IF
-                  IF(NEW)  THEN
-                     PRINT 724, IWHICH,MAYBE
-  724                FORMAT(' 2A- IWHICH,MAYBE ',2I5)
-                     KTYPS(5) = KTYPS(5) + 1
-                     NTYPS = NTYPS + 1
-                     IF(NTYPS.GT.ITRKL)  THEN
-C.......................................................................
-C FATAL ERROR: THERE ARE MORE DUPLICATE TYPES IN THIS TRACK THAN THE
-C  LIMIT "ITRKL" -- STOP 29
-                        PRINT 52, ITRKL
-                        CALL W3TAGE('PREPOBS_PREPACQC')
-                        CALL ERREXIT(29)
-C.......................................................................
-                     END IF
-                     TYPE(NTYPS) = 'TYPE 2A '
-                  END IF
-               ELSE  IF(LOGTRK)  THEN
-                  I1 = IPTADJ(1)
-                  IF(DELPOS(K).GT.50.0)  TOSLIM = 'R'
-                  I2 = I1 + 1
-                  DUP = .FALSE.
-                  NEW = .FALSE.
-                  IF(QDELT.NE.0..AND..NOT.LOGWND.AND.(.NOT.LOGLAT.OR.
-     $             .NOT.LOGLON))  THEN
-                     CALL CHOOSE(I1,I2,TOSLIM,DUP,IWHICH,MAYBE,NEW)
-                     IF(.NOT.NEW.AND.NAPTS.EQ.1)  THEN
-                        IF(IWHICH.GT.0.AND.IWHICH.EQ.IPTADJ(1).AND.
-     $                   CTAG(IWHICH)(14:14).GT.'3')  THEN
-                           IF(EWRITE)  PRINT 9016, IWHICH,AAID(IWHICH),
-     $            REAL(JARRAY(IWHICH,1))*.01,REAL(JARRAY(IWHICH,2))*.01,
-     $            REAL(JARRAY(IWHICH,4)),CTAG(IWHICH)
-                           CTAG(IWHICH)(4:4) = 'F'
-                           CTAG(IWHICH)(14:14) = '3'
-                           JARRAY(IWHICH,12) = 310
-                        END IF
-                     ELSE  IF(NEW.AND.TOSLIM.EQ.'R')  THEN
-                        PRINT 725, IWHICH,MAYBE
-  725                   FORMAT(' 3 - IWHICH,MAYBE ',2I5)
-                        IF(MAYBE.GT.0)  CTAG(MAYBE)(3:3) = 'E'
-                      IF(IWHICH.GT.0.AND.CTAG(IWHICH)(14:14).GT.'3')THEN
-                           IF(EWRITE)  PRINT 9016, IWHICH,AAID(IWHICH),
-     $            REAL(JARRAY(IWHICH,1))*.01,REAL(JARRAY(IWHICH,2))*.01,
-     $            REAL(JARRAY(IWHICH,4)),CTAG(IWHICH)
-                           CTAG(IWHICH)(4:4) = 'F'
-                           CTAG(IWHICH)(14:14) = '3'
-                           JARRAY(IWHICH,12) = 310
-                        END IF
-                     ELSE  IF(NEW)  THEN
-CVVVVVASK PAUL
-C ASK PAUL: PAUL CLAIMS THIS SHOULD BE 'F' NOT 'D' (LIKE ABOVE)
-C   DOUBLE CHECK WITH HIM: NOTE PREV. IF-THEN SETS WIND TO 'F' IF
-C   NEW AND TOSLIM = R (HERE NEW AND TOSSLIM .NE. R)
-CAAAAAASK PAUL
-                        PRINT 725, IWHICH,MAYBE
-                        IF(MAYBE.GT.0)  CTAG(MAYBE)(3:3) = 'E'
-                      IF(IWHICH.GT.0.AND.CTAG(IWHICH)(14:14).GT.'0')THEN
-                           IF(EWRITE)  PRINT 9019, IWHICH,AAID(IWHICH),
-     $            REAL(JARRAY(IWHICH,1))*.01,REAL(JARRAY(IWHICH,2))*.01,
-     $            REAL(JARRAY(IWHICH,4)),CTAG(IWHICH)
- 9019 FORMAT(/' #EVENT ###: TRKCHK; NTRK>2 TYPE 3     , WND QM SET "D"',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-                           CTAG(IWHICH)(1:1) = 'D'
-                           CTAG(IWHICH)(13:13) = '0'
-                           CTAG(IWHICH)(14:14) = '0'
-                        END IF
-                     END IF
-                     IF(IWHICH.NE.L)  THEN
-                        CTAG(L)(3:3) = 'E'
-                     ELSE
-                        CTAG(L+1)(3:3) = 'E'
-                     END IF
-                     IF(NEW.AND.IWHICH.NE.0)  THEN
-                        KTYPS(7) = KTYPS(7) + 1
-                        NTYPS = NTYPS + 1
-                        IF(NTYPS.GT.ITRKL)  THEN
-C.......................................................................
-C FATAL ERROR: THERE ARE MORE DUPLICATE TYPES IN THIS TRACK THAN THE
-C  LIMIT "ITRKL" -- STOP 29
-                           PRINT 52, ITRKL
-                           CALL W3TAGE('PREPOBS_PREPACQC')
-                           CALL ERREXIT(29)
-C.......................................................................
-                        END IF
-                        TYPE(NTYPS) = 'TYPE 3  '
-                     END IF
-                  ELSE
-                     KTYPS(9) = KTYPS(9) + 1
-                     NTYPS = NTYPS + 1
-                     IF(NTYPS.GT.ITRKL)  THEN
-C.......................................................................
-C FATAL ERROR: THERE ARE MORE DUPLICATE TYPES IN THIS TRACK THAN THE
-C  LIMIT "ITRKL" -- STOP 29
-                        PRINT 52, ITRKL
-                        CALL W3TAGE('PREPOBS_PREPACQC')
-                        CALL ERREXIT(29)
-C.......................................................................
-                     END IF
-                     TYPE(NTYPS) = 'TIME TAG'
-                  END IF
-                  PRINT 667, L,L+1,AVESPD(K),DELPOS(K),LOGLAT,LOGLON,
-     $             LOGTME,LOGALT,LOGTMP,LOGWND,NEW,IWHICH,MAYBE
-  667 FORMAT(' TYP3 ',2(1X,I4),' AVESPD(KTS)',F10.0,' DELPOS',F5.1,
-     $ ' LOGICALS ',6(L1,1X),'NEW ',L1,' IWHICH ',I5,' MAYBE ',I5)
-               END IF
-  216          CONTINUE
-            ENDDO
-C CHECK IF LAST REPORT IS BAD
-            IF(((DELPOS(LTRK-1).GT.35.0.AND.JARRAY(IEND,1).EQ.0).OR.
-     $       (DELPOS(LTRK-1).GT.35.0.AND.JARRAY(IEND,2).EQ.0)).AND.
-     $       CTAG(IEND)(14:14).GT.'3')  THEN
-       IF(EWRITE)  PRINT 9020, IEND,AAID(IEND),REAL(JARRAY(IEND,1))*.01,
-     $  REAL(JARRAY(IEND,2))*.01,REAL(JARRAY(IEND,4)),CTAG(IEND)
- 9020 FORMAT(/' #EVENT 313: TRKCHK; NTRK>2 LAST IS BAD, WND QM SET "F"',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-               CTAG(IEND)(4:4) = 'F'
-               CTAG(IEND)(14:14) = '3'
-               JARRAY(IEND,12) = 313
-            END IF
-            QSUM   = 0.0
-            IQNUM  = 0
-C LOOP SETS POINTERS IF POSITION DIFFERENCES ARE TOO LARGE
-            DO L = IBEG,IEND
-               K = L - IBEG + 1
-               IF(DELPOS(K).GT.25.0)  THEN
-                  IF(NTRKP+1.GT.ITRKL)  THEN
-C.......................................................................
-C FATAL ERROR: THERE ARE MORE REPORTS IN THIS TRACK WITH LARGE POSTION
-C  ERRORS THAN THE LIMIT "ITRKL" -- STOP 30
-                     PRINT 53, ITRKL
-   53 FORMAT(/' THERE ARE MORE THAN',I5,' REPORTS IN THIS TRACK WITH ',
-     $ 'LARGE POSITION ERRORS -- MUST INCREASE SIZE OF PARAMETER NAME ',
-     $ '"ITRKL" - STOP 30'/)
-                     CALL W3TAGE('PREPOBS_PREPACQC')
-                     CALL ERREXIT(30)
-C.......................................................................
-                  END IF
-                  IF(L.LT.IEND)  THEN
-                     NTRKP = NTRKP + 1
-                     IPTTRK(NTRKP) = L
-                     NTRKP = NTRKP + 1
-                     IF(NTRKP.GT.ITRKL)  THEN
-C.......................................................................
-C FATAL ERROR: THERE ARE MORE REPORTS IN THIS TRACK WITH LARGE POSTION
-C  ERRORS THAN THE LIMIT "ITRKL" -- STOP 30
-                        PRINT 53, ITRKL
-                        CALL W3TAGE('PREPOBS_PREPACQC')
-                        CALL ERREXIT(30)
-C.......................................................................
-                     END IF
-                     IPTTRK(NTRKP) = L + 1
-                  ELSE
-                     NTRKP = NTRKP + 1
-                     IPTTRK(NTRKP) = L
-                  END IF
-               END IF
-C CALCULATE AVERAGE VECTOR INCREMENT FOR TRACK (QSUM) AMONGST THOSE OBS.
-C  WITH A SCALED INCREMENT CHARACTER Q-Z
-               IF(CTAG(L)(5:5).GE.'Q'.AND.CTAG(L)(5:5).LE.'Z')  THEN
-                  CTG = CTAG(L)(5:5)
-                  SCALE = 95.0
-                  DO I=1,9
-                     IF(CTG.EQ.CH1(I)) THEN
-                        SCALE = ICH1(I)
-                        EXIT
-                     END IF
-                  ENDDO
-                  IQNUM = IQNUM + 1
-                  QSUM = QSUM + SCALE
-               END IF
-            ENDDO
-            IF(IQNUM.NE.0)  THEN
-               QSUM = QSUM/IQNUM
-            ELSE
-               QSUM = 0.0
-            END IF
-C CHECK IF NTRKP INDICATES INTERIOR BAD
-            DO KK = 1,NTRKP-1
-               DO JJ = KK+1,NTRKP
-                  IF(IPTTRK(KK).EQ.IPTTRK(JJ))  THEN
-                     I1 = IPTTRK(KK)
-                     I2 = IPTTRK(JJ)
-                     DUP = .TRUE.
-                     CALL CHOOSE(I1,I2,TOSLIM,DUP,IWHICH,MAYBE,NEW)
-                  IF(IWHICH.GT.0.AND.CTAG(IWHICH)(14:14).GT.'3')  THEN
-                        IF(EWRITE)  PRINT 9021, IWHICH,AAID(IWHICH),
-     $            REAL(JARRAY(IWHICH,1))*.01,REAL(JARRAY(IWHICH,2))*.01,
-     $            REAL(JARRAY(IWHICH,4)),CTAG(IWHICH)
- 9021 FORMAT(/' #EVENT 314: TRKCHK; NTRK>2 TYPE 3 DUP , WND QM SET "F"',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-                        CTAG(IWHICH)(4:4) = 'F'
-                        CTAG(IWHICH)(14:14) = '3'
-                        JARRAY(IWHICH,12) = 314
-                     END IF
-                     PRINT 727, IWHICH,MAYBE
-  727                FORMAT(' INT-IWHICH,MAYBE ',2I5)
-                     KTYPS(7) = KTYPS(7) + 1
-                     NTYPS = NTYPS + 1
-                     IF(NTYPS.GT.ITRKL)  THEN
-C.......................................................................
-C FATAL ERROR: THERE ARE MORE DUPLICATE TYPES IN THIS TRACK THAN THE
-C  LIMIT "ITRKL" -- STOP 29
-                        PRINT 52, ITRKL
-                        CALL W3TAGE('PREPOBS_PREPACQC')
-                        CALL ERREXIT(29)
-C.......................................................................
-                     END IF
-                     TYPE(NTYPS) = 'TYPE 3  '
-                  END IF
-               ENDDO
-            ENDDO
-            NPRNT = NPTRS + NTYPS + NAPTS + DTKNT
-            IF(NPRNT.GT.0.OR.LUTCEQ.OR.LVAREQ.OR.NCHNGD.GT.0)  THEN
-               IF(TRACE)  THEN
-                  PRINT 480
-  480          FORMAT(' POINTER SUMMARY--K--  ADJ   TRK    NADI   NADJ')
-                  DO KK = 1,LTRK
-                     IF(KK.GT.ITRKL)  THEN
-C.......................................................................
-C FATAL ERROR: THERE ARE MORE REPORTS IN THE POINTER SUMMARY FOR THIS
-C  TRACK THAN THE LIMIT "ITRKL" -- STOP 26
-                        PRINT 49, ITRKL
-   49 FORMAT(/' THERE ARE MORE THAN',I5,' REPORTS IN THE POINTER ',
-     $ 'SUMMARY FOR THIS TRACK -- MUST INCREASE SIZE OF PARAMETER NAME',
-     $ ' "ITRKL" - STOP 26'/)
-                        CALL W3TAGE('PREPOBS_PREPACQC')
-                        CALL ERREXIT(26)
-C.......................................................................
-                     END IF
-              PRINT 482,KK,IPTADJ(KK), IPTTRK(KK), IPTNAD(KK),JPTNAD(KK)
-  482                FORMAT(' ',15X,I3,3X,4(I4,2X))
-                  ENDDO
-                  PRINT 8891, LTRK,IBEG,IEND
- 8891             FORMAT(' TRACE AT 215 ',3(1X,I6))
-               END IF
-               DO L = IBEG,IEND
-                  K = L - IBEG + 1
-      PRINT 334, K,L,AAID(L),JARRAY(L,1),JARRAY(L,2),JARRAY(L,4),
-     $ JARRAY(L,3),JARRAY(L,5),JARRAY(L,6),JARRAY(L,7),CTAG(L),
-     $ DELPOS(K),AVESPD(K)
-  334          FORMAT(' K=',I3,' L=',I5,2X,A8,6I7,I5,'  "',A14,'"/ ',
-     $          F7.1,F13.1)
-               ENDDO
-               PRINT 314, NAPTS,NTRKP,NPTRS,QSUM,(TYPE(M),M=1,NTYPS)
-  314          FORMAT(' END /POINTERS #ADJS,#TRKS,#NADJ',3(1X,I4),
-     $          ' QSUM ',F5.1,/,' TYPES ',7(2X,A8))
-CCCCC          PRINT 5012, KTYPS
-C5012 FORMAT(//,' #TYPE1A ',I2,' #TYPE1B ',I2,' #TYPE?? ',I2,
-CCCCC$ ' #TYPE1D ',I2,' #TYPE2A ',I2,' #TYPE2B ',I2,' #TYPE3 ',I2,
-CCCCC$ '          ',I2,'TIME TAGS',I2)
-               IF(TRACE)  PRINT 8892, LTRK,IBEG,IEND,I
- 8892          FORMAT(' TRACE AT END, LTRK,IBEG,IEND,I!',4(1X,I6))
-               PRINT 634
-  634          FORMAT(' ----------------------------------')
-            END IF
-         END IF
-C-----------------------------------------------------------------------
-         NTRK = 0
-C GO BACK TO 66 TO START NEXT TRACK
-         GO TO 66
-C**********************************************************************
-      END IF
-      PRINT 574
-C RESORT FOR STACK DETERMINATION:
-C    1ST ORDER - LATITUDE (SOUTH TO NORTH)
-C    2ND ORDER - LONGITUDE (WEST, INCREASING)
-C    3RD ORDER - TIME (INCREASING)
-C    4TH ORDER - ALITITUDE (INCREASING) (THIS WAS ADDED 8/23/1999)
-C SORT BY CONCATENATING THESE QUANITIIES INTO CHARACTER ARRAY
-C  (DO NOT INCLUDE ASDARS/AMDARS/TAMDARS AND EXCLUDED REPORTS IN THIS
-C   SORT)
-      DO J = 1,NAIREP
-         WRITE(CARRAY(J)(1:5),'(I5.5)') JARRAY(J,1) + 9000
-         WRITE(CARRAY(J)(6:10),'(I5.5)') JARRAY(J,2)
-         WRITE(CARRAY(J)(11:14),'(I4.4)') JARRAY(J,4)
-         WRITE(CARRAY(J)(15:20),'(I6.6)') JARRAY(J,3)
-         CARRAY(J)(21:32) = '000000000000'
-CCCCC    PRINT 788, J,AAID(J),CARRAY(J)
-CC788    FORMAT(' DBG J ',I6,2X,'; ID=',A8,'; CARRAY=',A32)
-      ENDDO
-C  CALL SORT ROUTINE- PUTS POINTERS INTO IPOINT ARRAY/DOES NOT REARRANGE
-      IF(NAIREP.GT.0)  CALL INDEXC(NAIREP,CARRAY,INDR)
-C WRITE SORTED REPORTS INTO SAAID, KARRAY, AND STAG ARRAYS (REMAINING
-C  ASDAR/AMDAR/TAMDAR AND EXCLUDED REPORTS ALREADY IN THESE ARRAYS IN
-C  PROPER POSITION FROM STORE MADE AT BEGINNING OF SUBROUTINE)
-      DO I = 1,NAIREP
-         J = INDR(I)
-         SAAID(I) = AAID(J)
-         STAG(I) = CTAG(J)
-         KARRAY(I,:) = JARRAY(J,:)
-      ENDDO
-CCCCC PRINT 562
-CC562 FORMAT(' LAT/LON  ACID ',6X,' LAT     LON ',4X,'UTC    ALT  ',
-CCCCC$'   TEMP    WDIR     WSPD ')
-CCCCC DO J = 1,KOUNT
-CCCCC    KARRY1 = MIN0(KARRAY(J,1),99999)
-CCCCC    KARRY2 = MIN0(KARRAY(J,2),99999)
-CCCCC    PRINT 711, J,SAAID(J),KARRY1,KARRY2,KARRAY(J,4),KARRAY(J,3),
-CCCCC$    KARRAY(J,5),KARRAY(J,6),KARRAY(J,7),STAG(J)
-CC711    FORMAT(' ',I5,2X,A8,7I8,1X,'"',A14,'"')
-CCCCC ENDDO
-C WRITE SORTED REPORTS BACK INTO ORIGINAL ARRAYS AND ELIMINATE DUPS
-      IF(IWRITE)  PRINT 557
-  557 FORMAT(/' FINAL LISTING OF SORTED DATA LEAVING TRKCHK----'/9X,
-     $ 'ACID',8X,'LAT    WLON    UTC   ALT   TEMP  WDIR  WSPD    -----',
-     $ 'TAGS-----   ITYPE  RPTIME  KNTINI  GALT GTEMP  GDIR  GSPD'/)
-      M = 0
-      DO I = 1,KOUNT
-         IF(STAG(I)(1:1).EQ.'D')  THEN
-            PRINT 9022, I,SAAID(I),REAL(KARRAY(I,1))*.01,
-     $       REAL(KARRAY(I,2))*.01,REAL(KARRAY(I,4)),STAG(I)
- 9022 FORMAT(/' ##########: TRKCHK; DUPLICATE REMOVED AT END OF SUBR..',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-            GO TO 219
-         END IF
-         IF(STAG(I)(3:3).EQ.'Z')  STAG(I)(3:3) = '-'
-         M = M + 1
-         ACID(M)   = SAAID(I)
-         ALAT(M)   = KARRAY(I,1) * .01
-         ALON(M)   = KARRAY(I,2) * .01
-         AALT(M)   = KARRAY(I,3)
-         TIME(M)   = KARRAY(I,4)
-         ATMP(M)   = KARRAY(I,5)
-         ADIR(M)   = KARRAY(I,6)
-         ASPD(M)   = KARRAY(I,7)
-         INTP(M)   = KARRAY(I,8)
-         IRTM(M)   = KARRAY(I,9)
-         KNTINI(M) = KARRAY(I,10)
-         ITEVNT(M) = KARRAY(I,11)
-         IWEVNT(M) = KARRAY(I,12)
-         AALTF(M)  = KARRAY(I,13)
-         ADIRF(M)  = KARRAY(I,14)
-         ASPDF(M)  = KARRAY(I,15)
-         ATMPF(M)  = KARRAY(I,16)
-         TAG(M)  = STAG(I)
-         IF(IWRITE)  PRINT 331, M,ACID(M),ALAT(M),ALON(M),NINT(TIME(M)),
-     $    NINT(AALT(M)),NINT(ATMP(M)),NINT(ADIR(M)),NINT(ASPD(M)),
-     $    TAG(M),INTP(M),IRTM(M),KNTINI(M),NINT(AALTF(M)),NINT(ATMPF(M))
-     $  , NINT(ADIRF(M)),NINT(ASPDF(M))
-  331    FORMAT(' ',I5,2X,A8,1X,2F8.2,I6,I7,3I6,3X,'"',A14,'"',I6,2I8,
-     $    I7,3I6)
-  219    CONTINUE
-      ENDDO
-      NFILE = M
-      PRINT 681, NFILE
-  681 FORMAT(1X,128('*')/47X,'OUT OF TRACK CHECK - NFILE =',I7/128('*'))
-      RETURN
-C.......................................................................
- 9999 CONTINUE
-C FATAL ERROR: THERE ARE MORE RPTS IN TRACK THAN "ITMX" -- STOP 24
-      PRINT 953, ITMX
-  953 FORMAT(/' THERE ARE MORE THAN',I5,' REPORTS IN A SINGLE TRACK ',
-     $ '-- MUST INCREASE SIZE OF PARAMETER NAME "ITMX" - STOP 24'/)
-      CALL W3TAGE('PREPOBS_PREPACQC')
-      CALL ERREXIT(24)
-C.......................................................................
-      END
-C$$$  SUBPROGRAM DOCUMENTATION BLOCK
-C                .      .    .                                       .
-C SUBPROGRAM:    WAYPT       CORRECTS WAYPOINT LOCATIONS FOR ACFT RPTS
-C   PRGMMR: D. A. KEYSER     ORG: NP22       DATE: 1995-11-08
-C
-C ABSTRACT: LOOPS THRU FLIGHT FROM POINTER IBEG TO IEND CHECKING IF
-C   LAT/LON IS ON LIST OF KNOWN INCORRECT WAYPOINT LOCATIONS.  IF
-C   SO, THE LAT/LON IS CHANGED TO THE CORRECT WAYPOINT LOCATION.
-C   THIS SUBROUTINE CAN BE CALLED ONLY FOR AIREP/PIREP REPORTS.
-C
-C PROGRAM HISTORY LOG:
-C 1993-01-05  P. JULIAN (W/NMC00) -- ORIGINAL AUTHOR
-C 1994-08-25  D. A. KEYSER -- STREAMLINED CODE, EXPANDED COMMENTS AND
-C             DOCBLOCKS, REVISED TO MAKE MACHINE INDEPENDENT
-C 1995-02-10  D. A. KEYSER -- MINOR CHANGE TO ALLOW WAYPOINT CORRECTED
-C             LAT/LON TO BE CARRIED BACK TO CALLING SUBROUTINE FOR
-C             WAYPOINT CALL REASON # 3 (WASN'T BEING DONE BEFORE)
-C 1995-05-30  D. A. KEYSER -- ADDED PARAMETER NAME "LSIZE" FOR MAX.
-C             NO. OF LAT/LON CORRECTIONS IN WAYPOINT FILE, ADDED
-C             COND. CODE 25 IF PARAMETER NAME "LSIZE" IS EXCEEDED
-C 1995-11-08  D. A. KEYSER -- INCREASED THE SIZE OF PARAMETER "LSIZE"
-C             FROM 26 TO 50
-C
-C USAGE:    CALL WAYPT(IBEG,IEND,NCHNGD)
-C   INPUT ARGUMENT LIST:
-C     IBEG     - POINTER FOR START OF FLIGHT SEGMENT
-C     IEND     - POINTER FOR END OF FLIGHT SEGMENT
-C
-C   OUTPUT ARGUMENT LIST:
-C     NCHNGD   - NUMBER OF REPORT LOCATIONS CHANGED IN A SINGLE CALL
-C              - TO THIS SUBROUTINE
-C
-C   INPUT FILES:
-C     UNIT 23  - TEXT FILE CONTAINING WAYPOINT CORRECTIONS
-C                (READ IN WHEN NAMELIST SWITCH WAYPIN=.TRUE.)
-C
-C   OUTPUT FILES:
-C     UNIT 06  - PRINTOUT
-C
-C REMARKS: CALLED BY MAIN PROGRAM AND BY SUBROUTINE 'TRKCHK'.
-C
-C ATTRIBUTES:
-C   LANGUAGE: FORTRAN 90
-C   MACHINE:  IBM-SP
-C
-C$$$
-      SUBROUTINE WAYPT(IBEG,IEND,NCHNGD)
-      PARAMETER (IRMX= 80000)
-      PARAMETER (ISIZE= 16)
-C PARAMETER NAME "LSIZE" IN THIS SUBROUTINE REFERS TO THE MAXIMUM
-C  NUMBER OF LATITUDES AND LONGITUDES IN THE WAYPOINT CORRECTION FILE
-      PARAMETER (LSIZE= 50)
-      PARAMETER (LSIZ23= LSIZE-23)
-      LOGICAL  WAYPIN,EWRITE
-      CHARACTER*80  BUFF1
-      CHARACTER*8  AAID(IRMX)
-      CHARACTER*14  CTAG(IRMX),STAG(IRMX)
-      INTEGER  OLDLAT(LSIZE),NEWLAT(LSIZE),OLDLON(LSIZE),NEWLON(LSIZE)
-      COMMON/INPT/DOSPOB,DOACRS,TMAXO,TMINO,TIMINC,WAYPIN,INIDST,IFLGUS,
-     $ JAMASS(6),JAWIND(6),RCPTST
-      COMMON/XXXXX/AAID,JARRAY(IRMX,ISIZE),CTAG,KARRAY(IRMX,ISIZE),STAG
-      COMMON/STWRIT/SWRITE,EWRITE,IWRITE
-      SAVE
-      DATA ITKNT/0/,INUM/23/
-      DATA OLDLAT/ 2017, 3717, 1067, 3000, 3383, 4850, 5683, 4283, 2617,
-     1             3417, 3783, 4500, 3417, 3717, 4033, 3100, 6217,-0583,
-     2            -0950,-0667, 0817, 4017, 2783,LSIZ23*99999/
-      DATA NEWLAT/-2983, 6000, 3967,-2750,-2683,-2533, 3504, 3007, 3648,
-     1             3019, 3845,-0511, 4092, 4056,-0813,-3123, 3950,-0583,
-     2             2431, 1478, 4195, 0090, 3746,LSIZ23*99999/
-      DATA OLDLON/35333,11367,28567, 8550,11650,11233,13550, 7150,31267,
-     1             9717,11300, 7467,11783, 9700, 7845, 8467, 2050,19000,
-     2            21300, 7633,26117,11017,13050,LSIZ23*99999/
-      DATA NEWLON/ 6200, 4317, 3167, 5700, 6050, 4917,33384,32180, 0422,
-     1             0923,34367, 3721,34562,34567, 3488, 5406, 3117,16900,
-     2            10450, 9237, 7183, 7000, 2405,LSIZ23*99999/
-      NCHNGD = 0
-      IF(ITKNT.EQ.0)  THEN
-         IF(WAYPIN)  THEN
-C FIRST TIME IN, READ WAYPOINTS FROM EXTERNAL FILE IF WAYPIN=TRUE
-            READ(23,230) BUFF1
-            READ(23,230) BUFF1
-            READ(23,231) INUM
-            IF(INUM.GT.LSIZE)  THEN
-C.......................................................................
-C FATAL ERROR: THERE ARE MORE LAT/LON CORRECTIONS IN WAYPOINT FILE THAN
-C  WHAT IS EXPECTED HERE IN "LSIZE" -- STOP 25
-               PRINT 53, LSIZE,INUM
-   53 FORMAT(/' THERE ARE MORE THAN THE',I5,' EXPECTED LAT/LON ',
-     $ 'CORRECTIONS IN THE WAYPOINT FILE'/5X,'-- MUST INCREASE SIZE OF',
-     $ ' PARAMETER NAME "LSIZE" TO AT LEAST',I5,' - STOP 25'/)
-               CALL W3TAGE('PREPOBS_PREPACQC')
-               CALL ERREXIT(25)
-C.......................................................................
-            END IF
-            READ(23,230) BUFF1
-            READ(23,232) (OLDLAT(J),J=1,INUM)
-            READ(23,230) BUFF1
-            READ(23,232) (NEWLAT(J),J=1,INUM)
-            READ(23,230) BUFF1
-            READ(23,232) (OLDLON(J),J=1,INUM)
-            READ(23,230) BUFF1
-            READ(23,232) (NEWLON(J),J=1,INUM)
- 230        FORMAT(A80)
- 231        FORMAT(I5)
- 232        FORMAT(12I6)
-         ELSE
-            INUM = 23
-         END IF
-         PRINT 2999, WAYPIN
-         PRINT 3000, (OLDLAT(K),K=1,INUM)
-         PRINT 3001, (NEWLAT(K),K=1,INUM)
-         PRINT 3002, (OLDLON(K),K=1,INUM)
-         PRINT 3003, (NEWLON(K),K=1,INUM)
- 2999    FORMAT(/' FIRST CALL TO SUBROUTINE WAYPT, WAYPIN = ',L4)
- 3000    FORMAT(' OLDLAT ',12I6)
- 3001    FORMAT(' NEWLAT ',12I6)
- 3002    FORMAT(' OLDLON ',12I6)
- 3003    FORMAT(' NEWLON ',12I6)
-         ITKNT = 1
-      END IF
-      DO L = IBEG,IEND
-         DO J = 1,INUM
-           IF(JARRAY(L,1).EQ.OLDLAT(J).AND.JARRAY(L,2).EQ.OLDLON(J))THEN
-               PRINT 2000, L,J
- 2000          FORMAT(' WAYPT MATCH L,J ',I5,1X,I2)
-               NCHNGD = NCHNGD + 1
-               JARRAY(L,1) = NEWLAT(J)
-               JARRAY(L,2) = NEWLON(J)
-               CTAG(L)(1:1) = '-'
-C SET TAG POSITION 9 TO 'C' TO INDICATE WAYPOINT CORRECTION
-               CTAG(L)(9:9) = 'C'
-C UPDATE KARRAY AS WELL - WAYPOINT(3) SORTS BY TIME (SEE SUBR. TRKCHK)
-               KARRAY(L,1) = NEWLAT(J)
-               KARRAY(L,2) = NEWLON(J)
-C UPDATE STAG AS WELL - WAYPOINT(3) SORTS BY TIME (SEE SUBR. TRKCHK)
-               STAG(L)(1:1) = '-'
-C SET TAG POSITION 9 TO 'C' TO INDICATE WAYPOINT CORRECTION
-               STAG(L)(9:9) = 'C'
-CVVVVV%%%%%
-         PRINT *,'~~~~~ WAYPT CORRECTION MADE (PRINT IN WAYPT)'
-CAAAAA%%%%%
-               IF(EWRITE)  PRINT 9002, L,AAID(L),REAL(JARRAY(L,1))*.01,
-     $          REAL(JARRAY(L,2))*.01,REAL(JARRAY(L,4)),CTAG(L)
- 9002 FORMAT(/' #EVENT ###: WAYPT; WAYPT ERROR, LAT/LON CHANGED.......',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-               PRINT 1000, IBEG,IEND,JARRAY(L,1),JARRAY(L,2)
- 1000          FORMAT(' WAYPT ERR ',2(I5,1X),' NEW POS ',2I6)
-            END IF
-         ENDDO
-      ENDDO
-      RETURN
-      END
-C$$$  SUBPROGRAM DOCUMENTATION BLOCK
-C                .      .    .                                       .
-C SUBPROGRAM:    CHOOSE      CHOOSES WORST/DUPL. BETWEEN PAIR OF RPTS
-C   PRGMMR: D. A. KEYSER     ORG: NP22       DATE: 1994-08-25
-C
-C ABSTRACT: USES SCALED VECTOR INCREMENTS TO EITHER CHOOSE UNEQUIVICALLY
-C   ONE OF A PAIR OF REPORTS (E.G. A DUPLICATE) OR TO CHOOSE THE
-C   'WORST' AMONGST TWO REPORTS BASED UPON THE SCALED INCREMENTS
-C   OF THE PAIR OF REPORTS.
-C
-C PROGRAM HISTORY LOG:
-C 1993-01-05  P. JULIAN (W/NMC00) -- ORIGINAL AUTHOR
-C 1994-08-25  D. A. KEYSER -- STREAMLINED CODE, EXPANDED COMMENTS AND
-C             DOCBLOCKS, REVISED TO MAKE MACHINE INDEPENDENT
-C
-C USAGE:    CALL CHOOSE(I,J,TOSLIM,DUP,IWHICH,MAYBE,NEW)
-C   INPUT ARGUMENT LIST:
-C     I        - POINTER FOR FIRST OF THE PAIR
-C     J        - POINTER FOR SECOND OF THE PAIR
-C     TOSLIM   - LIMITING SCALED QUALITY MARKER
-C     DUP      - LOGICAL: =.TRUE.  CHOOSE WHICH OF PAIR IS DUPLICATE;
-C              -          =.FALSE. CHOOSE WHICH OF PAIR IS WORST
-C
-C   OUTPUT ARGUMENT LIST:
-C     IWHICH   - POINTER (I OR J) FOR THE ONE OF THE PAIR CHOSEN
-C              - (DUP=T) OR FOR THE ONE OF THE PAIR CHOSEN BECAUSE
-C              - IT EXCEEDED THE 'TOSLIM' (DUP=F)
-C     MAYBE    - POINTER (I OR J) FOR THE ONE OF THE PAIR CHOSEN
-C              - BUT NOT BECAUSE IT EXCEEDED 'TOSLIM' (DUP=F ONLY)
-C     NEW      - SET TO TRUE UNLESS REPORT ALREADY HAD A DUPLICATE
-C              - OR FAILED FLAG IN QUALITY MARKER
-C
-C REMARKS: CALLED BY SUBROUTINE 'TRKCHK'.
-C
-C ATTRIBUTES:
-C   LANGUAGE: FORTRAN 90
-C   MACHINE:  IBM-SP
-C
-C$$$
-      SUBROUTINE CHOOSE(I,J,TOSLIM,DUP,IWHICH,MAYBE,NEW)
-      PARAMETER (IRMX= 80000)
-      PARAMETER (ISIZE= 16)
-      CHARACTER*1  TOSLIM
-      CHARACTER*8  AAID(IRMX)
-      CHARACTER*14  CTAG(IRMX),STAG(IRMX)
-      LOGICAL  LIGS,LIGX,LJGS,LJGX,LIGJ,LJGI,DUP,NEW
-      COMMON/XXXXX/AAID,JARRAY(IRMX,ISIZE),CTAG,KARRAY(IRMX,ISIZE),STAG
-      NEW = .FALSE.
-      IWHICH = 0
-      MAYBE  = 0
-C IF DUPL. AND 2ND INCREMENT NOT CHECKED, SET 2ND INCREMENT TO THAT OF 1
-      IF(CTAG(J)(5:5).EQ.'N'.AND.DUP)  CTAG(J)(5:5) = CTAG(I)(5:5)
-      IF(CTAG(I)(1:1).EQ.'D'.OR.CTAG(I)(4:4).EQ.'F')  THEN
-C-----------------------------------------------------------------------
-C IF FIRST OF PAIR HAS DUPLICATE OR BAD Q. MARK IT IS SELECTED
-         IWHICH = I
-         PRINT 1116, IWHICH,I,J,CTAG(I),CTAG(J),DUP,NEW
- 1116    FORMAT(' CHOICE= ',I5,' I&J= ',2I5,' TAGS= "',A14,'"/"',A14,
-     $    '" DUP? ',L1,' NEW? ',L1)
-      ELSE  IF(CTAG(J)(1:1).EQ.'D'.OR.CTAG(J)(4:4).EQ.'F')  THEN
-C-----------------------------------------------------------------------
-C ELSE, IF SECOND OF PAIR HAS DUPLICATE OR BAD Q. MARK IT IS SELECTED
-         IWHICH = J
-         PRINT 1116, IWHICH,I,J,CTAG(I),CTAG(J),DUP,NEW
-      ELSE  IF(.NOT.DUP)  THEN
-C-----------------------------------------------------------------------
-C ELSE, IF NOT CHECKING FOR DUPLICATES, FIND THE WORST OF THE PAIR
-         NEW = .TRUE.
-         IF((CTAG(I)(5:5).EQ.'Q'.AND.CTAG(J)(5:5).EQ.'Q').OR.
-     $    (CTAG(I)(5:5).EQ.'R'.AND.CTAG(J)(5:5).EQ.'R'))  THEN
-C IF BOTH HAVE Q.M. OF 'Q' OR 'R' THEN RETAIN THEM BOTH
-            RETURN
-         END IF
-C LIGJ = T IF 1ST WORSE THAN OR SAME AS 2ND; =F IF 1ST BETTER THAN 2ND
-         LIGJ = (CTAG(I)(5:5).GE.CTAG(J)(5:5))
-C LIGS = T IF 1ST BETWEEN S AND Z
-         LIGS = (CTAG(I)(5:5).GE.'S'.AND.CTAG(I)(5:5).LE.'Z')
-C LIGX = T IF 1ST WORSE THAN OR SAME AS 'TOSLIM'
-         LIGX = (CTAG(I)(5:5).GE.TOSLIM.AND.CTAG(I)(5:5).LE.'Z')
-C LJGS = T IF 2ND BETWEEN S AND Z
-         LJGS = (CTAG(J)(5:5).GE.'S'.AND.CTAG(J)(5:5).LE.'Z')
-C LJGX = T IF 2ND WORSE THAN OR SAME AS 'TOSLIM'
-         LJGX = (CTAG(J)(5:5).GE.TOSLIM.AND.CTAG(J)(5:5).LE.'Z')
-         IF(LIGX.AND..NOT.LJGX)  THEN
-C 1ST WORSE THAN/SAME AS 'TOSLIM' & 2ND BETTER THAN 'TOSLIM': CHOOSE 1ST
-            IWHICH = I
-         ELSE  IF(LJGX.AND..NOT.LIGX)  THEN
-C 2ND WORSE THAN/SAME AS 'TOSLIM' & 1ST BETTER THAN 'TOSLIM': CHOOSE 2ND
-            IWHICH = J
-         ELSE  IF(LIGX.AND.LJGX)  THEN
-C BOTH WORSE THAN/SAME AS 'TOSLIM' .. CHECK CARSWELL-TINKER INDICATOR
-            IF(CTAG(I)(7:7).EQ.'C'.AND.CTAG(J)(7:7).NE.'C')  THEN
-C ...1ST IS CARSWELL-TINKER, CHOOSE 1ST
-               IWHICH = I
-            ELSE  IF(CTAG(J)(7:7).EQ.'C'.AND.CTAG(I)(7:7).NE.'C')  THEN
-C ...2ND IS CARSWELL-TINKER, CHOOSE 2ND
-               IWHICH = J
-            ELSE  IF(LIGJ)  THEN
-C ...BOTH EITHER ARE OR AREN'T CARSWELL-TINKER, CHOOSE 1ST IF WORSE
-C     THAN 2ND
-               IWHICH = I
-            ELSE
-C ...BOTH EITHER ARE OR AREN'T CARSWELL-TINKER, CHOOSE 2ND IF WORSE
-C     THAN 1ST
-               IWHICH = J
-            END IF
-         ELSE  IF(LIGS.AND..NOT.LJGS.AND.CTAG(J)(5:5).NE.'N')  THEN
-C 1ST BETWEEN S AND Z & 2ND IS Q OR R, CHOOSE 1ST MAYBE
-            MAYBE = I
-         ELSE  IF(LJGS.AND..NOT.LIGS.AND.CTAG(I)(5:5).NE.'N')  THEN
-C 2ND BETWEEN S AND Z & 1ST IS Q OR R, CHOOSE 2ND MAYBE
-            MAYBE = J
-         ELSE  IF(LIGS.AND.LJGS)  THEN
-C BOTH BETWEEN S AND Z .. CHECK CARSWELL-TINKER INDICATOR
-            IF(CTAG(I)(7:7).EQ.'C'.AND.CTAG(J)(7:7).NE.'C')  THEN
-C ...1ST IS CARSWELL-TINKER, CHOOSE 1ST MAYBE
-               MAYBE = I
-            ELSE  IF(CTAG(J)(7:7).EQ.'C'.AND.CTAG(I)(7:7).NE.'C')  THEN
-C ...2ND IS CARSWELL-TINKER, CHOOSE 2ND MAYBE
-               MAYBE = J
-            ELSE  IF(LIGJ)  THEN
-C ...BOTH EITHER ARE/AREN'T CARSWELL-TINKER, CHOOSE 1ST MAYBE IF WORSE
-C     THAN 2ND
-               MAYBE = I
-            ELSE
-C ...BOTH EITHER ARE/AREN'T CARSWELL-TINKER, CHOOSE 2ND MAYBE IF WORSE
-C     THAN 1ST
-               MAYBE = J
-            END IF
-         END IF
-         PRINT 1117, IWHICH,LIGS,LJGS,LIGX,LJGX,LIGJ,I,J,CTAG(I),
-     $    CTAG(J),DUP,NEW
- 1117    FORMAT(' CHOICE= ',I5,' W/ LOGICALS: LIGS=',L1,' LJGS=',L1,
-     $    ' LIGX=',L1,' LJGX=',L1,' LIGJ=',L1,' I&J=',2I5,' TAGS="',
-     $    A14,'"/"',A14,'" DUP? ',L1,' NEW? ',L1)
-      ELSE
-C-----------------------------------------------------------------------
-C ELSE IF CHECKING FOR DUPLICATES, FIND THE DUPLICATE
-         NEW =.TRUE.
-C LIGJ = T IF 1ST WORSE THAN 2ND; =F IF 1ST BETTER THAN OR SAME AS 2ND
-         LIGJ = (CTAG(I)(5:5).GT.CTAG(J)(5:5))
-C LJGI = T IF 2ND WORSE THAN 1ST; =F IF 2ND BETTER THAN OR SAME AS 1ST
-         LJGI = (CTAG(J)(5:5).GT.CTAG(I)(5:5))
-         IF(CTAG(I)(5:5).EQ.CTAG(J)(5:5))  THEN
-C BOTH HAVE SAME QUALITY .. CHECK CARSWELL-TINKER INDICATOR
-            IF(CTAG(J)(7:7).EQ.'C'.AND.CTAG(I)(7:7).NE.'C')  THEN
-C ...2ND IS CARSWELL-TINKER, CHOOSE 2ND
-               IWHICH = J
-            ELSE  IF(CTAG(I)(7:7).EQ.'C'.AND.CTAG(J)(7:7).NE.'C')  THEN
-C ...1ST IS CARSWELL-TINKER, CHOOSE 1ST
-               IWHICH = I
-            ELSE
-C ...BOTH EITHER ARE OR AREN'T CARSWELL-TINKER, CHOOSE 1ST
-               IWHICH = I
-            END IF
-         ELSE  IF(LIGJ)  THEN
-C 1ST IS WORSE THAN 2ND, CHOOSE 1ST
-            IWHICH = I
-         ELSE  IF(LJGI)  THEN
-C 2ND IS WORSE THAN 1ST, CHOOSE 2ND
-            IWHICH = J
-         END IF
-         PRINT 1118, IWHICH,LIGJ,LJGI,I,J,CTAG(I),CTAG(J),DUP,NEW
- 1118    FORMAT(' CHOICE= ',I5,' FROM LOGICALS: LIGJ=',L1,' LJGI=',L1,
-     $   ' I&J= ',2I5,' TAGS= "',A14,'"/"',A14,'" DUP? ',L1,' NEW? ',L1)
-C-----------------------------------------------------------------------
-      END IF
-      RETURN
-      END
-C$$$  SUBPROGRAM DOCUMENTATION BLOCK
-C                .      .    .                                       .
-C SUBPROGRAM:    SHEAR       CHECKS WIND DIFFERENCE AGAINST STATISTICS
-C   PRGMMR: D. A. KEYSER     ORG: NP22       DATE: 1994-08-25
-C
-C ABSTRACT: DOES WIND DIFFERENCING BOTH AT SAME AND AT DIFFERENT
-C   LEVELS AND ASSIGNS DIGITAL FLAGS DEPENDING UPON THE MAGNITUDES
-C   COMPARED WITH A STATISTICAL DISTRIBUTION OF SUCH DIFFERENCES
-C   AND USING THE OBSERVED VECTOR INCREMENTS. FLAGS BAD OBSERVATIONS.
-C   THERE MUST BE AT LEAST TWO HIGH-ALTITUDE OBSERVATIONS IN STACK
-C   FOR THIS CHECK TO BE PERFORMED.
-C
-C PROGRAM HISTORY LOG:
-C 1989-04-01  P. JULIAN -- ORIGINAL AUTHOR
-C 1993-01-05  P. JULIAN -- CHANGES TO UTILIZE SCALED OBS INCREMENTS
-C 1994-08-25  D. A. KEYSER -- STREAMLINED CODE, EXPANDED COMMENTS AND
-C             DOCBLOCKS, REVISED TO MAKE MACHINE INDEPENDENT
-C
-C USAGE:    CALL SHEAR(NUM,INDX)
-C   INPUT ARGUMENT LIST:
-C     NUM      - NUMBER OF OBSERVATIONS TO BE TREATED
-C     INDX     - POINTER TO POSITION IN ORIGINAL AIRCRAFT ARRAY
-C
-C   OUTPUT FILES:
-C     UNIT 06  - PRINTOUT
-C
-C REMARKS: CALLED BY SUBROUTINE 'PRELIM'.
-C
-C ATTRIBUTES:
-C   LANGUAGE: FORTRAN 90
-C   MACHINE:  IBM-SP
-C
-C$$$
-      SUBROUTINE SHEAR(NUM,INDX)
-      PARAMETER (IRMX= 80000, ISMX= 8000)
-C PRINT LOGICALS- PRNTA:PRINT ALL; PRNTT:PRINT TITLE; PRNTL: PRINT LINE
-      LOGICAL  PRNTA,PRNTT,PRNTL
-      CHARACTER*1  CTG,CH1(9)
-      CHARACTER*8  ACID,SAID
-      CHARACTER*14  TAG
-      INTEGER  COUNT(ISMX),LOUNT(ISMX),CHKSUM(ISMX),KPOINT(ISMX),
-     $ GOUNT(ISMX),IARRAY(ISMX),INDR(ISMX),ICH1(9)
-      REAL  TABLE(7,7),VPOINT(ISMX)
-      COMMON/CMPNTS/U(ISMX),V(ISMX),UF(ISMX),VF(ISMX)
-      COMMON/SUMDAT/ISTCPT(ISMX),SAID(ISMX),SLAT(ISMX),SLON(ISMX),
-     $ SHGT(ISMX),STIM(ISMX),SSPD(ISMX),SDIR(ISMX),STMP(ISMX),
-     $ KBAD(ISMX),NUMORG,SSPDF(ISMX),SDIRF(ISMX),STMPF(ISMX),SHGTF(ISMX)
-      COMMON/ALLDAT/IFLEPT(IRMX),ACID(IRMX),ALAT(IRMX),ALON(IRMX),
-     $ AALT(IRMX),TIME(IRMX),ASPD(IRMX),ADIR(IRMX),TBASE,
-     $ ATMP(IRMX),TAG(IRMX),IRTM(IRMX),INTP(IRMX),KNTINI(IRMX),
-     $ ITEVNT(IRMX),IWEVNT(IRMX),ATMPF(IRMX),AALTF(IRMX),ASPDF(IRMX),
-     $ ADIRF(IRMX)
-C VECTOR ERROR (TABLE(IALT,ITIM),ITIM=1,6)/    KNOTS               /
-      DATA  (TABLE(1,ITIM),ITIM=1,7)/ 38.,39.,40.,41.,42.,43.,44./
-      DATA  (TABLE(2,ITIM),ITIM=1,7)/ 49.,50.,51.,52.,53.,54.,55./
-      DATA  (TABLE(3,ITIM),ITIM=1,7)/ 60.,61.,62.,63.,64.,65.,66./
-      DATA  (TABLE(4,ITIM),ITIM=1,7)/ 71.,72.,73.,74.,75.,76.,77./
-      DATA  (TABLE(5,ITIM),ITIM=1,7)/ 82.,83.,84.,85.,86.,87.,88./
-      DATA  (TABLE(6,ITIM),ITIM=1,7)/ 93.,94.,95.,96.,97.,98.,99./
-      DATA  (TABLE(7,ITIM),ITIM=1,7)/ 97.,98.,99.,99.,99.,99.,99./
-      DATA  KNO/5/
-      DATA CH1  /'Q','R','S','T','U','V','W','X','Y'/
-      DATA ICH1 /10, 20, 30, 40, 50, 60, 70, 80, 90 /
-C CALL STATS TO OBTAIN AVG. SPEED & VECTOR DIFFERENCE
-      CALL STATS(KNO,INDX,NUM,SBAR,VPOINT)
-      LOOP = 0
-C CALIBX IS ADJUSTABLE CONSTANT FOR ON-LEVEL DIFFERENCE CHECK
-CCCCC CALIBX = 0.30 SLIGHTLY MORE PERMISSIVE IS
-      CALIBX = 0.45
-C GOUNT IS INTEGER WEIGHTING FROM SCALED OBSERVED VECTOR INCREMENT
-      DO K = 1,NUM
-         GOUNT(K) = 0
-         KNDX = INDX + K - 1
-         IF(IFLEPT(KNDX).LE.0.OR.KBAD(K).LE.0)  GO TO 45
-         SCALE = 25.0
-C SCALE IS BASED ON VALUE OF SCALED INCREMENT CHARACTER Q-Z
-         IF(TAG(KNDX)(5:5).GE.'Q'.AND.TAG(KNDX)(5:5).LE.'Z')  THEN
-            CTG = TAG(KNDX)(5:5)
-            SCALE = 100.0
-            DO I=1,9
-               IF(CTG.EQ.CH1(I)) THEN
-                  SCALE = ICH1(I)
-                  EXIT
-               END IF
-            ENDDO
-         END IF
-C NOTE: GOUNT WILL BE -1 FOR OBS. W/O SCALED VECTOR INCREMENT VALUE
-         GOUNT(K) = NINT((SCALE - 30) * 0.2)
-C IF SUSPECTED TRACK CHECK ERROR ADD 2 TO GOUNT
-         IF(TAG(KNDX)(3:3).EQ.'E')  GOUNT(K) = GOUNT(K) + 2
-   45    CONTINUE
-      ENDDO
-C START OF ITERATION CHECKING AND TOSSING
- 1010 CONTINUE
-      LOOP = LOOP + 1
-C COUNT IS INTEGER SUM OF QUALITY UNITS FOR OFF-LEVEL(SHEAR) CHECKS
-C LOUNT IS SAME BUT FOR ON-LEVEL CHECKS
-      IARRAY(1:NUM) = NINT(VPOINT(1:NUM)*100.)
-      COUNT(1:NUM) = 0
-      LOUNT(1:NUM) = 0
-      CHKSUM(1:NUM) = -99
-      DO K = 1,NUM
-         IF(KBAD(K).LE.0)  GOUNT(K) = 0
-      ENDDO
-C EACH ITERATION MUST RESORT VECTOR DIFFERENCE AMONGST "GOOD"
-C  OBS. IN STACK
-      IF(NUM.GT.0)  CALL INDEXF(NUM,IARRAY,KPOINT)
-      DIFF = 0.0
-      IMAXK = 0
-      IMAXJ = 0
-      PRNTT =.TRUE.
-      PRNTA =.FALSE.
-      DO K = 1,NUM
-         IF(IARRAY(KPOINT(K)).LT.0)  KPOINT(K) = -9
-         KNDX = INDX + K - 1
-         IF(IFLEPT(KNDX).GT.0.AND.KBAD(K).GT.0)  THEN
-            DO J = K+1,NUM
-               PRNTL =.FALSE.
-               JNDX = INDX + J - 1
-               IF(IFLEPT(JNDX).LE.0.OR.KBAD(J).LE.0)  GO TO 2
-               TIMDIF = ABS(TIME(JNDX)-TIME(KNDX)) * .01
-               ALTDIF = ABS(AALT(JNDX)-AALT(KNDX))
-               IALT = (ALTDIF + 50.) * 0.001637
-               ITIM = MAX0(1,NINT(TIMDIF))
-               IF(IALT.GT.9.OR.ITIM.GT.7)  GO TO 999
-               QUAN = SQRT((U(K) - U(J))**2 + (V(K) - V(J))**2)
-               IF(IALT.LE.0)  THEN
-C ON-LEVEL CHECK
-C CALIBX=0.45 IS ADJUSTABLE CONSTANT FOR ON-LEVEL DIFFERENCE CHECK
-                  CHEK = 9.0 + (TIMDIF * SBAR * CALIBX)
-                  IF((QUAN-CHEK).GT.DIFF)  THEN
-                     DIFF = QUAN - CHEK
-C IMAXJ AND IMAXK ARE THE TWO LEVELS EXCEEDING THE LIMITS
-                     IMAXJ = J
-                     IMAXK = K
-                     PRNTL = .TRUE.
-                     PRNTA = .TRUE.
-                  END IF
-                  IF(QUAN.LT.0.25*CHEK)  THEN
-                     LOUNT(K) = LOUNT(K) - 2
-                     LOUNT(J) = LOUNT(J) - 2
-                  ELSE  IF(QUAN.LT.0.5*CHEK)  THEN
-                     LOUNT(K) = LOUNT(K) - 1
-                     LOUNT(J) = LOUNT(J) - 1
-                  ELSE  IF(QUAN.GT.2.*CHEK)  THEN
-                     LOUNT(K) = LOUNT(K) + 2
-                     LOUNT(J) = LOUNT(J) + 2
-                  ELSE  IF(QUAN.GT.CHEK)  THEN
-                     LOUNT(K) = LOUNT(K) + 1
-                     LOUNT(J) = LOUNT(J) + 1
-                  END IF
-               ELSE
-C OFF-LEVEL CHECK
-                  IF(IALT.GT.5)  GO TO 2
-                  CHEK = TABLE(IALT,ITIM) + (SBAR * 0.14)
-                  IF((QUAN-CHEK).GT.DIFF)  THEN
-                     DIFF =  QUAN - CHEK
-C IMAXJ AND IMAXK ARE THE TWO LEVELS EXCEEDING THE LIMITS
-                     IMAXJ = J
-                     IMAXK = K
-                     PRNTL = .TRUE.
-                     PRNTA = .TRUE.
-                  END IF
-                  IF(QUAN.GT.2.8*CHEK)  THEN
-                     COUNT(K) = COUNT(K) + 4
-                     COUNT(J) = COUNT(J) + 4
-                  ELSE  IF(QUAN.GT.1.4*CHEK)  THEN
-                     COUNT(K) = COUNT(K) + 2
-                     COUNT(J) = COUNT(J) + 2
-                  ELSE  IF(QUAN.GT.CHEK)  THEN
-                     COUNT(K) = COUNT(K) + 1
-                     COUNT(J) = COUNT(J) + 1
-                  END IF
-               END IF
-               CHKSUM(J) = LOUNT(J) + COUNT(J) + GOUNT(J)
-               CHKSUM(K) = LOUNT(K) + COUNT(K) + GOUNT(K)
-               IF(PRNTT.AND.PRNTL)  THEN
-                  PRINT 441
-  441 FORMAT(' SHEAR/ I  J     ALTDIF    TIMDIF   SHEARVEC    LIMIT')
-                  PRNTT = .FALSE.
-               END IF
-               IF(PRNTL)  PRINT 401, K,J,ALTDIF,TIMDIF,QUAN,
-     $          CHEK+SIGN(.0005,CHEK)
-  401          FORMAT('     ',2I4,3X,F8.0,F8.2,2X,F7.1,2X,F7.1)
-    2          CONTINUE
-            ENDDO
-         END IF
-      ENDDO
-      IF(KPOINT(NUM).LT.1.OR.KPOINT(NUM-1).LT.1)  RETURN
-      IPOINT = KPOINT(NUM)
-      JPOINT = KPOINT(NUM-1)
-      IF(DIFF.GT.0.0)  THEN
-         IF(NUM.GT.0)  CALL INDEXF(NUM,CHKSUM,INDR)
-C HOW MANY OBS. DO WE ACTUALLY HAVE TO EVALUATE (NUMT) ?
-C  (THERE MUST BE AT LEAST TWO)
-         NUMT = 0
-         DO I = 1,NUM
-            IF(CHKSUM(I).GT.-99)  NUMT = NUMT + 1
-         ENDDO
-         ICHK1 = INDR(NUM)
-         ICHK2 = INDR(NUM-1)
-C***********************************************************************
-C                  LOGIC TREE FOR DECIDING WHATS WRONG
-C               ITERATE IF MAJOR BADS-ONLY 4 BADS ALLOWED
-C                    THIS IS SET FOR MAXIMUM TOSSES
-C***********************************************************************
-         IF(NUMT.GT.3)  THEN
-C-----------------------------------------------------------------------
-C FOUR OR MORE OBSERVATIONS IN THE STACK CAN BE EVALUATED
-            ICHK3 = INDR(NUM-2)
-            ICHK4 = INDR(NUM-3)
-            ICDIF1 = CHKSUM(ICHK1) - CHKSUM(ICHK2)
-            ICDIF2 = CHKSUM(ICHK2) - CHKSUM(ICHK3)
-            ICDIF3 = CHKSUM(ICHK3) - CHKSUM(ICHK4)
-            IF(ICDIF1.EQ.0.AND.ICDIF2.EQ.0.AND.ICDIF3.EQ.0)  RETURN
-            IF(PRNTA)  THEN
-               IF(NUM.LE.24)  THEN
-                  PRINT 136, (COUNT(I),I=1,NUM)
-                  PRINT 138, (LOUNT(I),I=1,NUM)
-                  PRINT 139, (GOUNT(I),I=1,NUM)
-                  PRINT 148, ICHK1,ICHK2,ICHK3,(CHKSUM(I),I=1,NUM)
-               ELSE
-                  PRINT 9136, (COUNT(I),I=1,NUM)
-                  PRINT 9138, (LOUNT(I),I=1,NUM)
-                  PRINT 9139, (GOUNT(I),I=1,NUM)
-                  PRINT 9148, ICHK1,ICHK2,ICHK3,(CHKSUM(I),I=1,NUM)
-               END IF
-            END IF
-C CALCULATE TOLERANCE LEVEL FOR CHECKING BADS- FUNCTION OF AVG. SPEED
-            DLIM = 2.5
-            IF(SBAR.GT.70.)  DLIM = DLIM + ((SBAR - 70.) * 0.02857)
-C START LOGIC TREE CHECK
-            IF(DIFF.GT.DLIM)  THEN
-C
-C NOTE: IN GENERAL, ALL THE CALC. FOR NEW IPOINT AND JPOINT IN THE IF
-C  BLOCKS BELOW ARE NEEDED ONLY IF ONE OF THE LOOPS ENDS UP GOING INTO
-C  THE TOSSKEY=2 OR 3 IF BLOCKS IN THE NEXT ELSE BLOCK ....
-C    --->   ELSE  IF(DIFF.GT.2.5.AND.ICDIF1.EQ.0)  THEN
-C  THIS NEXT ELSE BLOCK CAN ONLY BE ATTAINED IF SBAR > 70 AND DIFF IS
-C   BETWEEN 2.5 AND SOME NUMBER NOT MUCH LARGER THAN 2.5 -- SELDOM
-C   OCCURS AND WHEN IT DOES, NEXT IF TEST IS ALMOST NEVER SATISFIED
-C   -- OTHERWISE DLIM IS 2.5 AND THE FIRST ELSE BLOCK ALWAYS ENTERED
-C
-      PRINT 177, DIFF,DLIM,SBAR,ICHK1,IMAXJ,ICHK2,IMAXK,IPOINT,JPOINT
-  177 FORMAT(' FOR SHEAR & NUMT> 3: DIFF=',F6.1,', DLIM=',F5.1,
-     $ ', SBAR=',F5.1,', ICHK1=',I3,', IMAXJ=',I3,', ICHK2=',I3,
-     $ ', IMAXK=',I3,', IPOINT=',I3,', JPOINT=',I3)
-               IF(ICHK1.EQ.IMAXJ.OR.ICHK1.EQ.IMAXK)  THEN
-                  KBAD(ICHK1) = 0
-                  ITOSSK = 0
-                  PRINT 152, ITOSSK,LOOP,ICHK1
-                  IF(LOOP.EQ.4)  RETURN
-                  VPOINT(ICHK1) = -999.0
-                  GO TO 1010
-               ELSE  IF(ICHK2.EQ.IMAXJ.OR.ICHK2.EQ.IMAXK)  THEN
-                  KBAD(ICHK2) = 0
-                  ITOSSK = 1
-                  PRINT 152, ITOSSK,LOOP,ICHK2
-                  IF(LOOP.EQ.4)  RETURN
-                  VPOINT(ICHK2) = -999.0
-                  GO TO 1010
-               END IF
-            ELSE  IF(DIFF.GT.2.5.AND.ICDIF1.EQ.0)  THEN
-CVVVVV%%%%%
-         PRINT *,'~~~~~ DIFF .GT. 2.5 AMD ICDIF1.EQ.0'
-CAAAAA%%%%%
-      PRINT 3177, DIFF,DLIM,SBAR,ICHK3,IMAXJ,IMAXK,IPOINT,JPOINT,ICDIF1
- 3177 FORMAT(' FOR SHEAR & NUMT> 3: DIFF=',F6.1,', DLIM=',F5.1,
-     $ ', SBAR=',F5.1,', ICHK3=',I3,', IMAXJ=',I3,', IMAXK=',I3,
-     $ ', IPOINT=',I3,', JPOINT=',I3,', ICDIF1=',I3)
-               IF((ICHK3.EQ.IMAXJ.AND.ICHK3.EQ.IPOINT).OR.
-     $            (ICHK3.EQ.IMAXK.AND.ICHK3.EQ.IPOINT))  THEN
-CVVVVV%%%%%
-         PRINT *,'~~~~~ TOSSKEY=2 FOUND!!'
-CAAAAA%%%%%
-                  KBAD(ICHK3) = 0
-                  ITOSSK = 2
-                  PRINT 152, ITOSSK,LOOP,ICHK3
-                  IF(LOOP.EQ.4)  RETURN
-                  VPOINT(ICHK3) = -999.0
-                  GO TO 1010
-               ELSE  IF((ICHK3.EQ.IMAXJ.AND.ICHK3.EQ.JPOINT).OR.
-     $                  (ICHK3.EQ.IMAXK.AND.ICHK3.EQ.JPOINT))  THEN
-CVVVVV%%%%%
-         PRINT *,'~~~~~ TOSSKEY=3 FOUND!!'
-CAAAAA%%%%%
-                  KBAD(ICHK3) = 0
-                  ITOSSK = 3
-                  PRINT 152, ITOSSK,LOOP,ICHK3
-                  RETURN
-               END IF
-            END IF
-         ELSE   IF(NUMT.GT.1)  THEN
-C-----------------------------------------------------------------------
-C ONLY TWO OR THREE OBSERVATIONS IN THE STACK CAN BE EVALUATED
-            PRNTA = .FALSE.
-            ITOSSK = -99
-            IF((CHKSUM(ICHK1)-CHKSUM(ICHK2)).GT.3)  THEN
-               KBAD(ICHK1) = 0
-               ITOSSK = 4
-               PRNTA = .TRUE.
-            ELSE  IF(DIFF.GT.9.)  THEN
-               KBAD(ICHK1) = 0
-               ITOSSK = 5
-               PRNTA = .TRUE.
-            END IF
-            IF(PRNTA)  THEN
-               PRINT 136, (COUNT(I),I=1,NUM)
-               PRINT 138, (LOUNT(I),I=1,NUM)
-               PRINT 139, (GOUNT(I),I=1,NUM)
-               PRINT 158, ICHK1,ICHK2,(CHKSUM(I),I=1,NUM)
-               PRINT 9177, DIFF,ICHK1,ICHK2
- 9177 FORMAT(' FOR SHEAR & NUMT< 4: DIFF=',F6.1,', ICHK1=',I6,
-     $ '; ICHK2=',I6)
-               PRINT 149, ITOSSK,ICHK1
-            END IF
-C-----------------------------------------------------------------------
-         END IF
-      END IF
-  136 FORMAT('  SHEAR CHKSUM',29X,24I3)
-  138 FORMAT('  ONLVL CHKSUM',29X,24I3)
-  139 FORMAT('  OBSINCCHKSUM',29X,24I3)
-  148 FORMAT(' SUM   RANK(1ST 3)',3I4,' SUM CHKSUMS ',24I3)
-  158 FORMAT(' SUM   RANK(1ST 2)',2I4,4X,' SUM CHKSUMS ',24I3)
- 9136 FORMAT('  SHEAR CHKSUM',/,40I3)
- 9138 FORMAT('  ONLVL CHKSUM',/,40I3)
- 9139 FORMAT('  OBSINCCHKSUM',/,40I3)
- 9148 FORMAT(' SUM   RANK(1ST 3)',3I4,' SUM CHKSUMS ',/,40I3)
-  149 FORMAT(' FOR NUMT< 4 TOSSKEY IS ',I4,' TOSSES #',I4)
-  152 FORMAT(' TOSSKEY IS ',I4,' LOOP ',I3,' TOSSES #',I4)
-      RETURN
-  999 CONTINUE
-      PRINT 200, K,J,TIMDIF,ALTDIF
-  200 FORMAT(' DISASTER AT ',2I4,2F8.0)
-      RETURN
-      END
-C$$$  SUBPROGRAM DOCUMENTATION BLOCK
-C                .      .    .                                       .
-C SUBPROGRAM:    LAPSE       CHECKS TEMPERATURES WITH LAPSE-RATE CHECK
-C   PRGMMR: D. A. KEYSER     ORG: NP22       DATE: 1994-08-25
-C
-C ABSTRACT: DOES TEMPERATURE CHECK BOTH AT SAME AND AT DIFFERENT
-C   LEVELS AND ASSIGNS DIGITAL FLAGS DEPENDING UPON THE MAGNITUDES
-C   COMPARED WITH POSSIBLE LAPSE RATES.  THERE MUST BE AT LEAST THREE
-C   HIGH-ALTITUDE OBS. IN STACK FOR THIS CHECK TO BE PERFORMED.
-C
-C PROGRAM HISTORY LOG:
-C 1993-01-05  P. JULIAN -- ORIGINAL AUTHOR
-C 1994-08-25  D. A. KEYSER -- STREAMLINED CODE, EXPANDED COMMENTS AND
-C             DOCBLOCKS, REVISED TO MAKE MACHINE INDEPENDENT
-C
-C USAGE:    CALL LAPSE(NUM,INDX)
-C   INPUT ARGUMENT LIST:
-C     NUM      - NUMBER OF OBSERVATIONS TO BE TREATED
-C     INDX     - POINTER TO POSITION IN ORIGINAL AIRCRAFT ARRAY
-C
-C   OUTPUT FILES:
-C     UNIT 06  - PRINTOUT
-C
-C REMARKS: CALLED BY SUBROUTINE 'PRELIM'.
-C
-C ATTRIBUTES:
-C   LANGUAGE: FORTRAN 90
-C   MACHINE:  IBM-SP
-C
-C$$$
-      SUBROUTINE LAPSE(NUM,INDX)
-      PARAMETER (IRMX= 80000, ISMX= 8000)
-      LOGICAL  PRNTT
-      CHARACTER*8  ACID,SAID
-      CHARACTER*14  TAG
-      INTEGER  COUNT(ISMX),LOUNT(ISMX),CHKSUM(ISMX),INDR(ISMX)
-      REAL TABLE(7,7)
-      COMMON/SUMDAT/ISTCPT(ISMX),SAID(ISMX),SLAT(ISMX),SLON(ISMX),
-     $ SHGT(ISMX),STIM(ISMX),SSPD(ISMX),SDIR(ISMX),STMP(ISMX),
-     $ KBAD(ISMX),NUMORG,SSPDF(ISMX),SDIRF(ISMX),STMPF(ISMX),SHGTF(ISMX)
-      COMMON/ALLDAT/IFLEPT(IRMX),ACID(IRMX),ALAT(IRMX),ALON(IRMX),
-     $ AALT(IRMX),TIME(IRMX),ASPD(IRMX),ADIR(IRMX),TBASE,
-     $ ATMP(IRMX),TAG(IRMX),IRTM(IRMX),INTP(IRMX),KNTINI(IRMX),
-     $ ITEVNT(IRMX),IWEVNT(IRMX),ATMPF(IRMX),AALTF(IRMX),ASPDF(IRMX),
-     $ ADIRF(IRMX)
-C LAPSE RATE CHECK (TABLE(IALT,ITIM),ITIM=1,6)/    DEG.C/KM            /
-      DATA(TABLE(1,ITIM),ITIM=1,7)/-12.,-12.,-13.,-13.,-13.,-14.,-14./
-      DATA(TABLE(2,ITIM),ITIM=1,7)/-12.,-12.,-13.,-13.,-13.,-14.,-14./
-      DATA(TABLE(3,ITIM),ITIM=1,7)/-12.,-12.,-13.,-14.,-14.,-15.,-15./
-      DATA(TABLE(4,ITIM),ITIM=1,7)/-12.,-12.,-13.,-14.,-14.,-15.,-15./
-      DATA(TABLE(5,ITIM),ITIM=1,7)/-13.,-13.,-14.,-14.,-14.,-15.,-16./
-      DATA(TABLE(6,ITIM),ITIM=1,7)/-13.,-13.,-14.,-15.,-15.,-16.,-16./
-      DATA(TABLE(7,ITIM),ITIM=1,7)/-14.,-14.,-15.,-15.,-15.,-16.,-16./
-C CALIBX IS ADJUSTABLE CONSTANT FOR ON-LEVEL DIFFERENCE CHECK
-      CALIBX = 0.70
-C START OF CHECKING AND TOSSING (NO ITERATION - ONLY ONCE THROUGH)
-C COUNT IS INTEGER SUM OF QUALITY UNITS FOR OFF-LEVEL(LAPSE) CHECKS
-C LOUNT IS SAME BUT FOR ON-LEVEL CHECKS
-      COUNT(1:NUM)  = 0
-      LOUNT(1:NUM)  = 0
-      CHKSUM(1:NUM) = -99
-      DIFF = 0.0
-      PRNTT = .TRUE.
-      DO K = 1,NUM
-         IF(STMP(K).GT.100.)  GO TO 1
-         IMAXK = 0
-         ISUPK = 0
-         KNDX = INDX + K - 1
-         IF(IFLEPT(KNDX).GT.0.AND.KBAD(K).GT.0)  THEN
-            DO J = K+1,NUM
-               IF(STMP(J).GT.100.)  GO TO 2
-               QUAN = 0.0
-               QTDF = 0.0
-               CHEK = 0.0
-               CHEC = 0.0
-               IMAXJ = 0
-               ISUPJ = 0
-               JNDX = INDX + J - 1
-               IF(IFLEPT(JNDX).LE.0.OR.KBAD(J).LE.0)  GO TO 2
-               TIMDIF = ABS(TIME(JNDX)-TIME(KNDX)) * .01
-               ALTDIF = ABS(AALT(JNDX)-AALT(KNDX))
-               IALT = (ALTDIF + 50.) * 0.001637
-               ITIM = MAX0(1,NINT(TIMDIF))
-               IF(IALT.GT.9.OR.ITIM.GT.7)  GO TO 999
-               IF(IALT.LE.0)  THEN
-C ON-LEVEL CHECK
-                  QUAN = ABS(STMP(K)-STMP(J)) * 0.1
-C CALIBX=0.70 IS ADJUSTABLE CONSTANT FOR ON-LEVEL DIFFERENCE CHECK
-                  CHEK = 2.5 + (TIMDIF * CALIBX)
-                  IF((QUAN-CHEK).GT.DIFF)  DIFF = QUAN - CHEK
-                  IF(QUAN.LT.0.25*CHEK)  THEN
-                     LOUNT(K) = LOUNT(K) - 2
-                     LOUNT(J) = LOUNT(J) - 2
-                  ELSE  IF(QUAN.LT.0.5*CHEK)  THEN
-                     LOUNT(K) = LOUNT(K) - 1
-                     LOUNT(J) = LOUNT(J) - 1
-                  ELSE  IF(QUAN.GT.CHEK)  THEN
-                     IMAXJ = J
-                     IMAXK = K
-                     IFPC = QUAN/CHEK + 1.0
-                     LOUNT(K) = IFPC + LOUNT(K)
-                     LOUNT(J) = IFPC + LOUNT(J)
-                  END IF
-               ELSE
-C OFF-LEVEL CHECK
-                  QQQ = AALT(KNDX) - AALT(JNDX)
-                  QTDF = ((STMP(K) - STMP(J)) * 0.1)/(QQQ * .001)
-                  IF(IALT.GT.5)  GO TO 2
-                  CHEC = TABLE(IALT,ITIM)
-               IF((ABS(QTDF)-ABS(CHEC)).GT.DIFF)DIFF=ABS(QTDF)-ABS(CHEC)
-                  IF((QTDF-CHEC).LT.0.0)  THEN
-C LAPSE CHECK
-                     ISUPJ = J
-                     ISUPK = K
-                     IF(QTDF.LT.1.3*CHEC)  THEN
-                        COUNT(K) = COUNT(K) + 4
-                        COUNT(J) = COUNT(J) + 4
-                     ELSE  IF(QTDF.LT.1.15*CHEC)  THEN
-                        COUNT(K) = COUNT(K) + 2
-                        COUNT(J) = COUNT(J) + 2
-                     ELSE  IF(QTDF.LT.CHEC)  THEN
-                        COUNT(K) = COUNT(K) + 1
-                        COUNT(J) = COUNT(J) + 1
-                     END IF
-                  END IF
-C INVERSION CHECK
-                  IF(QTDF.GT.16.0)  THEN
-                     COUNT(K) = COUNT(K) + 4
-                     COUNT(J) = COUNT(J) + 4
-                  ELSE  IF(QTDF.GT.10.0)  THEN
-                     COUNT(K) = COUNT(K) + 2
-                     COUNT(J) = COUNT(J) + 2
-                  END IF
-               END IF
-               CHKSUM(J) = LOUNT(J) + COUNT(J)
-               CHKSUM(K) = LOUNT(K) + COUNT(K)
-               IF(IMAXJ.NE.0.OR.ISUPJ.NE.0)  THEN
-                  IF(DIFF.GT.4.0)  THEN
-                     IF(PRNTT)  THEN
-                        PRINT 161
-  161 FORMAT(' LAPSE/ ONLVL INDX STABE INDX  ALTDIF  TIMDIF    TDIF ',
-     $ '    CHEK   LAPSERATE  CHEC')
-                        PRNTT = .FALSE.
-                     END IF
-                     PRINT 401, IMAXJ,IMAXK,ISUPJ,ISUPK,ALTDIF,TIMDIF,
-     $                QUAN,CHEK,QTDF,CHEC
-  401                FORMAT('   ',4I6,F8.0,F8.2,4F9.1)
-                  END IF
-               END IF
-    2          CONTINUE
-            ENDDO
-         END IF
-    1    CONTINUE
-      ENDDO
-      IF(DIFF.GT.4.0)  THEN
-         IF(NUM.GT.0)  CALL INDEXF(NUM,CHKSUM,INDR)
-C HOW MANY OBS. DO WE ACTUALLY HAVE TO EVALUATE (NUMT) ?
-C  (THERE MUST BE AT LEAST THREE)
-         NUMT = 0
-         DO I = 1,NUM
-            IF(CHKSUM(I).GT.-99)  NUMT = NUMT + 1
-         ENDDO
-         ICHK1 = INDR(NUM)
-         ICHK2 = INDR(NUM-1)
-         ICHK3 = INDR(NUM-2)
-         ICDIF2 = CHKSUM(ICHK2) - CHKSUM(ICHK3)
-         ICHK4 = 0
-C**********************************************************************
-C  LOGIC TREE FOR DECIDING WHATS WRONG - NO ITERATION HERE (ONCE ONLY)
-C**********************************************************************
-         IF(NUMT.GT.3)  THEN
-C----------------------------------------------------------------------
-C FOUR OR MORE OBSERVATIONS IN THE STACK CAN BE EVALUATED
-            ICHK4 = INDR(NUM-3)
-            ICDIF3 = CHKSUM(ICHK3) - CHKSUM(ICHK4)
-            IF(NUM.LE.24)  THEN
-               PRINT 136, (COUNT(I),I=1,NUM)
-               PRINT 138, (LOUNT(I),I=1,NUM)
-               PRINT 148, ICHK1,ICHK2,ICHK3,(CHKSUM(I),I=1,NUM)
-            ELSE
-               PRINT 9136, (COUNT(I),I=1,NUM)
-               PRINT 9138, (LOUNT(I),I=1,NUM)
-               PRINT 9148, ICHK1,ICHK2,ICHK3,(CHKSUM(I),I=1,NUM)
-            END IF
-            PRINT 177, DIFF,CHKSUM(ICHK1),CHKSUM(ICHK2),ICDIF2,ICDIF3
-  177 FORMAT(' FOR LAPSE & NUMT> 3: DIFF=',F6.1,', CHKSUM(ICHK1)=',I6,
-     $ ', CHKSUM(ICHK2)=',I6,', ICDIF2=',I6,', ICDIF3=',I6)
-            IF(CHKSUM(ICHK1).GE.7.AND.CHKSUM(ICHK2).GE.7)  THEN
-               KBAD(ICHK1) = 0
-               KBAD(ICHK2) = 0
-               I1TOSS = ICHK1
-               I2TOSS = ICHK2
-               ITOSSK = 0
-               PRINT 149, ITOSSK,I1TOSS,I2TOSS
-      ELSE  IF(CHKSUM(ICHK1).GE.6.AND.ICDIF2.LT.5.AND.ICDIF3.LT.5) THEN
-               KBAD(ICHK1) = 0
-               I1TOSS = ICHK1
-               ITOSSK = 1
-               PRINT 1149, ITOSSK,I1TOSS
- 1149 FORMAT(' FOR NUMT> 3 TOSSKEY IS ',I4,' TOSSES #',I4)
-            ELSE  IF(CHKSUM(ICHK1).GE.6.AND.ICDIF2.GE.5)  THEN
-               KBAD(ICHK1) = 0
-               KBAD(ICHK2) = 0
-               I1TOSS = ICHK1
-               I2TOSS = ICHK2
-               ITOSSK = 2
-               PRINT 149, ITOSSK,I1TOSS,I2TOSS
-            END IF
-         ELSE  IF(NUMT.EQ.3)  THEN
-C----------------------------------------------------------------------
-C ONLY THREE OBSERVATIONS IN THE STACK CAN BE EVALUATED
-            ICDIF1 = CHKSUM(ICHK1) - CHKSUM(ICHK2)
-            PRINT 136, (COUNT(I),I=1,NUM)
-            PRINT 138, (LOUNT(I),I=1,NUM)
-            PRINT 148, ICHK1,ICHK2,ICHK3,(CHKSUM(I),I=1,NUM)
-            PRINT 9177, DIFF,ICDIF1,ICDIF2
- 9177 FORMAT(' FOR LAPSE & NUMT= 3: DIFF=',F6.1,', ICDIF1=',I6,
-     $ ', ICDIF2=',I6)
-            IF(ICDIF1.GT.4.AND.ICDIF2.LT.2)  THEN
-               KBAD(ICHK1) = 0
-               I1TOSS = ICHK1
-               ITOSSK = 3
-               PRINT 147, ITOSSK,I1TOSS
-            ELSE  IF(DIFF.GT.2.9)  THEN
-               KBAD(ICHK1) = 0
-               I1TOSS = ICHK1
-               ITOSSK = 4
-               PRINT 147, ITOSSK,I1TOSS
-            END IF
-C----------------------------------------------------------------------
-         END IF
-      END IF
-  136 FORMAT('  STABIL (LAPSE) CHKSUM',20X,24I3)
-  138 FORMAT('  ONLVL CHKSUM         ',20X,24I3)
-  148 FORMAT(' SUM   RANK(1ST 3)',3I4,' SUM CHKSUMS ',24I3)
- 9136 FORMAT('  STABIL (LAPSE) CHKSUM',/,40I3)
- 9138 FORMAT('  ONLVL  CHKSUM        ',/,40I3)
- 9148 FORMAT(' SUM   RANK(1ST 3)',3I4,' SUM CHKSUMS  ',/,40I3)
-  147 FORMAT(' FOR NUMT= 3 TOSSKEY IS ',I4,' TOSSES #',I4)
-  149 FORMAT(' FOR NUMT> 3 TOSSKEY IS ',I4,' TOSSES #',I4,' &',I4)
-      RETURN
-  999 CONTINUE
-      PRINT 200, K,J,TIMDIF,ALTDIF
-  200 FORMAT(' DISASTER AT ',2I4,2F8.0)
-      RETURN
-      END
-C$$$  SUBPROGRAM DOCUMENTATION BLOCK
-C                .      .    .                                       .
-C SUBPROGRAM:    AVEROB      COMPUTES SIMPLE AVG. OF WINDS (SUPEROB)
-C   PRGMMR: D. A. KEYSER     ORG: NP22       DATE: 1995-03-27
-C
-C ABSTRACT: COMPUTES SIMPLE AVERAGE VECTOR WIND FOR ALL OBSERVATIONS
-C   MEETING SPECIFIED TOLERANCES IN ALTITUDE, TIME, AND VECTOR
-C   DIFFERENCE.  THESE OBSERVATIONS ARE SUPEROBS.
-C
-C PROGRAM HISTORY LOG:
-C 1989-04-01  P. JULIAN (W/NMC00) -- ORIGINAL AUTHOR
-C 1990-06-14  D. A. KEYSER -- CORRECTED TO HONOR ALL SDM/QCAIRCFT PURGES
-C             FOR STACKED OBS.; FIXED ERROR IN Q. MARK DESIGNATOR
-C 1990-07-03  D. A. KEYSER -- SOME OMIT Q.M. INCORRECTLY CHANGED BACK
-C             TO 'N' OR 'C', FIXED
-C 1993-01-05  P. JULIAN -- MINOR CHNAGES TO REFLECT USE OF SCALED INCRS
-C 1994-08-25  D. A. KEYSER -- STREAMLINED CODE, EXPANDED COMMENTS AND
-C             DOCBLOCKS, REVISED TO MAKE MACHINE INDEPENDENT
-C 1995-03-27  D. A. KEYSER -- FOR INIDST=2, SUPEROBS NOW CONTAIN
-C             SUPEROBED FORECAST(GUESS) P-ALT, WIND DIR, WIND SPEED &
-C             TEMP (IF AVAILABLE FROM INDIV. RPTS MAKING UP SUPEROBS)
-C
-C USAGE:    CALL AVEROB(NUM,INDX,LK)
-C   INPUT ARGUMENT LIST:
-C     NUM      - NUMBER OF OBSERVATIONS TO BE TREATED
-C     INDX     - POINTER TO POSITION IN ORIGINAL AIRCRAFT ARRAY
-C
-C   OUTPUT ARGUMENT LIST:
-C     LK       - POINTER INDICATING ' NUM + NO. OF AVERAGES FORMED '
-C
-C   OUTPUT FILES:
-C     UNIT 06  - PRINTOUT
-C
-C REMARKS: CALLED BY SUBROUTINE 'SUPROB'.
-C
-C ATTRIBUTES:
-C   LANGUAGE: FORTRAN 90
-C   MACHINE:  IBM-SP
-C
-C$$$
-      SUBROUTINE AVEROB(NUM,INDX,LK)
-      PARAMETER (IRMX= 80000, ISMX= 8000)
-      LOGICAL  EWRITE
-      CHARACTER*8  ACID,SAID
-      CHARACTER*14  TAG
-      INTEGER  SUPMRK(ISMX)
-      COMMON/SUMDAT/ISTCPT(ISMX),SAID(ISMX),SLAT(ISMX),SLON(ISMX),
-     $ SHGT(ISMX),STIM(ISMX),SSPD(ISMX),SDIR(ISMX),STMP(ISMX),
-     $ KBAD(ISMX),NUMORG,SSPDF(ISMX),SDIRF(ISMX),STMPF(ISMX),SHGTF(ISMX)
-      COMMON/ALLDAT/IFLEPT(IRMX),ACID(IRMX),ALAT(IRMX),ALON(IRMX),
-     $ AALT(IRMX),TIME(IRMX),ASPD(IRMX),ADIR(IRMX),TBASE,
-     $ ATMP(IRMX),TAG(IRMX),IRTM(IRMX),INTP(IRMX),KNTINI(IRMX),
-     $ ITEVNT(IRMX),IWEVNT(IRMX),ATMPF(IRMX),AALTF(IRMX),ASPDF(IRMX),
-     $ ADIRF(IRMX)
-      COMMON/CMPNTS/U(ISMX),V(ISMX),UF(ISMX),VF(ISMX)
-      COMMON/STWRIT/SWRITE,EWRITE,IWRITE
-      DATA  XMSG/99999./
-      NUMGT = MAX0(NUMORG,NUM)
-      LK = NUMGT
-      NOOK = 0
-      DO K = 1,NUM
-         JNDX = INDX + K - 1
-         IF(KBAD(K).EQ.0)  ISTCPT(K) = 0
-C ASK PAUL: IS BELOW LOGIC CORRECT??
-         IF(IFLEPT(JNDX).NE.0.OR.ISTCPT(K).NE.0.OR.TAG(JNDX)(4:4).NE.
-     $    'F')  THEN
-            NOOK = NOOK + 1
-         ELSE
-            KBAD(K) = 0
-         END IF
-CCCCC    PRINT 1315, K,JNDX,IFLEPT(JNDX),ISTCPT(K),(TAG(JNDX)(II:II),
-CCCCC$    II=2,4,2)
-C1315    FORMAT(' AVEROB K,JNDX,IFLEPT,ISTCPT,QFS',4I5,2X,A1,2X,A1)
-      ENDDO
-      IF(NOOK.EQ.2)  THEN
-         CALL NOEQ2(NUM,INDX,LK)
-         RETURN
-      END IF
-      SUPMRK = 65
-      DO K = 1,NUM
-         JNDX = INDX + K - 1
-C ASK PAUL: IS BELOW LOGIC CORRECT??
-         IF(IFLEPT(JNDX).GT.0.OR.ISTCPT(K).GT.0.AND.TAG(JNDX)(4:4).NE.
-     $    'F')   THEN
-            IF(SUPMRK(K).GT.K)  THEN
-               SUPMRK(K) = K
-               DO KK = K+1,NUM
-                  KNDX = INDX + KK - 1
-C ASK PAUL: IS BELOW LOGIC CORRECT??
-                  IF(IFLEPT(KNDX).GT.0.OR.ISTCPT(KK).GT.0.AND.
-     $             TAG(JNDX)(4:4).NE.'F')  THEN
-                     ALTDIF = ABS(AALT(JNDX)-AALT(KNDX))
-                     TIMDIF = ABS(TIME(JNDX)-TIME(KNDX))
-                     VECDIF = SQRT((U(K)-U(KK))**2 + (V(K)-V(KK))**2)
-                     IF(ALTDIF.LT.150..AND.TIMDIF.LT.550..AND.VECDIF.LT.
-     $                16.0)  SUPMRK(KK) = K
-                  END IF
-               ENDDO
-            END IF
-         END IF
-      ENDDO
-      DO K = 1,NUM
-         KNDX = INDX + K - 1
-         IF(ISTCPT(K).NE.0)  THEN
-            SUMU   = 0.0
-            SUMV   = 0.0
-            SUMS   = 0.0
-            SUMT   = 0.0
-            SUMTMP = 0.0
-            KOUNTM = 0
-            SUMUF  = 0.0
-            SUMVF  = 0.0
-            SUMSF  = 0.0
-            SUMTMF = 0.0
-            KOUNTF = 0
-            KOUNWF = 0
-            KOUNT = 0
-            DO KK = K,NUM
-               JNDX = INDX + KK - 1
-               IF(SUPMRK(KK).EQ.K.AND.ISTCPT(KK).NE.0)  THEN
-                  SUMU = SUMU + U(KK)
-                  SUMV = SUMV + V(KK)
-                  SUMS = SUMS + SSPD(KK)
-                  SUMT = TIME(JNDX) + SUMT
-                  IF(AMAX1(UF(KK),VF(KK),SSPDF(KK)).LT.XMSG)  THEN
-                     SUMUF = SUMUF + UF(KK)
-                     SUMVF = SUMVF + VF(KK)
-                     SUMSF = SUMSF + SSPDF(KK)
-                     KOUNWF = KOUNWF + 1
-                  END IF
-                  IF(TAG(JNDX)(2:2).NE.'F'.AND.ATMP(JNDX).LT.XMSG)  THEN
-                     SUMTMP = ATMP(JNDX) + SUMTMP
-                     KOUNTM = KOUNTM + 1
-                     IF(ATMPF(JNDX).LT.XMSG)  THEN
-                        SUMTMF = ATMPF(JNDX) + SUMTMF
-                        KOUNTF = KOUNTF + 1
-                     END IF
-                  END IF
-                  KOUNT = KOUNT + 1
-               END IF
-CCCCC          PRINT 2215,K,JNDX,IFLEPT(JNDX),KK,KNDX,IFLEPT(KNDX),KOUNT
-C2215          FORMAT(' TEST K,JNDX,IFLEPT,KK,KNDX,IFLEPT ',7I6)
-            ENDDO
-            IF(KOUNT.GT.1)  THEN
-C THERE IS AT LEAST ONE OTHER REPORT AT THE SAME LEVEL
-               SUMU = SUMU/KOUNT
-               SUMV = SUMV/KOUNT
-               SUMS = SUMS/KOUNT
-               TBAR = SUMT/KOUNT
-               LK = LK + 1
-               SSPD(LK) = SUMS
-               SDIR(LK) = AVEDIR(SUMU,SUMV,SUMS)
-               SHGT(LK) = AALT(KNDX)
-               SSPDF(LK) = XMSG
-               SDIRF(LK) = XMSG
-               IF(KOUNWF.GT.1)  THEN
-                  SSPDF(LK) = SUMSF/KOUNWF
-              SDIRF(LK) = AVEDIR(SUMUF/KOUNWF,SUMVF/KOUNWF,SUMSF/KOUNWF)
-               END IF
-               STMP(LK) = XMSG
-               STMPF(LK) = XMSG
-               IF(KOUNTM.GT.1)  THEN
-                  STMP(LK) = SUMTMP/KOUNTM
-                  IF(KOUNTF.GT.1)  STMPF(LK) = SUMTMF/KOUNTF
-               END IF
-               SHGTF(LK) = AALTF(KNDX)
-               SLAT(LK) = ALAT(KNDX)
-               SLON(LK) = ALON(KNDX)
-               STIM(LK) = TBAR
-               ISTCPT(LK) = KOUNT
-               CTEMP = STMP(LK)
-               IF(STMP(LK).LT.XMSG)  CTEMP = STMP(LK)/10.
-               CTMPF = STMPF(LK)
-               IF(STMPF(LK).LT.XMSG)  CTMPF = STMPF(LK)/10.
-      PRINT 6427, LK,KOUNT,NINT(SDIR(LK)),SSPD(LK),
-     $ CTEMP+SIGN(.0005,CTEMP),NINT(SHGT(LK)),NINT(STIM(LK)),
-     $ NINT(SDIRF(LK)),SSPDF(LK),CTMPF+SIGN(.0005,CTMPF),NINT(SHGTF(LK))
- 6427 FORMAT(' SUPROB(AVEROB)',I3,',KOUNT=',I3,',DIR/SPD=',I3,'/',F5.1,
-     $ ',TMP=',F7.1,',ALT=',I5,',TIME=',I4,',GES: DIR/SPD=',I5,'/',F7.1,
-     $ ',TMP=',F7.1,',ALT=',I5)
-            END IF
-            IF(SUPMRK(K).EQ.65)  IFLEPT(KNDX) = MIN0(IFLEPT(KNDX),0)
-         END IF
-      ENDDO
-      IF(LK.GT.NUMGT)  THEN
-         DO K = 1,NUM-1
-            KNDX = INDX + K - 1
-            DO KK = K+1,NUM
-               JNDX = INDX + KK - 1
-               IF(SUPMRK(KK).EQ.SUPMRK(K))  THEN
-                  IF(TAG(KNDX)(14:14).GT.'4')  THEN
-                     IF(EWRITE)  PRINT 9024, KNDX,ACID(KNDX),ALAT(KNDX),
-     $                ALON(KNDX),TIME(KNDX),TAG(KNDX)
- 9024 FORMAT(/' #EVENT 315: AVEROB; OMIT WIND(S-OB), WND QM SET TO "O"',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-                     TAG(KNDX)(4:4) = 'O'
-                     TAG(KNDX)(14:14) = '4'
-                     IWEVNT(KNDX) = 315
-                  END IF
-                  IF(TAG(JNDX)(14:14).GT.'4')  THEN
-                     IF(EWRITE)  PRINT 9024, JNDX,ACID(JNDX),ALAT(JNDX),
-     $                ALON(JNDX),TIME(JNDX),TAG(JNDX)
-                     TAG(JNDX)(4:4) = 'O'
-                     TAG(JNDX)(14:14) = '4'
-                     IWEVNT(JNDX) = 315
-                  END IF
-                  IF(TAG(KNDX)(13:13).GT.'4')  THEN
-                     IF(EWRITE)  PRINT 9025, KNDX,ACID(KNDX),ALAT(KNDX),
-     $                ALON(KNDX),TIME(KNDX),TAG(KNDX)
- 9025 FORMAT(/' #EVENT 315: AVEROB; OMIT TEMP(S-OB), TMP QM SET TO "O"',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-                     TAG(KNDX)(2:2) = 'O'
-                     TAG(KNDX)(13:13) = '4'
-                     ITEVNT(KNDX) = 315
-                  END IF
-                  IF(TAG(JNDX)(13:13).GT.'4')  THEN
-                     IF(EWRITE)  PRINT 9025, JNDX,ACID(JNDX),ALAT(JNDX),
-     $                ALON(JNDX),TIME(JNDX),TAG(JNDX)
-                     TAG(JNDX)(2:2) = 'O'
-                     TAG(JNDX)(13:13) = '4'
-                     ITEVNT(JNDX) = 315
-                  END IF
-               END IF
-            ENDDO
-         ENDDO
-      END IF
-      PRINT 7070,  (SUPMRK(M),M=1,NUM)
-      PRINT 7071,  (KBAD(M),M=1,NUM)
- 7070 FORMAT(' FROM AVEROB, SUPMRK = ',21I5)
- 7071 FORMAT(' FROM AVEROB, KBAD   = ',21I5)
-      IF(NUM.LT.NUMORG)  THEN
-         DO K = 1,NUMORG
-            KNDX = INDX + K - 1
-            ISTCPT(K) = IFLEPT(KNDX)
-         ENDDO
-      END IF
-      NUM = NUMGT
-      NUMORG = 0
-      RETURN
-      END
-C$$$  SUBPROGRAM DOCUMENTATION BLOCK
-C                .      .    .                                       .
-C SUBPROGRAM:    FORSDM      WRITES FLAGGED OR LARGE INCR. ISOL. RPTS
-C   PRGMMR: D. A. KEYSER     ORG: NP22       DATE: 2002-11-20
-C
-C ABSTRACT: WRITES ALL ISOLATED REPORTS CONTAINING A WIND WHICH HAS
-C   BEEN FLAGGED FOR NON-USE TO A TEXT FILE WHICH THE SDM CAN EXAMINE.
-C   ALSO WRITES ALL ISOLATED REPORTS WITH LARGE INCREMENTS, REGARDLESS
-C   OF QUALITY MARKER.  THIS ALLOWS THE SDM TO USE SDMEDIT TO 'KEEP'
-C   ANY OF THESE REPORTS IN THE NEXT NETWORK RUN.  AIREP/PIREP REPORTS
-C   WITHIN THE CONTINENTAL U.S. ARE EXCLUDED FROM THE WRITE IF IFLGUS=1
-C   OR 2 AND KTACAR > 1.
-C
-C PROGRAM HISTORY LOG:
-C 1993-01-05  P. JULIAN -- NEW SUBPROGRAM
-C 1994-08-25  D. A. KEYSER -- STREAMLINED CODE, EXPANDED COMMENTS AND
-C             DOCBLOCKS, REVISED TO MAKE MACHINE INDEPENDENT
-C 1998-02-17  D. A. KEYSER -- IMPROVED PRINT IN SDMACQC FILE IN UNIT 52
-C 2002-11-20  D. A. KEYSER -- SINCE HAVE REMOVED ASSUMPTION THAT AN SDM
-C             PURGE ON TEMP ONLY ALSO RESULTS IN AN SDM PURGE ON WIND
-C             AS WELL AS THE RELATIONSHIP BETWEEN AN SDM KEEP ON WIND
-C             VS. A KEEP ON TEMP (THEY ARE INDENDENDENT OF EACH OTHER),
-C             NOW TESTS BOTH BYTE 2 AND 4 OF TAG FOR "P" OR "H" RATHER
-C             THAN JUST BYTE 1 OF TAG {WHICH NOW CAN NEVER HAVE AN "H"
-C             AND WILL ONLY HAVE A "P" IF WIND (AND THUS ALSO TEMP VIA
-C             ACTIONS OF PREVIOUS PREPOBS_PREPACQC PROGRAM} IS PURGED}
-C
-C USAGE:    CALL FORSDM(INDX)
-C   INPUT ARGUMENT LIST:
-C     INDX     - POINTER TO POSITION IN ORIGINAL AIRCRAFT ARRAY
-C
-C   OUTPUT FILES:
-C     UNIT 52  - TEXT FILE FOR SDM PERUSAL (LIST OF ISOLATED REPORTS
-C              - THAT ARE FLAGGED FOR NON-USE BY THIS PROGRAM AS WELL
-C              - AS THOSE WITH LARGE INCREMENTS)
-C
-C ATTRIBUTES:
-C   LANGUAGE: FORTRAN 90
-C   MACHINE:  IBM-SP
-C
-C$$$
-      SUBROUTINE FORSDM(INDX)
-      PARAMETER (IRMX= 80000)
-      CHARACTER*1  CTG,CLON,C1,CH1(9)
-      CHARACTER*8  ACID
-      CHARACTER*14  TAG
-      INTEGER  ICH1(9)
-      COMMON/TSTACAR/KTACAR
-      COMMON/INPT/DOSPOB,DOACRS,TMAXO,TMINO,TIMINC,WAYPIN,INIDST,IFLGUS,
-     $ JAMASS(6),JAWIND(6),RCPTST
-      COMMON/MASK/GDNH(362,91),GDSH(145,37),GDUS(362,91)
-      COMMON/ALLDAT/IFLEPT(IRMX),ACID(IRMX),ALAT(IRMX),ALON(IRMX),
-     $ AALT(IRMX),TIME(IRMX),ASPD(IRMX),ADIR(IRMX),TBASE,
-     $ ATMP(IRMX),TAG(IRMX),IRTM(IRMX),INTP(IRMX),KNTINI(IRMX),
-     $ ITEVNT(IRMX),IWEVNT(IRMX),ATMPF(IRMX),AALTF(IRMX),ASPDF(IRMX),
-     $ ADIRF(IRMX)
-      DATA CH1  /'Q','R','S','T','U','V','W','X','Y'/
-      DATA ICH1 /10, 20, 30, 40, 50, 60, 70, 80, 90 /
-C
-C NOTE: ALL CONV'L AIREP/PIREP (NOT ASDAR/AMDAR/TAMDAR) RPTS OVER CONUS
-C  (DEFINED AS CONTINENTAL U.S, SO. ONTARIO AND THE GULF OF MEXICO NORTH
-C  OF 25 DEG. N LAT) WILL BE EXCLUDED FROM ALL NCEP ANALYSES IF:
-C  IFLGUS= 1 OR 2 & KTACAR>1.  BASED ON THESE SWITCHES, THIS SUBR. MAY
-C  CHECK FOR OBS. OVER THIS REGION AND NOT WRITE ANY FLAGGED REPORTS TO
-C  THE SDM TEXT FILE HERE
-C
-      IF((TAG(INDX)(1:1).GE.'U'.AND.TAG(INDX)(1:1).LE.'Z').OR.
-     $ TAG(INDX)(4:4).EQ.'F')  THEN
-         IF(NINT(ALAT(INDX)).GT.0.AND.TAG(INDX)(7:7).NE.'Z'.AND.
-     $    IFLGUS.GT.0)  THEN
-            IF(KTACAR.GT.1)  THEN
-               KXI = (360.0 - ALON(INDX)) + 0.005 + 1.0
-               KYJ = ALAT(INDX) + 1.0
-      IF(KYJ.LT.91.AND.(GDUS(KXI,KYJ).GT.0.5.OR.GDUS(KXI+1,KYJ).GT.0.5
-     $ .OR.GDUS(KXI,KYJ+1).GT.0.5.OR.GDUS(KXI+1,KYJ+1).GT.0.5))  RETURN
-            END IF
-         END IF
-C SKIP WRITING OF ANY FLAGGED REPORTS OUTSIDE REQUESTED TIME WINDOW
-         IF(TIME(INDX).LT.TMINO.OR.TIME(INDX).GT.TMAXO)  RETURN
-C WRITE SDM WINDS W/ VECTOR INCR. U-Z OR FLAGGED BY THIS PROGRAM; SCALE
-C  BASED ON VALUE OF SCALED INCREMENT CHARACTER Q-Z, IF INCREMENT NOT
-C  AVAIL. SCALE SET TO MSG
-         SCALE = 99999.
-         IF(TAG(INDX)(1:1).GE.'Q'.AND.TAG(INDX)(1:1).LE.'Z')  THEN
-            CTG = TAG(INDX)(1:1)
-            SCALE = 100.0
-            DO I=1,9
-               IF(CTG.EQ.CH1(I)) THEN
-                  SCALE = ICH1(I)
-                  EXIT
-               END IF
-            ENDDO
-         END IF
-         IF(AALT(INDX).LE.11000.)  THEN
-            PRALT = 1013.25 *
-     $       (((288.15 - (.0065*AALT(INDX)))/288.15)**5.256)
-         ELSE
-             PRALT = 226.3 * EXP(1.576106E-4*(11000.-AALT(INDX)))
-         END IF
-         QTIME = MOD(TIME(INDX),2400.)
-         QTEMP = 99999.
-         IF(ATMP(INDX).LT.99999.)  QTEMP = ATMP(INDX) * 0.1
-         QLON = ALON(INDX)
-         CLON = 'W'
-         IF(NINT(QLON).GT.180)  THEN
-            QLON = (360. - QLON)
-            CLON = 'E'
-         END IF
-         C1 = '-'
-ccccc    IF(TAG(INDX)(1:1).EQ.'H'.OR.TAG(INDX)(1:1).EQ.'P')
-ccccc$    C1 = TAG(INDX)(1:1)
-         IF(TAG(INDX)(4:4).EQ.'H'.OR.TAG(INDX)(2:2).EQ.'H' .OR.
-     $      TAG(INDX)(4:4).EQ.'P'.OR.TAG(INDX)(2:2).EQ.'P')
-     $    C1 = 'Y'
-         WRITE(52,25) ACID(INDX),ALAT(INDX),QLON,CLON,QTIME,PRALT,
-     $    QTEMP,ADIR(INDX),ASPD(INDX),SCALE,C1,TAG(INDX)(4:4),
-     $    TAG(INDX)(2:2)
-   25 FORMAT(' ',A8,2F8.2,A1,3F7.0,F6.0,F7.1,F7.0,3(4X,A1))
-      END IF
-      RETURN
-      END
-C$$$  SUBPROGRAM DOCUMENTATION BLOCK
-C                .      .    .                                       .
-C SUBPROGRAM:    RPACKR      PREPARES OBS. FOR PACKING
-C   PRGMMR: D. A. KEYSER     ORG: NP22       DATE: 2007-10-17
-C
-C ABSTRACT: PREPARES OBSERVATIONS FOR FINAL PACKING TO OUTPUT FILE.
-C   FINAL CHECK TO REMOVE DUPLICATES, FINAL ASSIGNMENT OF TEMPERATURE
-C   AND WIND QUALITY MARKERS (IF APPLICABLE) AND ACCUMULATION OF NEW
-C   SUPEROBS IN HOLDING ARRAYS (IF APPLICABLE).
-C
-C PROGRAM HISTORY LOG:
-C 1989-04-01  P. JULIAN (W/NMC00) -- ORIGINAL AUTHOR
-C 1990-04-16  P. JULIAN    -- MODIFIED TO PACK SUPEROBS ONE AT A
-C             TIME ON SINGLE LEVELS ONLY
-C 1990-06-14  D. A. KEYSER -- INCLUDED PROCESSING OF TEMP; CORRECTED
-C             ERROR LEADING TO LOSS OF SOME OBS. IN REPACKING;
-C             CORRECTED TO HONOR ALL SDM/QCAIRCFT PURGES FOR STACKED
-C             OBS. & ALL SDM KEEPS FOR ISOL. OBS.; CORRECTED SLIGHT
-C             ERROR IN LAT/LON IN OUTPUT FILE FOR SOME OBS.
-C 1990-07-03  D. A. KEYSER -- ADDED 1 TO OUTPUT TIME FOR MULTIPLE
-C             SUPEROBS IN SAME STACK W/ SAME ORIG. TIME (SO OI WON'T
-C             TOSS AS DUPLICATES); ROUNDED OUTPUT TIME OFF TO NEAREST
-C             INTEGER (FOR AVG'D SUPEROBS), WAS TRUNCATED
-C 1991-02-26  G. J. DIMEGO -- MADE INCREMENT TO-BE-ADDED 11 (SEE ABOVE)
-C 1994-01-01  P. JULIAN -- CHANGES TO RE-DO ON29(REV) QUAL MARKS
-C 1994-08-25  D. A. KEYSER -- STREAMLINED CODE, EXPANDED COMMENTS AND
-C             DOCBLOCKS, REVISED TO MAKE MACHINE INDEPENDENT; ADDED
-C             REPACKING OF ORIGINAL RESERVE CHARACTER INFO PLUS OTHER
-C             META-DATA IN CATEGORY 8 FOR NON-SUPEROBED REPORTS FOR
-C             ON29 OUTPUT; ADDED STORAGE OF ALL SUPEROBS IN HOLDING
-C             ARRAYS
-C 1995-03-27  D. A. KEYSER -- ASDAR/AMDAR TMP/WND RPTS NOT FLAGGED BY
-C             OTHER CHKS NOW GET "GOOD" Q.M. (& FOR INIDST=2, NEW RSN.
-C             CODE 28) REGARDLESS OF SCALED VECTOR INCR. (BEFORE Q.M.
-C             BASED ON SCALED VECTOR INCR.)
-C 1995-07-06  D. A. KEYSER -- REPORTS IN A STACK OF TWO NOW GET
-C             TEMPERATURE AND WIND FLAGGED AS BAD (AND ARE ASSIGNED
-C             THE NEW REASON CODE "329" FOR OUTPUT TO PREPBUFR
-C             FILE) IF THE SCALED VECTOR WIND INCREMENT IS LARGE
-C             (IN THE RANGE 'V' TO 'Z'), A SUPEROB IS NEVER STORED;
-C             ASDAR/AMDAR REPORTS NOW GET TEMPERATURE AND WIND Q.
-C             MARKS SET TO "SUSPECT" (AND ARE ASSIGNED THE NEW REASON
-C             CODE "330" FOR OUTPUT TO PREPBUFR FILE) IF THE
-C             PHASE OF FLIGHT INDICATOR IS MISSING (INDICATES A
-C             PROBABLE "BANKING" AIRCRAFT WITH SUSPECT DATA QUALITY)
-C 2002-11-20  D. A. KEYSER -- SINCE THERE IS NO LONGER ANY RELATIONSHIP
-C             BETWEEN AN SDM KEEP ON WIND VS. A KEEP ON TEMP - THEY ARE
-C             INDENDENDENT OF EACH OTHER, FULL Q.C. IS NOW PERFORMED ON
-C             REPORTS WITH A KEEP FLAG ON EITHER, ALTHOUGH THE ORIGINAL
-C             KEEP FLAGS ARE STILL HONORED
-C 2007-10-17  D. A. KEYSER -- CHANGES TO TREAT TAMDAR AND CANADIAN
-C             AMDAR REPORTS THE SAME AS ASDAR/AMDAR REPORTS
-C
-C USAGE:    CALL RPACKR(NUM,NOBS,INDX)
-C   INPUT ARGUMENT LIST:
-C     NUM      - NUMBER OF OBSERVATIONS IN ORIGINAL STACK
-C     NOBS     - NUMBER OF OBSERVATIONS TO BE PACKED
-C     INDX     - POINTER TO POSITION IN ORIGINAL AIRCRAFT ARRAY
-C
-C   OUTPUT FILES:
-C     UNIT 06  - PRINTOUT
-C
-C REMARKS: CALLED BY MAIN PROGRAM.
-C
-C ATTRIBUTES:
-C   LANGUAGE: FORTRAN 90
-C   MACHINE:  IBM-SP
-C
-C$$$
-      SUBROUTINE RPACKR(NUM,NOBS,INDX)
-      PARAMETER (IRMX= 80000, ISMX= 8000)
-      PARAMETER (ISUP= 4000)
-      LOGICAL  EWRITE
-      CHARACTER*4  SSMARK
-      CHARACTER*8  ACID,SAID
-      CHARACTER*14  TAG
-      INTEGER  IDATA(1608)
-      REAL  ORIGTM(10),RDATA(1608)
-      COMMON/INPT/DOSPOB,DOACRS,TMAXO,TMINO,TIMINC,WAYPIN,INIDST,IFLGUS,
-     $ JAMASS(6),JAWIND(6),RCPTST
-      COMMON/OUTPUT/KNTOUT(5)
-      COMMON/STWRIT/SWRITE,EWRITE,IWRITE
-      COMMON/SUMDAT/ISTCPT(ISMX),SAID(ISMX),SLAT(ISMX),SLON(ISMX),
-     $ SHGT(ISMX),STIM(ISMX),SSPD(ISMX),SDIR(ISMX),STMP(ISMX),
-     $ KBAD(ISMX),NUMORG,SSPDF(ISMX),SDIRF(ISMX),STMPF(ISMX),SHGTF(ISMX)
-      COMMON/ALLDAT/IFLEPT(IRMX),ACID(IRMX),ALAT(IRMX),ALON(IRMX),
-     $ AALT(IRMX),TIME(IRMX),ASPD(IRMX),ADIR(IRMX),TBASE,
-     $ ATMP(IRMX),TAG(IRMX),IRTM(IRMX),INTP(IRMX),KNTINI(IRMX),
-     $ ITEVNT(IRMX),IWEVNT(IRMX),ATMPF(IRMX),AALTF(IRMX),ASPDF(IRMX),
-     $ ADIRF(IRMX)
-      COMMON/SUPOBS/SSLAT(ISUP),SSLON(ISUP),SSTIM(ISUP),SSHGT(ISUP),
-     $ SSTMP(ISUP),SSDIR(ISUP),SSSPD(ISUP),SSHGTF(ISUP),SSTMPF(ISUP),
-     $ SSDIRF(ISUP),SSSPDF(ISUP),SSMARK(ISUP)
-      EQUIVALENCE  (IDATA,RDATA)
-      N2DO = NOBS
-C NSPOB IS NO. OF SUPEROBS FORMED FOR THE STACK (NSPOB IS LIMITED TO 5)
-      NSPOB = N2DO - NUM
-C INVENTORY INCREMENTS
-      CALL ACOUNT(NUM,INDX)
-      IF(NOBS.GE.2)  THEN
-         PRINT 8000, NOBS,NUM,NSPOB,INDX
- 8000    FORMAT(' ENTERING RPACKR WITH NOBS =',I4,', NUM =',I4,', AND',
-     $    ' NO. OF SPROBS =',I3,' AND INDX= ',I5)
-      ELSE
-         ISTCPT(1) = -2
-      END IF
-      DO I = 1,NUM
-         JNDX = INDX + I - 1
-         IF(TAG(JNDX)(1:1).EQ.'D')  THEN
-C SKIP REPACKING OF ORIGINAL REPORT IF IT IS INDEED A DUPLICATE REPORT
-            PRINT 9026, JNDX,ACID(JNDX),ALAT(JNDX),ALON(JNDX),
-     $       TIME(JNDX),TAG(JNDX)
- 9026 FORMAT(/' ##########: RPACKR; DUPLICATE REMOVED AT BEG OF SUBR..',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"'/)
-            KNTINI(JNDX) = 99999
-            GO TO 1
-         END IF
-C SKIP REPACKING OF ORIGINAL REPORT IF IT IS OUTSIDE REQ. TIME WINDOW
-         IF(TIME(JNDX).LT.TMINO.OR.TIME(JNDX).GT.TMAXO)  THEN
-C SET POS.1 OF TAG TO 'D' TO REMOVE FROM FINAL LISTING OF ORIG. REPORTS
-            TAG(JNDX)(1:1) = 'D'
-CCCCC       PRINT 9002, JNDX,ACID(JNDX),ALAT(JNDX),ALON(JNDX),
-CCCCC$       TIME(JNDX),TAG(JNDX)
-C9002 FORMAT(/' ##########: RPACKR; RPTS OUTSIDE TIME WINDOW SKIPPED..',
-CCCCC$ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"'/)
-            KNTINI(JNDX) = 99999
-            GO TO 1
-         END IF
-C NOW, MAKE FINAL ASSIGNMENT OF TEMPERATURE AND WIND Q. MARKS (IF APPL.)
-         IF(TAG(JNDX)(1:1).EQ.'P')  THEN
-C SDM WIND PURGE OBSERVATIONS HAVE ALREADY BEEN MARKED
-C  (NOTE: IF PURGE ON WIND, WILL ALSO BE PURGE ON TEMP FROM ACTION
-C         TAKEN BY PREVIOUS PREPOBS_PREPDATA PROGRAM)
-         ELSE  IF(N2DO.EQ.1)  THEN
-C**********************************************************************
-C                    ISOLATED OBSERVATIONS COME HERE
-C**********************************************************************
-            IF(TAG(JNDX)(7:7).EQ.'Z')  THEN
-C----------------------------------------------------------------------
-C                           ASDARS/AMDARS/TAMDARS
-C----------------------------------------------------------------------
-               IF(TAG(JNDX)(13:13).GT.'5')  THEN
-                  IF(TAG(JNDX)(10:10).EQ.'7')  THEN
-                     IF(EWRITE)  PRINT 9095, JNDX,ACID(JNDX),ALAT(JNDX),
-     $                ALON(JNDX),TIME(JNDX),TAG(JNDX)
- 9095 FORMAT(/' #EVENT 330: RPACKR; ISOLAT. ASDAR/AMDAR/TAMDAR ',
-     $ 'BANKING?, TMP QM. Q',I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-                     TAG(JNDX)(2:2) = 'Q'
-                     TAG(JNDX)(13:13) = '5'
-                     ITEVNT(JNDX) = 330
-                  ELSE  IF(TAG(JNDX)(13:13).GT.'6')  THEN
-C IF "GOOD" ASDAR/AMDAR/TAMDAR REPORT, TEMP Q.M. IS 'A'
-                     IF(EWRITE)  PRINT 9090, JNDX,ACID(JNDX),ALAT(JNDX),
-     $                ALON(JNDX),TIME(JNDX),TAG(JNDX)
- 9090 FORMAT(/' #EVENT 328: RPACKR; ISOLAT. "GOOD" ASDAR/AMDAR/TAMDAR,',
-     $ ' TEMP Q.M. A',I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-                     TAG(JNDX)(2:2) = 'A'
-                     TAG(JNDX)(13:13) = '6'
-                     ITEVNT(JNDX) = 328
-                  END IF
-               END IF
-               IF(TAG(JNDX)(14:14).GT.'5')  THEN
-                  IF(TAG(JNDX)(10:10).EQ.'7')  THEN
-                     IF(EWRITE)  PRINT 8095, JNDX,ACID(JNDX),ALAT(JNDX),
-     $                ALON(JNDX),TIME(JNDX),TAG(JNDX)
- 8095 FORMAT(/' #EVENT 330: RPACKR; ISOLAT. ASDAR/AMDAR/TAMDAR ',
-     $ 'BANKING?, WND QM. Q',I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-                     TAG(JNDX)(4:4) = 'Q'
-                     TAG(JNDX)(14:14) = '5'
-                     IWEVNT(JNDX) = 330
-                  ELSE  IF(TAG(JNDX)(14:14).GT.'6')  THEN
-C IF "GOOD" ASDAR/AMDAR/TAMDAR REPORT, WIND Q.M. IS 'A'
-                     IF(EWRITE)  PRINT 9091, JNDX,ACID(JNDX),ALAT(JNDX),
-     $                ALON(JNDX),TIME(JNDX),TAG(JNDX)
- 9091 FORMAT(/' #EVENT 328: RPACKR; ISOLAT. "GOOD" ASDAR/AMDAR/TAMDAR,',
-     $ ' WIND Q.M. A',I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-                     TAG(JNDX)(4:4) = 'A'
-                     TAG(JNDX)(14:14) = '6'
-                     IWEVNT(JNDX) = 328
-                  END IF
-               END IF
-            ELSE
-C----------------------------------------------------------------------
-C                              AIREPS/PIREPS
-C----------------------------------------------------------------------
-               IF(TAG(JNDX)(1:1).EQ.'Q'.OR.TAG(JNDX)(1:1).EQ.'R')  THEN
-                  IF(TAG(JNDX)(13:13).GT.'6')  THEN
-C IF "GOOD" REPORT W/ SMALL VECTOR WIND INCREMENT (Q-R) TEMP Q.M. IS 'A'
-                     IF(EWRITE)  PRINT 9030, JNDX,ACID(JNDX),ALAT(JNDX),
-     $                ALON(JNDX),TIME(JNDX),TAG(JNDX)
- 9030 FORMAT(/' #EVENT 317: RPACKR; ISOLAT. AIREP SMALL INCR. TMP QM A',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-                     TAG(JNDX)(2:2) = 'A'
-                     TAG(JNDX)(13:13) = '6'
-                     ITEVNT(JNDX) = 317
-                  END IF
-                  IF(TAG(JNDX)(14:14).GT.'6')  THEN
-C IF "GOOD" REPORT W/ SMALL VECTOR WIND INCREMENT (Q-R) WIND Q.M. IS 'A'
-                     IF(EWRITE)  PRINT 8030, JNDX,ACID(JNDX),ALAT(JNDX),
-     $                ALON(JNDX),TIME(JNDX),TAG(JNDX)
- 8030 FORMAT(/' #EVENT 317: RPACKR; ISOLAT. AIREP SMALL INCR. WND QM A',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-                     TAG(JNDX)(4:4) = 'A'
-                     TAG(JNDX)(14:14) = '6'
-                     IWEVNT(JNDX) = 317
-                  END IF
-            ELSE IF(TAG(JNDX)(1:1).GE.'V'.AND.TAG(JNDX)(1:1).LE.'Z')THEN
-                  IF(TAG(JNDX)(13:13).GT.'3')  THEN
-C IF LARGE VECTOR WIND INCREMENT (V - Z), TEMP Q.M. IS 'F'
-                     IF(EWRITE)  PRINT 9029, JNDX,ACID(JNDX),ALAT(JNDX),
-     $                ALON(JNDX),TIME(JNDX),TAG(JNDX)
- 9029 FORMAT(/' #EVENT 316: RPACKR; ISOLAT. AIREP LARGE INCR. TMP QM F',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-                     TAG(JNDX)(2:2) = 'F'
-                     TAG(JNDX)(13:13) = '3'
-                     ITEVNT(JNDX) = 316
-                  END IF
-                  IF(TAG(JNDX)(14:14).GT.'3')  THEN
-C IF LARGE VECTOR WIND INCREMENT (V - Z), WIND Q.M. IS 'F'
-                     IF(EWRITE)  PRINT 8029, JNDX,ACID(JNDX),ALAT(JNDX),
-     $                ALON(JNDX),TIME(JNDX),TAG(JNDX)
- 8029 FORMAT(/' #EVENT 316: RPACKR; ISOLAT. AIREP LARGE INCR. WND QM F',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-                     TAG(JNDX)(4:4) = 'F'
-                     TAG(JNDX)(14:14) = '3'
-                     IWEVNT(JNDX) = 316
-                  END IF
-               ELSE  IF((TAG(JNDX)(1:1).GE.'S'.AND.TAG(JNDX)(1:1)
-     $          .LE.'U').OR.TAG(JNDX)(1:1).EQ.'-')  THEN
-                  IF(TAG(JNDX)(13:13).GT.'5')  THEN
-C IF "GOOD" REPORT WITH INTERMEDIATE VECTOR WIND INCREMENT (S - U) OR
-C  WAYPOINT LOCATION CHANGED ('-'), TEMP Q.M. IS 'Q'
-                     IF(EWRITE)  PRINT 9031, JNDX,ACID(JNDX),ALAT(JNDX),
-     $                ALON(JNDX),TIME(JNDX),TAG(JNDX)
- 9031 FORMAT(/' #EVENT 318: RPACKR; ISOLAT. AIREP SUSP. INCR. TMP QM Q',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-                     TAG(JNDX)(2:2) = 'Q'
-                     TAG(JNDX)(13:13) = '5'
-                     ITEVNT(JNDX) = 318
-                  END IF
-                  IF(TAG(JNDX)(14:14).GT.'5')  THEN
-C IF "GOOD" REPORT WITH INTERMEDIATE VECTOR WIND INCREMENT (S - U) OR
-C  WAYPOINT LOCATION CHANGED ('-'), WIND Q.M. IS 'Q'
-                     IF(EWRITE)  PRINT 8031, JNDX,ACID(JNDX),ALAT(JNDX),
-     $                ALON(JNDX),TIME(JNDX),TAG(JNDX)
- 8031 FORMAT(/' #EVENT 318: RPACKR; ISOLAT. AIREP SUSP. INCR. WND QM Q',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-                     TAG(JNDX)(4:4) = 'Q'
-                     TAG(JNDX)(14:14) = '5'
-                     IWEVNT(JNDX) = 318
-                  END IF
-               ELSE  IF(TAG(JNDX)(1:1).EQ.'C')  THEN
-C IF REPORT WITH VECTOR WIND INCREMENT NOT CALCULATED ('C'), TEMP &
-C  WIND Q.M. IS '-' (INCLUDES ALL RPTS OUTSIDE +/- 3.33-HR WINDOW)
-                  IF(TAG(JNDX)(13:13).GT.'7')  THEN
-                     IF(EWRITE)  PRINT 9032, JNDX,ACID(JNDX),ALAT(JNDX),
-     $                ALON(JNDX),TIME(JNDX),TAG(JNDX)
- 9032 FORMAT(/' #EVENT ###: RPACKR; ISOLAT. AIREP INCR. N/A TMP QM " "',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-                     TAG(JNDX)(13:13) = '7'
-                  END IF
-                  IF(TAG(JNDX)(14:14).GT.'7')  THEN
-                     IF(EWRITE)  PRINT 8032, JNDX,ACID(JNDX),ALAT(JNDX),
-     $                ALON(JNDX),TIME(JNDX),TAG(JNDX)
- 8032 FORMAT(/' #EVENT ###: RPACKR; ISOLAT. AIREP INCR. N/A WND QM " "',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-                     TAG(JNDX)(14:14) = '7'
-                  END IF
-               ELSE
-               END IF
-C----------------------------------------------------------------------
-            END IF
-         ELSE
-C**********************************************************************
-C                    STACKED  OBSERVATIONS COME HERE
-C**********************************************************************
-            IF(TAG(JNDX)(1:1).GE.'V'.AND.TAG(JNDX)(1:1).LE.'Z'.AND.
-     $       NUM.LT.3)  THEN
-C IF NO. IN STACK IS TWO, THEN AIREP/PIREP WITH LARGE VECTOR WIND INCR.
-C  (V - Z) HAVE TEMP & WIND Q.M. SET TO 'F' (AS WITH ISOLATED REPORTS)
-               IF(TAG(JNDX)(13:13).GT.'3')  THEN
-CVVVVV%%%%%
-         PRINT *,'~~~~~ NUM=2 & THIS OBS. HAS A LARGE INCR., FLAG TEMP'
-CAAAAA%%%%%
-                  IF(EWRITE)  PRINT 9929, JNDX,ACID(JNDX),ALAT(JNDX),
-     $             ALON(JNDX),TIME(JNDX),TAG(JNDX)
- 9929 FORMAT(/' #EVENT 329: RPACKR; <3 STACKD AIREP LRG INCR. TMP QM F',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-                  TAG(JNDX)(2:2) = 'F'
-                  TAG(JNDX)(13:13) = '3'
-                  ITEVNT(JNDX) = 329
-               END IF
-               IF(TAG(JNDX)(14:14).GT.'3')  THEN
-CVVVVV%%%%%
-         PRINT *,'~~~~~ NUM=2 & THIS OBS. HAS A LARGE INCR., FLAG WIND'
-CAAAAA%%%%%
-                  IF(EWRITE)  PRINT 8929, JNDX,ACID(JNDX),ALAT(JNDX),
-     $             ALON(JNDX),TIME(JNDX),TAG(JNDX)
- 8929 FORMAT(/' #EVENT 329: RPACKR; <3 STACKD AIREP LRG INCR. WND QM F',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-                  TAG(JNDX)(4:4) = 'F'
-                  TAG(JNDX)(14:14) = '3'
-                  IWEVNT(JNDX) = 329
-               END IF
-C WILL NOT STORE ANY SUPEROB REPORTS IN THIS CASE
-               IF(NSPOB.GT.0) PRINT 9903
-CVVVVV%%%%%
-               IF(NSPOB.GT.0)
-     $   PRINT *,'~~~~~ THE SUPEROB HERE IS NOT STORED'
-CAAAAA%%%%%
- 9903 FORMAT(/' ##########: RPACKR; SUPEROB IS SKIPPED - ONE OR BOTH ',
-     $ 'ORIG. OBS. IN A STACK OF TWO ORIG. OBS. HAVE LARGE INCREMENT'/)
-               NSPOB = 0
-            END IF
-            IF(TAG(JNDX)(14:14).GT.'6')  THEN
-C IF WIND IS NEITHER BAD NOR SUSPECT AT THIS POINT, SET Q.M. TO GOOD
-               IF(EWRITE)  PRINT 9034, JNDX,ACID(JNDX),ALAT(JNDX),
-     $          ALON(JNDX),TIME(JNDX),TAG(JNDX)
- 9034 FORMAT(/' #EVENT 320: RPACKR; STACKED W/ GOOD WND, WIND Q.M. "A"',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-               TAG(JNDX)(4:4) = 'A'
-               TAG(JNDX)(14:14) = '6'
-               IWEVNT(JNDX) = 320
-            END IF
-            IF(TAG(JNDX)(13:13).GT.'6')  THEN
-C IF TEMP IS NEITHER BAD NOR SUSPECT AT THIS POINT, SET Q.M. TO GOOD
-               IF(EWRITE)  PRINT 9035, JNDX,ACID(JNDX),ALAT(JNDX),
-     $          ALON(JNDX),TIME(JNDX),TAG(JNDX)
- 9035 FORMAT(/' #EVENT 320: RPACKR; STACKED W/ GOOD TMP, TEMP Q.M. "A"',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-               TAG(JNDX)(2:2) = 'A'
-               TAG(JNDX)(13:13) = '6'
-               ITEVNT(JNDX) = 320
-            END IF
-C**********************************************************************
-         END IF
-         IF(TAG(JNDX)(4:4).EQ.'F'.AND.TAG(JNDX)(13:13).GT.'3')  THEN
-C IF WIND IS FLAGGED, THEN TEMPERATURE IS ALWAYS ALSO FLAGGED
-            IF(EWRITE)  PRINT 9033, JNDX,ACID(JNDX),ALAT(JNDX),
-     $       ALON(JNDX),TIME(JNDX),TAG(JNDX)
- 9033 FORMAT(/' #EVENT 319: RPACKR; BAD WIND, TEMP Q.M. SET TO "F"....',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-            TAG(JNDX)(2:2) = 'F'
-            TAG(JNDX)(13:13) = '3'
-            ITEVNT(JNDX) = 319
-         END IF
-    1    CONTINUE
-      ENDDO
-      NPT = NUM
-      IF(NSPOB.GT.0)  THEN
-C#######################################################################
-C#######################################################################
-C                         S  U  P  E  R  O  B  S
-C#######################################################################
-C#######################################################################
-         DO I = 1,NSPOB
-            NPT = NPT + 1
-C RE-STORE TIME IN WORD 4
-            RDATA(4) = NINT(MOD(STIM(NPT),2400.))
-            IF(RDATA(4).LT.0.0)  THEN
-               RDATA(4) = RDATA(4) + 2400.
-               STIM(NPT) = STIM(NPT) + 2400.
-            END IF
-C MULT. SUPEROBS IN STACK W/ SAME ORIG. TIME HAVE OUTPUT TIME INCR. BY
-C  'TIMINC' FOR EACH OCCURRENCE OF A DUPL. TIME (PREVENTS OI DUPL. TOSS)
-            ORIGTM(I) = RDATA(4)
-            DO J = 1,I-1
-               IF(ORIGTM(I).EQ.ORIGTM(J))  THEN
-                  RDATA(4) = MOD(RDATA(4)+TIMINC,2400.)
-                  STIM(NPT) = STIM(NPT) + TIMINC
-               END IF
-            ENDDO
-C SKIP PACKING OF SUPEROB REPORT IF IT IS OUTSIDE REQ. TIME WINDOW
-            IF(STIM(NPT).LT.TMINO.OR.STIM(NPT).GT.TMAXO)  THEN
-               PRINT 9003, I,SLAT(NPT),SLON(NPT),STIM(NPT)
- 9003 FORMAT(/' ##########: RPACKR; SUPOBS OUTSIDE TIME WINDOW SKIPPED',
-     $ I5,2X,'SUPROB  ',2F8.2,F6.0/)
-               GO TO 2
-            END IF
-            KNTOUT(3) = KNTOUT(3) + 1
-            IF(KNTOUT(3).GT.ISUP)  THEN
-C.......................................................................
-C FATAL ERROR: THERE ARE MORE SUPEROBED RPTS THAN "ISUP" -- STOP 23
-               PRINT 53, ISUP
-   53 FORMAT(/' THERE ARE MORE THAN',I5,' SUPEROBED REPORTS GENERATED',
-     $ ' -- MUST INCREASE SIZE OF PARAMETER NAME "ISUP" - STOP 23'/)
-               CALL W3TAGE('PREPOBS_PREPACQC')
-               CALL ERREXIT(23)
-C.......................................................................
-            END IF
-            SSLAT(KNTOUT(3)) = SLAT(NPT)
-            SSLON(KNTOUT(3)) = SLON(NPT)
-            SSTIM(KNTOUT(3)) = STIM(NPT)
-            SSHGT(KNTOUT(3)) = SHGT(NPT)
-            SSTMP(KNTOUT(3)) = STMP(NPT)
-            SSDIR(KNTOUT(3)) = SDIR(NPT)
-            SSSPD(KNTOUT(3)) = SSPD(NPT)
-            SSHGTF(KNTOUT(3)) = SHGTF(NPT)
-            SSTMPF(KNTOUT(3)) = STMPF(NPT)
-            SSDIRF(KNTOUT(3)) = SDIRF(NPT)
-            SSSPDF(KNTOUT(3)) = SSPDF(NPT)
-            SSMARK(KNTOUT(3)) = 'SS  '
-    2       CONTINUE
-         ENDDO
-C#######################################################################
-      END IF
-      IF(NOBS.GE.2.OR.NOBS.NE.NUM)  PRINT 8378
- 8378 FORMAT(1X,'***********************************************')
-      RETURN
-      END
-C$$$  SUBPROGRAM DOCUMENTATION BLOCK
-C                .      .    .                                       .
-C SUBPROGRAM:    ACOUNT      DOES SIMPLE ACCOUNTING OF REPORTS
-C   PRGMMR: D. A. KEYSER     ORG: NP22       DATE: 2002-11-20
-C
-C ABSTRACT: DOES SIMPLE ACCOUNTING BY LOGGING NUMBER OF REPORTS BY
-C   SCALED VECTOR INCREMENT.  FURTHER ACCOUNTING ACCORDING TO ISOLATED
-C   OR STACKED REPORTS ALSO PERFORMED.  IN ADDITION, LOGS THE NUMBER OF
-C   SDM KEEPS AND SDM PURGES ON WIND AND/OR TEMP.  THE NUMBER OF BAD
-C   TEMPERATURES IS ALSO ACCOUNTED FOR HERE.
-C
-C PROGRAM HISTORY LOG:
-C 1994-01-01  P. JULIAN (W/NMC00) -- ORIGINAL AUTHOR
-C 1994-08-25  D. A. KEYSER -- STREAMLINED CODE, EXPANDED COMMENTS AND
-C             DOCBLOCKS, REVISED TO MAKE MACHINE INDEPENDENT
-C 2002-11-20  D. A. KEYSER -- SINCE HAVE REMOVED ASSUMPTION THAT AN SDM
-C             PURGE ON TEMP ONLY ALSO RESULTS IN AN SDM PURGE ON WIND
-C             AS WELL AS THE RELATIONSHIP BETWEEN AN SDM KEEP ON WIND
-C             VS. A KEEP ON TEMP (THEY ARE INDENDENDENT OF EACH OTHER),
-C             NOW TESTS BOTH BYTE 2 AND 4 OF TAG FOR "P" OR "H" RATHER
-C             THAN JUST BYTE 1 OF TAG {WHICH NOW CAN NEVER HAVE AN "H"
-C             AND WILL ONLY HAVE A "P" IF WIND (AND THUS ALSO TEMP VIA
-C             ACTIONS OF PREVIOUS PREPOBS_PREPACQC PROGRAM} IS PURGED}
-C
-C USAGE:    CALL ACOUNT(NUM,INDX)
-C   INPUT ARGUMENT LIST:
-C     NUM      - NUMBER OF OBSERVATIONS TO BE TREATED
-C     INDX     - POINTER TO POSITION IN ORIGINAL AIRCRAFT ARRAY
-C
-C REMARKS: CALLED BY SUBROUTINE 'RPACKR'.
-C
-C ATTRIBUTES:
-C   LANGUAGE: FORTRAN 90
-C   MACHINE:  IBM-SP
-C
-C$$$
-      SUBROUTINE ACOUNT(NUM,INDX)
-      PARAMETER (IRMX= 80000)
-      CHARACTER*1  QCACMK(15)
-      CHARACTER*8  ACID
-      CHARACTER*14  TAG
-      COMMON/ACCONT/KQM2F(15),KISO(15),KNQM(15),KSDM(2),KT,KTYPS(9)
-      COMMON/ALLDAT/IFLEPT(IRMX),ACID(IRMX),ALAT(IRMX),ALON(IRMX),
-     $ AALT(IRMX),TIME(IRMX),ASPD(IRMX),ADIR(IRMX),TBASE,
-     $ ATMP(IRMX),TAG(IRMX),IRTM(IRMX),INTP(IRMX),KNTINI(IRMX),
-     $ ITEVNT(IRMX),IWEVNT(IRMX),ATMPF(IRMX),AALTF(IRMX),ASPDF(IRMX),
-     $ ADIRF(IRMX)
-      COMMON/INPT/DOSPOB,DOACRS,TMAXO,TMINO,TIMINC,WAYPIN,INIDST,IFLGUS,
-     $ JAMASS(6),JAWIND(6),RCPTST
-      DATA  QCACMK/'Q','R','S','T','U','V','W','X','Y','Z','C','P','H',
-     $ '-','D'/
-      IF(NUM.EQ.1)  THEN
-         IF(TIME(INDX).GE.TMINO.AND.TIME(INDX).LE.TMAXO)  THEN
-            DO  M = 1,15
-               IF(TAG(INDX)(1:1).EQ.QCACMK(M))  THEN
-                  KISO(M) = KISO(M) + 1
-                  GO TO 618
-               END IF
-            ENDDO
-  618       CONTINUE
-         END IF
-      ELSE
-         DO K = INDX,INDX+NUM-1
-            IF(TIME(K).GE.TMINO.AND.TIME(K).LE.TMAXO)  THEN
-               DO  M = 1,15
-                  IF(TAG(K)(1:1).EQ.QCACMK(M))  THEN
-                     KNQM(M) = KNQM(M) + 1
-                     IF(TAG(K)(4:4).EQ.'F')  KQM2F(M) = KQM2F(M) + 1
-                     GO TO 718
-                  END IF
-               ENDDO
-  718          CONTINUE
-ccccc          IF(TAG(K)(1:1).EQ.'P')  KSDM(1) = KSDM(1) + 1
-               IF(TAG(K)(2:2).EQ.'P'.OR.TAG(K)(4:4).EQ.'P')
-     $          KSDM(1) = KSDM(1) + 1
-ccccc          IF(TAG(K)(1:1).EQ.'H')  KSDM(2) = KSDM(2) + 1
-               IF(TAG(K)(2:2).EQ.'H'.OR.TAG(K)(4:4).EQ.'H')
-     $          KSDM(2) = KSDM(2) + 1
-               IF(TAG(K)(2:2).EQ.'F'.AND.TAG(K)(4:4).NE.'F') KT = KT +1
-            END IF
-         ENDDO
-      END IF
-      RETURN
-      END
-C$$$  SUBPROGRAM DOCUMENTATION BLOCK
-C                .      .    .                                       .
-C SUBPROGRAM:    IDSORT      SORTS INPUT AIRCFT REPORTS BY STATION ID
-C   PRGMMR: D. A. KEYSER     ORG: NP22       DATE: 1999-08-23
-C
-C ABSTRACT: USES LOCAL SORT ROUTINE TO SORT ENTIRE AIRCRAFT FILE
-C   BY THE 8-CHARACTER STATION (FLIGHT) IDENTIFICATION.
-C
-C PROGRAM HISTORY LOG:
-C 1993-01-05  P. JULIAN -- THIS IS A NEW SUBPROGRAM-ALL CODE WAS
-C             WRITTEN TO ENABLE LOCAL SORT PROGRAM TO BE USED.
-C 1994-08-25  D. A. KEYSER -- STREAMLINED CODE, EXPANDED COMMENTS AND
-C             DOCBLOCKS, REVISED TO MAKE MACHINE INDEPENDENT
-C 1995-07-06  D. A. KEYSER -- NO LONGER SETS CHAR. ' ' TO '0' IN
-C             WORKING STNID ARRAY PRIOR TO IDSORT (WAS BREAKING-UP
-C             SOME TRACKS AND WAS NEVER NEEDED FOR ANY OTHER REASON)
-C 1999-08-23  D.A. KEYSER -- ADDED HIGHER ORDERS IN CHARACTER SORTS
-C             TO HOPEFULLY ALWAYS GIVE SAME SORT ORDER REGARDLESS OF
-C             INPUT REPORT ORDER
-C
-C USAGE:    CALL IDSORT(NFILE,NASDAR,NEXCLD)
-C   INPUT ARGUMENT LIST:
-C     NFILE    - NUMBER OF OBSERVATIONS TO SORT
-C
-C   OUTPUT ARGUMENT LIST:
-C     NASDAR   - NUMBER OF ASDAR/AMDAR/TAMDAR REPORTS IN SORT
-C     NEXCLD   - NUMBER OF EXCLUDED REPORTS AT END OF SORT
-C
-C   OUTPUT FILES:
-C     UNIT 06  - PRINTOUT
-C
-C REMARKS: CALLED BY MAIN PROGRAM.
-C
-C ATTRIBUTES:
-C   LANGUAGE: FORTRAN 90
-C   MACHINE:  IBM-SP
-C
-C$$$
-      SUBROUTINE IDSORT(NFILE,NASDAR,NEXCLD)
-      PARAMETER (IRMX= 80000)
-      PARAMETER (ISIZE= 16)
-      CHARACTER*8  ACID,AAID(IRMX)
-      CHARACTER*14  TAG,STAG(IRMX)
-      CHARACTER*32  CARRAY(IRMX)
-      REAL  SARRAY(IRMX,ISIZE)
-      INTEGER  INDR(IRMX)
-      COMMON/ALLDAT/IFLEPT(IRMX),ACID(IRMX),ALAT(IRMX),ALON(IRMX),
-     $ AALT(IRMX),TIME(IRMX),ASPD(IRMX),ADIR(IRMX),TBASE,
-     $ ATMP(IRMX),TAG(IRMX),IRTM(IRMX),INTP(IRMX),KNTINI(IRMX),
-     $ ITEVNT(IRMX),IWEVNT(IRMX),ATMPF(IRMX),AALTF(IRMX),ASPDF(IRMX),
-     $ ADIRF(IRMX)
-      COMMON/WORD/ICHTP
-      NASDAR = 0
-      NEXCLD = 0
-C FILL IN CARRAY FOR SORT ROUTINE
-      DO J = 1,NFILE
-         IF(TAG(J)(12:12).EQ.'@')  THEN
-C EXCLUDED RPTS ARE COUNTED AND WILL BE AT VERY END OF SORT
-C  (DO THIS BY CHANGING CHARACTER STRING TO:
-C     '99999' IF CHARACTERS ARE EBCDIC,
-C     '~~~~~' IF CHARACTERS ARE ASCII)
-C    1ST ORDER - "99999" or "~~~~~"//STATION ID
-C    2ND ORDER - TIME (INCREASING) (THIS WAS ADDED 8/23/1999)
-C    3RD ORDER - LONGITUDE (WEST, INCREASING) (THIS WAS ADDED 8/23/1999)
-C    4TH ORDER - LATITUDE (SOUTH TO NORTH) (THIS WAS ADDED 8/23/1999)
-C    5TH ORDER - ALTITUDE (INCREASING) (THIS WAS ADDED 8/23/1999)
-            NEXCLD = NEXCLD + 1
-            CARRAY(J)(1:5) = '99999'
-            IF(ICHTP.EQ.0)  CARRAY(J)(1:5) = '~~~~~'
-            CARRAY(J)( 6:12) = ACID(J)(1:7)
-            WRITE(CARRAY(J)(13:16),'(I4.4)')  NINT(TIME(J))
-            WRITE(CARRAY(J)(17:21),'(I5.5)')  NINT(ALON(J)*100.)
-            WRITE(CARRAY(J)(22:26),'(I5.5)')  NINT(ALAT(J)*100.) + 9000
-            WRITE(CARRAY(J)(27:32),'(I6.6)')  NINT(AALT(J))
-C RESET POS. 8 OF ID BACK TO '-' (LATER USED TO TAG ISOLATED REPORTS)
-            TAG(J)(12:12) = '-'
-         ELSE  IF(TAG(J)(7:7).EQ.'Z')  THEN
-C ASDAR/AMDAR/TAMDAR RPTS ARE COUNTED AND WILL BE AFTER AIREPS IN SORT
-C  (DO THIS BY CHANGING CHARACTER STRING TO:
-C     '999' IF CHARACTERS ARE EBCDIC,
-C     '~~~' IF CHARACTERS ARE ASCII)
-C    1ST ORDER - "999" or "~~~"//STATION ID
-C    2ND ORDER - TIME (INCREASING)
-C    3RD ORDER - LONGITUDE (WEST, INCREASING) (THIS WAS ADDED 8/23/1999)
-C    4TH ORDER - LATITUDE (SOUTH TO NORTH) (THIS WAS ADDED 8/23/1999)
-C    5TH ORDER - ALTITUDE (INCREASING) (THIS WAS ADDED 8/23/1999)
-            NASDAR = NASDAR + 1
-            CARRAY(J)(1:3) = '999'
-            IF(ICHTP.EQ.0)  CARRAY(J)(1:3) = '~~~'
-            CARRAY(J)(4:11) = ACID(J)
-            WRITE(CARRAY(J)(12:16),'(I5.5)')  NINT(TIME(J))
-            WRITE(CARRAY(J)(17:21),'(I5.5)')  NINT(ALON(J)*100.)
-            WRITE(CARRAY(J)(22:26),'(I5.5)')  NINT(ALAT(J)*100.) + 9000
-            WRITE(CARRAY(J)(27:32),'(I6.6)')  NINT(AALT(J))
-         ELSE
-C AIREPS WILL BE AT BEGINNING OF SORT
-C    1ST ORDER - STATION ID
-C    2ND ORDER - LONGITUDE (WEST, INCREASING)
-C    3RD ORDER - TIME (INCREASING)
-C    4TH ORDER - LATITUDE (SOUTH TO NORTH) (THIS WAS ADDED 8/23/1999)
-C    5TH ORDER - ALTITUDE (INCREASING) (THIS WAS ADDED 8/23/1999)
-            CARRAY(J)(1:7) = ACID(J)(1:7)
-            WRITE(CARRAY(J)(8:12),'(I5.5)')  NINT(ALON(J)*100.)
-            WRITE(CARRAY(J)(13:16),'(I4.4)')  NINT(TIME(J))
-            WRITE(CARRAY(J)(17:21),'(I5.5)')  NINT(ALAT(J)*100.) + 9000
-            WRITE(CARRAY(J)(22:27),'(I6.6)')  NINT(AALT(J))
-            CARRAY(J)(28:32) = '00000'
-         END IF
-C REMOVED THIS FOR 6 JUL 1995 VERSION (WAS SPLITTING UP SOME TRACKS)
-CCCCCCCCCDO K = 1,12
-CCCCCCCCC   IF(CARRAY(J)(K:K).EQ.' ')  CARRAY(J)(K:K) = '0'
-CCCCCCCCCENDDO
-C TRANSFER ORIGINAL DATA TO TEMPORARY ARRAYS TO HOLD FOR RE-ARRANGING
-         AAID(J) = ACID(J)
-         SARRAY(J,1)  = ALAT(J)
-         SARRAY(J,2)  = ALON(J)
-         SARRAY(J,3)  = AALT(J)
-         SARRAY(J,4)  = TIME(J)
-         SARRAY(J,5)  = ATMP(J)
-         SARRAY(J,6)  = ADIR(J)
-         SARRAY(J,7)  = ASPD(J)
-         SARRAY(J,8)  = REAL(INTP(J))
-         SARRAY(J,9)  = REAL(IRTM(J))
-         SARRAY(J,10) = REAL(KNTINI(J))
-         SARRAY(J,11) = REAL(ITEVNT(J))
-         SARRAY(J,12) = REAL(IWEVNT(J))
-         SARRAY(J,13) = AALTF(J)
-         SARRAY(J,14) = ADIRF(J)
-         SARRAY(J,15) = ASPDF(J)
-         SARRAY(J,16) = ATMPF(J)
-         STAG(J) = TAG(J)
-CCCCC    LON = 99999
-CCCCC    IF(ALON(J).LT.99999.)  LON = NINT(ALON(J)*100.)
-CCCCC    PRINT 1927, AAID(J),NINT(TIME(J)),LON,CARRAY(J)
-C1927    FORMAT(' ',A8,2X,2I8,3X,A32)
-CCCCC    PRINT 100, J,AAID(J),SARRAY(J,1),SARRAY(J,2),SARRAY(J,4),
-CCCCC$    SARRAY(J,3),SARRAY(J,5),SARRAY(J,6),SARRAY(J,7),STAG(J)(1:4)
-CD100    FORMAT(' ', I7,2X,A8,2X,2F9.2,5F9.0,1X,A4)
-      ENDDO
-C CALL SORT ROUTINE- PUTS POINTERS INTO IPOINT ARRAY/DOES NOT REARRANGE
-      IF(NFILE.GT.0)  CALL INDEXC(NFILE,CARRAY,INDR)
-      DO I = 1,NFILE
-         J = INDR(I)
-C WRITE SORTED REPORTS BACK INTO ORIGINAL ARRAYS
-         ACID(I)   = AAID(J)
-         ALAT(I)   = SARRAY(J,1)
-         ALON(I)   = SARRAY(J,2)
-         AALT(I)   = SARRAY(J,3)
-         TIME(I)   = SARRAY(J,4)
-         ATMP(I)   = SARRAY(J,5)
-         ADIR(I)   = SARRAY(J,6)
-         ASPD(I)   = SARRAY(J,7)
-         INTP(I)   = NINT(SARRAY(J,8))
-         IRTM(I)   = NINT(SARRAY(J,9))
-         KNTINI(I) = NINT(SARRAY(J,10))
-         ITEVNT(I) = NINT(SARRAY(J,11))
-         IWEVNT(I) = NINT(SARRAY(J,12))
-         AALTF(I) = SARRAY(J,13)
-         ADIRF(I) = SARRAY(J,14)
-         ASPDF(I) = SARRAY(J,15)
-         ATMPF(I) = SARRAY(J,16)
-         TAG(I)  = STAG(J)
-      ENDDO
-      RETURN
-      END
-C$$$  SUBPROGRAM DOCUMENTATION BLOCK
-C                .      .    .                                       .
-C SUBPROGRAM:    PRELIM      SUPERVISES QUALITY CONTROL
-C   PRGMMR: D. A. KEYSER     ORG: NP22       DATE: 2002-11-20
-C
-C ABSTRACT: DOES BASIC SCREENING OF OBS.  CALCULATES STATISTICAL
-C   QUANTITIES AND BRANCHES DEPENDING UPON HOW MANY OBS ARE CO-
-C   LOCATED (STACKED).  USES STATISTICS TO CHECK ON MUTUAL AGREEMENT
-C   OR DISAGREEMENT WITHIN OBSERVATION STACKS.
-C
-C PROGRAM HISTORY LOG:
-C 1993-01-05  P. JULIAN -- THIS IS A NEW SUBPROGRAM-ALL CODE WAS
-C             PREVIOUSLY A PART OF SUBPROGRAM SUPROB (WHICH NOW
-C             STANDS ALONE); THIS SUBPROGRAM IS CALLED REGARDLESS
-C             OF LOGICAL DOSPOB
-C 1994-08-25  D. A. KEYSER -- STREAMLINED CODE, EXPANDED COMMENTS AND
-C             DOCBLOCKS, REVISED TO MAKE MACHINE INDEPENDENT
-C 2002-11-20  D. A. KEYSER -- SINCE HAVE REMOVED THE RELATIONSHIP
-C             BETWEEN AN SDM KEEP ON WIND VS. A KEEP ON TEMP (THEY ARE
-C             INDENDENDENT OF EACH OTHER), NOW TESTS BOTH BYTE 2 AND 4
-C             OF TAG FOR "H" RATHER THAN JUST BYTE 1 OF TAG (WHICH NOW
-C             CAN NEVER HAVE AN "H")
-C
-C USAGE:    CALL PRELIM(NUM,INDX,LOALT,KNUM,STCLIM)
-C   INPUT ARGUMENT LIST:
-C     NUM      - NUMBER OF OBSERVATIONS
-C     INDX     - POINTER TO POSITION IN ORIGINAL AIRCRAFT ARRAY
-C     LOALT    - NUMBER OF OBSERVATIONS AT LOW ALTITUDE
-C     STCLIM   - VECTOR WIND INCREMENT THRESHOLD FOR SDM PRINT (UNIT 53)
-C
-C   OUTPUT ARGUMENT LIST:
-C     KNUM      - NUMBER OF GOOD WIND OBSERVATIONS
-C
-C   OUTPUT FILES:
-C     UNIT 06  - PRINTOUT
-C     UNIT 53  - TEXT FILE FOR SDM PERUSAL (LIST OF STACKED REPORTS
-C              - WITH AVERAGE VECTOR WIND INCREMENT .GT. NAMELIST
-C              - VARIABLE 'STCLIM', ALSO LIST OF STACKED REPORTS WITH
-C              - AT LEAST ONE REPORT CONTAINING SDM KEEP FLAG ON WIND
-C              - AND/OR TEMP)
-C
-C REMARKS: CALLED BY MAIN PROGRAM.
-C
-C ATTRIBUTES:
-C   LANGUAGE: FORTRAN 90
-C   MACHINE:  IBM-SP
-C
-C$$$
-      SUBROUTINE PRELIM(NUM,INDX,LOALT,KNUM,STCLIM)
-      PARAMETER (IRMX= 80000, ISMX= 8000)
-      LOGICAL  EWRITE
-      CHARACTER*1  CTG,CLON,C1,CH1(9)
-      CHARACTER*8  ACID,SAID
-      CHARACTER*14  TAG
-      INTEGER  ICH1(9)
-      REAL  SCALE(ISMX)
-      COMMON/STWRIT/SWRITE,EWRITE,IWRITE
-      COMMON/SUMDAT/ISTCPT(ISMX),SAID(ISMX),SLAT(ISMX),SLON(ISMX),
-     $ SHGT(ISMX),STIM(ISMX),SSPD(ISMX),SDIR(ISMX),STMP(ISMX),
-     $ KBAD(ISMX),NUMORG,SSPDF(ISMX),SDIRF(ISMX),STMPF(ISMX),SHGTF(ISMX)
-      COMMON/ALLDAT/IFLEPT(IRMX),ACID(IRMX),ALAT(IRMX),ALON(IRMX),
-     $ AALT(IRMX),TIME(IRMX),ASPD(IRMX),ADIR(IRMX),TBASE,
-     $ ATMP(IRMX),TAG(IRMX),IRTM(IRMX),INTP(IRMX),KNTINI(IRMX),
-     $ ITEVNT(IRMX),IWEVNT(IRMX),ATMPF(IRMX),AALTF(IRMX),ASPDF(IRMX),
-     $ ADIRF(IRMX)
-      DATA  XMSG/99999./
-      DATA CH1  /'Q','R','S','T','U','V','W','X','Y'/
-      DATA ICH1 / 5, 15, 25, 35, 45, 55, 65, 75, 85 /
-      KNUM = 0
-      NUMORG = NUM
-C NUMH IS THE NUMBER OF OBSERVATIONS AT MID- AND HIGH ALTITUDES
-      NUMH = NUM - LOALT
-      PRINT 6001, NUM,INDX,ALAT(INDX)+SIGN(.0005,ALAT(INDX)),
-     $ ALON(INDX)+SIGN(.0005,ALON(INDX)),NUMH,LOALT
- 6001 FORMAT(' ******* IN PRELIM FOR A STACK ======>  NUM =',I6,
-     $ ', INDX =',I6,' AT LAT',F7.1,', LON',F7.1,', NUMH=',I3,
-     $ ', LOALT=',I3,'  <==========')
-      IF(NUMH.LT.2)  GO TO 1369
-C IF 2 OR MORE HI-ALT. OBS, CALL SHEAR TO CALC. ON- & OFF-LVL DIFFS
-      CALL SHEAR(NUM,INDX)
-C UPDATE STAC ARRAY INDICATORS AND QUALITY INDICATORS
-      DO I = 1,NUM
-         JNDX = INDX + I - 1
-         IF(TAG(JNDX)(4:4).EQ.'F')  ISTCPT(I) = 0
-         IF(ISTCPT(I).GT.0)  KNUM = KNUM + 1
-         IF(ISTCPT(I).EQ.0.OR.KBAD(I).EQ.0)  THEN
-            ISTCPT(I) = 0
-            IFLEPT(JNDX) = 0
-            IF(TAG(JNDX)(14:14).GT.'3')  THEN
-               IF(EWRITE)  PRINT 9036, JNDX,ACID(JNDX),ALAT(JNDX),
-     $          ALON(JNDX),TIME(JNDX),TAG(JNDX)
- 9036 FORMAT(/' #EVENT 321: PRELIM; WND FAILED SHEAR CHK, WND Q.M. "F"',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-               TAG(JNDX)(4:4) = 'F'
-               TAG(JNDX)(14:14) = '3'
-               IWEVNT(JNDX) = 321
-            END IF
-            KBAD(I) = I
-         END IF
-      ENDDO
-C IF 3 OR MORE HI-ALT. OBS, CALL LAPSE TO FIND BAD TEMPS, MAKE DECISIONS
-      IF(NUMH.GT.2)  CALL LAPSE(NUM,INDX)
- 1369 CONTINUE
-C UPDATE STAC ARRAY INDICATORS AND QUALITY INDICATORS
-C FROM HERE ON SUPEROB QUANTITIES ARE DETERMINED BY GOOD WINDS ONLY -
-C  ANY GOOD TEMPS WITH BAD WIND REPORTS ARE IGNORED (C'EST LA VI)
-      QSUM  = 0.0
-      IQNUM = 0
-      SCALE = XMSG
-      IFLAG = 0
-      DO I = 1,NUM
-         JNDX = INDX + I - 1
-         IF(ISTCPT(I).EQ.0.OR.KBAD(I).EQ.0)  THEN
-            IF(TAG(JNDX)(13:13).GT.'3')  THEN
-               IF(KBAD(I).EQ.0)  THEN
-                  IF(EWRITE)  PRINT 9037, JNDX,ACID(JNDX),ALAT(JNDX),
-     $             ALON(JNDX),TIME(JNDX),TAG(JNDX)
- 9037 FORMAT(/' #EVENT 322: PRELIM; TMP FAILED LAPSE CHK, TMP Q.M. "F"',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-                  ITEVNT(JNDX) = 322
-               ELSE
-                  IF(EWRITE)  PRINT 9028, JNDX,ACID(JNDX),ALAT(JNDX),
-     $             ALON(JNDX),TIME(JNDX),TAG(JNDX)
- 9028 FORMAT(/' #EVENT 319: PRELIM; WIND IS BAD, TEMP Q.M. SET TO "F".',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-                  ITEVNT(JNDX) = 319
-               END IF
-               TAG(JNDX)(2:2) = 'F'
-               TAG(JNDX)(13:13) = '3'
-            END IF
-            KBAD(I) = I
-         END IF
-C AMONGST THOSE OBS. WITH A SCALED VECTOR INCREMENT, SCALE IS BASED ON
-C  VALUE OF SCALED INCREMENT CHARACTER Q-Z
-         IF(TAG(JNDX)(5:5).GE.'Q'.AND.TAG(JNDX)(5:5).LE.'Z'.AND.
-     $    ISTCPT(I).GT.0)  THEN
-C WE WANT ONLY GOOD HIGH-ALTITUDE OBSERVED VECTOR INCREMENTS HERE
-            CTG = TAG(JNDX)(5:5)
-            SCALE(I) = 95.0
-            DO II=1,9
-               IF(CTG.EQ.CH1(II)) THEN
-                  SCALE(I) = ICH1(II)
-                  EXIT
-               END IF
-            ENDDO
-            IQNUM = IQNUM + 1
-            QSUM = QSUM + SCALE(I)
-         END IF
-C IF ANY OBS. IN STACK HAS A KEEP FLAG (SDM) ON WIND AND/OR TEMP
-C  WILL ALWAYS FORCE THIS STACK TO GO TO SDMSTAC D-SET FOR SDM PERUSAL
-C  AND POSSIBLE DELETING OF THE STACK, REGARDLESS OF QSUM VALUE
-ccccc    IF(TAG(JNDX)(1:1).EQ.'H')  IFLAG = 1
-         IF(TAG(JNDX)(4:4).EQ.'H'.OR.TAG(JNDX)(2:2).EQ.'H') IFLAG = 1
-CCCCC    CTEMP = ATMP(JNDX)
-CCCCC    IF(ATMP(JNDX).LT.XMSG)  CTEMP = ATMP(JNDX)/10.
-CCCCC PRINT 6003, I,ACID(JNDX),ADIR(JNDX),ASPD(JNDX),AALT(JNDX),
-CCCCC$ CTEMP+SIGN(.0005,CTEMP),TIME(JNDX),KBAD(I),ISTCPT(I),TAG(JNDX),
-CCCCC$ SCALE(I),IQNUM
-C6003    FORMAT(' ',I3,1X,A8,F6.0,F6.1,1X,F7.0,F6.1,2X,F5.0,2I4,2X,'"',
-CCCCC$    A14,'"',F4.1,1X,I3)
-      ENDDO
-      IF(IQNUM.NE.0)  THEN
-         QSUM = QSUM/IQNUM
-      ELSE
-         QSUM = 0.0
-      END IF
-      PRINT 111, INDX,KNUM,IQNUM,QSUM
-  111 FORMAT(' FROM PRELIM, INDX,KNUM,IQNUM,QSUM ',3I5,F7.1)
-      IF(QSUM.GT.STCLIM.OR.IFLAG.EQ.1)  THEN
-C IF VECTOR WIND INCREMENT THRESHOLD EXEEDED, OR IF AT LEAST ONE REPORT
-C  IN STACK CONTAINS SDM KEEP FLAG ON WIND AND/OR TEMP, SEND PRINT TO
-C  SDM IN UNIT 53
-         DO I = 1,NUM
-            JNDX = INDX + I - 1
-            QTEMP = 99999.
-            IF(ATMP(JNDX).LT.99999.)  QTEMP = ATMP(JNDX) * 0.1
-            QLON = ALON(JNDX)
-            QTIME = MOD(TIME(JNDX),2400.)
-            CLON = 'W'
-            IF(NINT(QLON).GT.180)  THEN
-               QLON = 360. - QLON
-               CLON = 'E'
-            END IF
-            IF(AALT(JNDX).LE.11000.)  THEN
-               PRALT =
-     $          1013.25*(((288.15 - (.0065*AALT(JNDX)))/288.15)**5.256)
-            ELSE
-               PRALT = 226.3 * EXP(1.576106E-4 * (11000. - AALT(JNDX)))
-            END IF
-            C1 = '-'
-ccccccccccccIF(TAG(JNDX)(1:1).EQ.'H'.OR.TAG(JNDX)(1:1).EQ.'P')
-ccccc$       C1 = TAG(JNDX)(1:1)
-            IF(TAG(JNDX)(4:4).EQ.'H'.OR.TAG(JNDX)(2:2).EQ.'H' .OR.
-     $         TAG(JNDX)(4:4).EQ.'P'.OR.TAG(JNDX)(2:2).EQ.'P')
-     $       C1 = 'Y'
-            WRITE(53,26) ACID(JNDX),ALAT(JNDX),QLON,CLON,QTIME,PRALT,
-     $       QTEMP,ADIR(JNDX),ASPD(JNDX),SCALE(I),C1,TAG(JNDX)(4:4),
-     $       TAG(JNDX)(2:2)
-   26       FORMAT(' ',A8,2F8.2,A1,3F7.0,F6.0,F7.1,F7.0,3(4X,A1))
-         ENDDO
-         WRITE(53,27)
-   27    FORMAT(' ','-------------------')
-      END IF
-      RETURN
-      END
-C$$$  SUBPROGRAM DOCUMENTATION BLOCK
-C                .      .    .                                       .
-C SUBPROGRAM:    SUPROB       DOES SUPEROBING
-C   PRGMMR: D. A. KEYSER     ORG: NP22       DATE: 1996-01-26
-C
-C ABSTRACT: DOES BASIC SCREENING OF OBS.  CALCULATES STATISTICAL
-C   QUANTITIES AND BRANCHES DEPENDING UPON HOW MANY OBS ARE CO-
-C   LOCATED (STACKED).  USES STATISTICS TO CHECK ON MUTUAL AGREEMENT
-C   OR DISAGREEMENT WITHIN OBSERVATION STACKS.
-C
-C PROGRAM HISTORY LOG:
-C 1989-04-01  P. JULIAN (W/NMC00) -- ORIGINAL AUTHOR
-C 1990-03-29  P. JULIAN    -- MODIFIED TO HONOR SDM/QCAIRCFT PURGE FOR
-C             STACKED OBSERVATIONS (OBS. INCRMENT CHECK)
-C 1990-06-14  D. A. KEYSER -- CORRECTED TO HONOR ALL SDM/QCAIRCFT PURGES
-C             FOR STACKED OBS.; FIXED ERROR IN Q. MARK DESIGNATOR
-C 1990-07-03  D. A. KEYSER -- ALT. CORRESP. TO PRESS. OF 300 & 200 MB
-C             FOR REGRESS. CALC. OF SUPEROBS OFF SLIGHTLY, FIXED
-C 1990-09-18  D. A. KEYSER -- MINOR ERROR IN LOGIC CORRECTED, SOME ORIG.
-C             REPORTS WERE BEING GIVEN 'O' Q. MARK BY MISTAKE
-C 1993-01-05  P. JULIAN -- SUBPROGRAM PRELIM CREATED FROM THE FIRST
-C             PORTION OF THE OLD VERSION
-C 1994-08-25  D. A. KEYSER -- STREAMLINED CODE, EXPANDED COMMENTS AND
-C             DOCBLOCKS, REVISED TO MAKE MACHINE INDEPENDENT
-C 1995-03-27  D. A. KEYSER -- FOR INIDST=2, SUPEROBS NOW CONTAIN
-C             SUPEROBED FORECAST(GUESS) P-ALT, WIND DIR, WIND SPEED &
-C             TEMP (IF AVAILABLE FROM INDIV. RPTS MAKING UP SUPEROBS)
-C 1995-04-26  D. A. KEYSER -- CORRECTED PROBLEM IN SUPEROBING GUESS
-C             (OCCASIONALLY OCCURRED)
-C 1996-01-26  D. A. KEYSER -- CORRECTED DIVIDE-BY-ZERO POSSIBILITY IN
-C             THE CALCULATION OF MULTIPLE CORRELATIONS
-C
-C USAGE:    CALL SUPROB(NUM,INDX,LK,LOALT,KNUM)
-C   INPUT ARGUMENT LIST:
-C     NUM      - NUMBER OF OBSERVATIONS TO BE TREATED
-C     INDX     - POINTER TO POSITION IN ORIGINAL AIRCRAFT ARRAY
-C     LOALT    - NUMBER OF OBSERVATIONS AT LOW ALTITUDE
-C     KNUM     - NUMBER OF GOOD WIND OBS
-C
-C   OUTPUT ARGUMENT LIST:
-C     LK       - POINTER INDICATING ' NUM + NO. OF SUPEROBS FORMED '
-C
-C   OUTPUT FILES:
-C     UNIT 06  - PRINTOUT
-C
-C REMARKS: CALLED BY MAIN PROGRAM.
-C
-C ATTRIBUTES:
-C   LANGUAGE: FORTRAN 90
-C   MACHINE:  IBM-SP
-C
-C$$$
-      SUBROUTINE SUPROB(NUM,INDX,LK,LOALT,KNUM)
-      PARAMETER (IRMX= 80000, ISMX= 8000)
-      DIMENSION  UOB(5),VOB(5),SALT(3),ALTNRM(5),QSPD(5),QDIR(5),TOB(5),
-     $ UOBF(5),VOBF(5),ALTNRF(5),QSPDF(5),QDIRF(5),TOBF(5),KFLAG(ISMX)
-      LOGICAL  EWRITE
-      CHARACTER*8  ACID,SAID
-      CHARACTER*14  TAG
-      INTEGER  IARRAY(ISMX),INDR(ISMX)
-      COMMON/SUMDAT/ISTCPT(ISMX),SAID(ISMX),SLAT(ISMX),SLON(ISMX),
-     $ SHGT(ISMX),STIM(ISMX),SSPD(ISMX),SDIR(ISMX),STMP(ISMX),
-     $ KBAD(ISMX),NUMORG,SSPDF(ISMX),SDIRF(ISMX),STMPF(ISMX),SHGTF(ISMX)
-      COMMON/ALLDAT/IFLEPT(IRMX),ACID(IRMX),ALAT(IRMX),ALON(IRMX),
-     $ AALT(IRMX),TIME(IRMX),ASPD(IRMX),ADIR(IRMX),TBASE,
-     $ ATMP(IRMX),TAG(IRMX),IRTM(IRMX),INTP(IRMX),KNTINI(IRMX),
-     $ ITEVNT(IRMX),IWEVNT(IRMX),ATMPF(IRMX),AALTF(IRMX),ASPDF(IRMX),
-     $ ADIRF(IRMX)
-      COMMON/CMPNTS/U(ISMX),V(ISMX),UF(ISMX),VF(ISMX)
-      COMMON/STWRIT/SWRITE,EWRITE,IWRITE
-      COMMON/STUFF/SDALT,TBAR
-C FOLLOWING IS NUMBER OF OBS SEPARATING TREATMENT OF STACK
-      DATA  KNO/5/
-C FOLLOWING ARE STANDARD ALT PRESS LEVELS FOR ANALYSIS(M)
-      DATA  SALT/9160.,10360.,11780./,XMSG/99999./
-      NUMORG = NUM
-C NUMH IS THE NUMBER OF OBSERVATIONS AT MID- AND HIGH ALTITUDES
-      NUMH = NUM - LOALT
-      IF((NUMH.EQ.0.AND.NUM.GT.0).OR.NUMH.EQ.2)  THEN
-C FOR NUMH = 2  --  AVERAGE WHAT IS THERE
-         CALL AVEROB(NUM,INDX,LK)
-         RETURN
-      ELSE  IF(NUMH.LT.2)  THEN
-         LK = NUM
-         RETURN
-      END IF
-      IF(KNUM.GT.KNO)  THEN
-C***********************************************************************
-C              FIND SUPEROBS FOR NUMBER LEFT .GT. 5 ( = KNO )
-C***********************************************************************
-C START SUPEROBING
-         CRSDA = 400.
-         IF(NUMH.GE.10)  CRSDA = 300.
-         IF(SDALT.LT.CRSDA)  THEN
-C SUPEROB SINGLE LEVEL REPORTS, STND DEV OF ALTS NOT ENOUGH FOR INTERP
-            SUMU   = 0.0
-            SUMV   = 0.0
-            SUMS   = 0.0
-            SUMH   = 0.0
-            SUMTMP = 0.0
-            NTEMP  = 0
-            SUMUF  = 0.0
-            SUMVF  = 0.0
-            SUMSF  = 0.0
-            SUMHF  = 0.0
-            SUMTMF = 0.0
-            NTEMPF = 0
-            NWINDF = 0
-            NHGHTF = 0
-            NT     = 0
-            DO K = 1,NUM
-               KNDX = INDX + K - 1
-               IF(ISTCPT(K).GT.0)  THEN
-                  NT = NT + 1
-                  IF(TAG(KNDX)(2:2).NE.'F'.AND.ATMP(KNDX).LT.XMSG)  THEN
-                     NTEMP = NTEMP + 1
-                     SUMTMP = SUMTMP + ATMP(KNDX)
-                     IF(ATMPF(KNDX).LT.XMSG)  THEN
-                        NTEMPF = NTEMPF + 1
-                        SUMTMF = SUMTMF + ATMPF(KNDX)
-                     END IF
-                  END IF
-                  SUMU = SUMU + U(K)
-                  SUMV = SUMV + V(K)
-                  SUMS = SUMS + SSPD(K)
-                  SUMH = SUMH + SHGT(K)
-                  IF(AMAX1(UF(K),VF(K),SSPDF(K)).LT.XMSG)  THEN
-                     NWINDF = NWINDF + 1
-                     SUMUF = SUMUF + UF(K)
-                     SUMVF = SUMVF + VF(K)
-                     SUMSF = SUMSF + SSPDF(K)
-                  END IF
-                  IF(SHGTF(K).LT.XMSG)  THEN
-                     NHGHTF = NHGHTF + 1
-                     SUMHF = SUMHF + SHGTF(K)
-                  END IF
-                  IF(TAG(KNDX)(13:13).GT.'4')  THEN
-                     IF(EWRITE)  PRINT 9038, KNDX,ACID(KNDX),ALAT(KNDX),
-     $                ALON(KNDX),TIME(KNDX),TAG(KNDX)
- 9038 FORMAT(/' #EVENT 315: SUPROB; S-LVL TMP SUPEROBED, TEMP Q.M. "O"',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-                     TAG(KNDX)(2:2) = 'O'
-                     TAG(KNDX)(13:13) = '4'
-                     ITEVNT(KNDX) = 315
-                  END IF
-                  IF(TAG(KNDX)(14:14).GT.'4')  THEN
-                     IF(EWRITE)  PRINT 9039, KNDX,ACID(KNDX),ALAT(KNDX),
-     $                ALON(KNDX),TIME(KNDX),TAG(KNDX)
- 9039 FORMAT(/' #EVENT 315: SUPROB; S-LVL WND SUPEROBED, WIND Q.M. "O"',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-                     TAG(KNDX)(4:4) = 'O'
-                     TAG(KNDX)(14:14) = '4'
-                     IWEVNT(KNDX) = 315
-                  END IF
-               END IF
-            ENDDO
-            IF(NT.GE.2)  THEN
-               LK = NUM + 1
-               SUMH = SUMH/NT
-               SUMU = SUMU/NT
-               SUMV = SUMV/NT
-               SUMS = SUMS/NT
-               SSPD(LK) = SUMS
-               SHGT(LK) = SUMH
-               STMP(LK) = XMSG
-               IF(NTEMP.GT.0)  STMP(LK) = SUMTMP/NTEMP
-               SDIRF(K) = AVEDIR(SUMUF,SUMVF,SUMSF)
-               STIM(LK) = TBAR
-               SLAT(LK) = ALAT(INDX)
-               SLON(LK) = ALON(INDX)
-               SDIR(LK) = AVEDIR(SUMU,SUMV,SUMS)
-               SSPDF(K) = XMSG
-               SDIRF(K) = XMSG
-               IF(NWINDF.GT.0)  THEN
-                 SSPDF(K) = SUMSF/NWINDF
-                 SDIRF(K)=AVEDIR(SUMUF/NWINDF,SUMVF/NWINDF,SUMSF/NWINDF)
-               END IF
-               SHGTF(LK) = XMSG
-               IF(NHGHTF.GT.0)  SHGTF(LK) = SUMHF/NHGHTF
-               STMPF(LK) = XMSG
-               IF(NTEMPF.GT.0)  STMPF(LK) = SUMTMF/NTEMPF
-               ISTCPT(LK) = NT
-               CTEMP = STMP(LK)
-               IF(STMP(LK).LT.XMSG)  CTEMP = STMP(LK)/10.
-               CTMPF = STMPF(LK)
-               IF(STMPF(LK).LT.XMSG)  CTMPF = STMPF(LK)/10.
-      PRINT 6412, NINT(SDIR(LK)),SSPD(LK),CTEMP+SIGN(.0005,CTEMP),
-     $ NINT(SHGT(LK)),ISTCPT(LK),NT,NINT(SDIRF(LK)),SSPDF(LK),
-     $ CTMPF+SIGN(.0005,CTMPF),NINT(SHGTF(LK))
- 6412 FORMAT(' SNG LVL: DIR/SPD=',I3,'/',F5.1,', TMP=',F6.1,', ALT=',I5,
-     $ ', ISTCPT=',I4,', # USED=',I3,', GES: DIR/SPD=',I5,'/',F7.1,
-     $ ', TMP=',F6.1,', ALT=',I5)
-            ELSE
-               RETURN
-            END IF
-         ELSE
-C NOT SINGLE LEVEL, USE 2-D INTERP (TIME AND ALTITUDE)
-            SUMU   = 0.0
-            SUMV   = 0.0
-            SUMT   = 0.0
-            SUMA   = 0.0
-            SUMS   = 0.0
-            SSQU   = 0.0
-            SSQV   = 0.0
-            SSQT   = 0.0
-            SSQA   = 0.0
-            SSQS   = 0.0
-            CSPAU  = 0.0
-            CSPAV  = 0.0
-            CSPTU  = 0.0
-            CSPTV  = 0.0
-            CSPAS  = 0.0
-            CSPAT  = 0.0
-            CSPTS  = 0.0
-            CSPATM = 0.0
-            CSPTTM = 0.0
-            SUMUF  = 0.0
-            SUMVF  = 0.0
-            SUMTF  = 0.0
-            SUMAF  = 0.0
-            SSQUF  = 0.0
-            SSQVF  = 0.0
-            SSQTF  = 0.0
-            SSQAF  = 0.0
-            CSPAUF = 0.0
-            CSPAVF = 0.0
-            CSPTUF = 0.0
-            CSPTVF = 0.0
-            CFPATM = 0.0
-            CFPTTM = 0.0
-C LOOP THRU ALL REPORTS CACLULATING REGRESSION INFO-WIND
-            NWIND  = 0
-            NWINDF = 0
-            DO I = 1,NUM
-               JNDX = INDX + I - 1
-               IF(IFLEPT(JNDX).GT.0)  THEN
-                  NWIND = NWIND + 1
-                  SUMU  = SUMU + U(I)
-                  SUMV  = SUMV + V(I)
-                  SUMS  = SUMS + ASPD(JNDX)
-                  SUMT  = SUMT + TIME(JNDX)
-                  SUMA  = SUMA + AALT(JNDX)
-                  SSQU  = SSQU + (U(I) * U(I))
-                  SSQV  = SSQV + (V(I) * V(I))
-                  SSQS  = SSQS + (ASPD(JNDX) * ASPD(JNDX))
-                  SSQT  = SSQT + (TIME(JNDX) * TIME(JNDX))
-                  SSQA  = SSQA + (AALT(JNDX) * AALT(JNDX))
-                  CSPAU = CSPAU + (U(I) * AALT(JNDX))
-                  CSPAV = CSPAV + (V(I) * AALT(JNDX))
-                  CSPTU = CSPTU + (U(I) * TIME(JNDX))
-                  CSPTV = CSPTV + (V(I) * TIME(JNDX))
-                  CSPAS = CSPAS + (ASPD(JNDX) * AALT(JNDX))
-                  CSPTS = CSPTS + (ASPD(JNDX) * TIME(JNDX))
-                  CSPAT = CSPAT + (TIME(JNDX) * AALT(JNDX))
-                  IF(AMAX1(UF(I),VF(I),ASPDF(JNDX)).LT.XMSG)  THEN
-                     NWINDF = NWINDF + 1
-                     SUMUF  = SUMUF  + UF(I)
-                     SUMVF  = SUMVF  + VF(I)
-                     SUMTF  = SUMTF  + TIME(JNDX)
-                     SUMAF  = SUMAF  + AALT(JNDX)
-                     SSQUF  = SSQUF  + (UF(I) * UF(I))
-                     SSQVF  = SSQVF  + (VF(I) * VF(I))
-                     SSQTF  = SSQTF  + (TIME(JNDX) * TIME(JNDX))
-                     SSQAF  = SSQAF  + (AALT(JNDX) * AALT(JNDX))
-                     CSPAUF = CSPAUF + (UF(I) * AALT(JNDX))
-                     CSPAVF = CSPAVF + (VF(I) * AALT(JNDX))
-                     CSPTUF = CSPTUF + (UF(I) * TIME(JNDX))
-                     CSPTVF = CSPTVF + (VF(I) * TIME(JNDX))
-                  END IF
-               END IF
-            ENDDO
-            RNDF = 1./NWIND
-            RFNO = 1./NWIND
-            IF(NWIND.GT.3)  RNDF = 1./(NWIND - 1)
-            UBAR = SUMU * RFNO
-            VBAR = SUMV * RFNO
-            TBAR = SUMT * RFNO
-            ABAR = SUMA * RFNO
-            SBAR = SUMS * RFNO
-            QQQ = (SSQU - (UBAR * UBAR * NWIND)) * RNDF
-            IF(QQQ.LE.0.0)  QQQ = .0001
-            SDU = SQRT(QQQ)
-            QQQ = (SSQV - (VBAR * VBAR * NWIND)) * RNDF
-            IF(QQQ.LE.0.0)  QQQ = .0001
-            SDV = SQRT(QQQ)
-            QQQ = (SSQT - (TBAR * TBAR * NWIND)) * RNDF
-            IF(QQQ.LE.0.0)  QQQ = .0001
-            SDT = SQRT(QQQ)
-            QQQ  = (SSQA - (ABAR * ABAR * NWIND)) * RNDF
-            IF(QQQ.LE.0.0)  QQQ = .0001
-            SDALT = SQRT(QQQ)
-            QQQ = (SSQS - (SBAR * SBAR * NWIND)) * RNDF
-            IF(QQQ.LE.0.0)  QQQ = .0001
-            SDS = SQRT(QQQ)
-            RUA = ((CSPAU - (UBAR * ABAR * NWIND)) * RNDF)/(SDU *SDALT)
-            RVA = ((CSPAV - (VBAR * ABAR * NWIND)) * RNDF)/(SDV *SDALT)
-            RUT = ((CSPTU - (UBAR * TBAR * NWIND)) * RNDF)/(SDU * SDT)
-            RVT = ((CSPTV - (VBAR * TBAR * NWIND)) * RNDF)/(SDV * SDT)
-            RSA = ((CSPAS - (SBAR * ABAR * NWIND)) * RNDF)/(SDS *SDALT)
-            RST = ((CSPTS - (SBAR * TBAR * NWIND)) * RNDF)/(SDS * SDT)
-            RAT = ((CSPAT - (TBAR * ABAR * NWIND)) * RNDF)/(SDT *SDALT)
-            RNDFF = XMSG
-            ABARF = XMSG
-            UBARF = XMSG
-            VBARF = XMSG
-            TBARF = XMSG
-            IF(NWINDF.GT.0)  THEN
-               RNDFF = 1./NWINDF
-               RFNOF = 1./NWINDF
-               IF(NWINDF.GT.3)  RNDFF = 1./(NWINDF - 1)
-               UBARF = SUMUF * RFNOF
-               VBARF = SUMVF * RFNOF
-               TBARF = SUMTF * RFNOF
-               ABARF = SUMAF * RFNOF
-            END IF
-            SDUF   = XMSG
-            SDALTF = XMSG
-            RUAF   = XMSG
-            RUTF   = XMSG
-            RVAF   = XMSG
-            RVTF   = XMSG
-            IF(NWINDF.GT.1)  THEN
-               QQQF = (SSQUF - (UBARF * UBARF * NWINDF)) * RNDFF
-               IF(QQQF.LE.0.0)  QQQF = .0001
-               SDUF = SQRT(QQQF)
-               QQQF = (SSQVF - (VBARF * VBARF * NWINDF)) * RNDFF
-               IF(QQQF.LE.0.0)  QQQF = .0001
-               SDVF = SQRT(QQQF)
-               QQQF = (SSQTF - (TBARF * TBARF * NWINDF)) * RNDFF
-               IF(QQQF.LE.0.0)  QQQF = .0001
-               SDTF = SQRT(QQQF)
-               QQQF = (SSQAF - (ABARF * ABARF * NWINDF)) * RNDFF
-               IF(QQQF.LE.0.0)  QQQF = .0001
-               SDALTF = SQRT(QQQF)
-               RUAF =((CSPAUF-(UBARF*ABARF*NWINDF))*RNDFF)/(SDUF*SDALTF)
-               RVAF =((CSPAVF-(VBARF*ABARF*NWINDF))*RNDFF)/(SDVF*SDALTF)
-               RUTF =((CSPTUF-(UBARF*TBARF*NWINDF))*RNDFF)/(SDUF*SDTF)
-               RVTF =((CSPTVF-(VBARF*TBARF*NWINDF))*RNDFF)/(SDVF*SDTF)
-            END IF
-C LOOP THRU ALL REPORTS CACLULATING REGRESSION INFO FOR TEMPERATURES
-            SUMTT  = 0.0
-            SUMAT  = 0.0
-            SUMTMP = 0.0
-            SSQTT  = 0.0
-            SSQAT  = 0.0
-            SSQTMP = 0.0
-            CSPATM = 0.0
-            CSPTTM = 0.0
-            NTEMP  = 0
-            SUMTTF = 0.0
-            SUMATF = 0.0
-            SUMTMF = 0.0
-            SSQTTF = 0.0
-            SSQATF = 0.0
-            SSQTMF = 0.0
-            CFPATM = 0.0
-            CFPTTM = 0.0
-            NTEMPF = 0
-            DO JNDX = INDX,INDX+NUM-1
-               IF(TAG(JNDX)(2:2).NE.'F'.AND.ATMP(JNDX).LT.XMSG)  THEN
-                  NTEMP  = NTEMP  + 1
-                  SUMTT  = SUMTT  + TIME(JNDX)
-                  SUMAT  = SUMAT  + AALT(JNDX)
-                  SUMTMP = SUMTMP + ATMP(JNDX)
-                  SSQTT  = SSQTT  + (TIME(JNDX) * TIME(JNDX))
-                  SSQAT  = SSQAT  + (AALT(JNDX) * AALT(JNDX))
-                  SSQTMP = SSQTMP + (ATMP(JNDX) * ATMP(JNDX))
-                  CSPATM = CSPATM + (ATMP(JNDX) * AALT(JNDX))
-                  CSPTTM = CSPTTM + (ATMP(JNDX) * TIME(JNDX))
-                  IF(ATMPF(JNDX).LT.XMSG)  THEN
-                     NTEMPF  = NTEMPF + 1
-                     SUMTTF  = SUMTTF + TIME(JNDX)
-                     SUMATF  = SUMATF + AALT(JNDX)
-                     SUMTMF  = SUMTMF + ATMPF(JNDX)
-                     SSQTTF  = SSQTTF + (TIME(JNDX)  * TIME(JNDX))
-                     SSQATF  = SSQATF + (AALT(JNDX) * AALT(JNDX))
-                     SSQTMF  = SSQTMF + (ATMPF(JNDX) * ATMPF(JNDX))
-                     CFPATM  = CFPATM + (ATMPF(JNDX) * AALT(JNDX))
-                     CFPTTM  = CFPTTM + (ATMPF(JNDX) * TIME(JNDX))
-                  END IF
-               END IF
-            ENDDO
-            TTBAR = XMSG
-            ATBAR = XMSG
-            TMPBAR = XMSG
-            IF(NTEMP.GT.0)  THEN
-CVVVVV FIX BY DAK 3/14/95 (ADDED NEXT LINE)
-               RNDF = 1./NTEMP
-CAAAAA FIX BY DAK 3/14/95
-               RFNO = 1./NTEMP
-               IF(NTEMP.GT.3)  RNDF = 1./(NTEMP - 1)
-               TMPBAR = SUMTMP * RFNO
-               TTBAR  = SUMTT  * RFNO
-               ATBAR  = SUMAT  * RFNO
-            END IF
-            QQQ = 0.0
-            RTTT  = XMSG
-            RTMA  = XMSG
-            SDTMP = XMSG
-            IF(NTEMP.GT.1)  THEN
-               QQQ = (SSQTMP - (TMPBAR * TMPBAR * NTEMP)) * RNDF
-               IF(QQQ.LE.0.0)  QQQ = .0001
-               SDTMP = SQRT(QQQ)
-               QQQ = (SSQTT - (TTBAR * TTBAR * NTEMP)) * RNDF
-               IF(QQQ.LE.0.0)  QQQ = .0001
-               SDTT = SQRT(QQQ)
-               QQQ = (SSQAT - (ATBAR * ATBAR * NTEMP)) * RNDF
-               IF(QQQ.LE.0.0)  QQQ = .0001
-               SDAT = SQRT(QQQ)
-CCCCC          PRINT 6346, TMPBAR,TTBAR,SDTMP,SDTT,ATBAR,SDAT
-C6346          FORMAT(' STATS ',6F12.3)
-               RTTT = ((CSPTTM-(TMPBAR*TTBAR*NTEMP))*RNDF)/(SDTMP*SDTT)
-               RTMA = ((CSPATM-(TMPBAR*ATBAR*NTEMP))*RNDF)/(SDTMP*SDAT)
-               PRINT 6017, RTTT,RTMA,NTEMP
- 6017          FORMAT(' CORR COEFFS  TEMP-TIME,TEMP-ALT ',
-     $          2F7.2,' WITH NTEMP=',I3)
-            END IF
-            TTBARF = XMSG
-            ATBARF = XMSG
-            TMFBAR = XMSG
-            IF(NTEMPF.GT.0)  THEN
-               RNDFF = 1./NTEMPF
-               RFNOF = 1./NTEMPF
-               IF(NTEMPF.GT.3)  RNDFF = 1./(NTEMPF - 1)
-               TMFBAR = SUMTMF * RFNOF
-               TTBARF = SUMTTF * RFNOF
-               ATBARF = SUMATF * RFNOF
-            END IF
-            QQQF = 0.0
-            RTTTF  = XMSG
-            RTMAF  = XMSG
-            SDTMPF = XMSG
-            IF(NTEMPF.GT.1)  THEN
-               QQQF = (SSQTMF - (TMFBAR * TMFBAR * NTEMPF)) * RNDFF
-               IF(QQQF.LE.0.0)  QQQF = .0001
-               SDTMPF = SQRT(QQQF)
-               QQQF = (SSQTTF - (TTBARF * TTBARF * NTEMPF)) * RNDFF
-               IF(QQQF.LE.0.0)  QQQF = .0001
-               SDTTF = SQRT(QQQF)
-               QQQF = (SSQATF - (ATBARF * ATBARF * NTEMPF)) * RNDFF
-               IF(QQQF.LE.0.0)  QQQF = .0001
-               SDATF = SQRT(QQQF)
-CCCCC          PRINT 7346, TMFBAR,TTBARF,SDTMPF,SDTTF,ATBARF,SDATF
-C7346          FORMAT(' GESS STATS ',6F12.3)
-            RTTTF=((CFPTTM-(TMFBAR*TTBARF*NTEMPF))*RNDFF)/(SDTMPF*SDTTF)
-            RTMAF=((CFPATM-(TMFBAR*ATBARF*NTEMPF))*RNDFF)/(SDTMPF*SDATF)
-               PRINT 7017, RTTTF,RTMAF,NTEMPF
- 7017          FORMAT(' GESS CORR COEFFS  TEMP-TIME,TEMP-ALT ',
-     $          2F7.2,' WITH NTEMPF=',I3)
-            END IF
-C CALCULATE MULTIPLE CORRELATIONS
-            DEN = 1. - (RAT * RAT)
-            IF(DEN.EQ.0.)  DEN = 0.0001
-            RUMULT = ((RUA*RUA+RUT*RUT-2.*RUA*RUT*RAT)/DEN)
-            IF(RUMULT.LE.0.0)  RUMULT = .0001
-            RUMULT = SQRT(RUMULT)
-            RVMULT = ((RVA*RVA+RVT*RVT-2.*RVA*RVT*RAT)/DEN)
-            IF(RVMULT.LE.0.0)  RVMULT = .0001
-            RVMULT = SQRT(RVMULT)
-            PRINT 6016, RUA,RUT,RVA,RVT,RSA,RST,NWIND
- 6016       FORMAT(' CORR COEFFS  RUA,RUT,RVA,RVT,RSPDA,RSPDT ',
-     $       3(2F7.2,4X),'WITH NWIND=',I3)
-            PRINT 6416, RUMULT,RVMULT,RAT
- 6416 FORMAT(' MULT CORR COEFFS, U-COMP, V-COMP ',2F9.2,';ALT,TIME ',
-     $ 'CORR= ',F9.2)
-            KOUNT = 0
-C CHECK ON NUMBER LEFT
-            IF(NWIND.GT.KNO)  THEN
-C CHECK ON TIME DEVIATION
-               TIMCHK = ABS(TBASE-TBAR)/SDT
-               IF(TIMCHK.LE.2.8)  THEN
-C FIND MAX & MIN WIND SPEED
-                  IARRAY(1:NUM) = NINT(SSPD(1:NUM)*100.)
-                  IF(NUM.GT.0)  CALL INDEXF(NUM,IARRAY,INDR)
-                  TIMCHK = (TBASE-TBAR)/SDT
-                  SPDMAX = SSPD(INDR(NUM))
-                  SPDMIN = SSPD(INDR(1))
-C FIND MAX & MIN TEMPERATURE
-                  IARRAY(1:NUM) = NINT(STMP(1:NUM)*100.)
-                  IF(NUM.GT.0)  CALL INDEXF(NUM,IARRAY,INDR)
-                  TMPMAX = STMP(INDR(NUM))
-                  IF(TMPMAX.GE.XMSG)  TMPMAX = STMP(INDR(NUM-1))
-                  TMPMIN = STMP(INDR(1))
-C TRY TO INTERPOLATE TO THREE STANDARD LEVELS
-                  DO JA = 1,3
-                     UOB(JA)  = XMSG
-                     VOB(JA)  = XMSG
-                     QSPD(JA) = XMSG
-                     QDIR(JA) = XMSG
-                     TOB(JA)  = XMSG
-                     ALTNRM(JA) = (SALT(JA) - ABAR)/SDALT
-                     UOBF(JA)   = XMSG
-                     VOBF(JA)   = XMSG
-                     QSPDF(JA)  = XMSG
-                     QDIRF(JA)  = XMSG
-                     TOBF(JA)   = XMSG
-                     ALTNRF(JA) = XMSG
-                     IF(NWINDF.GT.1) ALTNRF(JA) =(SALT(JA)-ABARF)/SDALTF
-C THE FOLLOWING VALUES OF VARIABLE QQQ ARE SELECTABLE CONSTANTS
-C  SPECIFYING THE ALLOWABLE SPREAD IN ALT; THEY ARE FUNCTIONS OF
-C  THE MULT CORRELATIONS (WIND COMPS WITH TIME AND ALTITIUDE)
-                     IF(RUMULT.GT.0.85.OR.RVMULT.GT.0.85)  THEN
-                        QQQ = 1.8
-                     ELSE  IF(RUMULT.GT.0.70.OR.RVMULT.GT.0.70) THEN
-                        QQQ = 1.6
-                     ELSE
-                        QQQ = 1.2
-                     END IF
-C IF ALT DEVIATION TOO GREAT, SKIP LEVEL
-                     IF(ABS(ALTNRM(JA)).LE.QQQ)  THEN
-C TRY IT
-      UOB(JA) = (RUT * SDU * TIMCHK) + (RUA * SDU * ALTNRM(JA)) + UBAR
-C KEYSER: ASK PAUL: ANY CHANCE BELOW SHOULD BE 'SDV' INSTEAD OF 'SDU'
-      VOB(JA) = (RVT * SDU * TIMCHK) + (RVA * SDU * ALTNRM(JA)) + VBAR
-                        QSPD(JA) = SQRT(UOB(JA)**2 + VOB(JA)**2)
-                        QDIR(JA) = AVEDIR(UOB(JA),VOB(JA),QSPD(JA))
-                        IF(NTEMP.GT.1)  TOB(JA) = (RTTT * SDTMP *
-     $                   TIMCHK) + (RTMA * SDTMP * ALTNRM(JA)) + TMPBAR
-                        IF(NWINDF.GT.1)  THEN
-      UOBF(JA)=(RUTF * SDUF * TIMCHK)+(RUAF * SDUF * ALTNRF(JA))+UBARF
-C KEYSER: ASK PAUL: ANY CHANCE BELOW SHOULD BE 'SDVF' INSTEAD OF 'SDUF'
-      VOBF(JA)=(RVTF * SDUF * TIMCHK)+(RVAF * SDUF * ALTNRF(JA))+VBARF
-                           QSPDF(JA) = SQRT(UOBF(JA)**2 + VOBF(JA)**2)
-                           QDIRF(JA)=AVEDIR(UOBF(JA),VOBF(JA),QSPDF(JA))
-                        END IF
-                        IF(NTEMPF.GT.1)  TOBF(JA) = (RTTTF * SDTMPF *
-     $                 TIMCHK) + (RTMAF * SDTMPF * ALTNRF(JA)) + TMFBAR
-C ADJUSTABLE  LIMITS  TUNING OPTION
-                        QMAX = SPDMAX * 1.09
-                        QMIN = SPDMIN * 0.91
-C IF ESTIMATED WIND OUTSIDE LIMITS, SKIP IT (W.R.T. REGRESSION)
-                        IF(QSPD(JA).LE.QMAX.AND.QSPD(JA).GE.QMIN)  THEN
-C OTHERWISE, GO ON
-                           KOUNT = KOUNT + 1
-                           LK = KOUNT + NUM
-                           SDIR(LK) = QDIR(JA)
-                           SSPD(LK) = QSPD(JA)
-                           SLAT(LK) = ALAT(INDX)
-                           SLON(LK) = ALON(INDX)
-                           SHGT(LK) = SALT(JA)
-                           STIM(LK) = TBASE
-                           SDIRF(LK) = QDIRF(JA)
-                           SSPDF(LK) = QSPDF(JA)
-                           SHGTF(LK) = XMSG
-                           IF(NWINDF.GT.1)  SHGTF(LK) = SALT(JA)
-                           QMAX = TMPMAX * 0.91
-                           QMIN = TMPMIN * 1.05
-                           STMP(LK) = XMSG
-                           STMPF(LK) = XMSG
-                           IF(TOB(JA).LE.QMAX.AND.TOB(JA).GE.QMIN)  THEN
-                              STMP(LK) = TOB(JA)
-                              STMPF(LK) = TOBF(JA)
-                           END IF
-                           ISTCPT(LK) = LK
-                        END IF
-                     END IF
-                     CTEMP = TOB(JA)
-                     IF(TOB(JA).LT.XMSG)  CTEMP = TOB(JA)/10.
-                     CTMPF = TOBF(JA)
-                     IF(TOBF(JA).LT.XMSG)  CTMPF = TOBF(JA)/10.
-      PRINT 6712, NINT(SALT(JA)),NINT(QDIR(JA)),QSPD(JA),ALTNRM(JA),
-     $ TIMCHK,KOUNT,CTEMP+SIGN(.0005,CTEMP),NINT(QDIRF(JA)),QSPDF(JA),
-     $ CTMPF+SIGN(.0005,CTMPF)
- 6712 FORMAT('  FOR ALT=',I5,',DIR/SPD=',I5,'/',F7.1,',NORM ALT=',F4.1,
-     $ ',NORM TIME=',F4.1,',KOUNT=',I3,',TMP=',F7.1,',GES: DIR/SPD=',I5,
-     $ '/',F7.1,',TMP=',F7.1)
-                  ENDDO
-               END IF
-            END IF
-C ALL INTERPS HAVE BEEN TRIED, RESULT IS KOUNT
-            IF(KOUNT.GT.0)  THEN
-               DO I = 1,NUM
-                  KNDX = INDX + I - 1
-                  IF(ISTCPT(I).GT.0)  THEN
-C Q.MARKS WILL BE SET TO 'O' --> OMIT
-                     IF(TAG(KNDX)(13:13).GT.'4')  THEN
-                        IF(EWRITE)  PRINT 9040, KNDX,ACID(KNDX),
-     $                   ALAT(KNDX),ALON(KNDX),TIME(KNDX),TAG(KNDX)
- 9040 FORMAT(/' #EVENT 315: SUPROB; M-LVL TMP SUPEROBED, TEMP Q.M. "O"',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-                        TAG(KNDX)(2:2) = 'O'
-                        TAG(KNDX)(13:13) = '4'
-                        ITEVNT(KNDX) = 315
-                     END IF
-                     IF(TAG(KNDX)(14:14).GT.'4')  THEN
-                        IF(EWRITE)  PRINT 9041, KNDX,ACID(KNDX),
-     $                   ALAT(KNDX),ALON(KNDX),TIME(KNDX),TAG(KNDX)
- 9041 FORMAT(/' #EVENT 315: SUPROB; M-LVL WND SUPEROBED, WIND Q.M. "O"',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-                        TAG(KNDX)(4:4) = 'O'
-                        TAG(KNDX)(14:14) = '4'
-                        IWEVNT(KNDX) = 315
-                     END IF
-                  ELSE  IF(ISTCPT(I).EQ.0)  THEN
-                     IF(TAG(KNDX)(13:13).GT.'3')  THEN
-                        IF(EWRITE)  PRINT 9042, KNDX,ACID(KNDX),
-     $                   ALAT(KNDX),ALON(KNDX),TIME(KNDX),TAG(KNDX)
- 9042 FORMAT(/' #EVENT 323: SUPROB; MUL-LVL TEMP BAD, TEMP Q.M. IS "F"',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-                        TAG(KNDX)(2:2) = 'F'
-                        TAG(KNDX)(13:13) = '3'
-                        ITEVNT(KNDX) = 323
-                     END IF
-                     IF(TAG(KNDX)(14:14).GT.'3')  THEN
-                        IF(EWRITE)  PRINT 8042, KNDX,ACID(KNDX),
-     $                   ALAT(KNDX),ALON(KNDX),TIME(KNDX),TAG(KNDX)
- 8042 FORMAT(/' #EVENT 323: SUPROB; MUL-LVL WIND BAD, WIND Q.M. IS "F"',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-                        TAG(KNDX)(4:4) = 'F'
-                        TAG(KNDX)(14:14) = '3'
-                        IWEVNT(KNDX) = 323
-                     END IF
-                  ELSE  IF(ISTCPT(I).LT.0)  THEN
-                     IF(TAG(KNDX)(13:13).GT.'7')  THEN
-                        IF(EWRITE)  PRINT 9043, KNDX,ACID(KNDX),
-     $                   ALAT(KNDX),ALON(KNDX),TIME(KNDX),TAG(KNDX)
- 9043 FORMAT(/' #EVENT ###: SUPROB; MUL-LO-LVL TEMP,  TEMP Q.M. IS " "',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-                        TAG(KNDX)(13:13) = '7'
-                     END IF
-                     IF(TAG(KNDX)(14:14).GT.'7')  THEN
-                        IF(EWRITE)  PRINT 8043, KNDX,ACID(KNDX),
-     $                   ALAT(KNDX),ALON(KNDX),TIME(KNDX),TAG(KNDX)
- 8043 FORMAT(/' #EVENT ###: SUPROB; MUL-LO-LVL WIND,  WIND Q.M. IS " "',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-                        TAG(KNDX)(14:14) = '7'
-                     END IF
-                  END IF
-               ENDDO
-            ELSE
-C INTERPOLATION FAILED SO TRANSFER TO AVEROB
-               CALL AVEROB(NUM,INDX,LK)
-            END IF
-C SUPEROB ANY LOW ALTITUDE REPORTS
-            IF(LOALT.GE.2)  THEN
-               KFLAG = 0
-               DO K = 1,NUM
-                  IF(K.EQ.NUM)  GO TO 705
-                  JNDX = INDX + K - 1
-                  IF(ISTCPT(K).LT.0.AND.KFLAG(K).EQ.0)  THEN
-                     KOUNT  = 1
-                     KOUNTM = 0
-                     KOUNWF = 0
-                     KOUNTF = 0
-                     KOUNHF = 0
-                     SUMD = SDIR(K)
-                     SUMS = SSPD(K)
-                     SUMT = STIM(K)
-                     SUMH = SHGT(K)
-                     SUMDF = XMSG
-                     SUMSF = XMSG
-                     IF(AMAX1(SDIRF(K),SSPDF(K)).LT.XMSG)  THEN
-                        SUMDF = SDIRF(K)
-                        SUMSF = SSPDF(K)
-                        KOUNWF = KOUNWF + 1
-                     END IF
-                     SUMTMP = XMSG
-                     SUMTMF = XMSG
-                     IF(STMP(K).LT.XMSG)  THEN
-                        SUMTMP = STMP(K)
-                        KOUNTM = 1
-                        IF(STMPF(K).LT.XMSG)  THEN
-                           SUMTMF = STMPF(K)
-                           KOUNTF = 1
-                        END IF
-                     END IF
-                     SUMHF = XMSG
-                     IF(SHGTF(K).LT.XMSG)  THEN
-                        SUMHF = SHGTF(K)
-                        KOUNHF = 1
-                     END IF
-                     DO KK = K+1,NUM
-                        KNDX = INDX + KK - 1
-      IF(ISTCPT(KK).LT.0.AND.ABS(SHGT(K)-SHGT(KK)).LT.150..AND.
-     $ ABS(STIM(K)-STIM(KK)).LT.350..AND.KFLAG(KK).EQ.0)  THEN
-                           SUMD = SDIR(KK) + SUMD
-                           SUMS = SSPD(KK) + SUMS
-                           SUMT = STIM(KK) + SUMT
-                           SUMH = SHGT(KK) + SUMH
-                           KOUNT = KOUNT + 1
-                           KFLAG(KK) = -1
-            IF(AMAX1(SDIRF(KK),SSPDF(KK)).LT.XMSG.AND.KOUNWF.GT.0)  THEN
-                              SUMDF = SDIRF(KK) + SUMDF
-                              SUMSF = SSPDF(KK) + SUMSF
-                              KOUNWF = KOUNWF + 1
-                           END IF
-                           IF(STMP(KK).LT.XMSG.AND.KOUNTM.GT.0)  THEN
-                              SUMTMP = STMP(KK) + SUMTMP
-                              KOUNTM = KOUNTM + 1
-                              IF(STMPF(KK).LT.XMSG.AND.KOUNTF.GT.0) THEN
-                                 SUMTMF = STMPF(KK) + SUMTMF
-                                 KOUNTF = KOUNTF + 1
-                              END IF
-                           END IF
-                           IF(SHGTF(KK).LT.XMSG.AND.KOUNHF.GT.0) THEN
-                              SUMHF = SHGTF(KK) + SUMHF
-                              KOUNHF = KOUNHF + 1
-                           END IF
-                           IF(TAG(JNDX)(13:13).GT.'4')  THEN
-                              IF(EWRITE)  PRINT 9044, JNDX,ACID(JNDX),
-     $                        ALAT(KNDX),ALON(JNDX),TIME(JNDX),TAG(JNDX)
- 9044 FORMAT(/' #EVENT 315: SUPROB; MUL-LO-LVL TMP SUPOBED, TMP QM "O"',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-                              TAG(JNDX)(2:2) = 'O'
-                              TAG(JNDX)(13:13) = '4'
-                              ITEVNT(JNDX) = 315
-                           END IF
-                           IF(TAG(JNDX)(14:14).GT.'4')  THEN
-                              IF(EWRITE)  PRINT 8044, JNDX,ACID(JNDX),
-     $                        ALAT(JNDX),ALON(JNDX),TIME(JNDX),TAG(JNDX)
- 8044 FORMAT(/' #EVENT 315: SUPROB; MUL-LO-LVL WND SUPOBED, WND QM "O"',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-                              TAG(JNDX)(4:4) = 'O'
-                              TAG(JNDX)(14:14) = '4'
-                              IWEVNT(JNDX) = 315
-                           END IF
-                           IF(TAG(KNDX)(13:13).GT.'4')  THEN
-                              IF(EWRITE)  PRINT 9044, KNDX,ACID(KNDX),
-     $                        ALAT(KNDX),ALON(KNDX),TIME(KNDX),TAG(KNDX)
-                              TAG(KNDX)(2:2) = 'O'
-                              TAG(KNDX)(13:13) = '4'
-                              ITEVNT(KNDX) = 315
-                           END IF
-                           IF(TAG(KNDX)(14:14).GT.'4')  THEN
-                              IF(EWRITE)  PRINT 8044, KNDX,ACID(KNDX),
-     $                        ALAT(KNDX),ALON(KNDX),TIME(KNDX),TAG(KNDX)
-                              TAG(KNDX)(4:4) = 'O'
-                              TAG(KNDX)(14:14) = '4'
-                              IWEVNT(KNDX) = 315
-                           END IF
-                        END IF
-                     ENDDO
-                     IF(KOUNT.GT.1)  THEN
-                        SUMD = SUMD/KOUNT
-                        SUMS = SUMS/KOUNT
-                        TBAR = SUMT/KOUNT
-                        SUMH = SUMH/KOUNT
-                        LK = LK + 1
-                        SSPD(LK) = SUMS
-                        SDIR(LK) = SUMD
-                        SHGT(LK) = SUMH
-                        SSPDF(LK) = XMSG
-                        SDIRF(LK) = XMSG
-                        IF(KOUNWF.GT.0)  THEN
-                           SSPDF(LK) = SUMSF/KOUNWF
-                           SDIRF(LK) = SUMDF/KOUNWF
-                        END IF
-                        STMP(LK)  = XMSG
-                        STMPF(LK) = XMSG
-                        IF(KOUNTM.GT.0)  THEN
-                           STMP(LK) = SUMTMP/KOUNTM
-                           IF(KOUNTF.GT.0)  STMPF(LK) = SUMTMF/KOUNTF
-                        END IF
-                        SHGTF(LK) = XMSG
-                        IF(KOUNHF.GT.0)  SHGTF(LK) = SUMHF/KOUNHF
-                        SLAT(LK) = ALAT(INDX)
-                        SLON(LK) = ALON(INDX)
-                        STIM(LK) = TBAR
-                        ISTCPT(LK) = KOUNT
-                        CTEMP = STMP(LK)
-                        IF(STMP(LK).LT.XMSG)  CTEMP = STMP(LK)/10.
-                        CTMPF = STMPF(LK)
-                        IF(STMPF(LK).LT.XMSG)  CTMPF = STMPF(LK)/10.
-CVVVVVV%%%%%
-      PRINT *, ' ~~~~~ HERE IS LOW ALT FIX-UP FOR SUPEROBING'
-CAAAAAA%%%%%
-      PRINT 6427, LK,KOUNT,NINT(SDIR(LK)),SSPD(LK),
-     $ CTEMP+SIGN(.0005,CTEMP),NINT(SHGT(LK)),NINT(SDIRF(LK)),SSPDF(LK),
-     $ CTMPF+SIGN(.0005,CTMPF),NINT(SHGTF(LK))
- 6427 FORMAT(' LOALT(SUPROB)',I3,',KOUNT=',I5,',DIR/SPD=',I3,'/',F5.1,
-     $ ',TMP=',F7.1,',ALT=',I5,',GES: DIR/SPD=',I5,'/',F7.1,',TMP=',
-     $ F7.1,',ALT=',I5)
-                     END IF
-                  END IF
-  705             CONTINUE
-               ENDDO
-            END IF
-         END IF
-         RETURN
-      ELSE
-C***********************************************************************
-C                 FIND SUPEROBS FOR NUMBER LEFT .LE. 5
-C***********************************************************************
-         IF(NUM.LE.2)  RETURN
-C SUPEROB SINGLE LEVEL REPORTS
-         NUMGT = MAX0(NUMORG,NUM)
-         LK = NUMGT
-         IF(SDALT.LT.400.) THEN
-            SUMU   = 0.0
-            SUMV   = 0.0
-            SUMS   = 0.0
-            SUMA   = 0.0
-            SUMTMP = 0.0
-            NTEMP  = 0
-            SUMUF  = 0.0
-            SUMVF  = 0.0
-            SUMSF  = 0.0
-            SUMAF  = 0.0
-            SUMTMF = 0.0
-            NTEMPF = 0
-            NWINDF = 0
-            NHGHTF = 0
-            NT = 0
-            DO K = 1,NUMGT
-               JNDX = INDX + K - 1
-               IF(IFLEPT(JNDX).EQ.0.OR.TAG(JNDX)(4:4).EQ.'F')  THEN
-                  ISTCPT(K) = IFLEPT(JNDX)
-               ELSE  IF(ISTCPT(K).GT.0)  THEN
-                  NT = NT + 1
-                  IF(ATMP(JNDX).LT.XMSG.AND.TAG(JNDX)(2:2).NE.'F')  THEN
-                     NTEMP = NTEMP + 1
-                     SUMTMP = SUMTMP + ATMP(JNDX)
-                     IF(ATMPF(JNDX).LT.XMSG)  THEN
-                        NTEMPF = NTEMPF + 1
-                        SUMTMF = SUMTMF + ATMPF(JNDX)
-                     END IF
-                  END IF
-                  SUMU = SUMU + U(K)
-                  SUMV = SUMV + V(K)
-                  SUMS = SUMS + SSPD(K)
-                  SUMA = SUMA + SHGT(K)
-                  IF(AMAX1(UF(K),VF(K),SSPDF(K)).LT.XMSG)  THEN
-                     NWINDF = NWINDF + 1
-                     SUMUF = SUMUF + UF(K)
-                     SUMVF = SUMVF + VF(K)
-                     SUMSF = SUMSF + SSPDF(K)
-                  END IF
-                  IF(SHGTF(K).LT.XMSG)  THEN
-                     NHGHTF = NHGHTF + 1
-                     SUMAF = SUMAF + SHGTF(K)
-                  END IF
-                  IF(TAG(JNDX)(13:13).GT.'4')  THEN
-                     IF(EWRITE)  PRINT 9038, JNDX,ACID(JNDX),ALAT(JNDX),
-     $                ALON(JNDX),TIME(JNDX),TAG(JNDX)
-                     TAG(JNDX)(2:2) = 'O'
-                     TAG(JNDX)(13:13) = '4'
-                     ITEVNT(JNDX) = 315
-                  END IF
-                  IF(TAG(JNDX)(14:14).GT.'4')  THEN
-                     IF(EWRITE)  PRINT 9039, JNDX,ACID(JNDX),ALAT(JNDX),
-     $                ALON(JNDX),TIME(JNDX),TAG(JNDX)
-                     TAG(JNDX)(4:4) = 'O'
-                     TAG(JNDX)(14:14) = '4'
-                     IWEVNT(JNDX) = 315
-                  END IF
-               END IF
-            ENDDO
-            IF(NT.EQ.0.OR.NT.EQ.1)  RETURN
-            IF(NT.EQ.2)  THEN
-               CALL NOEQ2(NUM,INDX,LK)
-            ELSE
-               LK = LK + 1
-               SUMU = SUMU/NT
-               SUMV = SUMV/NT
-               SUMS = SUMS/NT
-               SHGT(LK) = SUMA/NT
-               STIM(LK) = TBAR
-               SLAT(LK) = ALAT(INDX)
-               SLON(LK) = ALON(INDX)
-               ISTCPT(LK) = IFLEPT(INDX)
-               SSPD(LK) = SUMS
-               SDIR(LK) = AVEDIR(SUMU,SUMV,SUMS)
-               SSPDF(LK) = XMSG
-               SDIRF(LK) = XMSG
-               IF(NWINDF.GT.0)  THEN
-                  SSPDF(LK) = SUMSF/NWINDF
-              SDIRF(LK) = AVEDIR(SUMUF/NWINDF,SUMVF/NWINDF,SUMSF/NWINDF)
-               END IF
-               SHGTF(LK) = XMSG
-               IF(NHGHTF.GT.0)  SHGTF(LK) = SUMAF/NHGHTF
-               STMP(LK) = XMSG
-               STMPF(LK) = XMSG
-               IF(NTEMP.GT.0)  THEN
-                  STMP(LK) = SUMTMP/NTEMP
-                  IF(NTEMPF.GT.0)  STMPF(LK) = SUMTMF/NTEMPF
-               END IF
-            END IF
-            DO I = 1,NUM
-               KNDX = INDX + I - 1
-               IF(ISTCPT(I).GT.0)  THEN
-                  IF(TAG(KNDX)(13:13).GT.'4')  THEN
-                     IF(EWRITE)  PRINT 9038, KNDX,ACID(KNDX),ALAT(KNDX),
-     $                ALON(KNDX),TIME(KNDX),TAG(KNDX)
-                     TAG(KNDX)(2:2) = 'O'
-                     TAG(KNDX)(13:13) = '4'
-                     ITEVNT(KNDX) = 315
-                  END IF
-                  IF(TAG(KNDX)(14:14).GT.'4')  THEN
-                     IF(EWRITE)  PRINT 9039, KNDX,ACID(KNDX),ALAT(KNDX),
-     $                ALON(KNDX),TIME(KNDX),TAG(KNDX)
-                     TAG(KNDX)(4:4) = 'O'
-                     TAG(KNDX)(14:14) = '4'
-                     IWEVNT(KNDX) = 315
-                  END IF
-               END IF
-            ENDDO
-            CTEMP = STMP(K)
-            IF(STMP(K).LT.XMSG)  CTEMP = STMP(K)/10.
-            CTMPF = STMPF(K)
-            IF(STMPF(K).LT.XMSG)  CTMPF = STMPF(K)/10.
-      PRINT 8412, LK,NINT(SDIR(LK)),SSPD(LK),NINT(STIM(LK)),
-     $ NINT(SHGT(LK)),CTEMP+SIGN(.0005,CTEMP),NT,NINT(SDIRF(LK)),
-     $ SSPDF(LK),NINT(SHGTF(LK)),CTMPF+SIGN(.0005,CTMPF)
- 8412 FORMAT(' LK=',I3,' SDALT <400, DIR/SPD=',I3,'/',F5.1,',TIME=',I4,
-     $ ',ALT=',I5,',TMP=',F7.1,I4,' OBS, GES: DIR/SPD=',I5,'/',F7.1,
-     $ ',ALT=',I5,',TMP=',F7.1)
-C ELSE NOT SINGLE LEVEL
-         ELSE
-            CALL AVEROB(NUM,INDX,LK)
-         END IF
-      END IF
-      RETURN
-      END
-C$$$  SUBPROGRAM DOCUMENTATION BLOCK
-C                .      .    .                                       .
-C SUBPROGRAM:    NOEQ2       DOES SUPEROBING FOR TWO OBSERVATIONS ONLY
-C   PRGMMR: D. A. KEYSER     ORG: NP22       DATE: 1995-03-27
-C
-C ABSTRACT: CALCULATES SUPEROB FOR CASE OF TWO OBSERVATIONS ONLY.
-C
-C PROGRAM HISTORY LOG:
-C 1989-04-01  P. JULIAN (W/NMC00) -- ORIGINAL AUTHOR
-C 1990-03-29  P. JULIAN    -- MODIFIED TO HONOR SDM/QCAIRCFT PURGE FOR
-C             STACKED OBSERVATIONS (OBS. INCRMENT CHECK)
-C 1990-06-14  D. A. KEYSER -- CORRECTED TO HONOR ALL SDM/QCAIRCFT PURGES
-C             FOR STACKED OBS.; FIXED ERROR IN Q. MARK DESIGNATOR
-C 1990-07-03  D. A. KEYSER -- ALT. CORRESP. TO PRESS. OF 300 & 200 MB
-C             FOR REGRESS. CALC. OF SUPEROBS OFF SLIGHTLY, FIXED
-C 1990-09-18  D. A. KEYSER -- MINOR ERROR IN LOGIC CORRECTED, SOME ORIG.
-C             REPORTS WERE BEING GIVEN 'O' Q. MARK BY MISTAKE
-C 1994-08-25  D. A. KEYSER -- STREAMLINED CODE, EXPANDED COMMENTS AND
-C             DOCBLOCKS, REVISED TO MAKE MACHINE INDEPENDENT
-C 1995-03-27  D. A. KEYSER -- FOR INIDST=2, SUPEROBS NOW CONTAIN
-C             SUPEROBED FORECAST(GUESS) P-ALT, WIND DIR, WIND SPEED &
-C             TEMP (IF AVAILABLE FROM INDIV. RPTS MAKING UP SUPEROBS)
-C
-C USAGE:    CALL NOEQ2(NUM,INDX,LK)
-C   INPUT ARGUMENT LIST:
-C     NUM      - NUMBER OF OBSERVATIONS TO BE TREATED
-C     INDX     - POINTER TO POSITION IN ORIGINAL AIRCRAFT ARRAY
-C
-C   OUTPUT ARGUMENT LIST:
-C     LK       - POINTER INDICATING ' NUM + NO. OF SUPEROBS FORMED '
-C
-C   OUTPUT FILES:
-C     UNIT 06  - PRINTOUT
-C
-C REMARKS: CALLED BY MAIN PROGRAM AND BY SUBROUTINES 'AVEROB' AND
-C   'SUPROB'.
-C
-C ATTRIBUTES:
-C   LANGUAGE: FORTRAN 90
-C   MACHINE:  IBM-SP
-C
-C$$$
-      SUBROUTINE NOEQ2(NUM,INDX,LK)
-      PARAMETER (IRMX= 80000, ISMX= 8000)
-      LOGICAL  L1L,L2L,EWRITE
-      CHARACTER*8  ACID,SAID
-      CHARACTER*14  TAG
-      COMMON/SUMDAT/ISTCPT(ISMX),SAID(ISMX),SLAT(ISMX),SLON(ISMX),
-     $ SHGT(ISMX),STIM(ISMX),SSPD(ISMX),SDIR(ISMX),STMP(ISMX),
-     $ KBAD(ISMX),NUMORG,SSPDF(ISMX),SDIRF(ISMX),STMPF(ISMX),SHGTF(ISMX)
-      COMMON/ALLDAT/IFLEPT(IRMX),ACID(IRMX),ALAT(IRMX),ALON(IRMX),
-     $ AALT(IRMX),TIME(IRMX),ASPD(IRMX),ADIR(IRMX),TBASE,
-     $ ATMP(IRMX),TAG(IRMX),IRTM(IRMX),INTP(IRMX),KNTINI(IRMX),
-     $ ITEVNT(IRMX),IWEVNT(IRMX),ATMPF(IRMX),AALTF(IRMX),ASPDF(IRMX),
-     $ ADIRF(IRMX)
-      COMMON/STWRIT/SWRITE,EWRITE,IWRITE
-      COMMON/CMPNTS/U(ISMX),V(ISMX),UF(ISMX),VF(ISMX)
-      DATA XMSG/99999./
-      LK = NUMORG
-C LK IS INITIALIZED TO NUMBER IN STACK
-C K1 AND K2 ARE RELATIVE TO STACK; I1 AND I2 ARE RELATIVE TO ALL OBS.
-      K1 = 0
-      K2 = 0
-      DO K = 1,NUM
-         KNDX = INDX + K - 1
-         IF(ISTCPT(K).NE.0.AND.TAG(KNDX)(4:4).NE.'F')  THEN
-            IF(K1.EQ.0)  THEN
-               K1      = K
-               KBAD(K) = K
-            ELSE
-               K2      = K
-               KBAD(K) = K
-            END IF
-         END IF
-      ENDDO
-C BOTH OBS. MUST BE GOOD, MID- OR HIGH-ALTITUDE
-      IF(K1.EQ.0.OR.K2.EQ.0)  RETURN
-      I1 = INDX + K1 - 1
-      I2 = INDX + K2 - 1
-C L1L & L2L ARE TRUE FOR LARGE VECTOR INCREMENT (V-Z)
-      L1L = (TAG(I1)(1:1).GE.'V'.AND.TAG(I1)(1:1).LE.'Z')
-      L2L = (TAG(I2)(1:1).GE.'V'.AND.TAG(I2)(1:1).LE.'Z')
-      IF(L1L.AND.TAG(I1)(3:3).EQ.'E')  THEN
-         IF(TAG(I1)(13:13).GT.'3')  THEN
-            IF(EWRITE)  PRINT 9047, I1,ACID(I1),ALAT(I1),ALON(I1),
-     $       TIME(I1),TAG(I1)
- 9047 FORMAT(/' #EVENT 324: NOEQ2; VRY LRG INCR/?TRKCHK ERR,TMP QM "F"',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-            TAG(I1)(2:2) = 'F'
-            TAG(I1)(13:13) = '3'
-            ITEVNT(I1) = 324
-         END IF
-         IF(TAG(I1)(14:14).GT.'3')  THEN
-            IF(EWRITE)  PRINT 8047, I1,ACID(I1),ALAT(I1),ALON(I1),
-     $       TIME(I1),TAG(I1)
- 8047 FORMAT(/' #EVENT 324: NOEQ2; VRY LRG INCR/?TRKCHK ERR,WND QM "F"',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-            TAG(I1)(4:4) = 'F'
-            TAG(I1)(14:14) = '3'
-            IWEVNT(I1) = 324
-         END IF
-         RETURN
-      END IF
-      IF(L2L.AND.TAG(I2)(3:3).EQ.'E')  THEN
-         IF(TAG(I2)(13:13).GT.'3')  THEN
-            IF(EWRITE)  PRINT 9047, I2,ACID(I2),ALAT(I2),ALON(I2),
-     $       TIME(I2),TAG(I2)
-            TAG(I2)(2:2) = 'F'
-            TAG(I2)(13:13) = '3'
-            ITEVNT(I2) = 324
-         END IF
-         IF(TAG(I2)(14:14).GT.'3')  THEN
-            IF(EWRITE)  PRINT 8047, I2,ACID(I2),ALAT(I2),ALON(I2),
-     $       TIME(I2),TAG(I2)
-            TAG(I2)(4:4) = 'F'
-            TAG(I2)(14:14) = '3'
-            IWEVNT(I2) = 324
-         END IF
-         RETURN
-      END IF
-      IF(ABS(SHGT(K1)-SHGT(K2)).LE.700..AND.ABS(STIM(K1)-STIM(K2)).LE.
-     $ 300.)  THEN
-         LK = NUM + 1
-         SUMU = (U(K1) + U(K2)) * 0.5
-         SUMV = (V(K1) + V(K2)) * 0.5
-         SUMS = (SSPD(K1) + SSPD(K2)) * 0.5
-         DDD = AVEDIR(SUMU,SUMV,SUMS)
-         SUMA = (SHGT(K1) + SHGT(K2)) * 0.5
-         SUMSF = XMSG
-         DDDF  = XMSG
-         IF(AMAX1(UF(K1),UF(K2),VF(K1),VF(K2),SSPDF(K1),SSPDF(K2))
-     $    .LT.XMSG)  THEN
-            SUMUF = (UF(K1) + UF(K2)) * 0.5
-            SUMVF = (VF(K1) + VF(K2)) * 0.5
-            SUMSF = (SSPDF(K1) + SSPDF(K2)) * 0.5
-            DDDF = AVEDIR(SUMUF,SUMVF,SUMSF)
-         END IF
-         SUMAF = XMSG
-         IF(AMAX1(SHGTF(K1),SHGTF(K2)).LT.XMSG)  SUMAF = (SHGTF(K1) +
-     $    SHGTF(K2)) * 0.5
-         SUMTMP = XMSG
-         SUMTMF = XMSG
-         IF(STMP(K1).LT.XMSG.AND.STMP(K2).LT.XMSG.AND.
-     $    TAG(I1)(2:2).NE.'F'.AND.TAG(I2)(2:2).NE.'F')  THEN
-            SUMTMP = (STMP(K1) + STMP(K2)) * 0.5
-            IF(STMPF(K1).LT.XMSG.AND.STMPF(K2).LT.XMSG)  THEN
-               SUMTMF = (STMPF(K1) + STMPF(K2)) * 0.5
-            ELSE  IF(STMPF(K1).LT.XMSG)  THEN
-               SUMTMF = STMPF(K1)
-            ELSE  IF(STMPF(K2).LT.XMSG)  THEN
-               SUMTMF = STMPF(K2)
-            END IF
-         ELSE  IF(STMP(K1).LT.XMSG.AND.TAG(I1)(2:2).NE.'F')  THEN
-            SUMTMP = STMP(K1)
-            IF(STMPF(K1).LT.XMSG)  SUMTMF = STMPF(K1)
-         ELSE  IF(STMP(K2).LT.XMSG.AND.TAG(I2)(2:2).NE.'F')  THEN
-            SUMTMP = STMP(K2)
-            IF(STMPF(K2).LT.XMSG)  SUMTMF = STMPF(K2)
-         END IF
-         SUMT = (STIM(K1) + STIM(K2)) * 0.5
-         IF(TAG(I1)(13:13).GT.'4')  THEN
-            IF(EWRITE)  PRINT 9048, I1,ACID(I1),ALAT(I1),ALON(I1),
-     $       TIME(I1),TAG(I1)
- 9048 FORMAT(/' #EVENT 315: NOEQ2; USED TO MAKE SUPROB, TEMP Q.M. "O".',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-            TAG(I1)(2:2) = 'O'
-            TAG(I1)(13:13) = '4'
-            ITEVNT(I1) = 315
-         END IF
-         IF(TAG(I1)(14:14).GT.'4')  THEN
-            IF(EWRITE)  PRINT 8048, I1,ACID(I1),ALAT(I1),ALON(I1),
-     $       TIME(I1),TAG(I1)
- 8048 FORMAT(/' #EVENT 315: NOEQ2; USED TO MAKE SUPROB, WIND Q.M. "O".',
-     $ I5,2X,A8,2F8.2,F6.0,2X,'"',A14,'"')
-            TAG(I1)(4:4) = 'O'
-            TAG(I1)(14:14) = '4'
-            IWEVNT(I1) = 315
-         END IF
-         IF(TAG(I2)(13:13).GT.'4')  THEN
-            IF(EWRITE)  PRINT 9048, I2,ACID(I2),ALAT(I2),ALON(I2),
-     $       TIME(I2),TAG(I2)
-            TAG(I2)(2:2) = 'O'
-            TAG(I2)(13:13) = '4'
-            ITEVNT(I2) = 315
-         END IF
-         IF(TAG(I2)(14:14).GT.'4')  THEN
-            IF(EWRITE)  PRINT 8048, I2,ACID(I2),ALAT(I2),ALON(I2),
-     $       TIME(I2),TAG(I2)
-            TAG(I2)(4:4) = 'O'
-            TAG(I2)(14:14) = '4'
-            IWEVNT(I2) = 315
-         END IF
-         SDIR(LK) = DDD
-         STIM(LK) = SUMT
-         SHGT(LK) = SUMA
-         STMP(LK) = SUMTMP
-         SLAT(LK) = ALAT(INDX)
-         SLON(LK) = ALON(INDX)
-         KBAD(LK) = LK
-         SSPD(LK) = SUMS
-         SDIRF(LK) = DDDF
-         SHGTF(LK) = SUMAF
-         STMPF(LK) = SUMTMF
-         SSPDF(LK) = SUMSF
-         CTEMP = STMP(LK)
-         IF(STMP(LK).LT.XMSG)  CTEMP = STMP(LK)/10.
-         CTMPF = STMPF(LK)
-         IF(STMPF(LK).LT.XMSG)  CTMPF = STMPF(LK)/10.
-         PRINT 8666, INDX,NUM,NINT(SDIR(LK)),SSPD(LK),NINT(SHGT(LK)),
-     $    CTEMP+SIGN(.0005,CTEMP),K1,K2,I1,I2,NINT(SDIRF(LK)),SSPDF(LK),
-     $    CTMPF+SIGN(.0005,CTMPF),NINT(SHGTF(LK))
- 8666    FORMAT(' NOEQ2',I5,',NM=',I2,',DIR/SPD=',I3,'/',F5.1,',AL=',I5,
-     $    ',T=',F7.1,',K1-2;I1-2=',2I3,2I5,',GES: DIR/SPD=',I5,'/',F7.1,
-     $    ',T=',F7.1,',AL=',I5)
-      END IF
-      RETURN
-      END
-C$$$  SUBPROGRAM DOCUMENTATION BLOCK
-C                .      .    .                                       .
-C SUBPROGRAM:    STATS       CALCS. STATS W/ AND W/O EACH OBS. IN TURN
-C   PRGMMR: D. A. KEYSER     ORG: NP22       DATE: 1994-08-25
-C
-C ABSTRACT: CALCULATES MEANS AND VARIANCES WITH AND WITHOUT EACH
-C   OBSERVATION IN TURN.  IF THERE ARE MORE THAN 'KNO' OBSERVATIONS
-C   NORMALIZED STANDARD DEVIATIONS ARE CALCULATED.  OTHERWISE UN-
-C   NORMALIZED STANDARD DEVIATIONS ARE CALCULATED.
-C
-C PROGRAM HISTORY LOG:
-C 1989-04-01  P. JULIAN -- ORIGINAL AUTHOR
-C 1994-08-25  D. A. KEYSER -- STREAMLINED CODE, EXPANDED COMMENTS AND
-C             DOCBLOCKS, REVISED TO MAKE MACHINE INDEPENDENT
-C
-C USAGE:    CALL STATS(KNO,INDX,NUM,SBAR,VPOINT)
-C   INPUT ARGUMENT LIST:
-C     KNO      - NO. OF OBS. SEPARATING TREATMENT & STATS CALCULATED
-C     INDX     - POINTER TO POSITION IN ORIGINAL AIRCRAFT ARRAY
-C     NUM      - NUMBER OF OBSERVATIONS IN STACK
-C
-C   OUTPUT ARGUMENT LIST:
-C     VPOINT   - ARRAY CONTAINING VECTOR DIFFERENCE TO AVERAGE VECTOR
-C              - FOR ALL OBS. IN STACK (IN ORDER OF OBS. IN STACK)
-C     SBAR     - AVERAGE SPEED IN STACK
-C
-C   OUTPUT FILES:
-C     UNIT 06  - PRINTOUT
-C
-C REMARKS: CALLED BY SUBROUTINE 'SHEAR'.
-C
-C ATTRIBUTES:
-C   LANGUAGE: FORTRAN 90
-C   MACHINE:  IBM-SP
-C
-C$$$
-      SUBROUTINE STATS(KNO,INDX,NUM,SBAR,VPOINT)
-      PARAMETER (IRMX= 80000, ISMX= 8000)
-      DIMENSION  SQQ(ISMX),DU(ISMX),DV(ISMX),VECT(ISMX),ALTNRM(ISMX),
-     $ UN(ISMX),VN(ISMX),UECT(ISMX),TIMNRM(ISMX),SSDN(ISMX),VPOINT(ISMX)
-      LOGICAL  SWRITE
-      CHARACTER*8  ACID,SAID
-      CHARACTER*14  TAG
-      COMMON/SUMDAT/ISTCPT(ISMX),SAID(ISMX),SLAT(ISMX),SLON(ISMX),
-     $ SHGT(ISMX),STIM(ISMX),SSPD(ISMX),SDIR(ISMX),STMP(ISMX),
-     $ KBAD(ISMX),NUMORG,SSPDF(ISMX),SDIRF(ISMX),STMPF(ISMX),SHGTF(ISMX)
-      COMMON/ALLDAT/IFLEPT(IRMX),ACID(IRMX),ALAT(IRMX),ALON(IRMX),
-     $ AALT(IRMX),TIME(IRMX),ASPD(IRMX),ADIR(IRMX),TBASE,
-     $ ATMP(IRMX),TAG(IRMX),IRTM(IRMX),INTP(IRMX),KNTINI(IRMX),
-     $ ITEVNT(IRMX),IWEVNT(IRMX),ATMPF(IRMX),AALTF(IRMX),ASPDF(IRMX),
-     $ ADIRF(IRMX)
-      COMMON/CMPNTS/U(ISMX),V(ISMX),UF(ISMX),VF(ISMX)
-      COMMON/STUFF/SDALT,TBAR
-      COMMON/STWRIT/SWRITE,EWRITE,IWRITE
-      DATA  XMSG/99999./
-C THE FOLLOWING IS CALIBRATION CONSTANT - EMPIRICALLY TUNED FOR
-C SELECTING SIGNIFICANT VECTOR RMS DIFFERENCE
-      DATA  CALIBX/1.40/
-      CRITCN = 5.35
-      IBAD   = 0
-      SUMT   = 0.0
-      SUMA   = 0.0
-      SUMTMP = 0.0
-      SSSTMP = 0.0
-      SUMS   = 0.0
-      SSST   = 0.0
-      SSSA   = 0.0
-      SSSS   = 0.0
-      SDU    = 0.0
-      SQV    = 0.0
-      SQU    = 0.0
-      SUMU   = 0.0
-      SUMV   = 0.0
-      SSSU   = 0.0
-      SSSV   = 0.0
-      KNUM   = 0
-      JNUM   = 0
-      KNUMT  = 0
-      UN     = XMSG
-      DU     = XMSG
-      VN     = XMSG
-      DV     = XMSG
-      SSDN   = XMSG
-      UECT   = -999.
-      VECT   = -999.
-      ALTNRM = XMSG
-      TIMNRM = XMSG
-      DO K = 1,NUM
-         KNDX = INDX + K - 1
-C INITIALIZE VPOINT AS THE ORIGINAL STACK ORDER
-         VPOINT(K) = REAL(K)
-         IF(IFLEPT(KNDX).LE.0.OR.ISTCPT(K).LE.0)  GO TO 101
-         KNUM = KNUM + 1
-         IF(ATMP(KNDX).LT.XMSG)  THEN
-            KNUMT = KNUMT + 1
-            SUMTMP = SUMTMP + ATMP(KNDX)
-            SSSTMP = SSSTMP + (ATMP(KNDX) * ATMP(KNDX))
-         END IF
-         SUMU = SUMU + U(K)
-         SUMV = SUMV + V(K)
-         SUMS = SUMS + ASPD(KNDX)
-         SUMT = SUMT + TIME(KNDX)
-         QQ   = AALT(KNDX) - 8000.
-         SUMA = SUMA + QQ
-         SSSU = SSSU + (U(K) * U(K))
-         SSSV = SSSV + (V(K) * V(K))
-         SSSS = SSSS + (ASPD(KNDX) * ASPD(KNDX))
-         SSST = SSST + (TIME(KNDX) * TIME(KNDX))
-         SSSA = SSSA + (QQ * QQ)
-         SMQU = 0.0
-         SMQV = 0.0
-         SSQU = 0.0
-         SSQV = 0.0
-C NOTE: JNUM COMES OUT OF 1 LOOP WITH SAME VALUE EVERY TIME ( = FINAL
-C  VALUE OF KNUM COMING OUT OF 101 LOOP MINUS 1; THUS IT COMES OUT
-C  OF 101 LOOP WITH THE VALUE KNUM - 1)
-         JNUM = 0
-         DO J = 1,NUM
-            JNDX = INDX + J - 1
-            IF(J.EQ.K.OR.(ISTCPT(J).LE.0.AND.IFLEPT(JNDX).LE.0)) GO TO 1
-            JNUM = JNUM + 1
-            SMQU = SMQU + U(J)
-            SMQV = SMQV + V(J)
-            SSQU = SSQU + (U(J) * U(J))
-            SSQV = SSQV + (V(J) * V(J))
-    1       CONTINUE
-         ENDDO
-C IF JNUM .GT. KNO  CALCULATE NORMALIZED QUANTITIES
-         IF(JNUM.GT.KNO)  THEN
-            RFNO = 1./JNUM
-            UQAR = SMQU * RFNO
-            VQAR = SMQV * RFNO
-            RNDF = 1.0
-            IF(JNUM.GE.2)  RNDF = 1./(JNUM - 1)
-            QQQ = (SSQU - (UQAR * UQAR * JNUM)) * RNDF
-            IF(QQQ.LE.0.0)  QQQ = .0001
-            SQU = SQRT(QQQ)
-            QQQ = (SSQV - (VQAR * VQAR * JNUM)) * RNDF
-            IF(QQQ.LE.0.0)  QQQ = .0001
-            SQV = SQRT(QQQ)
-            UN(K) = (U(K) - UQAR)/SQU
-            VN(K) = (V(K) - VQAR)/SQV
-            UECT(K) = SQRT((UN(K) * UN(K)) + (VN(K) * VN(K)))
-         ELSE  IF(JNUM.NE.0)  THEN
-            RFNO = 1./JNUM
-            UQAR = SMQU * RFNO
-            VQAR = SMQV * RFNO
-            DU(K) = U(K) - UQAR
-            DV(K) = V(K) - VQAR
-            VECT(K) = SQRT((DU(K) * DU(K)) + (DV(K) * DV(K)))
-         END IF
-  101    CONTINUE
-      ENDDO
-      RNUM = 1.
-      IF(KNUM.GT.0)  RNUM = 1./KNUM
-      SBAR = SUMS * RNUM
-C IF 2 OR FEWER GOOD HIGH-ALT. OBS. IN STACK, NO MORE NEED BE DONE
-      IF(KNUM.LE.2)  RETURN
-      TMPBAR = XMSG
-      RNUMTM = 1.
-      IF(KNUMT.GT.0)  THEN
-         RNUMTM = 1./KNUMT
-         TMPBAR = SUMTMP * RNUMTM
-      END IF
-      IF(KNUMT.GT.1)  RNUMTM = 1./(KNUMT - 1)
-      UBAR = SUMU * RNUM
-      VBAR = SUMV * RNUM
-      TBAR = SUMT * RNUM
-      ABAR = SUMA * RNUM
-      IF(KNUM.GT.1)  RNUM = 1./(KNUM - 1)
-      QQQ = (SSSU - (UBAR * UBAR * KNUM)) * RNUM
-      IF(QQQ.LE.0.0)  QQQ = .0001
-      SDU = SQRT(QQQ)
-      QQQ = (SSSV - (VBAR * VBAR * KNUM)) * RNUM
-      IF(QQQ.LE.0.0)  QQQ = .0001
-      SDV = SQRT(QQQ)
-      SDT = SQRT((SSST - (TBAR * TBAR * KNUM)) * RNUM)
-      QQQ = (SSSA - (ABAR * ABAR * KNUM)) * RNUM
-      IF(QQQ.LE.0.0)  QQQ = .0001
-      SDALT = SQRT(QQQ)
-      ABAR = ABAR + 8000.
-      QQQ = (SSSS - (SBAR * SBAR * KNUM)) * RNUM
-      IF(QQQ.LE.0.0)  QQQ = .0001
-      SDS = SQRT(QQQ)
-      SDTMP = XMSG
-      QQQ = 0.0
-      IF(KNUMT.GT.1) QQQ = (SSSTMP - (TMPBAR * TMPBAR * KNUMT)) * RNUMTM
-      IF(QQQ.LE.0.0)  QQQ = .0001
-      SDTMP = SQRT(QQQ)
-      KNUM = 0
-      DO K = 1,NUM
-         KNDX = INDX + K - 1
-         IF(IFLEPT(KNDX).LE.0)  GO TO 102
-         SQ   = 0.0
-         SSQ  = 0.0
-C NOTE: KNUM COMES OUT OF 1030 LOOP WITH SAME VALUE EVERY TIME
-C  ( = NUMBER OF TIMES 1030 LOOP IS EXECUTED MINUS 1)
-         KNUM = 0
-         DO J = 1,NUM
-            IF(J.EQ.K.OR.ISTCPT(J).LE.0)  GO TO 1030
-            KNUM = KNUM + 1
-            IF(JNUM.GT.KNO)  THEN
-               SQ = SQ + UECT(J)
-               SSQ = SSQ + (UECT(J) * UECT(J))
-            ELSE
-               SQ = SQ + VECT(J)
-               SSQ = SSQ + (VECT(J) * VECT(J))
-            END IF
- 1030       CONTINUE
-         ENDDO
-         IF(KNUM.NE.0)  THEN
-            SQ = SQ/KNUM
-            QNDF = 0.0
-            IF(KNUM.GT.1)  QNDF = 1./(KNUM - 1)
-            QARG = (SSQ - (SQ * SQ * KNUM)) * QNDF
-            IF(QARG.LE.0.0)  QARG = .00001
-            SSDN(K) = SQRT(QARG)
-            IF(JNUM.GT.KNO)  SSDN(K) = SSDN(K) * CRITCN
-         END IF
-  102    CONTINUE
-      ENDDO
-      IF(KNUM.GT.KNO)  THEN
-C***********************************************************************
-C                      MORE THAN KNO OBSERVATIONS
-C***********************************************************************
-         SQQ = XMSG
-         VPOINT(1:NUM) = UECT(1:NUM)
-         DO I = 1,NUM
-            JNDX = INDX + I - 1
-            IF(ISTCPT(I).LE.0)  GO TO 117
-            ALTNRM(I) = 0.
-CVVVVV%%%%%
-                    IF(SDALT.EQ.0.)  PRINT *, '~~~~~ SDALT=0 IN STATS'
-CAAAAA%%%%%
-            IF(SDALT.NE.0.)  ALTNRM(I) = ABS((AALT(JNDX)-ABAR)/SDALT)
-            TIMNRM(I) = 0.
-CVVVVV%%%%%
-                    IF(SDT.EQ.0.)  PRINT *, '~~~~~ SDT=0 IN STATS'
-CAAAAA%%%%%
-            IF(SDT.NE.0.)  TIMNRM(I) = ABS((TIME(JNDX)-TBAR)/SDT)
-            QNORM = SQRT(ALTNRM(I) * ALTNRM(I) + TIMNRM(I) * TIMNRM(I))
-            SQQ(I) = 2.50 + (QNORM * CALIBX)
-            IF(UECT(I).GT.SQQ(I).AND.ISTCPT(I).GT.0)  IBAD = IBAD + 1
-  117       CONTINUE
-         ENDDO
-         PRINT 6006, UBAR,SDU,VBAR,SDV,KNUM,JNUM
-         CTEMP = TMPBAR
-         CTSD  = SDTMP
-         IF(TMPBAR.LT.XMSG)  CTEMP = TMPBAR/10.
-         IF(SDTMP.LT.XMSG)   CTSD  = SDTMP/10.
-         PRINT 6106, TBAR+SIGN(.0005,TBAR),SDT,ABAR,SDALT,SBAR,
-     $    SDS+SIGN(.0005,SDS),CTEMP+SIGN(.0005,CTEMP),
-     $    CTSD+SIGN(.0005,CTSD)
-CCCCC    IF(IBAD.GT.0)  PRINT 1627, (L,UECT(L),SQQ(L),KBAD(L),
-CCCCC$    ISTCPT(L),ALTNRM(L),TIMNRM(L),L=1,NUM)
-C1627 FORMAT(' L=',I4,', UECT=',F9.3,', SQQ=',F9.3,', KBAD=',I6,
-CCCCC$', ISTCPT=',I6,', ALTNRM=',F9.2,', TIMNRM=',F9.2)
-      ELSE
-C***********************************************************************
-C                      LESS THAN KNO OBSERVATIONS
-C***********************************************************************
-         VPOINT(1:NUM) = VECT(1:NUM)
-         PRINT 6006, UBAR,SDU,VBAR,SDV,KNUM,JNUM
- 6006    FORMAT(' UBAR,SDU,VBAR,SDV  ',2(F8.1,F8.1),';  KNUM,JNUM ',2I4)
-         CTEMP = TMPBAR
-         CTSD  = SDTMP
-         IF(TMPBAR.LT.XMSG)  CTEMP = TMPBAR/10.
-         IF(SDTMP.LT.XMSG)   CTSD  = SDTMP/10.
-         PRINT 6106, TBAR+SIGN(.0005,TBAR),SDT,ABAR,SDALT,SBAR,
-     $    SDS+SIGN(.0005,SDS),CTEMP+SIGN(.0005,CTEMP),
-     $    CTSD+SIGN(.0005,CTSD)
- 6106    FORMAT(' TBAR,SDT ',2F7.0,'; ABAR,SDALT ',2F8.0,'; SBAR,SDS ',
-     $    2F7.0,'; TMPBAR,SDTMP ',2F7.1)
-      END IF
-C***********************************************************************
-C                          PRINT SECTION
-C***********************************************************************
-      IF(SWRITE)  THEN
-         IF(JNUM.GT.KNO)  THEN
-            PRINT 6332
- 6332 FORMAT(6X,'DIR    SPD      U      V     DELU    DELV   D VECT   ',
-     $ 'SQQ     NALT    NTIM    ALT    TEMP  TIME  KBAD ISTCPT    TAGS')
-            DO I = 1,NUM
-               JNDX = INDX + I - 1
-               CTEMP = ATMP(JNDX)
-               IF(ATMP(JNDX).LT.XMSG)  CTEMP = ATMP(JNDX)/10.
-      PRINT 6003, I,ADIR(JNDX),ASPD(JNDX),U(I),V(I),UN(I),VN(I),UECT(I),
-     $ SQQ(I),ALTNRM(I),TIMNRM(I),AALT(JNDX),CTEMP+SIGN(.0005,CTEMP),
-     $ TIME(JNDX),KBAD(I),ISTCPT(I),TAG(JNDX)
- 6003 FORMAT(' ',I3,F6.0,F6.1,1X,2F7.1,2F8.2,4F8.2,F8.0,F7.1,F7.0,I4,I5,
-     $ 6X,'"',A14,'"')
-            ENDDO
-         ELSE
-            PRINT 6472
- 6472 FORMAT(7X,'DIR   SPD      U     V      DELU    DELV   D VECT   ',
-     $ 'SSDN     ALT     TEMP   TIME   KBAD ISTCPT    TAGS')
-            DO I = 1,NUM
-               JNDX = INDX + I - 1
-               CTEMP = ATMP(JNDX)
-               IF(ATMP(JNDX).LT.XMSG)  CTEMP = ATMP(JNDX)/10.0
-C FOR COMPARISON DAK VS. PRJ SWITCH COMMENTS
-      PRINT 6002, I,ADIR(JNDX),ASPD(JNDX),U(I),V(I),DU(I),DV(I),VECT(I),
-     $ SSDN(I),AALT(JNDX),CTEMP+SIGN(.0005,CTEMP),TIME(JNDX),KBAD(I),
-     $ ISTCPT(I),TAG(JNDX)
- 6002 FORMAT(' ',I3,F6.0,F6.1,1X,2F7.1,4F8.2,F9.0,F9.1,F7.0,2I5,6X,'"',
-     $ A14,'"')
-            ENDDO
-         END IF
-      END IF
-      RETURN
-      END
-C$$$  SUBPROGRAM DOCUMENTATION BLOCK
-C                .      .    .                                       .
-C SUBPROGRAM:    AVEDIR      CALC. AVG. WIND DIR. FROM AVG. U-/V-COMPS
-C   PRGMMR: D. A. KEYSER     ORG: NP22       DATE: 1994-08-25
-C
-C ABSTRACT: FUNCTION -- CALCULATES THE AVERAGE METEROLOGICAL WIND
-C   DIRECTION FROM THE AVERAGE OF A NUMBER OF ZONAL AND MERIDIONAL
-C   WIND COMPONENTS.
-C
-C PROGRAM HISTORY LOG:
-C 1994-01-01  P. JULIAN (W/NMC00) -- ORIGINAL AUTHOR
-C 1994-08-25  D. A. KEYSER -- STREAMLINED CODE, EXPANDED COMMENTS AND
-C             DOCBLOCKS, REVISED TO MAKE MACHINE INDEPENDENT
-C
-C USAGE:    XX = AVEDIR(SUMU,SUMV,SUMS)
-C   INPUT ARGUMENT LIST:
-C     SUMU     - THE AVERAGE OF THE ZONAL WIND COMPONENTS
-C     SUMV     - THE AVERAGE OF THE MERIDIONAL WIND COMPONENTS
-C     SUMS     - THE AVERAGE OF THE WIND SPEEDS
-C
-C REMARKS: REAL VARIABLE 'AVEDIR' RETURNED IS THE AVERAGE WIND
-C   DIRECTION.  CALLED BY SUBROUTINES 'AVEROB', 'SUPROB' AND 'NOEQ2'.
-C
-C ATTRIBUTES:
-C   LANGUAGE: FORTRAN 90
-C   MACHINE:  IBM-SP
-C
-C$$$
-      REAL FUNCTION AVEDIR(SUMU,SUMV,SUMS)
-      IF(SUMV.EQ.0.0)  SUMV = .001
-      AVEDIR = (ATAN2( -SUMV, SUMU) * (180./3.14159)) + 270.
-      IF(AVEDIR.GT.360.)  AVEDIR = AVEDIR - 360.
-      IF(SUMS.LT.0.5.OR.AVEDIR.LT.0.4)  AVEDIR = 360.
-      RETURN
-      END
-C$$$  SUBPROGRAM DOCUMENTATION BLOCK
-C                .      .    .                                       .
-C SUBPROGRAM:    INDEXC      GENERAL SORT ROUTINE FOR CHARACTER ARRAY
-C   PRGMMR: D. A. KEYSER     ORG: NP22       DATE: 1999-08-23
-C
-C ABSTRACT: USES EFFICIENT SORT ALGORITHM TO PRODUCE INDEX SORT LIST
-C   FOR A 32-CHARACTER ARRAY.  DOES NOT REARRANGE THE FILE.
-C
-C PROGRAM HISTORY LOG:
-C 1993-06-05  R  KISTLER --- FORTRAN VERSION OF C-PROGRAM
-C 1993-07-15  P. JULIAN ---- MODIFIED TO SORT 12-CHARACTER ARRAY
-C 1994-08-25  D. A. KEYSER - MODIFIED TO SORT 16-CHARACTER ARRAY
-C 1995-05-30  D. A. KEYSER - TESTS FOR < 2 ELEMENTS IN SORT LIST,
-C             IF SO RETURNS WITHOUT SORTING (BUT FILLS INDX ARRAY)
-C 1999-08-23  D. A. KEYSER - EXPANDED CHARACTER ARRAY FROM 16 TO 32
-C             BYTES (ALLOWS HIGHER ORDERS TO BE INCLUDED IN SORT)
-C
-C USAGE:    CALL INDEXC(N,CARRIN,INDX)
-C   INPUT ARGUMENT LIST:
-C     N        - SIZE OF ARRAY TO BE SORTED
-C     CARRIN   - 32-CHARACTER ARRAY TO BE SORTED
-C
-C   OUTPUT ARGUMENT LIST:
-C     INDX     - ARRAY OF POINTERS GIVING SORT ORDER OF CARRIN IN
-C              - ASCENDING ORDER {E.G., CARRIN(INDX(I)) IS SORTED IN
-C              - ASCENDING ORDER FOR ORIGINAL I = 1, ... ,N}
-C
-C REMARKS: CALLED BY SUBROUTINES 'TRKCHK' AND 'IDSORT'.
-C
-C ATTRIBUTES:
-C   LANGUAGE: FORTRAN 90
-C   MACHINE:  IBM-SP
-C
-C$$$
-      SUBROUTINE INDEXC(N,CARRIN,INDX)
-      CHARACTER*32  CARRIN(N),CC
-      INTEGER  INDX(N)
-      DO J = 1,N
-         INDX(J) = J
-      ENDDO
-C MUST BE > 1 ELEMENT IN SORT LIST, ELSE RETURN
-      IF(N.LE.1)  RETURN
-      L = N/2 + 1
-      IR = N
-   33 CONTINUE
-      IF(L.GT.1)  THEN
-         L = L - 1
-         INDXT = INDX(L)
-         CC = CARRIN(INDXT)
-      ELSE
-         INDXT = INDX(IR)
-         CC = CARRIN(INDXT)
-         INDX(IR) = INDX(1)
-         IR = IR - 1
-         IF(IR.EQ.1)  THEN
-            INDX(1) = INDXT
-            RETURN
-         END IF
-      END IF
-      I = L
-      J = L * 2
-   30 CONTINUE
-      IF(J.LE.IR)  THEN
-         IF(J.LT.IR)  THEN
-            IF(CARRIN(INDX(J)).LT.CARRIN(INDX(J+1)))  J = J + 1
-         END IF
-         IF(CC.LT.CARRIN(INDX(J)))  THEN
-            INDX(I) = INDX(J)
-            I = J
-            J = J + I
-         ELSE
-            J = IR + 1
-         ENDIF
-      END IF
-      IF(J.LE.IR)  GO TO 30
-      INDX(I) = INDXT
-      GO TO 33
-      END
-C$$$  SUBPROGRAM DOCUMENTATION BLOCK
-C                .      .    .                                       .
-C SUBPROGRAM:    INDEXF      GENERAL SORT ROUTINE FOR INTEGER ARRAY
-C   PRGMMR: D. A. KEYSER     ORG: NP22       DATE: 1995-05-30
-C
-C ABSTRACT: USES EFFICIENT SORT ALGORITHM TO PRODUCE INDEX SORT LIST
-C   FOR AN INTEGER ARRAY.  DOES NOT REARRANGE THE FILE.
-C
-C PROGRAM HISTORY LOG:
-C 1993-06-05  R  KISTLER -- FORTRAN VERSION OF C-PROGRAM
-C 1995-05-30  D. A. KEYSER - TESTS FOR < 2 ELEMENTS IN SORT LIST,
-C             IF SO RETURNS WITHOUT SORTING (BUT FILLS INDX ARRAY)
-C
-C USAGE:    CALL INDEXF(N,IARRIN,INDX)
-C   INPUT ARGUMENT LIST:
-C     N        - SIZE OF ARRAY TO BE SORTED
-C     IARRIN   - INTEGER ARRAY TO BE SORTED
-C
-C   OUTPUT ARGUMENT LIST:
-C     INDX     - ARRAY OF POINTERS GIVING SORT ORDER OF IARRIN IN
-C              - ASCENDING ORDER {E.G., IARRIN(INDX(I)) IS SORTED IN
-C              - ASCENDING ORDER FOR ORIGINAL I = 1, ... ,N}
-C
-C REMARKS: CALLED BY SUBROUTINES 'TRKCHK', 'SHEAR', 'LAPSE', 'SUPROB',
-C   'STATS' AND 'OBUFR'.
-C
-C ATTRIBUTES:
-C   LANGUAGE: FORTRAN 90
-C   MACHINE:  IBM-SP
-C
-C$$$
-      SUBROUTINE INDEXF(N,IARRIN,INDX)
-      INTEGER  INDX(N),IARRIN(N)
-      DO J = 1,N
-         INDX(J) = J
-      ENDDO
-C MUST BE > 1 ELEMENT IN SORT LIST, ELSE RETURN
-      IF(N.LE.1)  RETURN
-      L = N/2 + 1
-      IR = N
-   33 CONTINUE
-      IF(L.GT.1)  THEN
-         L = L - 1
-         INDXT = INDX(L)
-         II = IARRIN(INDXT)
-      ELSE
-         INDXT = INDX(IR)
-         II = IARRIN(INDXT)
-         INDX(IR) = INDX(1)
-         IR = IR - 1
-         IF(IR.EQ.1)  THEN
-            INDX(1) = INDXT
-            RETURN
-         END IF
-      END IF
-      I = L
-      J = L * 2
-   30 CONTINUE
-      IF(J.LE.IR)  THEN
-         IF(J.LT.IR)  THEN
-            IF(IARRIN(INDX(J)).LT.IARRIN(INDX(J+1)))  J = J + 1
-         END IF
-         IF(II.LT.IARRIN(INDX(J)))  THEN
-            INDX(I) = INDX(J)
-            I = J
-            J = J + I
-         ELSE
-            J = IR + 1
-         END IF
-      END IF
-      IF(J.LE.IR)  GO TO 30
-      INDX(I) = INDXT
-      GO TO 33
-      END
-C$$$  SUBPROGRAM DOCUMENTATION BLOCK
-C                .      .    .                                       .
-C SUBPROGRAM:    DBUFR       GETS THE DATE FROM A PREPBUFR FILE
-C   PRGMMR: D. A. KEYSER     ORG: NP22       DATE: 1994-08-25
-C
-C ABSTRACT: READS THRU SUCCESSIVE BUFR MESSAGES UNTIL THE BUFR TABLE
-C   A ENTRY "AIRCFT" (CONVENTIONAL AIREP/PIREP AND ASDAR/AMDAR/TAMDAR
-C   AIRCRAFT REPORTS) IS FOUND IN A PREPBUFR FILE.  RETURNS THE DATE
-C   OF THIS MESSAGE TO THE CALLING PROGRAM.
-C
-C PROGRAM HISTORY LOG:
-C 1994-08-25  D. A. KEYSER -- ORIGINAL AUTHOR
-C
-C USAGE:    CALL DBUFR(IDATEP)
-C   OUTPUT ARGUMENT LIST:
-C     IDATEP   - DATE FROM FIRST TABLE A "AIRCFT" MESSAGE (YYMMDDHH)
-C
-C   INPUT FILES:
-C     UNIT 14  - PREPBUFR FILE CONTAINING ALL DATA
-C
-C   OUTPUT FILES:
-C     UNIT06   - PRINTOUT
-C
-C REMARKS: CALLED BY MAIN PROGRAM.
-C
-C ATTRIBUTES:
-C   LANGUAGE: FORTRAN 90
-C   MACHINE:  IBM-SP
-C
-C$$$
-      SUBROUTINE DBUFR(IDATEP)
-      CHARACTER*8   SUBSET
-      COMMON/TSTACAR/KTACAR
-      CALL DATELEN(10)
-      CALL OPENBF(14,'IN',14)
-   10 CONTINUE
-      CALL READMG(14,SUBSET,IDATEP,IRET)
-      IF(IRET.NE.0)   GO TO 999
-      IF(SUBSET.EQ.'AIRCAR  ')  KTACAR = KTACAR + 1
-      IF(SUBSET.NE.'AIRCFT  ')  GO TO 10
-cppppp
-      print * ,' '
-      print *, 'First AIRCFT message found ... '
-      print *,'PREPBUFR File Sec. 1 message date (IDATEP) = ',IDATEP
-cppppp
-      IF(IDATEP.LT.1000000000)  THEN
+calloc  integer      max_reps          ! original number of input merged (mass + wind piece)
+calloc                                 !  aircraft-type reports (obtained from first pass
+calloc                                 !  through input PREPBUFR file to get total for array
+calloc                                 !  allocation should = nrpts4QC_pre)
+c^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-C If 2-digit year returned in IDATEP, must use "windowing" technique
-C  to create a 4-digit year
+      integer    maxflt               ! maximum number of flights allowed (inside NRL QC)
+      parameter (maxflt = 12500)
+      character*6  cmaxflt            ! character form of maxflt
 
-C IMPORTANT: IF DATELEN(10) IS CALLED, THE DATE HERE SHOULD ALWAYS
-C            CONTAIN A 4-DIGIT YEAR, EVEN IF INPUT FILE IS NOT
-C            Y2K COMPLIANT (BUFRLIB DOES THE WINDOWING HERE)
+      integer    imiss                ! NRL integer missing value flag
+      parameter (imiss = 99999)
 
-         PRINT *, '##PREPACQC - THE FOLLOWING SHOULD NEVER HAPPEN!!!!!'
-         PRINT *, '##PREPACQC - 2-DIGIT YEAR IN IDATEP RETURNED FROM ',
-     $    'READMG (IDATEP IS: ',IDATEP,') - USE WINDOWING TECHNIQUE ',
-     $    'TO OBTAIN 4-DIGIT YEAR'
-         IF(IDATEP/1000000.GT.20)  THEN
-            IDATEP = 1900000000 + IDATEP
-         ELSE
-            IDATEP = 2000000000 + IDATEP
-         ENDIF
-         PRINT *, '##PREPACQC - CORRECTED IDATEP WITH 4-DIGIT YEAR, ',
-     $    'IDATEP NOW IS: ',IDATEP
-      ENDIF
-      RETURN
-  999 CONTINUE
-C PREPBUFR DATA SET CONTAINS NO "AIRCFT" TABLE A MSGS -- STOP 4  !!!
-      PRINT 14
-   14 FORMAT(/' PREPBUFR DATA SET CONTAINS NO "AIRCFT" TABLE A ',
-     $ 'MESSAGES - STOP 4'/)
-      CALL CLOSBF(14)
-      CALL W3TAGE('PREPOBS_PREPACQC')
-      CALL ERREXIT(4)
-      END
-C$$$  SUBPROGRAM DOCUMENTATION BLOCK
-C                .      .    .                                       .
-C SUBPROGRAM:    IBUFR       DECODES ACFT OBS. FROM PREPBUFR FILE
-C   PRGMMR: D. A. KEYSER     ORG: NP22       DATE: 2008-07-30
-C
-C ABSTRACT: DECODES A CONVENTIONAL AIREP/PIREP OR ASDAR/AMDAR/TAMDAR
-C   AIRCRAFT OBSERVATION FROM A TABLE A ENTRY "AIRCFT" MESSAGE IN A
-C   PREPBUFR FILE FOR EACH CALL.  IF ALL SUBSETS HAVE BEEN DECODED IN
-C   A MESSAGE THE NEXT TABLE A ENTRY "AIRCFT" MESSAGE IN READ IN AND
-C   DECODED. A RETURN 1 OCCURS WHEN ALL TABLE A ENTRY "AIRCFT" MESSAGES
-C   HAVE BEEN PROCESSED.  SPECIAL LOGIC COMBINES THE SEPARATE WIND AND
-C   MASS REPORT "PIECES" INTO A SINGLE OBSERVATION PRIOR TO RETURN TO
-C   CALLING PROGRAM.
-C
-C PROGRAM HISTORY LOG:
-C 1994-08-25  D. A. KEYSER -- ORIGINAL AUTHOR
-C 1995-03-27  D. A. KEYSER -- STORES FORECAST (GUESS) P-ALTITUDE, WIND
-C             DIRECTION, WIND SPEED AND TEMPERATURE FOR EACH DECODED
-C             REPORT (DIRECTION/SPEED OBTAINED FROM FORECAST U/V)
-C             (I/O ARGUMENTS ADDED TO TRANSFER VALUES TO CALLING PGM)
-C 1995-07-06  D. A. KEYSER -- FOR ASDAR/AMDAR: CHECKS "TSB" MNENOMIC
-C             FOR VALUE OF "2", IF SO MEANS REPORT HAS A MISSING
-C             PHASE OF FLIGHT INDICATOR AND STORES A "7" IN THE
-C             CHARACTER*1 VARIABLE LATER CHECKED BY MAIN PROGRAM
-C 1996-10-18  D. A. KEYSER -- NOW CLOSES INPUT BUFR DATA SET AFTER ALL
-C             REPORTS HAVE BEEN READ IN BY SUBR. IBUFR, UPDATED BUFRLIB
-C             CAUSES PGM TO ABORT WITH CALL TO OPENBF IN SUBR. OBUFR
-C             W/O THIS FIX
-C 2002-11-20  D. A. KEYSER -- EXPANDED CHARACTER QMARKI FROM 4 TO 5
-C             BYTES, WHERE BYTE 5 HOLDS "P" OR "H" FOR TEMP SDM PURGE
-C             OR KEEP FLAG - BYTE 1 HOLDS "P" OR "H" EXCLUSIVELY FOR
-C             WIND SDM PURGE OR KEEP FLAGS, USED TO BE COMBINED FOR
-C             WIND AND TEMP, BUT REMOVED ASSUMPTION THAT AN SDM PURGE
-C             ON TEMP ONLY ALSO RESULTS IN AN SDM PURGE ON WIND, THERE
-C             IS ALSO NO LONGER ANY RELATIONSHIP BETWEEN AN SDM KEEP ON
-C             WIND VS. A KEEP ON TEMP - THEY ARE INDENDENDENT OF EACH
-C             OTHER
-C 2008-07-30  D. A. KEYSER -- RECEIPT TIME TEST IS NO LONGER DONE FOR
-C             TAMDAR REPORTS (REGARDLESS OF SWITCH "RCPTST" BECAUSE
-C             TAMDAR REPORTS CAN BE RESENT MANY TIMES OVER AND THE
-C             RECEIPT TIME FOR VERY LATE (E.G., T-12 NDAS) RUNS MAY
-C             INCORRECTLY DISPLAY WHAT LOOKS LIKE A "STRANGE" RECEIPT
-C             TIME); IN RESPONSE TO CHANGE FROM SINGLE LEVEL TO
-C             DELAYED REPLICATION FOR "AIRCFT" REPORT LEVEL DATA NOW IN
-C             PREPBUFR FILE (IN PREPARATION FOR NRL AIRCRAFT QC PROGRAM
-C             WHICH WILL REPLACE THIS PROGRAM AND CAN GENERATE AIRCRAFT
-C             "PROFILES"), RECEIPT TIME (RCT) (WHICH IS NOW PART OF
-C             LEVEL DATA) IS NO LONGER RETRIEVED IN SAME CALL TO UFBINT
-C             AS REMAINING SINGLE-LEVEL HEADER DATA (TO AVOID BUFRLIB
-C             ERROR) (ALL LEVEL DATA HERE STILL HAS JUST ONE
-C             REPLICATION AT THIS POINT)
-C
-C USAGE:    CALL IBUFR(ALTF,DIRF,SPDF,TMPF,*)
-C   INPUT ARGUMENT LIST:
-C     ALTF     - INITIAL FORECAST VALUE FOR PRESSURE ALTITUDE, MISSING
-C     DIRF     - INITIAL FORECAST VALUE FOR WIND DIRECTION, MISSING
-C     SPDF     - INITIAL FORECAST VALUE FOR WIND SPEED, MISSING
-C     TMPF     - INITIAL FORECAST VALUE FOR TEMPERATURE, MISSING
-C
-C   OUTPUT ARGUMENT LIST:
-C     ALTF     - FORECAST VALUE FOR PRESSURE ALTITUDE (METERS)
-C     DIRF     - FORECAST VALUE FOR WIND DIRECTION (DEGREES)
-C     SPDF     - FORECAST VALUE FOR WIND SPEED (KNOTS)
-C     TMPF     - FORECAST VALUE FOR TEMPERATURE (DEG. C X 10)
-C
-C   INPUT FILES:
-C     UNIT 14  - PREPBUFR FILE CONTAINING ALL DATA
-C
-C   OUTPUT FILES:
-C     UNIT 06  - PRINTOUT
-C
-C REMARKS: CALLED BY MAIN PROGRAM.
-C
-C ATTRIBUTES:
-C   LANGUAGE: FORTRAN 90
-C   MACHINE:  IBM-SP
-C
-C$$$
-      SUBROUTINE IBUFR(ALTF,DIRF,SPDF,TMPF,*)
-      SAVE
-      CHARACTER*1   CIQMMK(10),CF,PF
-      CHARACTER*5   QMARKI
-      CHARACTER*8   SUBSET,IDENT
-      CHARACTER*40  HEADR,OBLVL,FCLVL
-      REAL(8)  HDR6,OBS(8),HDR(9),FST_8(4),RCT
-      REAL     ACAT(9),FST(4)
-      COMMON/CBUFR/IDENT,IRCTME,RDATA(1608),KIX,QMARKI,CF,PF
-      COMMON/STDATE/IDATE(5)
-      EQUIVALENCE  (IDENT,HDR6),(IRPTYP,RDATA(8))
-      DATA  CIQMMK/'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'/
-      DATA   ACAT/10.5,20.5,30.5,40.5,50.5,60.5,70.5,80.5,90.5/
-      DATA  HEADR/'YOB XOB NUL DHR TSB SID ITP TYP SQN     '/
-      DATA  OBLVL/'ZOB TOB DDO FFO TQM WQM UOB VOB         '/
-      DATA  FCLVL/'UFC VFC TFC ZFC                         '/
-      DATA  XMSG/99999./,IMSG/99999/,IFLAG/0/,ILOOP/1/,KI/0/,SQNL/0/
-C ON INPUT: IFLAG =0 - 1ST "PIECE" OF NEXT OBS. HAS NOT YET BEEN DECODED
-C           IFLAG =1 - 1ST "PIECE" OF NEXT OBS. DECODED IN PREVIOUS CALL
-      IF(IFLAG.EQ.1)  GO TO 45
-      RDATA = XMSG
-   30 CONTINUE
-      CALL READSB(14,IRET)
-      IF(IRET.NE.0)  THEN
-   20    CONTINUE
-         CALL READMG(14,SUBSET,IDATEP,IRET)
-         IF(IRET.NE.0)  THEN
-C NON-ZERO IRET IN READMG MEANS ALL BUFR MESSAGES IN FILE HAVE BEEN READ
-C  FILE WILL BE CLOSED
-            PRINT 101
-  101 FORMAT(/5X,'===> PREPBUFR DATA SET IN UNIT 14 SUCCESSFULLY',
-     $ ' CLOSED FROM INITIAL READ OF AIRCFT OBS.')
-            CALL CLOSBF(14)
-            RETURN 1
-         END IF
-         IF(SUBSET.NE.'AIRCFT  ')  GO TO 20
-         GO TO 30
-      END IF
-      CALL UFBINT(14,HDR,9,1,N1LEV,HEADR)
-      CALL UFBINT(14,OBS,8,1,NLEV ,OBLVL)
-      CALL UFBINT(14,FST_8,4,1,NLEV2,FCLVL); FST=FST_8
-      CALL UFBINT(14,RCT,1,1,N3LEV,'RCT')
-      IF(N1LEV.NE.NLEV.OR.NLEV2.NE.NLEV.OR.NLEV.NE.1.OR.N3LEV.NE.NLEV)
-     $ GO TO 999
-      KI = NINT(HDR(8))/100
-      IF(ILOOP.EQ.2)  THEN
-C COMPARE RPT SEQ. NUMBERS IN HEADERS OF TWO "PIECES" DECODED IN THIS
-C  CALL - IF THEY AGREE THEN BOTH ARE PART OF SAME OBS., OTHERWISE THIS
-C  OBS. CONSISTS OF ONLY ONE "PIECE" AND IT IS RETURNED TO CALLING PGM
-C  (IFLAG=1 ON RETURN INDICATES NEXT OBS. 1ST "PIECE" HAS BEEN DECODED)
-         IF(HDR(9).EQ.SQNL)  GO TO 40
-         ILOOP = 1
-         IFLAG = 1
-         RETURN
-      END IF
-   45 CONTINUE
-C CONSTRUCT OBSERVATION HEADER(ONLY DONE FOR 1ST DECODED REPORT "PIECE")
-      CF     = '-'
-      PF     = '-'
-      QMARKI = '---C-'
-C      RDATA(1) = MIN0(IMSG,NINT(HDR(1)*100.))
-C      RDATA(2) = MIN0(IMSG,NINT(36000.-(HDR(2)*100.)))
-C      IRCTME  = MIN0(IMSG,NINT(RCT*100.))
-C      NDT = MIN0(IMSG,NINT(HDR(4)*100.))
-      RDATA(1) = NINT(MIN(99999._8,HDR(1)*100.))
-      RDATA(2) = NINT(MIN(99999._8,(36000.-(HDR(2)*100.))))
-      IRCTME  = NINT(MIN(99999._8,RCT*100.))
-      NDT = NINT(MIN(99999._8,HDR(4)*100.))
-      RDATA(4) = NDT + (IDATE(4) * 100)
-      RDATA(4) = MOD(NINT(RDATA(4)),2400)
-      IF(NINT(RDATA(4)).LT.0)  RDATA(4) = NINT(2400. + RDATA(4))
-      IF(NINT(HDR(5)).EQ.1)  CF = 'C'
-      IF(NINT(HDR(5)).EQ.2)  PF = '7'
-C      IRPTYP   = MIN0(99,NINT(HDR(7)))
-      IRPTYP   = NINT(MIN(99._8,HDR(7)))
-      HDR6 = HDR(6)
-      KIX = HDR(8)
-   40 CONTINUE
-      IF(KI.EQ.2)  THEN
-C CONSTRUCT WIND PART OF OBSERVATION FROM DECODED WIND REPORT "PIECE"
-C
-C QMARKI(4:4) HOLDS SCALED VECTOR WIND INCREMENT MARKER (IF APPLICABLE)
-C  OBTAINED FROM THE CALCULATED VECTOR INCREMENT (NOTE: IF REPORT TIME
-C  IS > 3.33-HOURS FROM CYCLE TIME THE DEFAULT SCALE = 'C' IS STORED)
-         IF(MAX(FST_8(1),FST_8(2)).LT.XMSG)  THEN
-            IF(MAX(OBS(7),OBS(8)).LT.XMSG.AND.(ABS(RDATA(4)-
-     $       REAL(IDATE(4)*100.)).LE.333..OR.(RDATA(4)-
-     $       REAL(IDATE(4)*100.)).GE.2067.))  THEN
-           VDIF = SQRT((FST_8(1)-OBS(7))**2+(FST_8(2)-OBS(8))**2)*1.9425
-               QMARKI(4:4) = 'Z'
-               DO J = 1,9
-                  IF(VDIF.LT.ACAT(J))  THEN
-                     QMARKI(4:4) = CIQMMK(J)
-                     GO TO 175
-                  END IF
-               ENDDO
-  175          CONTINUE
-            END IF
-C CONSTRUCT FCST WIND DIR. (DEG) & SPD (KTS) FROM FCST WIND COMPONENTS
-            ISUNIT = 1
-            CALL CMDDFF(ISUNIT,FST(1),FST(2),DIRF,SPDF)
-            DIRF = NINT(DIRF)
-            SPDF = NINT(SPDF)
-         END IF
-C RDATA(43) HOLDS PRESSURE ALTITUDE (METERS)
-C         RDATA(43) = MIN0(IMSG,NINT(OBS(1)))
-         RDATA(43) = NINT(MIN(99999._8,OBS(1)))
-C ALTF HOLDS FORECAST PRESSURE ALTITUDE (METERS)
-         IF(FST_8(4).LT.XMSG)  ALTF = NINT(FST_8(4))
-C RDATA(46) HOLDS WIND DIRECTION (DEGREES)
-C         RDATA(46) = MIN0(IMSG,NINT(OBS(3)))
-         RDATA(46) = NINT(MIN(99999._8,OBS(3)))
-C RDATA(46) HOLDS WIND SPEED (KNOTS)
-C         RDATA(47) = MIN0(IMSG,NINT(OBS(4)))
-         RDATA(47) = NINT(MIN(99999._8,OBS(4)))
-C QMARKI(1:1) HOLDS SDM WIND PURGE FLAG (IF APPLICABLE) -- OR --
-C  HOLDS SDM WIND KEEP FLAG (IF APPLICABLE)
-         IF(NINT(OBS(6)).EQ.14)  THEN
-            QMARKI(1:1) = 'P'
-         ELSE  IF(NINT(OBS(6)).EQ.0)  THEN
-            QMARKI(1:1) = 'H'
-         END IF
-      ELSE
-C CONSTRUCT MASS PART OF OBSERVATION FROM DECODED MASS REPORT "PIECE"
-C
-C RDATA(44) HOLDS TEMPERATURE (DEGREES CELSIUS X 10)
-C         RDATA(44) = MIN0(IMSG,NINT(OBS(2)*10.))
-         RDATA(44) = NINT(MIN(99999._8,OBS(2)*10.))
-C TMPF HOLDS FORECAST TEMPERATURE (DEGREES CELSIUS X 10)
-         IF(FST_8(3).LT.XMSG)  TMPF = NINT(FST_8(3) * 10.)
-C QMARKI(5:5) HOLDS SDM TEMP PURGE FLAG (IF APPLICABLE) -- OR --
-C  HOLDS SDM TEMP KEEP FLAG (IF APPLICABLE)
-C  (NOTE: IF ONLY SDM PURGE FLAG ON WIND, PREVIOUS PREPOBS_PREPDATA
-C         PROGRAM WILL ALSO SET TEMP Q.M. AS SDM PURGE)
-         IF(NINT(OBS(5)).EQ.14)  THEN
-            QMARKI(5:5) = 'P'
-         ELSE  IF(NINT(OBS(5)).EQ.0)  THEN
-            QMARKI(5:5) = 'H'
-         END IF
-      END IF
-      IF(ILOOP.EQ.1)  THEN
-C IF ONLY ONE "PIECE" HAS BEEN DECODED IN THIS CALL, DECODE NEXT "PIECE"
-C  TO DETERMINE IF IT IS THE SECOND "PIECE" OF THE AIRCRAFT OBSERVATION
-C  (SAVE RPT SEQ. # OF 1ST "PIECE" FOR LATER COMPARISON AGAINST SECOND)
-         SQNL = HDR(9)
-         ILOOP = 2
-         GO TO 30
-      END IF
-C IF TWO "PIECES" HAVE BEEN DECODED IN THIS CALL, READY TO RETURN
-C  COMPLETE AIRCRAFT OBSERVATION TO CALLING PROGRAM
-      ILOOP = 1
-      IFLAG = 0
-      RETURN
-C-----------------------------------------------------------------------
-  999 CONTINUE
-C THE NUMBER OF DECODED LEVELS IS NOT 1!! -- STOP 70
-      PRINT 217
-  217 FORMAT(/' THE NUMBER OF DECODED LEVELS FOR A REPORT IS NOT 1 -- ',
-     $ 'STOP 70'/)
-      CALL W3TAGE('PREPOBS_PREPACQC')
-      CALL ERREXIT(70)
-C-----------------------------------------------------------------------
-      END
-C$$$  SUBPROGRAM DOCUMENTATION BLOCK
-C                .      .    .                                       .
-C SUBPROGRAM:    OBUFR       WRITES AIRCRAFT RPTS TO PREPBUFR FILE
-C   PRGMMR: D. A. KEYSER     ORG: NP22       DATE: 2008-07-30
-C
-C ABSTRACT: RESORTS ALL OBS. IN HOLDING ARRAYS BACK TO ORIGINAL ORDER,
-C   THEN FOR ALL TABLE A ENTRY MESSAGES EXCEPT "AIRCFT" DOES A
-C   STRAIGHT COPY OF EACH SUBSET (REPORT) FROM THE INPUT PREPBUFR
-C   FILE TO THE OUTPUT PREPBUFR FILE.  FOR TABLE A ENTRY "AIRCFT"
-C   MESSAGES, ALSO COPIES ALL SUBSETS (RPTS) THAT ARE NOT DUPLICATES
-C   OR NOT OUTSIDE USER-SPECIFIED TIME WINDOW.  HOWEVER, FROM RESORTED
-C   OBS. HOLDING ARRAYS, DETERMINES IF AN "EVENT" HAS OCCURRED (I.E.,
-C   A CHANGED TEMPERATURE OR WIND QUALITY MARKER ON AN OBS THAT WAS NOT
-C   ORIGNALLY "BAD").  IF SO, PUSHES DOWN TEMPERATURE OR WIND STACKED
-C   EVENTS AND RECORDS THIS EVENT (REASON CODE) ALONG WITH THE NEW
-C   QUALITY MARKER PRIOR TO WRITING THE SUBSET TO THE OUTPUT PREPBUFR
-C   FILE.  WILL ALSO UPDATE LAT/LON IF IT WAS CHANGED DUE TO A WAYPOINT
-C   ERROR (THIS IS NOT A STACKED EVENT, HOWEVER).
-C
-C PROGRAM HISTORY LOG:
-C 1994-08-25  D. A. KEYSER -- ORIGINAL AUTHOR
-C 1995-03-27  D. A. KEYSER -- N-LIST SWITCHES "JAMASS" & "JAWIND" NOW
-C             6-WORD ARRAYS, RPTS CAN NOW BE EXCLUDED FROM OUTPUT
-C             ACCORDING TO LAT. BAND; N-LIST SWITCH "FLAGUS"(LOGICAL)
-C             REPLACED BY "IFLGUS"(INTEGER), WHERE IFLGUS=0(1) EQUATES
-C             TO FLAGUS=F(T) AND NEW CHOICE IFLGUS=2 MEANS EXCLUDE RPTS
-C             OVER U.S. FROM OUTPUT RATHER THAN JUST FLAGGING
-C 1995-04-26  D. A. KEYSER -- PROGRAM CODE STILL ENCODED INTO BUFR
-C             BUT ITS VALUE HARDWIRED TO 7 (IN PREP. FOR NEW BUFR
-C             USER TABLE WHICH WILL NO LONGER HAVE PGM CODE)
-C 2004-11-16  D. A. KEYSER -- NOW CALLS BUFRLIB ROUTINE "UFBQCD" TO GET
-C             PROGRAM CODE FOR THIS Q.C. STEP ("PREPACQC") RATHER THAN
-C             HARDWIRING IT TO 7 AS BEFORE
-C 2008-07-30  D. A. KEYSER -- PRIOR TO WRITING OUT EVENT, TESTS ORIG. T
-C             & W QM'S - IF > 3, WILL NOT WRITE OUT EVENT (HONORS
-C             ORIGINAL T & W QM'S IF BAD), THIS NEEDED BECAUSE TAMDAR
-C             AND CANADIAN AMDAR CURRENTLY HAVE T & W QM=9 COMING IN
-C             (MISSING OBS ERROR) WHICH CODE WAS IGNORING (AND WRITING
-C             OUT EVENT WITH GOOD QM MOST OF THE TIME - THIS CAUSED
-C             OIQC TO USE THESE OBS IN ITS DECISION MAKING PROCESS -
-C             THESE OBS ARE CURRENTLY ONLY MONITORED BY GSI AND SHOULD
-C             NOT BE CONSIDERED BY OIQC)
-C
-C USAGE:    CALL OBUFR(KOUNT)
-C   INPUT ARGUMENT LIST:
-C     KOUNT    - THE NUMBER OF AIRCRAFT OBSERVATIONS IN HOLDING ARRAYS
-C
-C   INPUT FILES:
-C     UNIT 14  - PREPBUFR FILE CONTAINING ALL DATA
-C
-C   OUTPUT FILES:
-C     UNIT 06  - PRINTOUT
-C     UNIT 61  - PREPBUFR FILE CONTAINING ALL DATA (NOW WITH ACFT QC)
-C
-C REMARKS: CALLED BY MAIN PROGRAM.
-C
-C ATTRIBUTES:
-C   LANGUAGE: FORTRAN 90
-C   MACHINE:  IBM-SP
-C
-C$$$
-      SUBROUTINE OBUFR(KOUNT)
-      PARAMETER (IRMX= 80000)
-      PARAMETER (ISIZE= 16)
-      LOGICAL  LTEST,DOSPOB
-      CHARACTER*1   CHRQM(6)
-      CHARACTER*8   LAST,ACID,AAID(IRMX),SUBSET,POSITN,HEADR
-      CHARACTER*14  TAG,STAG(IRMX)
-      CHARACTER*20  QM1LVL,QM2LVL
-      REAL(8) HDR(2),POS(2),QMS1(4),QMS2(5)
-      REAL RQM(6),SARRAY(IRMX,ISIZE),PHIACF(7)
-      INTEGER  INDR(IRMX),IARRAY(IRMX),MFLAG(2)
-      COMMON/ALLDAT/IFLEPT(IRMX),ACID(IRMX),ALAT(IRMX),ALON(IRMX),
-     $ AALT(IRMX),TIME(IRMX),ASPD(IRMX),ADIR(IRMX),TBASE,
-     $ ATMP(IRMX),TAG(IRMX),IRTM(IRMX),INTP(IRMX),KNTINI(IRMX),
-     $ ITEVNT(IRMX),IWEVNT(IRMX),ATMPF(IRMX),AALTF(IRMX),ASPDF(IRMX),
-     $ ADIRF(IRMX)
-      COMMON/OUTPUT/KNTOUT(5)
-      COMMON/INPT/DOSPOB,DOACRS,TMAXO,TMINO,TIMINC,WAYPIN,INIDST,IFLGUS,
-     $ JAMASS(6),JAWIND(6),RCPTST
-      COMMON/TSTACAR/KTACAR
-      COMMON/MASK/GDNH(362,91),GDSH(145,37),GDUS(362,91)
-      DATA  QM1LVL/'TOB TQM TPC TRC     '/
-      DATA  QM2LVL/'UOB WQM WPC WRC VOB '/
-      DATA  HEADR/'TYP SQN '/
-      DATA  POSITN/'YOB XOB '/
-      DATA  KNTBFR/0/,KKK/0/,IFLAG/0/,SQNL/0/
-      DATA  RQM  / 0., 1., 3.,13.,10.,14./
-      DATA  CHRQM/'H','A','Q','F','O','P'/
-      DATA  LAST/'XXXXXXXX'/,ISUBO/0/,ISUBOT/0/,IRECOL/0/,IRECO/0/
-      DATA  PHIACF/-90.,-70.,-20.,0.,20.,70.,90./
-      DATA  MFLAG/2*0/
-      PRINT 199
-  199 FORMAT(/5X,'===> ALL REPORTS Q.C.ED AND READY FOR REPACKING'/)
-      LTEST = (IFLGUS.GT.0.AND.KTACAR.GT.1)
-C TRANSFER ORIGINAL DATA TO TEMPORARY ARRAYS TO HOLD FOR RE-ARRANGING
-      DO J = 1,KOUNT
-         IF(LTEST.AND.NINT(ALAT(J)).GT.0.AND.TAG(J)(7:7).NE.'Z')  THEN
-C TEST FOR AIREP/PIREP OBS. OVER CONTINENTAL U.S. WHEN IFLGUS = 1 OR 2
-C  AND THERE ARE AT LEAST TWO "AIRCAR" TABLE A ENTRY BUFR MESSAGES
-            KXI = (360.0 - ALON(J)) + 0.005 + 1.0
-            KYJ = ALAT(J) + 1.0
-            IF(KYJ.LT.91.AND.(GDUS(KXI,KYJ).GT..5.OR.GDUS(KXI+1,KYJ).GT.
-     $      .5.OR.GDUS(KXI,KYJ+1).GT..5.OR.GDUS(KXI+1,KYJ+1).GT..5))THEN
-               IF(IFLGUS.EQ.1)  THEN
-C  ..IN SUCH A CASE, FOR IFLGUS=1 ADD 400 TO TEMPERATURE AND WIND EVENT
-C     VALUE (THIS WILL LATER BECOME EVENT 325 & FLAG TEMP/WIND W/ 15'S)
-                  ITEVNT(J) = ITEVNT(J) + 400
-                  IWEVNT(J) = IWEVNT(J) + 400
-               ELSE
-C  ..IN SUCH A CASE, FOR IFLGUS=2, SET KNTINI TO 99999 (THIS WILL LATER
-C     EXCLUDE SUCH REPORTS FROM BEING OUTPUT) AND SET TAG POS. 1 TO "D"
-                  KNTINI(J) = 99999
-                  TAG(J)(1:1) = 'D'
-               END IF
-            END IF
-         END IF
-         AAID(J) = ACID(J)
-         SARRAY(J,1)  = ALAT(J)
-         SARRAY(J,2)  = ALON(J)
-         SARRAY(J,3)  = AALT(J)
-         SARRAY(J,4)  = TIME(J)
-         SARRAY(J,5)  = ATMP(J)
-         SARRAY(J,6)  = ADIR(J)
-         SARRAY(J,7)  = ASPD(J)
-         SARRAY(J,8)  = REAL(INTP(J))
-         SARRAY(J,9)  = REAL(IRTM(J))
-         SARRAY(J,10) = REAL(KNTINI(J))
-         SARRAY(J,11) = REAL(ITEVNT(J))
-         SARRAY(J,12) = REAL(IWEVNT(J))
-         SARRAY(J,13) = AALTF(J)
-         SARRAY(J,14) = ADIRF(J)
-         SARRAY(J,15) = ASPDF(J)
-         SARRAY(J,16) = ATMPF(J)
-         STAG(J) = TAG(J)
-         IARRAY(J) = KNTINI(J)
-      ENDDO
-C NEED TO RESORT OBS. ACCORDING TO ORIGINAL ORDER THAT WAS READ IN
-C CALL SORT ROUTINE- PUTS POINTERS INTO IPOINT ARRAY/DOES NOT REARRANGE
-      IF(KOUNT.GT.0)  CALL INDEXF(KOUNT,IARRAY,INDR)
-C WRITE SORTED REPORTS BACK INTO ORIGINAL ARRAYS
-      DO I = 1,KOUNT
-         J = INDR(I)
-         ACID(I)   = AAID(J)
-         ALAT(I)   = SARRAY(J,1)
-         ALON(I)   = SARRAY(J,2)
-         AALT(I)   = SARRAY(J,3)
-         TIME(I)   = SARRAY(J,4)
-         ATMP(I)   = SARRAY(J,5)
-         ADIR(I)   = SARRAY(J,6)
-         ASPD(I)   = SARRAY(J,7)
-         INTP(I)   = NINT(SARRAY(J,8))
-         IRTM(I)   = NINT(SARRAY(J,9))
-         KNTINI(I) = NINT(SARRAY(J,10))
-         ITEVNT(I) = NINT(SARRAY(J,11))
-         IWEVNT(I) = NINT(SARRAY(J,12))
-         AALTF(I)  = SARRAY(J,13)
-         ADIRF(I)  = SARRAY(J,14)
-         ASPDF(I)  = SARRAY(J,15)
-         ATMPF(I)  = SARRAY(J,16)
-         TAG(I)  = STAG(J)
-      ENDDO
-      CALL DATELEN(10)
-      CALL OPENBF(14,'IN',14)
-      PRINT 200
-  200 FORMAT(/5X,'+++> PREPBUFR DATA SET IN UNIT 14 SUCCESSFULLY',
-     $ ' OPENED FOR INPUT; FIRST MESSAGE CONTAINS BUFR TABLES A,B,D'/)
-      CALL OPENBF(61,'OUT',14)
-      PRINT 100
-  100 FORMAT(/5X,'+++> PREPBUFR DATA SET IN UNIT 61 SUCCESSFULLY',
-     $ ' OPENED FOR OUTPUT; CUSTOMIZED BUFR TABLES A,B,D IN UNIT 14'/
-     $ 12X,'READ IN AND ENCODED INTO MESSAGE NO. 1 OF OUTPUT DATA SET'/)
-      IF(LTEST)  THEN
-         IF(IFLGUS.EQ.1)  PRINT 300, KTACAR
-         IF(IFLGUS.EQ.2)  PRINT 323, KTACAR
-      END IF
-  300 FORMAT(/8X,'==> CONVL AIREP/PIREP RPTS OVER U.S. MAINLAND/G. MEX'
-     $,'ICO/SO.ONTARIO WILL BE FLAGGED, NO. ACARS MSGS PREV=',I5,' <==')
-  323 FORMAT(/8X,'==> CONVL AIREP/PIREP RPTS OVER U.S. MAINLAND/G. MEXI'
-     $,'CO/SO.ONTARIO WILL BE EXCLUDED, NO. ACARS MSGS PREV=',I5,' <==')
+      real       amiss                ! NRL real missing value flag
+      parameter (amiss = -9999.)
 
-C GET THE "PROGRAM CODE" CORRESPONDING TO "PREPACQC"
-      CALL UFBQCD(14,'PREPACQC',PCODE)
+      real*8     bmiss                ! BUFR missing value
+      real*8     getbmiss             ! Function to return current bmiss value from BUFRLIB
 
-   10 CONTINUE
+      real         m2ft               ! NRL conversion factor to convert m to ft
 
-C READ IN NEXT BUFR MESSAGE FROM INPUT FILE
-      CALL READMG(14,SUBSET,IDATEP,IRET)
-      IF(IRET.NE.0)  THEN
-C NON-ZERO IRET IN READMG MEANS ALL BUFR MESSAGES IN FILE HAVE BEEN READ
-C  CLOSE INPUT DATA SET
-         IF(LAST.EQ.'AIRCFT  ')  THEN
-C CALL SUBR. SBUFR IF SUPEROBS ARE TO BE INCLUDED
-            IF(DOSPOB.AND.KNTOUT(3).GT.0)
-     $       CALL SBUFR(LTEST,SQNL,IRECOL,ISUBO,ISUBOT,PCODE)
-            CALL UFBCNT(61,IRECO,ISUBO)
-            ISUBOT = ISUBOT + ISUBO
-            PRINT 1254, IRECO,LAST,ISUBO,ISUBOT
- 1254 FORMAT(/' --- WROTE BUFR DATA MSG NO. ',I10,' -- TABLE A ENTRY "',
-     $A8,'" - CONTAINS',I6,' REPORTS (TOTAL NO. RPTS WRITTEN =',I7,')'/)
-         END IF
-         PRINT 9101, IRECO,ISUBOT
- 9101 FORMAT(/' --- ALL TOTAL OF',I11,' BUFR MESSAGES WRITTEN OUT -- TO'
-     $,'TAL NUMBER OF REPORTS WRITTEN =',I7//5X,'===> PREPBUFR DATA '
-     $,'SET IN UNIT 14 SUCCESSFULLY CLOSED FROM FINAL READ OF ALL OBS')
-         CALL CLOSBF(61)
-         PRINT 9102
- 9102 FORMAT(/5X,'===> PREPBUFR DATA SET IN UNIT 61 SUCCESSFULLY ',
-     $ 'CLOSED AFTER WRITING OF ALL OBS'/25X,' *** ALL DONE ***'/)
-         RETURN
-      END IF
-      CALL UFBCNT(14,IRECI,ISUBI)
-CCCCC PRINT 1364, IRECI,SUBSET
-      IF(SUBSET.EQ.'AIRCFT  ')  PRINT 1364, IRECI,SUBSET
- 1364 FORMAT(' --- READ IN BUFR DATA MESSAGE NUMBER',I6,' WITH TABLE ',
-     $ 'A ENTRY "',A8,'"')
-      IF(LAST.NE.SUBSET)  THEN
-         IF(LAST.EQ.'AIRCFT  ')  THEN
-C CALL SUBR. SBUFR IF SUPEROBS ARE TO BE INCLUDED
-            IF(DOSPOB.AND.KNTOUT(3).GT.0)
-     $       CALL SBUFR(LTEST,SQNL,IRECOL,ISUBO,ISUBOT,PCODE)
-            CALL UFBCNT(61,IRECO,ISUBO)
-            ISUBOT = ISUBOT + ISUBO
-            PRINT 1254, IRECO,LAST,ISUBO,ISUBOT
-C MUST CLOSE THE LAST "AIRCFT" TABLE A ENTRY MESSAGE
-            CALL CLOSMG(61)
-         END IF
-         PRINT 105, SUBSET,IDATEP
-  105 FORMAT(/' ===> NEXT MESSAGE IN OUTPUT PREPBUFR DATA SET IN ',
-     $ 'UNIT 61 HAS NEW TABLE A ENTRY OF "',A6,'" -- DATE IS',I11)
-         CALL UFBCNT(61,IRECOL,ISUBO)
-         IRECOL = IRECOL + 1
-      END IF
-      LAST = SUBSET
-      IF(SUBSET.NE.'AIRCFT  ')  THEN
-C ALL TABLE A ENTRY BUFR MESSAGES THAT ARE NOT "AIRCFT" ARE SIMPLY
-C  COPIED FROM INPUT FILE TO OUTPUT FILE AS IS (NO DECODING OF SUBSETS)
-         CALL COPYMG(14,61)
-         CALL UFBCNT(61,IRECO,ISUBO)
-         ISUBOT = ISUBOT + ISUBO
-CCCCC    PRINT 1254, IRECO,SUBSET,ISUBO,ISUBOT
-         GO TO 10
-      END IF
-C TABLE A ENTRY "AIRCFT" MESSAGES COME HERE TO DECODE/ENCODE EACH SUBSET
-      CALL OPENMB(61,SUBSET,IDATEP)
-    2 CONTINUE
-C READ IN NEXT SUBSET (REPORT) FROM THIS BUFR MESSAGE
-      CALL READSB(14,IRET)
-C NON-ZERO IRET IN READSB MEANS ALL SUBSETS IN BUFR MSG HAVE BEEN READ
-C GO ON TO READ NEXT BUFR MESSAGE
-      IF(IRET.NE.0)  GO TO 10
-C OTHERWISE, MUST LOOK AT RPT SEQ. NUMBER TO SEE IF THIS IS PIECE 1 OF A
-C  1- OR 2-PIECE(MASS/WIND) OBS. (KNEW=1) OR IF THIS IS PIECE 2 (KNEW=0)
-      CALL UFBINT(14,HDR,2,1,N1LEV,HEADR)
-      IF(N1LEV.NE.1)  GO TO 999
-      KNEW = 0
-      IF(HDR(2).NE.SQNL)  THEN
-         KNEW  = 1
-         IF(IFLAG.EQ.0)  THEN
-C TEST BELOW SATISFIED WHEN BOTH JAMASS & JAWIND ARE 9999 FOR LAT BAND
-C  (SET POS. 1 OF TAG TO 'D' TO REMOVE FROM FINAL PRINTOUT LISTING)
-            IF(MIN0(MFLAG(1),MFLAG(2)).EQ.1)  TAG(KKK)(1:1) = 'D'
-            KKK = KKK + 1
-            MFLAG(1) = 1
-            MFLAG(2) = 1
-         END IF
-         IFLAG = 0
-         KNTBFR = KNTBFR + 1
-      END IF
-      SQNL = HDR(2)
-C DETERMINE IF THIS "AIRCFT" OBS SHOULD INDEED BE WRITTEN TO OUTPUT FILE
-      IF(KNTBFR.NE.KNTINI(KKK))  THEN
-C  -- COME HERE IF NOT AND SET IFLAG=1 IN CASE NEXT PIECE READ IN IS
-C      PART OF THIS SAME OBS.
-         IFLAG = 1
-         GO TO 2
-      END IF
-C DETERMINE LATITUDE BAND INDEX (IBNDA)
-      DO IBNDA = 1,5
-         IF(ALAT(KKK).LT.(PHIACF(IBNDA+1)-0.005))  GO TO 6701
-      ENDDO
-      IBNDA = 6
- 6701 CONTINUE
-      KI = NINT(HDR(1))/100
-      IF((JAMASS(IBNDA).NE.0.AND.KI.EQ.1).OR.(JAWIND(IBNDA).NE.0.AND.
-     $ KI.EQ.2)) GO TO 3
-      MFLAG(KI) = 0
-C ALL SUBSETS THAT ARE TO BE RETAINED ARE FIRST COPIED FROM INPUT BUFFER
-C  TO OUTPUT BUFFER AS IS
-      CALL UFBCPY(14,61)
-      IF(KI.EQ.1.AND.ITEVNT(KKK).GT.0)  THEN
-C --> COME HERE IF THERE IS A TEMPERATURE EVENT (NEW Q. MARKER)
-C      STACK NEW Q.MARK, PGM CODE, REASON CODE (EVENT) AND TEMP. OB
-C      (UNLESS ORIGINAL TEMP. QM IS "BAD", THEN DON'T WRITE OUT EVENT)
-         CALL UFBINT(14,QMS1,4,1,N1LEV,QM1LVL)
-         IF(QMS1(2).GT.3) THEN
-            IF(QMS1(2).LT.10) THEN
-               WRITE(TAG(KKK)(2:2),'(I1)') NINT(QMS1(2))
-            ELSE IF(QMS1(2).EQ.10) THEN
-               TAG(KKK)(2:2) = 'a'
-            ELSE IF(QMS1(2).EQ.11) THEN
-               TAG(KKK)(2:2) = 'b'
-            ELSE IF(QMS1(2).EQ.12) THEN
-               TAG(KKK)(2:2) = 'c'
-            ELSE IF(QMS1(2).EQ.13) THEN
-               TAG(KKK)(2:2) = 'd'
-            ELSE IF(QMS1(2).EQ.14) THEN
-               TAG(KKK)(2:2) = 'e'
-            ELSE
-               TAG(KKK)(2:2) = 'f'
-            END IF
-            TAG(KKK)(13:13) = '8'
-            ITEVNT(KKK) = 0
-            GO TO 2203
-         END IF
-         IF(N1LEV.NE.1)  GO TO 999
-         IF(MOD(ITEVNT(KKK),400).GT.0)  THEN
-C ----> COME HERE FOR ALL EVENTS EXCEPT 325
-            QMS1(2) = 2.
-            QMS1(3) = PCODE
-            QMS1(4) = REAL(MOD(ITEVNT(KKK),400))
-CVVVVVTEMPORARY
-C UNTIL NEW USER TABLE SET-UP, MUST SUBTRACT 300 FROM REASON CODE
-            QMS1(4) = QMS1(4) - 300.
-CAAAAATEMPORARY
-            DO I = 1,6
-               IF(TAG(KKK)(2:2).EQ.CHRQM(I))  THEN
-                  QMS1(2) = RQM(I)
-                  GO TO 203
-               END IF
-            ENDDO
-  203       CONTINUE
-            CALL UFBINT(61,QMS1,4,1,IRET,QM1LVL)
-         END IF
-         IF(ITEVNT(KKK).GE.400)  THEN
-C ----> COME HERE FOR EVENT 325
-            QMS1(2) =  15.
-            QMS1(3) = PCODE
-            QMS1(4) = 325.
-CVVVVVTEMPORARY
-C UNTIL NEW USER TABLE SET-UP, MUST SUBTRACT 300 FROM REASON CODE
-            QMS1(4) = QMS1(4) - 300.
-CAAAAATEMPORARY
-            CALL UFBINT(61,QMS1,4,1,IRET,QM1LVL)
-         END IF
-      ELSE  IF(KI.EQ.2.AND.IWEVNT(KKK).GT.0)  THEN
-C --> COME HERE IF THERE IS A WIND EVENT (NEW Q. MARKER)
-C      STACK NEW Q.MARK, PGM CODE, REASON CODE (EVENT) AND WIND OB
-C      (UNLESS ORIGINAL WIND QM IS "BAD", THEN DON'T WRITE OUT EVENT)
-         CALL UFBINT(14,QMS2,5,1,N1LEV,QM2LVL)
-         IF(QMS2(2).GT.3) THEN
-            IF(QMS2(2).LT.10) THEN
-               WRITE(TAG(KKK)(4:4),'(I1)') NINT(QMS2(2))
-            ELSE IF(QMS2(2).EQ.10) THEN
-               TAG(KKK)(4:4) = 'a'
-            ELSE IF(QMS2(2).EQ.11) THEN
-               TAG(KKK)(4:4) = 'b'
-            ELSE IF(QMS2(2).EQ.12) THEN
-               TAG(KKK)(4:4) = 'c'
-            ELSE IF(QMS2(2).EQ.13) THEN
-               TAG(KKK)(4:4) = 'd'
-            ELSE IF(QMS2(2).EQ.14) THEN
-               TAG(KKK)(4:4) = 'e'
-            ELSE
-               TAG(KKK)(4:4) = 'f'
-            END IF
-            TAG(KKK)(14:14) = '8'
-            IWEVNT(KKK) = 0
-            GO TO 2203
-         END IF
-         IF(N1LEV.NE.1)  GO TO 999
-         IF(MOD(IWEVNT(KKK),400).GT.0)  THEN
-C ----> COME HERE FOR ALL EVENTS EXCEPT 325
-            QMS2(2) = 2.
-            QMS2(3) = PCODE
-            QMS2(4) = REAL(MOD(IWEVNT(KKK),400))
-CVVVVVTEMPORARY
-C UNTIL NEW USER TABLE SET-UP, MUST SUBTRACT 300 FROM REASON CODE
-            QMS2(4) = QMS2(4) - 300.
-CAAAAATEMPORARY
-            DO I = 1,6
-               IF(TAG(KKK)(4:4).EQ.CHRQM(I))  THEN
-                  QMS2(2) = RQM(I)
-                  GO TO 303
-               END IF
-            ENDDO
-  303       CONTINUE
-            CALL UFBINT(61,QMS2,5,1,IRET,QM2LVL)
-         END IF
-         IF(IWEVNT(KKK).GE.400)  THEN
-C ----> COME HERE FOR EVENT 325
-            QMS2(2) =  15.
-            QMS2(3) = PCODE
-            QMS2(4) = 325.
-CVVVVVTEMPORARY
-C UNTIL NEW USER TABLE SET-UP, MUST SUBTRACT 300 FROM REASON CODE
-            QMS2(4) = QMS2(4) - 300.
-CAAAAATEMPORARY
-            CALL UFBINT(61,QMS2,5,1,IRET,QM2LVL)
-         END IF
-      END IF
-      IF(TAG(KKK)(9:9).EQ.'C')  THEN
-C --> COME HERE IF LAT/LON WAS CHANGED DUE TO WAYPOINT ERROR
-C      WRITE NEW LAT/LON OUT (NOT A STACKED EVENT, OLD LAT/LON GONE!!)
-         POS(1) = ALAT(KKK)
-         POS(2) = 360. - ALON(KKK)
-         CALL UFBINT(61,POS,2,1,IRET,POSITN)
-      END IF
-      IF(KI.EQ.1)  THEN
-         KNTOUT(1) = KNTOUT(1) + 1
-      ELSE
-         KNTOUT(2) = KNTOUT(2) + 1
-      END IF
+      parameter (m2ft = 3.28084)
 
- 2203 CONTINUE
+c ----------------------
+c Declaration statements
+c ----------------------
 
-C FINALLY, WRITE SUBSET (REPORT) WITH ANY ADDED EVENTS (IF APPL.) TO
-C  OUTPUT FILE
-      CALL WRITSB(61)
-      CALL UFBCNT(61,IRECO,ISUBON)
-      IF(IRECO.GT.IRECOL)  THEN
-         IRECOL = IRECO
-         ISUBOT = ISUBOT + ISUBO
-         PRINT 1264, IRECO-1,ISUBO,ISUBOT
- 1264 FORMAT(/' --- THIS REPORT OPENS NEW MSG (SAME TABLE A): LAST ',
-     $ 'DATA MSG WAS NO.',I10,' WITH',I5,' REPORTS (TOTAL NO. REPORTS ',
-     $ 'WRITTEN =',I7,')'/)
-      END IF
-      ISUBO = ISUBON
-    3 CONTINUE
-CCCCC IF(KNEW.EQ.1)  THEN
-CCCCC    TEMP = 99999.
-CCCCC    IF(ATMP(KKK).LT.99999.)  TEMP = ATMP(KKK)/10.
-CCCCC    PRINT 6111, KKK,ACID(KKK),TIME(KKK),ALAT(KKK),ALON(KKK),
-CCCCC$   AALT(KKK),TEMP,ADIR(KKK),ASPD(KKK),TAG(KKK)(2:2),TAG(KKK)(4:4),
-CCCCC$  TAG(KKK),INTP(KKK),IRTM(KKK),KNTINI(KKK),ITEVNT(KKK),IWEVNT(KKK)
-C6111    FORMAT(' ',I5,2X,A8,F8.0,2F9.2,F7.0,F9.2,F7.0,F8.1,4X,A1,1X,A1,
-CCCCC$    3X,'"',A14,'"',2I6,I8,2I6)
-CCCCC END IF
-      GO TO 2
-C-----------------------------------------------------------------------
-  999 CONTINUE
-C THE NUMBER OF DECODED HEADER AND/OR OBS. LEVELS IS NOT 1!! -- STOP 70
-      PRINT 217
-  217 FORMAT(/' THE NUMBER OF DECODED HEADER AND/OR OBS. LEVELS FOR',
-     $ ' A REPORT IS NOT 1 -- STOP 70'/)
-      CALL W3TAGE('PREPOBS_PREPACQC')
-      CALL ERREXIT(70)
-C-----------------------------------------------------------------------
-      END
-C$$$  SUBPROGRAM DOCUMENTATION BLOCK
-C                .      .    .                                       .
-C SUBPROGRAM:    SBUFR       WRITES SUPEROB RPTS TO PREPBUFR FILE
-C   PRGMMR: D. A. KEYSER     ORG: NP22       DATE: 2004-11-16
-C
-C ABSTRACT: ENCODES SUPEROB AIRCRAFT MASS AND WIND REPORTS INTO THE
-C   OUTPUT PREPBUFR FILE.  THESE ARE CONSIDERED EVENT 326 FOR
-C   TEMPERATURE AND WIND.  MAY ALSO PUSH DOWN TEMPERATURE AND WIND
-C   STACK AND RECORD AN EVENT IF REPORT IS OVER CONTINENTAL U.S. AND
-C   ACARS DATA ARE PRESENT (EVENT IS SETTING QUALITY MARKER TO 15,
-C   VALID ONLY FOR NAMELIST SWITCH IFLGUS = 1).
-C
-C PROGRAM HISTORY LOG:
-C 1994-08-25  D. A. KEYSER -- ORIGINAL AUTHOR
-C 1995-03-27  D. A. KEYSER -- SUPEROBS NOW CONTAIN S-OBED FCST P-ALT,
-C             WIND DIR, WIND SPEED & TEMP (IF AVAIL. FROM INDIV. RPTS
-C             MAKING UP SUPEROBS), FCST INFO. ENCODED IN BUFR ALONG W/
-C             REST OF SUPEROBED DATA (FCST DIR/SPEED CONVERTED TO U/V);
-C             N-LIST SWITCHES "JAMASS" & "JAWIND" NOW 6-WORD ARRAYS,
-C             REPORTS CAN NOW BE EXCLUDED FROM OUTPUT ACCORDING TO
-C             LAT. BAND; N-LIST SWITCH "FLAGUS"(LOGICAL) REPLACED BY
-C             "IFLGUS"(INTEGER), WHERE IFLGUS=0(1) EQUATES TO
-C             FLAGUS=F(T) AND NEW CHOICE IFLGUS=2 MEANS EXCLUDE RPTS
-C             OVER U.S. FROM OUTPUT RATHER THAN JUST FLAGGING
-C 2004-11-16  D. A. KEYSER -- ADDED INPUT ARGUMENT "PCODE" WHICH HOLDS
-C             PROGRAM CODE FOR THIS Q.C. STEP ("PREPACQC"), BEFORE IT
-C             WAS HARDWIRED TO 7
-C
-C USAGE:    CALL SBUFR(LTEST,COUNT,IRECOL,ISUBO,ISUBOT,PCODE)
-C   INPUT ARGUMENT LIST:
-C     LTEST    - LOGICAL TO INDICATE IF REPORTS OVER CONTINENTAL U.S.
-C              - SHOULD BE FLAGGED (BASED ON NUMBER OF ACARS REPORTS
-C              - AND NAMELIST SWITCH IFLGUS)
-C     COUNT    - REPORT SEQUENCE NUMBER OF LAST ORIGINAL AIRCRAFT
-C              - REPORT PROCESSED IN SUBROUTINE OBUFR
-C     IRECOL   - CURRENT RECORD (MESSAGE) NUMBER BEING WRITTEN INTO
-C              - IN PREPBUFR DATA SET
-C     ISUBO    - CURRENT NUMBER OF SUBSETS THAT HAVE BEEN WRITTEN INTO
-C              - CURRENT RECORD (MESSAGE) IN PREPBUFR DATA SET
-C     ISUBOT   - TOTAL NUMBER OF SUBSETS THAT HAVE BEEN WRITTEN INTO
-C              - PREPBUFR DATA SET PRIOR TO THE CURRENT RECORD
-C     PCODE    - PROGRAM CODE CORRESPONDING TO THIS Q.C. STEP
-C              - ("PREPACQC")
-C
-C   OUTPUT ARGUMENT LIST:
-C     ISUBOT   - TOTAL NUMBER OF SUBSETS THAT HAVE BEEN WRITTEN INTO
-C              - PREPBUFR DATA SET PRIOR TO THE CURRENT RECORD
-C
-C   OUTPUT FILES:
-C     UNIT 06  - PRINTOUT
-C     UNIT 61  - PREPBUFR FILE CONTAINING ALL DATA (NOW WITH ACFT QC
-C              - AND SUPEROBS)
-C
-C REMARKS: CALLED BY SUBROUTINE OBUFR.
-C
-C ATTRIBUTES:
-C   LANGUAGE: FORTRAN 90
-C   MACHINE:  IBM-SP
-C
-C$$$
-      SUBROUTINE SBUFR(LTEST,COUNT,IRECOL,ISUBO,ISUBOT,PCODE)
-      PARAMETER (ISUP= 4000)
-      LOGICAL  LTEST
-      CHARACTER*1   CIQMMK(10)
-      CHARACTER*4   SSMARK
-      CHARACTER*8   IDENT
-      CHARACTER*16  QMSLV(2),FSTLV(2)
-      CHARACTER*32  OBSLV(2),EVNLV(2)
-      CHARACTER*40  HEADR
-      REAL(8)       HDR1,HDR(10),OBS(8),QMS(4),EVN(8),QFLG(5),FST_8(4)
-      REAL          ACAT(9),PHIACF(7)
-      INTEGER       LCAT(9),MFLAG(2)
+c Indices/counters
+c ----------------
+      integer      i,j                ! loop indeces
 
-      COMMON/TSTACAR/KTACAR
-      COMMON/MASK/GDNH(362,91),GDSH(145,37),GDUS(362,91)
-      COMMON/SUPOBS/SSLAT(ISUP),SSLON(ISUP),SSTIM(ISUP),SSHGT(ISUP),
-     $ SSTMP(ISUP),SSDIR(ISUP),SSSPD(ISUP),SSHGTF(ISUP),SSTMPF(ISUP),
-     $ SSDIRF(ISUP),SSSPDF(ISUP),SSMARK(ISUP)
-      COMMON/OUTPUT/KNTOUT(5)
-      COMMON/STDATE/IDATE(5)
-      COMMON/INPT/DOSPOB,DOACRS,TMAXO,TMINO,TIMINC,WAYPIN,INIDST,IFLGUS,
-     $ JAMASS(6),JAWIND(6),RCPTST
-      EQUIVALENCE  (IDENT,HDR1)
-      DATA  HEADR/'SID XOB YOB DHR TYP T29 TSB ITP ELV SQN '/
-      DATA  OBSLV/'POB TOB ZOB CAT NUL NUL NUL NUL ',
-     $            'POB NUL ZOB CAT UOB VOB DDO FFO '/
-      DATA  QMSLV/'PQM NUL TQM ZQM ',
-     $            'PQM WQM NUL ZQM '/
-      DATA  FSTLV/'NUL NUL TFC ZFC ',
-     $            'UFC VFC NUL ZFC '/
-      DATA  EVNLV/'PPC PRC ZPC ZRC TPC TRC NUL NUL ',
-     $            'PPC PRC ZPC ZRC NUL NUL WPC WRC '/
-      DATA  IDENT/'SUPROB  '/,XMSG/99998./
-      DATA  CIQMMK/'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'/
-      DATA   ACAT/10.5,20.5,30.5,40.5,50.5,60.5,70.5,80.5,90.5/
-      DATA   LCAT/  20,  40,  60,  80, 100, 120, 140, 160, 180/
-      DATA  PHIACF/-90.,-70.,-20.,0.,20.,70.,90./
-C FCNS PRS, PR CALC. PRESS. FROM ALT. FOR Z > 11000M, Z < 11000M; RESP
-C  (U.S. STANDARD ATMOSPHERE)
-      PRS(Z) = 226.3 * EXP(1.576106E-4 * (11000. - Z))
-      PR(Z) = 1013.25 * (((288.15 - (.0065 * Z))/288.15)**5.256)
-      PRINT 299
-  299 FORMAT(/25X,'****  READY TO ENCODE SUPEROB MASS AND WIND REPORTS',
-     $ ' IN THE PREPBUFR FILE  ****'/)
-      IF(LTEST)  THEN
-         IF(IFLGUS.EQ.1)  PRINT 300, KTACAR
-         IF(IFLGUS.EQ.2)  PRINT 323, KTACAR
-      END IF
-  300 FORMAT(8X,'==> SUPEROBED REPORTS OVER U.S. MAINLAND/G. MEXICO/SO',
-     $ '.ONTARIO WILL ALSO BE FLAGGED, NO. ACARS MSGS PREV=',I5,' <=='/)
-  323 FORMAT(8X,'==> SUPEROBED REPORTS OVER U.S. MAINLAND/G. MEXICO/SO',
-     $'.ONTARIO WILL ALSO BE EXCLUDED, NO. ACARS MSGS PREV=',I5,' <=='/)
-C INITIALIZE THE CONSTANTS
-      HDR(1)  = HDR1
-      HDR(6)  =  41.
-      HDR(7)  =   0.
-      HDR(8)  =  99.
-      OBS(4)  =   6.
-      QMS(1)  =   2.
-      QMS(4)  =   2.
-      EVN(1)  = PCODE
-      EVN(2)  = 326.
-CVVVVVTEMPORARY
-C UNTIL NEW USER TABLE SET-UP, MUST SUBTRACT 300 FROM REASON CODE
-      EVN(2) = EVN(2) - 300.
-CAAAAATEMPORARY
-      EVN(3)  = PCODE
-      EVN(4)  = 326.
-CVVVVVTEMPORARY
-C UNTIL NEW USER TABLE SET-UP, MUST SUBTRACT 300 FROM REASON CODE
-      EVN(4) = EVN(4) - 300.
-CAAAAATEMPORARY
-      QFLG(2) =  15.
-      QFLG(3) = PCODE
-      QFLG(4) = 325.
-CVVVVVTEMPORARY
-C UNTIL NEW USER TABLE SET-UP, MUST SUBTRACT 300 FROM REASON CODE
-      QFLG(4) = QFLG(4) - 300.
-CAAAAATEMPORARY
-C LOOP THROUGH ALL THE SUPEROBS
-      DO I = 1,KNTOUT(3)
-         SSMARK(I) = 'SS  '
-         IFLAG = 0
-C CONVERT PRESSURE ALTITUDE TO PRESSURE (VIA U.S. STD. ATMOS. EST.)
-         IF(SSHGT(I).GE.XMSG)  THEN
-            SSMARK(I)(3:4) = 'FF'
-            GO TO 1
-         END IF
-         IF(LTEST.AND.NINT(SSLAT(I)).GT.0)  THEN
-C TEST FOR SUPEROBS OVER CONTINENTAL U.S. WHEN IFLGUS=1 OR 2 AND THERE
-C  ARE AT LEAST TWO "AIRCAR" TABLE A ENTRY BUFR MESSAGES
-            KXI = (360.0 - SSLON(I)) + 0.005 + 1.0
-            KYJ = SSLAT(I) + 1.0
-            IF(KYJ.LT.91.AND.(GDUS(KXI,KYJ).GT..5.OR.GDUS(KXI+1,KYJ).GT.
-     $      .5.OR.GDUS(KXI,KYJ+1).GT..5.OR.GDUS(KXI+1,KYJ+1).GT..5))THEN
-               IF(IFLGUS.EQ.1)  THEN
-C  ..IN SUCH A CASE, IF IFLGUS=1 SET IFLAG = 1 (WILL LATER FLAG TEMP/
-C     (WIND WITH 15'S)
-                  IFLAG = 1
-                  SSMARK(I)(1:2) = 'PP'
-               ELSE
-C  ..IN SUCH A CASE, IF IFLGUS=2 EXCLUDE REPORT FROM PROCESSING
-C     (WIND WITH 15'S)
-                  SSMARK(I)(3:4) = 'FF'
-                  GO TO 1
-               END IF
-            END IF
-         END IF
-CCCCC    TEMP = 99999.
-CCCCC    IF(SSTMP(I).LT.99999.)  TEMP = SSTMP(I)/10.
-CCCCC    PRINT 6111, I,SSTIM(I),SSLAT(I),SSLON(I),SSHGT(I),TEMP,
-CCCCC$    SSDIR(I),SSSPD(I),IFLAG
-C6111    FORMAT(' ',I5,'  SUPROB',F9.0,2F9.2,F7.0,F9.2,F7.0,F8.1,4X,
-CCCCC$    'S S',I5)
-C FILL THE HEADER INFORMATION FOR THIS SUPEROB REPORT
-         OBS(1) = PR(SSHGT(I))
-         IF(SSHGT(I).GT.11000.)  OBS(1) = PRS(SSHGT(I))
-         HDR(2)  = 360. - SSLON(I)
-         HDR(3)  = SSLAT(I)
-         DT = SSTIM(I) - REAL(IDATE(4)*100)
-         IF(DT.GT. 1200.)  DT = DT - 2400.
-         IF(DT.LT.-1200.)  DT = DT + 2400.
-         HDR(4)  = DT * .01
-         HDR(9)  = SSHGT(I)
-         HDR(10) = COUNT + REAL(I)
-         OBS(3)  = SSHGT(I)
-         IF(SSHGTF(I).LT.XMSG)  FST_8(4)  = SSHGTF(I)
-C DETERMINE LATITUDE BAND INDEX (IBNDA)
-         DO IBNDA = 1,5
-            IF(HDR(3).LT.(PHIACF(IBNDA+1)-0.005))  GO TO 6701
-         ENDDO
-         IBNDA = 6
- 6701    CONTINUE
-         MFLAG(1) = 1
-         MFLAG(2) = 1
-         IF(SSTMP(I).LT.XMSG.AND.JAMASS(IBNDA).EQ.0)  THEN
-            MFLAG(1) = 0
-C FILL THE MASS PIECE INFORMATION FOR THIS SUPEROB REPORT
-            HDR(5) = 131.
-            OBS(2) = SSTMP(I)/10.
-            IF(SSTMPF(I).LT.XMSG)  THEN
-               FST_8(3) = SSTMPF(I)/10.
-               IF(ABS(HDR(4)).LE.3.33)  THEN
-                  TDIF = ABS(FST_8(3)-OBS(2))
-                  SSMARK(I)(3:3) = 'Z'
-                  DO J = 1,9
-                     IF(NINT(TDIF*10.).LT.LCAT(J))  THEN
-                        SSMARK(I)(3:3) = CIQMMK(J)
-                        GO TO 1175
-                     END IF
-                  ENDDO
- 1175             CONTINUE
-               END IF
-            END IF
-            QMS(3) =   1.
-            EVN(5) = PCODE
-            EVN(6) = 326.
-CVVVVVTEMPORARY
-C UNTIL NEW USER TABLE SET-UP, MUST SUBTRACT 300 FROM REASON CODE
-            EVN(6) = EVN(6) - 300.
-CAAAAATEMPORARY
-            CALL UFBINT(61,HDR,10,1,IRET,HEADR)
-            CALL UFBINT(61,OBS,08,1,IRET,OBSLV(1))
-            CALL UFBINT(61,QMS,04,1,IRET,QMSLV(1))
-            CALL UFBINT(61,FST_8,04,1,IRET,FSTLV(1))
-            CALL UFBINT(61,EVN,08,1,IRET,EVNLV(1))
-            IF(IFLAG.EQ.1)  THEN
-C ----> COME HERE FOR EVENT 325
-               QFLG(1) = OBS(2)
-               CALL UFBINT(61,QFLG,4,1,IRET,'TOB TQM TPC TRC')
-            END IF
-            KNTOUT(4) = KNTOUT(4) + 1
-C WRITE SUBSET (SUPEROB MASS REPORT) TO OUTPUT FILE
-            CALL WRITSB(61)
-            CALL UFBCNT(61,IRECO,ISUBON)
-            IF(IRECO.GT.IRECOL)  THEN
-               IRECOL = IRECO
-               ISUBOT = ISUBOT + ISUBO
-               PRINT 1264, IRECO-1,ISUBO,ISUBOT
- 1264 FORMAT(/' --- THIS REPORT OPENS NEW MSG (SAME TABLE A): LAST ',
-     $ 'DATA MSG WAS NO.',I10,' WITH',I5,' REPORTS (TOTAL NO. REPORTS ',
-     $ 'WRITTEN =',I7,')'/)
-            END IF
-            ISUBO = ISUBON
-         END IF
-         IF(SSDIR(I).LT.XMSG.AND.SSSPD(I).LT.XMSG.AND.
-     $    JAWIND(IBNDA).EQ.0)  THEN
-            MFLAG(2) = 0
-C FILL THE WIND PIECE INFORMATION FOR THIS SUPEROB REPORT
-            HDR(5) = 231.
-            OBS(7) = SSDIR(I)
-            OBS(8) = SSSPD(I)
-            IF(SSSPD(I).GT.0.)  THEN
-               OBS(5) = (-SSSPD(I) * 0.5148) * SIN(SSDIR(I)*0.017453293)
-               OBS(6) = (-SSSPD(I) * 0.5148) * COS(SSDIR(I)*0.017453293)
-            ELSE
-               OBS(5) = 0.
-               OBS(6) = 0.
-            END IF
-            IF(SSDIRF(I).LT.XMSG.AND.SSSPDF(I).LT.XMSG)  THEN
-               FST_8(1)=(-SSSPDF(I)* 0.5148) *SIN(SSDIRF(I)*0.017453293)
-               FST_8(2)=(-SSSPDF(I)* 0.5148) *COS(SSDIRF(I)*0.017453293)
-               IF(ABS(HDR(4)).LE.3.33)  THEN
-             VDIF=SQRT((FST_8(1)-OBS(5))**2+(FST_8(2)-OBS(6))**2)*1.9425
-                  SSMARK(I)(4:4) = 'Z'
-                  DO J = 1,9
-                     IF(VDIF.LT.ACAT(J))  THEN
-                        SSMARK(I)(4:4) = CIQMMK(J)
-                        GO TO 175
-                     END IF
-                  ENDDO
-  175             CONTINUE
-               END IF
-            END IF
-            QMS(2) =   1.
-            EVN(7) = PCODE
-            EVN(8) = 326.
-CVVVVVTEMPORARY
-C UNTIL NEW USER TABLE SET-UP, MUST SUBTRACT 300 FROM REASON CODE
-            EVN(8) = EVN(8) - 300.
-CAAAAATEMPORARY
-            CALL UFBINT(61,HDR,10,1,IRET,HEADR)
-            CALL UFBINT(61,OBS,08,1,IRET,OBSLV(2))
-            CALL UFBINT(61,QMS,04,1,IRET,QMSLV(2))
-            CALL UFBINT(61,FST_8,04,1,IRET,FSTLV(2))
-            CALL UFBINT(61,EVN,08,1,IRET,EVNLV(2))
-            IF(IFLAG.EQ.1)  THEN
-C ----> COME HERE FOR EVENT 325
-               QFLG(1) = OBS(5)
-               QFLG(5) = OBS(6)
-               CALL UFBINT(61,QFLG,5,1,IRET,'UOB WQM WPC WRC VOB')
-            END IF
-            KNTOUT(5) = KNTOUT(5) + 1
-C WRITE SUBSET (SUPEROB WIND REPORT) TO OUTPUT FILE
-            CALL WRITSB(61)
-            CALL UFBCNT(61,IRECO,ISUBON)
-            IF(IRECO.GT.IRECOL)  THEN
-               IRECOL = IRECO
-               ISUBOT = ISUBOT + ISUBO
-               PRINT 1264, IRECO-1,ISUBO,ISUBOT
-            END IF
-            ISUBO = ISUBON
-         END IF
-C TEST BELOW SATISFIED WHEN BOTH JAMASS & JAWIND ARE 9999 FOR LAT BAND
-C  (SET POS. 1 & 2 OF SSMARK TO 'FF' REMOVE FROM FINAL PRINTOUT LISTING)
-         IF(MIN0(MFLAG(1),MFLAG(2)).EQ.1)  SSMARK(I)(3:4) = 'FF'
-    1    CONTINUE
-      ENDDO
-      RETURN
-      END
-C$$$  SUBPROGRAM DOCUMENTATION BLOCK
-C
-C SUBPROGRAM:    CMDDFF      CONVERTS WIND U/V COMPONENTS TO DIR/SPD
-C   PRGMMR: D. A. KEYSER     ORG: NP22       DATE: 1995-03-27
-C
-C ABSTRACT: CONVERTS GRID U AND V COMPONENTS OF VELOCITY (M/S) TO WIND
-C   DIRECTION AND SPEED.  SEE ARGUMENT 'ISUNIT' FOR OUTPUT SPEED UNITS.
-C
-C PROGRAM HISTORY LOG:
-C   UNKNOWN
-C 1995-03-27  D. A. KEYSER -- ORIGINAL AUTHOR
-C
-C USAGE:    CALL CMDDFF(ISUNIT,U,V,DD,FF)
-C   INPUT ARGUMENT LIST:
-C     ISUNIT   - OUTPUT SPEED UNIT INDICATOR (=1 - KNOTS, =2 - M/S)
-C     U        - U-COMPONENT OF WIND VELOCITY (M/S)
-C     V        - V-COMPONENT OF WIND VELOCITY (M/S)
-C
-C   OUTPUT ARGUMENT LIST:
-C     DD       - DIRECTION OF WIND (DEGREES)
-C     FF       - SPEED OF WIND (SEE 'ISUNIT' FOR UNITS)
-C
-C REMARKS: CALLED BY SUBROUTINE IBUFR.
-C
-C ATTRIBUTES:
-C   LANGUAGE: FORTRAN 90
-C   MACHINE:  IBM-SP
-C
-C$$$
-      SUBROUTINE CMDDFF(ISUNIT,U,V,DD,FF)
-      REAL  FACTOR(2)
-      DATA  FACTOR/0.5148,1.0/,CONV2R/0.017453293/
-      IF(U.EQ.0.0)  THEN
-         DD = 0.
-         IF(V.GT.0.0)  DD = 180.
-      ELSE
-         IF(V.EQ.0.0)  THEN
-            DD =  90.
-            IF(U.GT.0.0)  DD = 270.
-         ELSE
-            DD = (ATAN2(U,V)/CONV2R) + 180.
-            DD = AMOD(DD,360.)
-         END IF
-      END IF
-      FF = SQRT(U**2 + V**2)/FACTOR(ISUNIT)
-      RETURN
-      END
+      integer      nrpts4QC_pre       ! original number of input merged (mass + wind piece)
+                                      !  aircraft-type reports (read in from PREPBUFR file)
+                                      !  (after all is said and done, should equal nrpts4QC +
+                                      !   krej)
+
+      integer      nrpts4QC           ! number of merged (mass + wind piece) reports going
+                                      !  through NRL QC code  (initially equals nrpts4QC_pre,
+                                      !  then reduced as processing continues - ultimately
+                                      !  includes only "good" reports)
+
+      integer      krej               ! number of merged (mass + wind piece) reports
+                                      !  ulimately rejected by NRL QC code
+
+c Observation variables required by the NRL aircraft QC routine
+c -------------------------------------------------------------
+      character*10   cdtg_an          ! date-time group for analysis (YYYYMMDDCC)
+
+
+      character*11 c_qc(max_reps)     ! character QC flags output from NRL QC code
+                                      !   1st char - info about reject (if ob was rejected)
+                                      !   2nd char - reason why time was rejected
+                                      !   3rd char - reason why latitude was rejected
+                                      !   4th char - reason why longitude was rejected
+                                      !   5th char - reason why pressure/atitude was rejected
+                                      !   6th char - readon why temperature was rejected
+                                      !   7th char - reason why wind direction was rejected
+                                      !   8th char - reason why wind speed was rejected
+                                      !   9th char - reason why mixing ratio was rejected
+                                      !  10th char - reason for blacklisting the aircraft
+                                      !  11th char - info about flight phase
+
+      character*25 csort(max_reps)    ! variable (sort key) used for sorting data in NRL QC
+                                      !  code
+
+      integer      itype(max_reps)     ! instrument (aircraft) type
+      real*8       alat(max_reps)      ! latitude
+     +,            alon(max_reps)      ! longitude
+      real         pres(max_reps)      ! pressure
+     +,            ht_ft(max_reps)     ! altitude in feet
+      integer      idt(max_reps)       ! time in seconds to anal. time (- before, + after)
+      integer      idp(max_reps)       ! surface pressure change at ob location (not created
+                                       !  anywhere, set to missing)
+      integer      ncep_qm_p(max_reps) ! NCEP PREPBUFR quality mark pressure (PQM)
+     +,            ncep_rc_p(max_reps) ! NCEP PREPBUFR NRLACQC pressure event reason code(PRC)
+     +,            ncep_qm_z(max_reps) ! NCEP PREPBUFR quality mark on altitude (ZQM)
+     +,            ncep_rc_z(max_reps) ! NCEP PREPBUFR NRLACQC alt/hght event reason code(ZRC)
+     +,            ncep_qm_t(max_reps) ! NCEP PREPBUFR quality mark on temperature (TQM)
+     +,            ncep_rc_t(max_reps) ! NCEP PREPBUFR NRLACQC temperature evnt rea. code(TRC)
+     +,            ncep_qm_q(max_reps) ! NCEP PREPBUFR quality mark on moisture (QQM)
+     +,            ncep_rc_q(max_reps) ! NCEP PREPBUFR NRLACQC moisture reason code (QRC)
+     +,            ncep_qm_w(max_reps) ! NCEP PREPBUFR quality mark on wind (WQM)
+     +,            ncep_rc_w(max_reps) ! NCEP PREPBUFR NRLACQC wind event reason code (WRC)
+     +,            ncep_rej(max_reps)  ! NCEP PREPBUFR rejection indicator
+
+      character*14 c_dtg(max_reps)     ! full date-time group (yyyymmddhhmmss)
+      character*8  c_acftreg(max_reps) ! aircraft registration (tail) number (used in NRL QC
+                                       !  QC processing)
+      character*9  c_acftid(max_reps)  ! aircraft flight number (used in NRL QC processing)
+
+      real         t_prcn(max_reps)    ! temperature precision
+     +,            ob_t(max_reps)      ! temperature
+     +,            ob_q(max_reps)      ! moisture (specific humidity)
+     +,            ob_dir(max_reps)    ! wind direction
+     +,            ob_spd(max_reps)    ! wind speed
+     +,            xiv_t(max_reps)     ! temperature innovation/increment (ob-bg)
+     +,            xiv_q(max_reps)     ! specific humidity innovation/increment (ob-bg)
+     +,            xiv_d(max_reps)     ! wind direction innovation/increment (ob-bg)
+     +,            xiv_s(max_reps)     ! wind speed innovation/increment (ob-bg)
+
+      integer      ichk_t(max_reps)    ! NRL QC flag for temperature ob
+     +,            ichk_q(max_reps)    ! NRL QC flag for specific humidity ob
+     +,            ichk_d(max_reps)    ! NRL QC flag for wind direction ob
+     +,            ichk_s(max_reps)    ! NRL QC flag for wind speed ob
+     +,            nchk_t(max_reps)    ! NCEP QC flag for temperature ob
+     +,            nchk_q(max_reps)    ! NCEP QC flag for specific humidity ob
+     +,            nchk_d(max_reps)    ! NCEP QC flag for wind direction ob
+     +,            nchk_s(max_reps)    ! NCEP QC flag for wind speed ob
+     +,            phase(max_reps)     ! phase of flight for aircraft
+
+      logical      l_minus9c(max_reps) ! true for MDCRS -9C temperatures
+
+c Pointers
+c --------
+      integer      indx(max_reps)      ! pointer index in NRL QC for good reports
+     +,            in_bad(max_reps)    ! pointer index in NRL QC for bad reports
+     +,            isave(max_reps)     ! second pointer index in NRL QC
+
+c **************************************************
+c  All below are output from NRL acftobs_qc routine
+c **************************************************
+
+c Flight statistics
+c -----------------
+      character*8  creg_flt(maxflt)    ! tail number for each flight
+      character*9  cid_flt(maxflt)     ! flight id for each flight
+     +,            cid_flt_old(maxflt) ! previous value of cid_flt
+      integer      nobs_flt(maxflt)    ! number of reports per flight
+     +,            ntot_flt(maxflt)    ! total number of reports per flight
+     +,            ntot_flt_old(maxflt)! previous value of total num of reports per flt
+     +,            nrej_flt(maxflt)    ! number of reports rejected per flight
+     +,            nrej_flt_old(maxflt)! previous value of num of reports rejected per flt
+     +,            iobs_flt(maxflt)    ! index for first report in each flight
+     +,            kflight             ! number of flights in dataset
+      logical      l_newflt(maxflt)    ! true if flight is new flight
+
+c Tail number statistics
+c ----------------------
+      character*8  creg_reg(maxflt)    ! tail numbers
+      integer      nobs_reg(maxflt,5)  ! number of reports per tail number per type
+     +,            ntot_reg(maxflt,5)  ! total number of reports rejected per tail number
+     +,            nrej_reg(maxflt,5)  ! number of reports rejected per tail number
+     +,            ntemp_reg(maxflt,5) ! number of reports with rejected temperature
+     +,            nwind_reg(maxflt,5) ! number of reports with rejected wind
+     +,            nwhol_reg(maxflt,5) ! number of reports with temperature in whole degrees
+
+      character*10 creg_reg_tot(maxflt)     ! master list of tail numbers
+      integer      nobs_reg_tot(maxflt,5)   ! number of reports per tail number
+     +,            nwhol_reg_tot(maxflt,5)  ! number of temperatures in whole degs/tail number
+     +,            nrej_reg_tot(maxflt,5)   ! number of reports rejected per tail number
+     +,            ntemp_reg_tot(maxflt,5)  ! number of temperatures rejected per tail number
+     +,            nwind_reg_tot(maxflt,5)  ! number of winds rejected per tail number
+     +,            nrej_inv_tot(maxflt,5)   ! number of reports rejected in subr. invalid
+     +,            nrej_stk_tot(maxflt,5)   ! number of reports rejected in subr. stkchek
+     +,            nrej_grc_tot(maxflt,5)   ! number of reports rejected in subr. grchek
+     +,            nrej_pos_tot(maxflt,5)   ! number of reports rejected in subr. poschek
+     +,            nrej_ord_tot(maxflt,5)   ! number of reports rejected in subr. ordchek
+     +,            nrej_sus_tot(maxflt,5)   ! number of reports rejected in suspect data check
+
+      integer      lead_t_tot(maxflt,11,2)  ! distribution of temperature innovations
+     +,            lead_d_tot(maxflt,11,2)  ! distribution of wind direction innovations
+     +,            lead_s_tot(maxflt,11,2)  ! distribution of wind speed innovations
+     +,            n_xiv_t(maxflt,2)        ! number of temperature innovations
+     +,            n_xiv_d(maxflt,2)        ! number of wind direction innovations
+     +,            n_xiv_s(maxflt,2)        ! number of wind speed innovations
+
+      real         sum_xiv_t(maxflt,2)      ! sum of temperature innovations
+     +,            sum_xiv_d(maxflt,2)      ! sum of wind direction innovations
+     +,            sum_xiv_s(maxflt,2)      ! sum of wind speed innovations
+     +,            sumabs_xiv_t(maxflt,2)   ! sum of absolute value of temperature innovations
+     +,            sumabs_xiv_d(maxflt,2)   ! sum of absolute value of wind dir. innovations
+     +,            sumabs_xiv_s(maxflt,2)   ! sum of absolute value of wind speed innovations
+
+c **************************************************
+
+c Variables for sorting data by type, tail, flight, etc., including bad reports - will be
+c  used AFTER NRL QC code in the generation of profiles PREPBUFR-like profiles file
+c ---------------------------------------------------------------------------------------
+      integer      iob                      ! loop index
+     +,            kidt                     ! idt + 100000 (converted to charcter c_idt and
+                                            !  added to csort_wbad sort key string)
+     +,            iht_ft                   ! integer of ht_ft (converted to charcter c_ht_ft
+                                            !  and added to csort_wbad sort key string)
+     +,            ilon                     ! integer of alon (converted to charcter c_lon
+                                            !  and added to csort_wbad sort key string)
+     +,            ilat                     ! integer of alat (converted to charcter c_lat
+                                            !  and added to csort_wbad sort key string)
+      character*6  c_lon                    ! character form of ilon (added to csort_wbad
+                                            !  sort key string)
+      character*7  c_idt                    ! character form of kidt (added to csort_wbad
+                                            !  sort key string)
+      character*5  c_ht_ft                  ! character form of iht_ft (added to csort_wbad
+                                            !  sort key string)
+     +,            c_lat                    ! character form of ilat (added to csort_wbad
+                                            !  sort key string)
+      character*4  c_type                   ! first 4 characters defining aircraft type
+                                            !  (added to csort_wbad sort key string)
+      character*1  c_qc11                   ! value of 11th char in NRL c_qc string,
+                                            !  specifies whether report is part of an ascent,
+                                            !  descent, level leg, etc. (added to csort_wbad
+                                            !  sort key string)
+      character*16 c_insty_ob               ! function - convers aircraft type to character
+                                            !  string ((added to csort_wbad sort key string)
+      character*40 csort_wbad(max_reps)     ! variable (sort key) used to sort data after NRL
+                                            !  QC code - used in generation of profiles
+                                            !  PREPBUFR-like profiles file
+      integer indx_wbad(max_reps)           ! sorted array index (specifies the order in
+                                            !  which reports should be written to the
+                                            !  PREPBUFR-like profiles file
+c Namelist variables
+c ------------------
+      namelist /nrlacqcinput/ trad,l_otw,l_nhonly,l_doprofiles,
+     +                        l_allev_pf,l_prof1lvl,l_mandlvl,tsplines,
+     +                        l_ext_table,l_qmwrite
+
+      real trad               ! Time window radius for outputting reports (if l_otw=T)
+      logical l_otw           ! T=eliminate reports outside the time window radius +/- trad
+     +,       l_nhonly        ! T=eliminate reports outside tropics & N. Hemisphere
+     +,       l_doprofiles    ! T=create merged raob lookalike QC'd profiles from aircraft
+                              !   ascents and descents (always) and output these as well as
+                              !   QC'd merged single(flight)-level aircraft reports not part
+                              !   of any profile (when l_prof1lvl=T) to a PREPBUFR-like file
+                              !   **CAUTION: Will make code take quite a bit longer to run!
+                              ! F=skip creation of merged raob lookalike QC'd profiles from
+                              !   aircraft ascents and descents into PREPBUFR-like file
+     +,       l_allev_pf      ! T=process latest (likely NRLACQC) events plus all prior
+                              !   events into profiles PREPBUFR-like file
+                              !   **CAUTION: More complete option, but will make code take
+                              !              longer to run!
+                              ! F=process ONLY latest (likely NRLACQC) events into profiles
+                              !   PREPBUFR-like file
+                              !
+                              ! Note 1: Hardwired to F if l_doprofiles=F
+                              ! Note 2: All pre-existing events plus latest (likely NRLACQC)
+                              !         events are always encoded into full PREPBUFR file)
+     +,       l_prof1lvl      ! T=encode merged single(flight)-level aircraft reports with
+                              !   NRLACQC events that are not part of any profile into
+                              !   PREPBUFR-like file, along with merged profiles from
+                              !   aircraft ascents and descents
+                              !   **CAUTION: Will make code take a bit longer to run!
+                              ! F=do not encode merged single(flight)-level aircraft reports
+                              !   with NRLACQC events that are not part of any profile into
+                              !   PREPBUFR-like file - only merged profiles from aircraft
+                              !   ascents and descents will be encoded into this file
+                              ! Note : Applicable only when l_doprofiles=T
+     +,       l_mandlvl       ! T=interpolate to mandatory levels in profile generation
+                              ! F=do not interpolate to mandatory levels in profile
+                              !   generation
+     +,       tsplines        ! T=use tension-splines for aircraft vertical velocity
+                              !   calculation
+                              ! F=use finite-differencing for aircraft vertical velocity
+                              !   calculation
+                              ! Note : Applicable only when l_doprofiles=T
+     +,       l_ext_table     ! T=use external text table to define profile prepbufr format
+                              ! F=take prepbufr format definition from input prepbufr file
+     +,       l_qmwrite       ! T=write NRL QMs in main prepbufr output file
+                              ! F=omit NRL QMs from main prepbufr output file - use with old formats
+
+c Variables used to hold original aircraft data read from the input PREPBUFR file - necessary
+c  for carrying data through program so that it can be written to output profiles PREPBUFR-
+c  like file from memory instead of going back to input PREPBUFR file and re-reading that
+c  file before adding any QC events resulting from a decision made by the NRL QC routine (not
+c  applicable for case of single-level QC'd reports written back to full PREPBUFR file)
+c --------------------------------------------------------------------------------------------
+      integer      mxnmev             ! maximum number of events allowed in stack
+      parameter (mxnmev = 15)
+
+      integer      mxlv               ! maximum number of report levels allowed in aircraft
+                                      !  profiles
+      parameter(mxlv = 255)
+
+
+      integer nevents(max_reps,6)     ! array tracking number of events for variables for
+                                      !  each report:
+                                      !   1 - number of pressure events
+                                      !   2 - number of specific humidity events
+                                      !   3 - number of temperature events
+                                      !   4 - number of altitude events
+                                      !   5 - number of wind (u/v) events
+                                      !   6 - number of wind (direction/speed) events
+      integer nnestreps(4,max_reps)   ! number of "nested replications" for TURB3SEQ,
+                                      !  PREWXSEQ, CLOUDSEQ, AFIC_SEQ
+
+      real*8  pob_ev(max_reps,mxnmev) ! POB values for each report, including all events
+     +,       pqm_ev(max_reps,mxnmev) ! PQM values for each report, including all events
+     +,       ppc_ev(max_reps,mxnmev) ! PPC values for each report, including all events
+     +,       prc_ev(max_reps,mxnmev) ! PRC values for each report, including all events
+     +,       zob_ev(max_reps,mxnmev) ! ZOB values for each report, including all events
+     +,       zqm_ev(max_reps,mxnmev) ! ZQM values for each report, including all events
+     +,       zpc_ev(max_reps,mxnmev) ! ZPC values for each report, including all events
+     +,       zrc_ev(max_reps,mxnmev) ! ZRC values for each report, including all events
+     +,       tob_ev(max_reps,mxnmev) ! TOB values for each report, including all events
+     +,       tqm_ev(max_reps,mxnmev) ! TQM values for each report, including all events
+     +,       tpc_ev(max_reps,mxnmev) ! TPC values for each report, including all events
+     +,       trc_ev(max_reps,mxnmev) ! TRC values for each report, including all events
+     +,       qob_ev(max_reps,mxnmev) ! QOB values for each report, including all events
+     +,       qqm_ev(max_reps,mxnmev) ! QQM values for each report, including all events
+     +,       qpc_ev(max_reps,mxnmev) ! QPC values for each report, including all events
+     +,       qrc_ev(max_reps,mxnmev) ! QRC values for each report, including all events
+     +,       uob_ev(max_reps,mxnmev) ! UOB values for each report, including all events
+     +,       vob_ev(max_reps,mxnmev) ! VOB values for each report, including all events
+     +,       wqm_ev(max_reps,mxnmev) ! WQM values for each report, including all events
+     +,       wpc_ev(max_reps,mxnmev) ! WPC values for each report, including all events
+     +,       wrc_ev(max_reps,mxnmev) ! WRC values for each report, including all events
+     +,       ddo_ev(max_reps,mxnmev) ! DDO values for each report, including all events
+     +,       ffo_ev(max_reps,mxnmev) ! FFO values for each report, including all events
+     +,       dfq_ev(max_reps,mxnmev) ! DFQ values for each report, including all events
+     +,       dfp_ev(max_reps,mxnmev) ! DFP values for each report, including all events
+     +,       dfr_ev(max_reps,mxnmev) ! DFR values for each report, including all events
+
+     +,       hdr(max_reps,15)        ! SID XOB YOB DHR ELV TYP T29 TSB ITP SQN PROCN RPT
+                                      !  TCOR RSRD EXRSRD
+     +,       acid(max_reps)          ! ACID
+     +,       rct(max_reps)           ! RCT
+
+     +,       pbg(max_reps,3)         ! POE PFC PFCMOD
+     +,       zbg(max_reps,3)         ! ZOE ZFC ZFCMOD
+     +,       tbg(max_reps,3)         ! TOE TFC TFCMOD
+     +,       qbg(max_reps,3)         ! QOE QFC QFCMOD
+     +,       wbg(max_reps,5)         ! WOE UFC VFC UFCMOD VFCMOD
+
+     +,       ppp(max_reps,3)         ! PAN PCL PCS
+     +,       zpp(max_reps,3)         ! ZAN ZCL ZCS
+     +,       tpp(max_reps,3)         ! TAN TCL TCS
+     +,       qpp(max_reps,3)         ! QAN QCL QCS
+     +,       wpp(max_reps,6)         ! UAN VAN UCL VCL UCS VCS
+
+     +,       drinfo(max_reps,3)      ! XOB YOB DHR
+     +,       acft_seq(max_reps,2)    ! PCAT POAF
+
+     +,       turb1seq(max_reps)      ! TRBX
+     +,       turb2seq(max_reps,4)    ! TRBX10 TRBX21 TRBX32 TRBX43
+     +,       turb3seq(3,max_reps,5)  ! DGOT HBOT HTOT
+     +,       prewxseq(1,max_reps,5)  ! PRWE
+     +,       cloudseq(5,max_reps,5)  ! VSSO CLAM CLTP HOCB HOCT
+     +,       afic_seq(3,max_reps,5)  ! AFIC HBOI HTOI
+     +,       mstq(max_reps)          ! MSTQ
+     +,       cat(max_reps)           ! CAT
+     +,       rolf(max_reps)          ! ROLF
+
+     +,       sqn(max_reps,2)         ! SQN (1=SQN for mass, 2=SQN for wind)
+     +,       procn(max_reps,2)       ! PROCN (1=PROCN for mass, 2=PROCN for wind)
+
+cvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+c add these in place of above declar. in event of future switch to dynamic memory allocation
+
+calloc  character*11,allocatable :: c_qc(:)
+calloc  character*25,allocatable :: csort(:)
+calloc  integer,allocatable :: itype(:)
+calloc  real*8, allocatable :: alat(:)
+calloc  real*8, allocatable :: alon(:)
+calloc  real,   allocatable :: pres(:)
+calloc  real,   allocatable :: ht_ft(:)
+calloc  integer,allocatable :: idt(:)
+calloc  integer,allocatable :: idp(:)
+calloc  character*14,allocatable :: c_dtg(:)
+calloc  character*8, allocatable :: c_acftreg(:)
+calloc  character*9, allocatable :: c_acftid(:)
+calloc  real,   allocatable :: t_prcn(:)
+calloc  real,   allocatable :: ob_t(:)
+calloc  real,   allocatable :: ob_q(:)
+calloc  real,   allocatable :: ob_dir(:)
+calloc  real,   allocatable :: ob_spd(:)
+calloc  real,   allocatable :: xiv_t(:)
+calloc  real,   allocatable :: xiv_q(:)
+calloc  real,   allocatable :: xiv_d(:)
+calloc  real,   allocatable :: xiv_s(:)
+calloc  integer,allocatable :: ichk_t(:)
+calloc  integer,allocatable :: ichk_q(:)
+calloc  integer,allocatable :: ichk_d(:)
+calloc  integer,allocatable :: ichk_s(:)
+calloc  integer,allocatable :: nchk_t(:)
+calloc  integer,allocatable :: nchk_q(:)
+calloc  integer,allocatable :: nchk_d(:)
+calloc  integer,allocatable :: nchk_s(:)
+calloc  integer,allocatable :: phase(:)
+calloc  logical,allocatable :: l_minus9c(:)
+calloc  integer,allocatable :: indx(:)
+calloc  integer,allocatable :: in_bad(:)
+calloc  integer,allocatable :: isave(:)
+calloc  character*40,allocatable :: csort_wbad(:)
+calloc  integer,allocatable :: indx_wbad(:)
+calloc  integer,allocatable :: nevents(:,:)
+calloc  integer,allocatable :: nnestreps(:,:)
+calloc  real*8,allocatable :: pob_ev(:,:)
+calloc  real*8,allocatable :: pqm_ev(:,:)
+calloc  real*8,allocatable :: ppc_ev(:,:)
+calloc  real*8,allocatable :: prc_ev(:,:)
+calloc  real*8,allocatable :: zob_ev(:,:)
+calloc  real*8,allocatable :: zqm_ev(:,:)
+calloc  real*8,allocatable :: zpc_ev(:,:)
+calloc  real*8,allocatable :: zrc_ev(:,:)
+calloc  real*8,allocatable :: tob_ev(:,:)
+calloc  real*8,allocatable :: tqm_ev(:,:)
+calloc  real*8,allocatable :: tpc_ev(:,:)
+calloc  real*8,allocatable :: trc_ev(:,:)
+calloc  real*8,allocatable :: qob_ev(:,:)
+calloc  real*8,allocatable :: qqm_ev(:,:)
+calloc  real*8,allocatable :: qpc_ev(:,:)
+CAlloc  real*8,allocatable :: qrc_ev(:,:)
+calloc  real*8,allocatable :: uob_ev(:,:)
+calloc  real*8,allocatable :: vob_ev(:,:)
+calloc  real*8,allocatable :: wqm_ev(:,:)
+calloc  real*8,allocatable :: wpc_ev(:,:)
+calloc  real*8,allocatable :: wrc_ev(:,:)
+calloc  real*8,allocatable :: ddo_ev(:,:)
+calloc  real*8,allocatable :: ffo_ev(:,:)
+calloc  real*8,allocatable :: dfq_ev(:,:)
+calloc  real*8,allocatable :: dfp_ev(:,:)
+calloc  real*8,allocatable :: dfr_ev(:,:)
+calloc  real*8,allocatable :: hdr(:,:)
+calloc  real*8,allocatable :: acid(:)
+calloc  real*8,allocatable :: rct(:)
+calloc  real*8,allocatable :: pbg(:,:)
+calloc  real*8,allocatable :: zbg(:,:)
+calloc  real*8,allocatable :: tbg(:,:)
+calloc  real*8,allocatable :: qbg(:,:)
+calloc  real*8,allocatable :: wbg(:,:)
+calloc  real*8,allocatable :: ppp(:,:)
+calloc  real*8,allocatable :: zpp(:,:)
+calloc  real*8,allocatable :: tpp(:,:)
+calloc  real*8,allocatable :: qpp(:,:)
+calloc  real*8,allocatable :: wpp(:,:)
+calloc  real*8,allocatable :: drinfo(:,:)
+calloc  real*8,allocatable :: acft_seq(:,:)
+calloc  real*8,allocatable :: turb1seq(:)
+calloc  real*8,allocatable :: turb2seq(:,:)
+calloc  real*8,allocatable :: turb3seq(:,:,:)
+calloc  real*8,allocatable :: prewxseq(:,:,:)
+calloc  real*8,allocatable :: cloudseq(:,:,:)
+calloc  real*8,allocatable :: afic_seq(:,:,:)
+calloc  real*8,allocatable :: mstq(:)
+calloc  real*8,allocatable :: cat(:)
+calloc  real*8,allocatable :: rolf(:)
+calloc  real*8,allocatable :: sqn(:,:)
+calloc  real*8,allocatable :: procn(:,:)
+
+c Variables for reading numeric data out of BUFR files via BUFRLIB
+c ----------------------------------------------------------------
+calloc  real*8       sqn_8             ! array holding BUFR subset sequence number from
+calloc                                 !  BUFRLIB call to input PREPBUFR file
+calloc  integer      nlev              ! number of report levels returned from BUFRLIB call
+calloc  Integer      iret              ! return code for call to BUFRLIB routine readns
+
+c Functions
+c ---------
+calloc  integer      ireadmg           ! for reading messages
+callo+,              ireadsb           ! for reading subsets
+
+
+c Variables for BUFRLIB interface
+c -------------------------------
+calloc  character*8  mesgtype          ! mesgtype of message
+calloc  integer      mesgdate          ! date time from BUFR message
+
+c Variables for determining whether consecutive reports are mass and wind pieces that belong
+c  together
+c ------------------------------------------------------------------------------------------
+calloc  logical l_match
+calloc  real sqn_current, sqn_next
+
+c^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+c Miscellaneous
+c -------------
+      real       nrlacqc_pc              ! PREPBUFR program code for the NRL PREPACQC step
+
+      logical    l_first_date            ! true for first date (used inside NRL QC code)
+      data       l_first_date /.true./   ! always initialize as T
+
+      logical    l_operational           ! run program in operational mode if true
+      data       l_operational /.true./  ! will get reset to F within acftobs_qc since
+                                         !  l_ncep=T; must be set to true here so that the
+                                         !  first l_operational=F section of the if block in
+                                         !  acftobs_qc.f will get skipped over
+                              ! DAK: would code run faster if l_operational=F?, does it give
+                              !      same answers I wonder ??
+      logical    l_pc                    ! true if running checkout at NRL (used inside NRL
+                                         !  QC code)
+      data       l_pc /.false./          ! always set to F
+      logical    l_last                  ! true if last time subroutine acftobs_qc is called
+      data       l_last /.true./         ! DAK: I think this should be set to T
+      logical    l_ncep                  ! run NRL QC code using NCEP preferences if true
+      data       l_ncep /.true./         ! always set to T
+
+c Machine characteristics (obtained from W3FI04)
+c ----------------------------------------------
+      integer    lwr                     ! machine word length in bytes (either 4 or 8)
+     +,          ichtp                   ! machine charatcer type (either 0 for ASCII or 1
+                                         !  for EBCDIC)
+     +,          iendn                   ! machine Endian configuration (either 0 for Big-
+                                         !  Endian or 1 for Little-Endian)
+
+c **********************************************************************************
+
+c Start program
+c -------------
+      call w3tagb('PREPOBS_PREPACQC',2016,344,1927,'NP22')
+
+      write(*,*)
+      write(*,*) '************************************************'
+      write(*,*) 'Welcome to PREPOBS_PREPACQC, version 2016-12-09 '
+      call system('date')
+      write(*,*) '************************************************'
+      write(*,*)
+
+C On WCOSS should always set BUFRLIB missing (BMISS) to 10E8 to avoid overflow when either an
+C  INTEGER*4 variable is set to BMISS or a REAL*8 (or REAL*4) variable that is missing is
+C  NINT'd
+C -------------------------------------------------------------------------------------------
+ccccc call setbmiss(10E10_8)
+      call setbmiss(10E8_8)
+      bmiss = getbmiss()
+      print *
+      print *, 'BUFRLIB value for missing is: ',bmiss
+      print *
+
+c Initialize observation arrays
+c -----------------------------
+      c_qc      = '-----------'
+      idp       = imiss  ! this is not created anywhere (even inside acftobs_qc)
+
+c Call W3FI04 to determine machine characteristics {word length (bytes), character type
+c  (ASCII or EBCDIC), and Endian-type (Big or Little)}
+c -------------------------------------------------------------------------------------
+      call w3fi04(iendn,ichtp,lwr)
+      print 2213, lwr, ichtp, iendn
+ 2213 format(/' ---> CALL TO W3FI04 RETURNS: LWR = ',I3,', ICHTP = ',i3,
+     + ', IENDN = ',I3/)
+
+c......................................................
+      if(ichtp.ne.0)  then
+
+C Characters on this machine are not ASCII!! -- stop 79
+c -----------------------------------------------------
+        print 217
+  217 format(/5x,'++ CHARACTERS ON THIS MACHINE ARE NOT ASCII - STOP ',
+     + '79'/)
+        call w3tage('PREPOBS_PREPACQC')
+        call errexit(79)
+      endif
+c......................................................
+
+c Read in namelist nrlacqcinput, but set namelist defaults first
+c --------------------------------------------------------------
+      trad         =    3.0
+      l_otw        = .false.
+      l_nhonly     = .false.
+      l_doprofiles = .false.
+      l_allev_pf   = .false.
+      l_prof1lvl   = .false.
+      l_mandlvl    = .true.
+      tsplines     = .true.
+      l_ext_table  = .false.
+      l_qmwrite    = .true.
+
+      read(5,nrlacqcinput,end=10)
+   10 continue
+      write(6,nrlacqcinput)
+
+      if(.not.l_doprofiles) l_allev_pf = .false. ! l_allev_pf always set to FALSE if profiles
+                                                 !  are not being generated
+
+      call datelen(10)
+
+c Open input PREPBUFR file (contains mass and wind reports for all data types, no NRLACQC
+c  events on reports in AIRCAR and AIRCFT message types)
+c ---------------------------------------------------------------------------------------
+      call openbf(inlun,'IN',inlun)
+      print *
+      print'(" Opened input PREPBUFR file with all data, including ",
+     +       "pre-NRLACQC aircraft data; unit number ",I0)', inlun
+      print *
+
+c Open output PREPBUFR file (will eventually be identical to input PREPBUFR file but with
+c  NRLACQC events on reports in AIRCAR and AIRCFT message types)
+c ---------------------------------------------------------------------------------------
+      call openbf(outlun,'OUT',inlun)
+      print *
+      print'(" Opened output PREPBUFR file - will hold all data, ",
+     +       "including post-NRLACQC aircraft data; unit number ",I0)',
+     +     outlun
+      print *
+
+      if(l_doprofiles) then
+
+c Open output PREPBUFR-like file (will eventually contain merged aircraft mass/wind data in
+c  AIRCAR and AIRCFT message types, including constructed profiles, with NRLACQC events on
+c  reports)
+c -----------------------------------------------------------------------------------------
+        if (l_ext_table) then
+           open(unit=extbl,form='formatted')
+           call openbf(proflun,'OUT',extbl)
+           close(extbl)
+        else
+           call openbf(proflun,'OUT',inlun)
+        end if
+        print *
+        print'(" Opened output PREPBUFR-like file - will hold only ",
+     +         "post-NRLACQC merged aircraft profile data; unit ",
+     +         "number ",I0)', proflun
+        print *
+      endif
+
+c Get the program code for NRLACQC
+c --------------------------------
+      if (.not. l_qmwrite ) then
+         nrlacqc_pc = 15
+      else         
+         call ufbqcd(outlun,'NRLACQC',nrlacqc_pc)
+      end if
+
+      print *
+      print *, 'NRLACQC PROGRAM CODE IS: ', nrlacqc_pc
+      print *
+
+cvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+c add this in event of future switch to dynamic memory allocation
+
+calloc  CALL SYSTEM('date')
+calloc  max_reps = 0
+calloc  l_match = .false.
+calloc  write(*,*) 'First time through just get count of number of ',
+callo+   'merged reports for dynamic array allocation'
+calloc  loop1: do while(ireadmg(inlun,mesgtype,mesgdate).eq.0)
+calloc    if((mesgtype.eq.'AIRCFT').or.
+callo+       (mesgtype.eq.'AIRCAR')) then
+calloc      do while(ireadsb(inlun).eq.0)
+c4051         continue
+calloc        l_match = .false.
+calloc        if(mesgtype.ne.'AIRCAR' .and. mesgtype.ne. 'AIRCFT')
+callo+         cycle loop1
+c5051         continue
+calloc        max_reps = max_reps + 1
+calloc        call ufbint(inlun,sqn_8,1,1,nlev,'SQN')
+calloc        sqn_current = sqn_8
+c6051         continue
+calloc        if(l_match) then
+calloc          call readns(inlun,mesgtype,mesgdate,iret)
+calloc          if(iret.eq.-1) then
+calloc            exit
+calloc          elseif(iret.eq.0) then
+calloc            go to 4051
+calloc          else
+calloc            print *, 'Unexpected return code(iret=',iret,
+callo+                     ') from readns!'
+calloc            call w3tage('PREPOBS_PREPACQC')
+calloc            call errexit(23) ! Problems reading BUFR file
+calloc          endif
+calloc        endif
+calloc        call readns(inlun,mesgtype,mesgdate,iret)
+calloc        if(iret.eq.-1) then
+calloc          exit
+calloc        elseif(iret.eq.0) then
+calloc          if(mesgtype.ne.'AIRCAR' .and. mesgtype.ne. 'AIRCFT')
+callo+           cycle loop1
+calloc          call ufbint(inlun,sqn_8,1,1,nlev,'SQN')
+calloc          sqn_next = sqn_8
+calloc          if(sqn_next.eq.sqn_current) then
+calloc            l_match = .true.
+calloc            go to 6051
+calloc          else
+calloc            l_match = .false.
+calloc            go to 5051
+calloc          endif
+calloc        else
+calloc          print *, 'Unexpected return code(iret=',iret,
+callo+                   ') from readns!'
+calloc          call w3tage('PREPOBS_PREPACQC')
+calloc          call errexit(23) ! Problems reading BUFR file
+calloc        endif
+calloc      enddo
+calloc    endif
+calloc  enddo loop1
+calloc  write(*,*)
+calloc  write(*,*) 'TOTAL NUM OF RPTS IN FIRST READ THROUGH: ',
+callo+   max_reps
+calloc  call closbf(inlun)
+calloc  call openbf(inlun,'IN',inlun)
+calloc  CALL SYSTEM('date')
+calloc  allocate(c_qc(max_reps),stat=i);if(i.ne.0) go to 901
+calloc  allocate(csort(max_reps),stat=i);if(i.ne.0) go to 901
+calloc  allocate(itype(max_reps),stat=i);if(i.ne.0) go to 901
+calloc  allocate(alat(max_reps),stat=i);if(i.ne.0) go to 901
+calloc  allocate(alon(max_reps),stat=i);if(i.ne.0) go to 901
+calloc  allocate(pres(max_reps),stat=i);if(i.ne.0) go to 901
+calloc  allocate(ht_ft(max_reps),stat=i);if(i.ne.0) go to 901
+calloc  allocate(idt(max_reps),stat=i);if(i.ne.0) go to 901
+calloc  allocate(idp(max_reps),stat=i);if(i.ne.0) go to 901
+calloc  allocate(c_dtg(max_reps),stat=i);if(i.ne.0) go to 901
+calloc  allocate(c_acftreg(max_reps),stat=i);if(i.ne.0) go to 901
+calloc  allocate(c_acftid(max_reps),stat=i);if(i.ne.0) go to 901
+calloc  allocate(t_prcn(max_reps),stat=i);if(i.ne.0) go to 901
+calloc  allocate(ob_t(max_reps),stat=i);if(i.ne.0) go to 901
+calloc  allocate(ob_q(max_reps),stat=i);if(i.ne.0) go to 901
+calloc  allocate(ob_dir(max_reps),stat=i);if(i.ne.0) go to 901
+calloc  allocate(ob_spd(max_reps),stat=i);if(i.ne.0) go to 901
+calloc  allocate(xiv_t(max_reps),stat=i);if(i.ne.0) go to 901
+calloc  allocate(xiv_q(max_reps),stat=i);if(i.ne.0) go to 901
+calloc  allocate(xiv_d(max_reps),stat=i);if(i.ne.0) go to 901
+calloc  allocate(xiv_s(max_reps),stat=i);if(i.ne.0) go to 901
+calloc  allocate(ichk_t(max_reps),stat=i);if(i.ne.0) go to 901
+calloc  allocate(ichk_q(max_reps),stat=i);if(i.ne.0) go to 901
+calloc  allocate(ichk_d(max_reps),stat=i);if(i.ne.0) go to 901
+calloc  allocate(ichk_s(max_reps),stat=i);if(i.ne.0) go to 901
+calloc  allocate(nchk_t(max_reps),stat=i);if(i.ne.0) go to 901
+calloc  allocate(nchk_q(max_reps),stat=i);if(i.ne.0) go to 901
+calloc  allocate(nchk_d(max_reps),stat=i);if(i.ne.0) go to 901
+calloc  allocate(nchk_s(max_reps),stat=i);if(i.ne.0) go to 901
+calloc  allocate(phase(max_reps),stat=i);if(i.ne.0) go to 901
+calloc  allocate(l_minus9c(max_reps),stat=i);if(i.ne.0) go to 901
+calloc  allocate(indx(max_reps),stat=i);if(i.ne.0) go to 901
+calloc  allocate(in_bad(max_reps),stat=i);if(i.ne.0) go to 901
+calloc  allocate(isave(max_reps),stat=i);if(i.ne.0) go to 901
+calloc  allocate(csort_wbad(max_reps),stat=i);if(i.ne.0) go to 901
+calloc  allocate(indx_wbad(max_reps),stat=i);if(i.ne.0) go to 901
+calloc  allocate(nevents(max_reps,6),stat=i);if(i.ne.0) go to 901
+calloc  allocate(nnestreps(4,max_reps),stat=i);if(i.ne.0) go to 901
+calloc  allocate(pob_ev(max_reps,mxnmev),stat=i);if(i.ne.0) go to 901
+calloc  allocate(pqm_ev(max_reps,mxnmev),stat=i);if(i.ne.0) go to 901
+calloc  allocate(ppc_ev(max_reps,mxnmev),stat=i);if(i.ne.0) go to 901
+calloc  allocate(prc_ev(max_reps,mxnmev),stat=i);if(i.ne.0) go to 901
+calloc  allocate(zob_ev(max_reps,mxnmev),stat=i);if(i.ne.0) go to 901
+calloc  allocate(zqm_ev(max_reps,mxnmev),stat=i);if(i.ne.0) go to 901
+calloc  allocate(zpc_ev(max_reps,mxnmev),stat=i);if(i.ne.0) go to 901
+calloc  allocate(zrc_ev(max_reps,mxnmev),stat=i);if(i.ne.0) go to 901
+calloc  allocate(tob_ev(max_reps,mxnmev),stat=i);if(i.ne.0) go to 901
+calloc  allocate(tqm_ev(max_reps,mxnmev),stat=i);if(i.ne.0) go to 901
+calloc  allocate(tpc_ev(max_reps,mxnmev),stat=i);if(i.ne.0) go to 901
+calloc  allocate(trc_ev(max_reps,mxnmev),stat=i);if(i.ne.0) go to 901
+calloc  allocate(qob_ev(max_reps,mxnmev),stat=i);if(i.ne.0) go to 901
+calloc  allocate(qqm_ev(max_reps,mxnmev),stat=i);if(i.ne.0) go to 901
+calloc  allocate(qpc_ev(max_reps,mxnmev),stat=i);if(i.ne.0) go to 901
+calloc  allocate(qrc_ev(max_reps,mxnmev),stat=i);if(i.ne.0) go to 901
+calloc  allocate(uob_ev(max_reps,mxnmev),stat=i);if(i.ne.0) go to 901
+calloc  allocate(vob_ev(max_reps,mxnmev),stat=i);if(i.ne.0) go to 901
+calloc  allocate(wqm_ev(max_reps,mxnmev),stat=i);if(i.ne.0) go to 901
+calloc  allocate(wpc_ev(max_reps,mxnmev),stat=i);if(i.ne.0) go to 901
+calloc  allocate(wrc_ev(max_reps,mxnmev),stat=i);if(i.ne.0) go to 901
+calloc  allocate(ddo_ev(max_reps,mxnmev),stat=i);if(i.ne.0) go to 901
+calloc  allocate(ffo_ev(max_reps,mxnmev),stat=i);if(i.ne.0) go to 901
+calloc  allocate(dfq_ev(max_reps,mxnmev),stat=i);if(i.ne.0) go to 901
+calloc  allocate(dfp_ev(max_reps,mxnmev),stat=i);if(i.ne.0) go to 901
+calloc  allocate(dfr_ev(max_reps,mxnmev),stat=i);if(i.ne.0) go to 901
+calloc  allocate(hdr(max_reps,15),stat=i);if(i.ne.0) go to 901
+calloc  allocate(acid(max_reps),stat=i);if(i.ne.0) go to 901
+calloc  allocate(rct(max_reps),stat=i);if(i.ne.0) go to 901
+calloc  allocate(pbg(max_reps,3),stat=i);if(i.ne.0) go to 901
+calloc  allocate(zbg(max_reps,3),stat=i);if(i.ne.0) go to 901
+calloc  allocate(tbg(max_reps,3),stat=i);if(i.ne.0) go to 901
+calloc  allocate(qbg(max_reps,3),stat=i);if(i.ne.0) go to 901
+calloc  allocate(wbg(max_reps,5),stat=i);if(i.ne.0) go to 901
+calloc  allocate(ppp(max_reps,3),stat=i);if(i.ne.0) go to 901
+calloc  allocate(zpp(max_reps,3),stat=i);if(i.ne.0) go to 901
+calloc  allocate(tpp(max_reps,3),stat=i);if(i.ne.0) go to 901
+calloc  allocate(qpp(max_reps,3),stat=i);if(i.ne.0) go to 901
+calloc  allocate(wpp(max_reps,6),stat=i);if(i.ne.0) go to 901
+calloc  allocate(drinfo(max_reps,3),stat=i);if(i.ne.0) go to 901
+calloc  allocate(acft_seq(max_reps,2),stat=i);if(i.ne.0) go to 901
+calloc  allocate(turb1seq(max_reps),stat=i);if(i.ne.0) go to 901
+calloc  allocate(turb2seq(max_reps,4),stat=i);if(i.ne.0) go to 901
+calloc  allocate(turb3seq(3,max_reps,5),stat=i);if(i.ne.0) go to 901
+calloc  allocate(prewxseq(1,max_reps,5),stat=i);if(i.ne.0) go to 901
+calloc  allocate(cloudseq(5,max_reps,5),stat=i);if(i.ne.0) go to 901
+calloc  allocate(afic_seq(3,max_reps,5),stat=i);if(i.ne.0) go to 901
+calloc  allocate(mstq(max_reps),stat=i);if(i.ne.0) go to 901
+calloc  allocate(cat(max_reps),stat=i);if(i.ne.0) go to 901
+calloc  allocate(rolf(max_reps),stat=i);if(i.ne.0) go to 901
+calloc  allocate(sqn(max_reps,2),stat=i);if(i.ne.0) go to 901
+calloc  allocate(procn(max_reps,2),stat=i);if(i.ne.0) go to 901
+c^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+c Call input routine input_acqc to read the input PREPBUFR file, merge the mass and wind
+c  pieces, translate some values to NRL standards and store in memory (arrays)
+c --------------------------------------------------------------------------------------
+      write(*,*)
+      write(*,*) 'Calling input_acqc....'
+      write(*,*)
+
+      call input_acqc(inlun,max_reps,mxnmev,bmiss,imiss,amiss,m2ft,mxlv,
+     +                nrpts4QC_pre,cdtg_an,alat,alon,ht_ft,idt,c_dtg,
+     +                itype,phase,t_prcn,c_acftreg,c_acftid,
+     +                pres,ob_t,ob_q,ob_dir,ob_spd,
+     +                ichk_t,ichk_q,ichk_d,ichk_s,
+     +                nchk_t,nchk_q,nchk_d,nchk_s,
+     +                xiv_t,xiv_q,xiv_d,xiv_s,l_minus9C,nevents,
+     +                hdr,acid,rct,drinfo,acft_seq,turb1seq,turb2seq,
+     +                turb3seq,prewxseq,cloudseq,afic_seq,mstq,cat,rolf,
+     +                nnestreps,sqn,procn,
+     +                pob_ev,pqm_ev,ppc_ev,prc_ev,pbg,ppp,
+     +                zob_ev,zqm_ev,zpc_ev,zrc_ev,zbg,zpp,
+     +                tob_ev,tqm_ev,tpc_ev,trc_ev,tbg,tpp,
+     +                qob_ev,qqm_ev,qpc_ev,qrc_ev,qbg,qpp,
+     +                uob_ev,vob_ev,wqm_ev,wpc_ev,wrc_ev,wbg,wpp,
+     +                ddo_ev,ffo_ev,dfq_ev,dfp_ev,dfr_ev,l_allev_pf)
+
+c Close input PREPBUFR file
+c -------------------------
+      call closbf(inlun)
+      print *
+      print'(" Closed input PREPBUFR file with all data, including ",
+     +       "pre-NRLACQC aircraft data; unit number ",I0)', inlun
+      print *
+
+      write(*,*)
+      write(*,*) 'Back from input_acqc....'
+      write(*,'(" There are ",I0," merged reports for acftobs_qc (NRL ",
+     +          "aircraft data QC routine).")') nrpts4QC_pre
+      write(*,*)
+
+      if(nrpts4QC_pre.gt.0) then
+
+c Now that we are done reading in data from the input PREPBUFR file, need to call acftobs_qc
+c  (actual NRL aircraft QC code)
+c ------------------------------------------------------------------------------------------
+      write(*,*) 'Passing ',nrpts4QC_pre,'obs to acftobs_qc.f...'
+      write(*,*)
+      write(*,*) 'Calling acftobs_qc...'
+
+c NRPTS4QC_PRE is returned from input_acqc and represents the original number of "merged"
+c  reports (mass and wind pieces put together) read in from the PREPBUFR file - we need to
+c  save this value now as it will be used later (e.g., to correctly match the QC decisions
+c  made by acftobs_qc to the reports originally in the input PREPBUFR file) - we will set
+c  NRPTS4qc to NRPTS4QC_PRE at this point and then pass NRPTS4QC into acftobs_qc - the value
+c  for NRPTS4Qc gets reduced in the various subroutines in acftobs_qc as it only represents
+c  the number of "good" reports coming out of each subroutine
+c-------------------------------------------------------------------------------------------  
+      nrpts4QC = nrpts4QC_pre
+
+      call acftobs_qc(max_reps,cdtg_an,nrpts4QC,krej,c_acftreg,c_acftid,
+     +                itype,idt,idp,alon,alat,pres,ht_ft,ob_t,ob_q,
+     +                ob_dir,ob_spd,t_prcn,xiv_t,xiv_q,xiv_d,xiv_s,
+     +                ichk_t,ichk_q,ichk_d,ichk_s,nchk_t,nchk_q,nchk_d,
+     +                nchk_s,indx,isave,in_bad,c_qc,csort,maxflt,
+     +                kflight,creg_flt,cid_flt,cid_flt_old,l_newflt,
+     +                nobs_flt,iobs_flt,ntot_flt,nrej_flt,ntot_flt_old,
+     +                nrej_flt_old,creg_reg,nobs_reg,ntot_reg,nrej_reg,
+     +                ntemp_reg,nwind_reg,nwhol_reg,creg_reg_tot,
+     +                nobs_reg_tot,nwhol_reg_tot,nrej_reg_tot,
+     +                ntemp_reg_tot,nwind_reg_tot,nrej_inv_tot,
+     +                nrej_stk_tot,nrej_grc_tot,nrej_pos_tot,
+     +                nrej_ord_tot,nrej_sus_tot,lead_t_tot,lead_d_tot,
+     +                lead_s_tot,n_xiv_t,n_xiv_d,n_xiv_s,sum_xiv_t,
+     +                sum_xiv_d,sum_xiv_s,sumabs_xiv_t,sumabs_xiv_d,
+     +                sumabs_xiv_s,l_minus9c,l_last,l_first_date,
+     +                l_operational,l_pc,l_ncep,*99)
+
+      go to 34
+
+c-----------------------------------
+   99 continue  ! return 1 out of subr. acftobs_qc comes here - keep going but post message
+      print 153, maxflt,maxflt
+  153 format(/' #####> WARNING: THERE ARE MORE THAN ',I6,' AIRCRAFT ',
+     + '"FLIGHTS" IN INPUT FILE -- MUST INCREASE SIZE OF PARAMETER ',
+     +'NAME "MAXFLT" - WILL CONTINUE ON PROCESSING ONLY ',I6,' FLTS-0'/)
+      write(cmaxflt,'(i6)') maxflt
+      call system('[ -n "$jlogfile" ] && $DATA/postmsg'//
+     + ' "$jlogfile" "***WARNING:'//cmaxflt//' AIRCRAFT "FLIGHT" '//
+     + 'LIMIT EXCEEDED IN PREPOBS_PREPACQC, ONLY '//
+     + cmaxflt//' FLIGHTS PROCESSED-0"')
+c-----------------------------------
+
+   34 continue
+
+      write(*,'(" After running acftobs_qc, there are ",I0," good ",
+     +          "reports, ",I0," bad reports (total rpts = ",I0,")")')
+     +        nrpts4QC,krej,nrpts4QC_pre
+      write(*,*)
+      write(*,*)
+
+c Sort reports (including bad ones) into profiles (sort logic and sort key construction
+c  borrowed from acftobs_qc) (note this is done even if l_doprofiles = FALSE because it
+c  is used in the final listing of single-level aircraft reports)
+c -------------------------------------------------------------------------------------
+
+c Initialize sort key and sort index
+c ----------------------------------
+      do i=1,max_reps
+        csort_wbad(i)   = 'zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz'
+        indx_wbad(i) = i 
+      enddo
+
+c Form variable to sort / sort key
+c --------------------------------
+      write(*,'(" Sorting reports and creating sort index, including ",
+     +          "reports marked as bad....")')
+ 
+      do iob=1,nrpts4QC_pre
+ 
+        kidt = idt(iob) + 100000
+        if(kidt.ge.1000000) then
+          write(*,*)
+          write(*,*) '** WARNING: kidt too large (=',kidt,')'
+          write(*,*)
+          write (*,8073) iob,c_insty_ob(itype(iob)),c_acftreg(iob),
+     +                   c_acftid(iob),idt(iob),alat(iob),alon(iob),
+     +                   pres(iob),ht_ft(iob),t_prcn(iob),ob_t(iob),
+     +                   xiv_t(iob),ichk_t(iob),ob_q(iob),xiv_q(iob),
+     +                   ichk_q(iob),ob_dir(iob),xiv_d(iob),ichk_d(iob),
+     +                   ob_spd(iob),xiv_s(iob),ichk_s(iob),idp(iob)
+ 8073 format(i5,1x,a8,1x,a8,1x,a9,1x,i7,1x,2f11.5,1x,f8.1,1x,f7.0,1x,
+     +       f5.2,4(2(1x,f8.2),1x,i5),1x,i4)
+          write(*,*)
+          kidt = 999999
+        endif
+        write(c_idt,'(i6)') kidt
+ 
+        if(ht_ft(iob).eq.amiss) then
+          c_ht_ft = '99999'
+        else
+          iht_ft = nint(ht_ft(iob))
+          if(iht_ft.ge.100000) then
+            write(*,*)
+            write(*,*) '** WARNING: iht_ft too large (=',iht_ft,')'
+            write (*,8073) iob,c_insty_ob(itype(iob)),c_acftreg(iob),
+     +                     c_acftid(iob),idt(iob),alat(iob),alon(iob),
+     +                     pres(iob),ht_ft(iob),t_prcn(iob),ob_t(iob),
+     +                     xiv_t(iob),ichk_t(iob),ob_q(iob),xiv_q(iob),
+     +                     ichk_q(iob),ob_dir(iob),xiv_d(iob),
+     +                     ichk_d(iob),ob_spd(iob),xiv_s(iob),
+     +                     ichk_s(iob),idp(iob)
+            write(*,*)
+            iht_ft = 99999
+          endif
+
+c Make descents look like ascents for sorting purposes (complication comes in when a descent
+c  has two obs with the same time, but different altitudes)
+c
+c *** -> Need to make sure to reverse order upon writing to output in output_acqc_prof for
+c         descents - profile levels need to be ordered by decreasing pressure (for example,
+c         1st lvl = 1010 mb, 2nd lvl = 987 mb, 3rd lvl = 764 mb, etc.)
+c -----------------------------------------------------------------------------------------
+	  if(c_qc(iob)(11:11).eq.'d' .or. c_qc(iob)(11:11).eq.'D')
+     +     iht_ft = 50000 + (-1)*iht_ft
+
+          if(iht_ft.ge.0) then
+            write(c_ht_ft,'(i5.5)') iht_ft
+          else
+            write(c_ht_ft,'(i5.4)') iht_ft
+          endif
+        endif
+ 
+! vvvv DAK-future change perhaps to account for incr. lat/lon precision
+        if(alat(iob).eq.amiss) then
+          c_lat = '99999'
+        else
+          ilat = nint(alat(iob)*100.)
+          if(abs(ilat).ge.100000) then
+            write(*,*)
+            write(*,*) '** WARNING: ilat too large (=',ilat,')'
+            write (*,8073) iob,c_insty_ob(itype(iob)),c_acftreg(iob),
+     +                     c_acftid(iob),idt(iob),alat(iob),alon(iob),
+     +                     pres(iob),ht_ft(iob),t_prcn(iob),ob_t(iob),
+     +                     xiv_t(iob),ichk_t(iob),ob_q(iob),xiv_q(iob),
+     +                     ichk_q(iob),ob_dir(iob),xiv_d(iob),
+     +                     ichk_d(iob),ob_spd(iob),xiv_s(iob),
+     +                     ichk_s(iob),idp(iob)
+            write(*,*)
+            ilat = 99999
+          endif
+          write(c_lat,'(i5)') ilat
+        endif
+ 
+        if(alon(iob).eq.amiss) then
+          c_lon = '999999'
+        else
+          ilon = nint(alon(iob)*100.)
+          if(abs(ilon).ge.1000000) then
+            write(*,*)
+            write(*,*) '** WARNING: ilon too large (=',ilon,')'
+            write (*,8073) iob,c_insty_ob(itype(iob)),c_acftreg(iob),
+     +                     c_acftid(iob),idt(iob),alat(iob),alon(iob),
+     +                     pres(iob),ht_ft(iob),t_prcn(iob),ob_t(iob),
+     +                     xiv_t(iob),ichk_t(iob),ob_q(iob),xiv_q(iob),
+     +                     ichk_q(iob),ob_dir(iob),xiv_d(iob),
+     +                     ichk_d(iob),ob_spd(iob),xiv_s(iob),
+     +                     ichk_s(iob),idp(iob)
+            write(*,*)
+            ilon = 999999
+          endif
+          write(c_lon,'(i6)') ilon
+        endif
+! ^^^^ DAK-future change perhaps to account for incr. lat/lon precision
+ 
+        c_type = c_insty_ob(itype(iob))
+
+c NRL sort key: 
+c -------------
+cc Option 1: not used
+cc      csort_wbad(iob) = c_idt(1:6)          ! time
+cc   +                  //c_ht_ft(1:5)        ! altitude
+cc   +                  //c_lat(1:5)          ! latitude
+cc   +                  //c_lon(1:6)          ! longitude
+cc   +                  //c_type(1:2)         ! aircraft type
+
+cc Option 2: not used (tail number first)
+cc      csort_wbad(iob) = c_acftreg(iob)(1:7) ! tail number
+cc   +                  //c_acftid(iob)(1:7)  ! flight number
+cc   +                  //c_idt(1:6)          ! time
+cc   +                  //c_ht_ft(1:5)        ! altitude
+cc   +                  //c_lat(1:5)          ! latitude
+cc   +                  //c_type(1:2)         ! aircraft type
+
+cc Option 3: not used (use type first to group AIRCFT and AIRCAR message types together)
+cc      csort_wbad(iob) = c_type(1:2)         ! aircraft type
+cc   +                  //c_acftreg(iob)(1:7) ! tail number
+cc   +                  //c_acftid(iob)(1:7)  ! flight number
+cc   +                  //c_idt(1:6)          ! time
+cc   +                  //c_ht_ft(1:5)        ! altitude
+cc   +                  //c_lat(1:5)          ! latitude
+cc   +                  //c_lon(1:6)          ! longitude
+
+c Option 4: not used
+c Sort by altitude before time... want descents in order with an increasing vertical
+c  coordinate - but if you have two obs in a descent with the same time but different
+c  altitude, the altitudes will show up reversed -- use offset to get around this
+c -----------------------------------------------------------------------------------
+c
+c Option 5: USE THIS (sort by time then altitude that is adjusted for descents)
+c -----------------------------------------------------------------------------
+        if(c_qc(iob)(11:11).eq.'A') then    ! change 'A' to 'a'
+          c_qc11 = 'a'
+        elseif(c_qc(iob)(11:11).eq.'D') then
+          c_qc11 = 'd'                      ! change 'D' to 'd'
+        else
+          c_qc11 = c_qc(iob)(11:11)
+        endif
+
+c Option 6: not used {sort by altitude first, then time... trust vertical coordinate more
+c  than position (many less bad marks in c_qc(5:5)'s vs c_qc(2:4))}
+c ---------------------------------------------------------------------------------------
+        csort_wbad(iob) = c_type(1:2)//c_qc11               ! aircraft type + ascent/descent
+     +                               //c_acftreg(iob)(1:8)  ! tail number
+     +                               //c_acftid(iob)(1:7)   ! flight number
+ccccc+                               //c_ht_ft(1:5)
+ccccc+                               //c_idt(1:6)
+     +                               //c_idt(1:6)           ! time
+     +                               //c_ht_ft(1:5)         ! altitude
+! vvvv DAK-future change perhaps to account for incr. lat/lon precision
+     +                               //c_lat(1:5)           ! latitude
+     +                               //c_lon(1:6)           ! longitude
+! ^^^^ DAK-future change perhaps to account for incr. lat/lon precision
+
+      enddo
+ 
+c Sort reports in file according to array csort_wbad
+c --------------------------------------------------
+      call indexc40(nrpts4QC_pre,csort_wbad,indx_wbad)
+
+      if(l_doprofiles) then ! takes longer to run, because it outputs profiles in separate
+                            !  PREPBUFR-like file
+
+c ----------------------------------------------------------------------------------
+c Translate NRL QC flags to NCEP events and add events to PREPBUFRlike profiles file
+c ----------------------------------------------------------------------------------
+        write(*,*) 'Calling output_acqc_prof....'
+        write(*,*)
+
+        call output_acqc_prof(proflun,nrpts4QC_pre,max_reps,mxnmev,mxlv,
+     +                        bmiss,cdtg_an,alat,alon,ht_ft,idt,c_qc,
+     +	                      trad,l_otw,l_nhonly,indx_wbad,c_acftreg,
+     +                        c_acftid,ob_t,nevents,hdr,acid,rct,drinfo,
+     +                        acft_seq,mstq,cat,
+     +                        pob_ev,pqm_ev,ppc_ev,prc_ev,pbg,ppp,
+     +                        zob_ev,zqm_ev,zpc_ev,zrc_ev,zbg,zpp,
+     +                        tob_ev,tqm_ev,tpc_ev,trc_ev,tbg,tpp,
+     +                        qob_ev,qqm_ev,qpc_ev,qrc_ev,qbg,qpp,
+     +                        uob_ev,vob_ev,wqm_ev,wpc_ev,wrc_ev,
+     +                        wbg,wpp,
+     +	                      ddo_ev,ffo_ev,dfq_ev,dfp_ev,dfr_ev,
+     +                        nrlacqc_pc,l_allev_pf,l_prof1lvl,
+     +                        l_mandlvl,tsplines,
+     +                        l_operational,lwr)
+
+        write(*,*)
+        write(*,*)
+        write(*,*) 'Back from output_acqc_prof ....'
+        write(*,'(" PREPBUFR-like (profiles) file has been updated ",
+     +            "with events representing the QC marks applied by ",
+     +            "the NRLACQC routine acftobs_qc.")')
+        write(*,*)
+        write(*,*)
+
+c Close output PREPBUFR-like (profiles) file 
+c ------------------------------------------
+        call closbf(proflun) ! closbf will take care of flushing last message
+        print *
+        print'(" Closed output PREPBUFR-like file - now holds post-",
+     +         "NRLACQC merged aircraft profile data; unit number ",
+     +         I0)', proflun
+        print *
+      endif
+
+c ----------------------------------------------------------------------
+c Always output single-level QC'd aircraft data in regular PREPBUFR file
+C ----------------------------------------------------------------------
+
+c Re-open input PREPBUFR file (contains mass and wind reports for all data types, no NRLACQC
+c  events on reports in AIRCAR and AIRCFT message types)
+c ------------------------------------------------------------------------------------------
+      call openbf(inlun,'IN',inlun)
+      print *
+      print'(" Again opened input PREPBUFR file with all data, ",
+     +       "including pre-NRLACQC aircraft data; unit number ",I0)',
+     +     inlun
+      print *
+
+
+C Initialize some variables that will be set in output_acqc_noprof and used in printout
+c -------------------------------------------------------------------------------------
+      ncep_qm_p = 9999
+      ncep_rc_p = 9999
+      ncep_qm_z = 9999
+      ncep_rc_z = 9999
+      ncep_qm_t = 9999
+      ncep_rc_t = 9999
+      ncep_qm_q = 9999
+      ncep_rc_q = 9999
+      ncep_qm_w = 9999
+      ncep_rc_w = 9999
+      ncep_rej  =    0
+
+c Translate NRL QC flags to NCEP events and add events to aircraft reports in "AIRCAR" and
+c  "AIRCFT" message types in full PREPBUFR file (split mass and wind pieces)
+c ----------------------------------------------------------------------------------------
+      call output_acqc_noprof(inlun,outlun,nrpts4QC_pre,max_reps,bmiss,
+     +                        alat,alon,ht_ft,idt,c_qc,trad,l_otw,
+     +                        l_nhonly,l_qmwrite,
+     +                        ncep_qm_p,ncep_rc_p,
+     +                        ncep_qm_z,ncep_rc_z,
+     +                        ncep_qm_t,ncep_rc_t,
+     +                        ncep_qm_q,ncep_rc_q,
+     +                        ncep_qm_w,ncep_rc_w,
+     +                        ncep_rej,nrlacqc_pc)
+
+      write(*,*)
+      write(*,*)
+      write(*,*) 'Back from output_acqc_noprof ....'
+      write(*,'(" PREPBUFR file has been updated with events ",
+     +          "representing the QC marks applied by the NRL aircraft",
+     +          " QC routine acftobs_qc")')
+      write(*,*)
+      write(*,*)
+
+c Close input PREPBUFR file
+c -------------------------
+      call closbf(inlun)
+      print *
+      print'(" Closed input PREPBUFR file with all data, including ",
+     +       "pre-NRLACQC aircraft data; unit number ",I0)', inlun
+      print *
+
+c Close output PREPBUFR file 
+c --------------------------
+      call closbf(outlun) ! closbf will take care of flushing last message
+      print *
+      print'(" Closed output PREPBUFR file - now holds all data, ",
+     +       "including post-NRLACQC aircraft data; unit number ",I0)',
+     +     outlun
+      print *
+
+      if(.not.l_operational) then
+
+c Write merged reports and resulting NRL QC decisions (array c_qc) to an output file for
+c  later perusal
+c --------------------------------------------------------------------------------------
+
+        open(51,file='merged.reports.post_acftobs_qc.sorted',form=
+     +       'formatted')
+        write(51,*)
+        write(51,'(" Final listing of all aircraft reports in PREPBUFR",
+     +             " file after NRL QC (sorted according to array ",
+     +             "csort_wbad)")')
+        if(nrpts4QC_pre.eq.max_reps) write(51,'(" (since max report ",
+     +   "limit hit, only reports going through QC listed here)")')
+        write(51,'(" -------------------------------------------------",
+     +             "--------------------------------------------------",
+     +             "-------")')
+        write(51,*)
+        write(51,'(" TAMDAR reports here replace characters 1-3 of ",
+     +             "manufactured flight # (''000'') with (''TAM'') in ",
+     +             "order to create truncated tail # ''TAM'' for ",
+     +             "NRLACQC sorting - the PREPBUFR file continues to ",
+     +             "encode ''000'' in")')
+        write(51,'("  characters 1-3 of manufactured flight # for ",
+     +             "TAMDAR (stored as both ''SID'' and ''ACID'')")')
+
+        write(51,*)
+        write(51,'(" AIREP and PIREP reports report only a flight # ",
+     +             "(manufactured for PIREPs) - a tail # for NRLACQC ",
+     +             "sorting is created by truncating the flight # - ",
+     +             "the PREPBUFR file will not encode these truncated ",
+     +             "tail #''s")')
+
+        write(51,*)
+        write(51,'(" All AMDAR reports except LATAM report only a tail",
+     +            " # - this is stored as both flight # and tail # for",
+     +             " NRLACQC sorting - the PREPBUFR file continues to ",
+     +             "encode only tail # (stored in ''SID'')")')
+        write(51,*)
+        write(51,'(" AMDAR reports from LATAM report both a tail # and",
+     +             " a flight # - these are used as reported for ",
+     +             "NRLACQC sorting - the PREPBUFR file continues to ",
+     +             "encode both tail # and flight # (as ''SID'' and ",
+     +             "''ACID'',")')
+        write(51,*) 'resp.)'
+        write(51,*)
+        write(51,'(" MDCRS reports from ARINC report both a tail # and",
+     +             " a flight # - these are used as reported for ",
+     +             "NRLACQC sorting - the PREPBUFR file continues to ",
+     +             "encode both tail # and flight # (as ''SID'' and ",
+     +             "''ACID'',")')
+        write(51,*) 'resp.)'
+
+        write(51,*)
+        write(51,3001)
+ 3001   format(173x,'! _PREPBUFR_QMs_!NRLACQC_REASON_CODE'/' index ',
+     +         'flight    tail num itp ph      lat       lon    ',
+     +         'time  hght   pres  temp/chk spec_h/chk  wspd/chk ',
+     +         'wdir/chk t-prec !__qc_flag__!_______________',
+     +         'csort_wbad_______________! Pq Zq Tq Qq Wq!Prc Zrc Trc ',
+     +         'Qrc Wrc'/'------ --------- -------- --- --  ',
+     +         '-------- --------- ------ ----- ------ --------- ',
+     +         '---------- --------- -------- ------ !-----------!',
+     +         '----------------------------------------! -- -- -- ',
+     +         '-- --!--- --- --- --- ---')
+
+        do i=1,nrpts4QC_pre
+          j=indx_wbad(i)
+
+          if(ncep_rej(j).eq.0) then
+            write(51,fmt=8001) j,c_acftid(j),c_acftreg(j),itype(j),
+     +       phase(j),alat(j),alon(j),idt(j),nint(ht_ft(j)),pres(j),
+     +       ob_t(j),ichk_t(j),ob_q(j),ichk_q(j),ob_spd(j),ichk_s(j),
+     +       nint(ob_dir(j)),ichk_d(j),t_prcn(j),c_qc(j),csort_wbad(j),
+     +       ncep_qm_p(j),ncep_qm_z(j),ncep_qm_t(j),ncep_qm_q(j),
+     +       ncep_qm_w(j),ncep_rc_p(j),ncep_rc_z(j),ncep_rc_t(j),
+     +       ncep_rc_q(j),ncep_rc_w(j)
+c           if(ncep_rc_p(j).ge.1000) write(51,fmt=9001) ncep_rc_p(j)
+c9001       format(' PRC too large = ',i10)
+c           if(ncep_rc_z(j).ge.1000) write(51,fmt=9002) ncep_rc_z(j)
+c9002       format(' ZRC too large = ',i10)
+c           if(ncep_rc_t(j).ge.1000) write(51,fmt=9003) ncep_rc_t(j)
+c9003       format(' TRC too large = ',i10)
+c           if(ncep_rc_q(j).ge.1000) write(51,fmt=9004) ncep_rc_q(j)
+c9004       format(' QRC too large = ',i10)
+c           if(ncep_rc_w(j).ge.1000) write(51,fmt=9005) ncep_rc_w(j)
+c9005       format(' WRC too large = ',i10)
+          endif
+	enddo
+
+ 8001 format(i6,1x,a9,1x,a8,i4,1x,i2,2f10.5,1x,i6,1x,i5,1x,f6.1,1x,
+     +       f6.2,i3,1x,f7.2,i3,1x,f6.1,i3,2x,i4,i3,1x,f6.2,1x,
+     +       '!',a11,'!',a40,'!',5(1x,i2.2),'!',i3.3,4(1x,i3.3))
+
+c Close data listing file
+c -----------------------
+	close(51)
+
+      endif
+
+c End program
+c -----------
+
+      write(*,*)
+      write(*,*) '**************************'
+      write(*,*) 'PREPOBS_PREPACQC has ended'
+      call system('date')
+      write(*,*) '**************************'
+      write(*,*)
+      call w3tage('PREPOBS_PREPACQC')
+
+      else  ! nrpts4QC_pre.le.0
+
+c Input PREPBUFR file contains NO aircraft data of any kind -- STOP 4
+c -------------------------------------------------------------------
+
+         WRITE(6,108)
+  108 FORMAT(/' INPUT PREPBUFR FILE CONTAINS NO "AIRCAR" OR "AIRCFT" ',
+     $ 'MESSAGES WITH REPORTS - STOP 4'/)
+         CALL ERREXIT(4)
+
+      endif ! nrpts4QC_pre.gt.0
+
+      stop
+
+cvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+c add this event of future switch to dynamic memory allocation
+
+ca901 continue
+
+calloc  print *, '#####PREPOBS_PREPACQC - UNABLE TO ALLOCATE ARRAYS'
+calloc  call w3tage('PREPOBS_PREPACQC')
+calloc  call errexit(99)
+c^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+      end
