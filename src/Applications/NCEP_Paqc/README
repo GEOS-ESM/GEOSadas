@@ -1,0 +1,16 @@
+README for NCEP_Paqc 
+  - preprocessing QC programs from NCEP and some BUFR utilities
+
+   *  block-unblock       add/remove f77 filemarkers on BUFR files
+                          (not needed with current BUFR library)
+   *  combine_bfr         utilities and notes about combining BUFR files
+   *  GMAOprev            GMAO version of NCEP 'prevents' code modified to
+                          read g5-eta files directly.  
+   *  modify_bufr         utility programs to act on BUFR files
+   *  oiqc                NCEP OIQC Optimal interpolation quality control
+   *  prepobs_cqcbufr.fd  Raob Complex Quality Control from NCEP
+   *  prepobs_cqcvad.fd   VAD wind QC routine from NCEP
+   *  prepobs_prepacqc.fd NCEP aircraft quality control base on NRL QC
+   *  prepobs_profcqc.fd  Wind Profiler QC routine from NCEP
+   *  radcor              Chris Redder's routines for applying Haimberger
+                          radiosonde adjustments and NCEP radiation correction
