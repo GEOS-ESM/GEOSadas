@@ -2,8 +2,8 @@
 # C48f.input
 #-----------
 
-description: C48f__GEOSadas-5_25_0__agrid_C48__ogrid_f34
-tag: GEOSadas-5_25_0
+description: C48f__GEOSadas-5_25_2__agrid_C48__ogrid_f34
+tag: GEOSadas-5_25_2
 fvsetupflags: -sensdeg 1
 
 ---ENDHEADERS---
@@ -29,7 +29,7 @@ EXPID? [u000_C48]
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [C48f__GEOSadas-5_25_0__agrid_C48__ogrid_f34]
+EXPDSC? [C48f__GEOSadas-5_25_2__agrid_C48__ogrid_f34]
 > 
 
 Land Surface Model choice [1]
@@ -78,7 +78,7 @@ Starting year-month-day? [20130902]
 > 20190116
 
 Starting hour-min-sec? [210000]
-> 21
+> 
 
 Name of experiment where ICs come from: [C48f]
 > 
@@ -219,9 +219,6 @@ Output Restart TYPE (bin or nc4) [nc4]
 > 
 
 Select group: [g0620]
-> 
-
-Continue without missing resource files? [y]
 > 
 
 Edit COLLECTIONS list in run/HISTORY.rc.tmpl (y/n)? [n]
