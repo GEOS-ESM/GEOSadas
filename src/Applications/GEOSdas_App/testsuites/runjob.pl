@@ -393,6 +393,7 @@ sub getRawInputs {
     open INPUT, "< $input" or die ">> Error << opening $input: $!";
     while (<INPUT>) {
         chomp; s/^\s+|\s+$//g;
+        $_ = envsubst($_);
 
         # get heading info
         #-----------------
@@ -458,6 +459,35 @@ sub getRawInputs {
     # save output filename in global hash
     #------------------------------------
     $rawInFile{$key} = $rawinput;
+}
+
+#=======================================================================
+# name - envsubst
+# purpose - replace environment variables in a string with their values
+#=======================================================================
+sub envsubst {
+    my ($string, @envVarList, $var);
+    $string = shift @_;
+
+    # list of environment variables to substitute
+    #--------------------------------------------
+    @envVarList = (qw/USER HOME ARCHIVE/);
+
+    foreach $var (@envVarList) {
+
+        # substitute for format $variable
+        #--------------------------------
+        if ($string =~ m/(\$$var)/) {
+            $string =~ s/\$$var/$ENV{$var}/g if $ENV{$var};
+        }
+
+        # substitute for format ${variable}
+        #----------------------------------
+        if ($string =~ m/(\${$var})/) {
+            $string =~ s/\${$var}/$ENV{$var}/g if $ENV{$var};
+        }
+    }
+    return $string;
 }
 
 #=======================================================================
