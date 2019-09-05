@@ -902,13 +902,11 @@ sub defaults {
                      DU_GridComp_ExtData.rc
                      DU_History___.rc
                      DU_Registry.rc
-                     Deposition_Registry___.rc 
                      GEOSCHEMchem_ExtData.rc
                      GEOSCHEMchem_GridComp.rc
                      GEOSCHEMchem_Registry.rc
                      GEOSachem_ExtData.rc
                      GEOSachem_Registry.rc
-                     GMICHEM_History___.rc
                      GMI_ExtData.rc
                      GMI_GridComp.rc
                      GMI_Registry.rc
@@ -942,7 +940,6 @@ sub defaults {
                      OC_GridComp_ExtData.rc
                      OC_History___.rc
                      OC_Registry.rc
-                     Reactions_Registry___.rc 
                      Rn_GridComp---Afri.rc
                      Rn_GridComp---Asia.rc
                      Rn_GridComp---Aust.rc
@@ -7182,7 +7179,7 @@ if ( $fvchem && $lm > 2 ) {
  $ncpus_idf = $ncpus_iau;
 
 # Set NCPUS for PSAS-AOD analysis (wired)
- $ncpus_aod = 28;
+ $ncpus_aod = 1;
 
  open(SCRIPT,">$fvhome/run/$jobn.j") or
  die ">>> ERROR <<< cannot write $fvhome/run/$jobn.j";
