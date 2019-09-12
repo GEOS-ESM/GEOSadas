@@ -44,10 +44,6 @@ if (CMAKE_Fortran_COMPILER_ID MATCHES Intel)
    string (REPLACE "${NO_ALIAS}" "" CMAKE_Fortran_FLAGS_RELEASE ${CMAKE_Fortran_FLAGS_RELEASE})
 endif ()
 
-if (EXTENDED_SOURCE)
-  set_target_properties (${this} PROPERTIES COMPILE_FLAGS ${EXTENDED_SOURCE})
-endif()
-
 esma_add_library(${this}
   SRCS ${SRCS}
   DEPENDENCIES NCEP_bufr_r8i8
@@ -72,4 +68,8 @@ foreach (target ${this} raobcore.x hradcor.x read_prepbufr.x)
       target_compile_options (${target} PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:${flag}>)
    endforeach ()
 endforeach ()
+
+if (EXTENDED_SOURCE)
+  set_target_properties (${this} PROPERTIES COMPILE_FLAGS ${EXTENDED_SOURCE})
+endif()
 
