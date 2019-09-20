@@ -20,6 +20,7 @@ program init_coeffs
   use m_sischnTable, only : sischnTable_clean
   use m_FileResolv,  only : FileResolv
   use read_diag
+  use nc_diag_read_mod,only: nc_diag_read_init
   use mpeu_util, only: gettablesize
   use mpeu_util, only: gettable
   implicit NONE
@@ -77,6 +78,9 @@ program init_coeffs
 !      6Jun2018    Meta   Extra check for '999' in ntl field for tlapmean
 !                         with tlapmean value == 0.0.  Set these 999 to 0
 !                         so that tlapmean can be initialized.
+!     17Sep2019    Meta   Quickie implementation of read of NetCDF using
+!                         read_diag routine (not as efficient as direct
+!                         read but should work w/o much code change).
 !EOP
 !-----------------------------------------------------------------------
 
@@ -122,7 +126,8 @@ program init_coeffs
   integer(i_kind),parameter:: lninfo = 11
   integer(i_kind),parameter:: lncoef = 14
   integer(i_kind),parameter:: lnberr = 16
-  integer(i_kind),parameter:: lndiag = 21
+! integer(i_kind),parameter:: lndiag = 21
+  integer(i_kind)          :: lndiag
   integer(i_kind),parameter:: lntemp = 51 
   integer(i_kind),parameter:: lnupdt = 52
   integer(i_kind),parameter:: lngtbl = 53
@@ -148,7 +153,7 @@ program init_coeffs
   logical update_file
   logical mean_only
   logical verbose, wrinit
-  logical use_iuse, use_qc
+  logical use_iuse, use_qc, use_netcdf
 
   character(6) :: word
   character(15):: obsname         ! obstype_platid
@@ -654,19 +659,25 @@ program init_coeffs
      
 !    Open file and read header
 
-     open(lndiag,file=diag_rad,form='unformatted',status='old',iostat=istatus)
-     if (istatus/=0) then
-        write(6,'('' Problem opening file '',a,'' iostat='',i4)') &
-             trim(diag_rad),istatus
-        close(lndiag)
-        cycle taskloop
+     if ( use_netcdf ) then
+       call set_netcdf_read(use_netcdf)
+       call nc_diag_read_init(diag_rad,lndiag)
+     else
+       lndiag = 21
+       open(lndiag,file=diag_rad,form='unformatted',status='old',iostat=istatus)
+       if (istatus/=0) then
+          write(6,'('' Problem opening file '',a,'' iostat='',i4)') &
+               trim(diag_rad),istatus
+          close(lndiag)
+          cycle taskloop
+       endif
      endif
      
      call read_radiag_header(lndiag,0,retrieval,header_fix,header_chan,data_name,istatus)
      if (istatus/=0) then
         write(6,'('' Problem reading header for file '',a,'' iostat='',i4)') &
              trim(diag_rad),istatus
-        close(lndiag)
+        if (.not. use_netcdf) close(lndiag)
         cycle taskloop
      endif
      
@@ -1442,6 +1453,7 @@ CONTAINS
 
     integer nargs, iargc, iarg
     character(len=120) argv, argv2
+    character(len=4) suffix
     
     nstep = 90
     satbias_in = ''
@@ -1450,12 +1462,13 @@ CONTAINS
     satinfo = ''
 !    fvroot = ''
     fvhome = ''
-    dtemplate = '_ges.%y4%m2%d2_%h2z.bin'
+    suffix = '.bin'
     prefix = '%s.'
     verbose = .false.
     wrinit = .false.       ! flag to write Yanqiu 'init' style file for testing
     use_iuse = .false.
     use_qc = .false.
+    use_netcdf = .false.
 
     nargs = iargc()
 
@@ -1510,6 +1523,9 @@ CONTAINS
              end if
              call getarg(iarg,argv)
              read(argv,*) mode
+          case ('-nc4')                           ! input diag files are in netCDF4 format
+             use_netcdf = .true.
+             suffix = '.nc4'
           case ('-nstep')                         ! specify number of cross-track positions
              iarg = iarg + 1
              if (iarg > nargs-2) then
@@ -1563,6 +1579,10 @@ CONTAINS
        end if
     end do
 
+    if ( dtemplate == '') then     !   not yet set
+       dtemplate = '_ges.%y4%m2%d2_%h2z' // suffix
+    end if
+
     if (satbias_in == '' .and. satbias_pc /= '') then
        print *,'satbias_in not specifed, not reading preconditioner file'
        satbias_pc = ''
@@ -1613,6 +1633,7 @@ subroutine usage()
   print *,'                                     -1  zero bias coeff, var=1e4'
   print *,'                                      0  zero bias coeff, var=0  '
   print *,'                                      1  mean/scanangle fit      '
+  print *,'  -nc4            use netCDF4 diag files for input '
   print *,'  -nstep steps    number of cross-track positions (default: 90)'
   print *,'  -s filename     satinfo input file name (default=gmao_global_satinfo.rc)'
   print *,'      -iuse       if satinfo file set, use "iuse" values from the file    '
