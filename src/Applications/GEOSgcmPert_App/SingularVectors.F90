@@ -13,8 +13,8 @@ Program SingularVectors
    use GEOS_AgcmPertGridCompMod, only:  ROOT_SetServices => SetServices
    use GEOS_PertSharedMod, only: ak=>pert_ak, bk=>pert_ak, BothPhases
 
-   use fv_mp_mod, only: mp_reduce_sum
-   use fv_timing_mod, only: timing_clear
+   use fv_mp_nlm_mod, only: mp_reduce_sum
+   use fv_timing_nlm_mod, only: timing_clear
 
    use svecs_utils
    use svecs_cf
