@@ -27,7 +27,6 @@ $NCSUFFIX || die "ERROR. FVWORK not defined: $!" unless ($NCSUFFIX);
 use lib ( "${FVROOT}/bin" );
 use File::Basename;      # for basename(), dirname()
 use File::Copy;          # for cp() and move
-use Shell qw(cat rm);    # cat and rm commands
 use Manipulate_time;     # token_resolve() 
 
 while(1) { # Start the daemon
@@ -179,7 +178,7 @@ sub prepqc {                        # runs NCEP preprocessing QC subsystem
         # Rename original prepqc file to serve as input to PREPQC
         #--------------------------------------------------------
         copy("$prepqc_new","$prepqc_old");
-        rm("$prepqc_new");
+        unlink("$prepqc_new");
 
         $cmd = "gmao_prepqc -r $fvhome/run -o $prepqc_new $nymd $nhms $prepqc_old $dynf";
         print "$0: $cmd\n" unless ( $opt_q );
