@@ -434,6 +434,7 @@ sub getInputs {
             # remove leading and trailing blanks
             #-----------------------------------
             chomp; s/^\s+|\s+$//g;
+            $_ = envsubst($_);
 
             # get heading info
             #-----------------
@@ -500,6 +501,35 @@ sub getInputs {
     # add plenty of cushion to @rawVALUE array for good measure
     #----------------------------------------------------------
     for (1..300) { push @rawVALUE, "" }
+}
+
+#=======================================================================
+# name - envsubst
+# purpose - replace environment variables in a string with their values
+#=======================================================================
+sub envsubst {
+    my ($string, @envVarList, $var);
+    $string = shift @_;
+
+    # list of environment variables to substitute
+    #--------------------------------------------
+    @envVarList = (qw/USER HOME ARCHIVE/);
+
+    foreach $var (@envVarList) {
+
+        # substitute for format $variable
+        #--------------------------------
+        if ($string =~ m/(\$$var)/) {
+            $string =~ s/\$$var/$ENV{$var}/g if $ENV{$var};
+        }
+
+        # substitute for format ${variable}
+        #----------------------------------
+        if ($string =~ m/(\${$var})/) {
+            $string =~ s/\${$var}/$ENV{$var}/g if $ENV{$var};
+        }
+    }
+    return $string;
 }
 
 #=======================================================================
