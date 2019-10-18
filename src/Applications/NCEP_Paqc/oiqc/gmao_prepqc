@@ -24,6 +24,8 @@
 #  27Oct2016  Meta      Some modifications for new NRL QC 
 #  02Feb2017  Meta      Plumbing fixes for NRL QC - save profile file where it
 #                       can be found by DAS, few other tweaks
+#  18Oct2019  Meta      Removed reference to 'Shell'; cleaned out 
+#                        code for old ACQC, ACARSQC
 #------------------------------------------------------------------
 
 # make env vars readily available
@@ -32,7 +34,6 @@ use Env qw(STRICT NCPUS EXPID PROFQC ACFTQC ACARSQC RADCOR FVWORK
            FORT_CONVERT12 FORT_CONVERT13 FORT_CONVERT15 );
 use File::Basename;      # for basename(), dirname()
 use Getopt::Long;        # command line options
-use Shell qw(cat);       # cat command
 use File::Copy;
 
 # Command line options
@@ -89,12 +90,6 @@ use File::Copy;
     newacqc()   if ($doACQC) ;
   $rc1 = system("zeit_co.x -r $fvwork/.zeit pqc_arqc");
   
-  # ACARSQC     (ACARS QC)
-  # -------
-# $rc1 = system("zeit_ci.x -r $fvwork/.zeit pqc_acarsqc");
-#   acarsqc()   if ($doACARSQC) ;
-# $rc1 = system("zeit_co.x -r $fvwork/.zeit pqc_acarsqc");
-
   # CQCVAD     (Radar VAD wind QC)
   # ------
   $rc1 = system("zeit_ci.x -r $fvwork/.zeit pqc_cqcvad");
@@ -640,85 +635,6 @@ sub newacqc {
 
 }
 
-#......................................................................
-
-sub acqc {                        
-
-    $acqcdir = "$prepqcdir/acqc"; # PREPQC working directory
-    $rc = system("/bin/mkdir -p $acqcdir" );
-    die ">>> ERROR <<< cannot create $acqcdir " if ( $rc );
-    chdir("$acqcdir"); 
-    system("/bin/touch .no_archiving");   # working prepqc dir not to be archived
-
-# Assign FORTRAN units for acqc
-# ------------------------------------------------------------
-
-#  NOTE: these files do not follow the fv file name conventions
-#        Many of the output files are discarded
-#  ------------------------------------------------------------
-   Assign("$prepqcdir/next.$nymd.$hh",          14 );  
-   Assign("$rcdir/prepobs_landc",       15 );
-   Assign("$rcdir/prepobs_waypoints",   23 );
-  
-   Assign("prepaqc.$nymd.$hh",          61 );
-   Assign("aqc_sdmisol.$nymd.$hh",      52 );
-   Assign("aqc_sdmxlim.$nymd.$hh",      53 );
-
-   $FORT_CONVERT15 = "BIG_ENDIAN";
-   
-# Run prepacqc
-# -------
-  $cmd = "prepacqc.x < $rcdir/prepobs_prepacqc.merra.parm";
-  print "$0: $cmd\n" unless ( $opt_q );
-  $rc = system ( $cmd ) unless ( $opt_n ) ;    
-  die ">>>> ERROR <<< running prepacqc.x" if ( $rc );
-
-# copy output file to 'next' so next routine will use it
-  copy("prepaqc.$nymd.$hh", "$prepqcdir/next.$nymd.$hh");
-
-  undef $FORT_CONVERT15;
-
-
-}
-
-#......................................................................
-
-sub acarsqc {                        
-
-    $arqcdir = "$prepqcdir/acarqc"; # PREPQC working directory
-    $rc = system("/bin/mkdir -p $arqcdir" );
-    die ">>> ERROR <<< cannot create $arqcdir " if ( $rc );
-    chdir("$arqcdir"); 
-    system("/bin/touch .no_archiving");   # working prepqc dir not to be archived
-
-
-# Assign FORTRAN units for acarsqc
-# ------------------------------------------------------------
-
-#  NOTE: these files do not follow the fv file name conventions
-#        Many of the output files are discarded
-#  ------------------------------------------------------------
-   Assign("$prepqcdir/next.$nymd.$hh",          14 );  
-   Assign("$rcdir/prepobs_landc",       15 );
-  
-   Assign("prepacr.$nymd.$hh",          61 );
-   Assign("acr_sdmlist.$nymd.$hh",      52 );
-
-   $FORT_CONVERT15 = "BIG_ENDIAN";
-   
-# Run acarsqc
-# -------
-  $cmd = "acarsqc.x < $rcdir/prepobs_acarsqc.merra.parm";
-  print "$0: $cmd\n" unless ( $opt_q );
-  $rc = system ( $cmd ) unless ( $opt_n ) ;    
-  die ">>>> ERROR <<< running acarsqc.x" if ( $rc );
-
-# copy output file to 'next' so next routine will use it
-  copy("prepacr.$nymd.$hh", "$prepqcdir/next.$nymd.$hh");
-
-  undef $FORT_CONVERT15;
-
-}
 #......................................................................
 
 #
