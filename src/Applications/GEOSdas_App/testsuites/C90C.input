@@ -2,8 +2,8 @@
 # C90C.input
 #-----------
 
-description: C90C__GEOSadas-5_25_0__agrid_C90__ogrid_CS
-tag: GEOSadas-5_25_0
+description: C90C__GEOSadas-5_25_2__agrid_C90__ogrid_CS
+tag: GEOSadas-5_25_2
 
 ---ENDHEADERS---
 
@@ -28,7 +28,7 @@ EXPID? [u000_C90]
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [C90C__GEOSadas-5_25_0__agrid_C90__ogrid_CS]
+EXPDSC? [C90C__GEOSadas-5_25_2__agrid_C90__ogrid_CS]
 > 
 
 Land Surface Model choice [1]
@@ -71,16 +71,7 @@ AeroCom? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/AeroCom]
 > 
 
 FVICS? [/archive/u/jstassi/restarts/5C0/CF0090x6C]
-> /archive/u/jstassi/restarts/GEOSadas-5_24_0
-
-Starting year-month-day? [20130902]
-> 20170204
-
-Starting hour-min-sec? [210000]
-> 21
-
-Name of experiment where ICs come from: [C90fF2]
-> 
+> /archive/u/jstassi/restarts/GEOSadas-5_24_0/C90fF2.rst.20170204_21z.tar
 
 Run model-adjoint-related applications (0=no,1=yes)? [0]
 > 
@@ -206,9 +197,6 @@ Output Restart TYPE (bin or nc4) [nc4]
 > 
 
 Select group: [g0620]
-> 
-
-Continue without missing resource files? [y]
 > 
 
 Edit COLLECTIONS list in run/HISTORY.rc.tmpl (y/n)? [n]

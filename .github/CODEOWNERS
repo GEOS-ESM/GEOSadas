@@ -3,6 +3,12 @@
 # Order is important; the last matching pattern takes the most
 # precedence.
 
+# GEOS ADAS Gatekeepers own all the files
+* @GEOS-ESM/adas-gatekeepers
+
+# Belt-and-suspender: ADAS Gatekeepers own Externals.cfg
+Externals.cfg @GEOS-ESM/adas-gatekeepers
+
 # The GEOS CMake Team is the CODEOWNER for the CMakeLists.txt files in this repository
 CMakeLists.txt @GEOS-ESM/cmake-team
 

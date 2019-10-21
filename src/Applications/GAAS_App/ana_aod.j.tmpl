@@ -60,17 +60,9 @@ endif
 # use AOD_list nodes for parallel runs which need to share nodes
 #---------------------------------------------------------------
 if ($aod_parallel_flag) then
-   setenv AOD_NODEFILE "PBS_NODEFILE=$AODWORK/AOD_list;"
-else
-   if ( $?PBS_NODEFILE ) then
-       setenv AOD_NODEFILE "PBS_NODEFILE=${PBS_NODEFILE};"
-   else
-       setenv AOD_NODEFILE 
-   endif
+   setenv PBS_NODEFILE $AODWORK/AOD_list
 endif
-
-if ( $NCPUS_AOD == 1 ) setenv AOD_NODEFILE
-setenv MPIRUN "$AOD_NODEFILE $MPIRUN_AOD -np $NCPUS_AOD"
+setenv MPIRUN "$MPIRUN_AOD -np $NCPUS_AOD"
 
 # loop for two time steps
 #------------------------

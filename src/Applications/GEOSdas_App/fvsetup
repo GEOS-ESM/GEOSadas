@@ -341,22 +341,32 @@
 # 25Jul2017 Holdaway   Added resource files associated with NGGPS FV3 tlm/adjoint, sens and svec
 # 19Jul2018 Wargan     Additions for OMPS
 #-------------------------------------------------------------------------
-
-use Cwd ("cwd");
+use Cwd qw(cwd);
 use English;
 use Env;                 # make env vars readily available
-use FindBin;             # so we can find where this script resides
-use lib ( "$FindBin::Bin", "$ESMADIR/$ARCH/bin" );
-use File::Path ("mkpath", "rmtree");
-use File::Copy ("cp");
-use Shell ("cat", "rm");
-use File::Basename ("basename", "dirname");
-use Time::Local;         # time functions
+use File::Basename qw(basename dirname);
+use File::Copy qw(cp mv);
+use File::Find;
+use File::Path qw(mkpath rmtree);
+use Getopt::Long qw(GetOptions);
+use Shell qw(cat rm);
 use Sys::Hostname;
-use Create_anasa_script qw( anasa_script );
-use Create_asens_script qw( asens_script );
-use Create_fsens_script qw( fsens_script );
-use GMAO_utils ("get_siteID");
+use Time::Local;         # time functions
+
+use FindBin;             # so we can find where this script resides
+use lib ("$FindBin::Bin", "$ESMADIR/$ARCH/bin");
+
+use AGCMrc qw(AGCM_rsts AGCM_label_subst);
+use AGCMrc qw(ed_g5agcm_rc set_AGCM_envvars set_AGCM_flags);
+use AGCM_PERTrc qw(AGCM_PERT_label_subst ed_g5agcm_pert_rc);
+use AGCM_PERTrc qw(set_AGCM_PERT_envvars set_AGCM_PERT_flags);
+use Create_anasa_script qw(anasa_script);
+use Create_asens_script qw(asens_script);
+use Create_fsens_script qw(fsens_script);
+use GMAO_utils qw(get_siteID);
+use Manipulate_time qw(tick);
+use Saverst qw(writeSaverst);
+use getsponsor qw(get_spcode);
 
 my $SECS_PER_MIN = 60;
 my $MINS_PER_HR  = 60;
@@ -380,6 +390,7 @@ my ($hyb_ens, $newradbc, $siglevs, $vres);
 
 system clear;
 get_runtime_values();
+$ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
 
 # FVROOT is directory above bin dir where binaries have been installed
 # --------------------------------------------------------------------
@@ -625,7 +636,6 @@ sub set_inputparams {
 #    tells the script to copy fname from $drstloc to $FVHOME/dir
 #=======================================================================
 sub get_runtime_values {
-    use Getopt::Long;
     $fvsetupflags = "";
 
     # list of flags to write to expid.input file as fvsetupflags;
@@ -654,7 +664,6 @@ sub get_runtime_values {
 
 #=======================================================================
 sub defaults {
-    use AGCMrc "AGCM_rsts";
 
   # get these files from AGCMrc package
   #------------------------------------
@@ -799,6 +808,7 @@ sub defaults {
   @gaas_files = qw ( GAAS_AerRegistry.rc
                      GAAS_AodRegistry.rc
                      GAAS_GridComp.rc
+                     GAAS_History___.rc
                      GAAS_Mie.rc
                      GAAS_Registry.rc
                      ana.rc.tmpl
@@ -816,6 +826,12 @@ sub defaults {
                      OBS_GridComp.rc.tmpl
                      saverst.rc );
 
+  @coupled_files = qw( BC_GridComp_ExtData-clim.rc
+                       CO_GridComp_ExtData-clim.rc
+                       NI_GridComp_ExtData-clim.rc
+                       OC_GridComp_ExtData-clim.rc
+                       SU_GridComp_ExtData-clim.rc );
+
   @chem_files = qw ( Aod-550nm_Registry.rc
                      Aod3d_1064nm.rc      
                      Aod3d_355nm.rc
@@ -827,25 +843,29 @@ sub defaults {
                      Aod_Registry.rc
                      BC_GridComp---full.rc
                      BC_GridComp.rc
-                     BC_GridComp_ExtData-clim.rc
                      BC_GridComp_ExtData.rc
+                     BC_History___.rc
                      BC_Registry.rc
                      BRC_GridComp---full.rc
                      BRC_GridComp.rc
                      BRC_GridComp_ExtData.rc
                      BRC_Registry.rc
+                     CARMA_History___.rc
                      CARMAchem_GridComp_ExtData.rc
                      CARMAchem_MieRegistry.rc
                      CARMAchem_Registry.rc
                      CFC_GridComp.rc
                      CFC_GridComp_ExtData.rc
+                     CFC_History___.rc
                      CFC_Registry.rc
                      CH4_GridComp---animls.rc
                      CH4_GridComp.rc
                      CH4_GridComp_ExtData.rc
+                     CH4_History___.rc
                      CH4_Registry.rc
                      CO2_GridComp.rc
                      CO2_GridComp_ExtData.rc
+                     CO2_History___.rc
                      CO2_Registry.rc 
                      CO_GridComp---bbae.rc
                      CO_GridComp---bbaf.rc
@@ -864,8 +884,8 @@ sub defaults {
                      CO_GridComp---nbgl.rc
                      CO_GridComp---nbna.rc
                      CO_GridComp.rc
-                     CO_GridComp_ExtData-clim.rc
                      CO_GridComp_ExtData.rc
+                     CO_History___.rc
                      CO_Registry.rc
                      Chem_AerRegistry.rc
                      Chem_ExtRegistry.rc
@@ -880,6 +900,7 @@ sub defaults {
                      DU_GridComp.rc
                      DU_GridComp---full.rc
                      DU_GridComp_ExtData.rc
+                     DU_History___.rc
                      DU_Registry.rc
                      GEOSCHEMchem_ExtData.rc
                      GEOSCHEMchem_GridComp.rc
@@ -901,21 +922,23 @@ sub defaults {
                      HEMCOgocart_Spec.rc
                      MAM7_ExtData.rc
                      MAMchem_GridComp.rc
+                     MAMchem_History___.rc
                      MAMchem_Registry.rc
                      NI_GridComp---full.rc
                      NI_GridComp.rc
-                     NI_GridComp_ExtData-clim.rc
                      NI_GridComp_ExtData.rc
+                     NI_History___.rc
                      NI_Registry.rc
                      O3_GridComp.rc
                      O3_GridComp_ExtData.rc
+                     O3_History___.rc
                      O3_Registry.rc
                      OC_GridComp---bbbo.rc
                      OC_GridComp---bbnb.rc
                      OC_GridComp---full.rc
                      OC_GridComp.rc
-                     OC_GridComp_ExtData-clim.rc
                      OC_GridComp_ExtData.rc
+                     OC_History___.rc
                      OC_Registry.rc
                      Rn_GridComp---Afri.rc
                      Rn_GridComp---Asia.rc
@@ -926,18 +949,21 @@ sub defaults {
                      Rn_GridComp---full.rc
                      Rn_GridComp.rc
                      Rn_GridComp_ExtData.rc
+                     Rn_History___.rc
                      Rn_Registry.rc
                      SC_GridComp.rc
                      SC_Registry.rc
                      SS_GridComp.rc
                      SS_GridComp---full.rc
+                     SS_History___.rc
                      SS_Registry.rc
                      StratChem_ExtData.rc
+                     StratChem_History___.rc
                      SU_GridComp---full.rc
                      SU_GridComp---volc.rc
                      SU_GridComp.rc
-                     SU_GridComp_ExtData-clim.rc
                      SU_GridComp_ExtData.rc
+                     SU_History___.rc
                      SU_Registry.rc 
                      TR_ExtData.rc
                      TR_ExtData.rc
@@ -1018,6 +1044,7 @@ sub defaults {
   if ( $anassi  ) { @arc_files = @as_files };
   if ( $anagsi  ) { @arc_files = ( @ag_files, @lcv2prsrcs )};
   if ( $fvchem  ) { @crc_files = @chem_files };
+  if ( $coupled ) { @crc_files = ( @chem_files, @coupled_files ) };
 
   $monthly_plots = 0;
   if ( $siteID eq "nccs" ) { $monthly_means = 1; $monthly_tar = 1 }
@@ -1347,7 +1374,6 @@ sub ed_g5prog_rc {
 
 #=======================================================================
 sub ed_g5prog_rc_new {
-    use File::Copy;
     return 0 unless $g5gcm;
     my ($mydir, $fhisname);
     my ($fdfn, $fhis, $iflag);
@@ -2217,16 +2243,16 @@ EOF
 }
 #=======================================================================
 sub ed_aens_replay_acq {
-
   my($mydir) = @_;
+  my($replay_arcdir, $acq);
 
-  my($frun, $ft, $acq);
+  $replay_arcdir = "/home/dao_ops/f517_fp/run/.../archive";
+  $replay_arcdir = query("Replay archive directory?", $replay_arcdir);
 
   $acq = "$fvhome/$mydir/atmens_replay.acq";
- open(SCRIPT,">$acq") or
- die ">>> ERROR <<< cannot write $acq";
- print  SCRIPT <<"EOF";
-/home/dao_ops/f517_fp/run/.../archive/atmens/Y%y4/M%m2/f517_fp.atmens_ebkg.%y4%m2%d2_%h2z.tar => $expid.atmens_ebkg.%y4%m2%d2_%h2z.tar
+  open(SCRIPT,">$acq") or die ">>> ERROR <<< cannot write $acq";
+  print  SCRIPT <<"EOF";
+$replay_arcdir/atmens/Y%y4/M%m2/f517_fp.atmens_ebkg.%y4%m2%d2_%h2z.tar => $expid.atmens_ebkg.%y4%m2%d2_%h2z.tar
 EOF
 
 }
@@ -2829,7 +2855,6 @@ sub get_nodeflg {
 
 #=======================================================================
 sub get_times {
-  use Manipulate_time "tick";
   my ($x, $drst, $proc);
   my ($nymdb2, $nhmsb2);
 
@@ -2902,7 +2927,8 @@ sub get_times {
   $asynbkg_xmn = $asynbkg_min - int($asynbkg_xhr*60);
   $asynbkg_xsc = 0;
   $asynbkg_hms = 10000 * $asynbkg_xhr + 100 * $asynbkg_xmn + $asynbkg_xsc;
-  $asynbkg_hms = sprintf("%6.6d","$asynbkg_hms"); print "asynbkg_hms = $asynbkg_hms \n";
+  $asynbkg_hms = sprintf("%6.6d","$asynbkg_hms");
+  #--print "asynbkg_hms = $asynbkg_hms \n";
 
   # Readjust default ending year-month-day if necessary
   #----------------------------------------------------
@@ -3274,7 +3300,7 @@ EOF
 
 #=======================================================================
 sub set_atmens {
-
+  my ($radbc, $src_arcdir, $prompt, $dflt);
   my ( $radbc ) = @_;
 
   if ( $hyb_ens < 3 ){ return 0 };
@@ -3365,7 +3391,20 @@ EOF
   }
   close TILDE;
   close JSCRPT;
+
+# Copy and rename ensemble restarts
+# ---------------------------------
+  $dflt = "/archive/u/$user/$expid";
+  $prompt = "  Experiment archive directory for ensemble restarts or 'later':";
+  $src_arcdir = query($prompt, $dflt);
+  if (-d $src_arcdir) {
+      $flags = "-fvhome $fvhome";
+      $cmd = "get_atmens_rst.pl $flags $src_arcdir $expid $nymdb $hhb";
+      print("$cmd\n");
+      system($cmd);
+  }
 }
+
 #=======================================================================
 sub get_varwindow {
 
@@ -4172,8 +4211,8 @@ INITIAL CONDITIONS
          Typically these files are copied from previously spun-up
          runs to "$fvhome/recycle".
 
-         FVICS is the directory where these start-up files are
-         located. Answer "later" if you prefer to copy these files
+         FVICS is the directory or the rst tarfile where these start-up
+         files are located. Answer "later" if you prefer to copy these files
          later.
 
          DEFAULT: $fvics
@@ -4187,6 +4226,16 @@ EOF
 
       $fvics = query("FVICS?", $fvics);
       print "\n";
+
+      if (-f $fvics) {
+          @vals = (basename($fvics) =~ m/(\S+)\.rst\.(\d{8})_(\d{2})z.tar/);
+          if (scalar(@vals) == 3) {
+              ($defexp, $nymdb, $hbb) = @vals;
+              $drstloc = dirname($fvics);
+              $FOUND_RESTARTS = 1;
+              next;
+          }
+      }
 
       if ($fvics eq "later") {
           print "  NOTE: Estimate starting date/time if not precisely known.\n";
@@ -4262,7 +4311,6 @@ EOF
 #        when using runjob.
 #=======================================================================
 sub get_GID {
-    use getsponsor "get_spcode";
     my (%flags, $gidflt);
 
     # get default group ID
@@ -4927,7 +4975,6 @@ sub secs2hhmmss {
 
 #=========================================================================
 sub mkdir_fvhome {  # create directories on FVHOME
-    use File::Copy ("cp");
 
   print "\nSetting up FVHOME directory for $expid experiment ...\n";
   foreach $dir (qw(ana diag daotovs etc obs prog rs run recycle fcst asens anasa)) {
@@ -6926,8 +6973,6 @@ set path = ( \$path \$FVROOT/bin )
 #---------
 if (! \$\?arch_type) set arch_type = "GENERIC"
 set atype = "mstorage.arc"
-set adate = ""
-set flags = ""
 
 # archive resource file
 #----------------------
@@ -6972,6 +7017,7 @@ endif
 
 # archive data date
 #------------------
+set adate = ""
 if (\$\?arch_date) then
    set adate = "-d \$arch_date"
 else
@@ -6980,6 +7026,7 @@ endif
 
 # flags
 #------
+set flags = ""
 if (\$arch_type == "MKEEP") set flags = "-v -p"
 
 # archive command
@@ -7226,7 +7273,6 @@ print SCRIPT <<"EOF";
   setenv NCPUS_GSI   $ncpus_gsi   # Number of CPUs to run GSI
   setenv NCPUS_GPERT $ncpus_gpert # Number of CPUs to run gcmPERT
   setenv NCPUS_AOD   $ncpus_aod   # Number of CPUs to run PSAS-AOD
-  setenv GAAS_RUN_SLURM 1 # 1 = force GAAS/AOD to run in its own SLURM job, 0 = allow geosdas.csm to decide
 EOF
 if ($ncpus_per_node) {
 print SCRIPT <<"EOF";
@@ -8939,7 +8985,6 @@ EOF
 
 #=======================================================================
 sub init_agcm_rc {
-    use AGCMrc ("set_AGCM_envvars", "set_AGCM_flags", "AGCM_label_subst");
     my ($mydir, $num_readers);
     my (%values, %flags, %envvars);
 
@@ -9103,7 +9148,6 @@ sub init_agcm_rc {
 
 #=======================================================================
 sub init_agcm_pert_rc {
-    use AGCM_PERTrc ("set_AGCM_PERT_envvars", "set_AGCM_PERT_flags", "AGCM_PERT_label_subst");
     my ($mydir);
     my (%values, %flags, %envvars);
 
@@ -9142,7 +9186,6 @@ sub init_agcm_pert_rc {
 
 #=======================================================================
 sub copy_resources {
-  use Saverst qw( writeSaverst );
   my ($chemrc, $ensFLG);
   my ($flags, $label, $string, $vars, $cmd);
 
@@ -9574,8 +9617,6 @@ sub copy_restarts_iau {
 
 #=======================================================================
 sub copy_restarts {
-  use Manipulate_time "tick";
-
   return 0 if $fvics eq "later";
 
   my ( $fhr, $bkgbits, $my_nymd, $my_nhms, $bkg_dtsec, $bkg_dthrs, $nymd_ana, $nhms_ana );
@@ -9676,7 +9717,6 @@ sub copy_restarts {
 
 #=======================================================================
 sub restart_notfound {
-    use File::Copy "move";
     my ($fn, $fname, $bname);
 
     $fn    = shift @_;
@@ -9701,7 +9741,7 @@ sub restart_notfound {
         if ($fn eq "gaas_bkg_sfc_rst") {
 
             $gaasdir = "$fvhome/run/gaas";
-            move "$gaasdir/GAAS.BOOTSTRAP_", "$gaasdir/GAAS.BOOTSTRAP";
+            mv "$gaasdir/GAAS.BOOTSTRAP_", "$gaasdir/GAAS.BOOTSTRAP";
 
             while (1) {
                 last unless $gaas_ana;
@@ -9714,7 +9754,7 @@ sub restart_notfound {
                     last;
                 }
                 elsif ( neg($ans) ) {
-                    move "$gaasdir/GAAS.BOOTSTRAP", "$gaasdir/GAAS.BOOTSTRAP_";
+                    mv "$gaasdir/GAAS.BOOTSTRAP", "$gaasdir/GAAS.BOOTSTRAP_";
                     die ">>> ERROR <<< Cannot proceed without restart: $bname\n";
                 }
             }
@@ -9922,10 +9962,6 @@ sub neg {
 
 #=======================================================================
 sub edit_resources {
-  use AGCMrc ("ed_g5agcm_rc");
-  use AGCM_PERTrc ("ed_g5agcm_pert_rc");
-  use File::Copy ("cp", "mv");
-  use File::Find;
   my ($proot);
   my ($cpfile, $cpdir, $target);
 
@@ -10054,8 +10090,6 @@ sub find_tilde_files {
 
 #=======================================================================
 sub save_inputs {
-    use File::Basename;
-    use File::Copy;
     my ($save_file, $backup_file);
     my ($ans, $base, $cnt);
 
@@ -10097,7 +10131,7 @@ sub save_inputs {
         $ans = query1("  Overwrite $dotOutFile (y/n)?", "y");
         if ( yes($ans) ) {
             $backup_file = $save_file."~";
-            move($save_file, $backup_file);
+            mv($save_file, $backup_file);
         }
         else {
             $base = basename $save_file;
