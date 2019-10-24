@@ -68,8 +68,8 @@ EOF
 if ($siteID eq "nccs") {
   print SCRIPT <<"EOF";
 #SBATCH --ntasks=$ncpus_gsi
-#SBATCH --ntasks-per-node=24
-#SBATCH --constraint=hasw
+#SBATCH --ntasks-per-node=36
+#SBATCH --constraint=sky
 EOF
 } else {
   print SCRIPT <<"EOF";

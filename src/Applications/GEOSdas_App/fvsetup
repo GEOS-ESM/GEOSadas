@@ -349,7 +349,6 @@ use File::Copy qw(cp mv);
 use File::Find;
 use File::Path qw(mkpath rmtree);
 use Getopt::Long qw(GetOptions);
-use Shell qw(cat rm);
 use Sys::Hostname;
 use Time::Local;         # time functions
 
@@ -1368,7 +1367,7 @@ sub ed_g5prog_rc {
   close(LUN2);
 
   cp($ft, $fhis);
-  rm($fdfn);
+  unlink($fdfn);
   unlink $ft;
 }
 
@@ -7197,8 +7196,8 @@ print  SCRIPT <<"EOF";
 #SBATCH --job-name=$jobn
 #SBATCH --output=$jobn.log.o%j.txt
 #SBATCH --ntasks=$ncpus
-#SBATCH --ntasks-per-node=24
-#SBATCH --constraint=hasw
+#SBATCH --ntasks-per-node=36
+#SBATCH --constraint=sky
 #SBATCH --time=${daswallclk}:00
 EOF
 
@@ -8084,7 +8083,7 @@ EOF
            echo2 "#SBATCH --partition=datamove"
            echo2 "#SBATCH --time=1:00:00"
            echo2 "#SBATCH --export=NONE"
-           echo2 "#SBATCH --constraint=hasw"
+           echo2 "#SBATCH --constraint=sky"
            echo2 ""
            echo2 "setenv FVHOME \$FVHOME"
            echo2 "set Bin = \$Bin"
@@ -8236,8 +8235,8 @@ print  SCRIPT <<"EOF";
 #SBATCH --job-name=fcst
 #SBATCH --output=fcst.log.o%j.txt
 #SBATCH --ntasks=$ncpus
-#SBATCH --ntasks-per-node=24
-#SBATCH --constraint=hasw
+#SBATCH --ntasks-per-node=36
+#SBATCH --constraint=sky
 #SBATCH --time=${fcswallclk}:00
 EOF
 

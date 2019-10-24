@@ -26,7 +26,6 @@ use FindBin;             # so we can find where this script resides
 use File::Basename;      # for basename(), dirname()
 use File::Find;          # for find()
 use Getopt::Std;         # command line options
-use Shell qw(cat);       # cat command
 
 # Command line options
 # --------------------
@@ -75,7 +74,10 @@ sub init {
       }
   print "Using arcdir = $arcdir\n" if ( $opt_v ); 
   die ">>> ERROR << missing $fvhome/.FVROOT" unless ( -e "$fvhome/.FVROOT" );
-  chomp ( $fvroot = cat("$fvhome/.FVROOT") );
+  open FOO,"$fvhome/.FVROOT";
+  $fvroot = join('',<FOO>);
+  close FOO;
+  #chomp ( $fvroot = cat("$fvhome/.FVROOT") );
 
   $pesto = "$fvroot/bin/pesto";
   die ">>> ERROR << cannot execute $pesto" unless ( -x "$pesto" );

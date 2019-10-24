@@ -1,1 +1,1 @@
-export MPIRUN_IAU="mpiexec_mpt -np $NCPUS_IAU mkiau.x"
+export MPIRUN_IAU="mpirun -np $NCPUS_IAU mkiau.x"

@@ -7,7 +7,7 @@ setenv BIGNAME `echo "$EXPID" | tr -s '[:lower:]' '[:upper:]'`
 setenv DATADIR /archive/u/rtodling
 
 setenv AENSTAT_NCPUS 4
-setenv AENSTAT_MPIRUN "mpiexec_mpt -np $AENSTAT_NCPUS mp_stats.x"
+setenv AENSTAT_MPIRUN "mpirun -np $AENSTAT_NCPUS mp_stats.x"
 
 setenv FVWORK /discover/nobackup/projects/gmao/obsdev/$user/ensosenswork.$BIGNAME
 setenv ATMENSETC $FVHOME/run/atmens/

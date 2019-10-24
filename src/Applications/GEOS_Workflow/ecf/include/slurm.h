@@ -1,2 +1,2 @@
 #SBATCH --export=NONE
-#SBATCH --constraint=hasw
+#SBATCH --constraint=sky

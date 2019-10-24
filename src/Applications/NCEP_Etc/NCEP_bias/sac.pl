@@ -18,7 +18,6 @@ use Env;                 # make env vars readily available
 use File::Basename;      # for basename(), dirname()
 use File::Copy "cp";     # for cp()
 use Getopt::Long;        # load module with GetOptions function
-use Shell qw(cat rm);    # cat and rm commands
 use Time::Local;         # time functions
 use FindBin;             # so we can find where this script resides
 

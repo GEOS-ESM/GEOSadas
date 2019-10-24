@@ -477,7 +477,7 @@ sub calc_monthly_means {
 
     $jobname = "MM_$ftype";
     $outfile = "$listdir/$EXPID.means.$ftype.$yyyymm.log.$$.txt.FAILED";
-    $tasks_per_node = 24;
+    $tasks_per_node = 36;
 
     if ($siteID eq "nccs") {
         $job_name = "SBATCH --job-name=$jobname";

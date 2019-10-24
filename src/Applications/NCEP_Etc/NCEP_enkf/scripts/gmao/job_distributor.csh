@@ -2,7 +2,7 @@
 #
 # 11Feb2013  Todling  - Initial code, adapted from Doris Pan original script
 # 23May2016  Thompson - Edited for MPT usage. Needs a script tentatively called
-#                       mptfix.pl that alters the MPI run cmd from mpiexec_mpt
+#                       mptfix.pl that alters the MPI run cmd from mpirun
 #                       to a corrected mpirun call that passes in nodes.
 #                       Requires new option passed in, -usrppn, for procs per node
 # 24Jun2016  Thompson - Due to fixes in mptfix.pl, no longer need to pass in -usrppn

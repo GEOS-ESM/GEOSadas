@@ -23,7 +23,7 @@ gcm:
   FCSTOFFSET: 0
 
 gcm_mpi:
-  MPIRUN_GCM: "\"mpiexec_mpt -np $NCPUS_GCM GEOSgcm.x\""
+  MPIRUN_GCM: "\"mpirun -np $NCPUS_GCM GEOSgcm.x\""
 
 adj:
   grsv: 1
@@ -31,7 +31,7 @@ adj:
   group_list: "\"SBATCH -A <<gid>>\""
 
 adj_mpi:
-  ADMRUN_OPT_BEGIN: "\"mpiexec_mpt -np $NCPUS_ADJ GEOSgcmPert.x\""
+  ADMRUN_OPT_BEGIN: "\"mpirun -np $NCPUS_ADJ GEOSgcmPert.x\""
 
 finalize:
   STAGE4FCST: 0

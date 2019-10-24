@@ -94,7 +94,7 @@ if ( !($?FVWORK)        ) setenv FAILED 1
 
 if ( !($?NCSUFFIX)      ) setenv NCSUFFIX nc4
 if ( !($?STAGEEFSENS)   ) setenv STAGEEFSENS /dev/null
-if ( !($?MPIRUN1PE)     ) setenv MPIRUN1PE "mpiexec_mpt -np 1"
+if ( !($?MPIRUN1PE)     ) setenv MPIRUN1PE "mpirun -np 1"
 
 if ( $FAILED ) then
   env

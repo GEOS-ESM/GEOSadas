@@ -1,9 +1,9 @@
 #!/bin/csh -fx
 # ------------------------------
 #SBATCH --account=g0613
-#SBATCH --constraint=hasw
+#SBATCH --constraint=sky
 #SBATCH --ntasks=96
-#SBATCH --ntasks-per-node=24
+#SBATCH --ntasks-per-node=36
 #
 #PBS -N atm_ens_osens
 #PBS -o atm_ens_osens.log.o%j
@@ -45,7 +45,7 @@
 # Experiment environment
 # ----------------------
 # setenv JOBGEN_QOS advda
-  setenv JOBGEN_CONSTRAINT hasw
+  setenv JOBGEN_CONSTRAINT sky
   setenv GID g0613
   setenv group_list "SBATCH -A $GID"
   setenv ARCH `uname -s`

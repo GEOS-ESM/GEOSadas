@@ -36,8 +36,8 @@ ana:
 
 ana_mpi:
   NCPUS: $NCPUS_GSI
-  MPIRUN_ANA: "\"mpiexec_mpt -np $NCPUS_GSI GSIsa.x\""
-  MPIRUN_SAC: "\"mpiexec_mpt -np $NCPUS_SAC sac.x\""
+  MPIRUN_ANA: "\"mpirun -np $NCPUS_GSI GSIsa.x\""
+  MPIRUN_SAC: "\"mpirun -np $NCPUS_SAC sac.x\""
 
 obs:
   OBSCLASS: "\"ncep_1bamua_bufr,ncep_osbuv_bufr,ncep_prep_bufr,disc_airs_bufr,disc_amsua_bufr,ncep_mhs_bufr,ncep_1bhrs4_bufr,ncep_goesfv_bufr,ncep_mtiasi_bufr,ncep_gpsro_bufr,ncep_aura_omi_bufr,ncep_satwnd_bufr,ncep_atms_bufr,ncep_sevcsr_bufr,ncep_cris_bufr,ncep_ssmis_bufr,ncep_tcvitals,ncep_avcsam_bufr,ncep_avcspm_bufr\""
@@ -53,7 +53,7 @@ aod:
   MODIS_L2_HDF: 1 # 0: pre-processed MODIS for GAAS, 1: staged MODIS
 
 aod_mpi:
-  MPIRUN_AOD: "\"mpiexec_mpt -np $NCPUS_AOD\""
+  MPIRUN_AOD: "\"mpirun -np $NCPUS_AOD\""
 
 gcm:
   MKRESRST: 0
@@ -62,7 +62,7 @@ gcm:
   FCSTAGE: $FVHOME/fcst
 
 gcm_mpi:
-  MPIRUN_GCM: "\"mpiexec_mpt -np $NCPUS_GCM GEOSgcm.x\""
+  MPIRUN_GCM: "\"mpirun -np $NCPUS_GCM GEOSgcm.x\""
 
 iau:
   # 0: disable IAU; otherwise offset should be 030000
@@ -71,7 +71,7 @@ iau:
   DO4DIAU: 0
 
 iau_mpi:
-  MPIRUN_IAU: "\"mpiexec_mpt -np $NCPUS_IAU mkiau.x\""
+  MPIRUN_IAU: "\"mpirun -np $NCPUS_IAU mkiau.x\""
 
 vtx:
   VTRACK: 1

@@ -1,1 +1,1 @@
-export MPIRUN_GCM="mpiexec_mpt -np $NCPUS_GCM GEOSgcm.x"
+export MPIRUN_GCM="mpirun -np $NCPUS_GCM GEOSgcm.x"

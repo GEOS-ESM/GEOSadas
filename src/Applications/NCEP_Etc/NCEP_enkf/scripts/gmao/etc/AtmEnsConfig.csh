@@ -63,7 +63,7 @@ setenv RECENTER_QNAME compute    # there is an issue when submitting this to gen
 # ---------------------------
 setenv MODIS_L2_HDF 1
 setenv NCPUS_AOD   8
-setenv MPIRUN_AOD  "mpiexec_mpt "
+setenv MPIRUN_AOD  "mpirun "
 setenv AENS_GAAS_OPT   1  # 1 members use central GAAS
                           # 2 analyze each member with PSAS
                           # 3 do (2), add EnKF-based AOD analysis (off aod.or.concentrations)
@@ -71,7 +71,7 @@ setenv AENS_GAAS_OPT   1  # 1 members use central GAAS
 setenv ATMENKFAERO_QNAME compute
 setenv ATMENKFAERO_WALLCLOCK 1:00:00
 setenv AENKFAERO_NCPUS 192
-setenv MPIRUN_ATMENKFAERO "mpiexec_mpt -np $AENKFAERO_NCPUS enkf_aero.x"
+setenv MPIRUN_ATMENKFAERO "mpirun -np $AENKFAERO_NCPUS enkf_aero.x"
 
 # atmos_ens2gcm.csh
 # -----------------
@@ -79,7 +79,7 @@ setenv MPIRUN_ATMENKFAERO "mpiexec_mpt -np $AENKFAERO_NCPUS enkf_aero.x"
 setenv IAU_QNAME compute
 setenv IAU_WALLCLOCK 1:00:00
 setenv ENSIAU_NCPUS 24
-setenv MPIRUN_ENSIAU  "mpiexec_mpt -np $ENSIAU_NCPUS $IAUX"
+setenv MPIRUN_ENSIAU  "mpirun -np $ENSIAU_NCPUS $IAUX"
 
 # atmos_enkf.j
 # ------------
@@ -87,7 +87,7 @@ setenv ATMENKF_QNAME compute
 setenv ATMENKF_WALLCLOCK 1:00:00
 #setenv ATMENKF_MPIPROCS 4
 setenv AENKF_NCPUS 192 
-setenv MPIRUN_ATMENKF "mpiexec_mpt -np $AENKF_NCPUS enkf_geos.x"
+setenv MPIRUN_ATMENKF "mpirun -np $AENKF_NCPUS enkf_geos.x"
 
 # gcm_ensemble.j
 # --------------
@@ -95,7 +95,7 @@ setenv AENS_GCM_DSTJOB 4
 setenv AGCM_QNAME compute
 setenv AGCM_WALLCLOCK 1:00:00
 setenv ENSGCM_NCPUS 48
-setenv MPIRUN_ENSGCM  "mpiexec_mpt -np $ENSGCM_NCPUS GEOSgcm.x"   # esma_mpirun does not work in this context
+setenv MPIRUN_ENSGCM  "mpirun -np $ENSGCM_NCPUS GEOSgcm.x"   # esma_mpirun does not work in this context
 setenv RSTSTAGE4AENS  $ATMENSLOC/atmens/RST                              # TBD: location of mean-fcst restarts
 
 
@@ -105,8 +105,8 @@ setenv AENS_GCMADJ_DSTJOB 1
 setenv AGCMADJ_QNAME compute
 setenv AGCMADJ_WALLCLOCK 1:00:00
 setenv ENSGCMADJ_NCPUS 96
-setenv MPIRUN_ENSGCMADJ "mpiexec_mpt -np $ENSGCMADJ_NCPUS GEOSgcmPert.x"   # esma_mpirun does not work in this context
-setenv ADMRUN_OPT_BEGIN "mpiexec_mpt -np $ENSGCMADJ_NCPUS GEOSgcmPert.x"
+setenv MPIRUN_ENSGCMADJ "mpirun -np $ENSGCMADJ_NCPUS GEOSgcmPert.x"   # esma_mpirun does not work in this context
+setenv ADMRUN_OPT_BEGIN "mpirun -np $ENSGCMADJ_NCPUS GEOSgcmPert.x"
 
 # vortex tracker
 # --------------
@@ -120,7 +120,7 @@ setenv AENS_OBSVR_DSTJOB 4
 setenv OBSVR_QNAME compute
 setenv OBSVR_WALLCLOCK 0:45:00
 setenv ENSGSI_NCPUS 32
-setenv MPIRUN_ENSANA  "mpiexec_mpt -np $ENSGSI_NCPUS GSIsa.x"     # esma_mpirun does not work in this context
+setenv MPIRUN_ENSANA  "mpirun -np $ENSGSI_NCPUS GSIsa.x"     # esma_mpirun does not work in this context
 
 # setup_perts.csh
 #----------------
@@ -132,7 +132,7 @@ setenv PERTS_NCPUS 1
 # pert-energy calculation
 #------------------------
 setenv AENSTAT_NCPUS 4
-setenv AENSTAT_MPIRUN "mpiexec_mpt -np $AENSTAT_NCPUS mp_stats.x"
+setenv AENSTAT_MPIRUN "mpirun -np $AENSTAT_NCPUS mp_stats.x"
 setenv AENSTAT_WALLCLOCK 0:30:00
 setenv AENSTAT_QNAME compute
 

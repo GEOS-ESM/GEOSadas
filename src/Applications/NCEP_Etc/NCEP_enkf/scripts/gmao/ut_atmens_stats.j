@@ -7,7 +7,7 @@ setenv DOANA 0
 setenv NEW  0
 
 setenv JOBGEN_QOS advda
-setenv JOBGEN_CONSTRAINT hasw
+setenv JOBGEN_CONSTRAINT sky
 
 # to run pegcm stats in parallel
 setenv PEGCM_NCPUS 28
@@ -26,7 +26,7 @@ setenv GID g0613
 setenv ENSPARALLEL 1
 setenv AENSTAT_NCPUS 28
 setenv AENSTAT_WALLCLOCK 1:00:00
-setenv AENSTAT_MPIRUN "mpiexec_mpt -np $AENSTAT_NCPUS mp_stats.x"
+setenv AENSTAT_MPIRUN "mpirun -np $AENSTAT_NCPUS mp_stats.x"
 setenv AENSTAT_QNAME compute
 
 setenv MYNAME ut_atmens_stats.csh

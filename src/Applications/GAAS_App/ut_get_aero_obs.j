@@ -18,7 +18,7 @@ source $FVROOT/bin/g5_modules
 set path = ( . $FVHOME/run $FVROOT/bin $path )
 
 setenv NCPUS_AOD 8
-setenv MPIRUN_AOD "mpiexec_mpt "
+setenv MPIRUN_AOD "mpirun "
 
 # FVWORK directory
 # ----------------

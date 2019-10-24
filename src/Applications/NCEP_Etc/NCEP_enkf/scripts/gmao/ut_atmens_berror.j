@@ -24,7 +24,7 @@ set path = ( . $FVROOT/bin $path )
 source $FVROOT/bin/g5_modules
 
 #setenv MPIRUN_CALCSTATS "mpirun -np 96 calcstats.x"
-setenv MPIRUN_CALCSTATS "mpiexec_mpt -np 96 calcstats.x"
+setenv MPIRUN_CALCSTATS "mpirun -np 96 calcstats.x"
 
 set nymd = 20160328
 set nhms =   060000

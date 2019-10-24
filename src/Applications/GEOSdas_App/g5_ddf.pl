@@ -11,7 +11,7 @@ use   Time::Local;
 use Getopt::Std;
 use   File::Basename;
 use   Data::Dumper;
-use Shell qw(cp);
+use File::Copy "cp";     # for cp()
 use Cwd 'realpath';
 
 # Initialize
