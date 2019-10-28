@@ -57,8 +57,10 @@ c
 c-------
 c 
 c
-      USE def_vitals; USE set_max_parms, only: maxstorm;
-      USE inparms; USE date_checks
+      USE def_vitals
+      USE set_max_parms, only: maxstorm
+      USE inparms
+      USE date_checks
       USE trig_vals
 c
       type (tcvcard) storm(maxstorm)
@@ -194,7 +196,8 @@ c             data, and they have to be added onto the end of the
 c             array, so we need to know where the current time's data
 c             ends so we know what index to start the 6h ago data.
 c
-      USE def_vitals; USE set_max_parms
+      USE def_vitals
+      USE set_max_parms
 c
       type (tcvcard) storm(maxstorm), ts
 c
@@ -240,7 +243,9 @@ c
 c---------------------------------------------------------------------
       subroutine output (storm,itotalct,okstorm)
 c
-      USE def_vitals; USE set_max_parms; USE inparms
+      USE def_vitals
+      USE set_max_parms
+      USE inparms
 c
       type (tcvcard) storm(maxstorm)
       type (datecard) dnow, d6ago, d6ahead
@@ -292,7 +297,10 @@ c     record (see Module def_vitals for specfics on where to find
 c     heading & direction in the vitals record) to get a new
 c     position for the current time by extrapolating out 6 hours.
 c
-      USE def_vitals; USE set_max_parms; USE inparms; USE date_checks
+      USE def_vitals
+      USE set_max_parms
+      USE inparms
+      USE date_checks
       USE trig_vals
 c
       type (tcvcard) storm(maxstorm)
@@ -404,7 +412,10 @@ c     heading & direction in the vitals record) to get a new
 c     position for the current time by extrapolating *BACKWARDS*
 c     6 hours to the current time.
 c
-      USE def_vitals; USE set_max_parms; USE inparms; USE date_checks
+      USE def_vitals
+      USE set_max_parms
+      USE inparms
+      USE date_checks
       USE trig_vals
 c
       type (tcvcard) storm(maxstorm)
@@ -530,7 +541,8 @@ c     storm number identifier will remain the same.
 c
 c     ict     Total number of storm card entries for this dtg
 c
-      USE def_vitals; USE set_max_parms
+      USE def_vitals
+      USE set_max_parms
 c 
       type (tcvcard) storm(maxstorm)
       logical okstorm(maxstorm)
@@ -584,7 +596,8 @@ c     entries from 6h ago to those from the current time to eliminate
 c     any matching storms (i.e., if we've got a current record for a 
 c     storm, we obviously don't need the 6h-old one).
 c
-      USE def_vitals; USE set_max_parms
+      USE def_vitals
+      USE set_max_parms
 c
       type (tcvcard) storm(maxstorm)
 c
@@ -629,7 +642,8 @@ c     6h ago to eliminate any matching storms (i.e., we only need the
 c     record for 6h ahead if we don't have either a current time
 c     record or a 6h-old record that we've updated).
 c
-      USE def_vitals; USE set_max_parms
+      USE def_vitals
+      USE set_max_parms
 c
       type (tcvcard) storm(maxstorm)
 c
@@ -678,7 +692,8 @@ c     storm number identifier will remain the same.
 c
 c     ict     Total number of storm card entries for this dtg
 c
-      USE def_vitals; USE set_max_parms
+      USE def_vitals
+      USE set_max_parms
 c
       type (tcvcard) storm(maxstorm)
       logical okstorm(maxstorm)
@@ -736,7 +751,8 @@ c     identifier will remain the same.
 c
 c     ict     Total number of storm card entries for this dtg
 c
-      USE def_vitals; USE set_max_parms
+      USE def_vitals
+      USE set_max_parms
 c  
       type (tcvcard) storm(maxstorm)
       logical okstorm(maxstorm)
@@ -785,7 +801,8 @@ c     the input dates for the current time, the 6 hour-ago time and
 c     the 6 hour-ahead time into a format that can be easily compared
 c     against the dates in the TC Vitals file.
 c
-      USE inparms; USE date_checks
+      USE inparms
+      USE date_checks
 c
       type (datecard) dnow,d6ago,d6ahead
 c

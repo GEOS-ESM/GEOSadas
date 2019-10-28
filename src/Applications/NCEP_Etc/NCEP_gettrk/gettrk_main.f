@@ -340,8 +340,14 @@ c                contain the actual minimum value at a gridpoint near
 c                the lat/lon found by the barnes analysis.
 c-----
 c
-      USE def_vitals; USE inparms; USE tracked_parms; USE error_parms
-      USE set_max_parms; USE level_parms; USE grid_bounds; USE trkrparms
+      USE def_vitals
+      USE inparms
+      USE tracked_parms
+      USE error_parms
+      USE set_max_parms
+      USE level_parms
+      USE grid_bounds
+      USE trkrparms
       USE contours
 c
       implicit none
@@ -1388,8 +1394,13 @@ c     stormcheck Character; set to 'Y' if mslp gradient or 850 mb
 c                tangential winds check okay.
 c     isiret   Return code for this subroutine.
 c
-      USE radii; USE grid_bounds; USE set_max_parms; USE level_parms
-      USE trig_vals; USE tracked_parms; USE atcf
+      USE radii
+      USE grid_bounds
+      USE set_max_parms
+      USE level_parms
+      USE trig_vals
+      USE tracked_parms
+      USE atcf
 c
       real         vt,vtavg,vr,grdspc,parmlat,parmlon,parmval
       real         pthresh,vthresh
@@ -1844,7 +1855,10 @@ c     OTHER:
 c     storm     An array of type tcvcard.  Use this for the storm ID.
 c               Defined in def_vitals module.
  
-      USE def_vitals; USE inparms; USE set_max_parms; USE atcf
+      USE def_vitals
+      USE inparms
+      USE set_max_parms
+      USE atcf
 c
       type (datecard) inp
 c
@@ -1907,7 +1921,10 @@ c     subroutine is used by Steve Lord for plotting purposes, and his
 c     plotting routines need the longitudes in 0 - 360, increasing 
 c     westward.  Thus, a necessary adjustment is made.
 c
-      USE def_vitals; USE inparms; USE set_max_parms; USE atcf
+      USE def_vitals
+      USE inparms
+      USE set_max_parms
+      USE atcf
 c
       type (datecard) inp
 c
@@ -2031,7 +2048,10 @@ c     purposes, and the atcf plotting routines need the longitudes in
 c     0 - 360, increasing westward.  Thus, a necessary adjustment is 
 c     made.
 c
-      USE def_vitals; USE inparms; USE set_max_parms; USE atcf
+      USE def_vitals
+      USE inparms
+      USE set_max_parms
+      USE atcf
 c
       type (datecard) inp
 c
@@ -2263,7 +2283,10 @@ c     intlat    integer that holds the value of outlat*10
 c     storm     An array of type tcvcard.  Use this for the storm ID
 c
 
-      USE def_vitals; USE inparms; USE set_max_parms; USE atcf
+      USE def_vitals
+      USE inparms
+      USE set_max_parms
+      USE atcf
       USE trkrparms
 c
       type (datecard) inp
@@ -2432,7 +2455,9 @@ c
 c     OTHER:
 c     storm  contains the tcvitals info (from module def_vitals)
 c
-      USE def_vitals; USE inparms; USE set_max_parms
+      USE def_vitals
+      USE inparms
+      USE set_max_parms
 c
       type (tcvcard) stm
       type (datecard) inp
@@ -2703,8 +2728,14 @@ c     slonfg  Array containing first guess longitude positions
 c     slatfg  Array containing first guess latitude positions
 c     storm   Contains tcvitals information
 c
-      USE radii; USE def_vitals; USE set_max_parms; USE grid_bounds
-      USE tracked_parms; USE level_parms; USE trig_vals; USE trkrparms
+      USE radii
+      USE def_vitals
+      USE set_max_parms
+      USE grid_bounds
+      USE tracked_parms
+      USE level_parms
+      USE trig_vals
+      USE trkrparms
 c
       type (trackstuff) trkrinfo
       integer   ifhours(maxtime)
@@ -3075,7 +3106,10 @@ c               quadrant, plus the location of it and the distance from
 c               the storm center.  This information is critical to 
 c               identifying when this subroutine is malfunctioning.
 
-      USE grid_bounds; USE tracked_parms; USE trig_vals; USE level_parms
+      USE grid_bounds
+      USE tracked_parms
+      USE trig_vals
+      USE level_parms
 c
       logical(1) valid_pt(imax,jmax)     
 c      dimension iwork(257)
@@ -3435,7 +3469,9 @@ c     radmaxwind the maximum radius to look for a max wind near the
 c                storm center.  You have to allow this to be bigger for
 c                model grids with coarse resolution (ECMWF 2.5 degree).
 
-      USE grid_bounds; USE tracked_parms; USE trig_vals
+      USE grid_bounds
+      USE tracked_parms
+      USE trig_vals
 
       real      radmaxwind
       logical(1) valid_pt(imax,jmax)
@@ -3594,7 +3630,10 @@ c                 a distance errmax of the guess position for this
 c                 time (geslon,geslat), then there will be NO 
 c                 dist_from_mean calculated for that parm.
 c
-      USE error_parms; USE set_max_parms; USE inparms; USE def_vitals
+      USE error_parms
+      USE set_max_parms
+      USE inparms
+      USE def_vitals
       USE atcf
 c
       type (datecard) inp
@@ -4160,7 +4199,10 @@ c     is different from how we do the other parms) is that if we just
 c     use the original grid resolution, we may not be able to 
 c     accurately pick out a minimum in the wind field at the center.
 c
-      USE radii; USE grid_bounds; USE tracked_parms; USE trig_vals
+      USE radii
+      USE grid_bounds
+      USE tracked_parms
+      USE trig_vals
       USE level_parms
 c
       real, allocatable ::  uold(:,:),vold(:,:),unew(:,:),vnew(:,:)
@@ -4443,7 +4485,9 @@ c                   look for the wind minimum
 c     igugret   return code for this subroutine (0=normal)
 c----
 c
-      USE set_max_parms; USE level_parms; USE error_parms
+      USE set_max_parms
+      USE level_parms
+      USE error_parms
 c
       logical(1) calcparm(maxtp,maxstorm)
       real      clon(maxstorm,maxtime,maxtp)
@@ -4711,7 +4755,10 @@ c     ctlat    Center latitude of storm found for this parameter
 c     xval     Max or Min value found at the (ctlon,ctlat)
 c     ifmret   Return code from this subroutine
 c
-      USE radii; USE grid_bounds; USE set_max_parms; USE level_parms
+      USE radii
+      USE grid_bounds
+      USE set_max_parms
+      USE level_parms
       USE trig_vals
 c
       real    fxy(imax,jmax),rlonv(imax),rlatv(jmax)
@@ -5427,7 +5474,9 @@ c     ABSTRACT:  This subroutine checks to make sure that the requested
 c                storm is in fact within the model's grid boundaries;
 c                this is only a concern for the regional models.
 c
-      USE def_vitals; USE grid_bounds; USE set_max_parms 
+      USE def_vitals
+      USE grid_bounds
+      USE set_max_parms 
 c
       if (guesslon > glonmax .or. guesslon < glonmin .or.
      &    guesslat > glatmax .or. guesslat < glatmin) then
@@ -5525,7 +5574,8 @@ c     from the vorticity values.  It is needed because at the original
 c     writing of this system, all of the forecast centers who included
 c     vorticity included only absolute vorticity.
 c
-      USE tracked_parms; USE trig_vals
+      USE tracked_parms
+      USE trig_vals
       integer igetgds(200)
 c
       rmaxlat = float(igetgds(4)) / 1000.0
@@ -5552,7 +5602,10 @@ c     ABSTRACT: This subroutine reads the input GRIB file for the
 c     tracked parameters.  It then calls subroutines to convert the
 c     data from a 1-d array into a 2-d array if the read was successful
 c
-      USE tracked_parms; USE level_parms; USE inparms; USE set_max_parms
+      USE tracked_parms
+      USE level_parms
+      USE inparms
+      USE set_max_parms
 c
       parameter (jf=1440*721,lugb=11,lugi=31) 
       real      f(jf)
@@ -5911,7 +5964,10 @@ c     created in the shell script.  Namelist datein contains the
 c     starting date information, plus the model identifier.  Namelist
 c     stswitch contains the flags for processing for each storm.
 c
-      USE inparms; USE set_max_parms; USE atcf; USE trkrparms
+      USE inparms
+      USE set_max_parms
+      USE atcf
+      USE trkrparms
 c
       implicit none
 c
@@ -6018,7 +6074,9 @@ c     storm      contains the tcvitals info
 c     (storm, stormswitch, slonfg and slatfg are allocatable and are 
 c      defined in module def_vitals)
 
-      USE def_vitals; USE set_max_parms; USE trkrparms
+      USE def_vitals
+      USE set_max_parms
+      USE trkrparms
 
       implicit none
 
@@ -6188,7 +6246,8 @@ c     grid that's NOT lat/lon, we want to make sure we read far enough
 c     into the file to read one that IS a lat/lon grid.  That's why we
 c     set jgds(1) = 0 before reading.
 c
-      USE grid_bounds; USE trkrparms
+      USE grid_bounds
+      USE trkrparms
 c
       type (trackstuff) trkrinfo
 
@@ -6412,7 +6471,9 @@ c     differences are used on the boundaries.
 c
 c     LOCAL VARIABLES:
 c
-      USE tracked_parms; USE trig_vals; USE grid_bounds
+      USE tracked_parms
+      USE trig_vals
+      USE grid_bounds
 c
       dimension cosfac(jmax),tanfac(jmax)
       real      tmpzeta(imax,jmax)
@@ -6720,8 +6781,12 @@ c
 c     OTHER:
 c     storm    Contains the tcvitals for the storms (module def_vitals)
 
-      USE trkrparms; USE grid_bounds; USE set_max_parms; USE def_vitals
-      USE contours; USE tracked_parms
+      USE trkrparms
+      USE grid_bounds
+      USE set_max_parms
+      USE def_vitals
+      USE contours
+      USE tracked_parms
 
       implicit none
 
@@ -6976,7 +7041,9 @@ c     maxmini  integer array containing i-indeces of the max/min points
 c     maxminj  integer array containing j-indeces of the max/min points
 c     ifamret  return code from this subroutine
 
-      USE trkrparms; USE set_max_parms; USE contours
+      USE trkrparms
+      USE set_max_parms
+      USE contours
 
       implicit none
 
@@ -7498,7 +7565,9 @@ c     LOCAL:
 c     num_pts_in_all_contours Counter for the number of pts inside of 
 c              the contour we're looking at
    
-      USE set_max_parms; USE trkrparms; USE contours
+      USE set_max_parms
+      USE trkrparms
+      USE contours
 
       implicit none
 
