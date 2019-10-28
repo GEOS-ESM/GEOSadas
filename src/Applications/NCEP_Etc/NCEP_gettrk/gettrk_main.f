@@ -123,8 +123,13 @@ c     clon,clat: Holds the coordinates for the center positions for
 c                all storms at all times for all parameters.
 c                (max_#_storms, max_fcst_times, max_#_parms)
 c
-      USE def_vitals; USE inparms; USE set_max_parms; USE level_parms
-      USE trig_vals; USE atcf; USE trkrparms
+      USE def_vitals
+      USE inparms
+      USE set_max_parms
+      USE level_parms
+      USE trig_vals
+      USE atcf
+      USE trkrparms
 c
       implicit none 
 c
