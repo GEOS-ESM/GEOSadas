@@ -162,6 +162,8 @@ CONTAINS
 !    to turn OFF ESMF's automatic logging feature
 !   -------------------------------------------------------------
     call ESMF_Initialize (logKindFlag=ESMF_LOGKIND_NONE, vm=vm, __RC__)
+    call ESMF_VMGetCurrent(vm=vm, rc=status)
+    call ESMF_VMGet(vm,mpiCommunicator=comm,rc=status)
 
     call init_ ( CF, nymd, nhms, __RC__ )
 
@@ -183,8 +185,6 @@ CONTAINS
          print *, 'Starting ' // Iam // ' with ', nPET, ' PETs ...'
          print *
     end if
-    call ESMF_VMGetCurrent(vm=vm, rc=status)
-    call ESMF_VMGet(vm,mpiCommunicator=comm,rc=status)
 
 
 !   Create a regular Lat/Lon grid over which BKG/ANA defined
