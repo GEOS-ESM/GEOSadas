@@ -322,7 +322,6 @@ EOF
 
   source \$SHARE/dao_ops/opengrads/setup.csh 1.9-rc1-gmao
 
-  setenv I_MPI_FABRICS shm:ofa
   setenv MPI_BUFS_PER_PROC 1024
 EOF
 

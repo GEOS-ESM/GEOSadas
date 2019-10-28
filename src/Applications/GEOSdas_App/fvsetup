@@ -7449,77 +7449,15 @@ print  SCRIPT <<"EOF";
   setenv OMP_NUM_THREADS             \$AGCM_N_THREADS_PER_PROCESS # Number OMP Threads (generic)
 
 EOF
-#--if ( $siteID eq "nccs" ) {
-#--print  SCRIPT <<"EOF";
-#--  setenv DAPL_ACK_RETRY 7
-#--  setenv DAPL_ACK_TIMER 20
-#--  setenv DAPL_RNR_RETRY 7
-#--  setenv DAPL_RNR_TIMER 28
-#--  setenv I_MPI_MPD_TMPDIR /tmp
-#--  setenv I_MPI_USE_DYNAMIC_CONNECTIONS 0
-#--  setenv I_MPI_JOB_STARTUP_TIMEOUT 10000
-#--  setenv I_MPI_RDMA_RNDV_WRITE 1
-#--# setenv I_MPI_DEVICE rdssm:OpenIB-mlx4_0-1
-#--EOF
-#--}
 print  SCRIPT <<"EOF";
 
   setenv MKL_CBWR SSE4_2
 
-# MVAPICH variables
-# -----------------
-  setenv MV2_DEFAULT_TIME_OUT 23
-  setenv MV2_USE_SHMEM_ALLREDUCE 0
-  setenv MV2_ON_DEMAND_THRESHOLD 8192
-  setenv MV2_USE_UD_HYBRID 0
-  setenv MV2_USE_SHMEM_COLL      0
-  setenv MV2_USE_UD_HYBRID       0
-  setenv MV2_HYBRID_MAX_RC_CONN 16
-  setenv MV2_SHOW_ENV_INFO 2
-
-# setenv I_MPI_FABRICS shm:ofa
-
-# The following are from OPS parallel
-  setenv I_MPI_USE_DYNAMIC_CONNECTIONS 0
-  setenv I_MPI_FABRICS shm:dapl
-  setenv I_MPI_FABRICS_LIST "dapl,ofa"
-  setenv I_MPI_FALLBACK "enable"
-  setenv I_MPI_MPD_RSH sshmpi
-  setenv I_MPI_DAPL_CHECK_MAX_RDMA_SIZE 1
-##setenv I_MPI_DAPL_UD on
-  setenv DAPL_UCM_CQ_SIZE 4096
-  setenv DAPL_UCM_QP_SIZE 4096
-  setenv I_MPI_DAPL_UD_SEND_BUFFER_NUM 4096
-  setenv I_MPI_DAPL_UD_RECV_BUFFER_NUM 4096
-  setenv I_MPI_DAPL_UD_ACK_SEND_POOL_SIZE 4096
-  setenv I_MPI_DAPL_UD_ACK_RECV_POOL_SIZE 4096
-  setenv I_MPI_DAPL_UD_RNDV_EP_NUM 2
-  setenv I_MPI_DAPL_UD_REQ_EVD_SIZE 2000
-  setenv DAPL_UCM_REP_TIME 2000
-  setenv DAPL_UCM_RTU_TIME 2000
-  setenv DAPL_UCM_RETRY 7
-  setenv DAPL_ACK_RETRY 7
-  setenv DAPL_ACK_TIMER 20
-  setenv DAPL_UCM_RETRY 10
-  setenv DAPL_ACK_RETRY 10
-
-# MPT env variables
-# -----------------
-  setenv MPI_COLL_REPRODUCIBLE
   setenv SLURM_DISTRIBUTION block
-  setenv MPI_DISPLAY_SETTINGS
 
 # For some reason, PMI_RANK is randomly set and interferes
 # with binarytile.x and other executables.
   unsetenv PMI_RANK
-
-  setenv MPI_COMM_MAX  1024
-  setenv MPI_GROUP_MAX 1024
-  setenv MPI_BUFS_PER_PROC 1024
-  setenv MPI_IB_TIMEOUT 23
-  setenv MPI_XPMEM_ENABLE no
-  setenv MPI_NUM_MEMORY_REGIONS 0
-  setenv SUPRESS_XPMEM_TRIM_THRESH 1
 
 # Needed for TLM/ADM
 # ------------------
@@ -8393,59 +8331,12 @@ print  SCRIPT <<"EOF";
   setenv AGCM_NUM_THREADS             \$AGCM_N_THREADS_PER_PROCESS   # No. OMP threads   for GCM
   setenv OMP_NUM_THREADS              \$AGCM_N_THREADS_PER_PROCESS   # Number OMP Threads (generic)
 
-# MVAPICH variables
-# -----------------
-  setenv MV2_DEFAULT_TIME_OUT 23
-  setenv MV2_USE_SHMEM_ALLREDUCE 0
-  setenv MV2_ON_DEMAND_THRESHOLD 8192
-  setenv MV2_USE_UD_HYBRID 0
-  setenv MV2_USE_SHMEM_COLL      0
-  setenv MV2_USE_UD_HYBRID       0
-  setenv MV2_HYBRID_MAX_RC_CONN 16
-  setenv MV2_SHOW_ENV_INFO 2
 
-# MPT env variables
-# -----------------
-  setenv MPI_COLL_REPRODUCIBLE
   setenv SLURM_DISTRIBUTION block
-  setenv MPI_DISPLAY_SETTINGS
-  setenv MPI_IB_TIMEOUT 23
-  setenv MPI_XPMEM_ENABLE no
-  setenv MPI_NUM_MEMORY_REGIONS 0
-  setenv SUPRESS_XPMEM_TRIM_THRESH 1
 
 # For some reason, PMI_RANK is randomly set and interferes
 # with binarytile.x and other executables.
   unsetenv PMI_RANK
-
-  setenv MPI_COMM_MAX  1024
-  setenv MPI_GROUP_MAX 1024
-  setenv MPI_BUFS_PER_PROC 256
-
-# The following are from OPS parallel
-  setenv I_MPI_USE_DYNAMIC_CONNECTIONS 0
-  setenv I_MPI_FABRICS shm:dapl
-  setenv I_MPI_FABRICS_LIST "dapl,ofa"
-  setenv I_MPI_FALLBACK "enable"
-  setenv I_MPI_MPD_RSH sshmpi
-  setenv I_MPI_DAPL_CHECK_MAX_RDMA_SIZE 1
-##setenv I_MPI_DAPL_UD on
-  setenv DAPL_UCM_CQ_SIZE 4096
-  setenv DAPL_UCM_QP_SIZE 4096
-  setenv I_MPI_DAPL_UD_SEND_BUFFER_NUM 4096
-  setenv I_MPI_DAPL_UD_RECV_BUFFER_NUM 4096
-  setenv I_MPI_DAPL_UD_ACK_SEND_POOL_SIZE 4096
-  setenv I_MPI_DAPL_UD_ACK_RECV_POOL_SIZE 4096
-  setenv I_MPI_DAPL_UD_RNDV_EP_NUM 2
-  setenv I_MPI_DAPL_UD_REQ_EVD_SIZE 2000
-  setenv DAPL_UCM_REP_TIME 2000
-  setenv DAPL_UCM_RTU_TIME 2000
-  setenv DAPL_UCM_RETRY 7
-  setenv DAPL_ACK_RETRY 7
-  setenv DAPL_ACK_TIMER 20
-  setenv DAPL_UCM_RETRY 10
-  setenv DAPL_ACK_RETRY 10
-
 
 # Needed for TLM/ADM
 # ------------------
@@ -8594,10 +8485,6 @@ EOF
   setenv KMP_STACKSIZE    450m
   unsetenv F_UFMTENDIAN
   setenv KMP_LIBRARY turnaround
-  setenv I_MPI_USE_DYNAMIC_CONNECTIONS 0
-  setenv I_MPI_JOB_STARTUP_TIMEOUT 10000
-  setenv I_MPI_RDMA_RNDV_WRITE 1
-
 EOF
 
     }else{ # end of Altix block

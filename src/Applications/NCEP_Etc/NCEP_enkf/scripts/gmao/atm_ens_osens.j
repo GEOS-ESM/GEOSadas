@@ -117,33 +117,8 @@
   set ANAX    = `which GSIsa.x`
   set SACX    = `which sac.x`
 
-# The following are from OPS parallel
-  setenv I_MPI_FABRICS shm:dapl
-  setenv I_MPI_FABRICS_LIST "dapl,ofa"
-  setenv I_MPI_FALLBACK "enable"
-  setenv I_MPI_MPD_RSH sshmpi
-  setenv I_MPI_DAPL_CHECK_MAX_RDMA_SIZE 1
-#
-  setenv DAPL_UCM_CQ_SIZE 4096
-  setenv DAPL_UCM_QP_SIZE 4096
-  setenv I_MPI_DAPL_UD_SEND_BUFFER_NUM 4096
-  setenv I_MPI_DAPL_UD_RECV_BUFFER_NUM 4096
-  setenv I_MPI_DAPL_UD_ACK_SEND_POOL_SIZE 4096
-  setenv I_MPI_DAPL_UD_ACK_RECV_POOL_SIZE 4096
-  setenv I_MPI_DAPL_UD_RNDV_EP_NUM 2
-  setenv I_MPI_DAPL_UD_REQ_EVD_SIZE 2000
-  setenv DAPL_UCM_REP_TIME 2000
-  setenv DAPL_UCM_RTU_TIME 2000
-  setenv DAPL_UCM_RETRY 7
-  setenv DAPL_ACK_RETRY 7
-  setenv DAPL_ACK_TIMER 20
-  setenv DAPL_UCM_RETRY 10
-  setenv DAPL_ACK_RETRY 10
-
 # For reproducibility between Westmere and Sandybridge nodes
 # ----------------------------------------------------------
-  setenv MV2_USE_SHMEM_ALLREDUCE 0
-  setenv MV2_ON_DEMAND_THRESHOLD 8192
   setenv MKL_CBWR SSE4_2
  
 # set HDF2RSX = `which hdf2rs.x`
@@ -160,30 +135,11 @@
   setenv GAAS_ANA 1
   setenv ACFTBIAS 0
 
-# Run-time mpi-related options
-# ----------------------------
-  setenv DAPL_ACK_RETRY 7
-  setenv DAPL_ACK_TIMER 20
-  setenv DAPL_RNR_RETRY 7
-  setenv DAPL_RNR_TIMER 28
-  setenv I_MPI_MPD_TMPDIR /tmp
-  setenv I_MPI_USE_DYNAMIC_CONNECTIONS 0
-  setenv I_MPI_JOB_STARTUP_TIMEOUT 10000
-  setenv I_MPI_RDMA_RNDV_WRITE 1
-
-# MVAPICH variables
-# -----------------
-  setenv MPI_COLL_REPRODUCIBLE
   setenv SLURM_DISTRIBUTION block
-  setenv MPI_DISPLAY_SETTINGS
 
 # For some reason, PMI_RANK is randomly set and interferes
 # with binarytile.x and other executables.
   unsetenv PMI_RANK
-
-  setenv MPI_COMM_MAX  1024
-  setenv MPI_GROUP_MAX 1024
-  setenv MPI_BUFS_PER_PROC 256
 
 # Internal parameters controlling system behavior
 # ----------------------------------------------
