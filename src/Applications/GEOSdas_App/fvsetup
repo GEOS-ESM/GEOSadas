@@ -8931,8 +8931,8 @@ sub init_agcm_rc {
     AGCM_label_subst("\@AGCM_LM", $km);
     AGCM_label_subst("\@AGCM_NF", $ogcm_nf);
     AGCM_label_subst("\@GRID_TYPE", $agcm_grid_type);
-    AGCM_label_subst("\@CUBE_AGCM", $cube_agcm);
-    AGCM_label_subst("\@LATLON_AGCM", $latlon_agcm);
+    AGCM_label_subst(">>>CUBE_AGCM<<<", $cube_agcm);
+    AGCM_label_subst(">>>LATLON_AGCM<<<", $latlon_agcm);
 
     AGCM_label_subst("\@AANA_IM", $ana_im);
     AGCM_label_subst("\@AANA_JM", $ana_jm);
@@ -8947,8 +8947,8 @@ sub init_agcm_rc {
     AGCM_label_subst("\@OGCM_LM", $ogcm_km);
     AGCM_label_subst("\@OGCM_NF", $ogcm_nf);
     AGCM_label_subst("\@OGCM_GRID_TYPE", $ogcm_grid_type);
-    AGCM_label_subst("\@CUBE_OGCM", $cube_ogcm);
-    AGCM_label_subst("\@LATLON_OGCM", $latlon_ogcm);
+    AGCM_label_subst(">>>CUBE_OGCM<<<", $cube_ogcm);
+    AGCM_label_subst(">>>LATLON_OGCM<<<", $latlon_ogcm);
 
     AGCM_label_subst("\@DT", $dt);
     AGCM_label_subst("\@CHEM_DT",  $chemdt);

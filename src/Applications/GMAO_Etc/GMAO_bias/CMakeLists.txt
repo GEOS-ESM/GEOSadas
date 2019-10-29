@@ -1,5 +1,9 @@
+esma_set_this()
+
 ecbuild_add_executable(TARGET cft_update.x SOURCES cft_update.f LIBS GMAO_mpeu)
+set_target_properties(cft_update.x PROPERTIES Fortran_MODULE_DIRECTORY ${esma_include}/${this})
 ecbuild_add_executable(TARGET convert_cft.x SOURCES convert_cft.f LIBS GMAO_mpeu)
+set_target_properties(convert_cft.x PROPERTIES Fortran_MODULE_DIRECTORY ${esma_include}/${this})
 
 if (EXTENDED_SOURCE)
   set_target_properties (convert_cft.x PROPERTIES COMPILE_FLAGS ${EXTENDED_SOURCE})
