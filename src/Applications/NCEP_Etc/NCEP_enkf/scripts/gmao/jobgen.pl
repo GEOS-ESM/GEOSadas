@@ -214,7 +214,6 @@ EOF
  if ( $opt_q ne "NULL" ) {
     if ( $opt_q eq "datamove" ) {
     print  SCRIPT <<"EOF";
-#SBATCH --constraint=sky
 #PBS -q $opt_q
 EOF
     }
