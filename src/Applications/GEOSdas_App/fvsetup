@@ -7220,7 +7220,7 @@ print SCRIPT <<"EOF";
   setenv group_list \"$group_list1\"
   setenv ARCH `uname -s`
   setenv HOST `uname -n`
-  setenv NCPUS       $ncpus       # Number of CPUs to run GCM
+  setenv NCPUS       56       # Number of CPUs to run GCM
   setenv NCPUS_IDF   $ncpus_idf   # Number of CPUs to run IDF
   setenv NCPUS_IAU   $ncpus_iau   # Number of CPUs to run IAU
   setenv NCPUS_GSI   $ncpus_gsi   # Number of CPUs to run GSI
@@ -7283,10 +7283,12 @@ print  SCRIPT <<"EOF";
 
 # Internal parameters controlling system behavior
 # ----------------------------------------------
+  setenv BERROR \$FVHOME/run/Berror
+  setenv MODELE_GCM 1
   setenv G5GCM   $g5gcm   # 1 = enables GEOS-5 GCM, 0 = disables GEOS-5 GCM (back to fvGCM)
   setenv FVSBC   $fvsbc   # 1 = enables SBC, 0 = disables SBC (Bias Correction)
   setenv FVCQC   $fvcqc   # 1 = enables CQC, 0 = disables CQC
-  setenv PREPQC  $prepqc  # 1 = enables NCEP-QC, 0 = disables QC
+  setenv PREPQC  0  # 1 = enables NCEP-QC, 0 = disables QC
   setenv OIQC    $oiqc    # 1 = enables OIQC, 0 = disables OIQC
   setenv RADCOR  $radcor  # (see ssprepqc usage for valid values)
   setenv DAOTOVS $daotovs # 1 = enables DAOTOVS, 0 = disables DAOTOVS
@@ -7310,9 +7312,9 @@ print  SCRIPT <<"EOF";
   setenv CONVUPA  $convupa # 1 = enables call to lcv2prs for conversion of upper-air output fields
   setenv DOIAU    $doiau   # 0 = disable IAU; otherwise offset should be 030000
   setenv SAVE4ASENS $doasens  # 1 = will not store intermediate files for later analysis sensitivity run
-  setenv MONTHLY_MEANS $monthly_means   # 1 = submit monthly means at end of month;     0 = don't
-  setenv MONTHLY_TAR $monthly_tar   # 1 = submit monthly tar job at end of month;   0 = don't
-  setenv MONTHLY_PLOTS $monthly_plots   # 1 = submit monthly plots job at end of month; 0 = don't
+  setenv MONTHLY_MEANS 0   # 1 = submit monthly means at end of month;     0 = don't
+  setenv MONTHLY_TAR 0   # 1 = submit monthly tar job at end of month;   0 = don't
+  setenv MONTHLY_PLOTS 0   # 1 = submit monthly plots job at end of month; 0 = don't
   setenv NCSUFFIX $ncsuffix
   setenv STAGE4FSENS /dev/null
   setenv GAAS_ANA $gaas_ana # 1 = aerosol analysis, 0 = disables it
@@ -7320,21 +7322,19 @@ print  SCRIPT <<"EOF";
   setenv SKIP_PSAS 0 #  sets do_you_want_to_skip_PSAS in ana.rc.tmpl; 0 = no, 1 = yes
   setenv LDAS_ANA $ldasANA  # 0 = don't run Land DAS Analysis; 1 = run LDAS
   setenv IGNORE_0 1   # 1 = ignore 0 length obs files in acquire
-  setenv ACFTBIAS $acftbias
+  setenv ACFTBIAS 0
   setenv USE_MODIS_STAGE 0  # 1 = use MODIS data from MODIS_STAGE_DIR; 0 = don't
   setenv MODIS_STAGE_DIR /discover/nobackup/dao_ops/intermediate/flk/modis  # L2a non-archive data dir
-  setenv FCSTIMES "21"
-  setenv FCSTATS  "21"
   setenv FHOURS   $fhours
-  setenv NEWRADBC $newradbc
-  setenv ANGLEBC  $newradbc
+  setenv NEWRADBC 0
+  setenv ANGLEBC  0
 # setenv DO_0HR_IMP 1
 EOF
 
 if ( $hyb_ens < 0 ) {
 print  SCRIPT <<"EOF";
-  setenv VTXRELOC $vtxreloc        # 0 = disable vortex relocator; 1 = enable
-  setenv VTRACK   $vtrack        # 0 = disable vortex tracker;   1 = enable
+  setenv VTXRELOC 0        # 0 = disable vortex relocator; 1 = enable
+  setenv VTRACK   0        # 0 = disable vortex tracker;   1 = enable
   setenv DO4DIAU  0           # 1=enables gcm to take time changing IAU forcing
   setenv HYBRIDGSI     /dev/null
   setenv STAGE4HYBGSI  /dev/null
@@ -7525,7 +7525,7 @@ print  SCRIPT <<"EOF";
   setenv OMP_SCHEDULE STATIC
   setenv MPIRUN        "prun -s -c \$PSAS_NUM_THREADS -n \$PSAS_NUM_MPI -N  \$PSAS_NUM_MPI "
   if ( \$G5GCM || \$AGCM_NUM_THREADS == 1 ) then
-     setenv    RUN_OPT_BEGIN "prun -s -n \$NCPUS \$GCMX"
+     setenv    RUN_OPT_BEGIN "prun -s -n \$NCPUS \$GCMX" -i ./I
      setenv ADMRUN_OPT_BEGIN "prun -s -n \$NCPUS_GPERT \$GCMPTX"
   else
      setenv    RUN_OPT_BEGIN "prun -s -c \$AGCM_N_THREADS_PER_PROCESS -N \$AGCM_N_PROCESSES -n \$AGCM_N_PROCESSES \$GCMX"
@@ -7550,7 +7550,7 @@ print  SCRIPT <<"EOF";
   setenv MPIRUN_AOD    "esma_mpirun "
   setenv RUN_OPT_BLEND "esma_mpirun -np \$NCPUS \$HDF2RSX"
   if (\$G5GCM ) then
-     setenv    RUN_OPT_BEGIN "esma_mpirun -np \$NCPUS \$GCMX"
+     setenv    RUN_OPT_BEGIN "esma_mpirun -np \$NCPUS \$GCMX -i ./I"
      setenv ADMRUN_OPT_BEGIN "esma_mpirun -np \$NCPUS_GPERT \$GCMPTX"
   else
      setenv    RUN_OPT_BEGIN "esma_mpirun -np \$AGCM_NUM_MPI \$GCMX"
@@ -7818,8 +7818,8 @@ print  SCRIPT <<"EOF";
 
 #         Check for Bootstrap
 #         -------------------
-          setenv BOOTSTRAP 0
-          if (-e \$FVRUN/AGCM.BOOTSTRAP.rc.tmpl) setenv BOOTSTRAP 1
+#          setenv BOOTSTRAP 0
+#          if (-e \$FVRUN/AGCM.BOOTSTRAP.rc.tmpl) setenv BOOTSTRAP 1
 
 #         Check for Hybrid-GSI
 #         --------------------
@@ -7863,7 +7863,7 @@ print  SCRIPT <<"EOF";
                        touch .SUBMITTED.\$fcstdtag
                        set jname = fcst.\${crstag}
                        set lname = \$FVHOME/fcst/fcst.log.\${crstag}.o%j.txt
-                       qsub -N \$jname -o \$lname g5fcst.j
+                       #qsub -N \$jname -o \$lname g5fcst.j
                    endif
                 endif
                 cd -
@@ -7912,6 +7912,7 @@ EOF
     /bin/rm \$FVHOME/recycle/\$fn
   end
   /bin/mv \$FVHOME/recycle/hold/\$EXPID.* \$FVHOME/recycle/
+  /bin/mv \$FVHOME/recycle/hold/fort.*.nc \$FVHOME/recycle/
   set rslist = `/bin/ls -1 \$FVHOME/recycle/\$EXPID.rst.lcv.????????_??z.bin`
   set rsdate = `rst_date \${rslist[1]}`  # date of last restart
 
@@ -7924,33 +7925,33 @@ EOF
 
                            cd \$FVHOME/run
 
-                                      zeit_ci.x pesto
+                                     # zeit_ci.x pesto
 
 # Move files to FVHOME for recycling, archiving and/or post-processing
 # ---------------------------------------------------------
   @ pesto_status = 0
 # - stage ana eta file
-  if ( \$ANASTAGE != "/dev/null" && -e stageana.arc ) then
-      setenv PESTOROOT \$ANASTAGE
-      pesto -v -d \$FVWORK -arc stageana.arc
-      @ pesto_status = \$status
-  endif
+#  if ( \$ANASTAGE != "/dev/null" && -e stageana.arc ) then
+#      setenv PESTOROOT \$ANASTAGE
+#      pesto -v -d \$FVWORK -arc stageana.arc
+#      @ pesto_status = \$status
+#  endif
 
 # Move files to FVHOME for archiving and/or post-processing
 # ---------------------------------------------------------
-  ls -altuF \$FVWORK
-  setenv PESTOROOT `dirname \$FVHOME`
-  pesto -v -l -clean -d \$FVWORK -arc silo.arc
-      @ pesto_status = \$status + \$pesto_status
+  # ls -altuF \$FVWORK
+  # setenv PESTOROOT `dirname \$FVHOME`
+  # pesto -v -l -clean -d \$FVWORK -arc silo.arc
+  #     @ pesto_status = \$status + \$pesto_status
 
-                                      zeit_co.x pesto
+  #                                     zeit_co.x pesto
 
 # Halt if pesto fails
 # -------------------
-  if ( \$pesto_status ) then
-      echo " Serious trouble: pesto failed"
-      exit 100
-  endif
+#  if ( \$pesto_status ) then
+#      echo " Serious trouble: pesto failed"
+#      exit 100
+#  endif
 
 
 # Mass storage archival as an 1 CPU batch job
@@ -7982,18 +7983,18 @@ EOF
 
 #     set variables to send with archive job
 #     --------------------------------------
-      set vars = "arch_type=ADAS,yyyymm=\$yyyymm,dd=\$dd"
-      if (\$\?MONTHLY_MEANS) then
-         set vars = "\$vars,MONTHLY_MEANS=\$MONTHLY_MEANS"
-      endif
+      # set vars = "arch_type=ADAS,yyyymm=\$yyyymm,dd=\$dd"
+      # if (\$\?MONTHLY_MEANS) then
+      #    set vars = "\$vars,MONTHLY_MEANS=\$MONTHLY_MEANS"
+      # endif
 
-      if (\$\?MONTHLY_TAR) then
-         set vars = "\$vars,MONTHLY_TAR=\$MONTHLY_TAR"
-      endif
+      # if (\$\?MONTHLY_TAR) then
+      #    set vars = "\$vars,MONTHLY_TAR=\$MONTHLY_TAR"
+      # endif
 
-      if (\$\?MONTHLY_PLOTS) then
-         set vars = "\$vars,MONTHLY_PLOTS=\$MONTHLY_PLOTS"
-      endif
+      # if (\$\?MONTHLY_PLOTS) then
+      #    set vars = "\$vars,MONTHLY_PLOTS=\$MONTHLY_PLOTS"
+      # endif
 
 #     submit archive job
 #     ------------------
@@ -8007,52 +8008,52 @@ EOF
 
 # submit job to calculate forecast statistics
 # -------------------------------------------
-  @ fdays = \$FHOURS / 24
-  if ( \$?FCSTATS ) then
-     foreach fcstime ( \$FCSTATS )
-        if (\$hh == \$fcstime) then
-           set fcstdt = `tick \$nymd \${hh}0000 -\$fdays 0`
+  # @ fdays = \$FHOURS / 24
+  # if ( \$?FCSTATS ) then
+  #    foreach fcstime ( \$FCSTATS )
+  #       if (\$hh == \$fcstime) then
+  #          set fcstdt = `tick \$nymd \${hh}0000 -\$fdays 0`
 
-           set fstats_dir = "\$FVHOME/fstats"
-           if (! -d \$fstats_dir) then
-              mkdir \$fstats_dir
-           endif
+  #          set fstats_dir = "\$FVHOME/fstats"
+  #          if (! -d \$fstats_dir) then
+  #             mkdir \$fstats_dir
+  #          endif
 
-           set jtype = "fstats_run"
-           set jdate = "\${fcstdt[1]}_\${hh}z"
-           set jname = "\$jtype.\$jdate"
-           set lname1 = "\$fstats_dir/\$jtype.log.\$jdate.o%j.txt"
-           set lname2 = "\$fstats_dir/\$jtype.log.\$jdate.txt"
+  #          set jtype = "fstats_run"
+  #          set jdate = "\${fcstdt[1]}_\${hh}z"
+  #          set jname = "\$jtype.\$jdate"
+  #          set lname1 = "\$fstats_dir/\$jtype.log.\$jdate.o%j.txt"
+  #          set lname2 = "\$fstats_dir/\$jtype.log.\$jdate.txt"
 
-           set Bin = "\$FVROOT/bin"
-           set flags = "-ihh \$hh -fhrs \$FHOURS -das"
-           set cmd = "g5fcst_stats.pl \$EXPID \$fcstdt[1] 1 \$flags"
+  #          set Bin = "\$FVROOT/bin"
+  #          set flags = "-ihh \$hh -fhrs \$FHOURS -das"
+  #          set cmd = "g5fcst_stats.pl \$EXPID \$fcstdt[1] 1 \$flags"
 
-           set jobfile = "\$fstats_dir/\$jname.j"
-           alias echo1 'echo \\!* >! \$jobfile'
-           alias echo2 'echo \\!* >> \$jobfile'
+  #          set jobfile = "\$fstats_dir/\$jname.j"
+  #          alias echo1 'echo \\!* >! \$jobfile'
+  #          alias echo2 'echo \\!* >> \$jobfile'
 
-           echo1 "#\\!/usr/bin/csh"
-           echo2 "#SBATCH --job-name=\$jname"
-           echo2 "#SBATCH --output=\$lname1"
-           echo2 "#SBATCH --partition=datamove"
-           echo2 "#SBATCH --time=1:00:00"
-           echo2 "#SBATCH --export=NONE"
-           echo2 "#SBATCH --constraint=hasw"
-           echo2 ""
-           echo2 "setenv FVHOME \$FVHOME"
-           echo2 "set Bin = \$Bin"
-           echo2 "set output = \$lname2"
-           echo2 ""
-           echo2 '\$Bin'/\$cmd
-           echo2 'if (\$status == 0) then'
-           echo2 '   qalter -o \$output \$PBS_JOBID'
-           echo2 "endif"
+  #          echo1 "#\\!/usr/bin/csh"
+  #          echo2 "#SBATCH --job-name=\$jname"
+  #          echo2 "#SBATCH --output=\$lname1"
+  #          echo2 "#SBATCH --partition=datamove"
+  #          echo2 "#SBATCH --time=1:00:00"
+  #          echo2 "#SBATCH --export=NONE"
+  #          echo2 "#SBATCH --constraint=hasw"
+  #          echo2 ""
+  #          echo2 "setenv FVHOME \$FVHOME"
+  #          echo2 "set Bin = \$Bin"
+  #          echo2 "set output = \$lname2"
+  #          echo2 ""
+  #          echo2 '\$Bin'/\$cmd
+  #          echo2 'if (\$status == 0) then'
+  #          echo2 '   qalter -o \$output \$PBS_JOBID'
+  #          echo2 "endif"
 
-           sbatch --dependency afterany:\$jobID \$jobfile
-        endif
-     end
-  endif
+  #          sbatch --dependency afterany:\$jobID \$jobfile
+  #       endif
+  #    end
+  # endif
 
 # If simulation is done, stop here
 # --------------------------------
@@ -8069,10 +8070,10 @@ EOF
 
 # Finished with Bootstrap
 # -----------------------
-if (-e \$FVRUN/AGCM.BOOTSTRAP.rc.tmpl) then
-   /bin/mv \$FVRUN/AGCM.BOOTSTRAP.rc.tmpl \$FVRUN/AGCM.BOOTSTRAP.rc.tmpl.DONE
-   setenv BOOTSTRAP 0
-endif
+#if (-e \$FVRUN/AGCM.BOOTSTRAP.rc.tmpl) then
+#   /bin/mv \$FVRUN/AGCM.BOOTSTRAP.rc.tmpl \$FVRUN/AGCM.BOOTSTRAP.rc.tmpl.DONE
+#   setenv BOOTSTRAP 0
+#endif
 
 
 end # while: loop over fvDAS run segments
@@ -8085,31 +8086,32 @@ end # while: loop over fvDAS run segments
 #                  ----------------------------------
 
                           cd \$FVHOME/run
+                          ./g5das.j
 
 # Resubmits itself
 # ----------------
-  set itime1 = \${rsdate[1]}_`echo \$rsdate[2] | cut -c1-2`z
-  set jname = $jobn.\${itime1}
-  set lname = $jobn.log.\${itime1}.o%j.txt
-  if ( `uname -s` == "OSF1" ) then
+#  set itime1 = \${rsdate[1]}_`echo \$rsdate[2] | cut -c1-2`z
+#  set jname = $jobn.\${itime1}
+#  set lname = $jobn.log.\${itime1}.o%j.txt
+#  if ( `uname -s` == "OSF1" ) then
 #     bsub -w ended(\${PBS_JOBID}) -J \$jname < \$FVHOME/run/$jobn.j
-      bsub                         -J \$jname < \$FVHOME/run/$jobn.j
-  else
-      if ( "\$HYBRIDGSI" != "/dev/null" && (! -e \$FVHOME/run/atmens_replay.acq) ) then
-         if (-e \$FVHOME/run/\${EXPID}_scheduler.j ) then
-            touch \$FVHOME/.DONE_MEM001_ddas.\$yyyymmddhh
-         else
-            qsub -W depend=afterany:\${PBS_JOBID} \$FVHOME/run/atm_ens.j
-         endif
-      else
-         qsub -W depend=afterany:\${PBS_JOBID} -N \$jname -o \$lname \$FVHOME/run/$jobn.j
-      endif
-  endif
+#      bsub                         -J \$jname < \$FVHOME/run/$jobn.j
+#  else
+#      if ( "\$HYBRIDGSI" != "/dev/null" && (! -e \$FVHOME/run/atmens_replay.acq) ) then
+#         if (-e \$FVHOME/run/\${EXPID}_scheduler.j ) then
+#            touch \$FVHOME/.DONE_MEM001_ddas.\$yyyymmddhh
+#         else
+#            qsub -W depend=afterany:\${PBS_JOBID} \$FVHOME/run/atm_ens.j
+#         endif
+#      else
+#         qsub -W depend=afterany:\${PBS_JOBID} -N \$jname -o \$lname \$FVHOME/run/$jobn.j
+#      endif
+#  endif
 
 # Rename output log
 # -----------------
-  set lname = \$FVHOME/run/$jobn.log.\${itime0}.txt
-  qalter -o \$lname \$PBS_JOBID
+#  set lname = \$FVHOME/run/$jobn.log.\${itime0}.txt
+#  qalter -o \$lname \$PBS_JOBID
 
 # All done
 # --------
@@ -8190,7 +8192,7 @@ print  SCRIPT <<"EOF";
 #SBATCH --job-name=fcst
 #SBATCH --output=fcst.log.o%j.txt
 #SBATCH --ntasks=$ncpus
-#SBATCH --ntasks-per-node=24
+#SBATCH --ntasks-per-node=28
 #SBATCH --constraint=hasw
 #SBATCH --time=${fcswallclk}:00
 EOF
@@ -8408,7 +8410,8 @@ print  SCRIPT <<"EOF";
   setenv N_MPI                        \$NCPUS    # number of MPI processes
   setenv NUMBER_MLP_PROCESSES         \${N_MPI} # still used by GCM
   setenv NUMBER_CPUS_PER_MLP_PROCESS  \${N_SMP} # still used by GCM
-
+ 
+  setenv BERROR \$FVHOME/run/Berror
 
   set fcst_opts = ( $blendg5 $grstage )
 

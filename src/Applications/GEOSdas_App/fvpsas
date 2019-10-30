@@ -245,12 +245,6 @@
         wait # while copies are being done in the background
                                                        zeit_co.x CopyGCMRS
 
-#       Link to GEOS-5 GCM boundary condition files
-#       -------------------------------------------
-                                                       zeit_ci.x lnbcs 
-        lnbcs $GcmBegDate || exit 95 
-                                                       zeit_co.x lnbcs 
-
 #       Determine time of trajectory output in forecast mode
 #       ----------------------------------------------------
         Call DetermineTrjTimes_ ( TrjBegEpoch, TrjEndEpoch )
@@ -333,7 +327,6 @@
                                                        zeit_ci.x PreAnaQC
        Call PreAnalysisQC_()
                                                        zeit_co.x PreAnaQC
-
   endif
 
   echo ""
@@ -357,7 +350,7 @@
      Call InitAerosolAnalysis_()
 
   endif
-
+  
 # Run system in split executable mode
 # -----------------------------------
   if ( $SPLITEXE ) then
@@ -484,22 +477,28 @@
 
 #        Run the model
 #        -------------
+	 
                                                        zeit_ci.x RunGcm
          Call SplitExecGcmRun_( 1 )
                                                        zeit_co.x RunGcm
 
+
 #        Save desired restarts for future forecasts
 #        ------------------------------------------
+	if (! $MODELE_GCM) then					       
                                                        zeit_ci.x SaveRstForFcst
-         Call SaveRstForFcst_()
+	    Call SaveRstForFcst_()
                                                        zeit_co.x SaveRstForFcst
-
+	endif					       
+						       						       
 #        Rename initial condition (relevant restarts) for next segment
 #        -------------------------------------------------------------
+	if (! $MODELE_GCM) then	
                                                        zeit_ci.x RenameRstCheckPoint
-         Call RenameRstCheckPoint_( 1 )
+	    Call RenameRstCheckPoint_( 1 )
                                                        zeit_co.x RenameRstCheckPoint
-
+         endif
+	 						       
 #        Run Land analysis
 #        -----------------
          if ( $LDAS_ANA ) then         
@@ -510,21 +509,25 @@
 
 #        Run the vortex tracker
 #        ----------------------
+	 if (! $MODELE_GCM) then
                                                        zeit_ci.x VortexTrack
-         Call SplitExecVortexTrackerRun_()
+	    Call SplitExecVortexTrackerRun_()
                                                        zeit_co.x VortexTrack
+         endif						      
 
 #        Couple Model to Analysis
 #        ------------------------
                                                        zeit_ci.x GcmToAna
          Call CoupleGcmToAna_( $ana_nymde, $ana_nhmse, 0 )
-                                                       zeit_co.x GcmToAna
+                                                       zeit_co.x GcmToAna						       						       
 
 #        Tag files coming out of forecasts with assimilation run
 #        -------------------------------------------------------
+	 if (! $MODELE_GCM) then				       
                                                        zeit_ci.x TagAndCopy
-         Call TagAndCopyStraightForecastOutput_( 1 )
+	    Call TagAndCopyStraightForecastOutput_( 1 )
                                                        zeit_co.x TagAndCopy
+         endif						      
 
          Call SignalEndOfDasCycle_( $nymdb, $nhmsb )
 
@@ -537,9 +540,12 @@
 
 #     Post processing
 #     ---------------
+      if (! $MODELE_GCM) then
                                                        zeit_ci.x SplitExecPost
-      Call SplitExecPostProcessing_()
+	Call SplitExecPostProcessing_()
                                                        zeit_co.x SplitExecPost
+      endif
+      					       
 
 # Single executable 
 # -----------------
@@ -563,14 +569,14 @@
 #   -------------------------------------------------------------------
 #   PART  IIb - Run Singular Vectors or Adjoint Sensitivity Calculation
 #   -------------------------------------------------------------------
-
- Call Stage4AdjointTools_()
- if ( $FORECAST ) then
+    if (! $MODELE_GCM) then
+	Call Stage4AdjointTools_()
+	if ( $FORECAST ) then
                                                        zeit_ci.x AdjointRun
-    Call AdjointToolsRun_()
+	    Call AdjointToolsRun_()
                                                        zeit_co.x AdjointRun
- endif # < forecast >
-
+	endif # < forecast >
+    endif
 #
 #                  ---------------------------------
 #                   PART III - Final Post-processing
@@ -591,6 +597,7 @@
 
   endif
 
+  
 # If G5/NCEP initialization run
 # ------------------------------
   if ( $FORECAST ) then
@@ -602,15 +609,11 @@
 # Tag and copy forecast related files, making extra copies for
 #  staging area, if necessary
 # ------------------------------------------------------------
+  if (! $MODELE_GCM) then
                                                        zeit_ci.x TagAndStage
   Call TagAndCopyForecastOutput_()
                                                        zeit_co.x TagAndStage
-
-# Singular vector/adjoint sensitivity post processing
-# ---------------------------------------------------
-                                                       zeit_ci.x AdjointPost
-  Call AdjointToolsPostProcessing_()
-                                                       zeit_co.x AdjointPost
+  endif					       
 
 # Tag various restarts and log files, making extra copies
 #  of restarts for recycling
@@ -618,16 +621,16 @@
                                                        zeit_ci.x TagAndRecycle
   Call FinalTaggingAndRecycling_()
                                                        zeit_co.x TagAndRecycle
-
+						       
 # Rename GAAS.BOOTSTRAP file, if it exists
 #-----------------------------------------
 if ( -e $FVHOME/run/gaas/GAAS.BOOTSTRAP ) then
      mv $FVHOME/run/gaas/GAAS.BOOTSTRAP{,_}
-endif
+endif						       
 
 # Display profiler results
 # ------------------------
-  zeit_pr.x
+#  zeit_pr.x
 
 #
 #                  ------------------------------

@@ -11,21 +11,20 @@ PRINTSPEC: 0  # (0: OFF, 1: IMPORT & EXPORT, 2: IMPORT, 3: EXPORT)
 # Model Resolution and Timestep Parameters
 # 4x4 is usually enough for any resolution
 # ----------------------------------------
-NX: @NX
-NY: @NY
+NX: 4
+NY: 4
 
 #TEST_CASE: 0
 #TEST_CASE: 1  # convert cubed back to latlon
 #TEST_CASE: 2  # test ad l2c (not avail yet)
 #TEST_CASE: 3  # test ad c2l
 
-DYCORE: @DYCORE
-AGCM.GRIDNAME: @AGCM_GRIDNAME
+DYCORE: NONE
+AGCM_GRIDNAME: ModelE-144x90
 
-AGCM.IM_WORLD: @AGCM_IM
-AGCM.JM_WORLD: @AGCM_JM
-AGCM.LM: @AGCM_LM
-AGCM.GRID_TYPE: Cubed-Sphere
+AGCM_IM: 144
+AGCM_JM: 90
+AGCM_LM: 40
 
 IAU_DATE: >>>ANADATE<<<
 IAU_TIME: >>>ANATIME<<<
@@ -39,14 +38,14 @@ AGCM_INTERNAL_CHECKPOINT_TYPE:          binary
 
 #WRITE_AGCM_INTERNAL_FILE: agcm_interal_rst
 
-ANALYZE_TS: 1
+ANALYZE_TS: 0
 REPLAY_BKG:  >>>BKGFNAME<<<
 REPLAY_FILE: >>>ANAFNAME<<<
 REPLAY_DAMPBEG: 0
 REPLAY_DAMPEND: 0
 REPLAY_OFFLINE: 1
 REPLAY_REMAP: YES
-REPLAY_WINDFIX: NO
+REPLAY_WINDFIX: YES
 # Following allows zero-out of q-tendency (careful)
 #NO_DQVDT: 1
 

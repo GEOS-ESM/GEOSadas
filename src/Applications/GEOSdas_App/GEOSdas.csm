@@ -161,6 +161,8 @@
   if ( !($?VTXRELOC ) )           setenv VTXRELOC      1
   if ( !($?WCONSTRAINT) )         setenv WCONSTRAINT   0
 
+  if ( !($?MODELE_GCM) )          setenv MODELE_GCM    0
+
   if ( !($?doPLOTS) )             setenv doPLOTS       0
   if ( !($?doFSENS) ) then
       if ( -e stage4fsens.arc ) then
@@ -294,7 +296,7 @@
   else
        setenv FVHOME  $1
        setenv FVWORK  $2
-       setenv EXPID   `basename $FVHOME`
+#       setenv EXPID   `basename $FVHOME`
        if ( !($?ANAID) )  setenv ANAID $EXPID 
   endif
 
@@ -524,6 +526,12 @@ exit 1
   /bin/cp $FVHOME/run/*.tmpl          .         # any templates
   /bin/cp $FVHOME/run/prepobs*        .         # all parameter files
   /bin/cp $FVHOME/run/gmao_acft_bias.parm .
+
+  /bin/cp $FVHOME/modele/I           .
+  /bin/cp $FVHOME/modele/runtime_opts           .
+  /bin/cp $FVHOME/modele/Model5E_ln           .
+  /bin/cp $FVHOME/modele/Model5E_uln           .
+  
   if ( -d $FVHOME/run/fsens ) then
       /bin/cp $FVHOME/run/fsens/*.tmpl    .	
       /bin/cp $FVHOME/run/fsens/*.rc      .	
@@ -662,25 +670,34 @@ exit 1
 # --------------------------------
   if ( $?ECHO___ ) set echo
 
-  foreach rs ( d $grs_list )
-     if ( "$rs" == "d" ) then
-        set rsfile = $FVHOME/recycle/$EXPID.rst.lcv.$itime.bin
-        /bin/cp $rsfile ./d_rst
-        set mydate = (`rst_date ./d_rst`)
-     else
-        set rsbase = $FVHOME/recycle/$EXPID.${rs}_rst.$itime
-        set rsfile = $rsbase.nc4
-        if (! -e $rsfile) then
-            set rsfile = $rsbase.bin
-            if (! -e $rsfile) then
-                if ("$grs_boot" =~ *$rs*) continue
-            endif
-        endif
-        /bin/cp $rsfile ./${rs}_rst & 
-     endif
-  end
+
+  /bin/cp $FVHOME/recycle/fort.*.nc .
+
+  set rsfile = $FVHOME/recycle/$EXPID.rst.lcv.$itime.bin
+  /bin/cp $rsfile ./d_rst
+  set mydate = (`rst_date ./d_rst`)
 
   set GcmBegDate = $mydate[1]
+
+  # foreach rs ( d $grs_list )
+  #    if ( "$rs" == "d" ) then
+  #       set rsfile = $FVHOME/recycle/$EXPID.rst.lcv.$itime.bin
+  #       /bin/cp $rsfile ./d_rst
+  #       set mydate = (`rst_date ./d_rst`)
+  #    else
+  #       set rsbase = $FVHOME/recycle/$EXPID.${rs}_rst.$itime
+  #       set rsfile = $rsbase.nc4
+  #       if (! -e $rsfile) then
+  #           set rsfile = $rsbase.bin
+  #           if (! -e $rsfile) then
+  #               if ("$grs_boot" =~ *$rs*) continue
+  #           endif
+  #       endif
+  #       /bin/cp $rsfile ./${rs}_rst & 
+  #    endif
+  # end
+
+  # set GcmBegDate = $mydate[1]
                               # Last line of CopyGcmRestarts4Forecast_
 \end
 
@@ -698,16 +715,16 @@ exit 1
 
 # Make sure restarts are present
 # ------------------------------
-  foreach rs ( d $grs_list )
-     set rsfile = ${rs}_rst
-     if (! -e $rsfile ) then
-        echo $myname": missing $rs"
-        if ("$grs_boot" =~ *$rs*) then
-            if ($rs != "saltwater_internal_rst") continue
-        endif
-        if ($rs !~ agcm_* ) exit 1         # IAU file not a restart
-     endif
-  end
+  # foreach rs ( d $grs_list )
+  #    set rsfile = ${rs}_rst
+  #    if (! -e $rsfile ) then
+  #       echo $myname": missing $rs"
+  #       if ("$grs_boot" =~ *$rs*) then
+  #           if ($rs != "saltwater_internal_rst") continue
+  #       endif
+  #       if ($rs !~ agcm_* ) exit 1         # IAU file not a restart
+  #    endif
+  # end
 
                                   # Last line of CopyGcmRestarts4Forecast_
 \end
@@ -2605,6 +2622,13 @@ exit 1
   fname2 set path = \( $path \)
   fname2 cd \$FVWORK
 
+  if ( $?obsclass ) then
+     fname2 acquire_obsys -v $acqflags1 -ssh  \\
+     fname2 "      "$bnymd $bnhms $onhms $nstep $obsclass
+     fname2 @ acqstatus = \$acqstatus + \$status
+     fname2 @ acqcnt ++
+  endif
+
   if ( $?req_obsclass ) then
      fname2 acquire_obsys -v $acqflags -ssh  \\
      fname2 "   "$bnymd $bnhms $onhms $nstep ${req_obsclass}
@@ -2627,13 +2651,6 @@ exit 1
           fname2 setup_gaas_obs.pl \$FVWORK -v -avhrr -modis
       endif
   endif
-  if ( $?obsclass ) then
-     fname2 acquire_obsys -v $acqflags1 -ssh  \\
-     fname2 "      "$bnymd $bnhms $onhms $nstep $obsclass
-     fname2 @ acqstatus = \$acqstatus + \$status
-     fname2 @ acqcnt ++
-  endif
-
   if ($obsflag == 1) then
      fname2 if \( ! \$acqcnt \|\| ! \$acqstatus \) then
      fname2 "    "/bin/rm -f \$FVWORK/acquire.FAILED
@@ -2683,14 +2700,12 @@ exit 1
 # Copy acquire rc file to run directory
        /bin/cp $acq  ${FVHOME}/run/obsys.acq.latest
 
-# Check for pre-qc in files from OBSCLASS
-       set aacq = "obsclass_pre-qc.rc"
-       extract_pre-qc.pl obsys.rc $aacq
+# Check if pre-qc file are present in acquire rc file
 
-   if ( `grep -c pre-qc $aacq` ) then
+   if ( `grep -c pre-qc $acq` ) then
 # Remove hard-wired times
-       grep pre-qc $aacq | grep -v ^\# | grep "%h2" | cut -d\> -f2 > pre-qc_acq 
-       grep pre-qc $aacq | grep -v ^\# | grep -v "%h2" | sed 's/\.t..z\./.t%h2z./' | cut -d\> -f2 >> pre-qc_acq 
+       grep pre-qc $acq | grep -v ^\# | grep "%h2" | cut -d\> -f2 > pre-qc_acq 
+       grep pre-qc $acq | grep -v ^\# | grep -v "%h2" | sed 's/\.t..z\./.t%h2z./' | cut -d\> -f2 >> pre-qc_acq 
 
 # Remove duplicate entries
        cat pre-qc_acq | sort | uniq > pre-qc.acq
@@ -3244,6 +3259,11 @@ endif
 
          if ( $DO4DVAR && $Final_ ) exit 0
 
+
+         @ adtfwd = $varwindow_sec
+         set beg_ana = ( $gcm_nymd0 $gcm_nhms0 )
+         set end_ana = ( `tick $beg_ana[1] $beg_ana[2] $adtfwd` )
+
 #        Checkpoint CoupleAnaToGcm: skip when already completed
          set ddz = $beg_ana[1]
          set hhz = `echo $beg_ana[2] | cut -c1-2`
@@ -3255,7 +3275,7 @@ endif
 
 #          Link to GEOS-5 GCM boundary condition files
 #          -------------------------------------------
-           lnbcs $nymdb || exit 95 
+#           lnbcs $nymdb || exit 95 
 
 
 #          GEOS-5 GCM, need to convert ana "eta" files into rst (and overwrite existing rsts for fvcore and moist)
@@ -3936,7 +3956,9 @@ endif
             if ( $use_shmem ) RmShmKeys_sshmpi.csh
             /bin/rm -f ./EGRESS
                                    zeit_ci.x gcm
-            $dryrun $run_opt_begin |& tee -a fvpsas.log
+	    ./Model5E_ln		   
+            $dryrun $run_opt_begin > Model5E.prt
+	    ./Model5E_uln
             echo "GCM status = $status"
                                    zeit_co.x gcm
             if ( $use_shmem ) RmShmKeys_sshmpi.csh
@@ -4905,7 +4927,7 @@ endif
        # number of mpi processes should equal number of args to cnv2prs.pl
        #------------------------------------------------------------------
        #prund.pl -H $HOSTNAME -d etaana etabkg etaasm sfc diag &
-       #esma_mpirun -np 5 $FVROOT/bin/prund.pl -H $HOSTNAME env NCPUS=$NCPUS FVROOT=$FVROOT FVHOME=$FVHOME $FVROOT/bin/cnv2prs.pl -%s
+       #esma_mpirun -inherit_limits -np 5 $FVROOT/bin/prund.pl -H $HOSTNAME env NCPUS=$NCPUS FVROOT=$FVROOT FVHOME=$FVHOME $FVROOT/bin/cnv2prs.pl -%s
        cnv2prs.pl -etaana -etabkg -etaasm -sfc -diag
 
     else if (`uname -n` =~ r[0-9]*i[0-9]*n[0-9]*) then # pleiades
@@ -5518,6 +5540,7 @@ endif
 	set rtags = ${nymd1}_${hour1}z-${nymd2}_${hour2}z
         mkdir -p       $FVHOME/recycle/hold
         setenv RSTHOLD $FVHOME/recycle/hold
+	/bin/cp fort.*.nc $RSTHOLD/ &
         foreach rs ( $grs_list )
             if ( $rs == "agcm_import") continue
             if ( -e ${rs}_rst ) /bin/mv -f ${rs}_rst  $EXPID.${rs}_rst.$rtag.$RSTSUFFIX 
@@ -5632,13 +5655,13 @@ endif
                /bin/cp    $cbkg_lst[$n]       $RSTHOLD/$cbkgetarst_lst[$n]  &
            endif
 
-           if ( -e $abkgetarst_lst[$n] ) then
-               /bin/cp    $abkgetarst_lst[$n]          $abkgetarst_lst[$n]  &
-               /bin/cp    $abkgetarst_lst[$n] $RSTHOLD/$abkgetarst_lst[$n]  &
-           else
-               /bin/cp    $abkg_lst[$n]                $abkgetarst_lst[$n]  &
-               /bin/cp    $abkg_lst[$n]       $RSTHOLD/$abkgetarst_lst[$n]  &
-           endif
+           # if ( -e $abkgetarst_lst[$n] ) then
+           #     /bin/cp    $abkgetarst_lst[$n]          $abkgetarst_lst[$n]  &
+           #     /bin/cp    $abkgetarst_lst[$n] $RSTHOLD/$abkgetarst_lst[$n]  &
+           # else
+           #     /bin/cp    $abkg_lst[$n]                $abkgetarst_lst[$n]  &
+           #     /bin/cp    $abkg_lst[$n]       $RSTHOLD/$abkgetarst_lst[$n]  &
+           # endif
          @ n++
         end
         wait

@@ -20,6 +20,7 @@ if(GIT_FOUND)
       execute_process(
          COMMAND ${GIT_EXECUTABLE} merge-base --is-ancestor ${Project_WC_LATEST_TAG} ${Project_WC_REVISION_HASH}
          RESULT_VARIABLE is_latest_tag_an_ancestor
+	 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
          )
       if (is_latest_tag_an_ancestor EQUAL 0)
          #message("Tag ${Project_WC_LATEST_TAG} is an ancestor of ${Project_WC_REVISION_HASH}")
