@@ -75,6 +75,7 @@ C 2017-05-16  M. SIENKIEWICZ CALL MAXOUT TO INCREASE MAX RECORD SIZE
 C         TO AVOID LOSING SOUNDING RECORDS THAT SLIGHTLY EXCEED MAX
 C 2018-02-01  M. SIENKIEWICZ INCREASE MAXREP FROM 900K TO 1400K AND
 C         MAXLEV FROM 1100K TO 1800K - SLOW CREEP IN OBS COUNTS
+C 2019-11-06  M. SIENKIEWICZ - USE GETBMISS TO GET BUFR MISSING VALUE
 C
 C USAGE:
 C   INPUT FILES:
@@ -123,7 +124,7 @@ C       W3NCO    - W3TAGB   W3TAGE   ERREXIT
 C       BUFRLIB  - DATEBF   CLOSBF   UFBCPY   OPENMB   IREADMM
 C                  OPENBF   UFBQCD   UFBINT   WRITSB   UFBCNT
 C                  CLOSMG   COPYMG   ICOPYSB  UFBMEM   IREADSB
-C                  READMM
+C                  READMM   GETBMISS
 C
 C   EXIT STATES:
 C     COND =   0 - SUCCESSFUL RUN
@@ -1739,6 +1740,7 @@ C ABSTRACT: REWRITES THE PREPBUFR FILE WITH UPDATED QUALITY MARKS.
 C
 C PROGRAM HISTORY LOG:
 C 1990-11-06  J. WOOLLEN - ORIGINAL AUTHOR
+C 2019-11-06  M. SIENKIEWICZ - CHANGE 'VMAX' TO 'BMISS'
 C
 C USAGE:    CALL PREPQM(LUBIN,LUBOT)
 C   INPUT ARGUMENT LIST:
@@ -1769,6 +1771,8 @@ C$$$
       PARAMETER (MAXREP=1400000)
       PARAMETER (MAXLEV=1800000)
 
+      REAL(8) BMISS
+
       COMMON /OIQCDATA/   FLV (MAXREP     ) , FLT (MAXREP     ) ,
      .FLN (MAXREP     ) , FTM (MAXREP     ) , FKX (MAXREP     ) ,
      .FNL (MAXREP     ) , FMS (MAXREP     ) , FMW (MAXREP,2   ) ,
@@ -1785,6 +1789,7 @@ C$$$
      .                OBS(8,255),QMS(6,255),PCS(6,255),RCS(6,255),
      .                OBE(8,255),QME(6,255),OES(6,255),FES(6,255),
      .                FCS(7,255)
+      COMMON /BUFRLIB_MISSING/ BMISS
  
       CHARACTER*30 OSTR,QSTR,PSTR,RSTR
       CHARACTER*8  SUBSET
@@ -1797,7 +1802,7 @@ C$$$
       DATA PSTR /'PPC TPC WPC NUL QPC'/
       DATA RSTR /'PRC TRC WRC NUL QRC'/
  
-      DATA VMAX /10E10/, MMAX /1000000000/
+      DATA MMAX /1000000000/
  
 C-----------------------------------------------------------------------
 C-----------------------------------------------------------------------
@@ -1914,10 +1919,10 @@ C  --------------------------------------
       CALL OPENMB(LUBOT,SUBSET,IDATE)
       CALL UFBCNT(LUBIN,IREC,IFLD)
       CALL UFBCPY(LUBIN,LUBOT)
-      OBE =  VMAX
-      QME =  VMAX
-      PCS =  VMAX
-      RCS =  VMAX
+      OBE =  BMISS
+      QME =  BMISS
+      PCS =  BMISS
+      RCS =  BMISS
 50    CONTINUE
  
 C  ADD AN EVENT IF THE OIQC QM <> DATA QM
@@ -3355,6 +3360,7 @@ C PROGRAM HISTORY LOG:
 C 1986-03-21  G. DIMEGO  - ORIGINAL AUTHOR
 C 1988-11-24  D. DEAVEN  - CODED FOR CYBER 205
 C 1992-07-29  J. WOOLLEN - UPDATED VERSION FOR OIQC
+c 2019-11-06  M. SIENKIEWICZ - ADD BUFRLIB MISSING VALUE
 C
 C USAGE:    CALL SETCON
 C   INPUT FILES:
@@ -3370,12 +3376,15 @@ C
 C$$$
       SUBROUTINE SETCON
 
+      REAL(8) BMISS,GETBMISS
+      
       COMMON /CORP  / CHLP(1500),CVC,FFLAT(91),IFA(10,10)
       COMMON /FCRATS/ RATION(21),RATIOS(21),TROPUV(21)
       COMMON /OBERRS/ QIKE(21,300),PMAND(21),P50(21),CHL(21)
       COMMON /OBHEIR/ QUALOB(300),binqadj
       COMMON /OBPRT / NPT,IDSTA(10),PSTA(10),KXSTA(10)
       common /trigs/  llnd(-10:10),rcos(181),prln(0:1100)
+      COMMON /BUFRLIB_MISSING/ BMISS
 
 
       CHARACTER*8     IDSTA
@@ -3385,6 +3394,8 @@ C$$$
 C-------------------------------------------------------------------
 C-------------------------------------------------------------------
 
+      bmiss = getbmiss()
+      
 c  compute trig lookup tables for searching data
 c  ---------------------------------------------
 
@@ -4193,7 +4204,6 @@ C$$$
       DATA QMSTR /'PQM QQM TQM ZQM WQM                   '/
       DATA OESTR /'POE QOE TOE ZOE WOE                   '/
  
-      DATA VMAX   / 10E10     /
       DATA ROG    / 29.261    /
       DATA QX     / 300*.TRUE./
  
