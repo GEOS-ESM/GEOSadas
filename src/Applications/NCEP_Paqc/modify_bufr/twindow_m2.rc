@@ -13,6 +13,10 @@
 #
 # 2019-06-04 Meta - Add column in GOES-16 specification to indicate the
 #                   satIDs to copy to output (other satIDs will be dropped)
+#
+# 2020-01-02 Meta - Remove restriction on satID for GOES-16+, to allow both
+#                   GOES-16 and GOES-17 winds to be processed.  Add entry
+#                   for new VIIRS IR subset
 
 
 action_table::
@@ -27,11 +31,11 @@ NC005019       -1             0           0                         #   GOES SWI
 NC005024       -1             0           0                         #   India INSAT IR
 NC005025       -1             0           0                         #   India INSAT VIS
 NC005026       -1             0           0                         #   India INSAT WV
-NC005030        2           -60           0     NC005010     270    #   GOES-16+ IR LW(245)
-NC005031        2           -60           0     NC005011     270    #   GOES-16+ WV clear sky/deep layer(247)
-NC005032        2           -60           0     NC005012     270    #   GOES-16+ VIS(251)
-NC005034        2           -60           0     NC005011     270    #   GOES-16+ WV cloud-top(246)
-#C005039       -1             0           0     NC005019     270    #   GOES-16+ SWIR(240)
+NC005030        2           -60           0     NC005010            #   GOES-16+ IR LW(245)
+NC005031        2           -60           0     NC005011            #   GOES-16+ WV clear sky/deep layer(247)
+NC005032        2           -60           0     NC005012            #   GOES-16+ VIS(251)
+NC005034        2           -60           0     NC005011            #   GOES-16+ WV cloud-top(246)
+#C005039       -1             0           0     NC005019            #   GOES-16+ SWIR(240)
 NC005039       -1             0           0                         #   GOES-16+ SWIR(240)
 NC005044        0             0           0                         #   JMA IR
 NC005045        0             0           0                         #   JMA VIS
@@ -43,6 +47,7 @@ NC005070        0             0           0                         #   MODIS IR
 NC005071        0             0           0                         #   MODIS WV
 NC005080       -1             0           0                         #   AVHRR IR
 NC005090       -1             0           0                         #   VIIRS IR
+NC005091       -1             0           0                         #   new VIIRS IR
 
 ::
 
