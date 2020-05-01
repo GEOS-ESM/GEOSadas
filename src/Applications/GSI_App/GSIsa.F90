@@ -14,10 +14,7 @@
 ! !USES:
  
    use ESMF  
-   use MAPL_Mod
-   use MAPL_CFIOMod
-   use MAPL_ProfMod
-   use MAPL_ShmemMod, only: MAPL_GetNodeInfo
+   use MAPL
    use GEOSaana_GridCompMod, only: SetServices   
    use gsi_chemguess_mod, only : gsi_chemguess_get
    use m_StrTemplate      
@@ -386,7 +383,8 @@
        enddo
    endif
 
-   call ESMFL_Bundle2State (AnaBundleIn, impAANA)
+   call ESMFL_Bundle2State (AnaBundleIn, impAANA, rc=status)
+   VERIFY_(status)
 
    do ib=1,nbuns
        call ESMF_FieldBundleDestroy ( XBundles(ib), rc=STATUS )
@@ -405,7 +403,9 @@
         verbose=.true., noread=.true., TIME_IS_CYCLIC=.false.,&
         only_vars=trim(exp_vars))
    VERIFY_(status)
+   !call ESMFL_Bundle2State (AnaBundleOut, expAANA, rc=status)
    call ESMFL_Bundle2State (AnaBundleOut, expAANA)
+   !VERIFY_(status)
    call ESMF_FieldBundleDestroy ( AnaBundleOut, rc=STATUS )
    VERIFY_(STATUS)
 

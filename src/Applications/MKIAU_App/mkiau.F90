@@ -34,8 +34,8 @@
    Program mkIAU
 
    use ESMF
-   use MAPL_Mod
-   use MAPL_CFIOMod
+   use MAPL
+   !use MAPL_CFIOMod
    use m_set_eta, only: set_eta
    use m_ioutil, only: luavail
    use m_StrTemplate, only: StrTemplate
@@ -43,11 +43,6 @@
    use m_zeit, only: zeit_allflush
    use GEOS_mkiauGridCompMod,   only: MKIAUSetServices  => SetServices
    use IAU_GridCompMod,         only:   IAUSetServices  => SetServices
-   use MAPL_AbstractRegridderMod
-   use MAPL_RegridderManagerMod
-   use MAPL_GridManagerMod
-   use MAPL_LatLonGridFactoryMod
-   use CubedSphereGridFactoryMod, only: CubedSphereGridFactory
    use LatLonToCubeRegridderMod
    use CubeToLatLonRegridderMod
    use CubeToCubeRegridderMod
