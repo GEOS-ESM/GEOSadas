@@ -814,6 +814,7 @@ sub defaults {
                      GCMPROG.rc.tmpl
                      HISTORY.rc.tmpl
                      OBS_GridComp.rc.tmpl
+                     GEOS_SurfaceGridComp.rc
                      saverst.rc );
 
   @chem_files = qw ( Aod-550nm_Registry.rc
