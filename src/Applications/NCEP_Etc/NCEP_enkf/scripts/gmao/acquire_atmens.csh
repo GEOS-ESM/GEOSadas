@@ -8,6 +8,8 @@
 #    Oct2011  Todling   Initial script
 #  09Apr2013  Todling   Update prologue
 #  06Apr2016  Todling   Allow to acquire stats tar ball
+#  24Feb2020  Todling   Adjust to allow replay from older ebkg tar balls
+#  23Jun2020  Todling   Redef meaning of ATMENSLOC
 ########################################################################
 
 if ( !($?ATMENS_VERBOSE) ) then
@@ -79,6 +81,13 @@ if ( $#argv < 4 ) then
 endif
 
 setenv FAILED 0
+if ( !($?ATMENS_BATCHSUB) ) then
+   if ( ($?BATCH_SUBCMD) ) then
+      setenv ATMENS_BATCHSUB $BATCH_SUBCMD
+   else
+      setenv FAILED 1
+   endif
+endif
 if ( !($?FVHOME)        ) setenv FAILED 1
 if ( !($?FVROOT)        ) setenv FAILED 1
 if ( !($?FVWORK)        ) setenv FAILED 1
@@ -87,7 +96,7 @@ if ( !($?TIMEINC)       ) setenv FAILED 1
 if ( !($?VAROFFSET)     ) setenv FAILED 1
 
 if ( !($?ENSACQ_WALLCLOCK)) setenv ENSACQ_WALLCLOCK 2:00:00
-if ( !($?ATMENSLOC)       ) setenv ATMENSLOC $FVWORK
+if ( !($?ATMENSLOC)       ) setenv ATMENSLOC $FVWORK/atmens
 
 if ( $FAILED ) then
   env
@@ -143,7 +152,11 @@ set yyyymmddhh = ${nymdb}${hhb}
        "Acquire existing AtmEns Failed"
 
        if ( -e acq_atmens.j ) then
-          qsub -W block=true acq_atmens.j
+          if ( $ATMENS_BATCHSUB == "sbatch" ) then
+             $ATMENS_BATCHSUB -W acq_atmens.j
+          else
+             $ATMENS_BATCHSUB -W block=true acq_atmens.j
+          endif
        else
           echo " ${MYNAME}: Failed to generate PBS jobs to acquire existing Atmos Ensemble. Aborting ... "
           touch $FVWORK/.FAILED
@@ -152,10 +165,10 @@ set yyyymmddhh = ${nymdb}${hhb}
 
 # unravel existing ensemble
 # -------------------------
-if ( -d $ATMENSLOC/atmens ) then
-   /bin/rm -r $ATMENSLOC/atmens
+if ( -d $ATMENSLOC ) then
+   /bin/rm -r $ATMENSLOC
 endif
-mkdir $ATMENSLOC/atmens
+mkdir $ATMENSLOC
 
 # check that tar ball was indeed retrieved
 # ----------------------------------------
@@ -183,13 +196,13 @@ foreach ball ( stat ebkg eprg ) # do not reorder the first two
       tar -xvf $expid.atmens_${ball}.${nymdb}_${hhb}z.tar
       set dummy = (`/bin/ls -1d *.atmens_${ball}.${nymdb}_${hhb}z`)
       set oldexpid = `echo $dummy[1] | cut -d. -f1`
-      if ( "$oldexpid" != "$expid" ) /bin/mv $oldexpid.atmens_${ball}.${nymdb}_${hhb}z $expid.atmens_${ball}.${nymdb}_${hhb}z
+      if ( "$oldexpid" != "$expid" ) /bin/mv -T $oldexpid.atmens_${ball}.${nymdb}_${hhb}z $expid.atmens_${ball}.${nymdb}_${hhb}z
       if ( $ball == "stat" || $ball == "ebkg" ) then
-         /bin/mv  $expid.atmens_${ball}.${nymdb}_${hhb}z/* $ATMENSLOC/atmens
+         /bin/mv  $expid.atmens_${ball}.${nymdb}_${hhb}z/* $ATMENSLOC
       else  # members already exist 
          cd $expid.atmens_${ball}.${nymdb}_${hhb}z
          foreach dir ( `/bin/ls -d mem*` ) 
-            /bin/mv $dir/* $ATMENSLOC/atmens/$dir/
+            /bin/mv $dir/* $ATMENSLOC/$dir/
          end
          cd - 
       endif
@@ -198,15 +211,15 @@ foreach ball ( stat ebkg eprg ) # do not reorder the first two
 end # <ball>
 
 # count number of members
-set members = `/bin/ls -d $ATMENSLOC/atmens/mem* | wc`
+set members = `/bin/ls -d $ATMENSLOC/mem* | wc`
 set nmem = $members[1]
 
 # Get positioned
-cd $ATMENSLOC/atmens
+cd $ATMENSLOC
 touch .no_archiving
 
 # set member count to pre-existing count when available
-if ( -d $ATMENSLOC/atmens ) then
+if ( -d $ATMENSLOC ) then
    set members = `/bin/ls -d mem* | wc`
    set pre_exist_nmem = $members[1]
 else
@@ -235,6 +248,17 @@ while ( $n < $pre_exist_nmem )
          echo "renamed member $fn to $expid.$suffix"
      endif
   end 
+  # make sure files have 4-digit time
+  set lstfn = (`/bin/ls *.bkg.eta.????????_??z.*`)
+  if ( $#lstfn > 0 ) then
+     foreach fn ( $lstfn )
+        set mypfx  = `echo $fn | cut -d. -f1-3`
+        set mysfx  = `echo $fn | cut -d. -f5-`
+        set mynymd = `echo $fn | cut -d. -f4 | cut -c1-8`
+        set myhh   = `echo $fn | cut -d. -f4 | cut -c10-11`
+        /bin/mv $fn $mypfx.${mynymd}_${myhh}00z.$mysfx
+     end
+  endif
   cd -
 
 end
@@ -251,6 +275,18 @@ if ( -d ensmean ) then
           echo "renamed member $fn to $expid.$suffix"
       endif
    end 
+   # make sure files have 4-digit time
+   set lstfn = (`/bin/ls *.bkg.eta.????????_??z.*`)
+   if ( $#lstfn > 0 ) then
+      foreach fn ( $lstfn )
+         set mypfx  = `echo $fn | cut -d. -f1-3`
+         set mysfx  = `echo $fn | cut -d. -f5-`
+         set mynymd = `echo $fn | cut -d. -f4 | cut -c1-8`
+         set myhh   = `echo $fn | cut -d. -f4 | cut -c10-11`
+         /bin/mv $fn $mypfx.${mynymd}_${myhh}00z.$mysfx
+      end
+   endif
+   cd -
 endif
 # all done
 exit(0)

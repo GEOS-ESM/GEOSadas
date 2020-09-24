@@ -10,6 +10,7 @@
 #  09Mar2013  Todling   Rename inflating perturbation file
 #  12Mar2014  Todling   - Remove optional env variables (after Amal findings)
 #                       - Modified interface accordingly
+#  21Feb2020  Todling   Allow for high freq bkg (up to 1mn)
 #------------------------------------------------------------------
 
 if ( !($?ATMENS_VERBOSE) ) then
@@ -32,7 +33,7 @@ if ( $#argv < 8 ) then
    echo " "
    echo " SYNOPSIS "
    echo " "
-   echo "  $MYNAME  fvroot expid member nymd hh ftype1 ftype2 "
+   echo "  $MYNAME  fvroot expid member nymd hhmn ftype1 ftype2 "
    echo "           BLEND ADDINF CENLOC INFLOC RCFILE"
    echo " " 
    echo " where" 
@@ -40,7 +41,7 @@ if ( $#argv < 8 ) then
    echo "   expid  -  usual experiment name, e.g., b541iau"
    echo "   member -  number of member to operate on"
    echo "   nymd   -  date of analysis, as in YYYYMMDD"
-   echo "   hh     -  time of analysis, as in HH"
+   echo "   hhmn   -  time of analysis, as in HHNM"
    echo "   ftype1 -  type of input field (i.e, ana.eta or inc.eta)"
    echo "   ftype2 -  type of central field (i.e, ana.eta)"
    echo "   BLEND  -  option to blend with central (-damp)"
@@ -95,7 +96,7 @@ set fvroot  = $1
 set expid   = $2
 set memtag  = $3
 set nymd    = $4
-set hh      = $5
+set hhmn    = $5
 set ftype1  = $6
 set ftype2  = $7
 set blend   = $8
@@ -103,6 +104,8 @@ set addinf_factor = $9
 set cenloc  = $10
 set infloc  = $11
 set rcfile  = $12
+
+set hh = `echo $hhmn | cut -c1-2`
 
 #source $fvroot/bin/g5_modules
 if ( ($?FVHOME) ) then
@@ -128,20 +131,20 @@ endif
  endif
  if ( "$ftype2" == "NONE" && "$cenloc" == "NONE" ) then
    dyn_recenter.x -g5 -rc $rcfile $blend $addinflation \
-                       $expid.${ftype1}.${nymd}_${hh}z.$NCSUFFIX \
+                       $expid.${ftype1}.${nymd}_${hhmn}z.$NCSUFFIX \
                        NONE \
                        NONE
  else
      if ( "$ftype2" == "NONE" ) then
         dyn_recenter.x -g5 -rc $rcfile $blend $addinflation \
-                        $expid.${ftype1}.${nymd}_${hh}z.$NCSUFFIX \
-                        $cenloc/$expid.${ftype1}.${nymd}_${hh}z.$NCSUFFIX \
-                        $cenloc/$expid.${ftype1}.${nymd}_${hh}z.$NCSUFFIX
+                        $expid.${ftype1}.${nymd}_${hhmn}z.$NCSUFFIX \
+                        $cenloc/$expid.${ftype1}.${nymd}_${hhmn}z.$NCSUFFIX \
+                        $cenloc/$expid.${ftype1}.${nymd}_${hhmn}z.$NCSUFFIX
      else
         dyn_recenter.x -g5 -rc $rcfile $blend $addinflation \
-                        $expid.${ftype1}.${nymd}_${hh}z.$NCSUFFIX \
-                        ../ensmean/$expid.${ftype2}.${nymd}_${hh}z.$NCSUFFIX \
-                        $cenloc/$expid.${ftype2}.${nymd}_${hh}z.$NCSUFFIX
+                        $expid.${ftype1}.${nymd}_${hhmn}z.$NCSUFFIX \
+                        ../ensmean/$expid.${ftype2}.${nymd}_${hhmn}z.$NCSUFFIX \
+                        $cenloc/$expid.${ftype2}.${nymd}_${hhmn}z.$NCSUFFIX
      endif
  endif
  if ( $status ) then

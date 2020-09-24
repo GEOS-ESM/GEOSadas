@@ -57,8 +57,7 @@ c
 c-------
 c 
 c
-      USE def_vitals; USE set_max_parms, only: maxstorm;
-      USE inparms; USE date_checks
+      USE def_vitals; USE set_max_parms; USE inparms; USE date_checks
       USE trig_vals
 c
       type (tcvcard) storm(maxstorm)

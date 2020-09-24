@@ -3,7 +3,6 @@
 
 #setenv REGRID_QOS advda
 #setenv ATMENS_IGNORE_CHKPNT 1
-#setenv ENSARCH_FIELDS "eana,ebkg,stat,ecbkg,eoi0,edia,ebaer,eaaer,eprg,eniana"
 setenv RSTEXT nc4
 
 setenv LOCAL_ACQUIRE 1
@@ -28,7 +27,7 @@ setenv ACFTBIAS @ACFTBIAS  # 0: no aircraft bias correction
 # archiving
 # ---------
 setenv ENSARCH_ALLBKG 1   # set this and ALL bkg files are saved in tar ball
-setenv ENSARCH_FIELDS "eana,ebkg,stat,ecbkg,eoi0,edia,ebaer,erst,eprg,eniana"
+setenv ENSARCH_FIELDS "eana,ebkg,ecbkg,edia,ebaer,erst,eprg"
 setenv ENSARCH_WALLCLOCK 2:00:00
 setenv ARCHLOC $FVARCH
 
@@ -38,8 +37,8 @@ setenv JOBMONITOR_MAXSLEEP_MIN 180
 setenv ATMENS_DEBUG  1
 setenv ATMENS_VERBOSE 1               # this can be put instead around each script call in atm_ens.j
 setenv ATMENS4ARCH $FVHOME            # location where dir with files to arch is held before arch
-setenv ATMENSLOC   $FVHOME/atmens     # location of recycled files for atmospheric ensemble
-setenv ATMENSETC   $FVHOME/run/atmens # location of RC files
+setenv ATMENSLOC   $FVHOME/atmose     # location of recycled files for atmospheric ensemble
+setenv ATMENSETC   $FVHOME/run/atmose # location of RC files
 #etenv TIMEINC 360 # analysis frequency in minutes (script not general enough for this to be anything)
 #etenv ASYNBKG 180 # background frequency in minutes (script not general enough for this to be anything)
 #etenv VAROFFSET 180   # abs value of time off from 1st synoptic hour of var window
@@ -52,26 +51,14 @@ setenv ENSPARALLEL 2           # 0 - does serial ensemble
                                # 1 - bias estimates from current hybrid cycle 
                                # 2 - bias estimates from previous hybrid cycle
 setenv ATMENS_DO4DIAU 0
-
-# atmens_recenter.csh
-# -------------------
-setenv AENSADDINFLOC addperts  # path relative to FVWORK
-setenv AENS_ADDINFLATION 1     # apply additive inflation to each analysis member
-setenv AENS_DONORECENTER 0     # do not recenter ensemble
-setenv ADDINF_FACTOR 0.35      # additive inflation coeff (seems small after mass-div fix)
-setenv ADDINF_FACTOR_SPPT 0.2  # additive inflation for when SPPT is used
-
-setenv RECENTER_WALLCLOCK 1:00:00
-setenv ENSRECENTER_NCPUS 1
-setenv RECENTER_QNAME compute
-setenv AENS_RECENTER_DSTJOB 4
+setenv ENSOBSVR -1             # bias correction files expected to be available for each member and control
 
 # ensemble GAAS and AERO EnKF
 # ---------------------------
 setenv MODIS_L2_HDF 1
 setenv NCPUS_AOD   8
 setenv MPIRUN_AOD  "$ATMENS_MPIRUN "
-setenv AENS_GAAS_OPT   1  # 1 members use central GAAS
+setenv AENS_GAAS_OPT   2  # 1 members use central GAAS
                           # 2 analyze each member with PSAS
                           # 3 do (2), add EnKF-based AOD analysis (off aod.or.concentrations)
                           # 4 EnKF-based AOD analysis (off aod.or.concentrations)

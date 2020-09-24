@@ -10,6 +10,7 @@
 #
 #  04Apr2013  Todling   Initial script
 #  12Jun2014  El Akkraoui  Bug fix for handling edge of database
+#  30Apr2020  Todling   Adjustment to fend against possibility of databased not having leap date
 #
 #------------------------------------------------------------------
 
@@ -31,7 +32,7 @@ if ( $#argv < 3 ) then
    echo " "
    echo " SYNOPSIS"
    echo " "
-   echo "  $MYNAME  expid nymd nhms "
+   echo "  $MYNAME  nymd nhms nmem "
    echo " "
    echo "  where"
    echo "    nymd   -  initial date of ensemble forecast, as in YYYYMMDD "
@@ -90,6 +91,7 @@ set path = ( . $FVROOT/bin $path )
 
 # +/- window days (usually 45-days)
 set season = `echorc.x -rc $ATMENSETC/nmcperts.rc nmc_perts_date_window`
+@ oneday_sec = 24 * 3600 # one day
 @ season_sec = $season * 24 * 3600 # forty-five days
 
 # check this is really active ...
@@ -143,8 +145,10 @@ if ( $VERBOSE ) then
    echo "pretend datebase begins: $lnymdhh"
    echo "present datebase   ends: $unymdhh"
 endif
+set lmmdd = `echo $lnymd | cut -c1-6`
+set ummdd = `echo $unymd | cut -c1-6`
 
-# Determine present month/date within datebase
+# Determine present month/date within database
 set byyyy_db = `echo $datemin | cut -c1-4`
 set eyyyy_db = `echo $datemax | cut -c1-4`
 
@@ -162,6 +166,29 @@ if (! $?new_nymdhh ) then
 endif
 set new_nymd = `echo $new_nymdhh | cut -c1-8`
 set new_nhms = `echo $new_nymdhh | cut -c9-10`0000
+# check for possible lack of leap date in database
+set leapmmdd = `echo $new_nymd | cut -c5-8`
+if ( $leapmmdd == "0229" ) then
+   set mydir     = `echorc.x -rc $ATMENSETC/nmcperts.rc nmc_perts_location`
+   set fname0229 = `echorc.x -rc $ATMENSETC/nmcperts.rc -template dummy $new_nymd $new_nhms nmc_perts_fnametmpl`
+   if ( ! -e $mydir/$fname0229 ) then
+      if ($VERBOSE) then
+         echo "data base missing: $mydir/$fname0229 ..."
+      endif
+      set lyyyy = `echo $lnymd | cut -c1-4`
+      # check if database covers leap year
+      if ( $lmmdd < "0227" ) then
+        # year of feb 29 is near beg of database
+      else
+        # year of feb 29 is near end of database
+        @ lyyyy = $lyyyy + 1
+      endif
+      set new_nymd = ${lyyyy}0228
+      if ( $VERBOSE ) then
+        echo "adjusted date due to missing leap date: $new_nymd"
+      endif
+   endif
+endif
 if ( $VERBOSE ) then
    echo "present date reset to similar date within datebase: $new_nymdhh " 
 endif

@@ -8,6 +8,7 @@
 #  05Nov2011  Todling   Initial script
 #  13Aug2012  Todling   Add cubed support (eventually the same
 #                       mkiau code should handle either case)
+#  21Feb2020  Todling   Allow for high freq bkg (up to 1mn)
 #------------------------------------------------------------------
 if ( !($?ATMENS_VERBOSE) ) then
     setenv ATMENS_VERBOSE 0
@@ -93,6 +94,7 @@ set nymd   = $3
 set nhms   = $4
 
 set hh = `echo $nhms | cut -c1-2`
+set hhmn = `echo $nhms | cut -c1-4`
 
 if ( -e $ATMENSETC/mkiau.rc.tmpl ) then # this means: running cubed
 
@@ -112,9 +114,9 @@ if ( -e $ATMENSETC/mkiau.rc.tmpl ) then # this means: running cubed
 
 else
 
-     $MPIRUN_ENSIAU -ana $expid.ana.eta.${nymd}_${hh}z.mem$memtag.$NCSUFFIX \
-                    -bkg $expid.bkg.eta.${nymd}_${hh}z.$NCSUFFIX -divr \
-                    -iau agcm_import_mem${memtag}_rst -nymd $nymd -nhms ${hh}0000
+     $MPIRUN_ENSIAU -ana $expid.ana.eta.${nymd}_${hhmn}z.mem$memtag.$NCSUFFIX \
+                    -bkg $expid.bkg.eta.${nymd}_${hhmn}z.$NCSUFFIX -divr \
+                    -iau agcm_import_mem${memtag}_rst -nymd $nymd -nhms ${hhmn}00
      if ( $status ) then
         echo " ${MYNAME}: iau increment generation failed for member $memtag "
         exit(1)

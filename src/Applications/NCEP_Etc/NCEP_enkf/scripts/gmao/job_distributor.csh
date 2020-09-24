@@ -6,9 +6,13 @@
 #                       to a corrected mpirun call that passes in nodes.
 #                       Requires new option passed in, -usrppn, for procs per node
 # 24Jun2016  Thompson - Due to fixes in mptfix.pl, no longer need to pass in -usrppn
+# 29May2020  Todling  - Tentative fix for SLURM
 #
 #
 
+setenv MYNAME "job_distributor.csh"
+
+setenv dryrun echo # use this when debugging
 setenv dryrun 
 
 setenv FAILED 0
@@ -47,39 +51,69 @@ endif
 set usrntask = $6
 echo "user_ntask = $usrntask"
 
+if ( "$7" != "-njobs" ) then
+   echo $0: missing njobs >&2;echo "$usage" >&2;exit 1
+endif
+set njobs = $8
+echo "njobs = $njobs"
 
-if ( ! -e $PBS_NODEFILE ) then
-  echo "Please execute the Poe script in a valid PBS session"
-  exit 3
+
+if ( $?SLURM_JOBID ) then
+
+  # Number of available nodes
+  set num_nodes = `sinfo -N -n "$SLURM_NODELIST" | grep -v NODELIST | cut -c1-8 | uniq | wc -l`
+
+  # Mimic old PBS_NODEFILE
+  setenv PBS_NODEFILE PBS_NODEFILE_${SLURM_JOBID} 
+  if(-e $PBS_NODEFILE) /bin/rm $PBS_NODEFILE
+  echo " usrntask $usrntask"
+  echo " njobs $njobs"
+  echo " num_nodes $num_nodes"
+  @ tasks_per_nodes = ($usrntask * $njobs) / $num_nodes
+  set tasklist = ()
+  @ nd = 0
+  while ($nd < $num_nodes)
+    set tasklist = ($tasklist,$tasks_per_nodes)
+    @ nd++
+  end
+  set tasklist = `echo $tasklist | cut -c2-`
+  arbitrary.pl $tasklist >> $PBS_NODEFILE
+else
+  @ ntasks = $usrntask
+  if ( ! -e $PBS_NODEFILE ) then
+    echo "Please execute the Poe script in a valid PBS session"
+    exit 3
+  endif
+  set LIST_NODES = nodeFile_${PBS_JOBID}
+  uniq ${PBS_NODEFILE} > $TMPDIR/${LIST_NODES}
+  # Number of available nodes
+  set num_nodes = `cat $TMPDIR/${LIST_NODES} | wc -l`
+  echo "num_nodes: " $num_nodes
 endif
 
-set LIST_NODES = nodeFile_${PBS_JOBID}
-uniq ${PBS_NODEFILE} > $TMPDIR/${LIST_NODES}
-
-# Number of available nodes
-set num_nodes = `cat $TMPDIR/${LIST_NODES} | wc -l`
-echo num_nodes $num_nodes
-
 set npes = `cat ${PBS_NODEFILE} | wc -l`
-@ num_jobs = $npes / $usrntask
-echo "will be running $num_jobs jobs!"
+ @ num_jobs = $npes / $usrntask
+echo "can run up to $num_jobs jobs!"
 
 # First boot the mpd ring
-mpdboot -n $num_nodes -r ssh -f $PBS_NODEFILE
+#mpdboot -n $num_nodes -r ssh -f $PBS_NODEFILE
 
 # Split user command file
 set uline = ()
 foreach line (`cat $usrcmd` )
   set uline = ( $line $uline ) 
 end
+set ncmds = $#uline
+echo "will be running $ncmds jobs!"
+
 # Loop until all jobs have been launched
 @ job_index = 1
 @ icnt = 0
 rm -f $filename.*
 foreach line (`cat ${PBS_NODEFILE} `)
       echo $line >> $filename.$job_index
-      if ( $icnt == $usrntask - 1 ) then
-        mptfix.pl $uline[$job_index] $filename.$job_index $usrntask
+      if ( $icnt == $usrntask - 1 && $job_index <= $ncmds ) then
+        mptfix.pl -debug $uline[$job_index] $filename.$job_index $usrntask
         $dryrun $uline[$job_index] &
         @ job_index = $job_index + 1
         @ icnt = 0
@@ -90,5 +124,5 @@ foreach line (`cat ${PBS_NODEFILE} `)
 wait
 
 echo "All tasks done!"
-mpdallexit 
+#mpdallexit 
 

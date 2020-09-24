@@ -1,10 +1,12 @@
 subroutine m_speclap(grid2,itype)
 
   use type_kinds, only: fp_kind
-  use variables,  only: nlat,nlon
+  use variables,  only: nlat,nlon,lgaus
   use specgrid,   only: enn1,nc,ncd2,factsml,factvml
+  use specgrid,   only: init_spec_grid,destroy_spec_grid
+  use specgrid,   only: init_spec_vars,destroy_spec_vars
   use specgrid,   only: sptez_s,load_grid,fill_ns
-  use specgrid,   only: imax,jmax
+  use specgrid,   only: jcap,imax,jmax
 
   implicit none
 
@@ -19,6 +21,8 @@ subroutine m_speclap(grid2,itype)
   allocate ( wrkspec(nc) )
   allocate ( grid(imax, jmax) )
 
+  call init_spec_vars(jcap)
+  call init_spec_grid(nlat,nlon,lgaus)
   call load_grid(grid2,nlat,nlon,grid)
   call sptez_s(wrkspec,grid,-1)
   if(itype==1)then
@@ -37,6 +41,8 @@ subroutine m_speclap(grid2,itype)
   call sptez_s(wrkspec,grid,1)
   call fill_ns(grid,nlat,nlon,grid2)
 
+  call destroy_spec_grid
+  call destroy_spec_vars
   deallocate ( wrkspec )
   deallocate ( grid    )
 

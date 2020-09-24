@@ -26,7 +26,6 @@ use FindBin;             # so we can find where this script resides
 use lib "$FindBin::Bin"; # make perl libraries available
 use File::Basename;      # for basename(), dirname()
 use Time::Local;         # time functions
-use Shell qw(cat rm);    # cat command
 use Round qw(round);
 use Run_parallel qw(parallel halt);
 use GMAO_utils qw(System);

@@ -13,6 +13,8 @@
 #  18Jun2014  Todling   Revisit FGAT (now works)
 #  21Aug2015  Todling   Allow obsvr-final to run independently of members setting 
 #  31Jul2018  Todling/Gu  Allow for ens own setting of anavinfo file
+#  21Feb2020  Todling   Allow for high freq bkg (up to 1mn)
+#  31Mar2020  Todling   Jobmonitor to protect against faulty batch-block
 #------------------------------------------------------------------
 
 if ( !($?ATMENS_VERBOSE) ) then
@@ -103,6 +105,7 @@ if ( $#argv < 4 ) then
 endif
  
 setenv FAILED 0
+if ( !($?ATMENS_BATCHSUB) ) setenv FAILED 1
 if ( !($?ATMENSETC)     ) setenv FAILED 1
 if ( !($?FVHOME)        ) setenv FAILED 1
 if ( !($?FVROOT)        ) setenv FAILED 1
@@ -141,10 +144,11 @@ set nymd     = $2
 set nhms     = $3
 set anadir   = $4
 set hha      = `echo $nhms | cut -c1-2`
-set yyyymmddhh = ${nymd}${hha}
+set hhmna    = `echo $nhms | cut -c1-4`
+set yyyymmddhhmn = ${nymd}${hhmna}
 
 setenv ENSWORK $FVWORK
-if ( -e $ENSWORK/.DONE_${MYNAME}.$yyyymmddhh ) then
+if ( -e $ENSWORK/.DONE_${MYNAME}.$yyyymmddhhmn ) then
    echo "${MYNAME}: all done"
    exit(0)
 endif
@@ -160,7 +164,7 @@ set do_obsvr = 0
 if((-e $ATMENSETC/obs1gsi_member.rc) && -e $ATMENSETC/GSI_GridComp_ensfinal.rc.tmpl ) set do_obsvr = 1
 if((-e $ATMENSETC/obs1gsi_final.rc)  && -e $ATMENSETC/GSI_GridComp_ensfinal.rc.tmpl ) set do_obsvr = 1
 if ( $do_obsvr == 0 ) then
-   touch $ENSWORK/.DONE_${MYNAME}.$yyyymmddhh
+   touch $ENSWORK/.DONE_${MYNAME}.$yyyymmddhhmn
    echo "${MYNAME}: nothing to do"
    exit(0)
 endif
@@ -169,12 +173,11 @@ endif
 @ varoffset_sc = $VAROFFSET * 60
 set beg_ana = `tick $nymd $nhms -$varoffset_sc`
 set end_ana = `tick $beg_ana[1] $beg_ana[2] $anafreq_sc`
-set hhb     = `echo $beg_ana[2] | cut -c1-2`
 
 # Run mean analysis
 # -----------------
 /bin/rm $ENSWORK/obs_ensfinal.log
-if (! -e $ENSWORK/.DONE_ENSFINAL_${MYNAME}.$yyyymmddhh ) then
+if (! -e $ENSWORK/.DONE_MEM001_ENSFINAL_${MYNAME}.$yyyymmddhhmn ) then
 
    # get positioned
    # --------------
@@ -187,7 +190,7 @@ if (! -e $ENSWORK/.DONE_ENSFINAL_${MYNAME}.$yyyymmddhh ) then
    # ----------------------------
    if ( $DOFGAT ) then
       if(-e myinc.eta.$NCSUFFIX) /bin/rm myinc.eta.$NCSUFFIX
-      dyndiff.x -g5 $expid.bkg.eta.${nymd}_${hha}z.$NCSUFFIX $expid.ana.eta.${nymd}_${hha}z.$NCSUFFIX \
+      dyndiff.x -g5 $expid.bkg.eta.${nymd}_${hhmna}z.$NCSUFFIX $expid.ana.eta.${nymd}_${hhmna}z.$NCSUFFIX \
                 -o myinc.eta.$NCSUFFIX
       if ($status) then
           echo "${MYNAME}: error running dyndiff, aborting ..."
@@ -199,23 +202,23 @@ if (! -e $ENSWORK/.DONE_ENSFINAL_${MYNAME}.$yyyymmddhh ) then
    # --------------------------------------------------------------------
    foreach fn ( `ls *.bkg.eta.*.$NCSUFFIX` )
       set this_nymd = `echo $fn | cut -d. -f4 | cut -c1-8`
-      set this_hh   = `echo $fn | cut -d. -f4 | cut -c10-11`
-      if ( ! -e $expid.ana.eta.${this_nymd}_${this_hh}z.$NCSUFFIX ) then
+      set this_hhmn = `echo $fn | cut -d. -f4 | cut -c10-13`
+      if ( ! -e $expid.ana.eta.${this_nymd}_${this_hhmn}z.$NCSUFFIX ) then
          if ( $DOFGAT ) then # when FGAT, it will update off-synoptic bkg w/ same inc as central inc
-            reset_time.x myinc.eta.$NCSUFFIX $this_nymd ${this_hh}0000 -9
+            reset_time.x myinc.eta.$NCSUFFIX $this_nymd ${this_hhmn}00 -9
             if ($status) then
                 echo "${MYNAME}: error running reset_time.x, aborting ..."
                 exit (1)
             endif
-            #dyn_recenter.x -g5 -noremap -o $expid.ana.eta.${this_nymd}_${this_hh}z.$NCSUFFIX myinc.eta.$NCSUFFIX NONE $fn
-            dynp.x -s $fn -p myinc.eta.$NCSUFFIX -a -1 -ainc -g5 -pureadd -realp -os $expid.ana.eta.${this_nymd}_${this_hh}z.$NCSUFFIX
+            #dyn_recenter.x -g5 -noremap -o $expid.ana.eta.${this_nymd}_${this_hhmn}z.$NCSUFFIX myinc.eta.$NCSUFFIX NONE $fn
+            dynp.x -s $fn -p myinc.eta.$NCSUFFIX -a -1 -ainc -g5 -pureadd -realp -os $expid.ana.eta.${this_nymd}_${this_hhmn}z.$NCSUFFIX
             if ( $status ) then
                echo "${MYNAME}: error calculating analysis, aborting ..."
                exit(1)
             endif
          else               # when not FGAT, will fake off-synoptic ana as being same as synoptic time ana
-            /bin/cp $expid.ana.eta.${nymd}_${hha}z.$NCSUFFIX $expid.ana.eta.${this_nymd}_${this_hh}z.$NCSUFFIX
-            reset_time.x $expid.ana.eta.${this_nymd}_${this_hh}z.$NCSUFFIX $this_nymd ${this_hh}0000 -9
+            /bin/cp $expid.ana.eta.${nymd}_${hhmna}z.$NCSUFFIX $expid.ana.eta.${this_nymd}_${this_hhmn}z.$NCSUFFIX
+            reset_time.x $expid.ana.eta.${this_nymd}_${this_hhmn}z.$NCSUFFIX $this_nymd ${this_hhmn}00 -9
          endif # DOFGAT
       endif
    end
@@ -272,6 +275,7 @@ if (! -e $ENSWORK/.DONE_ENSFINAL_${MYNAME}.$yyyymmddhh ) then
 #  ln -sf $ATMENSETC/obs1gsi_mean.rc      gsiparm.anl.tmpl
    ln -sf ../ensmean/obs_input.*          .
    ln -sf ../ensmean/satbias_in           .
+   ln -sf ../ensmean/aircftbias_in        .
    ln -sf ../ensmean/satbias_angle        .
    /bin/rm anavinfo
    ln -sf ../ensmean/anavinfo             .
@@ -324,14 +328,26 @@ if (! -e $ENSWORK/.DONE_ENSFINAL_${MYNAME}.$yyyymmddhh ) then
              "$MPIRUN_ENSANA |& tee -a $ENSWORK/obs_ensfinal.log" \
              $ENSWORK/ensfinal   \
              $MYNAME             \
-             $ENSWORK/.DONE_ENSFINAL_${MYNAME}.$yyyymmddhh \
+             $ENSWORK/.DONE_MEM001_ENSFINAL_${MYNAME}.$yyyymmddhhmn \
              "Observer Failed for Mean "
 
              if ( -e obs_ensfinal.j ) then
-                qsub -W block=true obs_ensfinal.j
+                if ( $ATMENS_BATCHSUB == "sbatch" ) then
+                   $ATMENS_BATCHSUB -W obs_ensfinal.j
+                else
+                   $ATMENS_BATCHSUB -W block=true obs_ensfinal.j
+                endif
              else
                 echo " ${MYNAME}: Observer Failed to generate PBS jobs for Mean, Aborting ... "
                 exit(1)
+             endif
+
+             # Monitor status of ongoing jobs (block job not always working)
+             # ------------------------------
+             jobmonitor.csh 1 ENSFINAL_${MYNAME}  $ENSWORK $yyyymmddhhmn
+             if ($status) then
+                 echo "${MYNAME}: cannot complete due to failed jobmonitor, aborting"
+                 exit(1)
              endif
 
    else
@@ -342,7 +358,7 @@ if (! -e $ENSWORK/.DONE_ENSFINAL_${MYNAME}.$yyyymmddhh ) then
            echo " ${MYNAME}: Mean Observer Failed, Aborting ... "
            exit(1)
         endif
-        touch $ENSWORK/.DONE_ENSFINAL_${MYNAME}.$yyyymmddhh
+        touch $ENSWORK/.DONE_MEM001_ENSFINAL_${MYNAME}.$yyyymmddhhmn
 
         # cat all pe files into diag files
         # --------------------------------
@@ -369,12 +385,12 @@ endif
 
 # Now perform some general checks:
 # -------------------------------
-if (! -e $ENSWORK/.DONE_ENSFINAL_${MYNAME}.$yyyymmddhh ) then
+if (! -e $ENSWORK/.DONE_MEM001_ENSFINAL_${MYNAME}.$yyyymmddhhmn ) then
    echo " ${MYNAME}: observer mean final not available, aborting ..."
    exit(1)
 endif
 
 # if made it here, then exit nicely
-touch $ENSWORK/.DONE_${MYNAME}.$yyyymmddhh
+touch $ENSWORK/.DONE_${MYNAME}.$yyyymmddhhmn
 echo " ${MYNAME}: Complete "
 exit(0)

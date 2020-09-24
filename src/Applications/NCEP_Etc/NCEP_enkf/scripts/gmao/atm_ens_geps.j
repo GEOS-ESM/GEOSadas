@@ -5,6 +5,9 @@
 #SBATCH --ntasks=96
 #SBATCH --ntasks-per-node=24
 #
+#SBATCH --job-name=atm_ens_ageps
+#SBATCH --output=atm_ens_ageps.log.o%j
+#SBATCH --time=6:00:00
 #PBS -N atm_ens_ageps
 #PBS -o atm_ens_ageps.log.o%j
 #_PBS -l select=1:ncpus=24
@@ -168,7 +171,6 @@
   setenv SPECRES    62    # should be able to revisit analyzer to avoid needing this
 
   setenv GAAS_ANA 1
-  setenv ACFTBIAS 0
 
 # Run-time mpi-related options
 # ----------------------------
@@ -199,6 +201,11 @@
 # ----------------------------------------------
   source $FVHOME/run/atmens/AtmEnsConfig.csh
 
+  if ( !($?ATMENS_BATCHSUB) ) then
+     echo "atm_ens_geps.j: missing  batch command"
+     exit(1)
+  endif
+
 # Costumize what to be save from offline forecasts
 # ------------------------------------------------
 # setenv ENSARCH_FIELDS "eprg,edia,fstat"
@@ -206,10 +213,10 @@
 
   setenv HYBRIDGSI     $FVWORK
   setenv STAGE4HYBGSI  $FVWORK
-  setenv ATMENSLOC     $FVWORK
+  setenv ATMENSLOC     $FVWORK/atmens
   setenv STAGEEFSENS   $FVHOME/asens
   setenv  DO_ATM_ENS    0
-  touch $ATMENSLOC/atmens/.no_archiving
+  touch $ATMENSLOC/.no_archiving
   if ( $?eanaonly ) then
      if ( -e $FVHOME/run/${EXPID}_scheduler.j ) then
         setenv  DO_ATM_ENS    0
@@ -286,6 +293,9 @@
   else
      if ( $?SLURM_JOBID ) then
          qalter -N ${JOBGEN_PFXNAME}_atm_ens_${JOBGEN_SFXNAME} $SLURM_JOBID
+     else
+         echo "no JOBID found, abort"
+         exit(1)
      endif
   endif
 
@@ -329,7 +339,11 @@
                 "Main job script Failed for Get for Ensemble Prediction System"
    
                 if ( -e get4ageps.j ) then
-                   qsub  -W block=true get4ageps.j
+                   if ( $ATMENS_BATCHSUB == "sbatch" ) then
+                      $ATMENS_BATCHSUB  -W get4ageps.j
+                   else
+                      $ATMENS_BATCHSUB  -W block=true get4ageps.j
+                   endif
                    touch .SUBMITTED
                 else
                    echo " $myname: Failed for Get for AGEPS, Aborting ... "
@@ -384,7 +398,7 @@
          endif
          zeit_co.x gcm_ens
       else
-         echo "cannot find $ATMENSLOC/atmens/ensmean/$EXPID.bkg.eta.${nymdb}_${hhb}z.$NCSUFFIX "
+         echo "cannot find $ATMENSLOC/ensmean/$EXPID.bkg.eta.${nymdb}_${hhb}z.$NCSUFFIX "
          echo "gcm_ensemble unable to run"
          exit(1)
       endif
@@ -475,7 +489,7 @@
       /bin/mv running.$lstcases[1] done.$lstcases[1]
       set lstcases = `/bin/ls -1 standalone_ageps.*`
       if (! $status ) then
-         qsub atm_ens_geps.j
+         $ATMENS_BATCHSUB atm_ens_geps.j
       endif
 
   endif

@@ -10,7 +10,9 @@
    ifact10=0,
    pseudo_q2=.true.,
    use_prepb_satwnd=>>>USE_PREPB_SATWND<<<,
+   ec_amv_qc=.false.,
    iguess=-1,
+   diag_version=30303,
    id_drifter=.true.,
    id_ship=.false.,
    tzr_qc=1,
@@ -18,7 +20,7 @@
    biascor=-0.10,bcoption=0,diurnalbc=1.0,
    crtm_coeffs_path="CRTM_Coeffs/",
    print_diag_pcg=.false.,
-   use_compress=.true.,nsig_ext=@NSIG_EXT,gpstop=60.,
+   use_compress=.true.,nsig_ext=@NSIG_EXT,gpstop=60.,lgpsbnd_revint=.true.,
    use_sp_eqspace=.true.,
    reduce_diag=.true.,
    luse_obsdiag=.true.,
@@ -65,8 +67,10 @@ OBS_INPUT::
 !  dfile          dtype       dplat       dsis                  dval    dthin  dsfcalc  obsclass
    prepbufr       ps          null        ps                    0.0     0      0        ncep_prep_bufr 
    prepbufr       t           null        t                     0.0     0      0        ncep_prep_bufr
+   prepbufr_profl t           null        t                     0.0     0      0        ncep_acftpfl_bufr
    prepbufr       q           null        q                     0.0     0      0        ncep_prep_bufr
    prepbufr       uv          null        uv                    0.0     0      0        ncep_prep_bufr
+   prepbufr_profl uv          null        uv                    0.0     0      0        ncep_acftpfl_bufr
    prepbufr       spd         null        spd                   0.0     0      0        ncep_prep_bufr
    radarbufr      rw          null        rw                    0.0     0      0        ncep_radar_bufr
    prepbufr       dw          null        dw                    0.0     0      0        ncep_prep_bufr
@@ -81,18 +85,20 @@ OBS_INPUT::
    sbuvbufr       sbuv2       n17         sbuv8_n17             0.0     0      0        ncep_osbuv_bufr
    sbuvbufr       sbuv2       n18         sbuv8_n18             0.0     0      0        ncep_osbuv_bufr
    omibufr        omi         aura        omi_aura              0.0     2      0        ncep_aura_omi_bufr
+!  ompsnmbufr     ompsnm      npp         ompsnm_npp            0.0     2      0        npp_ompsnm_bufr
+!  ompsnpbufr     ompsnp      npp         ompsnp_npp            0.0     0      0        npp_ompsnp_bufr
 !  NOomibufr      omi         aura        omi_aura              0.0     2      0        test
    hirs2bufr      hirs2       n14         hirs2_n14             0.0     1      0        ncep_1bhrs2_bufr
    hirs3bufr      hirs3       n16         hirs3_n16             0.0     1      0        ncep_1bhrs3_bufr
    hirs3bufr      hirs3       n17         hirs3_n17             0.0     1      0        ncep_1bhrs3_bufr
    hirs4bufr      hirs4       n18         hirs4_n18             0.0     1      0        ncep_1bhrs4_bufr
    hirs4bufr      hirs4       metop-a     hirs4_metop-a         0.0     1      0        ncep_1bhrs4_bufr
-   gsndrbufr      sndr        g11         sndr_g11              0.0     1      0        test
-   gsndrbufr      sndr        g12         sndr_g12              0.0     1      0        test
-   gimgrbufr      goes_img    g11         imgr_g11              0.0     1      0        test
-   gimgrbufr      goes_img    g12         imgr_g12              0.0     1      0        test
+!  gsndrbufr      sndr        g11         sndr_g11              0.0     1      0        test
+!  gsndrbufr      sndr        g12         sndr_g12              0.0     1      0        test
+!  gimgrbufr      goes_img    g11         imgr_g11              0.0     1      0        test
+!  gimgrbufr      goes_img    g12         imgr_g12              0.0     1      0        test
    airsbufr       airs        aqua        airs_aqua             0.0     3      0        disc_airs_bufr
-   msubufr        msu         n14         msu_n14               0.0     1      0        test
+!  msubufr        msu         n14         msu_n14               0.0     1      0        test
    amsuabufr      amsua       n15         amsua_n15             0.0     1      0        ncep_1bamua_bufr
    amsuabufr      amsua       n16         amsua_n16             0.0     1      0        ncep_1bamua_bufr
    amsuabufr      amsua       n17         amsua_n17             0.0     1      0        ncep_1bamua_bufr
@@ -105,9 +111,9 @@ OBS_INPUT::
    amsubbufr      amsub       n17         amsub_n17             0.0     1      0        ncep_1bamub_bufr
    mhsbufr        mhs         n18         mhs_n18               0.0     1      0        ncep_mhs_bufr
    mhsbufr        mhs         metop-a     mhs_metop-a           0.0     1      0        ncep_mhs_bufr
-   ssmitbufr      ssmi        f13         ssmi_f13              0.0     1      0        test
-   ssmitbufr      ssmi        f14         ssmi_f14              0.0     1      0        test
-   ssmitbufr      ssmi        f15         ssmi_f15              0.0     1      0        test
+!  ssmitbufr      ssmi        f13         ssmi_f13              0.0     1      0        test
+!  ssmitbufr      ssmi        f14         ssmi_f14              0.0     1      0        test
+!  ssmitbufr      ssmi        f15         ssmi_f15              0.0     1      0        test
    amsrebufr      amsre_low   aqua        amsre_aqua            0.0     1      0        ncep_amsre_bufr
    amsrebufr      amsre_mid   aqua        amsre_aqua            0.0     1      0        ncep_amsre_bufr
    amsrebufr      amsre_hig   aqua        amsre_aqua            0.0     1      0        ncep_amsre_bufr
@@ -131,13 +137,15 @@ OBS_INPUT::
    gsnd1bufr      sndrd3      g13         sndrD3_g13            0.0     1      0        ncep_goesfv_bufr
    gsnd1bufr      sndrd4      g13         sndrD4_g13            0.0     1      0        ncep_goesfv_bufr
    iasibufr       iasi        metop-a     iasi_metop-a          0.0     3      0        ncep_mtiasi_bufr
-   gomebufr       gome        metop-a     gome_metop-a          0.0     2      0        test
+!  gomebufr       gome        metop-a     gome_metop-a          0.0     2      0        test
 !  mlsoz          o3lev       aura        mls_aura_ozlv         0.0     0      0        test
-   mlsozbufr      o3lev       aura        o3lev_aura            0.0     0      0        test
+!  mlsozbufr      o3lev       aura        o3lev_aura            0.0     0      0        test
+!  ompslpuvnc     ompslpuv    npp         ompslpuv_npp          1.0     0      0        ompslpuv_nc
+!  ompslpvisnc    ompslpvis   npp         ompslpvis_npp         1.0     0      0        ompslpvis_nc
 !  mlsoztext      o3lev       aura        o3lev_aura            0.0     0      0        test
-   amsuabufr      amsua       n19         amsua_n19             0.0     1      0        test
+   amsuabufr      amsua       n19         amsua_n19             0.0     1      0        ncep_1bamua_bufr
    hirs4bufr      hirs4       n19         hirs4_n19             0.0     1      0        ncep_1bhrs4_bufr
-   mhsbufr        mhs         n19         mhs_n19               0.0     1      0        test
+   mhsbufr        mhs         n19         mhs_n19               0.0     1      0        ncep_mhs_bufr
    tcvitl         tcp         null        tcp                   0.0     0      0        ncep_tcvitals
    eosamsuabufr   amsua       aqua        amsua_aqua            0.0     1      0        disc_amsua_bufr
    sbuvbufr       sbuv2       n19         sbuv8_n19             0.0     0      0        ncep_osbuv_bufr
@@ -148,7 +156,9 @@ OBS_INPUT::
    amsuabufr      amsua       metop-b     amsua_metop-b         0.0     1      0        ncep_1bamua_bufr
    mhsbufr        mhs         metop-b     mhs_metop-b           0.0     1      0        ncep_mhs_bufr
    iasibufr       iasi        metop-b     iasi_metop-b          0.0     3      0        ncep_mtiasi_bufr
-   gomebufr       gome        metop-b     gome_metop-b          0.0     2      0        test
+!  gomebufr       gome        metop-b     gome_metop-b          0.0     2      0        test
+   amsuabufr      amsua       metop-c     amsua_metop-c         0.0     1      0        ncep_1bamua_bufr
+   mhsbufr        mhs         metop-c     mhs_metop-c           0.0     1      0        ncep_mhs_bufr
    atmsbufr       atms        npp         atms_npp              0.0     1      0        ncep_atms_bufr
    atmsbufr       atms        n20         atms_n20              0.0     1      0        ncep_atms_bufr
    crisbufr       cris        npp         cris_npp              0.0     3      0        ncep_cris_bufr
@@ -159,19 +169,20 @@ OBS_INPUT::
    avcsambufr     avhrr       metop-a     avhrr3_metop-a        0.0     1      0        ncep_avcsam_bufr
    avcsambufr     avhrr       metop-b     avhrr3_metop-b        0.0     1      0        ncep_avcsam_bufr
 !  omieffbufr     omieff      aura        omieff_aura           0.0     2      0        test
-   omieffnc       omieff      aura        omieff_aura           0.0     2      0        test
-   mlstbufr       t           aura        t                     0.0     0      0        test
+!  omieffnc       omieff      aura        omieff_aura           0.0     2      0        test
+!  mlstbufr       t           aura        t                     0.0     0      0        test
    gsnd1bufr      sndrd1      g15         sndrD1_g15            0.0     1      0        ncep_goesfv_bufr
    gsnd1bufr      sndrd2      g15         sndrD2_g15            0.0     1      0        ncep_goesfv_bufr
    gsnd1bufr      sndrd3      g15         sndrD3_g15            0.0     1      0        ncep_goesfv_bufr
    gsnd1bufr      sndrd4      g15         sndrD4_g15            0.0     1      0        ncep_goesfv_bufr
-   tomseffnc      tomseff     nim07       tomseff_nim07         0.0     2      0        test
-   tomseffnc      tomseff     ep          tomseff_ep            0.0     2      0        test
-   sbuvbufr       sbuv2       nim07       sbuv8_nim07           0.0     0      0        test
+!  tomseffnc      tomseff     nim07       tomseff_nim07         0.0     2      0        test
+!  tomseffnc      tomseff     ep          tomseff_ep            0.0     2      0        test
+!  sbuvbufr       sbuv2       nim07       sbuv8_nim07           0.0     0      0        test
    mlsnc          mls55       aura        mls55_aura            0.0     0      0        mls_nrt_nc
    oscatbufr      uv          null        uv                    0.0     0      0        ncep_oscat_bufr
-!  tmibufr        tmi         trmm        tmi_trmm              1.0     1      0        gmao_tmi_bufr
+!  tmibufr        tmi         trmm        tmi_trmm              0.0     1      0        gmao_tmi_bufr
    gmibufr        gmi         gpm         gmi_gpm               0.0     1      0        gmao_gmi_bufr
+   amsr2bufr      amsr2       gcom-w1     amsr2_gcom-w1         0.0     1      0        gmao_amsr2_bufr
 ! The following needs to be set for oneob-test:
 !  prepqc         dummy       dummy       dummy                 1.0     1      0        test
 ::
