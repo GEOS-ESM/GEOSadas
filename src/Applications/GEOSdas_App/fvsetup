@@ -349,7 +349,6 @@ use File::Copy qw(cp mv);
 use File::Find;
 use File::Path qw(mkpath rmtree);
 use Getopt::Long qw(GetOptions);
-use Shell qw(cat rm);
 use Sys::Hostname;
 use Time::Local;         # time functions
 
@@ -382,11 +381,13 @@ my ($checkFLG, $dbqueue, $runjobFLG, $saveFLG, $stopFLG);
 my (@fvprompt, @fvANS1, @fvANS2, $fvsetupflags);
 my ($fvhome, $fvroot, $fvbin, $checkID, $siteID);
 my ($remNODE, $remID);
+my ($qsub);
+my ($acqloc);
 
 my ($sysfile, $nodeflg);
 my (@rmTilde);
 my ($merra2, $acftbias, $doRcorr, $nrt, $rstype);
-my ($hyb_ens, $newradbc, $siglevs, $vres);
+my ($hyb_ens, $do4diau, $newradbc, $siglevs, $vres, $aensupa);
 
 system clear;
 get_runtime_values();
@@ -498,6 +499,10 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
   arch_anasa();
   run_config();
 
+# If so, setup EnADAS
+# -------------------
+  set_atmens();
+
 # Copy files
 # ----------
   copy_resources();
@@ -509,10 +514,6 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
   create_archscript();
   create_script();
   create_ana_aod_script_tmpl();
-
-# If so, setup EnADAS
-# -------------------
-  set_atmens();
 
 # Create the JOB script - forecast run
 # ------------------------------------
@@ -571,6 +572,7 @@ sub set_inputparams {
                     "convsfc"        => $convsfc,
                     "convupa"        => $convupa, 
                     "do4dvar"        => $do4dvar, 
+                    "do4diau"        => $do4diau, 
                     "doRcorr"        => $doRcorr, 
                     "expid"          => $expid, 
                     "fcswallclk"     => $fcswallclk, 
@@ -581,6 +583,7 @@ sub set_inputparams {
                     "gid"            => $gid, 
                     "group_list"     => $group_list, 
                     "export_none"    => $export_none, 
+                    "hyb_ens"        => $hyb_ens, 
                     "joba"           => $joba, 
                     "jobfs"          => $jobfs, 
                     "jobqueue1"      => $jobqueue1,
@@ -598,6 +601,7 @@ sub set_inputparams {
                     "oiqc"           => $oiqc, 
                     "osfmodule"      => $osfmodule, 
                     "prepqc"         => $prepqc,
+                    "qsub"           => $qsub,
                     "specres"        => $specres,
                     "varoffset"      => $varoffset,
                     "varwindow"      => $varwindow, 
@@ -902,11 +906,13 @@ sub defaults {
                      DU_GridComp_ExtData.rc
                      DU_History___.rc
                      DU_Registry.rc
+                     Deposition_Registry___.rc 
                      GEOSCHEMchem_ExtData.rc
                      GEOSCHEMchem_GridComp.rc
                      GEOSCHEMchem_Registry.rc
                      GEOSachem_ExtData.rc
                      GEOSachem_Registry.rc
+                     GMICHEM_History___.rc
                      GMI_ExtData.rc
                      GMI_GridComp.rc
                      GMI_Registry.rc
@@ -940,6 +946,7 @@ sub defaults {
                      OC_GridComp_ExtData.rc
                      OC_History___.rc
                      OC_Registry.rc
+                     Reactions_Registry___.rc 
                      Rn_GridComp---Afri.rc
                      Rn_GridComp---Asia.rc
                      Rn_GridComp---Aust.rc
@@ -1322,8 +1329,8 @@ sub ed_g5prog_rc {
   $fdfn = "$fvhome/$mydir/$fhisname";
   $fhis = "$fvhome/$mydir/HISTORY.rc.tmpl";
 
-  $prog3dnm = "%s.prog.eta.%y4%m2%d2_%h2z.$ncsuffix"; # prog filename template
-  $prog2dnm = "%s.prog.sfc.%y4%m2%d2_%h2z.$ncsuffix"; # prog filename template
+  $prog3dnm = "%s.prog.eta.%y4%m2%d2_%h2%n2z.$ncsuffix"; # prog filename template
+  $prog2dnm = "%s.prog.sfc.%y4%m2%d2_%h2%n2z.$ncsuffix"; # prog filename template
   $vtxmix   = "%s.vtx.prs.%y4%m2%d2_%h2z.$ncsuffix";  # prog filename template
 
   open(LUN,"$fdfn") || die "Fail to open GCMPROG.rc.tmpl: $!\n";
@@ -1368,7 +1375,7 @@ sub ed_g5prog_rc {
   close(LUN2);
 
   cp($ft, $fhis);
-  rm($fdfn);
+  unlink($fdfn);
   unlink $ft;
 }
 
@@ -1390,8 +1397,8 @@ sub ed_g5prog_rc_new {
 
     # variable substitutions
     #-----------------------
-    $prog3dnm = "%s.prog.eta.%y4%m2%d2_%h2z.$ncsuffix";
-    $prog2dnm = "%s.prog.sfc.%y4%m2%d2_%h2z.$ncsuffix";
+    $prog3dnm = "%s.prog.eta.%y4%m2%d2_%h2%n2z.$ncsuffix";
+    $prog2dnm = "%s.prog.sfc.%y4%m2%d2_%h2%n2z.$ncsuffix";
     $vtxmix   = "%s.vtx.prs.%y4%m2%d2_%h2z.$ncsuffix";
 
     if ($admtlm) { $fcsens = " " }
@@ -1450,7 +1457,7 @@ sub ed_daotovs_fv {
 
   $frun = "$fvhome/run/daotovs_fv.rc";
   $ft   = "$fvhome/run/tmp.rc";
-  $dbkg = "%s.bkg.eta.%y4%m2%d2_%h2z.$ncsuffix";
+  $dbkg = "%s.bkg.eta.%y4%m2%d2_%h2%n2z.$ncsuffix";
 
   open(LUN,"$frun") || die "Fail to open daotovs_fv.rc: $!\n";
   open(LUN2,">$ft") || die "Fail to open tmp.rc: $!\n";
@@ -1526,7 +1533,7 @@ sub create_fvpsasrc {
   print(MYRC "\n");
   if ( $varcase == 4 || $varcase == 5 || ! $fulldas ) {
       foreach $id (@ordered_ids) {
-          $bkgname = "%s.$bkg{$id}$type{$id}.$tmpl.$ncsuffix";
+          $bkgname = "%s.$bkg{$id}$type{$id}.$tmpl2.$ncsuffix";
           print(MYRC "${id}_bkg_filename: $bkgname\n");
       }
 
@@ -1536,7 +1543,7 @@ sub create_fvpsasrc {
           $bkgbits = $bkgbits0;
           while ( $bkgbits <= $bkgbitsf ) {
               $fhr = sprintf "%02d", $bkgbits;
-              $bkgname = "%s.$bkg{$id}${fhr}$type{$id}.$tmpl.$ncsuffix";
+              $bkgname = "%s.$bkg{$id}${fhr}$type{$id}.$tmpl2.$ncsuffix";
               if ( "$id" eq "upper-air1" || "$id" eq "upper-air2" ) {
                  print(MYRC "upper-air_$bkg{$id}${fhr}_filename: $bkgname\n");
               } else {
@@ -1554,19 +1561,20 @@ sub create_fvpsasrc {
 # Write out time-invariant template names to fvpsas.rc
 # ----------------------------------------------------
   print(MYRC "\n");
-  print(MYRC "surface_bkg_filename: %s.bkg.sfc.$tmpl.$ncsuffix\n");
-  print(MYRC "upper-air_bkg_filename: %s.bkg.eta.$tmpl.$ncsuffix\n");
-  print(MYRC "upper-air_ana_filename: %s.ana.eta.$tmpl.$ncsuffix\n");
-  print(MYRC "upper-air_inc_filename: %s.inc.eta.$tmpl.$ncsuffix\n");
-  print(MYRC "upper-air_xana_filename: %s.xana.eta.$tmpl.$ncsuffix\n");
-  print(MYRC "upper-air_xinc_filename: %s.xinc.eta.$tmpl.$ncsuffix\n");
-  print(MYRC "noexp_iau_tendency_filename: agcm_import_rst.%y4%m2%d2_%h2z.bin\n");
-  print(MYRC "iau_tendency_filename: %s.agcm_import_rst.%y4%m2%d2_%h2z.bin\n");
-  print(MYRC "iau09_tendency_filename: %s.agcm09_import_rst.%y4%m2%d2_%h2z.bin\n");
-  print(MYRC "surface_inc_filename: %s.inc.sfc.$tmpl.$ncsuffix\n");
-  print(MYRC "forecast-bias_filename: %s.bbias.eta.$tmpl.$ncsuffix\n");
+  print(MYRC "surface_bkg_filename: %s.bkg.sfc.$tmpl2.$ncsuffix\n");
+  print(MYRC "upper-air_bkg_filename: %s.bkg.eta.$tmpl2.$ncsuffix\n");
+  print(MYRC "upper-air_ana_filename: %s.ana.eta.$tmpl2.$ncsuffix\n");
+  print(MYRC "upper-air_inc_filename: %s.inc.eta.$tmpl2.$ncsuffix\n");
+  print(MYRC "upper-air_xana_filename: %s.xana.eta.$tmpl2.$ncsuffix\n");
+  print(MYRC "upper-air_xinc_filename: %s.xinc.eta.$tmpl2.$ncsuffix\n");
+  print(MYRC "upper-air_anasa_filename: %s.anasa.eta.$tmpl2.$ncsuffix\n");
+  print(MYRC "noexp_iau_tendency_filename: agcm_import_rst.%y4%m2%d2_%h2%n2z.$ncsuffix\n");
+  print(MYRC "iau_tendency_filename: %s.agcm_import_rst.%y4%m2%d2_%h2%n2z.$ncsuffix\n");
+  print(MYRC "iau09_tendency_filename: %s.agcm09_import_rst.%y4%m2%d2_%h2%n2z.$ncsuffix\n");
+  print(MYRC "surface_inc_filename: %s.inc.sfc.$tmpl2.$ncsuffix\n");
+  print(MYRC "forecast-bias_filename: %s.bbias.eta.$tmpl2.$ncsuffix\n");
   print(MYRC "post-analysis_obs_filename: %s.ana.obs.$tmpl.ods\n");
-  print(MYRC "sfcexp_filename: %s.sfc_export.$tmpl\n");
+  print(MYRC "sfcexp_filename: %s.sfc_export.$tmpl2\n");
   print(MYRC "upper-air_vtx_filename: %s.vtx.prs.$tmpl.$ncsuffix\n");
   print(MYRC "upper-air_vtx09_filename: %s.vtx09.prs.$tmpl.$ncsuffix\n"); # wired-in
   print(MYRC "upalcv_traj_filename: %s.traj.lcv.$tmpl2.$ncsuffix\n");
@@ -1575,15 +1583,15 @@ sub create_fvpsasrc {
   print(MYRC "uparst_traj_filename: %s.traj_lcv_rst.$tmpl2.$ncsuffix\n");
   print(MYRC "uparst_mtrj_filename: %s.mtrj_lcv_rst.$tmpl2.$ncsuffix\n");
   print(MYRC "uparst_ptrj_filename: %s.ptrj_prs_rst.$tmpl2.$ncsuffix\n");
-  print(MYRC "upper-air_prog_filename: %s.prog.eta.$tmpl.$ncsuffix\n");
-  print(MYRC "surface_prog_filename: %s.prog.sfc.$tmpl.$ncsuffix\n");
-  print(MYRC "aero_bkg_filename: %s.abkg.eta.$tmpl.$ncsuffix\n");
-  print(MYRC "chem_bkg_filename: %s.cbkg.eta.$tmpl.$ncsuffix\n");
+  print(MYRC "upper-air_prog_filename: %s.prog.eta.$tmpl2.$ncsuffix\n");
+  print(MYRC "surface_prog_filename: %s.prog.sfc.$tmpl2.$ncsuffix\n");
+  print(MYRC "aero_bkg_filename: %s.abkg.eta.$tmpl2.$ncsuffix\n");
+  print(MYRC "chem_bkg_filename: %s.cbkg.eta.$tmpl2.$ncsuffix\n");
   print(MYRC "gaas_bkg_filename: %s.gaas_bkg.sfc.$tmpl.$ncsuffix\n");
   print(MYRC "gaasrst_bkg_filename: %s.gaas_bkg_sfc_rst.$tmpl.$ncsuffix\n");
-  print(MYRC "chem_ana_filename: %s.cana.eta.$tmpl.$ncsuffix\n");
-  print(MYRC "reference_filename: %s.ref.eta.$tmpl.$ncsuffix\n");
-  print(MYRC "verification_filename: %s.ver.eta.$tmpl.$ncsuffix\n");
+  print(MYRC "chem_ana_filename: %s.cana.eta.$tmpl2.$ncsuffix\n");
+  print(MYRC "reference_filename: %s.ref.eta.$tmpl2.$ncsuffix\n");
+  print(MYRC "verification_filename: %s.ver.eta.$tmpl2.$ncsuffix\n");
 
 # Done
 # ----
@@ -1702,13 +1710,6 @@ sub ed_ncep_rc {
        if ($varcase >= 4) {
            if($rcd =~ /\@L4DVAR/) {$rcd=~ s/\@L4DVAR/.true./g; }
            if($rcd =~ /\@MITER/)  {$rcd=~ s/\@MITER/1/g; }
-           if ( $wcnstrt == 1) {
-              $iwrtinc = $varoffset / $asynbkg_min + 1;
-              if($rcd =~ /\@IWRTINC/) {$rcd=~ s/\@IWRTINC/$iwrtinc/g; }
-           } else {
-              $iwrtinc = 1;
-              if($rcd =~ /\@IWRTINC/) {$rcd=~ s/\@IWRTINC/$iwrtinc/g; }
-           }
            if ($varcase == 4) {
                if($rcd =~ /\@IDMODEL/)  {$rcd=~ s/\@IDMODEL/.false./g; }  # 4DVAR case
            }
@@ -1719,6 +1720,13 @@ sub ed_ncep_rc {
            if($rcd =~ /\@L4DVAR/) {$rcd=~ s/\@L4DVAR/.false./g; }
            if($rcd =~ /\@MITER/)  {$rcd=~ s/\@MITER/2/g; }
            if($rcd =~ /\@IDMODEL/)  {$rcd=~ s/\@IDMODEL/.false./g; }
+       }
+       if ( $wcnstrt == 1 || $do4diau ) {
+          $iwrtinc = $varoffset / $asynbkg_min + 1;
+          if($rcd =~ /\@IWRTINC/) {$rcd=~ s/\@IWRTINC/$iwrtinc/g; }
+       } else {
+          $iwrtinc = 1;
+          if($rcd =~ /\@IWRTINC/) {$rcd=~ s/\@IWRTINC/$iwrtinc/g; }
        }
        print(LUN2 "$rcd\n");
      }
@@ -1819,6 +1827,7 @@ sub ed_gsigridcomp_rc {
        } else {
             if($rcd =~ /\@ANAINC/) {$rcd=~ s/\@ANAINC/YES/g; }
        }
+       if($rcd =~ /\@AENSUPAFN/) {$rcd=~ s/\@AENSUPAFN/%s.$aensupa.%y4%m2%d2_%h2%n2z.>>>NCSUFFIX<<</g; }
 
        print(LUN2 "$rcd\n");
      }
@@ -1947,8 +1956,8 @@ sub ed_4dfcst_acq {
  open(SCRIPT,">$acq") or
  die ">>> ERROR <<< cannot write $acq";
  print  SCRIPT <<"EOF";
-/archive/u/$user/$expid/rs/Y%y4/M%m2/$expid.agcm_import_rst.%y4%m2%d2_%h2z.bin
-/archive/u/$user/$expid/ana/Y%y4/M%m2/$expid.ana.eta.%y4%m2%d2_%h2z.nc4
+$acqloc/$user/$expid/rs/Y%y4/M%m2/$expid.agcm_import_rst.%y4%m2%d2_%h2%n2z.$ncsuffix
+$acqloc/$user/$expid/ana/Y%y4/M%m2/$expid.ana.eta.%y4%m2%d2_%h2%n2z.nc4
 EOF
 
 }
@@ -1965,8 +1974,8 @@ sub ed_4dfcst09_acq {
  open(SCRIPT,">$acq") or
  die ">>> ERROR <<< cannot write $acq";
  print  SCRIPT <<"EOF";
-/archive/u/$user/$expid/ana/Y%y4/M%m2/$expid.ana09.eta.%y4%m2%d2_%h2z.nc4
-/archive/u/$user/$expid/rs/Y%y4/M%m2/$expid.agcm09_import_rst.%y4%m2%d2_%h2z.bin
+$acqloc/$user/$expid/ana/Y%y4/M%m2/$expid.ana09.eta.%y4%m2%d2_%h2%n2z.nc4
+$acqloc/$user/$expid/rs/Y%y4/M%m2/$expid.agcm09_import_rst.%y4%m2%d2_%h2z.bin
 EOF
 
 }
@@ -2010,12 +2019,12 @@ sub ed_bkg_acq {
  open(SCRIPT,">$acq") or
  die ">>> ERROR <<< cannot write $acq";
  print  SCRIPT <<"EOF";
-$defexploc/$vexpid/ana/Y%y4/M%m2/$vexpid.bkg.eta.%y4%m2%d2_%h2z.$ncsuffix
-$defexploc/$vexpid/ana/Y%y4/M%m2/$vexpid.bkg.sfc.%y4%m2%d2_%h2z.$ncsuffix
-$defexploc/$vexpid/ana/Y%y4/M%m2/$vexpid.cbkg.eta.%y4%m2%d2_%h2z.$ncsuffix
-$defexploc/$vexpid/ana/Y%y4/M%m2/$vexpid.bkg09.eta.%y4%m2%d2_%h2z.$ncsuffix
-$defexploc/$vexpid/ana/Y%y4/M%m2/$vexpid.bkg09.sfc.%y4%m2%d2_%h2z.$ncsuffix
-$defexploc/$vexpid/ana/Y%y4/M%m2/$vexpid.cbkg09.eta.%y4%m2%d2_%h2z.$ncsuffix
+$defexploc/$vexpid/ana/Y%y4/M%m2/$vexpid.bkg.eta.%y4%m2%d2_%h2%n2z.$ncsuffix
+$defexploc/$vexpid/ana/Y%y4/M%m2/$vexpid.bkg.sfc.%y4%m2%d2_%h2%n2z.$ncsuffix
+$defexploc/$vexpid/ana/Y%y4/M%m2/$vexpid.cbkg.eta.%y4%m2%d2_%h2%n2z.$ncsuffix
+$defexploc/$vexpid/ana/Y%y4/M%m2/$vexpid.bkg09.eta.%y4%m2%d2_%h2%n2z.$ncsuffix
+$defexploc/$vexpid/ana/Y%y4/M%m2/$vexpid.bkg09.sfc.%y4%m2%d2_%h2%n2z.$ncsuffix
+$defexploc/$vexpid/ana/Y%y4/M%m2/$vexpid.cbkg09.eta.%y4%m2%d2_%h2%n2z.$ncsuffix
 EOF
 }
 
@@ -2054,13 +2063,19 @@ sub ed_satbias_acq {
     $mysatbiaspc = "";
   }
 
+ if ( $acftbias ) {
+     $myacftbias = "$defexploc/$vexpid/ana/Y%y4/M%m2/$vexpid.ana.acftbias.%y4%m2%d2_%h2z.txt";
+ } else {
+     $myacftbias = "#$defexploc/$vexpid/ana/Y%y4/M%m2/$vexpid.ana.acftbias.%y4%m2%d2_%h2z.txt";
+ }
+
  open(SCRIPT,">$acq") or
  die ">>> ERROR <<< cannot write $acq";
  print  SCRIPT <<"EOF";
-#$defexploc/$vexpid/ana/Y%y4/M%m2/$vexpid.ana.acftbias.%y4%m2%d2_%h2z.txt
 #$defexploc/$vexpid/ana/Y%y4/M%m2/$vexpid.bbias.eta.%y4%m2%d2_%h2z.bin
 $defexploc/$vexpid/ana/Y%y4/M%m2/$vexpid.ana.satbias.%y4%m2%d2_%h2z.txt
 $defexploc/$vexpid/ana/Y%y4/M%m2/$vexpid.ana.satbang.%y4%m2%d2_%h2z.txt
+$myacftbias
 $mysatbiaspc
 EOF
 }
@@ -2079,12 +2094,12 @@ sub ed_asens_acq {
  open(SCRIPT,">$acq") or
  die ">>> ERROR <<< cannot write $acq";
  print  SCRIPT <<"EOF";
-$defexploc/$vexpid/ana/Y%y4/M%m2/$vexpid.bkg.eta.%y4%m2%d2_%h2z.$ncsuffix
-$defexploc/$vexpid/ana/Y%y4/M%m2/$vexpid.bkg.sfc.%y4%m2%d2_%h2z.$ncsuffix
-$defexploc/$vexpid/ana/Y%y4/M%m2/$vexpid.cbkg.eta.%y4%m2%d2_%h2z.$ncsuffix
-$defexploc/$vexpid/ana/Y%y4/M%m2/$vexpid.bkg09.eta.%y4%m2%d2_%h2z.$ncsuffix
-$defexploc/$vexpid/ana/Y%y4/M%m2/$vexpid.bkg09.sfc.%y4%m2%d2_%h2z.$ncsuffix
-$defexploc/$vexpid/ana/Y%y4/M%m2/$vexpid.cbkg09.eta.%y4%m2%d2_%h2z.$ncsuffix
+$defexploc/$vexpid/ana/Y%y4/M%m2/$vexpid.bkg.eta.%y4%m2%d2_%h2%n2z.$ncsuffix
+$defexploc/$vexpid/ana/Y%y4/M%m2/$vexpid.bkg.sfc.%y4%m2%d2_%h2%n2z.$ncsuffix
+$defexploc/$vexpid/ana/Y%y4/M%m2/$vexpid.cbkg.eta.%y4%m2%d2_%h2%n2z.$ncsuffix
+$defexploc/$vexpid/ana/Y%y4/M%m2/$vexpid.bkg09.eta.%y4%m2%d2_%h2%n2z.$ncsuffix
+$defexploc/$vexpid/ana/Y%y4/M%m2/$vexpid.bkg09.sfc.%y4%m2%d2_%h2%n2z.$ncsuffix
+$defexploc/$vexpid/ana/Y%y4/M%m2/$vexpid.cbkg09.eta.%y4%m2%d2_%h2%n2z.$ncsuffix
 EOF
 }
 
@@ -2237,12 +2252,30 @@ $defexploc/$expid/rs/Y%y4/M%m2/$expid.rst.%y4%m2%d2_%h2z.tar
 EOF
 if ( $hyb_ens < 4 ) {
  print  SCRIPT <<"EOF";
-$defexploc/$expid/rs/Y%y4/M%m2/$expid.agcm_import_rst.%y4%m2%d2_%h2z.bin
+$defexploc/$expid/rs/Y%y4/M%m2/$expid.agcm_import_rst.%y4%m2%d2_%h2%n2z.$ncsuffix
 EOF
 }
 }
 #=======================================================================
 sub ed_aens_replay_acq {
+
+  return 0 unless ( $g5gcm );
+
+  my($mydir,$myacq) = @_;
+
+  my($frun, $ft, $acq);
+
+  $acq = "$fvhome/$mydir/$myacq";
+ open(SCRIPT,">$acq") or
+ die ">>> ERROR <<< cannot write $acq";
+ print  SCRIPT <<"EOF";
+$acqloc/$user/$expid/atmens/Y%y4/M%m2/$expid.atmens_ebkg.%y4%m2%d2_%h2z.tar
+EOF
+
+}
+
+#=======================================================================
+sub ed_aens_das_replay_acq {
   my($mydir) = @_;
   my($replay_arcdir, $acq);
 
@@ -2324,7 +2357,7 @@ sub ed_blendacq {
  open(SCRIPT,">$myrc") or
  die ">>> ERROR <<< cannot write $myrc";
  print  SCRIPT <<"EOF";
-$anastagedir/%s.ana.eta.%y4%m2%d2_%h2z.$ncsuffix
+$anastagedir/%s.ana.eta.%y4%m2%d2_%h2%n2z.$ncsuffix
 EOF
 
 }
@@ -2440,6 +2473,8 @@ EOF
 
 #=======================================================================
 sub get_lsmodel {
+
+    my $lndbcs_def = "Icarus_Updated";
     my $lsdflt = 1;
     my $rrdflt = 0;
 
@@ -2452,16 +2487,34 @@ sub get_lsmodel {
 
     print <<"EOF";
 
-------------------
-LAND SURFACE MODEL
-------------------
+----------------
+LAND BCS Version
+----------------
+    Icarus_Updated (default)
+    or
+    Icarus-NLv3
+
+EOF
+;
+
+    $landbcs = query("  Land Boundary Conditions?", $lndbcs_def);
+
+    if ( "$landbcs" eq "Icarus-NLv3" ) {
+
+       print <<"EOF";
+---------------
+CATCHMENT MODEL
+---------------
 
     1. catchment
     2. catchmentCN
 
 EOF
 ;
-    $lsmodel_flag = query("  Land Surface Model choice", $lsdflt);
+
+       $lsmodel_flag = query("  Catchment Model choice?", $lsdflt);
+
+    }
 
     return if $lsmodel_flag == 1 or $lsmodel_flag == 2;
     return 1;
@@ -2617,9 +2670,9 @@ sub get_extdata {
 #=======================================================================
 sub inq_admtlm {
 
-  $asmetafn = "$defexploc/$expid/ana/Y%y4/M%m2/$expid.asm.eta.%y4%m2%d2_%h2z.$ncsuffix";
-  $anaetafn = "$defexploc/$expid/ana/Y%y4/M%m2/$expid.ana.eta.%y4%m2%d2_%h2z.$ncsuffix";
-  $bkgetafn = "$defexploc/$expid/ana/Y%y4/M%m2/$expid.bkg.eta.%y4%m2%d2_%h2z.$ncsuffix";
+  $asmetafn = "$defexploc/$expid/ana/Y%y4/M%m2/$expid.asm.eta.%y4%m2%d2_%h2%n2z.$ncsuffix";
+  $anaetafn = "$defexploc/$expid/ana/Y%y4/M%m2/$expid.ana.eta.%y4%m2%d2_%h2%n2z.$ncsuffix";
+  $bkgetafn = "$defexploc/$expid/ana/Y%y4/M%m2/$expid.bkg.eta.%y4%m2%d2_%h2%n2z.$ncsuffix";
 
   return 0 unless $admodel;
 
@@ -2677,6 +2730,11 @@ EOF
   return 0 unless $doasens;
 
   $vexpid = query("  Verifying experiment id:", $vexpid);
+
+  if ( $doasens && $hyb_ens > 2 ) {
+     ed_aens_replay_acq("asens","atmens_asens.acq");
+  }
+
   return 0;
 }
 
@@ -2718,7 +2776,7 @@ sub get_fvhome {
 
   $cnode = 2;
   $mywork   = "/scratch1";
-  $qsub     = "qsub";  $less = "";
+  $qsub     = "sbatch";  $less = "";
   $jobqueue1 ="";
   $jobqueue2 ="";
 
@@ -2739,7 +2797,8 @@ sub get_fvhome {
         }
         #--print "Location of working directory on Columbia? [$mywork] ";
         $fvhome = $FVHOME or $fvhome = "$mywork/$user/$expid";
-        $jobqueue1 ="#PBS -q science\@c${cnode}";
+        $jobqueue1 ="#SBATCH --partition=science\@c${cnode}\n"
+            .       "#PBS -q science\@c${cnode}";
         $jobqueue2 = $jobqueue1;
 
   } elsif ( $siteName eq "pfe" ) {
@@ -2749,12 +2808,25 @@ sub get_fvhome {
 
   } elsif ( $siteID eq "nccs" ) {
         $mywork = "/discover/nobackup";
-        $myhome = "/discover/nobackup";
         $jobqueue2 = "SBATCH --partition=datamove";
-        $fvhome = $FVHOME or $fvhome = "$myhome/$user/$expid";
+        $fvhome = "/discover/nobackup/$user/$expid";
+
+        if (defined($FVHOME)) {
+            $mywork = dirname("$FVHOME");
+            $fvhome = $FVHOME;
+        }
   } else {
         $fvhome = $FVHOME or $fvhome = "$mywork/$user/$expid";
   }
+
+# By default will use archive to look for files typically handled w/ ACQ extension
+# --------------------------------------------------------------------------------
+  if ($ENV{ARCHIVE}) {
+     $acqloc = "$ENV{ARCHIVE}";
+  } else {
+     $acqloc = "/archive/u/";
+  }
+
 
   print <<"EOF";
 
@@ -2784,7 +2856,7 @@ EOF
   print ">> WARNING << defaulting to pre-defined environment variable,"
   .   " FVHOME = $FVHOME\n\n" if $FVHOME;
   $fvhome = query("FVHOME?", $fvhome);
-  return warn ">>> ERROR <<< FVHOME path must begin with '/'\n"
+  return warn ">>> ERROR <<< FVHOME ($fvhome) path must begin with '/'\n"
       unless $fvhome =~ m[^/];
 
   $basen = basename("$fvhome");
@@ -2830,8 +2902,15 @@ EOF
 
 #=======================================================================
 sub get_nodeflg {
-  $nodeflg = "";
+  $ncpus_per_node = 24;
+  $nodeflg = "hasw";
   $proc = "";
+  # reset default if applicable
+  my $npn = `facter processorcount`; chomp($npn);
+  if ( $npn == 40 ) {
+     $ncpus_per_node = 36;
+     $nodeflg = "sky";
+  }
 
   # currently not applicable at nccs
   #---------------------------------
@@ -2840,13 +2919,14 @@ sub get_nodeflg {
   # request specific nodes on pfe?
   #-------------------------------
   if ($siteName eq "pfe") {
-      $ans = query("  Processing nodes (1:Westmere, 2:SandyBridge, 3:Ivy Bridge, 4:Haswell)?", "1");
-      $ans = 1 unless $ans == 2 or $ans == 3 or $ans == 4;
+      $ans = query("  Processing nodes (1:Westmere, 2:SandyBridge, 3:Ivy Bridge, 4:Haswell, 5:Sky)?", "1");
+      $ans = 1 unless $ans == 2 or $ans == 3 or $ans == 4 or $ans == 5;
 
       if    ($ans == 1) { $nodeflg = "wes"; $ncpus_per_node = 12 }
       elsif ($ans == 2) { $nodeflg = "san"; $ncpus_per_node = 16 }
       elsif ($ans == 3) { $nodeflg = "ivy"; $ncpus_per_node = 20 }
       elsif ($ans == 4) { $nodeflg = "has"; $ncpus_per_node = 24 }
+      elsif ($ans == 5) { $nodeflg = "sky"; $ncpus_per_node = 36 }
 
       $procflg = ":mpiprocs=$ncpus_per_node$proc";
   }
@@ -3145,12 +3225,12 @@ sub set_rcov {
 sub set_acftbias {
     my($dflt, $ans);
 
-    if ($merra2) { $dflt = "y" }
-    else         { $dflt = "n" }
+    $dflt = "y";
+    $acftbias = 2;
 
-    $acftbias = 0;
     $ans = query("  Use aircraft bias correction (y/n)?", $dflt);
-    $acftbias = 1 if yes($ans);
+    $acftbias = 0 if neg($ans);
+    $acftbias = 1 if $acftbias and $merra2;
 
     return 0;
 }
@@ -3294,6 +3374,14 @@ EOF
       print "  Try again.\n\n";
   }
 
+  $do4diau = 0;
+  if ( $hyb_ens == 4 ) {
+     $do4diau = 1;
+  }
+  if ( $varcase == 4 || $hyb_ens == 4 ) {
+     $varobsbin = $asynbkg_min;
+  }
+
   return 0 ;
 
 }
@@ -3330,11 +3418,11 @@ EOF
 
   $aens_replay = query("  Replayed Ensemble (from OPS)? ", $aens_replay);
   if ( $aens_replay eq "yes"   ) {
-     ed_aens_replay_acq("run");
+     ed_aens_das_replay_acq("run");
      return 0;
   }
   $aens_sppt = query("  Use SPPT-scheme for Ensemble? ", $aens_sppt);
-  if ( $aens_replay eq "no"   ) {
+  if ( $aens_sppt eq "no" ) {
      $sppt_flag = "-nosppt";
   } else {
      $sppt_flag = "";
@@ -3349,12 +3437,22 @@ EOF
   if ( $aens_res eq "C48" ) { $aens_im =   48; $aens_jm =  288; $aens_ocn = "C" };
   if ( $aens_res eq "C90" ) { $aens_im =   90; $aens_jm =  540; $aens_ocn = "C" };
   if ( $aens_res eq "C180") { $aens_im =  180; $aens_jm = 1080; $aens_ocn = "C" };
+  if ( $aens_res eq "C360") { $aens_im =  360; $aens_jm = 2160; $aens_ocn = "C" };
 
   if ( $newradbc ) {
      $setradbc = "-radbc"; chomp($setrabc);
   } else {
      $setradbc = "";
   }
+  if ( $acftbias ) {
+     $setacftbc = "-acftbc $acftbias"; chomp($setacftbc);
+  } else {
+     $setacftbc = "";
+  }
+  
+ if ($aens_res eq "C360") {
+    $aensupa = "Bkg.eta";
+ }
   
  $aens_lsmodel = "";
   if ( $lsmodel_flag == 2 ) {
@@ -3365,9 +3463,9 @@ EOF
 
 # If so, setup EnADAS 
 # -------------------
-  $flags = "-nlevs $aens_lev $setradbc $aens_lsmodel -expdir $fvhome/.. $sppt_flag";
+  $flags = "-nlevs $aens_lev $setacftbc $setradbc $aens_lsmodel -expdir $fvhome/.. $sppt_flag";
   $flags .= " -fvhome $fvhome" if $checkFLG;
-  $params = " $aens_ana $expid $aens_im $aens_jm $aens_ocn"; 
+  $params = " $aens_ana $expid $aens_im $aens_jm $aens_ocn $landbcs"; 
 
   $cmd = "$fvbin/setup_atmens.pl $flags $params";
   print "$cmd\n";
@@ -3375,9 +3473,11 @@ EOF
 
 # Edit atm_ens.j script
 # ---------------------
-  $replace{"g0613"} = $gid;
-  $replace{"u000_c72"} = $expid;
-  $replace{"g5das.j"} = "$jobn.j";
+  $replace{">>>GID<<<"} = $gid;
+  $replace{">>>NODEFLG<<<"} = $nodeflg;
+  $replace{">>>EXPID<<<"} = $expid;
+  $replace{">>>JOBNJ<<<"} = "$jobn.j";
+  $replace{">>>FVHOME<<<"} = "$fvhome";
 
   $atm_ens_j = "$fvhome/run/atm_ens.j";
   $atm_ens_j_tilde = "${atm_ens_j}~";
@@ -3427,7 +3527,7 @@ sub get_varwindow {
   $gcmibc    = 0;              # Default is to run w/o Incremental Bias Correction
   $nvarouter = 1;              # Default number of var loops
   $wcnstrt   = 0;              # Detault weak constraint option
-  $varobsbin = 6;              # Default observation bin interval (default is 3dvar)
+  $varobsbin = 360;            # Default observation bin interval (default is 3dvar)
   $do4dtlm   = 0;              # Default: do not integrate TLM after var
   $g4res     = "z";            # Default: unknown resolution for perturbation model
 
@@ -4148,10 +4248,10 @@ sub get_restart5 {
   return 0 unless ( $g5gcm );
 
   $defexp = "u000_${res}${vres}";
-  $nymdb = "20130902";
-  $nymde = "20130905";
-  @inputs = qw( /archive/u/jstassi/restarts/5C0 );
-  $defexploc = "/archive/u/$user";
+  $nymdb = "20190116";
+  $nymde = "20190119";
+  @inputs = qw( /archive/u/jstassi/restarts/GEOSadas-5_24_0 );
+  $defexploc = "$acqloc";
   if ( $do4dvar ) {
     $anastagedir = "/dev/null";
   } else {
@@ -4163,7 +4263,7 @@ sub get_restart5 {
   $nhmsb = "210000";   $hhb = substr($nhmsb,0,2);
   $nhmse = "030000";   $hhe = substr($nhmse,0,2);
   for($i=0; $i<scalar(@inputs); $i++) {
-      if (-e ($default = $inputs[$i])) { last; }
+      if (-e ($default = $inputs[$i])) { last }
   }
 
   $merra2_nccs_fvics = "/archive/users/gmao_ops/MERRA2/gmao_ops/GEOSadas-5_12_4";
@@ -4172,12 +4272,8 @@ sub get_restart5 {
           $fvics = $merra2_nccs_fvics;
       }
   }          
-  unless ($fvics eq $merra2_nccs_fvics) {
-      if    ($ogcm eq "c") { $fvics = "$default/DE0360xPE0180" }
-      elsif ($ogcm eq "e") { $fvics = "$default/DE1440XPE0720" }
-      elsif ($ogcm eq "f") { $fvics = "$default/DE2880xPE1440" }
-      elsif ($ogcm eq "C") { $fvics = "$default/CF${agcm_im4}x6C" }
-  }
+  
+  $fvics = $default unless $fvics eq $merra2_nccs_fvics;
   $drstloc = "$fvics/rs/Y${yyyyb}/M${mmb}";
   $rst_set = 1;
   $chemethod = "CLIM";
@@ -4346,7 +4442,7 @@ sub get_GID {
     if ($gid) {
         if ($siteID eq "nccs") { $group_list  = "SBATCH --account=$gid";
                                  $group_list1 = "SBATCH --account=\$GID";
-                                 $export_none = "SBATCH --export=NONE" }
+                                 $export_none = "#SBATCH --export=NONE" }
         else                   { $group_list  = "PBS -W group_list=$gid";
                                  $group_list1 = "PBS -W group_list=\$GID" }
     }
@@ -4362,7 +4458,7 @@ sub get_dimsg5gcm {
 
 # Set default dimensions for GEOS-5 GCM & ocean resolution defaults
 # -----------------------------------------------------------------
-   $res = "C180";
+   $res = "C48";
    $vres = 72;
    if ( $merra2 ) { $ores = "e34" }
    else           { $ores = "f"   }
@@ -4860,6 +4956,7 @@ EOF
   } else {
        die ">>> ERROR <<< invalid GEOS-5 GCM resolution: res = $res";
   }
+  $aensupa = "bkg.eta";
 
   if ($cubed) {
      $agcm_nf = 6;
@@ -5123,14 +5220,15 @@ sub archiving_rules {
 #                   --------------------
 #
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_airs_aqua_%c%c%c.%y4%m2%d2_%h2z.bin
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_amsr2_gcom-w1_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_amsre_aqua_%c%c%c.%y4%m2%d2_%h2z.bin
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_amsre_%c%c%c_aqua_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_amsua_aqua_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_amsua_metop-%c_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_amsu%c_%c%c%c_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_avhrr_%c%c%c_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_avhrr_metop-%c_%c%c%c.%y4%m2%d2_%h2z.bin
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_atms_npp_%c%c%c.%y4%m2%d2_%h2z.bin
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_atms_%c%c%c_%c%c%c.%y4%m2%d2_%h2z.bin
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_cris-fsr_%c%c%c_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_cris_npp_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_conv_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_gmi_gpm_%c%c%c.%y4%m2%d2_%h2z.bin
@@ -5177,14 +5275,15 @@ sub archiving_rules {
 #                   CORRESPONDING ODS FILES
 #                   -----------------------
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_airs_aqua.%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_amsr2_gcom-w1.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_amsre_aqua.%y4%m2%d2_%h2z.ods
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_amsre_%c%c%c_aqua.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_amsua_aqua.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_amsua_metop-%c.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_amsu%c_%c%c%c.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_avhrr_%c%c%c.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_avhrr_metop-%c.%y4%m2%d2_%h2z.ods
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_atms_npp.%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_atms_%c%c%c.%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_cris-fsr_%c%c%c.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_cris_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_conv.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_gmi_gpm_%c%c%c.%y4%m2%d2_%h2z.ods
@@ -5230,14 +5329,15 @@ sub archiving_rules {
 #                   CORRESPONDING 0 hr IMPACT ODS FILES
 #                   -----------------------------------
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_airs_aqua.%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_amsr2_gcom-w1.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_amsre_aqua.%y4%m2%d2_%h2z.ods
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_amsre_%c%c%c_aqua.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_amsua_aqua.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_amsua_metop-%c.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_amsu%c_%c%c%c.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_avhrr_%c%c%c.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_avhrr_metop-%c.%y4%m2%d2_%h2z.ods
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_atms_npp.%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_atms_%c%c%c.%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_cris-fsr_%c%c%c.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_cris_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_conv.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_gmi_gpm_%c%c%c.%y4%m2%d2_%h2z.ods
@@ -5283,7 +5383,8 @@ sub archiving_rules {
 #                   GSI SENSITIVITY DIAGNOSTIC FILES
 #                   --------------------------------
 #
-#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_atms_npp_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_atms_%c%c%c_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_cris-fsr_%c%c%c_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_cris_npp_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_conv_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_gps_bnd_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
@@ -5313,6 +5414,7 @@ sub archiving_rules {
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_mhs_%c%c%c_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_mhs_metop-%c_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ssmi_%c%c%c_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_amsr2_gcom-w1_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_amsre_aqua_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ssmis_%c%c%c_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_sndrd%c_%c%c%c_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
@@ -5348,7 +5450,8 @@ sub archiving_rules {
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_mhs_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_mhs_metop-%c_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ssmi_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
-#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_amsre_aqua_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_amsr2_gcom-w1_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_amsre_aqua_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ssmis_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_sndrd%c_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ssu_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
@@ -5384,7 +5487,8 @@ sub archiving_rules {
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_mhs_%c%c%c_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_mhs_metop-%c_%c%c%c_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ssmi_%c%c%c_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
-#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_amsre_aqua_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_amsr2_gcom-w1_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_amsre_aqua_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ssmis_%c%c%c_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_sndrd%c_%c%c%c_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_tmi_trmm_%c%c%c_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
@@ -5411,7 +5515,8 @@ sub archiving_rules {
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c_amsua_aqua_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c_mhs_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c_ssmi_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
-#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c_amsre_aqua_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c_amsr2_gcom-w1_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c_amsre_aqua_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c_ssmis_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c_sndrD%c_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c_ssu_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
@@ -5436,7 +5541,8 @@ sub archiving_rules {
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c%c_amsua_aqua_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c%c_mhs_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c%c_ssmi_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
-#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c%c_amsre_aqua_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c%c_amsr2_gcom-w1_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c%c_amsre_aqua_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c%c_ssmis_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c%c_sndrD%c_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c%c_ssu_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
@@ -5461,7 +5567,8 @@ sub archiving_rules {
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c_amsua_aqua_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c_mhs_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c_ssmi_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
-#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c_amsre_aqua_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c_amsr2_gcom-w1_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c_amsre_aqua_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c_ssmis_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c_sndrD%c_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c_ssu_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
@@ -5486,7 +5593,8 @@ sub archiving_rules {
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c%c%c_amsua_aqua_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c%c%c_mhs_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c%c%c_ssmi_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
-#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c%c%c_amsre_aqua_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c%c%c_amsr2_gcom-w1_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c%c%c_amsre_aqua_c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c%c%c_ssmis_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c%c%c_sndrD%c_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c%c%c_ssu_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
@@ -5503,46 +5611,52 @@ sub archiving_rules {
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.lanczvec.%c%c%c.%c%c%c%c.%c%c%c%c.%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.zlanczos.%c%c%c.%c%c%c%c.%c%c%c%c.%y4%m2%d2_%h2z.bin
 #
-#
-\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg.eta.%y4%m2%d2.$ncsuffix
-\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.ana.eta.%y4%m2%d2.$ncsuffix
-\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg.sfc.%y4%m2%d2.$ncsuffix
-\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.ana.sfc.%y4%m2%d2.$ncsuffix
-\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.asm.eta.%y4%m2%d2_%h2z.$ncsuffix
-\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bbias.eta.%y4%m2%d2_%h2z.$ncsuffix
-\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.ana.eta.%y4%m2%d2_%h2z.iter%c.$ncsuffix
-\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.aana.eta.%y4%m2%d2_%h2z.iter%c.$ncsuffix
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.abkg.eta.%y4%m2%d2_%h2z.$ncsuffix
-\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.cbkg.eta.%y4%m2%d2_%h2z.$ncsuffix
-\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg.eta.%y4%m2%d2_%h2z.$ncsuffix
-\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg.eta.%y4%m2%d2_%h2z.iter%c.$ncsuffix
-\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg.prs.%y4%m2%d2_%h2z.$ncsuffix
-\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg%c%c.eta.%y4%m2%d2_%h2z.$ncsuffix
-\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.ana.eta.%y4%m2%d2_%h2z.$ncsuffix
-\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.ana.prs.%y4%m2%d2_%h2z.$ncsuffix
-\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg.sfc.%y4%m2%d2_%h2z.$ncsuffix
+#
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.ana.eta.%y4%m2%d2.$ncsuffix
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.ana.eta.%y4%m2%d2_%h2%n2z.iter%c.$ncsuffix
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.aana.eta.%y4%m2%d2_%h2z%n2.iter%c.$ncsuffix
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.ana.eta.%y4%m2%d2_%h2%n2z.$ncsuffix
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.ana.prs.%y4%m2%d2_%h2%n2z.$ncsuffix
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.ana.inst3d_met_p.%y4%m2%d2_%h2%n2z.$ncsuffix
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.asm.eta.%y4%m2%d2_%h2%n2z.$ncsuffix
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.asm.inst3d_met_p.%y4%m2%d2_%h2%n2z.$ncsuffix
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.ana.sfc.%y4%m2%d2.$ncsuffix
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.ana.sfc.%y4%m2%d2_%h2%n2z.$ncsuffix
+
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bbias.eta.%y4%m2%d2_%h2z.$ncsuffix
+
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg.eta.%y4%m2%d2.$ncsuffix
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg.eta.%y4%m2%d2_%h2%n2z.$ncsuffix
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg.eta.%y4%m2%d2_%h2%n2z.iter%c.$ncsuffix
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg%c%c.eta.%y4%m2%d2_%h2%n2z.$ncsuffix
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg.prs.%y4%m2%d2_%h2%n2z.$ncsuffix
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg.sfc.%y4%m2%d2.$ncsuffix
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg.sfc.%y4%m2%d2_%h2%n2z.$ncsuffix
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg.sfc.%y4%m2%d2_%h2%n2z.iter%c.$ncsuffix
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg%c%c.sfc.%y4%m2%d2_%h2%n2z.$ncsuffix
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg.inst3d_met_p.%y4%m2%d2_%h2%n2z.$ncsuffix
+
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.cbkg.eta.%y4%m2%d2_%h2%n2z.$ncsuffix
+
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.gaas_bkg.sfc.%y4%m2%d2_%h2z.$ncsuffix
-\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg.sfc.%y4%m2%d2_%h2z.iter%c.$ncsuffix
-\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg%c%c.sfc.%y4%m2%d2_%h2z.$ncsuffix
-\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.ana.sfc.%y4%m2%d2_%h2z.$ncsuffix
-\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.xana.sfc.%y4%m2%d2_%h2z.$ncsuffix
-\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.xbkg.sfc.%y4%m2%d2_%h2z.$ncsuffix
-\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.xana.eta.%y4%m2%d2_%h2z.$ncsuffix
-\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.xana.eta.%y4%m2%d2_%h2z.iter%c.$ncsuffix
-\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.xinc.eta.%y4%m2%d2_%h2z.$ncsuffix
-\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.xinc.eta.%y4%m2%d2_%h2z.iter%c.$ncsuffix
-\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.xbkg.eta.%y4%m2%d2_%h2z.$ncsuffix
-\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.asm.inst3d_met_p.%y4%m2%d2_%h2z.$ncsuffix
-\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.ana.inst3d_met_p.%y4%m2%d2_%h2z.$ncsuffix
-\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg.inst3d_met_p.%y4%m2%d2_%h2z.$ncsuffix
-\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.xana.inst2d_met_x.%y4%m2%d2_%h2z.$ncsuffix
-\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.xbkg.inst2d_met_x.%y4%m2%d2_%h2z.$ncsuffix
-\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.xana.inst3d_met_x.%y4%m2%d2_%h2z.$ncsuffix
-\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.xbkg.inst3d_met_x.%y4%m2%d2_%h2z.$ncsuffix
+
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.xana.sfc.%y4%m2%d2_%h2%n2z.$ncsuffix
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.xbkg.sfc.%y4%m2%d2_%h2%n2z.$ncsuffix
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.xana.eta.%y4%m2%d2_%h2%n2z.$ncsuffix
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.xana.eta.%y4%m2%d2_%h2%n2z.iter%c.$ncsuffix
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.xinc.eta.%y4%m2%d2_%h2%n2z.$ncsuffix
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.xinc.eta.%y4%m2%d2_%h2%n2z.iter%c.$ncsuffix
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.xbkg.eta.%y4%m2%d2_%h2%n2z.$ncsuffix
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.xana.inst2d_met_x.%y4%m2%d2_%h2%n2z.$ncsuffix
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.xbkg.inst2d_met_x.%y4%m2%d2_%h2%n2z.$ncsuffix
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.xana.inst3d_met_x.%y4%m2%d2_%h2%n2z.$ncsuffix
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.xbkg.inst3d_met_x.%y4%m2%d2_%h2%n2z.$ncsuffix
+
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.finc.eta.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.%s.$ncsuffix
-\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.inc.eta.%y4%m2%d2_%h2z.iter%c.$ncsuffix
-\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.inc.eta.%y4%m2%d2_%h2z.$ncsuffix
-\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.inc.sfc.%y4%m2%d2_%h2z.$ncsuffix
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.inc.eta.%y4%m2%d2_%h2%n2z.iter%c.$ncsuffix
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.inc.eta.%y4%m2%d2_%h2%n2z.$ncsuffix
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.inc.sfc.%y4%m2%d2_%h2%n2z.$ncsuffix
 
 #
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.cana.eta.%y4%m2%d2.$ncsuffix
@@ -5721,9 +5835,9 @@ sub archiving_rules {
 #                   GEOS-5 GCM RE-START FILES
 #                   -------------------------
 #
-\${PESTOROOT}%s/rs/Y%y4/M%m2/%s.agcm_import_rst.%y4%m2%d2_%h2z.bin
-\${PESTOROOT}%s/rs/Y%y4/M%m2/%s.agcm_import_rst_f.%y4%m2%d2_%h2z.bin
-\${PESTOROOT}%s/rs/Y%y4/M%m2/%s.agcm_internal_rst.%y4%m2%d2_%h2z.bin
+\${PESTOROOT}%s/rs/Y%y4/M%m2/%s.agcm_import_rst.%y4%m2%d2_%h2%n2z.$ncsuffix
+\${PESTOROOT}%s/rs/Y%y4/M%m2/%s.agcm_import_rst_f.%y4%m2%d2_%h2%n2z.$ncsuffix
+\${PESTOROOT}%s/rs/Y%y4/M%m2/%s.agcm_internal_rst.%y4%m2%d2_%h2z.$ncsuffix
 \${PESTOROOT}%s/rs/Y%y4/M%m2/%s.catch_internal_rst.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/rs/Y%y4/M%m2/%s.fvcore_internal_rst.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/rs/Y%y4/M%m2/%s.gocart_internal_rst.%y4%m2%d2_%h2z.bin
@@ -5754,14 +5868,14 @@ sub archiving_rules {
 #                    GEOS-DAS RE-START FILES
 #                    -----------------------
 #
-\${PESTOROOT}%s/rs/Y%y4/M%m2/%s.abkg_eta_rst.%y4%m2%d2_%h2z.$ncsuffix
-\${PESTOROOT}%s/rs/Y%y4/M%m2/%s.bkg_eta_rst.%y4%m2%d2_%h2z.$ncsuffix
-\${PESTOROOT}%s/rs/Y%y4/M%m2/%s.cbkg_eta_rst.%y4%m2%d2_%h2z.$ncsuffix
-\${PESTOROOT}%s/rs/Y%y4/M%m2/%s.bkg_sfc_rst.%y4%m2%d2_%h2z.$ncsuffix
+\${PESTOROOT}%s/rs/Y%y4/M%m2/%s.abkg_eta_rst.%y4%m2%d2_%h2%n2z.$ncsuffix
+\${PESTOROOT}%s/rs/Y%y4/M%m2/%s.bkg_eta_rst.%y4%m2%d2_%h2%n2z.$ncsuffix
+\${PESTOROOT}%s/rs/Y%y4/M%m2/%s.cbkg_eta_rst.%y4%m2%d2_%h2%n2z.$ncsuffix
+\${PESTOROOT}%s/rs/Y%y4/M%m2/%s.bkg_sfc_rst.%y4%m2%d2_%h2%n2z.$ncsuffix
 \${PESTOROOT}%s/rs/Y%y4/M%m2/%s.abkg%c%c_eta_rst.%y4%m2%d2_%h2z.$ncsuffix
-\${PESTOROOT}%s/rs/Y%y4/M%m2/%s.bkg%c%c_eta_rst.%y4%m2%d2_%h2z.$ncsuffix
-\${PESTOROOT}%s/rs/Y%y4/M%m2/%s.bkg%c%c_sfc_rst.%y4%m2%d2_%h2z.$ncsuffix
-\${PESTOROOT}%s/rs/Y%y4/M%m2/%s.cbkg%c%c_eta_rst.%y4%m2%d2_%h2z.$ncsuffix
+\${PESTOROOT}%s/rs/Y%y4/M%m2/%s.bkg%c%c_eta_rst.%y4%m2%d2_%h2%n2z.$ncsuffix
+\${PESTOROOT}%s/rs/Y%y4/M%m2/%s.bkg%c%c_sfc_rst.%y4%m2%d2_%h2%n2z.$ncsuffix
+\${PESTOROOT}%s/rs/Y%y4/M%m2/%s.cbkg%c%c_eta_rst.%y4%m2%d2_%h2%n2z.$ncsuffix
 \${PESTOROOT}%s/rs/Y%y4/M%m2/%s.gaas_bkg_sfc_rst.%y4%m2%d2_%h2z.$ncsuffix
 #\${PESTOROOT}%s/rs/Y%y4/M%m2/%s.ana_pcpbias_rst.%y4%m2%d2_%h2z.txt
 \${PESTOROOT}%s/rs/Y%y4/M%m2/%s.ana_acftbias_rst.%y4%m2%d2_%h2z.txt
@@ -6239,12 +6353,12 @@ sub arch_fcst {
 #                 ---------------------------
 #
 \${PESTOROOT}%s/prog/Y%y4/M%m2/D%d2/H%h2/%s.inst3_3d_asm_Np.%y4%m2%d2_%h2z+%y4%m2%d2_%h2%n2z.$ncsuffix
-\${PESTOROOT}%s/prog/Y%y4/M%m2/D%d2/H%h2/%s.prog.inst3d_met_p.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.$ncsuffix
-\${PESTOROOT}%s/prog/Y%y4/M%m2/D%d2/H%h2/%s.prog.eta.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.$ncsuffix
+\${PESTOROOT}%s/prog/Y%y4/M%m2/D%d2/H%h2/%s.prog.inst3d_met_p.%y4%m2%d2_%h2z+%y4%m2%d2_%h2%n2z.$ncsuffix
+\${PESTOROOT}%s/prog/Y%y4/M%m2/D%d2/H%h2/%s.prog.eta.%y4%m2%d2_%h2z+%y4%m2%d2_%h2%n2z.$ncsuffix
 \${PESTOROOT}%s/prog/Y%y4/M%m2/D%d2/H%h2/%s.prog.eta.%y4%m2%d2_%h2z+%y4%m2%d2.$ncsuffix
-\${PESTOROOT}%s/prog/Y%y4/M%m2/D%d2/H%h2/%s.prog.prs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.$ncsuffix
+\${PESTOROOT}%s/prog/Y%y4/M%m2/D%d2/H%h2/%s.prog.prs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2%n2z.$ncsuffix
 \${PESTOROOT}%s/prog/Y%y4/M%m2/D%d2/H%h2/%s.prog.prs.%y4%m2%d2_%h2z+%y4%m2%d2.$ncsuffix
-\${PESTOROOT}%s/prog/Y%y4/M%m2/D%d2/H%h2/%s.prog.sfc.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.$ncsuffix
+\${PESTOROOT}%s/prog/Y%y4/M%m2/D%d2/H%h2/%s.prog.sfc.%y4%m2%d2_%h2z+%y4%m2%d2_%h2%n2z.$ncsuffix
 \${PESTOROOT}%s/prog/Y%y4/M%m2/D%d2/H%h2/%s.prog.sfc.%y4%m2%d2_%h2z+%y4%m2%d2.$ncsuffix
 \${PESTOROOT}%s/prog/Y%y4/M%m2/D%d2/H%h2/%s.vtx.mix.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.$ncsuffix
 \${PESTOROOT}%s/prog/Y%y4/M%m2/D%d2/H%h2/%s.vtx.mix.%y4%m2%d2_%h2z+%y4%m2%d2.$ncsuffix
@@ -6482,7 +6596,8 @@ sub arch_asens {
 #                   GSI SENSITIVITY DIAGNOSTIC FILES
 #                   --------------------------------
 #
-#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_atms_npp_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_atms_%c%c%c_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_cris-fsr_%c%c%c_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_cris_npp_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_conv_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_gps_bnd_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
@@ -6509,6 +6624,7 @@ sub arch_asens {
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_mhs_%c%c%c_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_mhs_metop-%c_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ssmi_%c%c%c_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_amsr2_gcom-w1_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_amsre_aqua_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ssmis_%c%c%c_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_sndrd%c_%c%c%c_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
@@ -6517,13 +6633,15 @@ sub arch_asens {
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_tmi_trmm_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_airs_aqua.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_amsre_%c%c%c_aqua.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_amsr2_gcom-w1.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_amsre_%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_amsu%c_%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_amsua_aqua.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_amsua_metop-%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_atms_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_atms_%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_avhrr_%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_avhrr_metop-%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_cris-fsr_%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_cris_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_conv.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_gmi_gpm.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
@@ -6546,6 +6664,8 @@ sub arch_asens {
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpvis_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpnm_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpnp_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompsnm_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompsnp_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_o3lev_aura.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_pcp_ssmi_dmsp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_pcp_tmi_trmm.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
@@ -6553,6 +6673,7 @@ sub arch_asens {
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_seviri_m%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_sbuv%c_%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_sndrd%c_g%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_sndr_g%c%c_prep.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ssmi_%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ssmis_%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ssu_%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
@@ -6578,7 +6699,8 @@ sub arch_asens {
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_amsua_aqua_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_mhs_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ssmi_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
-#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_amsre_aqua_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_amsr2_gcom-w1_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_amsre_aqua_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ssmis_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_sndrD%c_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ssu_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
@@ -6605,7 +6727,8 @@ sub arch_asens {
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_amsua_aqua_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_mhs_%c%c%c_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ssmi_%c%c%c_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
-#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_amsre_aqua_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_amsr2_gcom-w1_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_amsre_aqua_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ssmis_%c%c%c_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_sndrD%c_%c%c%c_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ssu_%c%c%c_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
@@ -6632,7 +6755,8 @@ sub arch_asens {
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c_amsua_aqua_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c_mhs_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c_ssmi_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
-#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c_amsre_aqua_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c_amsr2_gcom-w1_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c_amsre_aqua_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c_ssmis_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c_sndrD%c_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c_ssu_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
@@ -6657,7 +6781,8 @@ sub arch_asens {
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c%c_amsua_aqua_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c%c_mhs_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c%c_ssmi_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
-#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c%c_amsre_aqua_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c%c_amsr2_gcom-w1_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c%c_amsre_aqua_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c%c_ssmis_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c%c_sndrD%c_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c%c_ssu_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
@@ -6682,7 +6807,8 @@ sub arch_asens {
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c_amsua_aqua_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c_mhs_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c_ssmi_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
-#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c_amsre_aqua_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c_amsr2_gcom-w1_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c_amsre_aqua_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c_ssmis_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c_sndrD%c_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c_ssu_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
@@ -6707,7 +6833,8 @@ sub arch_asens {
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c%c%c_amsua_aqua_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c%c%c_mhs_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c%c%c_ssmi_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
-#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c%c%c_amsre_aqua_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c%c%c_amsr2_gcom-w1_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c%c%c_amsre_aqua_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c%c%c_ssmis_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c%c%c_sndrD%c_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c%c%c_ssu_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
@@ -6750,12 +6877,18 @@ sub arch_anasa {
 \${PESTOROOT}%s/etc/Y%y4/M%m2/%s.anasa_stats.log.%y4%m2%d2_%h2z.txt
 \${PESTOROOT}%s/etc/Y%y4/M%m2/%s.odssa.log.%y4%m2%d2_%h2z.txt
 \${PESTOROOT}%s/etc/Y%y4/M%m2/%s.zeitsa.reg.%y4%m2%d2_%h2z.txt
-\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.anasa.eta.%y4%m2%d2_%h2z.$ncsuffix
-\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.xincsa.eta.%y4%m2%d2_%h2z.$ncsuffix
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.anasa.satbias.%y4%m2%d2_%h2z.txt
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.anasa.satbang.%y4%m2%d2_%h2z.txt
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.anasa.satbiaspc.%y4%m2%d2_%h2z.txt
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.anasa.acftbias.%y4%m2%d2_%h2z.txt 
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.anasa.eta.%y4%m2%d2_%h2%n2z.$ncsuffix
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.xincsa.eta.%y4%m2%d2_%h2%n2z.$ncsuffix
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bbiassa.eta.%y4%m2%d2_%h2z.$ncsuffix
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bbiassa.eta.%y4%m2%d2_%h2z.bin
+\${PESTOROOT}%s/rs/Y%y4/M%m2/%s.agcmrstsa.%y4%m2%d2_%h2z.tar
 #
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_airs_aqua.%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_amsr2_gcom-w1.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_amsre_aqua.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_amsre_%c%c%c_aqua.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_amsua_aqua.%y4%m2%d2_%h2z.ods
@@ -6763,7 +6896,8 @@ sub arch_anasa {
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_amsu%c_%c%c%c.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_avhrr_%c%c%c.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_avhrr_metop-%c.%y4%m2%d2_%h2z.ods
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_atms_npp.%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_atms_%c%c%c.%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_cris-fsr_%c%c%c.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_cris_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_conv.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_gmi_gpm.%y4%m2%d2_%h2z.ods
@@ -6805,6 +6939,7 @@ sub arch_anasa {
 \${PESTOROOT}%s/etc/Y%y4/M%m2/%s.zeitsa.reg.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.txt
 #
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_airs_aqua.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_amsr2_gcom-w1.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_amsre_aqua.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_amsre_%c%c%c_aqua.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_amsua_aqua.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
@@ -6812,7 +6947,8 @@ sub arch_anasa {
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_amsu%c_%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_avhrr_%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_avhrr_metop-%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_atms_npp.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_atms_%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_cris-fsr_%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_cris_npp.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_conv.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_gmi_gpm.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
@@ -6849,14 +6985,15 @@ sub arch_anasa {
 #
 # The following for doing observation-minus-forecast diagnostics
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_airs_aqua_ges.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_amsr2_gcom-w1_ges.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_amsre_aqua_ges.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
-#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_amsre_%c%c%c_aqua_ges.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_amsua_aqua_ges.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_amsua_metop-%c_ges.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_amsu%c_%c%c%c_ges.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_avhrr_%c%c%c_ges.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_avhrr_metop-%c_ges.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
-#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_atms_npp_ges.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_atms_%c%c%c_ges.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_cris-fsr_%c%c%c_ges.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_cris_npp_ges.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_conv_ges.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_gmi_gpm_ges.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
@@ -6907,7 +7044,7 @@ sub arch_stageana {
 #
 #...........................................................................
 #
-\${PESTOROOT}/%s.ana.eta.%y4%m2%d2_%h2z.$ncsuffix
+\${PESTOROOT}/%s.ana.eta.%y4%m2%d2_%h2%n2z.$ncsuffix
 #
 EOF
 
@@ -6939,17 +7076,15 @@ print  SCRIPT <<"EOF";
 #$group_list
 ##$export_none
 #$jobqueue2
+#SBATCH --time=${arcwallclk}:00
+#SBATCH --job-name=arch_$expid
+#SBATCH --output=arch_$expid.log.o%j.txt
+#SBATCH --ntasks=$pbs_arcncpu
 #PBS -N arch_$expid
 #PBS -o arch_$expid.log.o%j.txt
 #PBS -l ncpus=$pbs_arcncpu
-#PBS -l walltime=${arcwallclk}:00
 #PBS -S /bin/csh
 #PBS -j oe
-#BSUB -J arch_$expid
-#BSUB -n 1
-#BSUB -W $arcwallclk
-#BSUB -o arch_$expid.log.o%J.txt
-#BSUB -e arch_$expid.log.o%J.txt
 # ------------------------------
 #
 # PBS front end for fvarchive().
@@ -6968,6 +7103,12 @@ unset echo
 if (-e \$FVHOME/run/FVDAS_Run_Config) source \$FVHOME/run/FVDAS_Run_Config
 set echo
 set path = ( \$path \$FVROOT/bin )
+
+# A bit sad that this needs to be here instead of set in the env
+# --------------------------------------------------------------
+if ( -e /etc/os-release ) then
+  setenv PERL5LIB /usr/lib/perl5/5.18.2/CPAN
+endif
 
 # defaults
 #---------
@@ -7060,7 +7201,10 @@ if ((\$arch_type == "ADAS") && (\$\?yyyymm) && (\$\?dd)) then
 
       # create job script for monthly post processing
       #----------------------------------------------
-      set monthlyPostTmpl = \$FVROOT/etc/monthly.yyyymm.pl.tmpl
+      set monthlyPostTmpl = \$FVHOME/run/monthly.yyyymm.pl.tmpl
+      if (! -e \$monthlyPostTmpl) then
+          cp \$FVROOT/etc/monthly.yyyymm.pl.tmpl \$monthlyPostTmpl
+      endif
       set monthlyPost = \$FVHOME/run/monthly.\$mean_date.pl
 
       # skip if monthly means script already exists
@@ -7100,9 +7244,9 @@ sub build_lnbcs {
   $mymerra2 = "";
   if ( $merra2 ) { $mymerra2 = "-merra2" };
   if ( $cubed ) {
-     $cmd = "$fvbin/gen_lnbcs.pl -fvhome $fvhome -o lnbcs $mymerra2 -cubed $agcm_im $agcm_jm $ogcm";
+     $cmd = "$fvbin/gen_lnbcs.pl -fvhome $fvhome -o lnbcs $mymerra2 -cubed $agcm_im $agcm_jm $ogcm $landbcs";
   } else {
-     $cmd = "$fvbin/gen_lnbcs.pl -fvhome $fvhome -o lnbcs $mymerra2        $agcm_im $agcm_jm $ogcm";
+     $cmd = "$fvbin/gen_lnbcs.pl -fvhome $fvhome -o lnbcs $mymerra2        $agcm_im $agcm_jm $ogcm $landbcs";
   }
   print "$cmd\n";
   system($cmd);
@@ -7188,7 +7332,7 @@ if ( $fvchem && $lm > 2 ) {
 #!/bin/csh -fx
 # ------------------------------
 #$group_list
-#$export_none
+##$export_none
 #$jobqueue1
 EOF
 
@@ -7197,8 +7341,8 @@ print  SCRIPT <<"EOF";
 #SBATCH --job-name=$jobn
 #SBATCH --output=$jobn.log.o%j.txt
 #SBATCH --ntasks=$ncpus
-#SBATCH --ntasks-per-node=24
-#SBATCH --constraint=hasw
+#SBATCH --ntasks-per-node=$ncpus_per_node
+#SBATCH --constraint=$nodeflg
 #SBATCH --time=${daswallclk}:00
 EOF
 
@@ -7219,6 +7363,9 @@ EOF
 }
 
 print SCRIPT <<"EOF";
+#SBATCH --job-name=$jobn
+#SBATCH --output=$jobn.log.o%j.txt
+#SBATCH --time=${daswallclk}:00
 #PBS -N $jobn
 #PBS -o $jobn.log.o%j.txt
 #PBS -l walltime=${daswallclk}:00
@@ -7273,11 +7420,13 @@ print SCRIPT <<"EOF";
   setenv NCPUS_GSI   $ncpus_gsi   # Number of CPUs to run GSI
   setenv NCPUS_GPERT $ncpus_gpert # Number of CPUs to run gcmPERT
   setenv NCPUS_AOD   $ncpus_aod   # Number of CPUs to run PSAS-AOD
+  setenv GAAS_RUN_SLURM 1 # launch AOD analysis as separate batch job
+  setenv AODBLOCKJOB 1
 EOF
 if ($ncpus_per_node) {
 print SCRIPT <<"EOF";
   setenv NCPUS_PER_NODE $ncpus_per_node
-  setenv NODES      $nodes
+  setenv NODES      $nodeflg
 EOF
 }
 print SCRIPT <<"EOF";
@@ -7302,7 +7451,7 @@ print SCRIPT <<"EOF";
       if( `uname -m` != "ia64" ) then
           setenv FORT90L -Wl,-T
       endif
-      setenv FVWORK $mywork/\$user/fvwork.\$\$
+      setenv FVWORK $diren/fvwork.\$\$
       if (\$?kidwork) then # this case, overwrite FVWORK with user-specific
          setenv FVWORK \$kidwork
       endif
@@ -7329,7 +7478,9 @@ print  SCRIPT <<"EOF";
 
 # Internal parameters controlling system behavior
 # ----------------------------------------------
+  setenv BATCH_SUBCMD $qsub
   setenv G5GCM   $g5gcm   # 1 = enables GEOS-5 GCM, 0 = disables GEOS-5 GCM (back to fvGCM)
+  setenv FCHOME  \$FVHOME/fcst
   setenv FVSBC   $fvsbc   # 1 = enables SBC, 0 = disables SBC (Bias Correction)
   setenv FVCQC   $fvcqc   # 1 = enables CQC, 0 = disables CQC
   setenv PREPQC  $prepqc  # 1 = enables NCEP-QC, 0 = disables QC
@@ -7345,6 +7496,7 @@ print  SCRIPT <<"EOF";
   setenv DO4DVAROBSVR $do4dvar # trigger for split observer
   setenv DO4DVAR  $do4dvar    # 1=enables 4dvar
   setenv DO4DTLM  $do4dtlm    # 1=enables tlm integration after each 4dvar iteration
+  setenv DO4DIAU  $do4diau       # 1=enables gcm to take time changing IAU forcing
   setenv DORCORR  $doRcorr    # 1=enables correlated obs errors
   setenv WCONSTRAINT $wcnstrt # set/unset weak constraint option
   setenv NVAROUTER $nvarouter # number of iteration for var loop
@@ -7368,20 +7520,32 @@ print  SCRIPT <<"EOF";
   setenv IGNORE_0 1   # 1 = ignore 0 length obs files in acquire
   setenv ACFTBIAS $acftbias
   setenv USE_MODIS_STAGE 0  # 1 = use MODIS data from MODIS_STAGE_DIR; 0 = don't
-  setenv MODIS_STAGE_DIR /discover/nobackup/dao_ops/intermediate/flk/modis  # L2a non-archive data dir
+  setenv MODIS_STAGE_DIR /discover/nobackup/projects/gmao/input/dao_ops/ops/flk/modis  # L2a non-archive data dir
   setenv FCSTIMES "21"
   setenv FCSTATS  "21"
   setenv FHOURS   $fhours
   setenv NEWRADBC $newradbc
   setenv ANGLEBC  $newradbc
+  setenv GSI_NETCDF_DIAG 1
 # setenv DO_0HR_IMP 1
+
+  if ( -e \$FVHOME/run/replay.acq ) then
+     setenv USE_MODIS_STAGE 1  # for now, replay.acq controls only meteorology (AOD is not yet replayed to)
+  endif
 EOF
+
+if ( $merra2 ) {
+} else {
+print  SCRIPT <<"EOF";
+  setenv LOCAL_ACQUIRE 1
+  setenv CHECK_DMF 0
+EOF
+}
 
 if ( $hyb_ens < 0 ) {
 print  SCRIPT <<"EOF";
   setenv VTXRELOC $vtxreloc        # 0 = disable vortex relocator; 1 = enable
   setenv VTRACK   $vtrack        # 0 = disable vortex tracker;   1 = enable
-  setenv DO4DIAU  0           # 1=enables gcm to take time changing IAU forcing
   setenv HYBRIDGSI     /dev/null
   setenv STAGE4HYBGSI  /dev/null
   setenv RSTSTAGE4AENS /dev/null
@@ -7391,14 +7555,12 @@ EOF
 print  SCRIPT <<"EOF";
   setenv VTXRELOC $vtxreloc        # 0 = disable vortex relocator; 1 = enable
   setenv VTRACK   $vtrack        # 0 = disable vortex tracker;   1 = enable
-  setenv DO4DIAU  0           # 1=enables gcm to take time changing IAU forcing
 EOF
   }
   if ( $hyb_ens == 4 ) {
 print  SCRIPT <<"EOF";
   setenv VTXRELOC 0
   setenv VTRACK   0
-  setenv DO4DIAU  1           # 1=enables gcm to take time changing IAU forcing
   setenv ANA4DUPD_IAU0_ONLY 0
 EOF
   }
@@ -7450,77 +7612,74 @@ print  SCRIPT <<"EOF";
   setenv OMP_NUM_THREADS             \$AGCM_N_THREADS_PER_PROCESS # Number OMP Threads (generic)
 
 EOF
-#--if ( $siteID eq "nccs" ) {
-#--print  SCRIPT <<"EOF";
-#--  setenv DAPL_ACK_RETRY 7
-#--  setenv DAPL_ACK_TIMER 20
-#--  setenv DAPL_RNR_RETRY 7
-#--  setenv DAPL_RNR_TIMER 28
-#--  setenv I_MPI_MPD_TMPDIR /tmp
-#--  setenv I_MPI_USE_DYNAMIC_CONNECTIONS 0
-#--  setenv I_MPI_JOB_STARTUP_TIMEOUT 10000
-#--  setenv I_MPI_RDMA_RNDV_WRITE 1
-#--# setenv I_MPI_DEVICE rdssm:OpenIB-mlx4_0-1
-#--EOF
-#--}
 print  SCRIPT <<"EOF";
 
   setenv MKL_CBWR SSE4_2
 
 # MVAPICH variables
 # -----------------
-  setenv MV2_DEFAULT_TIME_OUT 23
-  setenv MV2_USE_SHMEM_ALLREDUCE 0
-  setenv MV2_ON_DEMAND_THRESHOLD 8192
-  setenv MV2_USE_UD_HYBRID 0
-  setenv MV2_USE_SHMEM_COLL      0
-  setenv MV2_USE_UD_HYBRID       0
-  setenv MV2_HYBRID_MAX_RC_CONN 16
-  setenv MV2_SHOW_ENV_INFO 2
-
-# setenv I_MPI_FABRICS shm:ofa
+  if (\$?MVAPICH) then
+     setenv MV2_DEFAULT_TIME_OUT 23
+     setenv MV2_USE_SHMEM_ALLREDUCE 0
+     setenv MV2_ON_DEMAND_THRESHOLD 8192
+     setenv MV2_USE_UD_HYBRID 0
+     setenv MV2_USE_SHMEM_COLL      0
+     setenv MV2_USE_UD_HYBRID       0
+     setenv MV2_HYBRID_MAX_RC_CONN 16
+     setenv MV2_SHOW_ENV_INFO 2
+  endif
 
 # The following are from OPS parallel
-  setenv I_MPI_USE_DYNAMIC_CONNECTIONS 0
-  setenv I_MPI_FABRICS shm:dapl
-  setenv I_MPI_FABRICS_LIST "dapl,ofa"
-  setenv I_MPI_FALLBACK "enable"
-  setenv I_MPI_MPD_RSH sshmpi
-  setenv I_MPI_DAPL_CHECK_MAX_RDMA_SIZE 1
-##setenv I_MPI_DAPL_UD on
-  setenv DAPL_UCM_CQ_SIZE 4096
-  setenv DAPL_UCM_QP_SIZE 4096
-  setenv I_MPI_DAPL_UD_SEND_BUFFER_NUM 4096
-  setenv I_MPI_DAPL_UD_RECV_BUFFER_NUM 4096
-  setenv I_MPI_DAPL_UD_ACK_SEND_POOL_SIZE 4096
-  setenv I_MPI_DAPL_UD_ACK_RECV_POOL_SIZE 4096
-  setenv I_MPI_DAPL_UD_RNDV_EP_NUM 2
-  setenv I_MPI_DAPL_UD_REQ_EVD_SIZE 2000
-  setenv DAPL_UCM_REP_TIME 2000
-  setenv DAPL_UCM_RTU_TIME 2000
-  setenv DAPL_UCM_RETRY 7
-  setenv DAPL_ACK_RETRY 7
-  setenv DAPL_ACK_TIMER 20
-  setenv DAPL_UCM_RETRY 10
-  setenv DAPL_ACK_RETRY 10
 
+  if (\$?I_MPI_ROOT) then
+#    The following as recommended by Scott and SI Team
+     setenv I_MPI_USE_DYNAMIC_CONNECTIONS 0
+     setenv I_MPI_SHM_HEAP_VSIZE   512
+     setenv PSM2_MEMORY            large
+     setenv I_MPI_ADJUST_GATHERV   3
+     setenv I_MPI_ADJUST_ALLREDUCE 12
+     setenv I_MPI_EXTRA_FILESYSTEM 1
+     setenv I_MPI_EXTRA_FILESYSTEM_LIST gpfs
+     setenv ROMIO_FSTYPE_FORCE         "gpfs:"
+#    setenv I_MPI_FABRICS shm:dapl
+#    setenv I_MPI_FABRICS_LIST "dapl,ofa"
+#    setenv I_MPI_FALLBACK "enable"
+#    setenv I_MPI_MPD_RSH sshmpi
+#    setenv I_MPI_DAPL_CHECK_MAX_RDMA_SIZE 1
+#    setenv I_MPI_DAPL_UD_SEND_BUFFER_NUM 4096
+#    setenv I_MPI_DAPL_UD_RECV_BUFFER_NUM 4096
+#    setenv I_MPI_DAPL_UD_ACK_SEND_POOL_SIZE 4096
+#    setenv I_MPI_DAPL_UD_ACK_RECV_POOL_SIZE 4096
+#    setenv I_MPI_DAPL_UD_RNDV_EP_NUM 2
+#    setenv I_MPI_DAPL_UD_REQ_EVD_SIZE 2000
+  endif
+  if (\$?MPT_VERSION) then
+     setenv DAPL_UCM_CQ_SIZE 4096
+     setenv DAPL_UCM_QP_SIZE 4096
+     setenv DAPL_UCM_REP_TIME 2000
+     setenv DAPL_UCM_RTU_TIME 2000
+     setenv DAPL_UCM_RETRY 7
+     setenv DAPL_ACK_RETRY 7
+     setenv DAPL_ACK_TIMER 20
+     setenv DAPL_UCM_RETRY 10
+     setenv DAPL_ACK_RETRY 10
 # MPT env variables
 # -----------------
-  setenv MPI_COLL_REPRODUCIBLE
+     setenv MPI_COLL_REPRODUCIBLE
+     setenv MPI_DISPLAY_SETTINGS
+     setenv MPI_COMM_MAX  1024
+     setenv MPI_GROUP_MAX 1024
+     setenv MPI_BUFS_PER_PROC 1024
+     setenv MPI_IB_TIMEOUT 23
+     setenv MPI_XPMEM_ENABLE no
+     setenv MPI_NUM_MEMORY_REGIONS 0
+     setenv SUPRESS_XPMEM_TRIM_THRESH 1
+  endif 
   setenv SLURM_DISTRIBUTION block
-  setenv MPI_DISPLAY_SETTINGS
 
 # For some reason, PMI_RANK is randomly set and interferes
 # with binarytile.x and other executables.
   unsetenv PMI_RANK
-
-  setenv MPI_COMM_MAX  1024
-  setenv MPI_GROUP_MAX 1024
-  setenv MPI_BUFS_PER_PROC 1024
-  setenv MPI_IB_TIMEOUT 23
-  setenv MPI_XPMEM_ENABLE no
-  setenv MPI_NUM_MEMORY_REGIONS 0
-  setenv SUPRESS_XPMEM_TRIM_THRESH 1
 
 # Needed for TLM/ADM
 # ------------------
@@ -7535,6 +7694,43 @@ print  SCRIPT <<"EOF";
     set path = ( . \$FVHOME/run \$FVROOT/bin \$SHARE/dasilva/opengrads/Contents \$BASEDIR/\$ARCH/bin \$path )
   else
     set path = ( . \$FVHOME/run \$FVROOT/bin \$SHARE/dasilva/opengrads/Contents \$path )
+  endif
+
+# Make sure RSTs have correct time tagging
+# ----------------------------------------
+  cd \$FVHOME/recycle
+  set lstfn = (`ls *.bkg_eta_rst.????????_??z* *.bkg??_eta_rst.????????_??z* *.bkg_sfc_rst.????????_??z* *.bkg??_sfc_rst.????????_??z* *.cbkg_eta_rst.????????_??z* *.cbkg??_eta_rst.????????_??z*`)
+  if ( \$#lstfn > 0 ) then
+     foreach fn ( \$lstfn )
+       set iii = `echo \${fn} | grep -o '\\.' | wc -l`
+       @ ip1 = \$iii + 1; @ im1 = \$iii - 1; @ im2 = \$iii - 2
+       set mypfx  = `echo \$fn | cut -d. -f1-\$im1`
+       set mysfx  = `echo \$fn | cut -d. -f\${ip1}-`
+       set mynymd = `echo \$fn | cut -d. -f\${iii} | cut -c1-8`
+       set myhh   = `echo \$fn | cut -d. -f\${iii} | cut -c10-11`
+       /bin/mv \$fn \$mypfx.\${mynymd}_\${myhh}00z.\$mysfx
+     end
+  endif
+  cd -
+  if ( "\$HYBRIDGSI" != "/dev/null" ) then
+     cd \$HYBRIDGSI
+     set lstdirs = ( `ls -d ensmean ensrms mem*` )
+     foreach dir ( \$lstdirs )
+        cd \$dir
+        set lstfn = (`ls *.bkg.eta.????????_??z* *.bkg.sfc.????????_??z* *.cbkg.eta.????????_??z*`)
+        if ( \$#lstfn > 0 ) then
+           foreach fn ( \$lstfn )
+             set iii = `echo \${fn} | grep -o '\\.' | wc -l`
+             @ ip1 = \$iii + 1; @ im1 = \$iii - 1; @ im2 = \$iii - 2
+             set mypfx  = `echo \$fn | cut -d. -f1-\$im1`
+             set mysfx  = `echo \$fn | cut -d. -f\${ip1}-`
+             set mynymd = `echo \$fn | cut -d. -f\${iii} | cut -c1-8`
+             set myhh   = `echo \$fn | cut -d. -f\${iii} | cut -c10-11`
+             /bin/mv \$fn \$mypfx.\${mynymd}_\${myhh}00z.\$mysfx
+           end
+        endif
+        cd -
+     end
   endif
 
 # MPI/OpenMP Hybrid Options
@@ -7827,6 +8023,17 @@ EOF
 # ----------------------------
   print  SCRIPT <<"EOF";
 
+# Check for aircraft bias correction obsclass if applicable
+# ---------------------------------------------------------
+  if ( (! \$PREPQC) && \$ACFTBIAS == 2 ) then
+     set check_acfb = `echo \$OBSCLASS | grep ncep_acftpfl_bufr`
+     if (\$status) then
+        echo "Required ncep_acftpfl_bufr missing from OBSCLASS"
+        echo "Cannot perform Variational Aircraft Bias Correction"
+        echo "Aborting ..."
+        exit 1
+     endif
+  endif
 
 
 # Run fvDAS for Several (1-day) Run Segments
@@ -7909,7 +8116,11 @@ print  SCRIPT <<"EOF";
                        touch .SUBMITTED.\$fcstdtag
                        set jname = fcst.\${crstag}
                        set lname = \$FVHOME/fcst/fcst.log.\${crstag}.o%j.txt
-                       qsub -N \$jname -o \$lname g5fcst.j
+                       if ( \$BATCH_SUBCMD == "sbatch" ) then
+                          sbatch -J \$jname -o \$lname g5fcst.j
+                       else
+                          qsub -N \$jname -o \$lname g5fcst.j
+                       endif
                    endif
                 endif
                 cd -
@@ -8043,8 +8254,13 @@ EOF
 
 #     submit archive job
 #     ------------------
-      set cmd = "qsub -N \$jname -o \$lname \$dependflag -v \$vars \$FVHOME/run/fvarchive.j"
-      set jobID = `\$cmd`
+      if ( \$BATCH_SUBCMD == "sbatch" ) then
+         set cmd = "sbatch -J \$jname -o \$lname \$dependflag --export=\$vars \$FVHOME/run/fvarchive.j"
+      else
+         set cmd = "qsub -N \$jname -o \$lname \$dependflag -v \$vars \$FVHOME/run/fvarchive.j"
+      endif
+      set jobIDline = `\$cmd`
+      set jobID = \$jobIDline[\$\#jobIDline]
   endif
 
 # Remove the working directory
@@ -8071,7 +8287,7 @@ EOF
            set lname2 = "\$fstats_dir/\$jtype.log.\$jdate.txt"
 
            set Bin = "\$FVROOT/bin"
-           set flags = "-ihh \$hh -fhrs \$FHOURS -das"
+           set flags = "-ihh \$hh -fhrs \$FHOURS -das -nodes $nodeflg"
            set cmd = "g5fcst_stats.pl \$EXPID \$fcstdt[1] 1 \$flags"
 
            set jobfile = "\$fstats_dir/\$jname.j"
@@ -8083,8 +8299,8 @@ EOF
            echo2 "#SBATCH --output=\$lname1"
            echo2 "#SBATCH --partition=datamove"
            echo2 "#SBATCH --time=1:00:00"
-           echo2 "#SBATCH --export=NONE"
-           echo2 "#SBATCH --constraint=hasw"
+           echo2 "##SBATCH --export=NONE"
+           echo2 "#SBATCH --constraint=$nodeflg"
            echo2 ""
            echo2 "setenv FVHOME \$FVHOME"
            echo2 "set Bin = \$Bin"
@@ -8092,7 +8308,7 @@ EOF
            echo2 ""
            echo2 '\$Bin'/\$cmd
            echo2 'if (\$status == 0) then'
-           echo2 '   qalter -o \$output \$PBS_JOBID'
+           echo2 '   qalter -o \$output \$SLURM_JOBID'
            echo2 "endif"
 
            sbatch --dependency afterany:\$jobID \$jobfile
@@ -8106,7 +8322,7 @@ EOF
    echo \$myname": simulation just completed, no further job segments"
 
    set lname = \$FVHOME/run/$jobn.log.\${itime0}.txt
-   qalter -o \$lname \$PBS_JOBID
+   qalter -o \$lname \$SLURM_JOBID
 
    exit 0
  endif
@@ -8138,24 +8354,32 @@ end # while: loop over fvDAS run segments
   set jname = $jobn.\${itime1}
   set lname = $jobn.log.\${itime1}.o%j.txt
   if ( `uname -s` == "OSF1" ) then
-#     bsub -w ended(\${PBS_JOBID}) -J \$jname < \$FVHOME/run/$jobn.j
+#     bsub -w ended(\${SLURM_JOBID}) -J \$jname < \$FVHOME/run/$jobn.j
       bsub                         -J \$jname < \$FVHOME/run/$jobn.j
   else
       if ( "\$HYBRIDGSI" != "/dev/null" && (! -e \$FVHOME/run/atmens_replay.acq) ) then
          if (-e \$FVHOME/run/\${EXPID}_scheduler.j ) then
             touch \$FVHOME/.DONE_MEM001_ddas.\$yyyymmddhh
          else
-            qsub -W depend=afterany:\${PBS_JOBID} \$FVHOME/run/atm_ens.j
+            if ( \$BATCH_SUBCMD == "sbatch" ) then
+               sbatch -d afterany:\${SLURM_JOBID} \$FVHOME/run/atm_ens.j
+            else
+               qsub -W depend=afterany:\${PBS_JOBID} \$FVHOME/run/atm_ens.j
+            endif
          endif
       else
-         qsub -W depend=afterany:\${PBS_JOBID} -N \$jname -o \$lname \$FVHOME/run/$jobn.j
+         if ( \$BATCH_SUBCMD == "sbatch" ) then
+            sbatch -d afterany:\${SLURM_JOBID} -J \$jname -o \$lname \$FVHOME/run/$jobn.j
+         else
+            qsub -W depend=afterany:\${PBS_JOBID} -N \$jname -o \$lname \$FVHOME/run/$jobn.j
+         endif
       endif
   endif
 
 # Rename output log
 # -----------------
   set lname = \$FVHOME/run/$jobn.log.\${itime0}.txt
-  qalter -o \$lname \$PBS_JOBID
+  qalter -o \$lname \$SLURM_JOBID
 
 # All done
 # --------
@@ -8227,7 +8451,7 @@ sub create_fscript {
 #   > touch forecast.20140613_21z
 # ------------------------------------------
 #$group_list
-#$export_none
+##$export_none
 #$jobqueue1
 EOF
 
@@ -8236,8 +8460,8 @@ print  SCRIPT <<"EOF";
 #SBATCH --job-name=fcst
 #SBATCH --output=fcst.log.o%j.txt
 #SBATCH --ntasks=$ncpus
-#SBATCH --ntasks-per-node=24
-#SBATCH --constraint=hasw
+#SBATCH --ntasks-per-node=$ncpus_per_node
+#SBATCH --constraint=$nodeflg
 #SBATCH --time=${fcswallclk}:00
 EOF
 
@@ -8259,6 +8483,9 @@ EOF
 }
 
 print  SCRIPT <<"EOF";
+#SBATCH --job-name=fcst
+#SBATCH --output=fcst.log.o%j.txt
+#SBATCH --time=${fcswallclk}:00
 #PBS -N fcst
 #PBS -o fcst.log.o%j.txt
 #PBS -l walltime=${fcswallclk}:00
@@ -8293,6 +8520,7 @@ print SCRIPT <<"EOF";
 
 # Experiment environment
 # ----------------------
+  setenv BATCH_SUBCMD $qsub
   setenv GID $gid
   setenv group_list \"$group_list1\"
   setenv ARCH `uname -s`
@@ -8319,7 +8547,7 @@ print SCRIPT <<"EOF";
   endif
   if( (`uname -s` == "Linux") && ( (`uname -m` == "ia64") || (`uname -m` == "x86_64") ) ) then
       setenv FORT90L -Wl,-T
-      setenv FVWORK $mywork/\$user/tmp.\$\$
+      setenv FVWORK $fvhome/../tmp.\$\$
       if(   -d \$FVWORK ) /bin/rm -r  \$FVWORK
       /bin/mkdir -p \$FVWORK
       if (-e /usr/bin/lfs) then
@@ -8343,6 +8571,7 @@ print  SCRIPT <<"EOF";
 
 # Load BASEDIR and modules
 # ------------------------
+  unsetenv LD_LIBRARY_PATH
   source \$FVROOT/bin/g5_modules
 
 # Until a better handle of GEOS_Util is agreed upon (should not refer to things in src)
@@ -8354,6 +8583,7 @@ print  SCRIPT <<"EOF";
 # Internal parameters controling system behavior
 # ----------------------------------------------
   setenv G5GCM   $g5gcm # 1 = enables GEOS-5 GCM, 0 = disables GEOS-5 GCM (back to fvGCM)
+  setenv FCHOME  \$FVHOME/fcst
   setenv FVSBC   0     # 1 = enables SBC, 0 = disables SBC (Bias Correction)
   setenv FVCQC   0     # 1 = enables CQC, 0 = disables CQC
   setenv PREPQC  0     # 1 = enables NCEP-QC, 0 = disables QC
@@ -8371,14 +8601,9 @@ print  SCRIPT <<"EOF";
   setenv CONVPROG $convupa  # 1 = enables conversion of prog output files to pressure
   setenv NCSUFFIX $ncsuffix
   setenv FVINPUT  \$FVHOME/fvInput
+  setenv DO4DIAU $do4diau
 
 EOF
-
-if ($hyb_ens == 4) {
-print SCRIPT <<"EOF";
-   setenv DO4DIAU 1
-EOF
-}
 
 print  SCRIPT <<"EOF";
 
@@ -8396,57 +8621,70 @@ print  SCRIPT <<"EOF";
 
 # MVAPICH variables
 # -----------------
-  setenv MV2_DEFAULT_TIME_OUT 23
-  setenv MV2_USE_SHMEM_ALLREDUCE 0
-  setenv MV2_ON_DEMAND_THRESHOLD 8192
-  setenv MV2_USE_UD_HYBRID 0
-  setenv MV2_USE_SHMEM_COLL      0
-  setenv MV2_USE_UD_HYBRID       0
-  setenv MV2_HYBRID_MAX_RC_CONN 16
-  setenv MV2_SHOW_ENV_INFO 2
-
-# MPT env variables
-# -----------------
-  setenv MPI_COLL_REPRODUCIBLE
-  setenv SLURM_DISTRIBUTION block
-  setenv MPI_DISPLAY_SETTINGS
-  setenv MPI_IB_TIMEOUT 23
-  setenv MPI_XPMEM_ENABLE no
-  setenv MPI_NUM_MEMORY_REGIONS 0
-  setenv SUPRESS_XPMEM_TRIM_THRESH 1
+  if (\$?MVAPICH) then
+     setenv MV2_DEFAULT_TIME_OUT 23
+     setenv MV2_USE_SHMEM_ALLREDUCE 0
+     setenv MV2_ON_DEMAND_THRESHOLD 8192
+     setenv MV2_USE_UD_HYBRID 0
+     setenv MV2_USE_SHMEM_COLL      0
+     setenv MV2_USE_UD_HYBRID       0
+     setenv MV2_HYBRID_MAX_RC_CONN 16
+     setenv MV2_SHOW_ENV_INFO 2
+  endif
 
 # For some reason, PMI_RANK is randomly set and interferes
 # with binarytile.x and other executables.
   unsetenv PMI_RANK
 
-  setenv MPI_COMM_MAX  1024
-  setenv MPI_GROUP_MAX 1024
-  setenv MPI_BUFS_PER_PROC 256
-
+# MPT env variables
+# -----------------
+  if (\$?I_MPI_ROOT) then
+     setenv I_MPI_USE_DYNAMIC_CONNECTIONS 0
+#    setenv I_MPI_FABRICS shm:dapl
+#    setenv I_MPI_FABRICS_LIST "dapl,ofa"
+#    setenv I_MPI_FALLBACK "enable"
+#    setenv I_MPI_MPD_RSH sshmpi
+#    setenv I_MPI_DAPL_CHECK_MAX_RDMA_SIZE 1
+##   setenv I_MPI_DAPL_UD on
+#    setenv I_MPI_DAPL_UD_SEND_BUFFER_NUM 4096
+#    setenv I_MPI_DAPL_UD_RECV_BUFFER_NUM 4096
+#    setenv I_MPI_DAPL_UD_ACK_SEND_POOL_SIZE 4096
+#    setenv I_MPI_DAPL_UD_ACK_RECV_POOL_SIZE 4096
+#    setenv I_MPI_DAPL_UD_RNDV_EP_NUM 2
+#    setenv I_MPI_DAPL_UD_REQ_EVD_SIZE 2000
+#    setenv I_MPI_JOB_STARTUP_TIMEOUT 10000
+#    setenv I_MPI_RDMA_RNDV_WRITE 1
+#    The following as recommended by Scott and SI Team
+     setenv I_MPI_SHM_HEAP_VSIZE   512
+     setenv PSM2_MEMORY            large
+     setenv I_MPI_ADJUST_GATHERV   3
+     setenv I_MPI_ADJUST_ALLREDUCE 12
+     setenv I_MPI_EXTRA_FILESYSTEM 1
+     setenv I_MPI_EXTRA_FILESYSTEM_LIST gpfs
+     setenv ROMIO_FSTYPE_FORCE         "gpfs:"
+  endif
+  if (\$?MPT_VERSION) then
+     setenv MPI_COLL_REPRODUCIBLE
+     setenv SLURM_DISTRIBUTION block
+     setenv MPI_DISPLAY_SETTINGS
+     setenv MPI_IB_TIMEOUT 23
+     setenv MPI_XPMEM_ENABLE no
+     setenv MPI_NUM_MEMORY_REGIONS 0
+     setenv SUPRESS_XPMEM_TRIM_THRESH 1
+     setenv MPI_COMM_MAX  1024
+     setenv MPI_GROUP_MAX 1024
+     setenv MPI_BUFS_PER_PROC 256
 # The following are from OPS parallel
-  setenv I_MPI_USE_DYNAMIC_CONNECTIONS 0
-  setenv I_MPI_FABRICS shm:dapl
-  setenv I_MPI_FABRICS_LIST "dapl,ofa"
-  setenv I_MPI_FALLBACK "enable"
-  setenv I_MPI_MPD_RSH sshmpi
-  setenv I_MPI_DAPL_CHECK_MAX_RDMA_SIZE 1
-##setenv I_MPI_DAPL_UD on
-  setenv DAPL_UCM_CQ_SIZE 4096
-  setenv DAPL_UCM_QP_SIZE 4096
-  setenv I_MPI_DAPL_UD_SEND_BUFFER_NUM 4096
-  setenv I_MPI_DAPL_UD_RECV_BUFFER_NUM 4096
-  setenv I_MPI_DAPL_UD_ACK_SEND_POOL_SIZE 4096
-  setenv I_MPI_DAPL_UD_ACK_RECV_POOL_SIZE 4096
-  setenv I_MPI_DAPL_UD_RNDV_EP_NUM 2
-  setenv I_MPI_DAPL_UD_REQ_EVD_SIZE 2000
-  setenv DAPL_UCM_REP_TIME 2000
-  setenv DAPL_UCM_RTU_TIME 2000
-  setenv DAPL_UCM_RETRY 7
-  setenv DAPL_ACK_RETRY 7
-  setenv DAPL_ACK_TIMER 20
-  setenv DAPL_UCM_RETRY 10
-  setenv DAPL_ACK_RETRY 10
-
+     setenv DAPL_UCM_CQ_SIZE 4096
+     setenv DAPL_UCM_QP_SIZE 4096
+     setenv DAPL_UCM_REP_TIME 2000
+     setenv DAPL_UCM_RTU_TIME 2000
+     setenv DAPL_UCM_RETRY 7
+     setenv DAPL_ACK_RETRY 7
+     setenv DAPL_ACK_TIMER 20
+     setenv DAPL_UCM_RETRY 10
+     setenv DAPL_ACK_RETRY 10
+  endif
 
 # Needed for TLM/ADM
 # ------------------
@@ -8595,9 +8833,7 @@ EOF
   setenv KMP_STACKSIZE    450m
   unsetenv F_UFMTENDIAN
   setenv KMP_LIBRARY turnaround
-  setenv I_MPI_USE_DYNAMIC_CONNECTIONS 0
-  setenv I_MPI_JOB_STARTUP_TIMEOUT 10000
-  setenv I_MPI_RDMA_RNDV_WRITE 1
+
 
 EOF
 
@@ -8750,7 +8986,11 @@ print  SCRIPT <<"EOF";
 
 # Pick oldest restart for initial condition
 # -----------------------------------------
-  set fclist = `/bin/ls -1 forecast.????????_??z`
+  if (\$?this_nymdhh) then
+     set fclist = `/bin/ls -1 forecast.\${this_nymdhh}z`
+  else
+     set fclist = `/bin/ls -1 forecast.????????_??z`
+  endif
   if ( \$status ) then # try old way: have restarts been dropped in fcst dir?
     echo \$myname": forecast cases not listed"
     set rslist = `/bin/ls -1 \$FVHOME/fcst/\$EXPID.rst.lcv.????????_??z.bin`
@@ -8788,6 +9028,12 @@ print  SCRIPT <<"EOF";
 
     fname1 "#\\!/bin/csh -xvf"
     fname2 "#\$group_list"
+    fname2 "#SBATCH --job-name=acquire"
+    fname2 "#SBATCH --ntasks=1"
+    fname2 "#SBATCH --time=1:00:00"
+    fname2 "#SBATCH --partition=datamove"
+    fname2 "#SBATCH --account=$gid"
+    fname2 "#SBATCH --output=acq.log.o%j.txt"
     fname2 "#PBS -N acquire"
     fname2 "#PBS -l nodes=1:ppn=1"
     fname2 "#PBS -l walltime=1:00:00"
@@ -8802,7 +9048,11 @@ print  SCRIPT <<"EOF";
     fname2 "endif"
     fname2 "exit"
 
-    qsub -W block=true \$fname
+    if ( \$BATCH_SUBCMD == "sbatch" ) then
+       sbatch -W \$fname
+    else
+       qsub -W block=true \$fname
+    endif
     sleep 2
 
   endif
@@ -8900,10 +9150,16 @@ endif
   set jname = fcst.arch.\${itime}
   set lname = fcst.arch.log.\${itime}.o%j.txt
 
-  if ( `uname -s` == "OSF1" ) then
-        bsub -J \$jname < \$FVHOME/run/fvarchive.j
-  else
-        qsub -N \$jname -o \$lname -v arch_type=FCST \$FVHOME/run/fvarchive.j
+  if ( !(\$?this_nymdhh) ) then # only archive when not running multiple concurrent fcst jobs
+     if ( `uname -s` == "OSF1" ) then
+           bsub -J \$jname < \$FVHOME/run/fvarchive.j
+     else
+           if ( \$BATCH_SUBCMD == "sbatch" ) then
+              sbatch -J \$jname -o \$lname --export=arch_type=FCST \$FVHOME/run/fvarchive.j
+           else
+              qsub -N \$jname -o \$lname -v arch_type=FCST \$FVHOME/run/fvarchive.j
+           endif
+     endif
   endif
 
 # --------------------------
@@ -8921,7 +9177,9 @@ endif
 
 # If forecast sucessfully completed, remove rs and resubmit
 # ---------------------------------------------------------
- if ( \$rc == 0 || \$rc == 101 || ) then
+ if ( \$rc == 0 || \$rc == 101 ) then
+
+     if( -e .SUBMITTED.\${nymd}_\${hh}z ) /bin/mv .SUBMITTED.\${nymd}_\${hh}z .DONE_FCST.\${nymd}_\${hh}z
 
      set rsfiles = `ls stage/\$EXPID*.\$itime.{bin,nc4} stage/\$EXPID*.\$itime_hhmm.$ncsuffix`
      foreach rsf ( \$rsfiles )
@@ -8931,13 +9189,15 @@ endif
      set rslist = `/bin/ls -1 \$FVHOME/fcst/\$EXPID.rst.lcv.????????_??z.bin`
      if ( \$status ) then
          if( -e forecast.\${nymd}_\${hh}z.RUNNING ) /bin/rm forecast.\${nymd}_\${hh}z.RUNNING
-         set fclist = `/bin/ls -1 forecast.????????_??z`
-         if ( \$status ) then
-            echo \$myname": no more restart files, forecast job completed"
-         else
-            set itime2 = \$fclist[1]:e
-            set jname2 = fcst.\$itime2
-            set lname2 = fcst.log.\${itime2}.o%j.txt
+         if ( !(\$?this_nymdhh) ) then
+            set fclist = `/bin/ls -1 forecast.????????_??z`
+            if ( \$status ) then
+               echo \$myname": no more restart files, forecast job completed"
+            else
+               set itime2 = \$fclist[1]:e
+               set jname2 = fcst.\$itime2
+               set lname2 = fcst.log.\${itime2}.o%j.txt
+            endif
          endif
      else
          set itime2 = \$rslist[1]:r:e
@@ -8948,14 +9208,18 @@ endif
      if ( \$\?itime2 ) then
          if ( ! -e .SUBMITTED.\$itime2 ) then
             touch .SUBMITTED.\$itime2
-            qsub -W depend=afterany:\${PBS_JOBID} -N \$jname2 -o \$lname2 $jobf.j
+            if ( \$BATCH_SUBCMD == "sbatch" ) then
+               sbatch -d afterany:\${SLURM_JOBID} -J \$jname2 -o \$lname2 $jobf.j
+            else
+               qsub -W depend=afterany:\${PBS_JOBID} -N \$jname2 -o \$lname2 $jobf.j
+            endif
          endif
      endif
 
      # Rename output log
      # -----------------
      set lname = \$FVHOME/fcst/fcst.log.\${itime}.txt
-     qalter -o \$lname \$PBS_JOBID
+     qalter -o \$lname \$SLURM_JOBID
 
      # Because on Columbia this is not a legitimate TMPDIR, remove dir to avoid pile up
      # --------------------------------------------------------------------------------
@@ -9109,7 +9373,7 @@ sub init_agcm_rc {
     AGCM_label_subst("\@NUM_READERS" , "1");
 
     #  Choice of LSM parameters
-    if ( $lsmodel_flag == 2 ) { 
+    if ( "$landbcs" eq "Icarus-NLv3" ) { 
        AGCM_label_subst("\@LSM_PARMS" , " ");
     } else {
        AGCM_label_subst("\@LSM_PARMS" , "#");
@@ -9301,6 +9565,9 @@ sub copy_resources {
   ed_g5cap_apert_rc("fcst");
   ed_g5prog_rc_new("fcst","GCMPROG.rc.tmpl");
   ed_rst4fcst_acq("fcst");
+  if ( $hyb_ens > 2 ) {
+     ed_aens_replay_acq("anasa","atmens_replay.acq");
+  }
   if ( $hyb_ens == 4 ) {
      ed_4dfcst_acq("fcst");
      ed_4dfcst09_acq("fcst");
@@ -9645,13 +9912,13 @@ sub copy_restarts {
 
                      $my_yyyy = substr($my_nymd,0,4);
                      $my_mm   = substr($my_nymd,4,2);
-                     $my_hh   = substr($my_nhms,0,2);
+                     $my_hhmn = substr($my_nhms,0,4);
                      if  ( $varcase==4 || $varcase==5 ) {
-                       if("$fn" =~ "sfc") { $fnsfx = "bkg_sfc_rst.${my_nymd}_${my_hh}z.$ncsuffix" };
-                       if("$fn" =~ "eta") { $fnsfx = "bkg_eta_rst.${my_nymd}_${my_hh}z.$ncsuffix" };
+                       if("$fn" =~ "sfc") { $fnsfx = "bkg_sfc_rst.${my_nymd}_${my_hhmn}z.$ncsuffix" };
+                       if("$fn" =~ "eta") { $fnsfx = "bkg_eta_rst.${my_nymd}_${my_hhmn}z.$ncsuffix" };
                      } else {
-                       if("$fn" =~ "sfc") { $fnsfx = "bkg${fhr}_sfc_rst.${my_nymd}_${my_hh}z.$ncsuffix" };
-                       if("$fn" =~ "eta") { $fnsfx = "bkg${fhr}_eta_rst.${my_nymd}_${my_hh}z.$ncsuffix" };
+                       if("$fn" =~ "sfc") { $fnsfx = "bkg${fhr}_sfc_rst.${my_nymd}_${my_hhmn}z.$ncsuffix" };
+                       if("$fn" =~ "eta") { $fnsfx = "bkg${fhr}_eta_rst.${my_nymd}_${my_hhmn}z.$ncsuffix" };
                      }
                      $fname    = "$drstloc/../../Y$my_yyyy/M$my_mm/$defexp.$fnsfx";
                      $destfile = "$fvhome/recycle/$expid.$fnsfx";
@@ -10240,6 +10507,7 @@ sub while3 {
     $subAddr = shift @_;
     $limit = shift @_;
     $limit = 3 unless $limit;
+    $limit = 1 if $runjobFLG;
 
     $cnt = 1;
     while ( &$subAddr ) {

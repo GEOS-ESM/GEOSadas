@@ -110,6 +110,7 @@
 #  22Apr2011 Owens      Support for G5/ECMWF restart blending via the -blendec option
 #  09Aug2011 Kokron     Added zeit calls to capture new functionality
 #  30May2013 Todling    Add GetAODinfo4Fcst_ to retrieve AOD fields for fcsts
+#  13Jun2020 Todling    Time aerosol analysis
 #
 #-----------------------------------------------------------------------------
 
@@ -393,7 +394,9 @@
             else
                 set aod_date = $gaasDateBeg
                 set aod_time = $gaasTimeBeg
+                                                       zeit_ci.x AeroAna
                 Call AerosolAnalysis_()
+                                                       zeit_co.x AeroAna
 
 #               Restore pre-BOOTSTRAP HISTORY collections and
 #               reset ENABLE_GAAS in GEOS_ChemGridComp.rc, if necessary

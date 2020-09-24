@@ -77,6 +77,15 @@ else
    set listdir = "$FVHOME/etc/Y$yyyy/M$mm"
    set outfile = "$listdir/$EXPID.prefetch.$ftype.$yyyymm.log.$$.txt";
 endif
-$PBS_BIN/qalter -o $outfile $PBS_JOBID
+if ( $?SLURM_JOBID ) then
+  $PBS_BIN/qalter -o $outfile $SLURM_JOBID
+else
+  if ( $?PBS_JOBID ) then
+     $PBS_BIN/qalter -o $outfile $PBS_JOBID
+  else
+     echo "monthly_means.j: cannot find JOBID, aborting"
+     exit(1)
+  endif
+endif
 
 exit 0

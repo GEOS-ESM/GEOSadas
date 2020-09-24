@@ -595,7 +595,8 @@ sub runSetup {
         $flags .=  " -header 'def: $var = $def0{$var}'";
     }
 
-    $cmd  = "($fvsetupScript $flags < $rawInFile $output) 2> $fvsuERR";
+    $cmd = "$fvsetupScript $flags < $rawInFile $output";
+    $cmd = "($cmd) 2> $fvsuERR" unless $debug;
     print "\n  $cmd\n" if $verbose;
 
     $status = system $cmd; print "\n\n";

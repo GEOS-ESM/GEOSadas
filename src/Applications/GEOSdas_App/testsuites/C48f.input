@@ -2,8 +2,8 @@
 # C48f.input
 #-----------
 
-description: C48f__GEOSadas-5_25_2__agrid_C48__ogrid_f34
-tag: GEOSadas-5_25_2
+description: C48f__GEOSadas-5_27_0__agrid_C48__ogrid_f34
+tag: GEOSadas-5_27_0
 fvsetupflags: -sensdeg 1
 
 ---ENDHEADERS---
@@ -14,7 +14,7 @@ Remote account for Intranet plots? [jstassi@train]
 Is this a MERRA2 experiment (y/n)? [n]
 > 
 
-AGCM Horizontal Resolution? [C180]
+AGCM Horizontal Resolution? [C48]
 > C48
 
 AGCM Vertical Resolution? [72]
@@ -29,10 +29,10 @@ EXPID? [u000_C48]
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [C48f__GEOSadas-5_25_2__agrid_C48__ogrid_f34]
+EXPDSC? [C48f__GEOSadas-5_27_0__agrid_C48__ogrid_f34]
 > 
 
-Land Surface Model choice [1]
+Land Boundary Conditions? [Icarus_Updated]
 > 
 
 FVHOME? [/discover/nobackup/jstassi/C48f]
@@ -71,10 +71,10 @@ MERRA2? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/MERRA2]
 AeroCom? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/AeroCom]
 > 
 
-FVICS? [/archive/u/jstassi/restarts/5C0/DE2880xPE1440]
+FVICS? [/archive/u/jstassi/restarts/GEOSadas-5_24_0]
 > /archive/u/jstassi/restarts/GEOSadas-5_24_0
 
-Starting year-month-day? [20130902]
+Starting year-month-day? [20190116]
 > 20190116
 
 Starting hour-min-sec? [210000]
@@ -101,7 +101,7 @@ Run analysis-sensitivity applications (0=no,1=yes)? [0]
 Verifying experiment id: [C48f]
 > 
 
-Ending year-month-day? [20190118]
+Ending year-month-day? [20190119]
 > 20190122
 
 Length of FORECAST run segments (in hours)? [123]
@@ -161,8 +161,8 @@ Which RADCOR option? [NONE]
 Use sat channel-correlated observation errors (y/n)? [y]
 > n
 
-Use aircraft bias correction (y/n)? [n]
-> 
+Use aircraft bias correction (y/n)? [y]
+> n
 
 Use unified radiance bias correction (y/n)? [y]
 > 
@@ -218,7 +218,7 @@ Which template? [GCMPROG.rc.tmpl]
 Output Restart TYPE (bin or nc4) [nc4]
 > 
 
-Select group: [g0620]
+Select group: [g0613]
 > 
 
 Edit COLLECTIONS list in run/HISTORY.rc.tmpl (y/n)? [n]

@@ -4,8 +4,10 @@
 #__TIME__
 #__ACCOUNT__
 #__OUTPUT__
+#__MONTHLY_PARTITION__
+#__MONTHLY_QOS__
 #SBATCH --no-requeue
-#SBATCH --export=NONE
+##SBATCH --export=NONE
 #PBS -S /bin/csh
 #PBS -r n
 #PBS -j oe
@@ -102,7 +104,16 @@ else
     set listdir = "$FVHOME/etc/Y$yyyy/M$mm"
     set outfile = "$listdir/$EXPID.means.$ftype.$yyyymm.log.$$.txt";
 endif
-$PBS_BIN/qalter -o $outfile $PBS_JOBID
+if ( $?SLURM_JOBID ) then
+  $PBS_BIN/qalter -o $outfile $SLURM_JOBID
+else
+  if ( $?PBS_JOBID ) then
+     $PBS_BIN/qalter -o $outfile $PBS_JOBID
+  else 
+     echo "monthly_means.j: cannot find JOBID, aborting"
+     exit(1)
+  endif
+endif
 
 # send mail if needed
 #--------------------

@@ -38,6 +38,7 @@ sub anasa_script {
     my $jobsa           = $inputparams{"jobsa"};
     my $group_list      = $inputparams{"group_list"};
     my $export_none     = $inputparams{"export_none"};
+    my $hyb_ens         = $inputparams{"hyb_ens"};
     my $jobqueue1       = $inputparams{"jobqueue1"};
     my $mem             = $inputparams{"mem"};
     my $nodes           = $inputparams{"nodes"};
@@ -54,6 +55,7 @@ sub anasa_script {
     my $asynbkg_min     = $inputparams{"asynbkg_min"};
     my $varoffset       = $inputparams{"varoffset"};
     my $do4dvar         = $inputparams{"do4dvar"};
+    my $do4diau         = $inputparams{"do4diau"};
     my $wcnstrt         = $inputparams{"wcnstrt"};
     my $nvarouter       = $inputparams{"nvarouter"};
     my $convsfc         = $inputparams{"convsfc"};
@@ -65,11 +67,16 @@ sub anasa_script {
     my $obClass         = $inputparams{"obClass"};
     my $newradbc        = $inputparams{"newradbc"};
     my $doRcorr         = $inputparams{"doRcorr"};
+    my $qsub            = $inputparams{"qsub"};
   
  # local variables
- my( $os, $siteID );
+ my( $os, $siteID, $nodeflg );
 
  $siteID = get_siteID();
+ $nodeflg = "hasw";
+ my $npn = `facter processorcount`; chomp($npn);
+ if    ( $npn == 40 ) { $nodeflg = "sky"  }
+ elsif ( $npn == 28 ) { $nodeflg = "hasw" }
 
  open(SCRIPT,">$fvhome/anasa/$jobsa.j") or
  die ">>> ERROR <<< cannot write $fvhome/anasa/$jobsa.j";
@@ -77,32 +84,19 @@ sub anasa_script {
  print  SCRIPT <<"EOF";
 #!/bin/csh -fx
 #$group_list
-#SBATCH --export=NONE
 #$jobqueue1
-#PBS -N anasa
-#PBS -o anasa.log.o%j
-EOF
-if ($siteID eq "nccs") {
-  print SCRIPT <<"EOF";
+##SBATCH --export=NONE
+#SBATCH --job-name=anasa
+#SBATCH --output=anasa.log.o%j
 #SBATCH --ntasks=$ncpus_gsi
 #SBATCH --ntasks-per-node=24
-#SBATCH --constraint=hasw
-EOF
-} else {
-  print SCRIPT <<"EOF";
+#SBATCH --constraint=$nodeflg
+#SBATCH --time=${fcswallclk}:00
+#PBS -N anasa
+#PBS -o anasa.log.o%j
 #PBS -l ncpus=$ncpus_gsi
-EOF
-}
-  print SCRIPT <<"EOF";
-#PBS -l walltime=${fcswallclk}:00
-##PBS -l mem=$mem
 #PBS -S /bin/csh
 #PBS -j eo
-#BSUB -J anasa
-#BSUB -n $ncpus_gsi
-#BSUB -W $fcswallclk
-#BSUB -o anasa.log.o%J
-#BSUB -e anasa.log.o%J
 # ------------------------------
 #
 # AnaStandAlone driver script.
@@ -146,7 +140,7 @@ EOF
   endif
   if( (`uname -s` == "Linux") && ((`uname -m` == "ia64") || (`uname -m` == "x86_64") )) then
       setenv FORT90L -Wl,-T
-      setenv FVWORK $mywork/\$user/tmp.\$\$
+      setenv FVWORK $fvhome/../tmp.\$\$
       if(   -d \$FVWORK ) /bin/rm -r  \$FVWORK
       /bin/mkdir -p \$FVWORK
   endif
@@ -154,6 +148,8 @@ EOF
 # Load BASEDIR and modules
 # ------------------------
   source \$FVROOT/bin/g5_modules
+
+  setenv BATCH_SUBCMD $qsub
 
 # Internal parameters controling system behavior
 # ----------------------------------------------
@@ -168,16 +164,31 @@ EOF
   setenv ASYNBKG $asynbkg_min   # 1 = enables ASYNOPTIC BCKG mode, 0 = disables it
   setenv VAROFFSET $varoffset   # abs value of time off from 1st synoptic hour of var window
   setenv DO4DVAR  $do4dvar    # 1=enables 4dvar
+  setenv DO4DIAU $do4diau
   setenv WCONSTRAINT $wcnstrt # set/unset weak constraint option
   setenv NVAROUTER $nvarouter # number of iteration for var loop
   setenv DIAG2ODS 1        # 1 = enables conversion of gsi-diag files to ODS, 0 = disables it
   setenv CONVSFC  $convsfc # 1 = enables call to lcv2prs for conversion of surface output fields
   setenv CONVUPA  $convupa # 1 = enables call to lcv2prs for conversion of upper-air output fields
   setenv NCSUFFIX $ncsuffix
+  setenv GSI_NETCDF_DIAG 1
   setenv LOCFERR  /dev/null
   setenv DORCORR $doRcorr
+EOF
+
+  if ( $hyb_ens < 3 ) {
+    print  SCRIPT <<"EOF";
 # setenv HYBRIDGSI  \$FVHOME/atmens
 # setenv STAGE4HYBGSI  \$HYBRIDGSI/central
+EOF
+  } else {
+    print  SCRIPT <<"EOF";
+  setenv HYBRIDGSI  \$FVHOME/atmens
+  setenv STAGE4HYBGSI  \$HYBRIDGSI/central
+EOF
+  }
+
+  print  SCRIPT <<"EOF";
 
 # SSI/GSI specifics
 # -----------------
@@ -322,7 +333,10 @@ EOF
 
   source \$SHARE/dao_ops/opengrads/setup.csh 1.9-rc1-gmao
 
-  setenv I_MPI_FABRICS shm:ofa
+  if (\$?I_MPI_ROOT) then
+     setenv I_MPI_USE_DYNAMIC_CONNECTIONS 0
+     setenv I_MPI_FABRICS shm:ofa
+  endif
   setenv MPI_BUFS_PER_PROC 1024
 EOF
 
@@ -383,7 +397,11 @@ EOF
   
     if( -e atmens_replay.acq ) /bin/cp atmens_replay.acq \$FVWORK/
 
-    set lstcases = `/bin/ls -1 standalone.*`
+    if (\$?this_nymdhh) then
+       set lstcases = `/bin/ls -1 standalone.\${this_nymdhh}z`
+    else
+       set lstcases = `/bin/ls -1 standalone.*`
+    endif
     if ( \$status ) then
       echo \$myname": standalone cases listed"
       exit 1
@@ -424,13 +442,13 @@ EOF
 
        set fendm = `tick \$nymde \$nhmse -10800`
        set hhem  = `echo \$fendm[2] | cut -c1-2`
-       set fcst_endm = \${fendm[1]}_\${hhem}z
+       set fcst_endm = \${fendm[1]}_\${hhem}00z
 
        set fendp = `tick \$nymde \$nhmse  10800`
        set hhep  = `echo \$fendp[2] | cut -c1-2`
-       set fcst_endp = \${fendp[1]}_\${hhep}z
 
        if ( \$LOCFERR != "/dev/null" ) then
+            set fcst_endp = \${fendp[1]}_\${hhep}z
             set ferrfile = `ls -1 \$LOCFERR/\$EXPID.ferr.eta.\${fcst_beg}\+\${fcst_end}.\$NCSUFFIX`
             if( -e \$ferrfile ) then
               /bin/cp \$ferrfile \$FVWORK/ferr.eta.\$NCSUFFIX
@@ -440,6 +458,7 @@ EOF
               exit 1
             endif 
        endif
+       set fcst_endp = \${fendp[1]}_\${hhep}00z
 
 #      Get prognostic files
 #      --------------------
@@ -461,6 +480,12 @@ EOF
        echo1 "#\\!/bin/csh -xvf"
        echo2 "#$group_list"
        echo2 "#$export_none"
+       echo2 "#SBATCH --account=$gid"
+       echo2 "#SBATCH --time=2:00:00"
+       echo2 "#SBATCH --job-name=acquire"
+       echo2 "#SBATCH --output=acquire.log.o%j"
+       echo2 "#SBATCH --ntasks=1"
+       echo2 "#SBATCH --partition=\$data_queue"
        echo2 "#PBS -N acquire"
        echo2 "#PBS -o acquire.log.o%j"
        echo2 "#PBS -l nodes=1:ppn=1"
@@ -477,7 +502,11 @@ EOF
        echo2 "/bin/cp \$LOCPROG/\$EXPID.prog.sfc.\${fcst_beg}+\${fcst_endp}.\$NCSUFFIX \$NOMF/\$EXPID.bkg.sfc.\${fcst_endp}.\$NCSUFFIX"
        echo2 "exit"
 
-       qsub -W block=true \$fname
+       if ( \$BATCH_SUBCMD == "sbatch" ) then
+          \$BATCH_SUBCMD -W \$fname
+       else
+          \$BATCH_SUBCMD -W block=true \$fname
+       endif
 
        set nymd = \$nymde
        set nhms = \$nhmse
@@ -543,10 +572,12 @@ EOF
 
 # Mass storage archival as an 1 CPU batch job
 # -------------------------------------------
-  if ( `uname -s` == "OSF1" ) then
-        bsub -J anasa.archive < \$FVHOME/run/fvarchive.j
-  else
-        qsub -N anasa.archive -o anasa.archive.log.o%j -v arch_type=ANASA \$FVHOME/run/fvarchive.j
+  if ( !(\$?this_nymdhh) ) then   # only archive when submitting one analysis at a time
+     if ( \$BATCH_SUBCMD == "sbatch" ) then
+        sbatch -J anasa.archive -o anasa.archive.log.o%j --export=arch_type=ANASA \$FVHOME/run/fvarchive.j
+     else
+        qsub   -N anasa.archive -o anasa.archive.log.o%j -v arch_type=ANASA \$FVHOME/run/fvarchive.j
+     endif
   endif
 
 # --------------------------
@@ -564,12 +595,19 @@ EOF
 
 # If forecast sucessfully completed, remove rs and resubmit
 # ---------------------------------------------------------
- if ( \$rc == 0 || \$rc == 101 || ) then
+ if ( \$rc == 0 || \$rc == 101 ) then
 
 
   /bin/rm \$lstcases[1]
 
-  set lstcases = `/bin/ls -1 standalone.*`
+  if (\$?this_nymdhh) then
+     if( (`uname -s` == "Linux") && ((`uname -m` == "ia64")||(`uname -m` == "x86_64")) ) then
+        cd
+        /bin/rm -r \$FVWORK
+     endif
+  else
+     set lstcases = `/bin/ls -1 standalone.*`
+  endif
   if ( \$status ) then
        echo \$myname": no more restart files, forecast job completed"
        exit 0
@@ -577,11 +615,11 @@ EOF
   set fcst_nxt = `echo \$lstcases[1] | cut -d. -f2 | cut -d+ -f1`
   set jname = a\${fcst_nxt}
   set lname = \$jname.log.o%j
-  if ( `uname -s` == "OSF1" ) then
-      bsub -J \$jname < $jobsa.j
-   else
-      qsub -W depend=afterany:\${PBS_JOBID} -N \$jname -o \$lname $jobsa.j
- endif
+  if ( \$BATCH_SUBCMD == "sbatch" ) then
+     sbatch -d afterany:\${PBS_JOBID} -J \$jname -o \$lname $jobsa.j
+  else
+     qsub -W depend=afterany:\${PBS_JOBID} -N \$jname -o \$lname $jobsa.j
+  endif
 
 
 # Because on Columbia this is not a legitimate TMPDIR, remove dir to avoid pile up
