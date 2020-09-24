@@ -29,6 +29,16 @@ ecbuild_add_executable (
   SOURCES gsidiag_bin2txt.f90 gauss_lat_nmc.f
   LIBS GEOSaana_GridComp NCEP_bufr_r8i4 NCEP_w3_r8i4)
 
+ecbuild_add_executable (
+  TARGET gsidiag_conv_bin2nc4.x
+  SOURCES gsidiag_conv_bin2nc4.f90 m_diag_conf.f90
+  LIBS GEOSaana_GridComp NCEP_bufr_r8i4 NCEP_w3_r8i4)
+
+ecbuild_add_executable (
+  TARGET gsidiag_rad_bin2nc4.x
+  SOURCES gsidiag_rad_bin2nc4.f90
+  LIBS GEOSaana_GridComp NCEP_bufr_r8i4 NCEP_w3_r8i4)
+
 install(PROGRAMS fvssi  DESTINATION bin) 
 
 set (DASPERL /usr/bin/perl)

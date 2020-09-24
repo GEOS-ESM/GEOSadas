@@ -38,6 +38,7 @@
 #  06Feb2014  Todling   Add GETOBSENS_ONLY to allow placing sens rather than imp in ODS files
 #  28Feb2014  Sienkiewicz Modify aircraft bias correction to add options 2 & 3
 #                            for NCEP variational bias correction methods
+#  23Jul2020  Todling   Add ability to generate agcm_import w/ IAU inc to allow fcst from SA
 #------------------------------------------------------------------
 
 # This scripts acquires data from storage and runs the analyzer
@@ -49,13 +50,17 @@
 
   setenv FAILED 0
   if ( !($?ACFTBIAS)  )  setenv ACFTBIAS 0
+  if ( !($?ANA4DUPD_IAU0_ONLY) ) setenv ANA4DUPD_IAU0_ONLY 0 # assume 4d increment
   if ( !($?ANGLEBC) )    setenv ANGLEBC  0
+  if ( !($?BATCH_SUBCMD)  )  setenv BATCH_SUBCMD "sbatch"
   if ( !($?INCSENS)   )  setenv INCSENS 0
+  if ( !($?GSI_NETCDF_DIAG) )  setenv GSI_NETCDF_DIAG 0
   if ( !($?SPECRES)   )  setenv FAILED 1
   if ( !($?VAROFFSET) )  setenv FAILED 1
   if ( !($?TIMEINC)   )  setenv FAILED 1
   if ( !($?STRICT)    )  setenv STRICT 0
   if ( !($?NVAROUTER) )  setenv NVAROUTER 1
+  if ( !($?DO4DIAU)   )  setenv DO4DIAU 0
   if ( !($?DO4DVAR)   )  setenv DO4DVAR 0
   if ( !($?DIAG2ODS)  )  setenv DIAG2ODS 1
   if ( !($?ANASENS)   )  setenv ANASENS 0
@@ -246,6 +251,10 @@
        echo "Overwriting $fn with that inside anasa"
        /bin/cp $fn  .
     end
+    foreach fn ( `ls $FVHOME/anasa/*.acq` )
+       echo "Overwriting $fn with that inside anasa"
+       /bin/cp $fn  .
+    end
   endif
 
   if ( ! -e $getbkg ) then
@@ -286,8 +295,8 @@
        endif
        acquire -v -rc satbias.acq -d $FVICS $spool         -ssh $nymd0 $nhms0 060000 1
 
-  else # if on discover, acquire via PBS job
-       # -----------------------------------
+  else # if on discover, acquire via batch job
+       # -------------------------------------
         set fname = "acquire_bkg.pbs" 
         alias fname1 "echo \!* >! $fname"
         alias fname2 "echo \!* >> $fname" 
@@ -311,6 +320,9 @@
         fname2 "#PBS -V"
         fname2 "#PBS -o acq.log.o%j"
         fname2 "#PBS -j eo"
+        fname2 "#SBATCH -A $GID"
+        fname2 "#SBATCH --partition=datamove"
+        fname2 "#SBATCH --time=1:00:00"
         fname2 ""
         fname2 "cd $FVWORK"
         fname2 "if ( $INCSENS ) then"
@@ -320,7 +332,11 @@
         fname2 "acquire -v -rc satbias.acq -d $FVICS $spool         -ssh $nymd0 $nhms0 060000 1"
         fname2 "exit"
 
-        qsub -W block=true $fname
+        if ( $BATCH_SUBCMD == "sbatch" ) then
+           $BATCH_SUBCMD -W $fname
+        else
+           $BATCH_SUBCMD -W block=true $fname
+        endif
         sleep 2
 
   endif # <acquire block>
@@ -339,6 +355,7 @@
      @ adtfwd = $varwindow_sec
      set beg_ana = ( `tick $YMD $HMS -$adtbck` )
      set end_ana = ( `tick $beg_ana[1] $beg_ana[2] $adtfwd` )
+     set beg_hh  = `echo $beg_ana[2] | cut -c1-2`
      set wrt_ana = ( `echo $beg_ana` )
 
      /bin/rm -f sed_file
@@ -482,8 +499,8 @@
  
             acquire_obsys -v -d $FVWORK $spool $strict -ssh $YMD $HMS 060000 $notimes $obsclass
 
-       else # if on discover, acquire via PBS job
-            # -----------------------------------
+       else # if on discover, acquire via batch job
+            # -------------------------------------
              set fname = "acquire_obs.pbs" 
              alias fname1 "echo \!* >! $fname"
              alias fname2 "echo \!* >> $fname" 
@@ -507,13 +524,20 @@
              fname2 "#PBS -V"
              fname2 "#PBS -o acq.log.o%j"
              fname2 "#PBS -j eo"
+             fname2 "#SBATCH -A $GID"
+             fname2 "#SBATCH --partition=datamove"
+             fname2 "#SBATCH --time=1:00:00"
              fname2 ""
              fname2 "cd $FVWORK"
              fname2 "acquire_obsys -v -d $FVWORK $spool $strict -ssh $nymd1 $nhms1 060000 1 ncep_tcvitals" 
              fname2 "acquire_obsys -v -d $FVWORK $spool $strict -ssh $YMD $HMS 060000 $notimes $obsclass"
              fname2 "exit"
 
-             qsub -W block=true $fname
+             if ( $BATCH_SUBCMD == "sbatch" ) then
+                $BATCH_SUBCMD -W $fname
+             else
+                $BATCH_SUBCMD -W block=true $fname
+             endif
              sleep 2
 
        endif # <acquire block>
@@ -743,8 +767,12 @@
           else
               set osens = ""
           endif
+
+          zeit_ci.x diag2ods
           diag2ods -rc $FVWORK/odsmatch.rc -log $olog -m $miter -res ${gnorm} \
                    $osens -o $EXPID.imp${order}_${gnorm} $YMD $HMS $EXPID
+          zeit_co.x diag2ods
+
 #         Summarize impacts
 #         -----------------
           obimp_summary.pl -ktsummary -type imp${order}_${gnorm} $YMD $HMS
@@ -819,17 +847,40 @@
       analyzer $YMD $HMS $STF $SKA $SSB $infn \
                  -oss $anafile -t $specres -levs $gsinlev -x $gsinlon -y $gsinlat -jiter $jiter -lnobs -log $alog $asyn
           if ( $status ) then
-               echo $myname": abnormal exit from analysis ..."
-               exit 2
+             echo $myname": abnormal exit from analysis ..."
+             exit 2
           else
-             if ( -e $expid.ana.eta.${YMD}_${h2}z.$NCSUFFIX ) then
-               /bin/mv $expid.ana.eta.${YMD}_${h2}z.$NCSUFFIX $expid.anasa.eta.${YMD}_${h2}z.$NCSUFFIX
+
+#            Create analysis files when applicable
+#            -------------------------------------
+             if ( $DO4DIAU ) then
+                set IAUX = `which mkiau.x`
+                set nxiau   = `echorc.x -rc mkiau.rc.tmpl NX`
+                set nyiau   = `echorc.x -rc mkiau.rc.tmpl NY`
+                @ NCPUS_IAU = $nxiau * $nyiau
+                setenv MPIRUN_IAU    "esma_mpirun -np $NCPUS_IAU $IAUX"
+    
+                zeit_ci.x ana4dupd
+                ana4dupd.pl -ncpus 7 -iau -iter 0 -rcdir . \
+                            $EXPID $beg_ana[1] $beg_ana[2] \
+                                   $end_ana[1] $end_ana[2] $ASYNBKG
+                tar cvf $EXPID.agcmrstsa.$beg_ana[1]_${beg_hh}z.tar *agcm_import*
+                zeit_co.x ana4dupd
              endif
-             foreach fn ( `ls *.xinc.eta.*$NCSUFFIX` )
-               set sfx = `echo $fn | cut -d. -f3-`
-               /bin/mv $fn  $expid.xincsa.$sfx
+             foreach ftype ( ana xinc )
+                foreach fn ( `ls *.$ftype.eta.*$NCSUFFIX` )
+                  set sfx = `echo $fn | cut -d. -f3-`
+                  /bin/mv $fn  $expid.${ftype}sa.$sfx
+                end
              end
           endif
+
+#      Rename bias files
+#      -----------------
+       if(-e $expid.ana.satbias.${YMD}_${h2}z.txt) /bin/mv $expid.ana.satbias.${YMD}_${h2}z.txt $expid.anasa.satbias.${YMD}_${h2}z.txt
+       if(-e $expid.ana.satbang.${YMD}_${h2}z.txt) /bin/mv $expid.ana.satbang.${YMD}_${h2}z.txt $expid.anasa.satbang.${YMD}_${h2}z.txt
+       if(-e $expid.ana.satbiaspc.${YMD}_${h2}z.txt) /bin/mv $expid.ana.satbiaspc.${YMD}_${h2}z.txt $expid.anasa.satbiaspc.${YMD}_${h2}z.txt
+       if(-e $expid.ana.acftbias.${YMD}_${h2}z.txt) /bin/mv $expid.ana.acftbias.${YMD}_${h2}z.txt $expid.anasa.acftbias.${YMD}_${h2}z.txt
 
 #      Generate ods files
 #      ------------------
@@ -842,6 +893,13 @@
           endif
           if ( $miter == 1 ) set omf = "-omf"
           diag2ods -rc $FVWORK/odsmatch.rc -ncpus $d2o_nproc -o $EXPID.diagsa $omf $YMD $HMS $EXPID
+       endif
+       if ( $GSI_NETCDF_DIAG ) then
+          foreach fname ( `ls $EXPID.diag_*.nc4` ) 
+            set instrm = `echo $fname | cut -d. -f2 | cut -c5-`
+            set suffix = `echo $fname | cut -d. -f3-`
+            /bin/mv $fname $EXPID.diagsa${instrm}.$suffix 
+          end
        endif
 
   endif
@@ -907,7 +965,7 @@ ENVIRONMENT VARIABLES (optional)
   DO4DVAR     trigger for 4DVAR-related features
   DIAG2ODS    produces ODS files from diag files (default: 1 (yes))
   GETOBSENS_ONLY places ob-sensitivity in ODS files instead of ob-impact (default: 0)
-  LOCAL_ACQUIRE  expects files to be acquired to be on disc visible by PBS (default: 0)
+  LOCAL_ACQUIRE  expects files to be acquired to be on disc visible by PBS/SLURM (default: 0)
   NCSUFFIX    suffix for SDF output (default: nc4)
   NVAROUTER   number of 4DVAR outer loops (only applies to 4DVAR)
   STRICT      when set, will crash if obs files missing
