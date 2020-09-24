@@ -18,13 +18,13 @@ ecbuild:
 NCEP_Shared:
   local: ./src/Shared/@NCEP_Shared
   remote: ../NCEP_Shared.git
-  tag: v1.0.1
+  branch: feature/mathomp4/update-to-geosadas527
   develop: main
 
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  tag: v1.1.9
+  branch: feature/mathomp4/update-to-geosadas527
   develop: main
 
 MAPL:
@@ -42,7 +42,7 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  tag: v1.0.1
+  branch: feature/mathomp4/update-to-geosadas527
   develop: develop
 
 GEOSgcm_GridComp:
@@ -55,13 +55,13 @@ GEOSgcm_GridComp:
 g5pert:
   local: ./src/Components/@g5pert
   remote: ../g5pert.git
-  tag: v1.0.0
+  branch: feature/mathomp4/update-to-geosadas527
   develop: develop
 
 GEOSagcmPert_GridComp:
   local: ./src/Components/@GEOSagcmPert_GridComp
   remote: ../GEOSagcmPert_GridComp.git
-  tag: v1.0.0
+  branch: feature/mathomp4/update-to-geosadas527
   develop: develop
 
 FVdycoreCubed_GridComp:
