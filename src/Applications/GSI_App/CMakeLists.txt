@@ -31,7 +31,7 @@ ecbuild_add_executable (
 
 ecbuild_add_executable (
   TARGET gsidiag_conv_bin2nc4.x
-  SOURCES gsidiag_conv_bin2nc4.f90 m_diag_conf.f90
+  SOURCES gsidiag_conv_bin2nc4.f90 m_diag_conv.f90
   LIBS GEOSaana_GridComp NCEP_bufr_r8i4 NCEP_w3_r8i4)
 
 ecbuild_add_executable (
