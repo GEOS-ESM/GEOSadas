@@ -14,10 +14,10 @@
 ! !USES:
  
    use ESMF  
-   use MAPL_Mod
-   use MAPL_CFIOMod
-   use MAPL_ProfMod
-   use MAPL_ShmemMod, only: MAPL_GetNodeInfo
+   use MAPL
+   use MPI
+   use pflogger, only: pfl_initialize => initialize
+   use MAPL_Profiler, only: get_global_time_profiler, BaseProfiler, TimeProfiler
    use GEOSaana_GridCompMod, only: SetServices   
    use gsi_chemguess_mod, only : gsi_chemguess_get
    use m_StrTemplate      
@@ -101,11 +101,14 @@
    character(len=ESMF_MAXSTR) :: wrtana
    character(len=ESMF_MAXSTR) :: enableTimers
    character(len=*), parameter :: Iam = 'GSIsa'
+   class (BaseProfiler), pointer :: t_p
+   type(MAPL_MetaComp), pointer :: child_maplobj
 
 ! start
 
 !  Initialize framework
 !  --------------------
+
 #if defined(ENABLE_ESMF_ERR_LOGGING)
    call ESMF_Initialize (vm=vm, rc=status)
 #else
@@ -113,6 +116,13 @@
 #endif
    VERIFY_(status)
 
+   write(*,*)'bma starting gsi'
+   t_p => get_global_time_profiler()
+   t_p = TimeProfiler('All', comm_world = MPI_COMM_WORLD)
+   call t_p%start()
+   call t_p%start('AANAaana')
+   write(*,*)'bma before flogger init'
+   call pfl_initialize()
    call ESMF_vmGet (vm, mpicommunicator=comm, rc=status)
    call MAPL_GetNodeInfo (comm=comm, rc=status)
 
@@ -175,6 +185,11 @@
 
 !  Register component
 !  ------------------
+   call MAPL_InternalStateRetrieve(gcAANA, CHILD_MAPLOBJ, RC=status)
+   VERIFY_(status)
+   CHILD_MAPLOBJ%t_profiler = TimeProfiler('AANAaana', comm_world = MPI_COMM_WORLD)
+   call CHILD_MAPLOBJ%t_profiler%start()
+
    call ESMF_GridCompSetServices ( gcAANA, SetServices, rc=STATUS ); VERIFY_(STATUS)
 
 !  Init component
@@ -279,6 +294,9 @@
 
 !   All done
 !   -------- 
+   call CHILD_MAPLOBJ%t_profiler%start()
+   call t_p%stop('AANAaana')
+   call t_p%stop()
    call ESMF_Finalize()
 
 #include "MAPL_ErrLog.h"
@@ -396,7 +414,8 @@
        enddo
    endif
 
-   call ESMFL_Bundle2State (AnaBundleIn, impAANA)
+   call ESMFL_Bundle2State (AnaBundleIn, impAANA, rc=status)
+   VERIFY_(status)
 
    do ib=1,nbuns
        call ESMF_FieldBundleDestroy ( XBundles(ib), rc=STATUS )
