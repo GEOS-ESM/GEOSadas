@@ -30,7 +30,7 @@ GMAO_Shared:
 MAPL:
   local: ./src/Shared/@MAPL
   remote: ../MAPL.git
-  tag: v2.1.6
+  branch: feature/mathomp4/update-to-geosadas527
   develop: develop
 
 FMS:
