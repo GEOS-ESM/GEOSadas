@@ -18,7 +18,6 @@ set(extraperlscripts
     fvarchive 
     fvsetup 
     fvconvert
-    monthly_means.pl.tmpl
     )
 
 set(misc_etc
