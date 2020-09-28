@@ -7,7 +7,7 @@ env:
 cmake:
   local: ./@cmake
   remote: ../ESMA_cmake.git
-  tag: v3.2.0
+  tag: v3.2.1
   develop: develop
 
 ecbuild:
@@ -30,7 +30,7 @@ GMAO_Shared:
 MAPL:
   local: ./src/Shared/@MAPL
   remote: ../MAPL.git
-  branch: feature/mathomp4/update-to-geosadas527
+  branch: develop
   develop: develop
 
 FMS:
