@@ -69,6 +69,13 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/VERSION DESTINATION etc)
 
 # CVSTAG is set and used in testsuites/
 
-if (EXISTS /etc/SuSE-release)
-   install(FILES /etc/SuSE-release DESTINATION etc)
-endif ()
+set(RELEASEFILES 
+   /etc/SuSE-release
+   /etc/os-release
+   )
+
+foreach (file ${RELEASEFILES})
+   if (EXISTS ${file})
+      install(FILES ${file} DESTINATION etc)
+   endif ()
+endforeach ()
