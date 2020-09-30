@@ -34,11 +34,8 @@
    Program mkIAU
 
    use ESMF
-   use MAPL
-   use MPI
-   use pflogger, only: pfl_initialize => initialize
-   use MAPL_Profiler, only: get_global_time_profiler, BaseProfiler, TimeProfiler
-   !use MAPL_CFIOMod
+   use MAPL_Mod
+   use MAPL_CFIOMod
    use m_set_eta, only: set_eta
    use m_ioutil, only: luavail
    use m_StrTemplate, only: StrTemplate
@@ -46,6 +43,11 @@
    use m_zeit, only: zeit_allflush
    use GEOS_mkiauGridCompMod,   only: MKIAUSetServices  => SetServices
    use IAU_GridCompMod,         only:   IAUSetServices  => SetServices
+   use MAPL_AbstractRegridderMod
+   use MAPL_RegridderManagerMod
+   use MAPL_GridManagerMod
+   use MAPL_LatLonGridFactoryMod
+   use CubedSphereGridFactoryMod, only: CubedSphereGridFactory
    use LatLonToCubeRegridderMod
    use CubeToLatLonRegridderMod
    use CubeToCubeRegridderMod
@@ -101,7 +103,6 @@
    integer :: ino_dqvdt
 
    integer :: Nx, Ny                   ! Layout
-   integer :: nx_cube, ny_cube
    integer :: im_bkg, jm_bkg, lm_bkg   ! Bkg Grid dimensions
    integer :: im_iau, jm_iau, lm_iau   ! IAU Grid dimensions (revisit for cubed)
 
@@ -138,7 +139,6 @@
    logical,save:: l2c_adtest = .false.
 
    logical,save:: proper_winds = .true.
-   type (MAPL_Communicators) :: mapl_comm
 
 !  Coordinate variables
 !  --------------------
@@ -147,8 +147,6 @@
 
    character(len=*), parameter :: Iam = 'mkIAU'
    character(len=*), parameter :: myRC= 'mkiau.rc'
-   class (BaseProfiler), pointer :: t_p
-   type(MAPL_MetaComp), pointer :: mapl_ptr
 
 !                             -----
     
@@ -164,14 +162,6 @@ CONTAINS
 !    to turn OFF ESMF's automatic logging feature
 !   -------------------------------------------------------------
     call ESMF_Initialize (logKindFlag=ESMF_LOGKIND_NONE, vm=vm, __RC__)
-    call ESMF_VMGet(vm,mpiCommunicator=comm,rc=status)
-    mapl_comm%mapl%comm=comm
-    mapl_comm%esmf%comm=comm
-    t_p => get_global_time_profiler()
-    t_p = TimeProfiler('All', comm_world = comm)
-    call t_p%start()
-    call t_p%start('mkiau.x')
-    call pfl_initialize()
 
     call init_ ( CF, nymd, nhms, __RC__ )
 
@@ -193,6 +183,8 @@ CONTAINS
          print *, 'Starting ' // Iam // ' with ', nPET, ' PETs ...'
          print *
     end if
+    call ESMF_VMGetCurrent(vm=vm, rc=status)
+    call ESMF_VMGet(vm,mpiCommunicator=comm,rc=status)
 
 
 !   Create a regular Lat/Lon grid over which BKG/ANA defined
@@ -222,14 +214,14 @@ CONTAINS
 !   -------------------------------------------------------------------------
     if (cubed) then
        ! check for pert-get-weights
-       !if (Ny/=6*Nx) then
-          !if ( MAPL_am_I_root() ) then
-             !print *, 'Error: expecting Ny=6*Nx, since this uses old get-weights'
-             !print *, 'Error: aborting ...'
-          !end if
-          !ASSERT_(.FALSE.)
-       !endif
-       cs_factory = CubedSphereGridFactory(im_world=IM_IAU,lm=LM_IAU,nx=nx_cube,ny=ny_cube/6,__RC__)
+       if (Ny/=6*Nx) then
+          if ( MAPL_am_I_root() ) then
+             print *, 'Error: expecting Ny=6*Nx, since this uses old get-weights'
+             print *, 'Error: aborting ...'
+          end if
+          ASSERT_(.FALSE.)
+       endif
+       cs_factory = CubedSphereGridFactory(im_world=IM_IAU,lm=LM_IAU,nx=nx,ny=ny/6,__RC__)
        GCMGrid = grid_manager%make_grid(cs_factory,__RC__)
     else
        call MAPL_DefGridName (IM_IAU,JM_IAU,ABKGGRIDNAME,MAPL_am_I_root())
@@ -262,8 +254,6 @@ CONTAINS
 
 !   Now create a component to handle the increment output
 !   -----------------------------------------------------
-    call MAPL_Set(MAPLOBJ, mapl_comm = mapl_Comm, rc = status)
-    _VERIFY(STATUS)
     BASE = MAPL_AddChild ( MAPLOBJ, Grid=BKGgrid,    &
                                        ConfigFile=myRC,   &
                                           name= 'ABKG',   &
@@ -293,29 +283,16 @@ CONTAINS
        call ESMF_GridValidate(GCMgrid,__RC__)
     endif
 
-   
-    call MAPL_InternalStateRetrieve(gcs(base), mapl_ptr, RC=status)
-    VERIFY_(status) 
-    call mapl_ptr%t_profiler%start()
-    call mapl_ptr%t_profiler%start('base_init')
     call ESMF_GridCompInitialize ( GCS(BASE), importState=IMPORTS(BASE), &
          exportState=EXPORTS(BASE), clock=CLOCK, userRC=userRC, RC=STATUS)
     ASSERT_(userRC==ESMF_SUCCESS .and. STATUS==ESMF_SUCCESS)
-    call mapl_ptr%t_profiler%stop('base_init')
-    call mapl_ptr%t_profiler%stop()
 
-    call MAPL_InternalStateRetrieve(gcs(stub), mapl_ptr, RC=status)
-    VERIFY_(status) 
-    call mapl_ptr%t_profiler%start()
-    call mapl_ptr%t_profiler%start('stub_init')
     call ESMF_GridCompInitialize ( GCS(STUB), importState=IMPORTS(STUB), &
          exportState=EXPORTS(STUB), clock=CLOCK, userRC=userRC, RC=STATUS)
     ASSERT_(userRC==ESMF_SUCCESS .and. STATUS==ESMF_SUCCESS)
-    call mapl_ptr%t_profiler%stop('stub_init')
-    call mapl_ptr%t_profiler%stop()
 
     if ( cubed ) then ! initialize GetWeights and FMS mambo-jambo
-         call GetWeights_init (6,1,im_iau,im_iau,lm_iau,Nx_cube,Ny_cube,.true.,.false.,comm)
+         call GetWeights_init (6,1,im_iau,im_iau,lm_iau,Nx,Ny,.true.,.false.,comm)
     endif
 
 #if 0
@@ -331,15 +308,9 @@ CONTAINS
 
 !   First run component to calculate IAU increment
 !   ----------------------------------------------
-    call MAPL_InternalStateRetrieve(gcs(base), mapl_ptr, RC=status)
-    VERIFY_(status) 
-    call mapl_ptr%t_profiler%start()
-    call mapl_ptr%t_profiler%start('base_run')
     call ESMF_GridCompRun (GCS(BASE), importState=IMPORTS(BASE), &
          exportState=EXPORTS(BASE), clock=CLOCK, userRC=userRC, RC=STATUS)
     ASSERT_(userRC==ESMF_SUCCESS .and. STATUS==ESMF_SUCCESS)
-    call mapl_ptr%t_profiler%stop('base_run')
-    call mapl_ptr%t_profiler%stop()
 
 !   Connect Exports of Run above with Imports of one below; regrid if needed
 !   ------------------------------------------------------------------------
@@ -347,36 +318,18 @@ CONTAINS
 
 !   Second run component to write out IAU increments
 !   ------------------------------------------------
-    call MAPL_InternalStateRetrieve(gcs(stub), mapl_ptr, RC=status)
-    VERIFY_(status) 
-    call mapl_ptr%t_profiler%start()
-    call mapl_ptr%t_profiler%start('stub_run')
     call ESMF_GridCompRun (GCS(STUB), importState=IMPORTS(STUB), &
          exportState=EXPORTS(STUB), clock=CLOCK, userRC=userRC, phase=1, RC=STATUS)
     ASSERT_(userRC==ESMF_SUCCESS .and. STATUS==ESMF_SUCCESS)
-    call mapl_ptr%t_profiler%stop('stub_run')
-    call mapl_ptr%t_profiler%stop()
 
 !   Finalize component
 !   ------------------
-    call MAPL_InternalStateRetrieve(gcs(base), mapl_ptr, RC=status)
-    VERIFY_(status) 
-    call mapl_ptr%t_profiler%start()
-    call mapl_ptr%t_profiler%start('base_finalize')
     call ESMF_GridCompFinalize ( GCS(BASE), importState=IMPORTS(BASE), &
          exportState=EXPORTS(BASE), clock=CLOCK, userRC=userRC, RC=STATUS)
     ASSERT_(userRC==ESMF_SUCCESS .and. STATUS==ESMF_SUCCESS)
-    call mapl_ptr%t_profiler%stop('stub_finalize')
-    call mapl_ptr%t_profiler%stop()
-    call MAPL_InternalStateRetrieve(gcs(base), mapl_ptr, RC=status)
-    VERIFY_(status) 
-    call mapl_ptr%t_profiler%start()
-    call mapl_ptr%t_profiler%start('stub_finalize')
     call ESMF_GridCompFinalize ( GCS(STUB), importState=IMPORTS(STUB), &
          exportState=EXPORTS(STUB), clock=CLOCK, userRC=userRC, RC=STATUS)
     ASSERT_(userRC==ESMF_SUCCESS .and. STATUS==ESMF_SUCCESS)
-    call mapl_ptr%t_profiler%stop('stub_finalize')
-    call mapl_ptr%t_profiler%stop()
 
 !   All done
 !   --------
@@ -443,9 +396,6 @@ CONTAINS
 
    call ESMF_ConfigGetAttribute( CF, NX, label ='NX:', __RC__ )
    call ESMF_ConfigGetAttribute( CF, NY, label ='NY:', __RC__ )
-   nx_cube=nx
-   ny_cube=ny
-   call MAPL_MakeDecomposition(nx,ny,__RC__)
 
    call ESMF_ConfigGetAttribute( CF, IM_IAU, label ='AGCM.IM_WORLD:', __RC__ )
    call ESMF_ConfigGetAttribute( CF, JM_IAU, label ='AGCM.JM_WORLD:', __RC__ )
