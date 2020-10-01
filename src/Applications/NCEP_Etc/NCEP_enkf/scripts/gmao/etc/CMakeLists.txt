@@ -1,6 +1,7 @@
 set (ALLETC
    AGCM.rc.tmpl
    AtmEnsConfig.csh
+   AtmOSEConfig.csh
    aens_stoch.rc
    ana_aodmean.rc
    ana_aodmember.rc
@@ -19,6 +20,7 @@ set (ALLETC
    GSI_GridComp.rc.tmpl
    GSI_GridComp_ensfinal.rc.tmpl
    HISTAENS.rc.tmpl
+   HISTAOSE.rc.tmpl
    mkiau.rc.tmpl
    mp_stats_perts.rc
    mp_stats.rc
