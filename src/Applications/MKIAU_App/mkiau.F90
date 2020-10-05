@@ -102,7 +102,8 @@
    integer :: nymd,nhms
    integer :: ino_dqvdt
 
-   integer :: Nx, Ny                   ! Layout
+   integer :: nx_ll, ny_ll             ! Layout
+   integer :: nx_cs, ny_cs
    integer :: im_bkg, jm_bkg, lm_bkg   ! Bkg Grid dimensions
    integer :: im_iau, jm_iau, lm_iau   ! IAU Grid dimensions (revisit for cubed)
 
@@ -162,6 +163,7 @@ CONTAINS
 !    to turn OFF ESMF's automatic logging feature
 !   -------------------------------------------------------------
     call ESMF_Initialize (logKindFlag=ESMF_LOGKIND_NONE, vm=vm, __RC__)
+    call ESMF_VMGet(vm,mpiCommunicator=comm,rc=status)
 
     call init_ ( CF, nymd, nhms, __RC__ )
 
@@ -170,10 +172,10 @@ CONTAINS
 !   Check the number of processors
 !   ------------------------------
     call ESMF_VMGet(vm, localPET=myPET, PETcount=nPET)  
-    if ( nPET /= Nx * Ny ) then
+    if ( nPET /= Nx_ll * Ny_ll ) then
        if ( MAPL_am_I_root() ) then
-          print *, 'Error: expecting ', Nx*Ny, ' PETs but found ', nPET, 'PETs'
-          print *, 'Try:  mpirun -np ', Nx*Ny, ' mkIAU.x'
+          print *, 'Error: expecting ', Nx_ll*Ny_ll, ' PETs but found ', nPET, 'PETs'
+          print *, 'Try:  mpirun -np ', Nx_ll*Ny_ll, ' mkIAU.x'
        end if
        ASSERT_(.FALSE.)
     end if
@@ -184,7 +186,6 @@ CONTAINS
          print *
     end if
     call ESMF_VMGetCurrent(vm=vm, rc=status)
-    call ESMF_VMGet(vm,mpiCommunicator=comm,rc=status)
 
 
 !   Create a regular Lat/Lon grid over which BKG/ANA defined
@@ -193,12 +194,12 @@ CONTAINS
     call regridder_manager%add_prototype('Cubed-Sphere', 'LatLon', REGRID_METHOD_BILINEAR, cube_to_latlon_prototype)
     call regridder_manager%add_prototype('LatLon', 'Cubed-Sphere', REGRID_METHOD_BILINEAR, latlon_to_cube_prototype)
     if (JM_BKG==6*IM_BKG) then
-       cs_factory = CubedSphereGridFactory(im_world=IM_BKG,lm=LM_BKG,nx=nx,ny=ny/6,__RC__)
+       cs_factory = CubedSphereGridFactory(im_world=IM_BKG,lm=LM_BKG,nx=nx_cs,ny=ny_cs,__RC__)
        BKGGrid = grid_manager%make_grid(cs_factory,__RC__)
     else
        call MAPL_DefGridName (IM_BKG,JM_BKG,ABKGGRIDNAME,MAPL_am_I_root())
        ll_factory = LatLonGridFactory(grid_name=trim(ABKGGRIDNAME), &
-                        Nx = Nx, Ny = Ny,   &
+                        Nx = nx_ll, Ny = Ny_ll,   &
                         IM_World = IM_BKG,  &
                         JM_World = JM_BKG,  &
                         LM = LM_BKG, pole='PC', dateline='DC',  &
@@ -214,19 +215,19 @@ CONTAINS
 !   -------------------------------------------------------------------------
     if (cubed) then
        ! check for pert-get-weights
-       if (Ny/=6*Nx) then
+       if (6*Nx_cs*Ny_cs /= nPet) then
           if ( MAPL_am_I_root() ) then
              print *, 'Error: expecting Ny=6*Nx, since this uses old get-weights'
              print *, 'Error: aborting ...'
           end if
           ASSERT_(.FALSE.)
        endif
-       cs_factory = CubedSphereGridFactory(im_world=IM_IAU,lm=LM_IAU,nx=nx,ny=ny/6,__RC__)
+       cs_factory = CubedSphereGridFactory(im_world=IM_IAU,lm=LM_IAU,nx=nx_cs,ny=ny_cs,__RC__)
        GCMGrid = grid_manager%make_grid(cs_factory,__RC__)
     else
        call MAPL_DefGridName (IM_IAU,JM_IAU,ABKGGRIDNAME,MAPL_am_I_root())
        ll_factory = LatLonGridFactory(grid_name=trim(ABKGGRIDNAME), &
-                        Nx = Nx, Ny = Ny,   &
+                        Nx = Nx_ll, Ny = Ny_ll,   &
                         IM_World = IM_IAU,  &
                         JM_World = JM_IAU,  &
                         LM = LM_IAU, pole='PC', dateline='DC',  &
@@ -292,7 +293,7 @@ CONTAINS
     ASSERT_(userRC==ESMF_SUCCESS .and. STATUS==ESMF_SUCCESS)
 
     if ( cubed ) then ! initialize GetWeights and FMS mambo-jambo
-         call GetWeights_init (6,1,im_iau,im_iau,lm_iau,Nx,Ny,.true.,.false.,comm)
+         call GetWeights_init (6,1,im_iau,im_iau,lm_iau,Nx_cs,Ny_cs*6,.true.,.false.,comm)
     endif
 
 #if 0
@@ -394,12 +395,11 @@ CONTAINS
    rc = 0
    cubed = .false.
 
-   call ESMF_ConfigGetAttribute( CF, NX, label ='NX:', __RC__ )
-   call ESMF_ConfigGetAttribute( CF, NY, label ='NY:', __RC__ )
-
    call ESMF_ConfigGetAttribute( CF, IM_IAU, label ='AGCM.IM_WORLD:', __RC__ )
    call ESMF_ConfigGetAttribute( CF, JM_IAU, label ='AGCM.JM_WORLD:', __RC__ )
    call ESMF_ConfigGetAttribute( CF, LM_IAU, label ='AGCM.LM:', __RC__ )
+   call MAPL_MakeDecomposition(nx_cs, ny_cs, reduceFactor=6, __RC__)
+   call MAPL_MakeDecomposition(nx_ll, ny_ll, __RC__)
 
    call ESMF_ConfigGetAttribute( CF, DYNTYP, label ='DYCORE:', __RC__ )
    if(trim(dyntyp)=='FV3') cubed=.true.

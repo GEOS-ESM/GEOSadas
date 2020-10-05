@@ -27,7 +27,7 @@ endif ()
 
 esma_add_library (${this}
   SRCS ${SRCS}
-  DEPENDENCIES MAPL GMAO_mpeu GMAO_hermes GMAO_transf
+  DEPENDENCIES MAPL_Base GMAO_mpeu GMAO_hermes GMAO_transf
   INCLUDES ${INC_ESMF})
 
 string(REPLACE " " ";" tmp ${FREAL8})
