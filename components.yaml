@@ -79,7 +79,7 @@ fvdycore:
 GEOSchem_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSphysics_GridComp/@GEOSchem_GridComp
   remote: ../GEOSchem_GridComp.git
-  tag: JM_v10.8.0_GF+SW_fix
+  branch: feature/bmauer/updates-from-geosadas5_27_0
   develop: develop
 
 mom:
