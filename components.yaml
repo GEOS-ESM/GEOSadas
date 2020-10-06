@@ -1,7 +1,7 @@
 env:
   local: ./@env
   remote: ../ESMA_env.git
-  tag: v1.4.1
+  branch: feature/bmauer/updates-from-geosadas5_27_0
   develop: main
 
 cmake:
