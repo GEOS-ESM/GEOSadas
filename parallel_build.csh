@@ -22,7 +22,7 @@ set origargv = "$argv"
 
 setenv external ""
 setenv DEVELOP FALSE
-setenv USEMEPO FALSE
+setenv USEMEPO TRUE
 while ($#argv)
    if ("$1" == "-develop") then
       setenv DEVELOP TRUE
