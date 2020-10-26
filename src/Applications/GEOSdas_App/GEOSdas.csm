@@ -4312,6 +4312,7 @@ endif
   sed -i "s|>>>FVHOME<<<|${FVHOME}|" $jobf
   sed -i "s|>>>FVWORK<<<|${FVWORK}|" $jobf
   sed -i "s|>>>GAASFAIL<<<|${GAASFAIL}|" $jobf
+  sed -i "s|>>>MPIRUN_PSAS<<<|${MPIRUN_AOD}|" $jobf
   sed -i "s|>>>MPIRUN_AOD<<<|${MPIRUN_AOD}|" $jobf
   sed -i "s|>>>NCPUS_AOD<<<|${NCPUS_AOD}|" $jobf
   sed -i "s|>>>NYMD<<<|${aod_date}|" $jobf

@@ -334,7 +334,19 @@
                 exit(1)
              endif
      endif
-     /bin/mv $STAGE4HYBGSI/*rndperts.dates*txt $ATMENSLOC
+     set lst = (`ls $STAGE4HYBGSI/*rndperts.dates*txt` )
+     if ( $%lst ) then
+         if ( $#lst == 1 ) then 
+            /bin/mv $STAGE4HYBGSI/*rndperts.dates*txt $ATMENSLOC
+         else
+            ls $STAGE4HYBGSI/*rndperts.dates*txt
+            echo "Main: too many rndperts-dates files found, aborting."
+            exit(1)
+         endif
+     else
+         echo "Main: failed in retrieve rndperts-dates file, aborting."
+         exit(1)
+     endif
   endif
 
 # In case additive inflation, prepare the perturbations

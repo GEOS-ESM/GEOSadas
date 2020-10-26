@@ -7803,11 +7803,12 @@ print  SCRIPT <<"EOF";
   setenv MPIRUN_OBSVR  "esma_mpirun -np \$NCPUS_GSI \$ANAX"
   setenv MPIRUN_SAC    "esma_mpirun -np  1      \$SACX"
   setenv MPIRUN_OIQC   "PBS_NODEFILE=\$FVWORK/OIQC_list; esma_mpirun -np 4"
-  setenv MPIRUN        "esma_mpirun -np \$PSAS_NUM_MPI"
   if (\$?MPT_VERSION) then
-    setenv MPIRUN_AOD    "mpirun "
+    setenv MPIRUN_AOD    "mpirun -np \$NCPUS_AOD"
+    setenv MPIRUN_PSAS   "mpiexec_mpt -np \$NCPUS_AOD"
   else
-    setenv MPIRUN_AOD    "esma_mpirun "
+    setenv MPIRUN_AOD    "esma_mpirun -np \$NCPUS_AOD"
+    setenv MPIRUN_PSAS   "esma_mpirun -np \$NCPUS_AOD"
   endif
   setenv RUN_OPT_BLEND "esma_mpirun -np \$NCPUS \$HDF2RSX"
   if (\$G5GCM ) then

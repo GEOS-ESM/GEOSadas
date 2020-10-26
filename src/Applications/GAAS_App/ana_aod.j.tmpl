@@ -31,6 +31,7 @@ setenv AODWORK        >>>AODWORK<<<
 setenv FVWORK         >>>FVWORK<<<
 setenv GAASFAIL       >>>GAASFAIL<<<
 setenv MPIRUN_AOD    ">>>MPIRUN_AOD<<<"
+setenv MPIRUN_PSAS   ">>>MPIRUN_PSAS<<<"
 setenv NCPUS_AOD      >>>NCPUS_AOD<<<
 setenv nhms           >>>NHMS<<<
 setenv nymd           >>>NYMD<<<
@@ -63,7 +64,17 @@ endif
 if ($aod_parallel_flag) then
    setenv PBS_NODEFILE $AODWORK/AOD_list
 endif
-setenv MPIRUN "$MPIRUN_AOD -np $NCPUS_AOD"
+
+if ( $?MPIRUN_AOD ) then
+   echo "ana_aod.j: missing MPIRUN_AOD env definition, aborting ..."
+   exit (1)
+endif
+if ( $?MPIRUN_PSAS ) then
+   setenv MPIRUN "$MPIRUN_PSAS"
+else
+   echo "ana_aod.j: missing MPIRUN_PSAS env definition, aborting ..."
+   exit (1)
+endif
 
 # loop for two time steps
 #------------------------
@@ -114,7 +125,7 @@ foreach time_offset ( 000000 030000 )
    #--------------
    if (-e ANAAOD_EGRESS) /bin/rm ANAAOD_EGRESS
    set flags = "-a $aod_a -d $aod_d -f $aod_f -k $aod_k"
-   $ANAAODX -v -x $EXPID $flags -o $ods_a $aer_f
+   $MPIRUN_AOD $ANAAODX -v -x $EXPID $flags -o $ods_a $aer_f
    if (! -e ANAAOD_EGRESS) then
       @ errcnt = $errcnt + 1
    endif
