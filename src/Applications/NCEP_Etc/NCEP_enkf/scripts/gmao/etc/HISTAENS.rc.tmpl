@@ -2,9 +2,36 @@
 #                 Create History List for Output
 #######################################################################
  
+#VERSION: 1
 EXPID:  >>>EXPID<<<
 EXPDSC: ensemble_bkg
  
+GRID_LABELS: PC@LHIS_IMx@LHIS_JM-DC
+             PC@HHIS_IMx@HHIS_JM-DC
+             PE@CHIS_IMx@CHIS_JM-CF
+:: 
+
+PC@LHIS_IMx@LHIS_JM-DC.GRID_TYPE: LatLon
+PC@LHIS_IMx@LHIS_JM-DC.IM_WORLD: @LHIS_IM
+PC@LHIS_IMx@LHIS_JM-DC.JM_WORLD: @LHIS_JM
+PC@LHIS_IMx@LHIS_JM-DC.POLE: PC
+PC@LHIS_IMx@LHIS_JM-DC.DATELINE: DC
+PC@LHIS_IMx@LHIS_JM-DC.LM: @AGCM_LM
+
+PC@HHIS_IMx@HHIS_JM-DC.GRID_TYPE: LatLon
+PC@HHIS_IMx@HHIS_JM-DC.IM_WORLD: @HHIS_IM
+PC@HHIS_IMx@HHIS_JM-DC.JM_WORLD: @HHIS_JM
+PC@HHIS_IMx@HHIS_JM-DC.POLE: PC
+PC@HHIS_IMx@HHIS_JM-DC.DATELINE: DC
+PC@HHIS_IMx@HHIS_JM-DC.LM: @AGCM_LM
+
+PE@CHIS_IMx@CHIS_JM-CF.GRID_TYPE: Cubed-Sphere
+PE@CHIS_IMx@CHIS_JM-CF.IM_WORLD: @CHIS_IM
+PE@CHIS_IMx@CHIS_JM-CF.JM_WORLD: @CHIS_JM
+PE@CHIS_IMx@CHIS_JM-CF.POLE: PC
+PE@CHIS_IMx@CHIS_JM-CF.DATELINE: DC
+PE@CHIS_IMx@CHIS_JM-CF.LM: @AGCM_LM
+
 COLLECTIONS: 'bkg.eta'
 @HRESAENS    'Bkg.eta'
              'bkg.sfc'
@@ -28,6 +55,8 @@ COLLECTIONS: 'bkg.eta'
 #            'tavg1_2d_lnd_Nx'  
 # Vortex track/relocator
 #             'vtx.mix'
+# Cubed trajectory (background for JEDI)
+#             'traj_lcv'
               ::
 
 #                      --------------------------
@@ -696,3 +725,51 @@ COLLECTIONS: 'bkg.eta'
                             'DUDT_ANA;DVDT_ANA'  , 'AGCM' , 'DUDTANA;DVDTANA'  ,
                             'DQVDT_ANA'          , 'AGCM' , 'DQVDTANA' ,
                           ::  
+
+  traj_lcv.format:     'CFIO' ,
+  traj_lcv.template:   '%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.nc4',
+  traj_lcv.ref_date:    >>>IOBBKGD<<< ,
+  traj_lcv.ref_time:    >>>IOBBKGT<<< ,
+  traj_lcv.end_date:    >>>IOEDATE<<< ,
+  traj_lcv.end_time:    >>>IOETIME<<< ,
+  traj_lcv.frequency:   010000      ,
+  traj_lcv.duration:    010000      ,
+  traj_lcv.mode:       'instantaneous',
+  traj_lcv.grid_label:  PE@CHIS_IMx@CHIS_JM-CF ,
+  traj_lcv.fields:      'U_DGRID;V_DGRID'  , 'DYN'         , 'u;v'        ,
+                        'U;V'              , 'DYN'         , 'ua;va'      ,
+                        'T'                , 'DYN'         , 't'          ,
+                        'Q'                , 'MOIST'       , 'q'          ,
+                        'DELP'             , 'DYN'         , 'delp'       ,
+                        'QITOT'            , 'AGCM'        , 'qi'         ,
+                        'QLTOT'            , 'AGCM'        , 'ql'         ,
+                        'QSTOT'            , 'MOIST'       , 'qs'         ,
+                        'QRTOT'            , 'MOIST'       , 'qr'         ,
+                        'O3PPMV'           , 'CHEMISTRY'   , 'o3mr'       ,
+                        'QCLSX0'           , 'MOIST'       , 'qls'        ,
+                        'QCCNX0'           , 'MOIST'       , 'qcn'        ,
+                        'CLCNX0'           , 'MOIST'       , 'cfcn'       ,
+                        'PS'               , 'DYN'         , 'ps'         ,
+                        'PHIS'             , 'AGCM'        , 'phis'       ,
+                        'FRLAND'           , 'SURFACE'     , 'frland'     ,
+                        'FRLANDICE'        , 'SURFACE'     , 'frlandice'  ,
+                        'FRLAKE'           , 'SURFACE'     , 'frlake'     ,
+                        'FROCEAN'          , 'SURFACE'     , 'frocean'    ,
+                        'FRACI'            , 'SURFACE'     , 'frseaice'   ,
+                        'KCBL_moist'       , 'MOIST'       , 'kcbl'       ,
+                        'TS_moist'         , 'MOIST'       , 'tsm'        ,
+                        'KHl_moist'        , 'MOIST'       , 'khl'        ,
+                        'KHu_moist'        , 'MOIST'       , 'khu'        ,
+                        'VARFLT'           , 'AGCM'        , 'varflt'     ,
+                        'USTAR'            , 'SURFACE'     , 'ustar'      ,
+                        'BSTAR'            , 'SURFACE'     , 'bstar'      ,
+                        'ZPBL'             , 'TURBULENCE'  , 'zpbl'       ,
+                        'CM'               , 'SURFACE'     , 'cm'         ,
+                        'CT'               , 'SURFACE'     , 'ct'         ,
+                        'CQ'               , 'SURFACE'     , 'cq'         ,
+                        'U10N;V10N'        , 'SURFACE'     , 'u10m;v10m'  ,
+                        'TA'               , 'DYN'         , 'ts'         ,
+                        'SNOMAS'           , 'SURFACE'     , 'sheleg'     ,
+                        'TSOIL1'           , 'SURFACE'     , 'soilt'      ,
+                        'WET1'             , 'SURFACE'     , 'soilm'      ,
+                        ::

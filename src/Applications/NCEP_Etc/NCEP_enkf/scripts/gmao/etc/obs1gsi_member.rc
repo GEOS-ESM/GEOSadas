@@ -161,7 +161,8 @@ OBS_INPUT::
    mhsbufr        mhs         metop-c     mhs_metop-c           0.0     1      0        ncep_mhs_bufr
    atmsbufr       atms        npp         atms_npp              0.0     1      0        ncep_atms_bufr
    atmsbufr       atms        n20         atms_n20              0.0     1      0        ncep_atms_bufr
-   crisbufr       cris        npp         cris_npp              0.0     3      0        ncep_cris_bufr
+!  crisbufr       cris        npp         cris_npp              0.0     3      0        ncep_cris_bufr
+   crisfsrbufr    cris-fsr    npp         cris-fsr_npp          0.0     3      0        ncep_crisfsr_bufr
    crisfsrbufr    cris-fsr    n20         cris-fsr_n20          0.0     3      0        ncep_crisfsr_bufr
    satwndbufr     uv          null        uv                    0.0     0      0        ncep_satwnd_bufr
    avcspmbufr     avhrr       n18         avhrr3_n18            0.0     1      0        ncep_avcspm_bufr

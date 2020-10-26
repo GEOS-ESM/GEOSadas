@@ -1,3 +1,25 @@
+14Oct2020
+---------
+- g5pert: take into consideration eps_eer when converting pert to energy and when calculating total 
+          energy - this has been wrong for a while (fixed for M2 obsimp)
+- add tarball in ensemble for saving cubed trajectory (background) files for JEDI
+- central DAS can store traj_lcv_rst files in own tar ball (for JEDI)
+- updates from GEOSadas-5_27_0_DryMass: zero diff to default (LLT)
+- add sigO to xvec slot of AOD output ODS files (required for DFS)
+- agcm_import files (IAU increment) now truly nc4 (little mistake before had changed filename sfx but not content)
+- add COSMIC-2; obsys-nccs includes period of concatenated GPSRO files before
+  NCEP had COSMIC-2 in the official stream
+- add back treatment of channel-correlated CrIS-FSR for both NPP and NOAA-20 (Wei)
+- adjustment to MHS QC for allsky (MJK)
+- revise automatic forecasts when forecast sensitivities are requested; now
+  creating 24 and 30 hour sensitivities automatically.
+- fully automated launching of FSOI jobs
+- when 4d, store IAU increments in agcmrst tarball
+
+- JEDI Support:
+  o knob to run JEDI analysis following GSI and optionally overwrite IAU
+    increments with those generated from JEDI analysis (i.e., cycle from JEDI analysis)
+
 16Aug2020
 ---------
 - Back out CrIS-FSR NPP; revised CrIS-FSR revised channels; CrIS-FSR chn correlations

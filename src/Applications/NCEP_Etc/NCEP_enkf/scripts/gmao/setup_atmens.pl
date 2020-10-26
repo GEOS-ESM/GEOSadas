@@ -47,6 +47,7 @@ my $scriptname = basename($0);
                "vtxrlc",
                "nosppt",
                "ose",
+               "rcorr",
                "h" );
 
   usage() if $opt_h;
@@ -138,6 +139,11 @@ sub init {
       $setacftbc = $opt_acftbc;
    }
 
+   $dorcorr = 0;
+   if ( $opt_rcorr ) {
+      $dorcorr = 1;
+   }
+
    $doose = 0;
    if ( $opt_ose ) {
       $doose = 1;
@@ -208,6 +214,7 @@ sub init {
      $miau_nx =    2; $miau_ny =   12;
      $obsv_nx =    4; $obsv_ny =    8;
      $stat_nx =    2; $stat_ny =    2;
+     $chis_im =   90; $chis_jm =  540;  # cubed-resolution
      $dhis_im =  288; $dhis_jm =  181;  # diag-resolution output
      $hhis_im =  288; $hhis_jm =  181;  # high-resolution output
      $lhis_im =  288; $lhis_jm =  181;  #  low-resolution output
@@ -219,6 +226,7 @@ sub init {
      $miau_nx =    2; $miau_ny =   12;
      $obsv_nx =    4; $obsv_ny =   14;
      $stat_nx =    2; $stat_ny =   14;
+     $chis_im =  180; $chis_jm = 1080;  # cubed-resolution
      $dhis_im =  288; $dhis_jm =  181;
      $hhis_im =  576; $hhis_jm =  361;
      $lhis_im =  576; $lhis_jm =  361;
@@ -230,6 +238,7 @@ sub init {
      $miau_nx =    4; $miau_ny =   24;
      $obsv_nx =    4; $obsv_ny =   14;
      $stat_nx =    3; $stat_ny =   12;
+     $chis_im =  360; $chis_jm = 2160;  # cubed-resolution
      $dhis_im =  288; $dhis_jm =  181;
      $hhis_im = 1152; $hhis_jm =  721;
      $lhis_im =  576; $lhis_jm =  361;
@@ -293,6 +302,8 @@ sub init {
 
 # location where ensemble RC files reside
   $AENSHOME = "$FVHOME/run/atmens";
+# location where OSE RC files reside
+  $AOSEHOME = "$FVHOME/run/atmose";
 
 }
 #......................................................................
@@ -372,7 +383,10 @@ ed_miau_rc ("$AENSHOME");
 ed_obsv_rc ("$AENSHOME");
 ed_enkf_rc ("$AENSHOME");
 ed_stat_rc ("$AENSHOME");
-ed_conf_rc ("$AENSHOME");
+ed_conf_rc ("$AENSHOME","AtmEnsConfig.csh");
+if ( $doose ) {
+   ed_conf_rc("$AOSEHOME","AtmOSEConfig.csh");
+}
 
 # take care of satbias acq
 ed_satbias_acq ("$AENSHOME");
@@ -467,12 +481,15 @@ sub ed_hist_rc {
         } else {
            if($rcd =~ /\@AENS_DOSPPT/) {$rcd=~ s/\@AENS_DOSPPT/#/g; }
         }
+        if($rcd =~ /\@CHIS_IM/) {$rcd=~ s/\@CHIS_IM/$chis_im/g; }
+        if($rcd =~ /\@CHIS_JM/) {$rcd=~ s/\@CHIS_JM/$chis_jm/g; }
         if($rcd =~ /\@DHIS_IM/) {$rcd=~ s/\@DHIS_IM/$dhis_im/g; }
         if($rcd =~ /\@DHIS_JM/) {$rcd=~ s/\@DHIS_JM/$dhis_jm/g; }
         if($rcd =~ /\@HHIS_IM/) {$rcd=~ s/\@HHIS_IM/$hhis_im/g; }
         if($rcd =~ /\@HHIS_JM/) {$rcd=~ s/\@HHIS_JM/$hhis_jm/g; }
         if($rcd =~ /\@LHIS_IM/) {$rcd=~ s/\@LHIS_IM/$lhis_im/g; }
         if($rcd =~ /\@LHIS_JM/) {$rcd=~ s/\@LHIS_JM/$lhis_jm/g; }
+        if($rcd =~ /\@AGCM_LM/) {$rcd=~ s/\@AGCM_LM/$agcm_lm/g; }
 
         print(LUN2 "$rcd\n");
      }
@@ -638,12 +655,12 @@ sub ed_stat_rc {
 #......................................................................
 sub ed_conf_rc {
 
-  my($mydir) = @_;
+  my($mydir,$conffn) = @_;
 
   my($acq);
 
   $tmprc  = "$mydir/tmp.rc";
-  $thisrc = "$mydir/AtmEnsConfig.csh";
+  $thisrc = "$mydir/$conffn";
 
      open(LUN,"$thisrc")  || die "Fail to open $thisrc $!\n";
      open(LUN2,">$tmprc") || die "Fail to open tmp.rc $!\n";
@@ -654,6 +671,7 @@ sub ed_conf_rc {
         chomp($rcd);
         if($rcd =~ /\@ACFTBIAS/)  {$rcd=~ s/\@ACFTBIAS/$setacftbc/g;  }
         if($rcd =~ /\@AGCM_CPUS/) {$rcd=~ s/\@AGCM_CPUS/$agcm_cpus/g; }
+        if($rcd =~ /\@DORCORR/)   {$rcd=~ s/\@DORCORR/$dorcorr/g; }
         if($rcd =~ /\@MIAU_CPUS/) {$rcd=~ s/\@MIAU_CPUS/$miau_cpus/g; }
         if($rcd =~ /\@OBSV_CPUS/) {$rcd=~ s/\@OBSV_CPUS/$obsv_cpus/g; }
         if($rcd =~ /\@STAT_CPUS/) {$rcd=~ s/\@STAT_CPUS/$stat_cpus/g; }
@@ -760,6 +778,7 @@ OPTIONS
      -nosppt       use to deactive SPPT scheme; use non-perturbed members
      -ose          set up ensemble as an OSE-type experiment (NOT ALL READY YET)
      -radbc        set up to run with Y. Zhu satellite bias correction
+     -rcorr        when specified will apply channel correlations
      -vtxrlc       use vortex tracker and relocator
      -h            prints this usage notice
 

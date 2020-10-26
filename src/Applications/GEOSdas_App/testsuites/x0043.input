@@ -1,9 +1,9 @@
 #------------
-# x0042.input
+# x0043.input
 #------------
 
-description: x0042__GEOSadas-5_27_0__agrid_C360__ogrid_C
-tag: GEOSadas-5_27_0
+description: x0043__GEOSadas-5_27_1__agrid_C360__ogrid_C
+tag: GEOSadas-5_27_1
 
 ---ENDHEADERS---
 
@@ -28,7 +28,7 @@ EXPID? [u000_C360]
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [x0042__GEOSadas-5_27_0__agrid_C360__ogrid_C]
+EXPDSC? [x0043__GEOSadas-5_27_1__agrid_C360__ogrid_C]
 > 
 
 Land Boundary Conditions? [Icarus_Updated]
@@ -37,10 +37,10 @@ Land Boundary Conditions? [Icarus_Updated]
 Catchment Model choice? [1]
 > 
 
-FVHOME? [/discover/nobackup/dao_it/x0042]
+FVHOME? [/discover/nobackup/dao_it/x0043]
 > /discover/nobackup/projects/gmao/dadev/dao_it/$expid
 
-The directory /discover/nobackup/projects/gmao/obsdev/dao_it/x0042 already exists. Clean it? [y]
+The directory /discover/nobackup/projects/gmao/obsdev/dao_it/x0043 already exists. Clean it? [y]
 > 
 
 Which case of variational analysis? [1]
@@ -74,16 +74,7 @@ AeroCom? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/AeroCom]
 > 
 
 FVICS? [/archive/u/jstassi/restarts/GEOSadas-5_24_0]
-> /archive/u/dao_it/x0041
-
-Starting year-month-day? [20190116]
-> 20191119
-
-Starting hour-min-sec? [210000]
-> 
-
-Name of experiment where ICs come from: [x0041]
-> 
+> /archive/u/jstassi/restarts/GEOSadas-5_27_0/x0041like.rst.20191119_21z.tar
 
 Run model-adjoint-related applications (0=no,1=yes)? [0]
 > 1
@@ -100,7 +91,7 @@ Run singular vector experiments (0=n,1=yes)? [0]
 Run analysis-sensitivity applications (0=no,1=yes)? [0]
 > 1
 
-Verifying experiment id: [x0042]
+Verifying experiment id: [x0043]
 > 
 
 Ending year-month-day? [20191121]
@@ -119,7 +110,7 @@ Number of PEs in the meridional direction (NY)? [48]
 > 
 
 Job nickname? [g5das]
-> x42
+> x43
 
 Run in split executable mode (1=yes;0=no)? [1]
 > 
@@ -235,7 +226,7 @@ Ensemble Resolution?  [C90]
 Ensemble Vertical Levels?  [72]
 > 
 
-Experiment archive directory for ensemble restarts or 'later': [/archive/u/rtodling/x0042]
+Experiment archive directory for ensemble restarts or 'later': [/archive/u/rtodling/x0043]
 > /archive/u/dao_it/x0041
 
 Edit COLLECTIONS list in run/HISTORY.rc.tmpl (y/n)? [n]

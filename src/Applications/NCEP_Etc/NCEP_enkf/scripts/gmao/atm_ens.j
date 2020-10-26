@@ -45,8 +45,13 @@
 
 # Experiment environment
 # ----------------------
-# setenv JOBGEN_QOS advda
+# setenv JOBGEN_PARTITION preops
+# setenv JOBGEN_QOS dastest
   setenv JOBGEN_CONSTRAINT >>>NODEFLG<<<
+  setenv ATMENS_QNAME compute
+  if ( $?JOBGEN_PARTITION ) then
+     setenv ATMENS_QNAME $JOBGEN_PARTITION
+  endif
   setenv GID >>>GID<<<
   setenv group_list "SBATCH -A $GID"
   setenv ARCH `uname -s`
@@ -299,6 +304,39 @@
      end
   endif
 
+# Retrieve existing random perturbations (enables for reproducibility) 
+# --------------------------------------------------------------------
+  if ( -e $ATMENSETC/given_rndperts.acq ) then
+     if ( ! -e $FVWORK/.DONE_MEM001_GETRNDPERTS.$yyyymmddhh) then
+      if(! -d $STAGE4HYBGSI ) mkdir -p $STAGE4HYBGSI
+      set spool = "-s $FVWORK/spool"
+      jobgen.pl \
+             -q datamove \
+             getrndperts         \
+             $GID                \
+             $OBSVR_WALLCLOCK    \
+             "acquire -v -strict -rc $ATMENSETC/given_rndperts.acq -d $STAGE4HYBGSI $spool -ssh $anymd $anhms 060000 1" \
+             $STAGE4HYBGSI       \
+             $myname             \
+             $FVWORK/.DONE_MEM001_GETRNDPERTS.$yyyymmddhh \
+             "Main job script Failed for Get Central Analysis"
+
+             if ( -e getrndperts.j ) then
+                if ( $ATMENS_BATCHSUB == "sbatch" ) then
+                   $ATMENS_BATCHSUB  -W getrndperts.j
+                else
+                   $ATMENS_BATCHSUB  -W block=true getrndperts.j
+                endif
+                touch .SUBMITTED
+             else
+                echo " $myname: Failed for Get Rnd-Perturbations, Aborting ... "
+                touch $FVWORK/.FAILED
+                exit(1)
+             endif
+     endif
+     /bin/mv $STAGE4HYBGSI/*rndperts.dates*txt $ATMENSLOC
+  endif
+
 # In case additive inflation, prepare the perturbations
 # -----------------------------------------------------  
   if ( ($DO_ATM_ENS || $RUN_PERTS) && -e $ATMENSETC/nmcperts.rc ) then 
@@ -339,39 +377,6 @@
                 exit(1)
              endif
      endif
-  endif
-
-# Retrieve existing random perturbations (enables for reproducibility) 
-# --------------------------------------------------------------------
-  if ( -e $ATMENSETC/given_rndperts.rc ) then
-     if ( ! -e $FVWORK/.DONE_MEM001_GETRNDPERTS.$yyyymmddhh) then
-      if(! -d $STAGE4HYBGSI ) mkdir -p $STAGE4HYBGSI
-      set spool = "-s $FVWORK/spool"
-      jobgen.pl \
-             -q datamove \
-             getrndperts         \
-             $GID                \
-             $OBSVR_WALLCLOCK    \
-             "acquire -v -strict -rc $ATMENSETC/given_rndperts.rc  -d $STAGE4HYBGSI $spool -ssh $anymd $anhms 060000 1" \
-             $STAGE4HYBGSI       \
-             $myname             \
-             $FVWORK/.DONE_MEM001_GETRNDPERTS.$yyyymmddhh \
-             "Main job script Failed for Get Central Analysis"
-
-             if ( -e getrndperts.j ) then
-                if ( $ATMENS_BATCHSUB == "sbatch" ) then
-                   $ATMENS_BATCHSUB  -W getrndperts.j
-                else
-                   $ATMENS_BATCHSUB  -W block=true getrndperts.j
-                endif
-                touch .SUBMITTED
-             else
-                echo " $myname: Failed for Get Rnd-Perturbations, Aborting ... "
-                touch $FVWORK/.FAILED
-                exit(1)
-             endif
-     endif
-     /bin/mv $STAGE4HYBGSI/*rndperts.dates*txt $ATMENSLOC
   endif
 
 

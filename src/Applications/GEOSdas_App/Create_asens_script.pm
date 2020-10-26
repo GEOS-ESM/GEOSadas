@@ -441,7 +441,11 @@ EOF
 
 #       Pick oldest restart for initial condition
 #       -----------------------------------------
-        set rslist = `/bin/ls -1 \$FVHOME/asens/\$EXPID.fsens_\${jgrdnrm}.eta.????????_??z+????????_??z-????????_??z.$ncsuffix`
+        if ( \$?this_nymdhh ) then
+            set rslist = `/bin/ls -1 \$FVHOME/asens/\$EXPID.fsens_\${jgrdnrm}.eta.????????_??z+????????_??z-\${this_nymdhh}z.$ncsuffix`
+        else
+            set rslist = `/bin/ls -1 \$FVHOME/asens/\$EXPID.fsens_\${jgrdnrm}.eta.????????_??z+????????_??z-????????_??z.$ncsuffix`
+        endif
         if ( \$status ) then
            echo \$myname": no gradient files found, nothing to do"
            exit 1
@@ -548,7 +552,7 @@ EOF
 
         set lstcases = `/bin/ls -1 standalone.*`
         if ( \$status ) then
-           echo \$myname": no more restart files, forecast job completed"
+           echo \$myname": no more increment files, forecast job completed"
            exit 0
         endif
         set fcst_nxt = `echo \$lstcases[1] | cut -d. -f2 | cut -d+ -f1`
@@ -567,21 +571,23 @@ EOF
             /bin/rm -f \$fn
         end
 
-        set rslist = `/bin/ls -1 \$FVHOME/asens/\$EXPID.fsens_???.eta.????????_??z+????????_??z-????????_??z.$ncsuffix`
-        if ( \$status ) then
-           echo \$myname": no more restart files, forecast job completed"
-        else
-           set gsens = \$rslist[1]:r
-           set jname = \$gsens:e
-           set itime2 = \$jname:r
-           set nymd2 = `echo \$itime2 | cut -c27-34`
-           set hh2   = `echo \$itime2 | cut -c36-37`
-           set jname = asens.\${nymd2}_\${hh2}z
-           set lname = \$FVHOME/asens/asens.log.\${nymd2}_\${hh2}z.o%j.txt
-           if ( \$BATCH_SUBCMD == "sbatch" ) then
-              sbatch -d afterany:\${PBS_JOBID} -J \$jname -o \$lname $joba.j
+        if (! \$?this_nymdhh ) then
+           set rslist = `/bin/ls -1 \$FVHOME/asens/\$EXPID.fsens_???.eta.????????_??z+????????_??z-????????_??z.$ncsuffix`
+           if ( \$status ) then
+              echo \$myname": no more sensitivity files, forecast job completed"
            else
-              qsub -W depend=afterany:\${PBS_JOBID} -N \$jname -o \$lname $joba.j
+              set gsens = \$rslist[1]:r
+              set jname = \$gsens:e
+              set itime2 = \$jname:r
+              set nymd2 = `echo \$itime2 | cut -c27-34`
+              set hh2   = `echo \$itime2 | cut -c36-37`
+              set jname = asens.\${nymd2}_\${hh2}z
+              set lname = \$FVHOME/asens/asens.log.\${nymd2}_\${hh2}z.o%j.txt
+              if ( \$BATCH_SUBCMD == "sbatch" ) then
+                 sbatch -d afterany:\${PBS_JOBID} -J \$jname -o \$lname $joba.j
+              else
+                 qsub -W depend=afterany:\${PBS_JOBID} -N \$jname -o \$lname $joba.j
+              endif
            endif
         endif
 

@@ -111,6 +111,7 @@
 #  09Aug2011 Kokron     Added zeit calls to capture new functionality
 #  30May2013 Todling    Add GetAODinfo4Fcst_ to retrieve AOD fields for fcsts
 #  13Jun2020 Todling    Time aerosol analysis
+#  19Oct2020 Todling    Call to JEDI analysis
 #
 #-----------------------------------------------------------------------------
 
@@ -478,6 +479,13 @@
                                                        zeit_ci.x AnaToGcm
          Call CoupleAnaToGcm_( 0, 1 )
                                                        zeit_co.x AnaToGcm
+
+#        Run prototype JEDI analysis
+#        ---------------------------
+                                                       zeit_ci.x JEDI_AnaRun
+         Call JEDI_AnalysisRun_( 0, 1 )
+                                                       zeit_co.x JEDI_AnaRun
+
 
 #        Update GCM resource files (caution: order-dependent)
 #        -------------------------

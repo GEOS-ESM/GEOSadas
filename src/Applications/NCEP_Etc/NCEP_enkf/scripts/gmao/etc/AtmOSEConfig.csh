@@ -9,7 +9,8 @@ setenv LOCAL_ACQUIRE 1
 setenv IGNORE_0 1
 setenv STRICT 0
 unsetenv FCSTIMES 
-setenv DORCORR 0
+#setenv DORCORR @DORCORR
+setenv DORCORR 0  # must be zero for now since ensemble Jo gets affected by RCORR which in turns change the EnKF data selection
 
 unsetenv PMI_RANK
 unsetenv PMI_FD
@@ -62,7 +63,7 @@ setenv AENS_GAAS_OPT   2  # 1 members use central GAAS
                           # 2 analyze each member with PSAS
                           # 3 do (2), add EnKF-based AOD analysis (off aod.or.concentrations)
                           # 4 EnKF-based AOD analysis (off aod.or.concentrations)
-setenv ATMENKFAERO_QNAME compute
+setenv ATMENKFAERO_QNAME $ATMENS_QNAME
 setenv ATMENKFAERO_WALLCLOCK 1:00:00
 setenv AENKFAERO_NCPUS 192
 setenv MPIRUN_ATMENKFAERO "$ATMENS_MPIRUN -np $AENKFAERO_NCPUS enkf_aero.x"
@@ -70,14 +71,14 @@ setenv MPIRUN_ATMENKFAERO "$ATMENS_MPIRUN -np $AENKFAERO_NCPUS enkf_aero.x"
 # atmos_ens2gcm.csh
 # -----------------
 setenv AENS_IAU_DSTJOB 8
-setenv IAU_QNAME compute
+setenv IAU_QNAME $ATMENS_QNAME
 setenv IAU_WALLCLOCK 1:00:00
 setenv ENSIAU_NCPUS @MIAU_CPUS
 setenv MPIRUN_ENSIAU  "$ATMENS_MPIRUN -np $ENSIAU_NCPUS $IAUX"
 
 # atmos_enkf.j
 # ------------
-setenv ATMENKF_QNAME compute
+setenv ATMENKF_QNAME $ATMENS_QNAME
 setenv ATMENKF_WALLCLOCK 1:00:00
 #setenv ATMENKF_MPIPROCS 4
 setenv AENKF_NCPUS @ENKF_CPUS
@@ -86,7 +87,7 @@ setenv MPIRUN_ATMENKF "$ATMENS_MPIRUN -np $AENKF_NCPUS enkf_geos.x"
 # gcm_ensemble.j
 # --------------
 setenv AENS_GCM_DSTJOB 4
-setenv AGCM_QNAME compute
+setenv AGCM_QNAME $ATMENS_QNAME
 setenv AGCM_WALLCLOCK 1:00:00
 setenv ENSGCM_NCPUS @AGCM_CPUS
 setenv MPIRUN_ENSGCM  "$ATMENS_MPIRUN -np $ENSGCM_NCPUS GEOSgcm.x"   # esma_mpirun does not work in this context
@@ -96,7 +97,7 @@ setenv RSTSTAGE4AENS  $ATMENSLOC/RST                                 # TBD: loca
 # adjgcm_ensemble.j
 # -----------------
 #setenv AENS_GCMADJ_DSTJOB 4
-setenv AGCMADJ_QNAME compute
+setenv AGCMADJ_QNAME $ATMENS_QNAME
 setenv AGCMADJ_WALLCLOCK 1:00:00
 setenv ENSGCMADJ_NCPUS 96
 setenv MPIRUN_ENSGCMADJ "$ATMENS_MPIRUN -np $ENSGCMADJ_NCPUS GEOSgcmPert.x"   # esma_mpirun does not work in this context
@@ -111,7 +112,7 @@ setenv VTXLEVS "1000 925 850 700 600 500 400 300 250 200 150 100 70 50 30 20 10"
 # obsvr_ensemble.j
 # ----------------
 setenv AENS_OBSVR_DSTJOB 4
-setenv OBSVR_QNAME compute
+setenv OBSVR_QNAME $ATMENS_QNAME
 setenv OBSVR_WALLCLOCK 0:45:00
 setenv ENSGSI_NCPUS @OBSV_CPUS
 setenv MPIRUN_ENSANA  "$ATMENS_MPIRUN -np $ENSGSI_NCPUS GSIsa.x"     # esma_mpirun does not work in this context
@@ -119,7 +120,7 @@ setenv MPIRUN_ENSANA  "$ATMENS_MPIRUN -np $ENSGSI_NCPUS GSIsa.x"     # esma_mpir
 # setup_perts.csh
 #----------------
 setenv AENS_PERTS_DSTJOB 8
-setenv PERTS_QNAME compute
+setenv PERTS_QNAME $ATMENS_QNAME
 setenv PERTS_WALLCLOCK 1:00:00
 setenv PERTS_NCPUS 24 
 setenv PERTS_ENSTAT_MPIRUN "$ATMENS_MPIRUN -np $PERTS_NCPUS mp_stats.x"
@@ -129,13 +130,13 @@ setenv PERTS_ENSTAT_MPIRUN "$ATMENS_MPIRUN -np $PERTS_NCPUS mp_stats.x"
 setenv AENSTAT_NCPUS @STAT_CPUS
 setenv AENSTAT_MPIRUN "$ATMENS_MPIRUN -np $AENSTAT_NCPUS mp_stats.x"
 setenv AENSTAT_WALLCLOCK 0:30:00
-setenv AENSTAT_QNAME compute
+setenv AENSTAT_QNAME $ATMENS_QNAME
 
 # post-egcm calculations
 # ----------------------
 setenv PEGCM_NCPUS @STAT_CPUS
 setenv PEGCM_WALLCLOCK 1:00:00
-setenv PEGCM_QNAME compute
+setenv PEGCM_QNAME $ATMENS_QNAME
 
 
 # NOTES:

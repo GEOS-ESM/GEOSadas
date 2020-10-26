@@ -213,9 +213,15 @@ sub restart_info {
         }
     }
     printarc("#\n# restart tar file\n#\n");
-    $lineTAR = '${PESTOROOT}%s/rs/Y%y4/M%m2/%s.rst.%y4%m2%d2_%h2z.tar';
+    $lineTAR = '${PESTOROOT}%s/rs/Y%y4/M%m2/%s.agcmrst.%y4%m2%d2_%h2z.tar';
     printarc("$lineTAR\n");
     $lineTAR = '${PESTOROOT}%s/rs/Y%y4/M%m2/%s.incrst.%y4%m2%d2_%h2z.tar';
+    printarc("$lineTAR\n");
+    $lineTAR = '${PESTOROOT}%s/rs/Y%y4/M%m2/%s.rst.%y4%m2%d2_%h2z.tar';
+    printarc("$lineTAR\n");
+    $lineTAR = '${PESTOROOT}%s/rs/Y%y4/M%m2/%s.trajrst.%y4%m2%d2_%h2z.tar';
+    printarc("$lineTAR\n");
+    $lineTAR = '${PESTOROOT}%s/jedi/rs/Y%y4/M%m2/%s.jedi_agcmrst.%y4%m2%d2_%h2z.tar';
     printarc("$lineTAR\n");
 
     closearc();
@@ -629,6 +635,19 @@ sub append_other_info {
 #
 \${PESTOROOT}%s/scanbuf/Y%y4/M%m2/%s.airs.%y4%m2%d2.t%h2z.log
 \${PESTOROOT}%s/scanbuf/Y%y4/M%m2/%s.eos_amsua.%y4%m2%d2.t%h2z.log
+#
+#                 -----------------
+#                   JEDI LISTING
+#                 -----------------
+\${PESTOROOT}%s/jedi/etc/Y%y4/M%m2/%s.jedi_%c%c%c.log.%y4%m2%d2_%h2z.txt
+\${PESTOROOT}%s/jedi/etc/Y%y4/M%m2/%s.jedi_%c%c%c%c.log.%y4%m2%d2_%h2z.txt
+#
+#               -------------------------
+#                    JEDI ANALYSIS
+#               -------------------------
+#
+\${PESTOROOT}%s/jedi/ana/Y%y4/M%m2/%s.jedi_ana.%y4%m2%d2_%h2z.tar
+\${PESTOROOT}%s/jedi/obs/Y%y4/M%m2/%s.jedi_hofx.%y4%m2%d2_%h2z.tar
 #
 #               -------------------------
 #                    LSM FILES

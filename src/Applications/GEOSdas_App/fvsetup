@@ -383,6 +383,7 @@ my ($fvhome, $fvroot, $fvbin, $checkID, $siteID);
 my ($remNODE, $remID);
 my ($qsub);
 my ($acqloc);
+my ($fcstimes,$fcswait_hrs,$asnwait_hrs);
 
 my ($sysfile, $nodeflg);
 my (@rmTilde);
@@ -619,8 +620,8 @@ sub set_inputparams {
 #
 # options
 # => agcm:      include agcm_import_rst when copying restart files
-# => sensdeg=s: =1 for first-deg sensitivity test
-#               =3 for third-deg sensitivity test (default)
+# => sensdeg=s: =1 for first-deg sensitivity test (default)
+#               =3 for third-deg sensitivity test
 # => check:     use when calling fvsetup from the checkinput script
 # => header=s:  header for input file
 # => setupfile: file to copy to expid directory (set note below)
@@ -661,7 +662,7 @@ sub get_runtime_values {
                 "runjob"      => \$runjobFLG,
                 "save=i"      => \$saveFLG,
                 "stop"        => \$stopFLG);
-    $sensdeg = 3 unless ($sensdeg and $sensdeg eq "1");
+    $sensdeg = 1 unless ($sensdeg and $sensdeg eq "3");
     $runjobFLG = 1 if $checkFLG;
     $saveFLG = 1 unless $saveFLG == 2;
 }
@@ -823,7 +824,6 @@ sub defaults {
                      sqc.rc );
 
   @g5rc_files = qw ( AGCM.rc.tmpl
-                     CAP.rc.tmpl
                      GEOS_ChemGridComp.rc
                      GCMPROG.rc.tmpl
                      HISTORY.rc.tmpl
@@ -1956,8 +1956,25 @@ sub ed_4dfcst_acq {
  open(SCRIPT,">$acq") or
  die ">>> ERROR <<< cannot write $acq";
  print  SCRIPT <<"EOF";
-$acqloc/$user/$expid/rs/Y%y4/M%m2/$expid.agcm_import_rst.%y4%m2%d2_%h2%n2z.$ncsuffix
-$acqloc/$user/$expid/ana/Y%y4/M%m2/$expid.ana.eta.%y4%m2%d2_%h2%n2z.nc4
+#$acqloc/$expid/rs/Y%y4/M%m2/$expid.agcm_import_rst.%y4%m2%d2_%h2%n2z.$ncsuffix
+$acqloc/$expid/ana/Y%y4/M%m2/$expid.ana.eta.%y4%m2%d2_%h2%n2z.nc4
+EOF
+
+}
+#=======================================================================
+sub ed_4dfcst03_acq {
+
+  return 0 unless ( $g5gcm );
+
+  my($mydir) = @_;
+
+  my($frun, $ft, $acq);
+
+  $acq = "$fvhome/$mydir/fcst03.acq";
+ open(SCRIPT,">$acq") or
+ die ">>> ERROR <<< cannot write $acq";
+ print  SCRIPT <<"EOF";
+$acqloc/$expid/rs/Y%y4/M%m2/$expid.agcmrst.%y4%m2%d2_%h2z.tar
 EOF
 
 }
@@ -1974,8 +1991,8 @@ sub ed_4dfcst09_acq {
  open(SCRIPT,">$acq") or
  die ">>> ERROR <<< cannot write $acq";
  print  SCRIPT <<"EOF";
-$acqloc/$user/$expid/ana/Y%y4/M%m2/$expid.ana09.eta.%y4%m2%d2_%h2%n2z.nc4
-$acqloc/$user/$expid/rs/Y%y4/M%m2/$expid.agcm09_import_rst.%y4%m2%d2_%h2z.bin
+$acqloc/$expid/ana/Y%y4/M%m2/$expid.ana09.eta.%y4%m2%d2_%h2%n2z.nc4
+#$acqloc/$expid/rs/Y%y4/M%m2/$expid.agcm09_import_rst.%y4%m2%d2_%h2z.bin
 EOF
 
 }
@@ -2141,15 +2158,14 @@ sub ed_g5cap_rc {
 
   return 0 unless ( $g5gcm );
 
-  my($mydir) = @_;
+  my($mydir,$g5caprc,$fhours) = @_;
 
   my($frun, $ft, $rcd, $myedate, $myjobsg );
-  my($g5caprc);
-
-  $g5caprc = "CAP.rc.tmpl";
 
   $ft   = "$fvhome/$mydir/tmp.rc";
   $frun = "$fvhome/$mydir/$g5caprc";
+
+  cp("$fvetc/CAP.rc.tmpl",$frun);
 
   $myedate = $end_date;
   if ( $mydir eq "run" ) {
@@ -2232,22 +2248,6 @@ sub ed_rst4fcst_acq {
  open(SCRIPT,">$acq") or
  die ">>> ERROR <<< cannot write $acq";
  print  SCRIPT <<"EOF";
-#$defexploc/$expid/rs/Y%y4/M%m2/$expid.catch_internal_rst.%y4%m2%d2_%h2z.bin
-#$defexploc/$expid/rs/Y%y4/M%m2/$expid.fvcore_internal_rst.%y4%m2%d2_%h2z.bin
-#$defexploc/$expid/rs/Y%y4/M%m2/$expid.gocart_internal_rst.%y4%m2%d2_%h2z.bin
-#$defexploc/$expid/rs/Y%y4/M%m2/$expid.irrad_internal_rst.%y4%m2%d2_%h2z.bin
-#$defexploc/$expid/rs/Y%y4/M%m2/$expid.lake_internal_rst.%y4%m2%d2_%h2z.bin
-#$defexploc/$expid/rs/Y%y4/M%m2/$expid.landice_internal_rst.%y4%m2%d2_%h2z.bin
-#$defexploc/$expid/rs/Y%y4/M%m2/$expid.moist_import_rst.%y4%m2%d2_%h2z.bin
-#$defexploc/$expid/rs/Y%y4/M%m2/$expid.moist_internal_rst.%y4%m2%d2_%h2z.bin
-#$defexploc/$expid/rs/Y%y4/M%m2/$expid.pchem_internal_rst.%y4%m2%d2_%h2z.bin
-#$defexploc/$expid/rs/Y%y4/M%m2/$expid.rst.lcv.%y4%m2%d2_%h2z.bin
-#$defexploc/$expid/rs/Y%y4/M%m2/$expid.saltwater_import_rst.%y4%m2%d2_%h2z.bin
-#$defexploc/$expid/rs/Y%y4/M%m2/$expid.saltwater_internal_rst.%y4%m2%d2_%h2z.bin
-#$defexploc/$expid/rs/Y%y4/M%m2/$expid.solar_internal_rst.%y4%m2%d2_%h2z.bin
-#$defexploc/$expid/rs/Y%y4/M%m2/$expid.surf_import_rst.%y4%m2%d2_%h2z.bin
-#$defexploc/$expid/rs/Y%y4/M%m2/$expid.turb_import_rst.%y4%m2%d2_%h2z.bin
-#$defexploc/$expid/rs/Y%y4/M%m2/$expid.turb_internal_rst.%y4%m2%d2_%h2z.bin
 $defexploc/$expid/rs/Y%y4/M%m2/$expid.rst.%y4%m2%d2_%h2z.tar
 EOF
 if ( $hyb_ens < 4 ) {
@@ -2269,7 +2269,7 @@ sub ed_aens_replay_acq {
  open(SCRIPT,">$acq") or
  die ">>> ERROR <<< cannot write $acq";
  print  SCRIPT <<"EOF";
-$acqloc/$user/$expid/atmens/Y%y4/M%m2/$expid.atmens_ebkg.%y4%m2%d2_%h2z.tar
+$acqloc/$expid/atmens/Y%y4/M%m2/$expid.atmens_ebkg.%y4%m2%d2_%h2z.tar
 EOF
 
 }
@@ -2688,6 +2688,9 @@ ADM-TLM Defaults
         ..../prog/Y%y4/M%m2/%s.prog.eta.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.$ncsuffix
 EOF
 
+  $fcstimes = "21";
+  $fcswait_hrs = "12";
+  $asnwait_hrs = "48";
   $admtlm = 0;
   $prompt = "  Run model-adjoint-related applications (0=no,1=yes)?";
   $admtlm = query($prompt, $admtlm);
@@ -2703,6 +2706,9 @@ EOF
   $svec = 0;
   $ans = query("  Run singular vector experiments (0=n,1=yes)?", $svec);
   $svec = 1 if $ans == 1;
+
+  $fcstimes = "15 21";
+  $fcswait_hrs = "36"; # can only launch forecast after when analysis is available
 
   return 0;
 }
@@ -2824,7 +2830,7 @@ sub get_fvhome {
   if ($ENV{ARCHIVE}) {
      $acqloc = "$ENV{ARCHIVE}";
   } else {
-     $acqloc = "/archive/u/";
+     $acqloc = "/archive/u/$user";
   }
 
 
@@ -2957,7 +2963,8 @@ sub get_times {
   $ndays  = 1;           # this is fixed at 1-day for now
   $nhours = $ndays * $HRS_PER_DAY;
   $nsegs  = 1;
-  $fhours = 123;
+  $fhours21 = 123;       
+  $fhours15 =  33;       
 
   # GEOS-5 GCM MPI decomposition; must be compatible w/ ncpus
   #----------------------------------------------------------
@@ -3027,7 +3034,7 @@ TIME RANGE
          PARAMETER   DEFAULT     DESCRIPTION
          ---------   -------     ---------------------------------------
          NYMD_end    $nymde    Ending year-month-day
-         FHOURS      $fhours        Length (in hours) of FORECAST run segments
+         FHOURS      $fhours21      Length (in hours) of FORECAST run segments
          NSEGS       $nsegs           Number of DAS segments per PBS job
          NX          $nx           Number of PEs in the zonal direction
          NY          $ny           Number of PEs in the meridional direction
@@ -3063,8 +3070,8 @@ EOF
 
   $loop = 0;
   {
-      $fhours = query("  Length of FORECAST run segments (in hours)?", $fhours);
-      if ($fhours % 3 != 0) {
+      $fhours21 = query("  Length of FORECAST run segments (in hours)?", $fhours21);
+      if ($fhours21 % 3 != 0) {
           if ($loop < 3) {
               warn ">> Error << Number of hours should be a multiple of 3.  Try again.\n";
               redo;
@@ -3449,6 +3456,11 @@ EOF
   } else {
      $setacftbc = "";
   }
+  if ( $doRcorr ) {
+     $rcorrarg = "-rcorr";
+  } else {
+     $rcorrarg = "";
+  }
   
  if ($aens_res eq "C360") {
     $aensupa = "Bkg.eta";
@@ -3463,7 +3475,7 @@ EOF
 
 # If so, setup EnADAS 
 # -------------------
-  $flags = "-nlevs $aens_lev $setacftbc $setradbc $aens_lsmodel -expdir $fvhome/.. $sppt_flag";
+  $flags = "-nlevs $aens_lev $setacftbc $rcorrarg $setradbc $aens_lsmodel -expdir $fvhome/.. $sppt_flag";
   $flags .= " -fvhome $fvhome" if $checkFLG;
   $params = " $aens_ana $expid $aens_im $aens_jm $aens_ocn $landbcs"; 
 
@@ -7521,9 +7533,9 @@ print  SCRIPT <<"EOF";
   setenv ACFTBIAS $acftbias
   setenv USE_MODIS_STAGE 0  # 1 = use MODIS data from MODIS_STAGE_DIR; 0 = don't
   setenv MODIS_STAGE_DIR /discover/nobackup/projects/gmao/input/dao_ops/ops/flk/modis  # L2a non-archive data dir
-  setenv FCSTIMES "21"
+  setenv FCSTIMES "$fcstimes"
   setenv FCSTATS  "21"
-  setenv FHOURS   $fhours
+  setenv FHOURS   $fhours21
   setenv NEWRADBC $newradbc
   setenv ANGLEBC  $newradbc
   setenv GSI_NETCDF_DIAG 1
@@ -7688,12 +7700,15 @@ print  SCRIPT <<"EOF";
   setenv NUMBER_MLP_PROCESSES         \${N_MPI} # still used by GCM
   setenv NUMBER_CPUS_PER_MLP_PROCESS  \${N_SMP} # still used by GCM
 
+  setenv JEDIDIR
+  if ( -d \$FVHOME/run/jedi ) setenv JEDIDIR \$FVHOME/run/jedi
+
 # Add FVROOT/bin to front of path so fvDAS binaries are found first
 # -----------------------------------------------------------------
   if ( `uname -s` == "Linux" ) then
-    set path = ( . \$FVHOME/run \$FVROOT/bin \$SHARE/dasilva/opengrads/Contents \$BASEDIR/\$ARCH/bin \$path )
+    set path = ( . \$FVHOME/run \$JEDIDIR \$FVROOT/bin \$SHARE/dasilva/opengrads/Contents \$BASEDIR/\$ARCH/bin \$path )
   else
-    set path = ( . \$FVHOME/run \$FVROOT/bin \$SHARE/dasilva/opengrads/Contents \$path )
+    set path = ( . \$FVHOME/run \$JEDIDIR \$FVROOT/bin \$SHARE/dasilva/opengrads/Contents \$path )
   endif
 
 # Make sure RSTs have correct time tagging
@@ -7712,7 +7727,7 @@ print  SCRIPT <<"EOF";
      end
   endif
   cd -
-  if ( "\$HYBRIDGSI" != "/dev/null" ) then
+  if ( (! -e \$FVHOME/run/atmens_replay.acq) && ("\$HYBRIDGSI" != "/dev/null") ) then
      cd \$HYBRIDGSI
      set lstdirs = ( `ls -d ensmean ensrms mem*` )
      foreach dir ( \$lstdirs )
@@ -7789,7 +7804,11 @@ print  SCRIPT <<"EOF";
   setenv MPIRUN_SAC    "esma_mpirun -np  1      \$SACX"
   setenv MPIRUN_OIQC   "PBS_NODEFILE=\$FVWORK/OIQC_list; esma_mpirun -np 4"
   setenv MPIRUN        "esma_mpirun -np \$PSAS_NUM_MPI"
-  setenv MPIRUN_AOD    "esma_mpirun "
+  if (\$?MPT_VERSION) then
+    setenv MPIRUN_AOD    "mpirun "
+  else
+    setenv MPIRUN_AOD    "esma_mpirun "
+  endif
   setenv RUN_OPT_BLEND "esma_mpirun -np \$NCPUS \$HDF2RSX"
   if (\$G5GCM ) then
      setenv    RUN_OPT_BEGIN "esma_mpirun -np \$NCPUS \$GCMX"
@@ -8099,8 +8118,8 @@ print  SCRIPT <<"EOF";
              set nymdb = `echo \$crstag | cut -c1-8`
              set hhb   = `echo \$crstag | cut -c10-11`
              set nhmsb = \${hhb}0000
-             @ twelve_hrs = 12 * 3600
-             set prevdate = `tick \$nymdb \$nhmsb -\$twelve_hrs`
+             @ these_hrs = $fcswait_hrs * 3600
+             set prevdate = `tick \$nymdb \$nhmsb -\$these_hrs`
              set nymdp = \$prevdate[1]
              set nhmsp = \$prevdate[2]
              set hhp   = `echo \$nhmsp | cut -c1-2`
@@ -8126,6 +8145,36 @@ print  SCRIPT <<"EOF";
                 cd -
              end
           endif
+
+#         If so, submit asens (FSOI) job
+#         ------------------------------
+          if ( -d \$FVHOME/asens ) then
+             set crstag = `ls \$FVHOME/recycle/\$EXPID.rst.lcv.*.bin | cut -d. -f4 `
+             set nymdb = `echo \$crstag | cut -c1-8`
+             set hhb   = `echo \$crstag | cut -c10-11`
+             set nhmsb = \${hhb}0000
+             @ asgap_hrs = $asnwait_hrs * 3600 + \$VAROFFSET * 60
+             set chkasens = `tick \$nymdb \$nhmsb - \$asgap_hrs`
+             set this_ana = `echo \${chkasens[1]}_\${chkasens[2]} | cut -c1-11`
+             set lstasens = (`ls \$FVHOME/asens/\$EXPID.fsens*+*-*\${this_ana}*`)
+             set asnorder = 2
+             if ( -e \$FVHOME/asens/asensrules.rc ) then
+               set asnorder = `echorc.x -rc \$FVHOME/asens/asensrules.rc ASENS_ORDER`
+             endif
+             if ( \$#lstasens == \$asnorder ) then
+                cd \$FVHOME/asens
+                echo "Submitting asens job for \$this_ana ... "
+                if ( \$BATCH_SUBCMD == "sbatch" ) then
+                   sbatch --export=this_nymdhh="\$this_ana" g5asens.j
+                else
+                   qsub -v this_nymdhh="\$this_ana" g5asens.j 
+                endif
+                cd -
+             else
+                echo "nothing to do in asens "
+             endif
+          endif
+
 EOF
 
 # Continue with rest of script
@@ -9518,11 +9567,24 @@ sub copy_resources {
 
           if ( -e "$fvroot/etc/$fname" ) {
               if ( $fname eq "fvsens.ccmrun.namelist.tmpl") {
-                  $admbegtlag = timeLagStartHours($fhours, $sensdeg);
+                  # for 21z forecasts
+                  my $fnmout21 = "fvsens.ccmrun.namelist_21.tmpl";
+                  my $fnmout00 = "fvsens.ccmrun.namelist_00.tmpl";
+                  $admbegtlag = timeLagStartHours($fhours21, $sensdeg, 27);
                   $cmd = "sed 's/>>>ADMBEGTLAG<<</$admbegtlag/' $fvroot/etc/$fname"
-                      .  " > $fvhome/fcst/$fname";
+                      .  " > $fvhome/fcst/$fnmout21";
                   $rc = system($cmd);
                   die "Error writing $fvroot/etc/$fname; rc = $rc/256\n" if $rc;
+                  cp("$fvhome/fcst/$fnmout21","$fvhome/fcst/$fnmout00");
+                  # for 15z forecasts
+                  my $fnmout15 = "fvsens.ccmrun.namelist_15.tmpl";
+                  my $fnmout18 = "fvsens.ccmrun.namelist_18.tmpl";
+                  $admbegtlag = timeLagStartHours($fhours15, $sensdeg, 33);
+                  $cmd = "sed 's/>>>ADMBEGTLAG<<</$admbegtlag/' $fvroot/etc/$fname"
+                      .  " > $fvhome/fcst/$fnmout15";
+                  $rc = system($cmd);
+                  die "Error writing $fvroot/etc/$fname; rc = $rc/256\n" if $rc;
+                  cp("$fvhome/fcst/$fnmout15","$fvhome/fcst/$fnmout18");
               } else {
                   cp("$fvroot/etc/$fname","$fvhome/fcst/$fname")
                       || die "Cannot write file $fvhome/fcst/$fname: $!";
@@ -9561,21 +9623,30 @@ sub copy_resources {
   # --------------------------------------
   ed_aod4fcst_acq("fcst");
   ed_g5fvlay_rc("fcst");
-  ed_g5cap_rc("fcst");
+  if ($admtlm) {
+     ed_g5cap_rc("fcst","CAP_21.rc.tmpl",$fhours21);
+     ed_g5cap_rc("fcst","CAP_15.rc.tmpl",$fhours15);
+  } else {
+     ed_g5cap_rc("fcst","CAP.rc.tmpl",$fhours21);
+  }
   ed_g5cap_apert_rc("fcst");
   ed_g5prog_rc_new("fcst","GCMPROG.rc.tmpl");
   ed_rst4fcst_acq("fcst");
   if ( $hyb_ens > 2 ) {
      ed_aens_replay_acq("anasa","atmens_replay.acq");
+     if ($admtlm) {
+        ed_aens_replay_acq("asens","atmens_asens.acq");
+     }
   }
   if ( $hyb_ens == 4 ) {
      ed_4dfcst_acq("fcst");
+     ed_4dfcst03_acq("fcst");
      ed_4dfcst09_acq("fcst");
   }
   writeSaverst($fcsthrs, "$fvhome/fcst");
 
   ed_g5fvlay_rc("run");
-  ed_g5cap_rc("run");
+  ed_g5cap_rc("run","CAP.rc.tmpl",-1);
   #--ed_g5prog_rc_new("run","GCMPROG.rc.tmpl");
   ed_g5hist_rc_new("run","HISTORY.rc.tmpl");
   writeSaverst($fcsthrs, "$fvhome/run");
@@ -9812,16 +9883,16 @@ sub edit_collections {
 
 #=======================================================================
 sub timeLagStartHours {
-    my ($numhrs, $deg, $lag1, $lag2);
+    my ($numhrs, $deg, $taub, $lag1);
     $numhrs = shift @_;
     $deg    = shift @_;
+    $taub   = shift @_;
         
-    $lag1 = $numhrs - 21;
-    $lag2 = $numhrs - 27;
-    if ($lag2 < 0) { $lag2 = 0; $deg = 1; }
-
-    if ($deg == 1) { return "$lag2";       }
-    else           { return "$lag1 $lag2"; }
+    $lag1 = $numhrs - $taub;
+    if ($lag1 < 0) { $lag1 = 0; $deg = 1; }
+    $lag1  = sprintf "%02d", $lag1; 
+     
+    return "$lag1";
 }
 
 #=======================================================================
@@ -10588,7 +10659,7 @@ EOF
             $qsub $less $fvhome/fcst/$jobf.j
 
          This script will carry out the forecast runs by means of several
-         job segments (one per initial conditions), each $fhours simulation
+         job segments (one per initial conditions), each $fhours21 simulation
          hour(s) long.
 
          The output location is $mhost under $expid_path

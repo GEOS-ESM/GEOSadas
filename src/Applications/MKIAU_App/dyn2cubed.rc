@@ -1,0 +1,26 @@
+# MAPL required variables
+# -----------------------
+RUN_DT: 21600   # for now, must be set to 6-hrs
+MAPL_ENABLE_TIMERS: NO
+PRINTSPEC: 0  # (0: OFF, 1: IMPORT & EXPORT, 2: IMPORT, 3: EXPORT)
+
+# Model Resolution and Timestep Parameters
+# 4x4 is usually enough for any resolution
+# ----------------------------------------
+NX: 2
+NY: 12
+
+DYCORE: FV3
+AGCM.GRIDNAME: PE360x2160-CF
+
+AGCM.IM_WORLD: 360
+AGCM.JM_WORLD: 2160
+AGCM.LM: 72
+AGCM.GRID_TYPE: Cubed-Sphere
+
+#INPUT_VARS: phis,hs_stdv,ps,ts,frland,frlandice,frlake,frocean,frseaice,u,v,tv,sphu,ozone,delp,qitot,qltot,qrtot,qstot,rh,mrh
+INPUT_VARS: ps,ts,u,v,tv,sphu,ozone,delp,qitot,qltot,qrtot,qstot,rh,mrh
+
+INPUT_FILE:  f522_fp.f48m24_rh.eta.%y4%m2%d2_%h2z.nc4
+OUTPUT_FILE: cbf522_fp.f48m24_rh.eta.%y4%m2%d2_%h2z.nc4
+

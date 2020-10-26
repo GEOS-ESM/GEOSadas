@@ -1536,6 +1536,7 @@ exit 1
 
      # end of IAU-period:
      @ timeinc_sec = $TIMEINC * 60
+     set beg_ana   = ( $fnymdb $fnhmsb )
      set end_ana   = ( `tick $fnymdb $fnhmsb $timeinc_sec` )
 
      if (`uname -n` !~ borg*) then
@@ -1581,6 +1582,9 @@ exit 1
         endif
         if(-e fcst09.acq) then
         fname2 " acquire -v -rc fcst09.acq -s $spool -d . $end_ana[1] $end_ana[2] $fcstacq_freq $nfcst "
+        endif
+        if(-e fcst03.acq) then
+        fname2 " acquire -v -rc fcst03.acq -s $spool -d . $beg_ana[1] $beg_ana[2] $fcstacq_freq $nfcst "
         endif
         fname2 "exit"
                                                                                                           
@@ -3114,6 +3118,27 @@ endif
 
 #
                               # Last line of AnalysisRun_()  
+\end
+
+#.............................................................................
+
+# ----------------------------------
+  Sub JEDI_AnalysisRun_( Viter_, Final_ ) 
+# ----------------------------------
+  if ( $?ECHO___ ) set echo
+#
+
+  if ( ! -d $FVHOME/run/jedi )  exit (0)
+
+  set this_hh0 = `echo $gcm_nhms0 | cut -c1-2`
+
+  jedi_driver.csh $gcm_nymd0 $gcm_nhms0 |& tee -a $FVWORK/$EXPID.jedi_drv.log.${gcm_nymd0}_${this_hh0}z.txt
+  if ( $status ) then
+     echo "JEDI analysis failed, aborting ..."
+     Call AbnormalExit_( 1 )
+  endif
+
+                              # Last line of JEDI_AnalysisRun_()  
 \end
 
 #.............................................................................
@@ -5845,6 +5870,18 @@ endif
        /bin/rm $EXPID.*rst*iter*.$RSTSUFFIX
     endif
     cd -
+    set lsttrajrst = `ls $EXPID.traj_lcv_rst.*$NCSUFFIX`
+    if ( ${%lsttrajrst}  ) then
+       tar cvf $FVWORK/$EXPID.trajrst.${rtag3}.tar $lsttrajrst
+       /bin/rm $lsttrajrst
+    endif
+    if ( $DO4DIAU ) then
+       set lstagcmrst = `ls $EXPID.agcm_import_rst.*$NCSUFFIX`
+       if ( ${%lstagcmrst}  ) then
+          tar cvf $FVWORK/$EXPID.agcmrst.${rtag3}.tar $lstagcmrst
+          /bin/rm $lstagcmrst
+       endif
+    endif
   endif
 
   exit 0
