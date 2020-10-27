@@ -306,7 +306,9 @@
 
 # Retrieve existing random perturbations (enables for reproducibility) 
 # --------------------------------------------------------------------
-  if ( -e $ATMENSETC/given_rndperts.acq ) then
+  set lst = (`ls $ATMENSLOC/*rndperts.dates*txt` )
+  if ( ! $%lst ) then
+   if ( -e $ATMENSETC/given_rndperts.acq ) then
      if ( ! -e $FVWORK/.DONE_MEM001_GETRNDPERTS.$yyyymmddhh) then
       if(! -d $STAGE4HYBGSI ) mkdir -p $STAGE4HYBGSI
       set spool = "-s $FVWORK/spool"
@@ -347,6 +349,7 @@
          echo "Main: failed in retrieve rndperts-dates file, aborting."
          exit(1)
      endif
+   endif
   endif
 
 # In case additive inflation, prepare the perturbations
