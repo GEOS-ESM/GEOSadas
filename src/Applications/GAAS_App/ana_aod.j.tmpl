@@ -65,7 +65,7 @@ if ($aod_parallel_flag) then
    setenv PBS_NODEFILE $AODWORK/AOD_list
 endif
 
-if ( $?MPIRUN_AOD ) then
+if ( ! $?MPIRUN_AOD ) then
    echo "ana_aod.j: missing MPIRUN_AOD env definition, aborting ..."
    exit (1)
 endif
