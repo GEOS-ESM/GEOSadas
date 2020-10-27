@@ -8154,8 +8154,8 @@ print  SCRIPT <<"EOF";
              set nymdb = `echo \$crstag | cut -c1-8`
              set hhb   = `echo \$crstag | cut -c10-11`
              set nhmsb = \${hhb}0000
-             @ asgap_hrs = $asnwait_hrs * 3600 + \$VAROFFSET * 60
-             set chkasens = `tick \$nymdb \$nhmsb - \$asgap_hrs`
+             @ asgap_sec = -($asnwait_hrs * 3600 + \$VAROFFSET * 60)
+             set chkasens = `tick \$nymdb \$nhmsb \$asgap_sec`
              set this_ana = `echo \${chkasens[1]}_\${chkasens[2]} | cut -c1-11`
              set lstasens = (`ls \$FVHOME/asens/\$EXPID.fsens*+*-*\${this_ana}*`)
              set asnorder = 2
