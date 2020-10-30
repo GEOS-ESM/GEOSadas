@@ -338,4 +338,3 @@ E) Variations on EnGSI:
    The script can then easily take care of linking these vectors to the member 
    directories w/ proper names, so all else would go on merrily.
 
-F) TBD: revisit dealloc in statevec.f90 (EnKF)

@@ -9586,6 +9586,9 @@ sub copy_resources {
                   $rc = system($cmd);
                   die "Error writing $fvroot/etc/$fname; rc = $rc/256\n" if $rc;
                   cp("$fvhome/fcst/$fnmout15","$fvhome/fcst/$fnmout18");
+                  if ( $admtlm ) {
+                     cp("$fvhome/fcst/$fnmout15","$fvhome/asens/asensrules.rc");
+                  }
               } else {
                   cp("$fvroot/etc/$fname","$fvhome/fcst/$fname")
                       || die "Cannot write file $fvhome/fcst/$fname: $!";
