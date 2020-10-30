@@ -18,18 +18,108 @@ Sequence of calls:
 Auxiliar functions:
 ------------------
 AtmEnsConfig.csh         - env var settings
+
 acquire_atmens.csh       - acquires existing ensemble; used for replay and obs. impact
+
 atm_ens.j                - main job control script
+
 atmens_stats.csh         - calculates ensemble statistics (mean/rms); called by ensemble scripts
+
 dry_atm_ens.j            - runs dry-case (no-actual run, just stub)
+
 jobgen.pl                - generates general pbs job script
+
 jobmonitor.csh           - monitor present jobs in pbs
+
 makeiau.csh              - explicit call to makeiau
+
 update_ens.csh           - move ensemble to proper update location
 
-atmos_enkf.nml.tmpl
+Resource files handled in default settings of atmens_setup.pl
+-------------------------------------------------------------
 
-                                                                             status
+aens_stoch.rc        - settings related to stochastic physics tendencies (SPPT)
+
+AGCM.rc.tmpl         - parameter settings controlling GCM options
+
+AtmEnsConfig.csh     - configuration of EnADAS
+
+atmens_storage.arc   - template names for various output entries
+
+atmos_enkf.nml.tmpl  - namelists parameters for meterology EnKF
+
+CAP.rc.tmpl          - model CAP parameters
+
+dyn_recenter.rc:     - control recentering parameters
+
+a) dyn_recenter_l132.rc       - for L132 model w/o SPPT
+b) dyn_recenter_l132_sppt.rc  - for L132 model w/ SPPT
+c) dyn_recenter_l72.rc        - for L72 model w/o SPPT
+d) dyn_recenter_l72_sppt.rc   - for L72 model w/ SPPT
+
+GAAS_GridComp.rc
+
+GEOS_ChemGridComp.rc
+
+GSI_GridComp_ensfinal.rc.tmpl  - final GSI observer (OmA) 
+
+GSI_GridComp.rc.tmpl           - GSI observers (mean and members)
+
+HISTAENS.rc.tmpl               - diagnostic output from model members
+
+mkiau.rc.tmpl                  - IAU generation settings
+
+mp_stats_perts.rc              - settings for program calculating mean NMC perturbations
+
+mp_stats.rc                    - settings for program calculating ensemble mean
+
+nmcperts.rc                    - settings for NMC perturbations
+
+obs1gsi_mean.rc                - GSI namelists for mean observer
+
+obs1gsi_member.rc              - GSI nemalists for member observers
+
+odsstats_ktonly.rc             - list of KTs used to calculate summary of obs residual statitics
+
+post_egcm.rc                   - controls what gets model output ensemble means/spread are calculated for
+
+
+Resource files handling addition (non-default) options
+------------------------------------------------------
+aero_enkf_nml.tmpl   - 
+
+ana_aodmean.rc
+
+ana_aodmember.rc
+
+atmens_berror.rc
+
+atmens_efsens.rc
+
+atmens_efsostorage.arc
+
+atmens_incenergy.rc.tmpl
+
+atmens_rst_regrid.rc
+
+AtmOSEConfig.csh
+
+atmos_enkf_sens.nml.tmpl
+
+central_ana.rc
+
+easyeana.rc
+
+ene_adaptinf.rc
+
+HISTAGEPS.rc.tmpl
+
+HISTAOSE.rc.tmpl
+
+obs_aodmean.rc
+
+obs_aodmember.rc
+
 First analysis runs:      <ens_bkg>+obs+bkg   -> CentralANA -> inc             *  
 Then atmos-model integration can take place as usual:
                           inc + rst           -> GCM        -> bkg/rst         *  
