@@ -52,13 +52,13 @@ CAP.rc.tmpl          - model CAP parameters
 
 dyn_recenter.rc:     - control recentering parameters
 
-..* dyn_recenter_l132.rc       - for L132 model w/o SPPT
+* dyn_recenter_l132.rc       - for L132 model w/o SPPT
 
-..* dyn_recenter_l132_sppt.rc  - for L132 model w/ SPPT
+* dyn_recenter_l132_sppt.rc  - for L132 model w/ SPPT
 
-..* dyn_recenter_l72.rc        - for L72 model w/o SPPT
+* dyn_recenter_l72.rc        - for L72 model w/o SPPT
 
-..* dyn_recenter_l72_sppt.rc   - for L72 model w/ SPPT
+* dyn_recenter_l72_sppt.rc   - for L72 model w/ SPPT
 
 GAAS_GridComp.rc
 
