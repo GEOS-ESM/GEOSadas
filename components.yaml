@@ -1,3 +1,7 @@
+GEOSadas:
+  fixture: true
+  develop: main
+
 env:
   local: ./@env
   remote: ../ESMA_env.git
@@ -55,13 +59,13 @@ GEOSgcm_GridComp:
 g5pert:
   local: ./src/Components/@g5pert
   remote: ../g5pert.git
-  branch: feature/rtodling/migrate-to-geosadas5271
+  tag: v1.1.0
   develop: develop
 
 GEOSagcmPert_GridComp:
   local: ./src/Components/@GEOSagcmPert_GridComp
   remote: ../GEOSagcmPert_GridComp.git
-  branch: feature/bmauer/updates-from-geosadas5_27_0
+  tag: v1.1.0
   develop: develop
 
 FVdycoreCubed_GridComp:
