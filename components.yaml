@@ -5,7 +5,7 @@ GEOSadas:
 env:
   local: ./@env
   remote: ../ESMA_env.git
-  branch: feature/bmauer/updates-from-geosadas5_27_0
+  tag: v1.4.2
   develop: main
 
 cmake:
@@ -34,7 +34,7 @@ GMAO_Shared:
 MAPL:
   local: ./src/Shared/@MAPL
   remote: ../MAPL.git
-  branch: feature/rtodling/migrate-to-geosadas5271
+  tag: v1.1.14
   develop: develop
 
 FMS:
@@ -46,7 +46,7 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  branch: feature/rtodling/migrate-to-geosadas5271
+  tag: v1.1.0
   develop: develop
 
 GEOSgcm_GridComp:
