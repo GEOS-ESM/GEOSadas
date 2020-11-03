@@ -22,13 +22,13 @@ ecbuild:
 NCEP_Shared:
   local: ./src/Shared/@NCEP_Shared
   remote: ../NCEP_Shared.git
-  branch: feature/mathomp4/update-to-geosadas527
+  tag: v1.1.0
   develop: main
 
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  branch: feature/rtodling/migrate-to-geosadas5271
+  tag: cvs/GEOSadas-5_27_1
   develop: main
 
 MAPL:
@@ -83,7 +83,7 @@ fvdycore:
 GEOSchem_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSphysics_GridComp/@GEOSchem_GridComp
   remote: ../GEOSchem_GridComp.git
-  branch: feature/bmauer/updates-from-geosadas5_27_0
+  tag: v1.1.1
   develop: develop
 
 mom:
