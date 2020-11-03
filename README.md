@@ -71,13 +71,13 @@ git clone git@github.com:GEOS-ESM/GEOSadas.git
 
 If all you wish is to build the model, you can run `parallel_build.csh` from a head node. Doing so will checkout all the external repositories of the model and build it. When done, the resulting model build will be found in `build/` and the installation will be found in `install/` with setup scripts like `gcm_setup` and `fvsetup` in `install/bin`.
 
-#### Debug Version of GEOS GCM
+#### Debug Version of GEOS ADAS
 
 To obtain a debug version, you can run `parallel_build.csh -debug` which will build with debugging flags. This will build in `build-Debug/` and install into `install-Debug/`.
 
-#### Mepo Version of GEOS GCM
+#### Mepo Version of GEOS ADAS
 
-GEOS GCM will soon be transitioning from using `checkout_externals` to
+GEOS ADAS will soon be transitioning from using `checkout_externals` to
 using [`mepo`](https://github.com/GEOS-ESM/mepo), a GMAO-developed
 multi-repository management tool. If you wish to use it via
 `parallel_build.csh` you can run:
