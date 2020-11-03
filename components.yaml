@@ -52,7 +52,7 @@ GEOSana_GridComp:
 GEOSgcm_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp
   remote: ../GEOSgcm_GridComp.git
-  branch: feature/rtodling/migrate-to-geosadas5271
+  tag: cvs/GEOSadas-5_27_1
   sparse: ./config/GEOSgcm_GridComp.sparse
   develop: develop
 
@@ -95,7 +95,7 @@ mom:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  branch: feature/rtodling/migrate-to-geosadas5271
+  tag: cvs/GEOSadas-5_27_1
   develop: develop
 
 UMD_Etc:
