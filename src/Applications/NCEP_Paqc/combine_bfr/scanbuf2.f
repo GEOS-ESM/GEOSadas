@@ -55,12 +55,12 @@
         knt = knt + ksub
         call readmg(lunit,subset,idat10,iret)
         if (subset .ne. saved) then 
-           if (knt .gt. 0) write(lprint,'(a8,i8)') saved,knt
+           if (knt .gt. 0) write(lprint,'(a8,i10)') saved,knt
            knt = 0
            saved = subset
         endif
       enddo
-      if (knt .gt. 0) write(lprint,'(a8,i8)') saved,knt
+      if (knt .gt. 0) write(lprint,'(a8,i10)') saved,knt
       stop
       end
 
