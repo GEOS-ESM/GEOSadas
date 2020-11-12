@@ -13,3 +13,6 @@ foreach(flag ${tmp})
    target_compile_options (supvit.x PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:${flag}>)
 endforeach()
 
+if (EXTENDED_SOURCE)
+  set_target_properties (supvit.x PROPERTIES COMPILE_FLAGS ${EXTENDED_SOURCE})
+endif()
