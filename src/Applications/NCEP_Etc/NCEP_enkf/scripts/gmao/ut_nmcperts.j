@@ -8,15 +8,15 @@
 #SBATCH --output=ut_nmcperts.log.o%j
 
 setenv FVROOT /discover/nobackup/projects/gmao/advda/rtodling/4OPS/g526/GEOSadas/Linux
-source $FVTOOT/bin/g5_modules
+source $FVROOT/bin/g5_modules
 
 setenv GEN_NMCPERTS_NCPUS 8
 setenv GEN_NMCPERTS_LOCAL 1
 setenv OPTRH 2
 setenv DRYRUN #echo
 
-set expid   = f521_fp
 set expid   = f522_fp
+set expid   = f521_fp
 
 set expout  = $expid
 if ($OPTRH == 1) then
@@ -24,6 +24,7 @@ if ($OPTRH == 1) then
 endif
 if ($OPTRH == 2) then
    set workdir = /discover/nobackup/projects/gmao/obsdev/rtodling/fcst4berrcov.f522_fp.20190304.000000/NMCperts_bec
+   set workdir = /discover/nobackup/projects/gmao/obsdev/rtodling/fcst4berrcov.f522_fp.20190304.000000/NMCperts_bec_test
 endif
 if ($OPTRH == 3) then
    set workdir = /discover/nobackup/projects/gmao/obsdev/rtodling/fcst4berrcov.f522_fp.20190304.000000/NMCperts_gsi
@@ -39,6 +40,12 @@ if ( $expid == "f522_fp" ) then
   set nymd    = 20190303  # date to generate pert for
   set nhms    = 000000    # time to generate pert for
   set ndays   = 370       # number of perts to create from given date/time
+endif
+if ( $expid == "f525_fp" ) then
+  set expout  = $expid
+  set nymd    = 20200307  # date to generate pert for
+  set nhms    = 000000    # time to generate pert for
+  set ndays   = 33        # number of perts to create from given date/time
 endif
 
 if ( ! -d $workdir ) mkdir -p $workdir

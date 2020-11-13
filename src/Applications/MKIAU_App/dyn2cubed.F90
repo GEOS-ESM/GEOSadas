@@ -290,7 +290,7 @@ CONTAINS
 
     use ESMF, only: ESMF_FALSE
     use m_StrTemplate, only: StrTemplate
-    use m_mpif90, only: mp_integer
+    use m_mpif90, only: mp_integer,mp_character
     use m_die, only: mp_die
 
     implicit NONE
@@ -323,6 +323,9 @@ CONTAINS
 !   ------------------------
     rc = 0
     if ( MAPL_am_I_root() ) then
+
+       bkgfname = "NULL"
+       outfname = "NULL"
        argc =  iargc()
        if ( argc .lt. 1 ) then
           call usage_()
@@ -334,6 +337,14 @@ CONTAINS
           iarg = iarg + 1
           call GetArg ( iarg, argv )
           read(argv,*) nhms
+          if (argc>2) then
+             iarg = iarg + 1
+             call GetArg ( iarg, argv )
+             read(argv,*) bkgfname
+             iarg = iarg + 1
+             call GetArg ( iarg, argv )
+             read(argv,*) outfname
+          endif
        endif
     endif
     if (rc/=0) then
@@ -341,6 +352,16 @@ CONTAINS
     endif
     call mpi_bcast(nymd, 1,mp_integer,MAPL_root,comm,rc)
     call mpi_bcast(nhms, 1,mp_integer,MAPL_root,comm,rc)
+    call mpi_bcast(bkgfname,ESMF_MAXSTR,mp_character,MAPL_root,comm,rc)
+    call mpi_bcast(outfname,ESMF_MAXSTR,mp_character,MAPL_root,comm,rc)
+
+    if ( MAPL_am_I_root() ) then
+       print*, ' Input file: ', trim(bkgfname)
+       print*, 'Output file: ', trim(outfname)
+    endif
+    if (trim(bkgfname) == "NULL" .or. trim(outfname) == "NULL" ) then
+       call mp_die ('main',": file names undefied, abort",99)
+    endif
 
 !   Create Config and Initialize Clock 
 !   ----------------------------------
@@ -366,11 +387,15 @@ CONTAINS
 
    call ESMF_ConfigGetAttribute( CF, ivars, label ='INPUT_VARS:', __RC__ )
 
+   if (trim(bkgfname) == "NULL") then
    call ESMF_ConfigGetAttribute( CF, tmpl,  label ='INPUT_FILE:', __RC__ )
    call StrTemplate ( bkgfname, tmpl, 'GRADS', nymd=nymd, nhms=nhms, stat=status)
+   endif
 
+   if (trim(outfname) == "NULL") then
    call ESMF_ConfigGetAttribute( CF, tmpl,  label ='OUTPUT_FILE:', __RC__ )
    call StrTemplate ( outfname, tmpl, 'GRADS', nymd=nymd, nhms=nhms, stat=status)
+   endif
 
    thistime(1) =     nymd/10000
    thistime(2) = mod(nymd,10000)/100
