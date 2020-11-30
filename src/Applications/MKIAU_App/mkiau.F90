@@ -34,8 +34,10 @@
    Program mkIAU
 
    use ESMF
-   use MAPL_Mod
-   use MAPL_CFIOMod
+   use MAPL
+   use CubeToLatLonRegridderMod
+   use CubeToCubeRegridderMod
+   use LatLonToCubeRegridderMod
    use m_set_eta, only: set_eta
    use m_ioutil, only: luavail
    use m_StrTemplate, only: StrTemplate
@@ -43,15 +45,6 @@
    use m_zeit, only: zeit_allflush
    use GEOS_mkiauGridCompMod,   only: MKIAUSetServices  => SetServices
    use IAU_GridCompMod,         only:   IAUSetServices  => SetServices
-   use MAPL_AbstractRegridderMod
-   use MAPL_RegridderManagerMod
-   use MAPL_GridManagerMod
-   use MAPL_LatLonGridFactoryMod
-   use CubedSphereGridFactoryMod, only: CubedSphereGridFactory
-   use LatLonToCubeRegridderMod
-   use CubeToLatLonRegridderMod
-   use CubeToCubeRegridderMod
-   use MAPL_TransposeRegridderMod
 
    implicit NONE
 
@@ -485,7 +478,6 @@ CONTAINS
    end subroutine init_
 
    subroutine info_ (agrid_bkg,dgrid_bkg,tvflag_bkg,thvflag_bkg )
-   use MAPL_Mod, only: MAPL_ROOT
    implicit none
    logical,intent(in):: agrid_bkg,dgrid_bkg,tvflag_bkg,thvflag_bkg
       if( myPET==MAPL_ROOT ) then
@@ -505,14 +497,6 @@ CONTAINS
 
    subroutine set_()
    
-   use MAPL_SimpleBundleMod, only: MAPL_SimpleBundleCreate
-   use MAPL_SimpleBundleMod, only: MAPL_SimpleBundleGetIndex
-   use MAPL_SimpleBundleMod, only: MAPL_SimpleBundle
-   use MAPL_SimpleBundleMod, only: MAPL_SimpleBundlePrint
-
-   use MAPL_Mod, only: MAPL_RVAP
-   use MAPL_Mod, only: MAPL_RGAS
-
    implicit none
 
    type(MAPL_SimpleBundle) :: bkg
@@ -656,11 +640,6 @@ CONTAINS
    use ESMFL_Mod, only: ESMFL_Bundle2State
    use ESMFL_Mod, only: ESMFL_Regrid
    use ESMFL_Mod, only: ESMFL_FieldRegrid
-
-   use MAPL_SimpleBundleMod, only: MAPL_SimpleBundleCreate
-   use MAPL_SimpleBundleMod, only: MAPL_SimpleBundleGetIndex
-   use MAPL_SimpleBundleMod, only: MAPL_SimpleBundle
-   use MAPL_SimpleBundleMod, only: MAPL_SimpleBundlePrint
 
    use m_mpif90, only: MP_TYPE,MP_SUM
 
@@ -1159,7 +1138,6 @@ CONTAINS
    end function mydot_product_
 
    subroutine DefVertGrid_(CF,ak,bk,nsig)
-   use MAPL_Mod, only: MAPL_ROOT
    use m_mpif90,only : MP_REAL8
    use m_mpif90,only : MP_comm_rank
 !-------------------------------------------------------------------------
@@ -1321,8 +1299,6 @@ CONTAINS
          use ESMF, only: ESMF_GridCompGet
          use ESMF, only: ESMF_GridComp
          use ESMF, only: ESMF_Grid
-         use MAPL_Mod, only: ArrayGather
-         use MAPL_Mod, only: MAPL_GridGet
          implicit none
          type ( ESMF_Grid ) Grid
          integer  im,jm,lm

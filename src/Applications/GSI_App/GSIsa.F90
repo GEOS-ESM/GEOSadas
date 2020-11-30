@@ -14,10 +14,9 @@
 ! !USES:
  
    use ESMF  
-   use MAPL_Mod
-   use MAPL_CFIOMod
-   use MAPL_ProfMod
-   use MAPL_ShmemMod, only: MAPL_GetNodeInfo
+   use MAPL
+   use MPI
+   use MAPL_Profiler, only: BaseProfiler, TimeProfiler, get_global_time_profiler, get_global_memory_profiler
    use GEOSaana_GridCompMod, only: SetServices   
    use gsi_chemguess_mod, only : gsi_chemguess_get
    use m_StrTemplate      
@@ -101,6 +100,8 @@
    character(len=ESMF_MAXSTR) :: wrtana
    character(len=ESMF_MAXSTR) :: enableTimers
    character(len=*), parameter :: Iam = 'GSIsa'
+   class (BaseProfiler), pointer :: t_p
+   type(MAPL_MetaComp), pointer :: child_maplobj 
 
 ! start
 
@@ -112,6 +113,11 @@
    call ESMF_Initialize (vm=vm, logKindFlag=ESMF_LOGKIND_NONE, rc=status)
 #endif
    VERIFY_(status)
+
+   call MAPL_Initialize(rc=status)
+   VERIFY_(status)
+   t_p => get_global_time_profiler()
+   call t_p%start('GSIsa.x')
 
    call ESMF_vmGet (vm, mpicommunicator=comm, rc=status)
    call MAPL_GetNodeInfo (comm=comm, rc=status)
@@ -172,10 +178,21 @@
 !  ---------------------------------
    call ESMF_GridCompSet(gcAANA, grid=gridAANA, rc=STATUS); VERIFY_(STATUS)
 
-
+   call MAPL_InternalStateRetrieve(gcAANA, CHILD_MAPLOBJ, RC=status)
+   VERIFY_(status)
+   CHILD_MAPLOBJ%t_profiler = TimeProfiler('AANAaana', comm_world = MPI_COMM_WORLD)
+!
 !  Register component
 !  ------------------
+  call CHILD_MAPLOBJ%t_profiler%start(rc=status)
+   VERIFY_(status)
+  call CHILD_MAPLOBJ%t_profiler%start('SetService',rc=status)
+   VERIFY_(status)
    call ESMF_GridCompSetServices ( gcAANA, SetServices, rc=STATUS ); VERIFY_(STATUS)
+  call CHILD_MAPLOBJ%t_profiler%stop('SetService',rc=status)
+   VERIFY_(status)
+  call CHILD_MAPLOBJ%t_profiler%stop(rc=status)
+   VERIFY_(status)
 
 !  Init component
 !  --------------
@@ -262,12 +279,12 @@
       end if
    endif
 
-!  Destroy Objects
-!  ---------------
-!  call ESMF_GridCompDestroy ( gcAANA,  rc=status ); VERIFY_(STATUS)
-!  call ESMF_StateDestroy    ( impAANA, rc=status ); VERIFY_(STATUS)
-!  call ESMF_StateDestroy    ( expAANA, rc=status ); VERIFY_(STATUS)
-!  call ESMF_ClockDestroy    ( clock,   rc=status ); VERIFY_(STATUS)
+  !Destroy Objects
+  !---------------
+  !call ESMF_GridCompDestroy ( gcAANA,  rc=status ); VERIFY_(STATUS)
+  !call ESMF_StateDestroy    ( impAANA, rc=status ); VERIFY_(STATUS)
+  !call ESMF_StateDestroy    ( expAANA, rc=status ); VERIFY_(STATUS)
+  !call ESMF_ClockDestroy    ( clock,   rc=status ); VERIFY_(STATUS)
 
 !  Show time
 !  ---------
@@ -279,6 +296,8 @@
 
 !   All done
 !   -------- 
+   call t_p%stop('GSIsa.x')
+   call MAPL_Finalize()
    call ESMF_Finalize()
 
 #include "MAPL_ErrLog.h"
@@ -396,7 +415,8 @@
        enddo
    endif
 
-   call ESMFL_Bundle2State (AnaBundleIn, impAANA)
+   call ESMFL_Bundle2State (AnaBundleIn, impAANA,rc=status)
+   !VERIFY_(status)
 
    do ib=1,nbuns
        call ESMF_FieldBundleDestroy ( XBundles(ib), rc=STATUS )
@@ -415,7 +435,8 @@
         verbose=.true., noread=.true., TIME_IS_CYCLIC=.false.,&
         only_vars=trim(exp_vars))
    VERIFY_(status)
-   call ESMFL_Bundle2State (AnaBundleOut, expAANA)
+   call ESMFL_Bundle2State (AnaBundleOut, expAANA, rc=status)
+   !VERIFY_(status)
    call ESMF_FieldBundleDestroy ( AnaBundleOut, rc=STATUS )
    VERIFY_(STATUS)
 
@@ -817,8 +838,6 @@
 !-------------------------------------------------------------------
    function AANAGridCreate ( vm, cf, rc) result(grid)
 !-------------------------------------------------------------------
-    use MAPL_LatLonGridFactoryMod
-    use MAPL_GridManagerMod
 
     type (ESMF_VM),    intent(INOUT) :: VM
     type(ESMF_Config), intent(INOUT) :: cf

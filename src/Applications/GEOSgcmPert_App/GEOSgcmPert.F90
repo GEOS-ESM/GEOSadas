@@ -15,8 +15,7 @@ Program GEOS5_Main
 
 
    use ESMF
-   use MAPL_Mod
-   use MAPL_CFIOMod
+   use MAPL
 
    use MAPL_HistoryGridCompMod, only : FHist_SetServices => SetServices
    use MAPL_HistoryGridCompMod, only : BHist_SetServices => SetServices
@@ -38,7 +37,6 @@ Program GEOS5_Main
    use GEOS_PertSharedMod,       only: bk=>pert_bk
    use GEOS_PertSharedMod,       only: GetShapiroCoeff
    use GEOS_PertSharedMod,       only: shapiro_coeff_=>pert_shapiro_coeff
-   use MAPL_GridManagerMod,      only: grid_manager
 
    implicit none
 
@@ -1239,10 +1237,6 @@ Program GEOS5_Main
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! This allows zeroing out fields from input bundle to help test ADM/TLM
    subroutine mychopit ( Bundle )
-   use MAPL_SimpleBundleMod, only: MAPL_SimpleBundleCreate
-   use MAPL_SimpleBundleMod, only: MAPL_SimpleBundleGetIndex
-   use MAPL_SimpleBundleMod, only: MAPL_SimpleBundle
-   use MAPL_SimpleBundleMod, only: MAPL_SimpleBundlePrint
    implicit none
    type(ESMF_FieldBundle)  :: Bundle
    type(MAPL_SimpleBundle) :: bnd
@@ -1286,10 +1280,6 @@ Program GEOS5_Main
 
    subroutine BundleExt2Int (DynBundle,IntBundle)
 !  This subroutine maps the internal bundle onto a dyn-like vector
-   use MAPL_SimpleBundleMod, only: MAPL_SimpleBundleCreate
-   use MAPL_SimpleBundleMod, only: MAPL_SimpleBundleGetIndex
-   use MAPL_SimpleBundleMod, only: MAPL_SimpleBundle
-   use MAPL_SimpleBundleMod, only: MAPL_SimpleBundlePrint
    implicit none
    type(ESMF_FieldBundle)  :: DynBundle ! dyn-like vector
    type(ESMF_FieldBundle)  :: IntBundle ! internal bundle
@@ -1317,10 +1307,6 @@ Program GEOS5_Main
 
    subroutine BundleInt2Ext (thisphase,bk,IntBundle,DynBundle)
 !  This subroutine maps the internal bundle onto a dyn-like vector
-   use MAPL_SimpleBundleMod, only: MAPL_SimpleBundleCreate
-   use MAPL_SimpleBundleMod, only: MAPL_SimpleBundleGetIndex
-   use MAPL_SimpleBundleMod, only: MAPL_SimpleBundle
-   use MAPL_SimpleBundleMod, only: MAPL_SimpleBundlePrint
    use m_mpif90,only : MP_comm_rank
    use m_mpif90,only : MP_comm_world
    use m_mpif90,only : MP_REAL8
