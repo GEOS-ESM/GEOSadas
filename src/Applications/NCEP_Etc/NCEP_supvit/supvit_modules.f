@@ -1,4 +1,4 @@
-      module def_vitals
+      module def_vitals_supvit
         type tcvcard         ! Define a new type for a TC Vitals card
           sequence
           character*4   tcv_center      ! Hurricane Center Acronym
@@ -16,9 +16,9 @@
           character*85  tcv_chunk       ! Remainder of vitals record;
                                         ! will just be read & written
         end type tcvcard
-      end module def_vitals
+      end module def_vitals_supvit
 c
-      module inparms
+      module inparms_supvit
         type datecard  ! Define a new type for the input namelist parms
           sequence
           integer       yy    ! Beginning yy of date to search for
@@ -26,19 +26,19 @@ c
           integer       dd    ! Beginning dd of date to search for
           integer       hh    ! Beginning hh of date to search for
         end type datecard
-      end module inparms
+      end module inparms_supvit
 c
       module date_checks
         integer, save  :: ymd_now,hhmm_now,ymd_6ago,hhmm_6ago
      &                   ,ymd_6ahead,hhmm_6ahead
       end module date_checks
 c
-      module set_max_parms
+      module set_max_parms_supvit
         integer, parameter :: maxstorm=200  ! max # of storms pgm can
                                             ! handle
-      end module set_max_parms
+      end module set_max_parms_supvit
 c
-      module trig_vals
+      module trig_vals_supvit
         real, save :: pi, dtr, rtd
         real, save :: dtk = 111194.9     ! Dist (m) over 1 deg lat
                                          ! using erad=6371.0e+3
@@ -47,7 +47,7 @@ c
                                           ! (m) using erad=6371.e3
         real, save :: omega = 7.292e-5
         real, save :: secphr = 3600.
-      end module trig_vals
+      end module trig_vals_supvit
 c
 c------------------------------------------------------
 c

@@ -153,7 +153,7 @@ sub asens_script {
 
 # Internal parameters controling system behavior
 # ----------------------------------------------
-# setenv ACFTBIAS $acftbias # knob for aircraft bias correction (1=on; 0=off) 
+  setenv ACFTBIAS $acftbias # knob for aircraft bias correction (1=on; 0=off) 
   setenv G5GCM   $g5gcm   # 1 = enables GEOS-5 GCM, 0 = disables GEOS-5 GCM (back to fvGCM)
 # setenv PREPQC  $prepqc  # 1 = enables NCEP-QC, 0 = disables QC
   setenv OIQC    $oiqc    # 1 = enables OIQC, 0 = disables OIQC

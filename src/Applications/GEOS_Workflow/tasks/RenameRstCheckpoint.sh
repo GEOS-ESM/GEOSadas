@@ -46,7 +46,7 @@ echo "grs_list: ${grs_list[@]}"
 
 for rsType in ${grs_list[@]}; do
 
-    if [ "$rsType" == "agcm_import" ] || [ "$rsType" == "agcm_internal" ]; then
+    if [ "$rsType" == "agcm_import" ] || [ "$rsType" == "agcm_internal" ] || [ "$rsType" == "aiau_import" ] ; then
 	continue
     fi
 
