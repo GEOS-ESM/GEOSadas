@@ -447,9 +447,30 @@
           endif
           @ hh = $HMS / 10000; set hh = `echo $hh |awk '{printf "%02d", $1}'`
           @ norder = `echorc.x -rc asensrules.rc ASENS_ORDER`
+          @ norder = `echorc.x -rc asensrules.rc ASENS_ORDER`
+          @ tauf   = `echorc.x -rc asensrules.rc integration_length_hrs`
+          @ tauf_sec = $tauf * 3600
+          set anadate = `tick $YMD $HMS $tauf_sec`
+          set GRYMD = $anadate[1]
+          set GRHMS = $anadate[2]
+          set GRhh  = `echo $GRHMS | cut -c1-2`
           foreach gnorm ( $jgrdnrm )
              set gsenslst =  `ls -1r $gsensdir/$EXPID.fsens_${gnorm}.eta.????????_??z+????????_??z-${YMD}_${hh}z.$NCSUFFIX \
+                                     $gsensdir/$EXPID.Jgradf_${gnorm}.eta.????????_??z+${GRYMD}_${GRhh}z.$NCSUFFIX\
                                      $gsensdir/$EXPID.fsensainc_${gnorm}.eta.????????_??z+????????_??z-${YMD}_${hh}z.$NCSUFFIX`
+             # Explaining the scale coefficients in each opt:
+             #  1) Regular case of doing LB04 approx. - 0.5 is the coeff in front of the fcst gradients, e.g., e(a,b;2) of DT09 
+             #  2) First order expression (single gradient) - 1.0 is the coeff in front of gradient, e.g., e(b;1) or e(a;1) of DT09
+             #  3) EnVarFSOI - the input in this case is e=C(eb+ea), the C-scaled, miggled, fcst error. Now, dJdf=2C(eb+ea), therefore
+             #     a factor of 0.5 is also applied when dJdx if used.
+             #  4) The forward/backward form is typically not used and involves handling the gradients dJdf in diff ways
+             set scale = 0.5
+             set admopt = "-adm"
+             set pertype = `echo $gsenslst[1] | cut -d. -f2`
+             if ( $pertype == "Jgradf_${gnorm}" ) then
+                set scale = 1.0
+                set admopt = 
+             endif
              if ( $#gsenslst == 1 ) then           # will do 1st order calculation of observation sensitivies
                 dynp.x -s $gsenslst[1] -p $gsenslst[1] -gsi -a 0 -g5 -pureadd -realp -twoperts -ainc -adm \
                        -os $expid.fsens_${gnorm}.eta.${YMD}_${hh}z.$NCSUFFIX -res $resol
@@ -459,10 +480,10 @@
                    set order = 3
                 endif
               else if ( $#gsenslst == 2 ) then
-                set pertype = `echo $gsenslst[2] | cut -d. -f2`
-                if ( $pertype == "fsens_${gnorm}" ) then # add two estimates of the gradient to do 3rd order calculation
+                if ( $pertype == "fsens_${gnorm}" || \
+                     $pertype == "Jgradf_${gnorm}" ) then # add two estimates of the gradient to do 3rd order calculation
                                                          # note: because of r4/r8 precision the total is only roundoff the sum of two
-                     dynp.x -s $gsenslst[1] -p $gsenslst[2] -gsi -scale 0.5 -g5 -pureadd -realp -twoperts -ainc -adm \
+                     dynp.x -s $gsenslst[1] -p $gsenslst[2] -gsi -scale $scale -g5 -pureadd -realp -twoperts -ainc $admopt \
                             -os $expid.fsens_${gnorm}.eta.${YMD}_${hh}z.$NCSUFFIX -res $resol
                      set order = 3
                 else                                     # add first term and 1/2 the second for alternative calculation
@@ -477,6 +498,7 @@
               endif
            end
  
+           # NOTE: whether handling fsens or Jgradf the final vector is named fsens for convenience
         endif # < INCSENS >
 
      endif # < ANASENS >
