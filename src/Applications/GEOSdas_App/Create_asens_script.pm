@@ -442,14 +442,17 @@ EOF
 #       Pick oldest restart for initial condition
 #       -----------------------------------------
         if ( \$?this_nymdhh ) then
-            set rslist = `/bin/ls -1 \$FVHOME/asens/\$EXPID.fsens_\${jgrdnrm}.eta.????????_??z+????????_??z-\${this_nymdhh}z.$ncsuffix`
+            set rslist = `/bin/ls -1 \$FVHOME/asens/\$EXPID.fsens_\${jgrdnrm}.eta.????????_??z+????????_??z-\${this_nymdhh}z.$ncsuffix \
+                                     \$FVHOME/asens/\$EXPID.Jgradf_\${jgrdnrm}.eta.????????_??z+????????_??z-\${this_nymdhh}z.$ncsuffix`
         else
-            set rslist = `/bin/ls -1 \$FVHOME/asens/\$EXPID.fsens_\${jgrdnrm}.eta.????????_??z+????????_??z-????????_??z.$ncsuffix`
+            set rslist = `/bin/ls -1 \$FVHOME/asens/\$EXPID.fsens_\${jgrdnrm}.eta.????????_??z+????????_??z-????????_??z.$ncsuffix \
+                                     \$FVHOME/asens/\$EXPID.Jgradf_\${jgrdnrm}.eta.????????_??z+????????_??z-????????_??z.$ncsuffix`
         endif
         if ( \$status ) then
            echo \$myname": no gradient files found, nothing to do"
            exit 1
         endif
+        set vectyp = `echo \$rslist[1] | cut -d. -f2 | cut -c1-5`
 
 #       Get date/time of initial condition
 #       ----------------------------------
@@ -458,10 +461,33 @@ EOF
         set myrsfile = \$rslist[1]
         set itime = \$myrsfile:r
         set itime = \$itime:e
+        if ( \$vectyp == "fsens" ) then
         set xttag = `echo \$itime | cut -c1-25`
         set nymd  = `echo \$itime | cut -c27-34`
         set hh    = `echo \$itime | cut -c36-37`
         set nhms  = \${hh}0000
+        else  # in case of Jgradf analysis not in time tag ...
+           set xttag = `echo \$itime | cut -c1-12`
+           set nymd  = `echo \$itime | cut -c14-21`
+           set hh    = `echo \$itime | cut -c23-24`
+           set nhms  = \${hh}0000
+           if ( -e \$FVHOME/asens/asensrules.rc ) then
+              set rcfile = \$FVHOME/asens/asensrules.rc
+           else
+              if ( -e \$FVHOME/run/asens/asensrules.rc ) then
+                 set rcfile = \$FVHOME/run/asens/asensrules.rc
+              else
+                 echo "main: Mising asensrules.rc, aborting "
+                 exit(1)
+              endif
+           endif
+           set tauf = `echorc.x -rc \$FVHOME/asens/asensrules.rc integration_length_hrs` 
+           @ tauf_sec = \$tauf * 3600
+           set anadate = `tick \$nymd \$nhms -\$tauf_sec`
+           set nymd = \$anadate[1]
+           set nhms = \$anadate[2]
+           set xttag = \${itime} # need a two-time-stamp date btime+etime
+        endif
 
 #       Find initial time of issued forecast
 #       ------------------------------------
@@ -472,7 +498,8 @@ EOF
         set nhms0 = \${hh0}0000
 
         set sfx = `echo \$myrsfile | cut -d+ -f2`
-        set jgnlist = (`/bin/ls \$FVHOME/asens/\$EXPID.fsens_\${jgrdnrm}.eta.????????_??z+\$sfx`)
+        set jgnlist = (`/bin/ls \$FVHOME/asens/\$EXPID.fsens_\${jgrdnrm}.eta.????????_??z+\$sfx  \
+                                \$FVHOME/asens/\$EXPID.Jgradf_\${jgrdnrm}.eta.????????_??z+\$sfx`)
         foreach fn ( \$jgnlist )
            /bin/mv \$fn \$FVHOME/asens/stage
         end
@@ -566,13 +593,15 @@ EOF
 
      else
 
-        set lst2del = (`/bin/ls \$FVHOME/asens/stage/\$EXPID.fsens_\${jgrdnrm}.eta.????????_??z+\$sfx`)
+        set lst2del = (`/bin/ls \$FVHOME/asens/stage/\$EXPID.fsens_\${jgrdnrm}.eta.????????_??z+\$sfx \
+                                \$FVHOME/asens/stage/\$EXPID.Jgradf_\${jgrdnrm}.eta.????????_??z+\$sfx`)
         foreach fn ( \$lst2del )
             /bin/rm -f \$fn
         end
 
         if (! \$?this_nymdhh ) then
-           set rslist = `/bin/ls -1 \$FVHOME/asens/\$EXPID.fsens_???.eta.????????_??z+????????_??z-????????_??z.$ncsuffix`
+           set rslist = `/bin/ls -1 \$FVHOME/asens/\$EXPID.fsens_???.eta.????????_??z+????????_??z-????????_??z.$ncsuffix \
+                                    \$FVHOME/asens/\$EXPID.Jgradf_???.eta.????????_??z+????????_??z-????????_??z.$ncsuffix`
            if ( \$status ) then
               echo \$myname": no more sensitivity files, forecast job completed"
            else

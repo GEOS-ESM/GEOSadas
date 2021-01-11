@@ -612,6 +612,7 @@ EOF
        echo \$myname": no more restart files, forecast job completed"
        exit 0
   endif
+  if ( \$#lstcases > 0 ) then
   set fcst_nxt = `echo \$lstcases[1] | cut -d. -f2 | cut -d+ -f1`
   set jname = a\${fcst_nxt}
   set lname = \$jname.log.o%j
@@ -619,6 +620,7 @@ EOF
      sbatch -d afterany:\${PBS_JOBID} -J \$jname -o \$lname $jobsa.j
   else
      qsub -W depend=afterany:\${PBS_JOBID} -N \$jname -o \$lname $jobsa.j
+  endif
   endif
 
 

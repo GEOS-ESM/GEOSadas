@@ -2,8 +2,8 @@
 # prePP.input
 #------------
 
-description: prePP__GEOSadas-5_27_1__agrid_C720__ogrid_C
-tag: GEOSadas-5_27_1
+description: prePP__GEOSadas-5_27_1_p1__agrid_C720__ogrid_C
+tag: GEOSadas-5_27_1_p1
 
 ---ENDHEADERS---
 
@@ -13,7 +13,7 @@ Remote account for Intranet plots? [rtodling@train]
 Is this a MERRA2 experiment (y/n)? [n]
 > 
 
-AGCM Horizontal Resolution? [C180]
+AGCM Horizontal Resolution? [C48]
 > C720
 
 AGCM Vertical Resolution? [72]
@@ -28,7 +28,7 @@ EXPID? [u000_C720]
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [prePP__GEOSadas-5_27_1__agrid_C720__ogrid_C]
+EXPDSC? [prePP__GEOSadas-5_27_1_p1__agrid_C720__ogrid_C]
 > 
 
 Land Boundary Conditions? [Icarus_Updated]
@@ -38,9 +38,9 @@ Catchment Model choice? [1]
 > 
 
 FVHOME? [/discover/nobackup/rtodling/prePP]
-> /discover/nobackup/projects/gmao/obsdev/rtodling/$expid
+> /discover/nobackup/projects/gmao/dadev/rtodling/$expid
 
-The directory /discover/nobackup/projects/gmao/obsdev/rtodling/prePP does not exist. Create it now? [y]
+The directory /discover/nobackup/projects/gmao/dadev/rtodling/prePP does not exist. Create it now? [y]
 > 
 
 Which case of variational analysis? [1]
@@ -73,11 +73,11 @@ MERRA2? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/MERRA2]
 AeroCom? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/AeroCom]
 > 
 
-FVICS? [/archive/u/jstassi/restarts/5C0/CF0720x6C]
+FVICS? [/archive/u/jstassi/restarts/GEOSadas-5_24_0]
 > later
 
-Starting year-month-day? [20130902]
-> 20191116
+Starting year-month-day? [20190116]
+> 
 
 Starting hour-min-sec? [210000]
 > 
@@ -100,8 +100,8 @@ Run analysis-sensitivity applications (0=no,1=yes)? [0]
 Verifying experiment id: [prePP]
 > 
 
-Ending year-month-day? [20191118]
-> 20200207
+Ending year-month-day? [20190119]
+> 
 
 Length of FORECAST run segments (in hours)? [123]
 > 
@@ -140,7 +140,7 @@ Ensemble Hybrid (<0;3=3dHyb;4=Hyb4d)? [-1]
 > 4
 
 Number of procs in the zonal direction (NX)? [16]
-> 27
+> 
 
 Number of procs in the meridional direction (NY)? [42]
 > 
@@ -149,7 +149,7 @@ Which main class of ObsSys (1: NRT; 2: MERRA; 3: MERRA-2)? [1]
 > 
 
 OBSERVING SYSTEM CLASSES?
-> disc_airs_bufr,disc_amsua_bufr,gmao_amsr2_bufr,gmao_gmi_bufr,mls_nrt_nc,ncep_1bamua_bufr,ncep_1bamub_bufr,ncep_1bhrs4_bufr,ncep_acftpfl_bufr,ncep_atms_bufr,ncep_aura_omi_bufr,ncep_avcsam_bufr,ncep_avcspm_bufr,ncep_cris_bufr,ncep_crisfsr_bufr,ncep_goesfv_bufr,ncep_gpsro_bufr,ncep_mhs_bufr,ncep_mtiasi_bufr,ncep_prep_bufr,ncep_satwnd_bufr,ncep_sevcsr_bufr,ncep_ssmis_bufr,ncep_tcvitals,npp_ompsnm_bufr
+> disc_airs_bufr,disc_amsua_bufr,gmao_amsr2_bufr,gmao_gmi_bufr,mls_nrt_nc,ncep_1bamua_bufr,ncep_1bhrs4_bufr,ncep_acftpfl_bufr,ncep_atms_bufr,ncep_aura_omi_bufr,ncep_avcsam_bufr,ncep_avcspm_bufr,ncep_crisfsr_bufr,ncep_goesfv_bufr,ncep_gpsro_bufr,ncep_mhs_bufr,ncep_mtiasi_bufr,ncep_prep_bufr,ncep_satwnd_bufr,ncep_sevcsr_bufr,ncep_ssmis_bufr,ncep_tcvitals,npp_ompsnm_bufr
 
 Which RADCOR option? [NONE]
 > 
@@ -157,8 +157,8 @@ Which RADCOR option? [NONE]
 Use sat channel-correlated observation errors (y/n)? [y]
 > 
 
-Use aircraft bias correction (y/n)? [n]
-> y
+Use aircraft bias correction (y/n)? [y]
+> 
 
 Use unified radiance bias correction (y/n)? [y]
 > 
