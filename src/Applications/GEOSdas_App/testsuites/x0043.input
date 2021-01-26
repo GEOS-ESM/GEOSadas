@@ -2,8 +2,8 @@
 # x0043.input
 #------------
 
-description: x0043__GEOSadas-5_27_1_p1__agrid_C360__ogrid_C
-tag: GEOSadas-5_27_1_p1
+description: x0043__GEOSadas-5_27_1_p2__agrid_C360__ogrid_C
+tag: GEOSadas-5_27_1_p2
 
 ---ENDHEADERS---
 
@@ -28,7 +28,7 @@ EXPID? [u000_C360]
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [x0043__GEOSadas-5_27_1_p1__agrid_C360__ogrid_C]
+EXPDSC? [x0043__GEOSadas-5_27_1_p2__agrid_C360__ogrid_C]
 > 
 
 Land Boundary Conditions? [Icarus_Updated]
