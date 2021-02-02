@@ -46,8 +46,8 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  tag: v1.2.1
-  develop: develop
+  tag: v1.2.2
+  develop: main
 
 GEOSgcm_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp
@@ -59,14 +59,14 @@ GEOSgcm_GridComp:
 g5pert:
   local: ./src/Components/@g5pert
   remote: ../g5pert.git
-  tag: v1.1.1
-  develop: develop
+  tag: v1.1.2
+  develop: main
 
 GEOSagcmPert_GridComp:
   local: ./src/Components/@GEOSagcmPert_GridComp
   remote: ../GEOSagcmPert_GridComp.git
   tag: v1.1.0
-  develop: develop
+  develop: main
 
 FVdycoreCubed_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSsuperdyn_GridComp/@FVdycoreCubed_GridComp
