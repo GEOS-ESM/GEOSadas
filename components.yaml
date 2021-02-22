@@ -28,7 +28,7 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  tag: cvs/rt-GEOSadas-5_27_1p2_toGit-2
+  tag: cvs/GEOSadas-5_27_1_p2
   develop: main
 
 MAPL:
@@ -52,7 +52,7 @@ GEOSana_GridComp:
 GEOSgcm_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp
   remote: ../GEOSgcm_GridComp.git
-  tag: cvs/rt-GEOSadas-5_27_1p2_toGit-2
+  tag: cvs/GEOSadas-5_27_1_p2
   sparse: ./config/GEOSgcm_GridComp.sparse
   develop: develop
 
