@@ -45,6 +45,7 @@
    use m_zeit, only: zeit_allflush
    use GEOS_mkiauGridCompMod,   only: MKIAUSetServices  => SetServices
    use IAU_GridCompMod,         only:   IAUSetServices  => SetServices
+   use MAPL_Profiler, only: BaseProfiler, TimeProfiler, get_global_time_profiler, get_global_memory_profiler
 
    implicit NONE
 
@@ -97,6 +98,7 @@
    integer :: ino_dqvdt
 
    integer :: Nx, Ny                   ! Layout
+   integer :: nx_cube,  ny_cube
    integer :: im_bkg, jm_bkg, lm_bkg   ! Bkg Grid dimensions
    integer :: im_iau, jm_iau, lm_iau   ! IAU Grid dimensions (revisit for cubed)
 
@@ -145,6 +147,9 @@
    character(len=*), parameter :: myRC= 'mkiau.rc'
 
 !                             -----
+   class (BaseProfiler), pointer :: t_p
+   type(MAPL_MetaComp), pointer :: child_maplobj
+   type (MAPL_Communicators) :: mapl_comm
     
     call Main()
 
@@ -160,6 +165,13 @@ CONTAINS
     call ESMF_Initialize (logKindFlag=ESMF_LOGKIND_NONE, vm=vm, __RC__)
     call ESMF_VMGetCurrent(vm=vm, rc=status)
     call ESMF_VMGet(vm,mpiCommunicator=comm,rc=status)
+
+    mapl_comm%mapl%comm=comm
+    mapl_comm%esmf%comm=comm
+    call MAPL_Initialize(rc=status)
+    VERIFY_(status)
+    t_p => get_global_time_profiler()
+    call t_p%start("mkiau.x")
 
     call init_ ( CF, nymd, nhms, __RC__ )
 
@@ -198,7 +210,8 @@ CONTAINS
           print *, 'Background on the cubed grid '
           print *
        endif
-       cs_factory = CubedSphereGridFactory(im_world=IM_BKG,lm=LM_BKG,nx=nx,ny=ny/6,__RC__)
+       !cs_factory = CubedSphereGridFactory(im_world=IM_BKG,lm=LM_BKG,nx=nx,ny=ny/6,__RC__)
+       cs_factory = CubedSphereGridFactory(im_world=IM_BKG,lm=LM_BKG,nx=nx_cube,ny=ny_cube,__RC__)
        BKGGrid = grid_manager%make_grid(cs_factory,__RC__)
     else
        call regridder_manager%add_prototype('Cubed-Sphere', 'LatLon', REGRID_METHOD_BILINEAR, cube_to_latlon_prototype)
@@ -226,14 +239,15 @@ CONTAINS
 !   -------------------------------------------------------------------------
     if (cubed) then
        ! check for pert-get-weights
-       if (Ny/=6*Nx) then
-          if ( MAPL_am_I_root() ) then
-             print *, 'Error: expecting Ny=6*Nx, since this uses old get-weights'
-             print *, 'Error: aborting ...'
-          end if
-          ASSERT_(.FALSE.)
-       endif
-       cs_factory = CubedSphereGridFactory(im_world=IM_IAU,lm=LM_IAU,nx=nx,ny=ny/6,__RC__)
+       !if (Ny/=6*Nx) then
+          !if ( MAPL_am_I_root() ) then
+             !print *, 'Error: expecting Ny=6*Nx, since this uses old get-weights'
+             !print *, 'Error: aborting ...'
+          !end if
+          !ASSERT_(.FALSE.)
+       !endif
+       !cs_factory = CubedSphereGridFactory(im_world=IM_IAU,lm=LM_IAU,nx=nx,ny=ny/6,__RC__)
+       cs_factory = CubedSphereGridFactory(im_world=IM_IAU,lm=LM_IAU,nx=nx_cube,ny=ny_cube,__RC__)
        GCMGrid = grid_manager%make_grid(cs_factory,__RC__)
     else
        call MAPL_DefGridName (IM_IAU,JM_IAU,ABKGGRIDNAME,MAPL_am_I_root())
@@ -266,6 +280,8 @@ CONTAINS
 
 !   Now create a component to handle the increment output
 !   -----------------------------------------------------
+    call MAPL_Set(MAPLOBJ, mapl_comm = mapl_Comm, rc = status)
+    VERIFY_(status)
     BASE = MAPL_AddChild ( MAPLOBJ, Grid=BKGgrid,    &
                                        ConfigFile=myRC,   &
                                           name= 'ABKG',   &
@@ -304,7 +320,7 @@ CONTAINS
     ASSERT_(userRC==ESMF_SUCCESS .and. STATUS==ESMF_SUCCESS)
 
     if ( cubed ) then ! initialize GetWeights and FMS mambo-jambo
-         call GetWeights_init (6,1,im_iau,im_iau,lm_iau,Nx,Ny,.true.,.false.,comm)
+         call GetWeights_init (6,1,im_iau,im_iau,lm_iau,Nx_cube,Ny_cube*6,.true.,.false.,comm)
     endif
 
 #if 0
@@ -353,6 +369,8 @@ CONTAINS
           close(999)
     end if
     call final_
+    call t_p%stop('mkiau.x')
+    call MAPL_Finalize()
     call ESMF_Finalize(__RC__)
 
   end subroutine Main
@@ -405,9 +423,11 @@ CONTAINS
    rc = 0
    cubed = .false.
 
-   call ESMF_ConfigGetAttribute( CF, NX, label ='NX:', __RC__ )
-   call ESMF_ConfigGetAttribute( CF, NY, label ='NY:', __RC__ )
+   !call ESMF_ConfigGetAttribute( CF, NX, label ='NX:', __RC__ )
+   !call ESMF_ConfigGetAttribute( CF, NY, label ='NY:', __RC__ )
 
+   call MAPL_MakeDecomposition(nx,ny,__RC__)
+   call MAPL_MakeDecomposition(nx_cube,ny_cube,reduceFactor=6,__RC__)
    call ESMF_ConfigGetAttribute( CF, IM_IAU, label ='AGCM.IM_WORLD:', __RC__ )
    call ESMF_ConfigGetAttribute( CF, JM_IAU, label ='AGCM.JM_WORLD:', __RC__ )
    call ESMF_ConfigGetAttribute( CF, LM_IAU, label ='AGCM.LM:', __RC__ )

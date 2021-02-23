@@ -828,7 +828,8 @@ sub defaults {
                      GCMPROG.rc.tmpl
                      HISTORY.rc.tmpl
                      OBS_GridComp.rc.tmpl
-                     saverst.rc );
+                     saverst.rc 
+                     GEOS_SurfaceGridComp.rc );
 
   @coupled_files = qw( BC_GridComp_ExtData-clim.rc
                        CO_GridComp_ExtData-clim.rc
