@@ -149,7 +149,7 @@
 !                             -----
    class (BaseProfiler), pointer :: t_p
    type(MAPL_MetaComp), pointer :: child_maplobj
-   type (MAPL_Communicators) :: mapl_comm
+   !type (MAPL_Communicators) :: mapl_comm
     
     call Main()
 
@@ -166,8 +166,8 @@ CONTAINS
     call ESMF_VMGetCurrent(vm=vm, rc=status)
     call ESMF_VMGet(vm,mpiCommunicator=comm,rc=status)
 
-    mapl_comm%mapl%comm=comm
-    mapl_comm%esmf%comm=comm
+    !mapl_comm%mapl%comm=comm
+    !mapl_comm%esmf%comm=comm
     call MAPL_Initialize(rc=status)
     VERIFY_(status)
     t_p => get_global_time_profiler()
@@ -280,8 +280,8 @@ CONTAINS
 
 !   Now create a component to handle the increment output
 !   -----------------------------------------------------
-    call MAPL_Set(MAPLOBJ, mapl_comm = mapl_Comm, rc = status)
-    VERIFY_(status)
+    !call MAPL_Set(MAPLOBJ, mapl_comm = mapl_Comm, rc = status)
+    !VERIFY_(status)
     BASE = MAPL_AddChild ( MAPLOBJ, Grid=BKGgrid,    &
                                        ConfigFile=myRC,   &
                                           name= 'ABKG',   &
