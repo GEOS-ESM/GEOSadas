@@ -29,7 +29,6 @@ use Env qw(STRICT NCPUS EXPID PROFQC ACFTQC ACARSQC RADCOR FVWORK
            FORT_CONVERT12 FORT_CONVERT13 FORT_CONVERT15 );
 use File::Basename;      # for basename(), dirname()
 use Getopt::Long;        # command line options
-use Shell qw(cat);       # cat command
 use File::Copy;
 
 # Command line options

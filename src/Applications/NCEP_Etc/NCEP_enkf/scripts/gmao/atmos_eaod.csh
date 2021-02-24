@@ -11,6 +11,8 @@
 #  20Mar2017  Todling   Allow EnKF to run over available aod/gaas-bkg cases
 #                       (as in Rapid Update analysis)
 #  26Mar2017  Todling   Allow for EnKF to generate approx analysis kernel
+#  31Mar2020  Todling   Jobmonitor to protect against faulty batch-block
+#  23Jun2020  Todling   Redef meaning of ATMENSLOC
 #--------------------------------------------------------------------------
 if ( !($?ATMENS_VERBOSE) ) then
     setenv ATMENS_VERBOSE 0
@@ -104,6 +106,7 @@ if ( $#argv < 4 ) then
 endif
 
 setenv FAILED 0
+if ( !($?ATMENS_BATCHSUB) ) setenv FAILED 1
 if ( !($?ATMENSETC)      ) setenv FAILED 1
 if ( !($?ATMENSLOC)      ) setenv FAILED 1
 if ( !($?FVHOME)         ) setenv FAILED 1
@@ -194,7 +197,7 @@ if (! -e $chemrc ) then
 endif
 set doing_gaas = `echorc.x -rc $chemrc ENABLE_GAAS`
 if ( "$doing_gaas" == ".TRUE." ) then
-   if ( ! -e  $ENSWORK/.DONE_${MYNAME}_acq.$yyyymmddhh ) then
+   if ( ! -e  $ENSWORK/.DONE_MEM001_ACQ_${MYNAME}.$yyyymmddhh ) then
       if ( -e $ATMENSETC/aod4aens.acq ) then
          set acqfile = $ATMENSETC/aod4aens.acq
          # retrieve AOD analysis files
@@ -213,25 +216,36 @@ if ( "$doing_gaas" == ".TRUE." ) then
            #setenv JOBGEN_NCPUS_PER_NODE 1
            jobgen.pl \
                 -expid $expid         \
-                -q datamove           \
                 acq_aodana            \
                 $GID                  \
                 $ENSACQ_WALLCLOCK     \
                 "acquire -v -rc $acqfile $spool -d $MYDIR -ssh $nymd $nhms $freq $nstep" \
                 $ENSWORK              \
                 $MYNAME               \
-                $ENSWORK/.DONE_${MYNAME}_acq.$yyyymmddhh \
+                $ENSWORK/.DONE_MEM001_ACQ_${MYNAME}.$yyyymmddhh \
                 "Acquire existing AOD files Failed"
    
                 if ( -e acq_aodana.j ) then
-                   qsub -W block=true acq_aodana.j
+                   if ( $ATMENS_BATCHSUB == "sbatch" ) then
+                      $ATMENS_BATCHSUB -W acq_aodana.j
+                   else
+                      $ATMENS_BATCHSUB -W block=true acq_aodana.j
+                   endif
                 else
                    echo " ${MYNAME}: Failed to generate PBS jobs to acquire existing AOD Analysis. Aborting ... "
                    touch $FVWORK/.FAILED
                    exit(1)
                 endif
+
+                # Monitor job in case block fails
+                # -------------------------------
+                jobmonitor.csh 1 ACQ_${MYNAME}  $ENSWORK $yyyymmddhh
+                if ($status) then
+                    echo "${MYNAME}: cannot complete due to failed jobmonitor, aborting"
+                    exit(1)
+                endif
    
-         endif # CRAP
+         endif #
       else # if doing gaas, better have corresponding acq file or else exit in error
          echo " ${MYNAME}: expected aod4aens.acq, but not found, aborting ..."
          exit(1)
@@ -264,7 +278,7 @@ if ( $AENS_GAAS_OPT == 1 ) then
 endif
 
 if ( $AENS_GAAS_OPT > 1 ) then
-  set members = `/bin/ls -d $ATMENSLOC/atmens/mem* | wc`
+  set members = `/bin/ls -d $ATMENSLOC/mem* | wc`
   set nmem = $members[1]
 
 # Retrieve AOD-related observations ...
@@ -299,7 +313,7 @@ if ( $AENS_GAAS_OPT > 1 ) then
             ln -sf $MYDIR/*ods .
             ln -sf $MYDIR/006  .
             ln -sf $MYDIR/*rc  .
-            ln -sf $ATMENSLOC/atmens/mem$nnn/*.gaas_bkg.sfc.*$NCSUFFIX  .
+            ln -sf $ATMENSLOC/mem$nnn/*.gaas_bkg.sfc.*$NCSUFFIX  .
             cd -
             run_gaas_ana.csh  $EXPID $nymd $nhms 1 $MYDIR/mem$nnn $ENSWORK/.DONE_MEM${nnn}_run_gaas_ana.csh.$yyyymmddhh &
          else
@@ -363,7 +377,7 @@ if ( $AENS_GAAS_OPT > 1 ) then
          set nnn = `echo $n | awk '{printf "%03d", $1}'`
          if( ! -d mem$nnn ) mkdir mem$nnn
          cd $MYDIR/mem$nnn
-         update_ens.csh $expid $nnn aaero $ENSWORK/mem${nnn} NULL $NCSUFFIX
+         update_ens.csh $expid mem$nnn aaero $ENSWORK/mem${nnn} NULL $NCSUFFIX
          cd -
       end
 
@@ -403,9 +417,9 @@ if ( $AENS_GAAS_OPT > 1 ) then
        # Apply AOD observer to the mean of the ensemble
        # ----------------------------------------------
        if ( ! -e $ENSWORK/.DONE_ENSMEAN_run_gaas_ana.csh.$yyyymmddhh ) then
-          ln -sf $ATMENSLOC/atmens/ensmean/$expid.bkg.eta.*z.$NCSUFFIX .
-          ln -sf $ATMENSLOC/atmens/ensmean/*.gaas_bkg.sfc.*$NCSUFFIX .
-          ln -sf $ATMENSLOC/atmens/ensmean/*.abkg.eta.*$NCSUFFIX .
+          ln -sf $ATMENSLOC/ensmean/$expid.bkg.eta.*z.$NCSUFFIX .
+          ln -sf $ATMENSLOC/ensmean/*.gaas_bkg.sfc.*$NCSUFFIX .
+          ln -sf $ATMENSLOC/ensmean/*.abkg.eta.*$NCSUFFIX .
           ln -sf $MYDIR/*ods .
           ln -sf $MYDIR/*rc  .
           ln -sf $MYDIR/006  .
@@ -537,7 +551,7 @@ if ( $AENS_GAAS_OPT > 1 ) then
             set xtag = ""
             if ( $kernel == ".true." ) set xtag = "KERNEL"
 
-            if ( ! -e $ENSWORK/.DONE_ENKFXAERO${xtag}_${MYNAME}.$eyyyymmddhh ) then
+            if ( ! -e $ENSWORK/.DONE_MEM001_ENKFXAERO${xtag}_${MYNAME}.$eyyyymmddhh ) then
 
                # Determine lat/lon
                # -----------------
@@ -596,14 +610,26 @@ if ( $AENS_GAAS_OPT > 1 ) then
                        "$MPIRUN_ATMENKFAERO |& tee -a $MYDIR/aenkfaero${xtag}.$eyyyymmddhh.log" \
                        $MYDIR              \
                        $MYNAME             \
-                       $ENSWORK/.DONE_ENKFXAERO${xtag}_${MYNAME}.$eyyyymmddhh \
+                       $ENSWORK/.DONE_MEM001_ENKFXAERO${xtag}_${MYNAME}.$eyyyymmddhh \
                        "AtmosEnKFaero Failed"
   
                        if ( -e aenkfaero.j ) then
-                          qsub -W block=true aenkfaero${xtag}.j
+                          if ( $ATMENS_BATCHSUB == "sbatch" ) then
+                             $ATMENS_BATCHSUB -W aenkfaero${xtag}.j
+                          else
+                             $ATMENS_BATCHSUB -W block=true aenkfaero${xtag}.j
+                          endif
                        else
                           echo " ${MYNAME}: Failed to generate PBS jobs for AtmEnKFAero, Aborting ... "
                           exit(1)
+                       endif
+
+                       # Monitor job in case block fails
+                       # -------------------------------
+                       jobmonitor.csh 1 ENKFXAERO${xtag}_${MYNAME}  $ENSWORK $yyyymmddhh
+                       if ($status) then
+                           echo "${MYNAME}: cannot complete due to failed jobmonitor, aborting"
+                           exit(1)
                        endif
 
                else
@@ -613,7 +639,7 @@ if ( $AENS_GAAS_OPT > 1 ) then
                      echo " ${MYNAME}: failed, aborting ..."
                      exit(1)
                   else
-                     touch $ENSWORK/.DONE_ENKFXAERO${xtag}_${MYNAME}.$eyyyymmddhh
+                     touch $ENSWORK/.DONE_MEM001_ENKFXAERO${xtag}_${MYNAME}.$eyyyymmddhh
                   endif
 
                endif # ENSPARALLEL
@@ -622,7 +648,7 @@ if ( $AENS_GAAS_OPT > 1 ) then
 
             # At this point, EnKF-AERO better have ran successfully
             # -----------------------------------------------------
-            if(! -e $ENSWORK/.DONE_ENKFXAERO${xtag}_${MYNAME}.$eyyyymmddhh ) then
+            if(! -e $ENSWORK/.DONE_MEM001_ENKFXAERO${xtag}_${MYNAME}.$eyyyymmddhh ) then
                echo " ${MYNAME}: failed, aborting ..."
                exit(1)
             endif
@@ -687,7 +713,7 @@ if ( $AENS_GAAS_OPT > 1 ) then
              set nnn = `echo $n | awk '{printf "%03d", $1}'`
              if( ! -d mem$nnn ) mkdir mem$nnn
              cd $MYDIR/mem$nnn
-             update_ens.csh ${anaprefix}$expid $nnn $upd_this $ENSWORK/mem${nnn} NULL $NCSUFFIX
+             update_ens.csh ${anaprefix}$expid mem$nnn $upd_this $ENSWORK/mem${nnn} NULL $NCSUFFIX
              cd -
           end
        end # upd_this (aod/conc)

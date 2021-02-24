@@ -26,7 +26,6 @@ use lib "$FindBin::Bin";        # look for perl packages in bin directory
 use Env;                        # make env vars readily available
 use File::Basename;             # for basename(), dirname()
 use File::Copy "cp";            # for cp()
-use Shell qw(cat rm);           # cat command
 use Time::Local;                # time functions
 use Run_parallel qw(parallel);
 

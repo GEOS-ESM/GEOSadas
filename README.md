@@ -8,10 +8,10 @@
 
 In your `.bashrc` or `.tcshrc` or other rc file add a line:
 
-##### NCCS (SLES11)
+##### NCCS
 
 ```
-module use -a /discover/swdev/gmao_SIteam/modulefiles-SLES11
+module use -a /discover/swdev/gmao_SIteam/modulefiles-SLES12
 ```
 
 ##### NAS
@@ -47,7 +47,7 @@ git clone git@github.com:GEOS-ESM/GEOSadas.git
 
 If all you wish is to build the model, you can run `parallel_build.csh` from a head node. Doing so will checkout all the external repositories of the model and build it. When done, the resulting model build will be found in `build/` and the installation will be found in `install/` with setup scripts like `gcm_setup` and `fvsetup` in `install/bin`.
 
-#### Debug Version of GEOS
+#### Debug Version of GEOS ADAS
 
 To obtain a debug version, you can run `parallel_build.csh -debug` which will build with debugging flags. This will build in `build-Debug/` and install into `install-Debug/`.
 
@@ -57,11 +57,20 @@ To obtain a debug version, you can run `parallel_build.csh -debug` which will bu
 
 The steps detailed below are essentially those that `parallel_build.csh` performs for you. Either method should yield identical builds.
 
-##### Checkout externals
+#### Mepo
+
+The GEOS ADAS is comprised of a set of sub-repositories. These are
+managed by a tool called [mepo](https://github.com/GEOS-ESM/mepo). To
+clone all the sub-repos, you can run `mepo clone` inside the fixture:
+
 ```
 cd GEOSadas
-checkout_externals
+mepo clone
 ```
+
+The first command initializes the multi-repository and the second one
+clones and assembles all the sub-repositories according to
+`components.yaml`
 
 #### Build the Model
 
@@ -96,8 +105,9 @@ and CMake will install there.
 
 ##### Build and Install with Make
 ```
-make -j6 install
+make -jN install
 ```
+where `N` is the number of parallel processes. On discover head nodes, this should only be as high as 2 due to limits on the head nodes. On a compute node, you can set `N` has high as you like, though 8-12 is about the limit of parallelism in our model's make system.
 
 ### Run the AGCM
 

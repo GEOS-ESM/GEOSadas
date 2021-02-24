@@ -23,8 +23,8 @@
   parameter(hsub=hvap+hfus)
   parameter(dldti=cvap-csol,xai=-dldti/rv,xbi=xai+hsub/(rv*ttp))
   parameter (tmix=ttp-20.0_fp_kind)
-  real(fp_kind) eps,epsm1,omeps
-  parameter (eps=rd/rv,epsm1=rd/rv-1._fp_kind)
+  real(fp_kind) eps,omeps
+  parameter (eps=rd/rv)
   parameter (omeps = 1._fp_kind-eps)
 !
   logical icesat

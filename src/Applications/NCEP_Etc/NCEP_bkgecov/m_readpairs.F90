@@ -1,30 +1,52 @@
-subroutine m_readpairs(tskcases,npes,mype,numcases,mycases)
+subroutine m_readpairs(npe,mype,numcases,mycases)
 
-  use type_kinds, only: fp_kind
+  use type_kinds, only: fp_kind,single
+  use m_die, only: die
 
   use m_GsiGrided, only : GsiGrided
   use m_GsiGrided, only : GsiGrided_init
   use m_GsiGrided, only : GsiGrided_read
   use m_GsiGrided, only : GsiGrided_clean
 
-  use variables,only: nlat,nlon,nsig,sigi,sigl,ak5,bk5
+  use variables,only: nlat,nlon,nsig,sigi,sigl,ak5,bk5,iglobal
+  use variables,only: lat1,lon1,ijn,displs_g,ltosi,ltosj
   use variables,only: vsmth,vsmc
   use variables,only: na,nb,filename,db_prec
   use variables,only: bbt,bbs,bbv,bbp
   use variables,only: bboz,bbq,bbqi,bbql,bbqr,bbqs
   use variables,only: filunit
-  use variables,only: grdsf,grdvp,gridt,grdc,gridq,grdrh,gridp,grdoz
-  use variables,only: gridqi,gridql,gridqr,gridqs
   use variables,only: nGlat,nGlon,glats,glons
   use variables,only: rearth
-  use variables,only: biasrm,bbiasz,bbiasd,bbiast,bcorrz,bcorrd,bcorrt,bbiasp,bcorrp
-  use variables,only: hydromet
-  use variables,only: vcoeffs,hcoeffs
+  use variables, only: create_bias_g
+  use variables, only: hcoeffs,vcoeffs
+  use variables, only: n2d,n3d
+  use variables, only: hydromet
+  use variables, only: nreaders
+  use variables, only: readperts
+  use variables, only: rhbounds
 
   use compact_diffs,only: init_compact_diffs
   use compact_diffs,only: create_cdiff_coefs
   use compact_diffs,only: inisph
   use compact_diffs,only: destroy_cdiff_coefs
+  use comm_mod, only: levs_id,nvar_id,grid2sub,nsig1o,spec_send,&
+        disp_spec
+
+! HISTORY:
+!   24Apr2020 Todling - rearranged this code considerably. Using
+!                       4 or 8 readers allows the code to process
+!                       a sample of 32 members in 10 min. The ideal
+!                       mode of exercising this software is to now 
+!                       let it work directly from the NMC-perturbation,
+!                       instead of having to read pairs of forecasts 
+!                       and calculating the perturbations internally.
+!                       With 16 readers a 370 sample-case of 721x1152
+!                       resolution can now be process in less the 25 min,
+!                       this is to be contrasted with the 7.5 hours it 
+!                       took to do the same amount of work.
+!                       The numbers about apply to 72 levels, jcap=512,
+!                       25 vertical; all these parameters contribute to
+!                       the time it takes to run this software.
 
 #ifndef ibm_sp
   use m_mpif
@@ -36,73 +58,131 @@ subroutine m_readpairs(tskcases,npes,mype,numcases,mycases)
   include 'mpif.h'
 #endif
 
-  integer, intent(in) :: tskcases,npes,mype,numcases 
+  integer, intent(in) :: npe,mype,numcases 
   integer, intent(out) :: mycases
 
 ! local variables
-  integer ierror,mpi_rtype
-  integer i,j,k,total,n,nymd1,nhms1,nymd2,nhms2,nl
+  character(len=*), parameter :: myname="m_readpairs"
+  integer ierror,mpi_rtype,iret
+  integer :: mm1,nsig1,ii,ns,nskip
   real(fp_kind),dimension(nsig) :: vcoef,vsmall
-  type(GsiGrided) :: ob1,ob2
+  type(GsiGrided) :: ob1
 
   real(fp_kind) ps0,det
 
-  real(fp_kind),allocatable,dimension(:,:,:,:):: bfactz,bfactd,bfactt
-  real(fp_kind),allocatable,dimension(:,:,:):: bfactp
+  real(single), allocatable,dimension(:,:)   :: z4all
+  integer,allocatable::nprocs(:)
 
-  logical ice
+  logical ice,itest
+
+  nsig1 = nsig+1
   if (db_prec) then
     mpi_rtype=mpi_real8
   else
     mpi_rtype=mpi_real4
   end if
 
-  mycases=0
+  if (readperts) then
+    if(mype==0) write(6,*) 'READING NMC-like DIFFERENCE FIELDS'
+  else
+    if(mype==0) write(6,*) 'READING FORECAST PAIRS'
+  endif
+
+  mycases=numcases
   ps0=1./101.324
-  bbp=0.
-  bbt=0.
-  bbs=0.
-  bbv=0.
-  bboz=0.
-  bbq=0.
-  if (hydromet) then
-     bbqi=0.
-     bbql=0.
-     bbqr=0.
-     bbqs=0.
+
+  call create_bias_g(lat1,lon1,nsig)
+
+  mm1=mype+1
+  filunit = 1000*(mype+1)+1
+  open(filunit,form='unformatted',action='write')
+  rewind(filunit)
+
+  call init_()
+
+  allocate(z4all(iglobal,n3d*nsig+n2d))
+
+  if(nreaders>npe) then
+    if(readperts) then
+       nreaders = 1
+    else
+       nreaders = 2
+    endif
   endif
-
-
-   call init_compact_diffs(nGlat,nGlon)
-   call create_cdiff_coefs(nGlon,glons)
-!  print*,'created compact coefficients '
-   call inisph(rearth,glats(2),nGlon,nGlat-2)
-!  print*,'Initialized spherical stuff'
-
-  if(biasrm) then 
-    allocate(bfactz(nlat,nlon,nsig,4))
-    allocate(bfactd(nlat,nlon,nsig,4))
-    allocate(bfactt(nlat,nlon,nsig,4))
-    allocate(bfactp(nlat,nlon,4))
-    bfactz=0.
-    bfactd=0.
-    bfactt=0.
-    bfactp=0.
+  if(mod(npe,nreaders)/=0) then
+    call die(myname,': nreaders should divide npe whole, aborting',99)
   endif
+  nskip=2
+  if(readperts) nskip=1
+  allocate(nprocs(nreaders))
+  do ii=1,nreaders
+     nprocs(ii)=(ii-1)*npe/nreaders
+  enddo
+  ii=0;ns=1
+  do while (ns<=numcases)
+     do ii=1,nreaders,nskip
+        if(ns<=numcases) then
+          if (readperts) then
+            call read_(ns,nprocs(ii),-1)
+          else
+            call read_(ns,nprocs(ii),nprocs(ii+1))
+          endif
+        endif
+        ns=ns+1
+     enddo
+     call mpi_barrier(mpi_comm_world,iret) ! shouldn''t need this barrier
+     ns=ns-nreaders/nskip
+     do ii=1,nreaders,nskip
+        if(ns<=numcases) then
+           if (readperts) then
+             call scatter_(ns,nprocs(ii),-1)
+           else
+             call scatter_(ns,nprocs(ii),nprocs(ii+1))
+           endif
+        endif
+        ns=ns+1
+     enddo
+     call mpi_barrier(mpi_comm_world,iret) ! shouldn''t need this barrier
+  enddo
+  deallocate(nprocs)
 
+  deallocate(z4all)
 
-  do n=1,tskcases
+  call mpi_barrier(mpi_comm_world,iret)
+  close(filunit)
 
-    total=npes*(n-1)+mype+1
+  call final_()
 
-    if(total.le.numcases)then
-      mycases=mycases+1
+  return
+contains
 
+ subroutine init_
+  call init_compact_diffs(nGlat,nGlon)
+  call create_cdiff_coefs(nGlon,glons)
+  call inisph(rearth,glats(2),nGlon,nGlat-2)
+ end subroutine init_
 
-      if(mype==total) print*,'reading file ', na(total)
+ subroutine read_(n,proc1,proc2)
+  integer, intent(in) :: n, proc1, proc2
+
+  integer i,j,k,kk,ii,nymd1,nhms1,nymd2,nhms2,nl
+  integer k1,k2,k3,k4,k5,k6,k7,k8,k9,k10,k11,k12
+
+    if(mype/=proc1.and.mype/=proc2) return
+
+    if (mype==proc1) then 
+      if (readperts) then
+        write(6,'(a,1x,i5,1x,a)') 'reading file on PE= ', mype, trim(filename(n))
+      else
+        write(6,'(i5)') numcases
+        write(6,'(2(a,1x,i5),1x,2a)') 'PE= ', mype, ' reading case ', n,' file: ',trim(filename(na(n)))
+      endif
       call GsiGrided_init(ob1)
-      call GsiGrided_read(na(total),nymd1,nhms1,ob1,mype)
-
+      if (readperts) then
+        call GsiGrided_read(n,nymd1,nhms1,ob1,mype)
+      else
+        call GsiGrided_read(na(n),nymd1,nhms1,ob1,mype)
+      endif
       ak5=ob1%ak
       bk5=ob1%bk
       do k=1,nsig
@@ -110,393 +190,308 @@ subroutine m_readpairs(tskcases,npes,mype,numcases,mycases)
         sigi(k)=ak5(k)*ps0+bk5(k)
       end do
       sigi(nsig+1)=ak5(nsig+1)*ps0+bk5(nsig+1)
-
-      gridt   = ob1%vt
-      grdvp   = ob1%vp
-      grdsf   = ob1%sf
-      grdc    = ob1%cw
-      gridp   = ob1%ps
-      grdoz   = ob1%oz
-
-      ice=.true.
-      gridq  = ob1%q
-      if (hydromet) then
-         gridqi = ob1%qi
-         gridql = ob1%ql
-         gridqr = ob1%qr
-         gridqs = ob1%qs
-      endif
-      call genqsat(ob1%vt,gridq,nlat,nlon,&
-                   ob1%ps,ice,sigl,ak5,bk5)
-
-      do k=1,nsig
-      do j=1,nlon
-      do i=1,nlat
-        if( abs(gridq(i,j,k)).gt.0. ) then
-          ob1%q(i,j,k)=ob1%q(i,j,k)/gridq(i,j,k)
-        else
-          ob1%q(i,j,k)=0.0
-        endif
-      end do
-      end do
-      end do
-
-      call GsiGrided_init(ob2)
-      call GsiGrided_read(nb(total),nymd2,nhms2,ob2,mype)
-      if(nymd1/=nymd2 .or. nhms1/=nhms2 ) then
-        call GsiGrided_clean(ob2)
-        call mpi_finalize(ierror)
-        stop
-      end if
-
-      ice=.true.
-      grdrh = ob2%q
-      call genqsat(ob2%vt,grdrh,nlat,nlon,&
-                   ob2%ps,ice,sigl,ak5,bk5)
-
-      do k=1,nsig
-      do j=1,nlon
-      do i=1,nlat
-        if( abs(grdrh (i,j,k)).gt.0.) then
-          ob2%q(i,j,k)=ob2%q(i,j,k)/grdrh(i,j,k)
-        else
-          ob2%q(i,j,k)=0.0
-        endif
-      end do
-      end do
-      end do
-
-      grdrh=0.5*(ob1%q +ob2%q)
-
-      do k=1,nsig
-      do j=1,nlon
-      do i=1,nlat
-         if(ob1%q(i,j,k) <-0.25) ob1%q(i,j,k)=-0.25
-         if(ob1%q(i,j,k) > 1.25) ob1%q(i,j,k)= 1.25
-         if(ob2%q(i,j,k) <-0.25) ob2%q(i,j,k)=-0.25
-         if(ob2%q(i,j,k) > 1.25) ob2%q(i,j,k)= 1.25
-      end do
-      end do
-      end do
-
-      grdc    = ob1%cw - ob2%cw
-      grdoz   = ob1%oz - ob2%oz
-      gridq   = ob1%q  - ob2%q
-      if (hydromet) then
-         gridqi  = ob1%qi - ob2%qi
-         gridql  = ob1%ql - ob2%ql
-         gridqr  = ob1%qr - ob2%qr
-         gridqs  = ob1%qs - ob2%qs
-      endif
-      grdrh   = 0.5*(ob1%q +ob2%q)
-
-      if( biasrm ) then 
-        do k=1,nsig
-          do j=1,nlon
-            do i=1,nlat
-              bfactz(i,j,k,1)=bfactz(i,j,k,1)+(ob1%sf(i,j,k)*ob2%sf(i,j,k))
-              bfactz(i,j,k,2)=bfactz(i,j,k,2)+(ob2%sf(i,j,k)*ob2%sf(i,j,k))
-              bfactz(i,j,k,3)=bfactz(i,j,k,3)+ob1%sf(i,j,k)
-              bfactz(i,j,k,4)=bfactz(i,j,k,4)+ob2%sf(i,j,k)
-
-              bfactd(i,j,k,1)=bfactd(i,j,k,1)+(ob1%vp(i,j,k)*ob2%vp(i,j,k))
-              bfactd(i,j,k,2)=bfactd(i,j,k,2)+(ob2%vp(i,j,k)*ob2%vp(i,j,k))
-              bfactd(i,j,k,3)=bfactd(i,j,k,3)+ob1%vp(i,j,k)
-              bfactd(i,j,k,4)=bfactd(i,j,k,4)+ob2%vp(i,j,k)
-
-              bfactt(i,j,k,1)=bfactt(i,j,k,1)+(ob1%vt(i,j,k)*ob2%vt(i,j,k))
-              bfactt(i,j,k,2)=bfactt(i,j,k,2)+(ob2%vt(i,j,k)*ob2%vt(i,j,k))
-              bfactt(i,j,k,3)=bfactt(i,j,k,3)+ob1%vt(i,j,k)
-              bfactt(i,j,k,4)=bfactt(i,j,k,4)+ob2%vt(i,j,k)
-            enddo
-          enddo 
-        enddo
-
-        do j=1,nlon
-          do i=1,nlat
-             bfactp(i,j,1)=bfactp(i,j,1)+(ob1%ps(i,j)*ob2%ps(i,j))
-             bfactp(i,j,2)=bfactp(i,j,2)+(ob2%ps(i,j)*ob2%ps(i,j))
-             bfactp(i,j,3)=bfactp(i,j,3)+ob1%ps(i,j)
-             bfactp(i,j,4)=bfactp(i,j,4)+ob2%ps(i,j)
-          enddo
-        enddo
-      else
-        gridt   = ob1%vt - ob2%vt
-        grdvp   = ob1%vp - ob2%vp
-        grdsf   = ob1%sf - ob2%sf
-        gridp   = ob1%ps - ob2%ps
-      
-        filunit = 1000*(mype+1)+n
-        open(filunit,form='unformatted')
-        rewind(filunit)
-
-        if (hydromet) then
-           write(filunit)grdsf,grdvp,gridt,gridp,gridq,gridqi,gridql,gridqr,gridqs,grdrh,grdoz,grdc
-        else
-           write(filunit)grdsf,grdvp,gridt,gridp,gridq,grdrh,grdoz,grdc
-        endif
-
-        close(filunit)
-
-        bbp(:,:  )=bbp(:,:  )+gridp(:,:  )
-        bbt(:,:,:)=bbt(:,:,:)+gridt(:,:,:)
-        bbv(:,:,:)=bbv(:,:,:)+grdvp(:,:,:)
-        bbs(:,:,:)=bbs(:,:,:)+grdsf(:,:,:)
-        bbq(:,:,:)=bbq(:,:,:)+gridq(:,:,:)
-        if (hydromet) then
-           bbqi(:,:,:)=bbqi(:,:,:)+gridqi(:,:,:)
-           bbql(:,:,:)=bbql(:,:,:)+gridql(:,:,:)
-           bbqr(:,:,:)=bbqr(:,:,:)+gridqr(:,:,:)
-           bbqs(:,:,:)=bbqs(:,:,:)+gridqs(:,:,:)
-        endif
-        bboz(:,:,:)=bboz(:,:,:)+grdoz(:,:,:)
-
-
-      endif 
-
-      call GsiGrided_clean(ob1)
-      call GsiGrided_clean(ob2)
-
+    end if 
+    if (mype==proc2) then 
+!     write(6,'(a,1x,i5,1x,a)') 'reading file on PE= ', mype, trim(filename(nb(n)))
+      write(6,'(2(a,1x,i5),1x,2a)') 'PE= ', mype, ' reading case ', n,' file: ',trim(filename(nb(n)))
+      call GsiGrided_init(ob1)
+      call GsiGrided_read(nb(n),nymd1,nhms1,ob1,mype)
     end if
-  end do
-  if(mype==0) print*, 'Pass bias removal'
+      
+!   call mpi_barrier(mpi_comm_world,iret)
 
-
-  nl = nlat*nlon
-  if (biasrm) then 
-
-    call mpi_allreduce((bfactz),bfactz,4*nl*nsig,mpi_rtype,mpi_sum, &
-                        mpi_comm_world,ierror)
-    call mpi_allreduce((bfactd),bfactd,4*nl*nsig,mpi_rtype,mpi_sum, &
-                        mpi_comm_world,ierror)
-    call mpi_allreduce((bfactt),bfactt,4*nl*nsig,mpi_rtype,mpi_sum, &
-                        mpi_comm_world,ierror)
-    call mpi_allreduce((bfactp),bfactp,4*nl     ,mpi_rtype,mpi_sum, &
-                        mpi_comm_world,ierror)
-
-    allocate(bcorrz(nlat,nlon,nsig))
-    allocate(bcorrd(nlat,nlon,nsig))
-    allocate(bcorrt(nlat,nlon,nsig))
-    allocate(bcorrp(nlat,nlon))
-    allocate(bbiasz(nlat,nlon,nsig))
-    allocate(bbiasd(nlat,nlon,nsig))
-    allocate(bbiast(nlat,nlon,nsig))
-    allocate(bbiasp(nlat,nlon))
-
-    do k=1,nsig
-      do j=1,nlon
+    if (mype==proc1 .or. mype==proc2) then 
+      do k=1,nsig
+        k1=nsig
+        k2=2*nsig
+        k3=3*nsig
+        k4=4*nsig
+        k5=5*nsig
+        k6=6*nsig
+        k7=7*nsig
+        k8=8*nsig
+        k9=9*nsig
+        k10=10*nsig
+        k11=11*nsig
+        ii =0
+        do j=1,nlon
         do i=1,nlat
-          do n=1,4
-            bfactz(i,j,k,n) = bfactz(i,j,k,n)/float(numcases)
-            bfactd(i,j,k,n) = bfactd(i,j,k,n)/float(numcases)
-            bfactt(i,j,k,n) = bfactt(i,j,k,n)/float(numcases)
-          enddo     
-          if(abs(bfactz(i,j,k,2)-bfactz(i,j,k,4)**2) > 1.e-26)then
-             bcorrz(i,j,k)=(bfactz(i,j,k,1)-bfactz(i,j,k,3)*bfactz(i,j,k,4)) &
-                            /(bfactz(i,j,k,2)-bfactz(i,j,k,4)**2.)
-          else
-             bcorrz(i,j,k)= 1. 
-          end if
-          bbiasz(i,j,k)=bfactz(i,j,k,3)-bcorrz(i,j,k)*bfactz(i,j,k,4)
-
-          if(abs(bfactd(i,j,k,2)-bfactd(i,j,k,4)**2) > 1.e-26)then
-            bcorrd(i,j,k)=(bfactd(i,j,k,1)-bfactd(i,j,k,3)*bfactd(i,j,k,4)) &
-                          /(bfactd(i,j,k,2)-bfactd(i,j,k,4)**2.)
-          else
-            bcorrd(i,j,k)= 1. 
-          end if
-          bbiasd(i,j,k)=bfactd(i,j,k,3)-bcorrd(i,j,k)*bfactd(i,j,k,4)
-
-          if(abs(bfactt(i,j,k,2)-bfactt(i,j,k,4)**2) > 1.e-26)then
-            bcorrt(i,j,k)=(bfactt(i,j,k,1)-bfactt(i,j,k,3)*bfactt(i,j,k,4)) &
-                          /(bfactt(i,j,k,2)-bfactt(i,j,k,4)**2.)
-          else
-            bcorrt(i,j,k)= 1. 
-          end if
-          bbiast(i,j,k)=bfactt(i,j,k,3)-bcorrt(i,j,k)*bfactt(i,j,k,4)
-        enddo
-      enddo
-    enddo
-    do j=1,nlon
+           ii = ii +1 
+           z4all(ii,k)   =ob1%sf(i,j,k)
+           z4all(ii,k1+k)=ob1%vp(i,j,k)
+           z4all(ii,k2+k)=ob1%vt(i,j,k)
+           z4all(ii,k3+k)=ob1%q(i,j,k)
+           z4all(ii,k4+k)=ob1%qi(i,j,k)
+           z4all(ii,k5+k)=ob1%ql(i,j,k)
+           z4all(ii,k6+k)=ob1%qr(i,j,k)
+           z4all(ii,k7+k)=ob1%qs(i,j,k)
+           z4all(ii,k8+k)=ob1%oz(i,j,k)
+           z4all(ii,k9+k)=ob1%cw(i,j,k)
+           z4all(ii,k10+k)=ob1%rh(i,j,k)
+           z4all(ii,k11+k)=ob1%mrh(i,j,k)
+        end do
+        end do
+      end do
+      k12=12*nsig
+      ii=0
+      do j=1,nlon
       do i=1,nlat
-        do n=1,4
-          bfactp(i,j,n) = bfactp(i,j,n)/float(numcases)
-        enddo
-        if(abs(bfactp(i,j,2)-bfactp(i,j,4)**2) > 1.e-26)then
-          bcorrp(i,j)=(bfactp(i,j,1)-bfactp(i,j,3)*bfactp(i,j,4)) &
-                      /(bfactp(i,j,2)-bfactp(i,j,4)**2.)
-        else
-          bcorrp(i,j)= 1. 
-        end if
-        bbiasp(i,j)=bfactp(i,j,3)-bcorrp(i,j)*bfactp(i,j,4)
-      enddo
-    enddo 
+         ii = ii+1
+         z4all(ii,k12+1)=ob1%ps(i,j)
+      enddo 
+      end do
+      call GsiGrided_clean(ob1)
+    endif 
 
-    deallocate(bfactz,bfactd,bfactt,bfactp)
+ end subroutine read_
 
-    mycases = 0 
-    do n=1,tskcases
-       total=npes*(n-1)+mype+1
-       if(total.le.numcases)then
-          mycases=mycases+1
-          filunit = 1000*(mype+1)+n
-          open(filunit,form='unformatted')
-          rewind(filunit)
+ subroutine scatter_(n,proc1,proc2)
+  integer, intent(in) :: n, proc1, proc2
 
-          call GsiGrided_init(ob1)
-          call GsiGrided_read(na(total),nymd1,nhms1,ob1,mype)
-          call GsiGrided_init(ob2)
-          call GsiGrided_read(nb(total),nymd1,nhms1,ob2,mype)
+  integer i,j,k,nl
 
-          do k=1,nsig
-            do j=1,nlon
-              do i=1,nlat
-                grdsf(i,j,k)=ob1%sf(i,j,k)-bcorrz(i,j,k)*ob2%sf(i,j,k)-bbiasz(i,j,k)
-                grdvp(i,j,k)=ob1%vp(i,j,k)-bcorrd(i,j,k)*ob2%vp(i,j,k)-bbiasd(i,j,k)
-                gridt(i,j,k)=ob1%vt(i,j,k)-bcorrt(i,j,k)*ob2%vt(i,j,k)-bbiast(i,j,k)
-              enddo
-            enddo
-          enddo
-          do j=1,nlon
-            do i=1,nlat
-              gridp(i,j)=ob1%ps(i,j)-bcorrp(i,j)*ob2%ps(i,j)-bbiasp(i,j)
-            enddo 
-          enddo
+! local variables
+  real(fp_kind),allocatable,dimension(:,:,:) :: sf1,sf2,vp1,vp2,t1,t2,q1,q2,     &
+                                                qi1,qi2,ql1,ql2,qr1,qr2,qs1,qs2, & 
+                                                rh1,rh2,oz1,oz2,cw1,cw2,mrh1,mrh2
+  real(fp_kind),allocatable,dimension(:,:)   :: ps1,ps2
+  real(single), allocatable,dimension(:,:)   :: z41,z42
+  real(fp_kind),allocatable,dimension(:,:,:) :: grdq1,grdq2,rh
 
+  allocate(sf1(lat1,lon1,nsig), &
+           vp1(lat1,lon1,nsig), &
+            t1(lat1,lon1,nsig), &
+            q1(lat1,lon1,nsig), &
+           qi1(lat1,lon1,nsig), &
+           ql1(lat1,lon1,nsig), &
+           qr1(lat1,lon1,nsig), &
+           qs1(lat1,lon1,nsig), &
+           rh1(lat1,lon1,nsig), &
+          mrh1(lat1,lon1,nsig), &
+           oz1(lat1,lon1,nsig), &
+           cw1(lat1,lon1,nsig), &
+           ps1(lat1,lon1)       )
 
-          if (hydromet) then
-             write(filunit)grdsf,grdvp,gridt,gridp,gridq,gridqi,gridql,gridqr,gridqs,grdrh,grdoz,grdc
-          else
-             write(filunit)grdsf,grdvp,gridt,gridp,gridq,grdrh,grdoz,grdc
-          endif
-          close(filunit)
-          call GsiGrided_clean(ob1)
-          call GsiGrided_clean(ob2)
+  allocate(z41(iglobal,nsig1o))
+  call mpi_scatterv(z4all,spec_send,disp_spec,mpi_rtype,&
+                    z41,spec_send(mm1),mpi_rtype,proc1, &
+                    mpi_comm_world,ierror)
+
+  if (.not.readperts) then
+    allocate(sf2(lat1,lon1,nsig), &
+             vp2(lat1,lon1,nsig), &
+              t2(lat1,lon1,nsig), &
+              q2(lat1,lon1,nsig), &
+             qi2(lat1,lon1,nsig), &
+             ql2(lat1,lon1,nsig), &
+             qr2(lat1,lon1,nsig), &
+             qs2(lat1,lon1,nsig), &
+             rh2(lat1,lon1,nsig), &
+            mrh2(lat1,lon1,nsig), &
+             oz2(lat1,lon1,nsig), &
+             cw2(lat1,lon1,nsig), &
+             ps2(lat1,lon1)       )
+
+    allocate(z42(iglobal,nsig1o))
+    call mpi_scatterv(z4all,spec_send,disp_spec,mpi_rtype,&
+                      z42,spec_send(mm1),mpi_rtype,proc2, & 
+                      mpi_comm_world,ierror)
+   endif
+
+    call mpi_bcast(sigl,nsig1,mpi_rtype,proc1,mpi_comm_world,ierror)
+    call mpi_bcast(sigi,nsig1,mpi_rtype,proc1,mpi_comm_world,ierror)
+    call mpi_bcast( ak5,nsig1,mpi_rtype,proc1,mpi_comm_world,ierror)
+    call mpi_bcast( bk5,nsig1,mpi_rtype,proc1,mpi_comm_world,ierror)
+
+    if (allocated(z41)) then
+       call grid2sub(reshape(z41,(/nlat,nlon,nsig1o/)),sf1,vp1,t1,q1,qi1,ql1,qr1,qs1,oz1,cw1,rh1,mrh1,ps1)
+       deallocate(z41)
+    endif
+    if (allocated(z42)) then
+       call grid2sub(reshape(z42,(/nlat,nlon,nsig1o/)),sf2,vp2,t2,q2,qi2,ql2,qr2,qs2,oz2,cw2,rh2,mrh2,ps2)
+       deallocate(z42)
+    endif
+
+    allocate(rh(lat1,lon1,nsig))
+   
+    if (readperts) then
+
+       q1=rh1
+       rh=mrh1
+
+       if(rhbounds(1)>-900.0) then
+          where(q1 <rhbounds(1)) q1=rhbounds(1)
        endif
-    enddo
-    deallocate(bcorrz,bcorrd,bcorrt,bcorrp)
-    deallocate(bbiasz,bbiasd,bbiast,bbiasp)
-  else 
-    call mpi_allreduce((bbp),bbp,nl,mpi_rtype,mpi_sum, &
-                        mpi_comm_world,ierror)
-    call mpi_allreduce((bbt),bbt,nl*nsig,mpi_rtype,mpi_sum, &
-                        mpi_comm_world,ierror)
-    call mpi_allreduce((bbs),bbs,nl*nsig,mpi_rtype,mpi_sum, &
-                        mpi_comm_world,ierror)
-    call mpi_allreduce((bbv),bbv,nl*nsig,mpi_rtype,mpi_sum, &
-                        mpi_comm_world,ierror)
-    call mpi_allreduce((bbq),bbq,nl*nsig,mpi_rtype,mpi_sum, &
-                        mpi_comm_world,ierror)
-    if (hydromet) then
-       call mpi_allreduce((bbqi),bbqi,nl*nsig,mpi_rtype,mpi_sum, &
-                           mpi_comm_world,ierror)
-       call mpi_allreduce((bbql),bbql,nl*nsig,mpi_rtype,mpi_sum, &
-                           mpi_comm_world,ierror)
-       call mpi_allreduce((bbqr),bbqr,nl*nsig,mpi_rtype,mpi_sum, &
-                           mpi_comm_world,ierror)
-       call mpi_allreduce((bbqs),bbqs,nl*nsig,mpi_rtype,mpi_sum, &
-                           mpi_comm_world,ierror)
+       if(rhbounds(2)< 900.0) then
+          where(q1 >rhbounds(2)) q1=rhbounds(2)
+       endif
+
+    else
+
+      ice=.true.
+      allocate(grdq1(lat1,lon1,nsig))
+      grdq1= q1
+      call genqsat(t1,grdq1,lat1,lon1,ps1,ice,sigl,ak5,bk5)
+      allocate(grdq2(lat1,lon1,nsig))
+      grdq2= q2
+      call genqsat(t2,grdq2,lat1,lon1,ps2,ice,sigl,ak5,bk5)
+   
+      do k=1,nsig
+        do j=1,lon1
+          do i=1,lat1
+            if( abs(grdq1(i,j,k)).gt.0. ) then
+              q1(i,j,k)=q1(i,j,k)/grdq1(i,j,k)
+            else
+              q1(i,j,k)=0.0
+            endif
+            if( abs(grdq2(i,j,k)).gt.0. ) then
+              q2(i,j,k)=q2(i,j,k)/grdq2(i,j,k)
+            else
+              q2(i,j,k)=0.0
+            endif
+          end do
+        end do
+      end do
+      deallocate(grdq1,grdq2)
+   
+      rh=0.5*(q1+q2)
+
+      do k=1,nsig
+        do j=1,lon1
+          do i=1,lat1
+            if(q1(i,j,k) < rhbounds(1)) q1(i,j,k)=rhbounds(1)
+            if(q1(i,j,k) > rhbounds(2)) q1(i,j,k)=rhbounds(2)
+            if(q2(i,j,k) < rhbounds(1)) q2(i,j,k)=rhbounds(1)
+            if(q2(i,j,k) > rhbounds(2)) q2(i,j,k)=rhbounds(2)
+          end do
+        end do
+      end do
+
+    cw1 = cw1 - cw2
+    oz1 = oz1 - oz2
+    q1  = q1  - q2
+    qi1 = qi1 - qi2
+    ql1 = ql1 - ql2
+    qr1 = qr1 - qr2
+    qs1 = qs1 - qs2
+    t1  = t1  - t2
+    vp1 = vp1 - vp2
+    sf1 = sf1 - sf2
+    ps1 = ps1 - ps2
+
+    deallocate(sf2,&
+               vp2,&
+                t2,&
+                q2,&
+               qi2,&
+               ql2,&
+               qr2,&
+               qs2,&
+               rh2,&
+              mrh2,&
+               oz2,&
+               cw2,&
+               ps2 )
+
+
     endif
-    call mpi_allreduce((bboz),bboz,nl*nsig,mpi_rtype,mpi_sum, &
-                        mpi_comm_world,ierror)
 
-    bbp = bbp/float(numcases)
-    bbt = bbt/float(numcases)
-    bbs = bbs/float(numcases)
-    bbv = bbv/float(numcases)
-    bbq = bbq/float(numcases)
-    if (hydromet) then
-       bbqi = bbqi/float(numcases)
-       bbql = bbql/float(numcases)
-       bbqr = bbqr/float(numcases)
-       bbqs = bbqs/float(numcases)
-    endif
-    bboz = bboz/float(numcases)
-  endif
-  if(mype==0) print*, 'Pass bias removal 2'
+    write(filunit) sf1,vp1,t1,ps1,q1,rh,qi1,ql1,qr1,qs1,oz1,cw1
+    deallocate(rh)
 
-  call destroy_cdiff_coefs
-! if(mype==0)then
-!   print*,'ak5 bk5 sigi sigl'
-!   do k = 1,nsig
-!     print*,'k= ',k,ak5(k),bk5(k),sigi(k),sigl(k)
-!   enddo
-!   print*,'k= ',k,ak5(k),bk5(k),sigi(k) ! print k+1
-! endif
-  call mpi_bcast(ak5, nsig+1,mpi_rtype,0,mpi_comm_world,ierror)
-  call mpi_bcast(bk5, nsig+1,mpi_rtype,0,mpi_comm_world,ierror)
-  call mpi_bcast(sigi,nsig+1,mpi_rtype,0,mpi_comm_world,ierror)
-  call mpi_bcast(sigl,nsig  ,mpi_rtype,0,mpi_comm_world,ierror)
+    if(proc1==1 .and. mype==0) print*,'store for bias calculation '
+    bbt(:,:,:) =bbt(:,:,:) +t1(:,:,:)
+    bbs(:,:,:) =bbs(:,:,:) +sf1(:,:,:)
+    bbv(:,:,:) =bbv(:,:,:) +vp1(:,:,:)
+    bbq(:,:,:) =bbq(:,:,:) +q1(:,:,:)
+    bbqi(:,:,:)=bbqi(:,:,:)+qi1(:,:,:)
+    bbql(:,:,:)=bbql(:,:,:)+ql1(:,:,:)
+    bbqr(:,:,:)=bbqr(:,:,:)+qr1(:,:,:)
+    bbqs(:,:,:)=bbqs(:,:,:)+qs1(:,:,:)
+    bboz(:,:,:)=bboz(:,:,:)+oz1(:,:,:)
+    bbp(:,:  ) =bbp(:,:  ) +ps1(:,:  )
 
+    deallocate(sf1,&
+               vp1,&
+                t1,&
+                q1,&
+               qi1,&
+               ql1,&
+               qr1,&
+               qs1,&
+               rh1,&
+              mrh1,&
+               oz1,&
+               cw1,&
+               ps1 )
 
-! Prepare horizontal smoothing coefficients
-  vcoef = hcoeffs(1:nsig)
-  write(12,*) 'Coeffs for Horizontal Smoothing'
-  do k=1,nsig
-     write(12,*)k,sigl(k),vcoef
-  end do
+ end subroutine scatter_
 
-  call getvsm_(nsig,mype,vcoef,vsmth)
-  call m3minv(vsmth,nsig,det)
+ subroutine final_
+  integer j,k
+  bbp = bbp/float(numcases)
+  bbt = bbt/float(numcases)
+  bbs = bbs/float(numcases)
+  bbv = bbv/float(numcases)
+  bbq = bbq/float(numcases)
+  bbql = bbql/float(numcases)
+  bbqi = bbqi/float(numcases)
+  bbqr = bbqr/float(numcases)
+  bbqs = bbqs/float(numcases)
+  bboz = bboz/float(numcases)
 
   if(mype==0)then
+
+!   Prepare horizontal smoothing coefficients
+    vcoef=hcoeffs(1:nsig)
+    do k=1,nsig
+      write(12,*)k,sigl(k),vcoef(k)
+    end do
+
+    call getvsm_(nsig,vcoef,vsmth)
+    call m3minv(vsmth,nsig,det)
+
     do k=1,nsig
       vsmall(k)=0
       do j=1,nsig
         vsmall(k)=vsmall(k)+vsmth(j,k)
       enddo
     enddo
-  endif
 
-! Prepare vertical smoothing coefficients
-  vcoef = vcoeffs(1:nsig)
-  write(14,*) 'Coeffs for Vertical Smoothing'
-  do k=1,nsig
-     write(42,*)k,sigl(k),vcoef
-  end do
+!   Prepare vertical smoothing coefficients
+    vcoef = vcoeffs(1:nsig)
+    do k=1,nsig
+      write(14,*)k,sigl(k),vcoef(k)
+    enddo
+    call getvsm_(nsig,vcoef,vsmc)
+    call m3minv(vsmc,nsig,det)
 
-  call getvsm_(nsig,mype,vcoef,vsmc)
-  call m3minv(vsmc,nsig,det)
-  if(mype==0) print*, 'Done readpairs'
+  endif !mype=0
+ end subroutine final_
 
-  return
 end subroutine m_readpairs
 
-subroutine getvsm_(nsig,mype,vcoef,vsmth)
+subroutine getvsm_(nsig,vcoef,vsmth)
   use type_kinds,only : fp_kind,single,double
   use variables, only : sigi,sigl 
   implicit none
   integer,intent(in) :: nsig
-  integer,intent(in) :: mype
   real(fp_kind),dimension(nsig),intent(in) :: vcoef 
   real(fp_kind),dimension(nsig,nsig),intent(out) :: vsmth
 
   integer k
   real(fp_kind) :: vf
    
-  vsmth=0.0_fp_kind
+  vsmth=0
 
-! if(mype==0)then
-!   print*,'sigi sigl'
-!   do k = 1,nsig
-!      print*,'k= ',k,sigi(k),sigl(k)
-!   enddo
-!   print*,'k= ',k,sigi(k)
-! endif
   do k=1,nsig
     vsmth(k,k)=1.
     vf=vcoef(k)*(sigi(k+1)-sigi(k))
     if(k > 1)then
-      if(abs(sigl(k)-sigl(k-1))<1.e-10) then
-        print *, 'something is fishy: 1', sigl(k)-sigl(k-1)
-      endif
       vsmth(k-1,k)=-vf/(sigl(k)-sigl(k-1))
       vsmth(k,k)=vsmth(k,k)-vsmth(k-1,k)
     endif
     if(k < nsig)then
-      if(abs(sigl(k+1)-sigl(k))<1.e-10) then
-        print *, 'something is fishy: 2', sigl(k+1)-sigl(k)
-      endif
       vsmth(k+1,k)=-vf/(sigl(k+1)-sigl(k))
       vsmth(k,k)=vsmth(k,k)-vsmth(k+1,k)
     endif

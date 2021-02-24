@@ -1,4 +1,4 @@
-      module def_vitals
+      module def_vitals_gettrk
         type tcvcard         ! Define a new type for a TC Vitals card
           sequence
           character*4   tcv_center      ! Hurricane Center Acronym
@@ -28,9 +28,9 @@
         integer, save, allocatable :: stormswitch(:)
         real, save, allocatable    :: slonfg(:,:),slatfg(:,:)
         character*3, save, allocatable :: stcvtype(:) ! FOF or TCV
-      end module def_vitals
+      end module def_vitals_gettrk
 c
-      module inparms
+      module inparms_gettrk
         type datecard  ! Define a new type for the input namelist parms
           sequence
           integer       bcc    ! First 2 chars of yy of date (century)
@@ -40,7 +40,7 @@ c
           integer       bhh    ! Beginning hh of date to search for 
           integer       model  ! integer identifier for model data used
         end type datecard
-      end module inparms
+      end module inparms_gettrk
 c
       module trkrparms
         type trackstuff  ! Define a new type for various tracker parms
@@ -150,7 +150,7 @@ C        real, parameter :: errpgro=1.25, errpmax=600.0
         real, parameter :: uverrmax = 225.0  ! For use in get_uv_guess
       end module error_parms
 c
-      module set_max_parms
+      module set_max_parms_gettrk
         integer, parameter :: maxstorm_tc=15  ! max # of storms pgm can
                                            ! handle, for tc tracker case
         integer, parameter :: maxstorm_mg=500  ! max # of storms pgm can
@@ -162,7 +162,7 @@ c
         integer, save :: interval_fhr      ! # of hrs between fcst times
         integer, parameter :: maxcenters=150 ! max # of max/min centers
                                              ! to be tracked.
-      end module set_max_parms
+      end module set_max_parms_gettrk
 c
       module level_parms
         integer, parameter :: nlevs=4   ! max # of vert levs to be read
@@ -177,7 +177,7 @@ c
         data wgts /0.25, 0.50, 0.25/    ! 850, 700 & 500 mb wgts
       end module level_parms
 c
-      module trig_vals
+      module trig_vals_gettrk
         real, save :: pi, dtr
         real, save :: dtk = 111.1949     ! Dist (km) over 1 deg lat
                                          ! using erad=6371.0e+3
@@ -185,7 +185,7 @@ c
         real, save :: ecircum = 40030.2  ! Earth's circumference
                                          ! (km) using erad=6371.e3
         real, save :: omega = 7.292e-5
-      end module trig_vals
+      end module trig_vals_gettrk
 c
 c---------------------------------------------------------------------c
 c

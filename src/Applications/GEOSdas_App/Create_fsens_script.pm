@@ -48,11 +48,16 @@ sub fsens_script {
     my $gid             = $inputparams{"gid"};
     my $expid           = $inputparams{"expid"};
     my $ncsuffix        = $inputparams{"ncsuffix"};
+    my $qsub            = $inputparams{"qsub"};
 
  # local variables
- my( $siteID );
+ my( $siteID, $nodeflg );
  
  $siteID = get_siteID();
+ $nodeflg = "hasw";
+ my $npn = `facter processorcount`; chomp($npn);
+ if    ( $npn == 40 ) { $nodeflg = "sky"  }
+ elsif ( $npn == 28 ) { $nodeflg = "hasw" }
 
  open(SCRIPT,">$fvhome/run/$jobfs.j") or
  die ">>> ERROR <<< cannot write $fvhome/run/$jobfs.j";
@@ -60,32 +65,19 @@ sub fsens_script {
  print  SCRIPT <<"EOF";
 #!/bin/csh -fx
 #$group_list
-#$export_none
+##$export_none
 #$jobqueue1
-#PBS -N fsens
-#PBS -o fsens.log.o%j
-EOF
-if ($siteID eq "nccs") {
-  print SCRIPT <<"EOF";
+#SBATCH --job-name=fsens
+#SBATCH --output=fsens.log.o%j
 #SBATCH --ntasks=$ncpus_gsi
 #SBATCH --ntasks-per-node=24
-#SBATCH --constraint=hasw
-EOF
-} else {
-  print SCRIPT <<"EOF";
+#SBATCH --constraint=$nodeflg
+#SBATCH --time=${fcswallclk}:00
+#PBS -N fsens
+#PBS -o fsens.log.o%j
 #PBS -l ncpus=$ncpus_gsi
-EOF
-}
-  print SCRIPT <<"EOF";
-#PBS -l walltime=${fcswallclk}:00
-##PBS -l mem=$mem
 #PBS -S /bin/csh
 #PBS -j eo
-#BSUB -J fsens
-#BSUB -n $ncpus_gsi
-#BSUB -W $fcswallclk
-#BSUB -o fsens.log.o%J
-#BSUB -e fsens.log.o%J
 # ------------------------------
 #
 # ForecastSens driver script.
@@ -105,6 +97,7 @@ EOF
 
 # Experiment environment
 # ----------------------
+  setenv BATCH_SUBCMD $qsub
   setenv GID $gid
   setenv group_list \"$group_list\"
   setenv ARCH `uname -s`
@@ -120,7 +113,7 @@ EOF
   setenv STAGE4FSENS \$FVHOME/save4fsens   # set to whatever else user wants
 
   if( (`uname -s` == "Linux") && ( (`uname -m` == "ia64") || (`uname -m` == "x86_64") ) ) then
-      setenv FVWORK /discover/nobackup/\$user/tmp.\$\$
+      setenv FVWORK $fvhome/../tmp.\$\$
       if(   -d \$FVWORK ) /bin/rm -r  \$FVWORK
       /bin/mkdir -p \$FVWORK
   else
@@ -302,10 +295,10 @@ EOF
   set jname = "fsens.archive"
   set lname = \$jname.log.o%j
 
-  if ( `uname -s` == "OSF1" ) then
-        bsub -J \$jname < \$FVHOME/run/fvarchive.j
+  if ( \$BATCH_SUBCMD == "sbatch" ) then
+     sbatch -J \$jname -o \$lname --export=arch_type=FSENS \$FVHOME/run/fvarchive.j
   else
-        qsub -N \$jname -o \$lname -v arch_type=FSENS \$FVHOME/run/fvarchive.j
+     qsub -N \$jname -o \$lname -v arch_type=FSENS \$FVHOME/run/fvarchive.j
   endif
 
 # --------------------------
@@ -339,10 +332,10 @@ EOF
      set jname = f\${nymd}_\${hh}
      set lname = \$jname.log.o%j
 
-     if ( `uname -s` == "OSF1" ) then
-          bsub -J \$jname < $jobfs.j
+     if ( \$BATCH_SUBCMD == "sbatch" ) then
+        sbatch -d afterany:\${PBS_JOBID} -J \$jname -o \$lname $jobfs.j
      else
-         qsub -W depend=afterany:\${PBS_JOBID} -N \$jname -o \$lname $jobfs.j
+        qsub -W depend=afterany:\${PBS_JOBID} -N \$jname -o \$lname $jobfs.j
      endif
 
 #    Because on Columbia this is not a legitimate TMPDIR, remove dir to avoid pile up

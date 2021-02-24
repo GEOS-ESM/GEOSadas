@@ -9,6 +9,7 @@
 #   20Oct2012 Todling   - redefine time arg in API from hh to nhms
 #                       - also address reproducibility issue
 #   17Apr2013 Todling   - update to use seasonally-aware NMC-perts
+#   23Jun2020 Todling   - redef meaning of ATMENSLOC
 #------------------------------------------------------------------
 
 if ( !($?ATMENS_VERBOSE) ) then
@@ -108,8 +109,8 @@ cd $ENSWORK/$ploc
 
 # Take existing dates.dat, in case it's already been generated
 # This allows run to be reproducible (user needs to retrieve dates from archive)
-if (-e $ATMENSLOC/atmens/$expid.rndperts.dates.${nymd}_${hh}z.txt ) then
-   /bin/cp $ATMENSLOC/atmens/$expid.rndperts.dates.${nymd}_${hh}z.txt dates.dat 
+if (-e $ATMENSLOC/$expid.rndperts.dates.${nymd}_${hh}z.txt ) then
+   /bin/cp $ATMENSLOC/$expid.rndperts.dates.${nymd}_${hh}z.txt dates.dat 
 endif
 
 if (! -e dates.dat ) then 
@@ -122,8 +123,8 @@ endif
 set pertimes = (`cat dates.dat`)
 
 # Store dates for re-run and archive purposes
-if (! -e $ATMENSLOC/atmens/$expid.rndperts.dates.${nymd}_${hh}z.txt ) then
-   /bin/cp dates.dat $ATMENSLOC/atmens/$expid.rndperts.dates.${nymd}_${hh}z.txt
+if (! -e $ATMENSLOC/$expid.rndperts.dates.${nymd}_${hh}z.txt ) then
+   /bin/cp dates.dat $ATMENSLOC/$expid.rndperts.dates.${nymd}_${hh}z.txt
 endif
 
 # Build acquire rc file

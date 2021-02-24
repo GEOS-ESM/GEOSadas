@@ -110,6 +110,7 @@
   if ( !($?AODBLOCKJOB) )         setenv AODBLOCKJOB   0
   if ( !($?AOD_OBSCLASS) )        setenv AOD_OBSCLASS  none
   if ( !($?ASYNBKG)  )            setenv ASYNBKG       360
+  if ( !($?BATCH_SUBCMD) )        setenv BATCH_SUBCMD  qsub
   if ( !($?BKG_PREPQC) )          setenv BKG_PREPQC    0
   if ( !($?BOOTSTRAP) )           setenv BOOTSTRAP     0
   if ( !($?CENTRAL_AGCM_PARALLEL) ) setenv CENTRAL_AGCM_PARALLEL 0
@@ -529,10 +530,10 @@ exit 1
       /bin/cp $FVHOME/run/fsens/*.rc      .	
   endif
   if ( $FORECAST ) then
-       foreach file ( ${fchome}/* )
+       foreach file ( `ls ${fchome}/*` )
           if ( $file =~ *.log.* ) continue
           set ext = $file:e            
-          if ( "$ext" != "bin" && "$ext" != "$NCSUFFIX" ) then
+          if ( "$ext" != "bin" && "$ext" != "$NCSUFFIX" && "$ext" != "tar" ) then
                 /bin/cp $file .   # skip restarts
           endif 
        end
@@ -541,7 +542,7 @@ exit 1
 
 # Edit and copy GAAS resource files
 # ---------------------------------
-  foreach file ( $FVHOME/run/gaas/*.rc )
+  foreach file ( `ls $FVHOME/run/gaas/*.rc` )
      set target = $FVWORK/$file:t
      vED -env $file -o $target
      echo "cat $target"
@@ -596,8 +597,9 @@ exit 1
 
 # Turn off aerosol data sets for local acquire and replay
 # -------------------------------------------------------
-  if ( $LOCAL_ACQUIRE || -e replay.acq ) then
+  if ( $LOCAL_ACQUIRE ) then
       set aerosol_acquire = 0
+      setenv USE_MODIS_STAGE 1
   else
       set aerosol_acquire = 1
   endif
@@ -705,7 +707,7 @@ exit 1
         if ("$grs_boot" =~ *$rs*) then
             if ($rs != "saltwater_internal_rst") continue
         endif
-        if ($rs !~ agcm_* ) exit 1         # IAU file not a restart
+        if ($rs !~ agcm_* && $rs !~ aiau_* ) exit 1         # IAU file not a restart
      endif
   end
 
@@ -1182,7 +1184,7 @@ exit 1
                  set fcs_nhmsi = ${saveme}0000
              endif
           end  # < id0 >
-       endif  # < -e saverst.rc >
+       #--endif  # < -e saverst.rc >
      else 
        set fcs_nymdi = 22000101  # dummy date
        set fcs_nhmsi = 000000    # dummy time
@@ -1207,43 +1209,35 @@ exit 1
      /bin/rm -f sed_file
      echo "s/>>>IOEDATE<<</${gcm_nymdb}/1" > sed_file
      echo "s/>>>IOETIME<<</${gcm_nhmsb}/1" >> sed_file
-     if ( -e replay.acq ) then   # in replay mode, only need to write bkg at synoptic times
-           echo "s/>>>IOBBKGD<<</${ana_nymde}/1" >> sed_file
-           echo "s/>>>IOBBKGT<<</${ana_nhmse}/1" >> sed_file
-           echo "s/>>>IOEBKGD<<</${ana_nymde}/1" >> sed_file
-           echo "s/>>>IOEBKGT<<</${ana_nhmse}/1" >> sed_file   
-           echo "s/>>>NCSUFFIX<<</${NCSUFFIX}/1" >> sed_file
-     else                        # in regular DAS, write bkg until the end of the cycle
-           if ( $DOIAU ) then
-                set TrjBegDate = $TrjBegEpoch[1]
-                set TrjBegTime = $TrjBegEpoch[2]
-                set TrjEndDate = $TrjEndEpoch[1]
-                set TrjEndTime = $TrjEndEpoch[2]
+     if ( $DOIAU ) then
+          set TrjBegDate = $TrjBegEpoch[1]
+          set TrjBegTime = $TrjBegEpoch[2]
+          set TrjEndDate = $TrjEndEpoch[1]
+          set TrjEndTime = $TrjEndEpoch[2]
 
-                set qcref = `tick $wrt_rst_nymd $wrt_rst_nhms 10800`  # tick time to synoptic hour
-                set qcref_nymd = ${qcref[1]}
-                set qcref_nhms = ${qcref[2]}
-                echo "s/>>>IOBBKGD<<</${wrt_rst_nymd}/1" >> sed_file  # for IAU, only write bkg's at later half of integration
-                echo "s/>>>IOBBKGT<<</${wrt_rst_nhms}/1" >> sed_file
-                echo "s/>>>IOBQCD<<</${qcref_nymd}/1"    >> sed_file   
-                echo "s/>>>IOBQCT<<</${qcref_nhms}/1"    >> sed_file
-                echo "s/>>>IOEQCD<<</${qcref_nymd}/1"    >> sed_file   
-                echo "s/>>>IOEQCT<<</${qcref_nhms}/1"    >> sed_file
-                echo "s/>>>IOBTRJD<<</$TrjBegDate/1"     >> sed_file
-                echo "s/>>>IOBTRJT<<</$TrjBegTime/1"     >> sed_file
-                echo "s/>>>IOETRJD<<</$TrjEndDate/1"     >> sed_file
-                echo "s/>>>IOETRJT<<</$TrjEndTime/1"     >> sed_file   
-                echo "s/>>>TRAJFRQ<<</$trajfrqhms/1"     >> sed_file   
-           else
-                echo "s/>>>IOBBKGD<<</17760704/1"   >> sed_file       # write bkg's from begining of time
-                echo "s/>>>IOBBKGT<<</000000/1"     >> sed_file
-           endif
-           echo "s/>>>IOEBKGD<<</${ioebkgd}/1"      >> sed_file
-           echo "s/>>>IOEBKGT<<</${ioebkgt}/1"      >> sed_file   
-           echo "s/>>>FCSDATE<<</${fcs_nymdi}/1"    >> sed_file
-           echo "s/>>>FCSTIME<<</${fcs_nhmsi}/1"    >> sed_file
-           echo "s/>>>NCSUFFIX<<</${NCSUFFIX}/1"    >> sed_file
+          set qcref = `tick $wrt_rst_nymd $wrt_rst_nhms 10800`  # tick time to synoptic hour
+          set qcref_nymd = ${qcref[1]}
+          set qcref_nhms = ${qcref[2]}
+          echo "s/>>>IOBBKGD<<</${wrt_rst_nymd}/1" >> sed_file  # for IAU, only write bkg's at later half of integration
+          echo "s/>>>IOBBKGT<<</${wrt_rst_nhms}/1" >> sed_file
+          echo "s/>>>IOBQCD<<</${qcref_nymd}/1"    >> sed_file   
+          echo "s/>>>IOBQCT<<</${qcref_nhms}/1"    >> sed_file
+          echo "s/>>>IOEQCD<<</${qcref_nymd}/1"    >> sed_file   
+          echo "s/>>>IOEQCT<<</${qcref_nhms}/1"    >> sed_file
+          echo "s/>>>IOBTRJD<<</$TrjBegDate/1"     >> sed_file
+          echo "s/>>>IOBTRJT<<</$TrjBegTime/1"     >> sed_file
+          echo "s/>>>IOETRJD<<</$TrjEndDate/1"     >> sed_file
+          echo "s/>>>IOETRJT<<</$TrjEndTime/1"     >> sed_file   
+          echo "s/>>>TRAJFRQ<<</$trajfrqhms/1"     >> sed_file   
+     else
+          echo "s/>>>IOBBKGD<<</17760704/1"   >> sed_file       # write bkg's from begining of time
+          echo "s/>>>IOBBKGT<<</000000/1"     >> sed_file
      endif
+     echo "s/>>>IOEBKGD<<</${ioebkgd}/1"      >> sed_file
+     echo "s/>>>IOEBKGT<<</${ioebkgt}/1"      >> sed_file   
+     echo "s/>>>FCSDATE<<</${fcs_nymdi}/1"    >> sed_file
+     echo "s/>>>FCSTIME<<</${fcs_nhmsi}/1"    >> sed_file
+     echo "s/>>>NCSUFFIX<<</${NCSUFFIX}/1"    >> sed_file
 
 #    set date/times for gaas_bkg.sfc outputs
 #    ---------------------------------------
@@ -1433,6 +1427,12 @@ exit 1
         set acqlog = $FVHOME/run/acqblend.log.$acqdate.txt
         fname1 "#\!/bin/csh -xvf"
         fname2 "#$group_list"
+        fname2 "#SBATCH --job-name=acqblend"
+        fname2 "#SBATCH --output=acqblend.log.$acqdate.txt"
+        fname2 "#SBATCH --ntasks=1"
+        fname2 "#SBATCH --time=2:00:00"
+        fname2 "#SBATCH --partition=$data_queue"
+        fname2 "#SBATCH --account=$GID"
         fname2 "#PBS -N acqblend"
         fname2 "#PBS -o acqblend.log.$acqdate.txt"
         fname2 "#PBS -l nodes=1:ppn=1"
@@ -1447,7 +1447,11 @@ exit 1
         fname2 " acquire -v -rc blend.acq -s $spool -d . -strict $nymd $nhms 060000 1 "
         fname2 "exit"
 
-        qsub -W block=true -o $acqlog $fname
+        if ( $BATCH_SUBCMD == "sbatch" ) then
+           sbatch -W -o $acqlog $fname
+        else
+           qsub -W block=true -o $acqlog $fname
+        endif
 
   endif
 
@@ -1532,6 +1536,7 @@ exit 1
 
      # end of IAU-period:
      @ timeinc_sec = $TIMEINC * 60
+     set beg_ana   = ( $fnymdb $fnhmsb )
      set end_ana   = ( `tick $fnymdb $fnhmsb $timeinc_sec` )
 
      if (`uname -n` !~ borg*) then
@@ -1554,6 +1559,12 @@ exit 1
         set acqlog = $FVHOME/fcst/acqfcst.log.$acqdate.txt
         fname1 "#\!/bin/csh -xvf"
         fname2 "#$group_list"
+        fname2 "#SBATCH --job-name=acqfcst"
+        fname2 "#SBATCH --output=acqfcst.log.$acqdate.txt"
+        fname2 "#SBATCH --ntasks=1"
+        fname2 "#SBATCH --time=2:00:00"
+        fname2 "#SBATCH --partition=$data_queue"
+        fname2 "#SBATCH --account=$GID"
         fname2 "#PBS -N acqfcst"
         fname2 "#PBS -o acqfcst.log.$acqdate.txt"
         fname2 "#PBS -l nodes=1:ppn=1"
@@ -1566,12 +1577,22 @@ exit 1
         fname2 "set path = ( $path )"
         fname2 "cd $FVWORK"
         fname2 " acquire -v -rc   fcst.acq -s $spool -d . $fnymdb $fnhmsb $fcstacq_freq $nfcst "
+        if(-e xinc.acq) then
+        fname2 " acquire -v -rc   xinc.acq -s $spool -d . $fnymdb $fnhmsb 060000 1 "
+        endif
         if(-e fcst09.acq) then
         fname2 " acquire -v -rc fcst09.acq -s $spool -d . $end_ana[1] $end_ana[2] $fcstacq_freq $nfcst "
         endif
+        if(-e fcst03.acq) then
+        fname2 " acquire -v -rc fcst03.acq -s $spool -d . $beg_ana[1] $beg_ana[2] $fcstacq_freq $nfcst "
+        endif
         fname2 "exit"
                                                                                                           
-        qsub -W block=true -o $acqlog $fname
+        if ( $BATCH_SUBCMD == "sbatch" ) then
+           sbatch -W -o $acqlog $fname
+        else
+           qsub -W block=true -o $acqlog $fname
+        endif
 
      endif
 
@@ -1610,12 +1631,22 @@ exit 1
            endif
         endif
 
+        foreach fn ( `ls *.agcmrst*tar` )
+           tar xvf $fn
+        end 
+
         foreach fn (`ls *.agcm_import_rst.*`)
             set noexpid = `echo $fn | cut -d. -f2-`
             /bin/ln -s  $fn $noexpid
         end
         set agcmfn = `echorc.x -template $EXPID $fnymdb $fnhmsb iau_tendency_filename`
         ln -sf $agcmfn agcm_import_rst
+
+        set lstfn = `ls *incrst*tar`
+        if (! $status ) then
+           tar xvf $lstfn
+           /bin/rm $lstfn
+        endif
 
      else
 
@@ -1728,6 +1759,12 @@ exit 1
         set acqlog = $FVHOME/fcst/acqaod4fcst.log.$acqdate.txt
         fname1 "#\!/bin/csh -xvf"
         fname2 "#$group_list"
+        fname2 "#SBATCH --job-name=acqaod4fcst"
+        fname2 "#SBATCH --output=acqaod4fcst.log.$acqdate.txt"
+        fname2 "#SBATCH --ntasks=1"
+        fname2 "#SBATCH --time=2:00:00"
+        fname2 "#SBATCH --partition=$data_queue"
+        fname2 "#SBATCH --account=$GID"
         fname2 "#PBS -N acqaod4fcst"
         fname2 "#PBS -o acqaod4fcst.log.$acqdate.txt"
         fname2 "#PBS -l nodes=1:ppn=1"
@@ -1742,7 +1779,11 @@ exit 1
         fname2 " acquire -v -rc aod4fcst.acq -s $spool -d . -strict $initref[1] $initref[2] 030000 2 "
         fname2 "exit"
                                                                                                           
-        qsub -W block=true -o $acqlog $fname
+        if ( $BATCH_SUBCMD == "sbatch" ) then
+           sbatch -W -o $acqlog $fname
+        else
+           qsub -W block=true -o $acqlog $fname
+        endif
 
      endif
 
@@ -2270,6 +2311,12 @@ exit 1
         while ( ( $bnymd <= $enymd[1] ) && ( ! -e "${FVWORK}/acquire.FAILED" ) )
              fname1 "#\!/bin/csh -xvf"
              fname2 "#$group_list"
+             fname2 "#SBATCH --job-name=acqreplay1"
+             fname2 "#SBATCH --output=acqreplay1.log.$acqdate.txt"
+             fname2 "#SBATCH --ntasks=1"
+             fname2 "#SBATCH --time=2:00:00"
+             fname2 "#SBATCH --partition=$data_queue"
+             fname2 "#SBATCH --account=$GID"
              fname2 "#PBS -N acqreplay1"
              fname2 "#PBS -o acqreplay1.log.$acqdate.txt"
              fname2 "#PBS -l nodes=1:ppn=1"
@@ -2284,7 +2331,11 @@ exit 1
              fname2 "acquire -v -rc replay.acq -s $spool -d $FVWORK -ssh $strict $bnymd $bnhms 060000 4"
              fname2 "exit"
 
-             qsub -W block=true -o $acqlog $fname
+             if ( $BATCH_SUBCMD == "sbatch" ) then
+                sbatch -W -o $acqlog $fname
+             else
+                qsub -W block=true -o $acqlog $fname
+             endif
              sleep 2
              set bnymd=`tick $bnymd`
         end
@@ -2299,6 +2350,12 @@ exit 1
              set acqlog = $FVHOME/run/acqreplay2.log.$acqdate.txt
              fname1 "#\!/bin/csh -xvf"
              fname2 "#$group_list"
+             fname2 "#SBATCH --job-name=acqreplay2"
+             fname2 "#SBATCH --output=acqreplay2.log.$acqdate.txt"
+             fname2 "#SBATCH --ntasks=1"
+             fname2 "#SBATCH --time=2:00:00"
+             fname2 "#SBATCH --partition=$data_queue"
+             fname2 "#SBATCH --account=$GID"
              fname2 "#PBS -N acqreplay2"
              fname2 "#PBS -o acqreplay2.log.$acqdate.txt"
              fname2 "#PBS -l nodes=1:ppn=1"
@@ -2313,7 +2370,7 @@ exit 1
              fname2 "acquire -v -rc replay.acq -d $spool -s $spool -ssh $la_dtg[1] $la_dtg[2] 06000 4"
              fname2 "exit"
 
-             qsub -o $acqlog $fname
+             $BATCH_SUBCMD -o $acqlog $fname
              set acq_status = $status
         endif # if nlook
 
@@ -2394,6 +2451,12 @@ exit 1
 
              fname1 "#\!/bin/csh -xvf"
              fname2 "#$group_list"
+             fname2 "#SBATCH --job-name=acqobs1"
+             fname2 "#SBATCH --output=acqobs1.log.$acqdate.txt"
+             fname2 "#SBATCH --ntasks=1"
+             fname2 "#SBATCH --time=2:00:00"
+             fname2 "#SBATCH --partition=$data_queue"
+             fname2 "#SBATCH --account=$GID"
              fname2 "#PBS -N acqobs1"
              fname2 "#PBS -o acqobs1.log.$acqdate.txt"
              fname2 "#PBS -l nodes=1:ppn=1"
@@ -2408,7 +2471,11 @@ exit 1
              fname2 "acquire -v -rc obsys.acq -s $spool -d $FVWORK -ssh $strict $bnymd $bnhms $inhms 4"
              fname2 "exit"
 
-             qsub -W block=true -o $acqlog $fname
+             if ( $BATCH_SUBCMD == "sbatch" ) then
+                sbatch -W -o $acqlog $fname
+             else
+                qsub -W block=true -o $acqlog $fname
+             endif
              sleep 2
              set bnymd=`tick $bnymd`
         end
@@ -2424,6 +2491,12 @@ exit 1
 
              fname1 "#\!/bin/csh -xvf"
              fname2 "#$group_list"
+             fname2 "#SBATCH --job-name=acqobs2"
+             fname2 "#SBATCH --output=acqobs2.log.$acqdate.txt"
+             fname2 "#SBATCH --ntasks=1"
+             fname2 "#SBATCH --time=2:00:00"
+             fname2 "#SBATCH --partition=$data_queue"
+             fname2 "#SBATCH --account=$GID"
              fname2 "#PBS -N acqobs2"
              fname2 "#PBS -o acqobs2.log.$acqdate.txt"
              fname2 "#PBS -l nodes=1:ppn=1"
@@ -2438,7 +2511,7 @@ exit 1
              fname2 "acquire -v -rc obsys.acq -d $spool -s $spool -ssh $la_dtg[1] $la_dtg[2] $inhms $nstep"
              fname2 "exit"
 
-             qsub -o $acqlog $fname
+             $BATCH_SUBCMD -o $acqlog $fname
              set acq_status = $status
         endif # if nlook
 
@@ -2568,7 +2641,11 @@ exit 1
         set obsflag = 1
         set acqflags  = "-d $FVWORK -s $spool -strict"
         set acqflags1 = "-d $FVWORK -s $spool $strict"
-        set blockflag = "-W block=true"
+        if ( $BATCH_SUBCMD == "sbatch" ) then
+           set blockflag = "-W"
+        else
+           set blockflag = "-W block=true"
+        endif
   endif
 
   # Check for available AOD obs classes
@@ -2586,6 +2663,12 @@ exit 1
   endif
   fname1 \#\!/bin/csh -xvf
   fname2 \#$group_list
+  fname2 \#SBATCH --job-name=$acqname
+  fname2 \#SBATCH --output=$acqname.log.$acqdate.txt
+  fname2 \#SBATCH --ntasks=1
+  fname2 \#SBATCH --time=2:00:00
+  fname2 \#SBATCH --partition=$data_queue
+  fname2 \#SBATCH --account=$GID
   fname2 \#PBS -N $acqname
   fname2 \#PBS -o $acqname.log.$acqdate.txt
   fname2 \#PBS -l nodes=1:ppn=1
@@ -2648,7 +2731,7 @@ exit 1
 
   # submit job script
   #------------------
-  qsub $blockflag -o $acqlog $fname  # acquire observations; ignore status return
+  $BATCH_SUBCMD $blockflag -o $acqlog $fname  # acquire observations; ignore status return
   sleep 2
   if ($obsflag == 1 && ( -e obsys.acq )) then
      cat obsys.acq >>! obsys.acq.all
@@ -3039,6 +3122,27 @@ endif
 
 #.............................................................................
 
+# ----------------------------------
+  Sub JEDI_AnalysisRun_( Viter_, Final_ ) 
+# ----------------------------------
+  if ( $?ECHO___ ) set echo
+#
+
+  if ( ! -d $FVHOME/run/jedi )  exit (0)
+
+  set this_hh0 = `echo $gcm_nhms0 | cut -c1-2`
+
+  jedi_driver.csh $gcm_nymd0 $gcm_nhms0 |& tee -a $FVWORK/$EXPID.jedi_drv.log.${gcm_nymd0}_${this_hh0}z.txt
+  if ( $status ) then
+     echo "JEDI analysis failed, aborting ..."
+     Call AbnormalExit_( 1 )
+  endif
+
+                              # Last line of JEDI_AnalysisRun_()  
+\end
+
+#.............................................................................
+
 # ------------------------------
   Sub StageAna4FSens_() 
 # ------------------------------
@@ -3075,7 +3179,7 @@ endif
          exit 1
      endif
 
-  endif
+  #--endif
 
                               # Last line of StageAna4FSens_()  
 \end
@@ -3242,6 +3346,10 @@ endif
              endif
          endif
 
+         @ adtfwd = $varwindow_sec
+         set beg_ana = ( $gcm_nymd0 $gcm_nhms0 )
+         set end_ana = ( `tick $beg_ana[1] $beg_ana[2] $adtfwd` )
+
          if ( $DO4DVAR && $Final_ ) exit 0
 
 #        Checkpoint CoupleAnaToGcm: skip when already completed
@@ -3365,7 +3473,8 @@ endif
                          Call AbnormalExit_( 4 )
                      endif
  
-                    /bin/cp -f agcm_import_rst ${EXPID}.agcm_import_rst.${gcm_nymd0}_${gcm_nhr0}z.bin
+                    set myiau = `echorc.x -template $EXPID $gcm_nymd0 $gcm_nhms0 iau_tendency_filename`
+                    /bin/cp -f agcm_import_rst $myiau
 
                     # create increment file to allow for multiple options of running DAS
 
@@ -3414,9 +3523,9 @@ endif
                                                      $wrt_inc[1] $wrt_inc[2] 0
                        set my_status = $status
 
-                       set inc_hh = `echo $wrt_inc[2] | cut -c1-2`
-                       if( -e $EXPID.agcm_import_rst.{$wrt_inc[1]}_${inc_hh}z.bin ) then
-                          /bin/cp -f $EXPID.agcm_import_rst.{$wrt_inc[1]}_${inc_hh}z.bin agcm_import_rst
+                       set myiau = `echorc.x -template $EXPID $wrt_inc[1] $wrt_inc[2] iau_tendency_filename`
+                       if( -e $myiau ) then
+                          /bin/cp -f $myiau agcm_import_rst
                        else
                           set my_status = 4
                        endif
@@ -3477,7 +3586,7 @@ endif
 ####  TEST TEST TEST
 ##                      /bin/cp $FVHOME/recycle/fd515_1rt.ana_satbang_rst.20141203_21z.txt satbang
 ##                      /bin/cp $FVHOME/recycle/fd515_1rt.ana_satbias_rst.20141203_21z.txt satbias
-##                   endif
+                     endif
 
                      # PROBLEMS HERE: 1. the initial bkg is never corrected; all other bkg's are corrected
                      #                   via the forced integration of the GCM.
@@ -3649,8 +3758,8 @@ endif
            @ thishrs = $wrt_rst_nhms / 10000
            set wrt_rst_hr = `echo $thishrs |awk '{printf "%02d", $1}'` # two-digit hour this seg ends
 
-           set ana0_hr = `echo $gcm_nhms0 |cut -c1-2` # two-digit hour this seg ends
-           set ana0date     = ${gcm_nymd0}_${ana0_hr}
+           set ana0_hhmn = `echo $gcm_nhms0 |cut -c1-4` # two-digit hour this seg ends
+           set ana0date     = ${gcm_nymd0}_${ana0_hhmn}
            set wrt_ana      = ( $gcm_nymd0 $gcm_nhms0 )
            set wrt_fcs_now  = ( `tick $gcm_nymd0 $gcm_nhms0  $aoffset_sec` )
            set wrt_fcs_nymd = $wrt_fcs_now[1]
@@ -3766,7 +3875,7 @@ endif
            echo "s/>>>REGULAR_REPLAY_GMAO<<</#/1"  >> sed_file
            echo "s/>>>REGULAR_REPLAY<<</#/1"       >> sed_file
            echo "s/>>>ITER<<</$Viter_/1"           >> sed_file
-           echo "s/>>>ANA0YYYYMMDDHH<<</$ana0date/1" >> sed_file
+           echo "s/>>>ANA0YYYYMMDDHHMN<<</$ana0date/1" >> sed_file
 
            if ( -e AGCM_${Viter_}.rc.tmpl ) then
               sed -f sed_file  ./AGCM_${Viter_}.rc.tmpl > ./AGCM.rc
@@ -3900,7 +4009,11 @@ endif
 #        ------------------
          if ( $DOFREPACK ) then
              setenv  REPACK_PBS `$REPACK_PBS_CMD`
-             echo $REPACK_PBS >! ${FVHOME}/.REPACK_PBS.${PBS_JOBID}
+             if ( $BATCH_SUBCMD == "sbatch" ) then
+                echo $REPACK_PBS >! ${FVHOME}/.REPACK_PBS.${SLURM_JOBID}
+             else
+                echo $REPACK_PBS >! ${FVHOME}/.REPACK_PBS.${PBS_JOBID}
+             endif
          else
              setenv  REPACK_PBS 0
          endif
@@ -3925,7 +4038,11 @@ endif
                  "Central AGCM Failed "
     
                  if ( -e agcm_central.j ) then
-                    qsub -W block=true agcm_central.j
+                    if ( $BATCH_SUBCMD == "sbatch" ) then
+                       sbatch -W agcm_central.j
+                    else
+                       qsub -W block=true agcm_central.j
+                    endif
                  else
                     echo " ${MYNAME}: AGCM Failed to generate PBS jobs for Central, Aborting ... "
                     exit(1)
@@ -4086,6 +4203,9 @@ endif
      vED -i -vv do_you_want_to_skip_PSAS=no $ana_rc
   endif
 
+  if (! $?AERO_OBSDBRC) setenv AERO_OBSDBRC obsys-gaas.rc
+  @ numhrs = $nstep * 6
+  set rcflag = "-rc $AERO_OBSDBRC"
   set patmosxFLG = 0
   set aod_obclass = `obsclass_filter.pl $rcflag $AOD_OBSCLASS $bnymd $bnhms $numhrs`
   set aod_obs_list = (`echo $aod_obclass | sed "s/,/ /g"`)
@@ -4117,11 +4237,11 @@ endif
      endif
   end
 
-  if ($USE_MODIS_STAGE) then
-     setenv MODIS_L2_HDF 1
-     sed -i "s/#___AQUA_NRT___//"  $ana_rc
-     sed -i "s/#___TERRA_NRT___//" $ana_rc
-  endif
+#  if ($USE_MODIS_STAGE) then
+#     setenv MODIS_L2_HDF 1
+#     sed -i "s/#___AQUA_NRT___//"  $ana_rc
+#     sed -i "s/#___TERRA_NRT___//" $ana_rc
+#  endif
 
   echo "cat $ana_rc"
   cat $ana_rc
@@ -4166,21 +4286,33 @@ endif
      set pbsflg2 = "ncpus=$NCPUS_PER_NODE"
      set pbsflg3 = "mpiprocs=$NCPUS_PER_NODE"
      set line5 = "#PBS -l ${pbsflg1}:${pbsflg2}:$pbsflg3$nodeflg"
+     set line6 = "#"
   else
-     set line5 = "#PBS -l ncpus=$NCPUS_AOD"
+     set line5 = "#SBATCH --ntasks=$NCPUS_AOD"
+     set line6 = "#PBS -l ncpus=$NCPUS_AOD"
+
+  endif
+  set npn = `facter processorcount`
+  if ( $npn == 40 ) then
+     set mynodes = "sky"
+  else
+     set mynodes = "hasw"
   endif
 
   setenv GAASFAIL $AODWORK/ana_aod.FAILED.$$
   touch $GAASFAIL
 
   sed -e 5i"$line5" < $tmpl >! $jobf
+  sed -i 6i"$line6" $jobf
   sed -i "s|>>>PATMOSX<<<|${patmosxFLG}|" $jobf
   sed -i "s|>>>MODIS_L2_HDF<<<|${MODIS_L2_HDF}|" $jobf
 
+  sed -i "s|>>>MYNODES<<<|${mynodes}|" $jobf
   sed -i "s|>>>AODWORK<<<|${AODWORK}|" $jobf
   sed -i "s|>>>FVHOME<<<|${FVHOME}|" $jobf
   sed -i "s|>>>FVWORK<<<|${FVWORK}|" $jobf
   sed -i "s|>>>GAASFAIL<<<|${GAASFAIL}|" $jobf
+  sed -i "s|>>>MPIRUN_PSAS<<<|${MPIRUN_AOD}|" $jobf
   sed -i "s|>>>MPIRUN_AOD<<<|${MPIRUN_AOD}|" $jobf
   sed -i "s|>>>NCPUS_AOD<<<|${NCPUS_AOD}|" $jobf
   sed -i "s|>>>NYMD<<<|${aod_date}|" $jobf
@@ -4204,11 +4336,17 @@ endif
 
      # submit job and save job ID
      #---------------------------
-     if ( $AODBLOCKJOB ) then
-        set jobID = `$PBS_BIN/qsub -W block=true -V -o $gaasLOG $jobf`
+     if ( $BATCH_SUBCMD == "sbatch" ) then
+         set qblock = "-W"
      else
-        set jobID = `$PBS_BIN/qsub -V -o $gaasLOG $jobf`
+         set qblock = "-W block=true"
      endif
+     if ( $AODBLOCKJOB ) then
+        set jobIDline = (`$PBS_BIN/$BATCH_SUBCMD $qblock -o $gaasLOG $jobf`)
+     else
+        set jobIDline = (`$PBS_BIN/$BATCH_SUBCMD -o $gaasLOG $jobf`)
+     endif
+     set jobID = $jobIDline[$#jobIDline]
 
      if ($?aodJobIDs) then
         setenv aodJobIDs "${aodJobIDs}:$jobID"
@@ -4250,7 +4388,7 @@ endif
            while ( $id < $rstot )
                @ id++
                set rsType = $grs_list[$id]
-               if ( $rsType == agcm_import || $rsType == agcm_internal ) continue
+               if ( $rsType == agcm_import || $rsType == agcm_internal || $rsType == aiau_import ) continue
 
                set GCMrst    = ${rsType}_rst
                set GCMrst_TS = ${GCMrst}.${timestamp}z.$RSTSUFFIX
@@ -4313,7 +4451,7 @@ endif
         set fcst_beg = ( `rst_date d_rst` )
         set nymdt   = $fcst_beg[1]
         set nhmst   = $fcst_beg[2]
-        set hht     = `echo $nhmst | cut -c1-2`
+        set hhmnt   = `echo $nhmst | cut -c1-4`
         set nd_nh = ( `grep -i JOB_SGMT $mycap|awk '{printf "%d %d",$2, $3}'` )
         set nsecs = `(expr $nd_nh[1] \* 86400 \+ $nd_nh[2] \/ 10000 \* 3600)`
         set fcst_end = ( `tick $fcst_beg $nsecs` )
@@ -4369,8 +4507,8 @@ endif
             echo "s/>>>REGULAR_REPLAY_GMAO<<</#/1"  >> sed_file
             echo "s/>>>REGULAR_REPLAY<<</#/1"       >> sed_file
         endif
-        set time0date = ${nymdt}_${hht}
-        echo "s/>>>ANA0YYYYMMDDHH<<</$time0date/1" >> sed_file
+        set time0date = ${nymdt}_${hhmnt}
+        echo "s/>>>ANA0YYYYMMDDHHMN<<</$time0date/1" >> sed_file
 
 #  Pure model run, in DAS mode (no provisions for replay yet)
 #  ----------------------------------------------------------
@@ -4461,7 +4599,11 @@ endif
 # ------------------
    if ( $DOFREPACK ) then
          setenv  REPACK_PBS `$REPACK_PBS_CMD`
-         echo $REPACK_PBS >! ${FVHOME}/.REPACK_PBS.${PBS_JOBID}
+         if ( $BATCH_SUBCMD == "sbatch" ) then
+            echo $REPACK_PBS >! ${FVHOME}/.REPACK_PBS.${SLURM_JOBID}
+         else
+            echo $REPACK_PBS >! ${FVHOME}/.REPACK_PBS.${PBS_JOBID}
+         endif
    else
          setenv  REPACK_PBS 0
    endif
@@ -4570,6 +4712,12 @@ endif
         set acqlog = $FVHOME/run/acq_tcv.log.$acqdate.txt
         fname1 "#\!/bin/csh -xvf"
         fname2 "#$group_list"
+        fname2 "#SBATCH --job-name=acqblend"
+        fname2 "#SBATCH --output=acqblend.log.$acqdate.txt"
+        fname2 "#SBATCH --ntasks=1"
+        fname2 "#SBATCH --time=2:00:00"
+        fname2 "#SBATCH --partition=$data_queue"
+        fname2 "#SBATCH --account=$GID"
         fname2 "#PBS -N acqblend"
         fname2 "#PBS -o acqblend.log.$acqdate.txt"
         fname2 "#PBS -l nodes=1:ppn=1"
@@ -4584,7 +4732,11 @@ endif
         fname2 " acquire_obsys -v -d $FVWORK $strict $anadate[1] $anadate[2] 060000 1 $tcvitals_class"
         fname2 "exit"
 
-        qsub -W block=true -o $acqlog $fname
+        if ( $BATCH_SUBCMD == "sbatch" ) then
+           sbatch -W -o $acqlog $fname
+        else
+           qsub -W block=true -o $acqlog $fname
+        endif
 
      endif
      ls -lrt *vtx.prs* *vtx.mix*
@@ -4751,6 +4903,7 @@ endif
               set cbkgp3   = `echorc.x -template $EXPID $bkg_nymdl $bkg_nhmsl chem_bkg_filename`
               /bin/cp $cbkgp3 $chembkg_lst[$nbkg] &
 
+            endif
          endif # < asynbkg >
          wait
 
@@ -4958,9 +5111,9 @@ endif
           set ftraj = `echorc.x -template $EXPID $TrjEndEpoch[1] $TrjEndEpoch[2] upalcv_traj_filename`
           set mtraj = `echorc.x -template $EXPID $TrjEndEpoch[1] $TrjEndEpoch[2] upalcv_mtrj_filename`
           set pfile = `echorc.x -template $EXPID $TrjEndEpoch[1] $TrjEndEpoch[2] upper-air_prog_filename` 
-          set    hh = `echo $TrjEndEpoch[2] | cut -c1-2`
-          set xfile = `ls -1 $EXPID.prog.eta.????????_??z+${TrjEndEpoch[1]}_${hh}z.$NCSUFFIX`
-          if (! -e $xfile ) set xfile = `ls -1 $EXPID.prog.eta.${TrjEndEpoch[1]}_${hh}z.$NCSUFFIX`
+          set  hhmn = `echo $TrjEndEpoch[2] | cut -c1-4`
+          set xfile = `ls -1 $EXPID.prog.eta.????????_??z+${TrjEndEpoch[1]}_${hhmn}z.$NCSUFFIX`
+          if (! -e $xfile ) set xfile = `ls -1 $EXPID.prog.eta.${TrjEndEpoch[1]}_${hhmn}z.$NCSUFFIX`
           if ( -e $xfile ) then
               /bin/cp $xfile $pfile
           else
@@ -5500,16 +5653,18 @@ endif
   set nhms2 = ${buf[2]}
   @ hour2 = $nhms2 / 10000
   @ hour4 = $nhms2 / 100
-  if ( $hour2 < 10   ) set hour2 = 0$hour2
-  if ( $hour4 < 1000 ) set hour4 = 0$hour4
+  set hour2 = `echo $hour2 |awk '{printf "%02d", $1}'`
+  set hour4 = `echo $hour4 |awk '{printf "%04d", $1}'`
   set rtag  = ${nymd2}_${hour2}z
   set rtag4 = ${nymd2}_${hour4}z
 
-  set buf  = `rst_date d_rst -$aoffset_sec`
+  @ timeinc_sec = $TIMEINC * 60
+  set buf  = (`rst_date d_rst`)
+  set buf  = (`tick $buf -$timeinc_sec`) # back to start time of present cycle
   set nymd3 = ${buf[1]}
   set nhms3 = ${buf[2]}
   @ hour3 = $nhms3 / 10000
-  if ( $hour3 < 10 ) set hour3 = 0$hour3
+  set hour3 = `echo $hour3 |awk '{printf "%02d", $1}'`
   set rtag3  = ${nymd3}_${hour3}z
 
   if ( $FORECAST ) then
@@ -5519,7 +5674,7 @@ endif
         mkdir -p       $FVHOME/recycle/hold
         setenv RSTHOLD $FVHOME/recycle/hold
         foreach rs ( $grs_list )
-            if ( $rs == "agcm_import") continue
+            if ( $rs == "agcm_import" || $rs == "aiau_import" ) continue
             if ( -e ${rs}_rst ) /bin/mv -f ${rs}_rst  $EXPID.${rs}_rst.$rtag.$RSTSUFFIX 
             /bin/cp $EXPID.${rs}_rst.$rtag.$RSTSUFFIX $RSTHOLD/ &
             if ( $final_fcst )   /bin/cp $EXPID.${rs}_rst.$rtag.$RSTSUFFIX ${fcstage}/ &
@@ -5662,21 +5817,22 @@ endif
         /bin/mv -f sana.log    $EXPID.sana.log.$rtags.txt
         /bin/mv -f cqc.log     $EXPID.cqc.log.$rtags.txt
         /bin/mv -f prepqc.log  $EXPID.prepqc.log.$rtags.txt
-  endif
 
-  if ( ! $DO4DVAR ) then
-     if ( $GAAS_ANA ) then
-         @ n = 1
-         @ nbkg = $#gaasbkg_lst
-         while ( $n <= $nbkg )
-             if ( -e $gaasbkg_lst[$n] ) then
-                 /bin/cp $gaasbkg_lst[$n]           $gaasbkgrst_lst[$n] &
-                 /bin/cp $gaasbkg_lst[$n]  $RSTHOLD/$gaasbkgrst_lst[$n] &
-             endif
-             @ n++
-         end
-         wait
-     endif
+        if ( (! $DO4DVAR) ) then
+           if ( $GAAS_ANA ) then
+               @ n = 1
+               @ nbkg = $#gaasbkg_lst
+               while ( $n <= $nbkg )
+                   if ( -e $gaasbkg_lst[$n] ) then
+                       /bin/cp $gaasbkg_lst[$n]           $gaasbkgrst_lst[$n] &
+                       /bin/cp $gaasbkg_lst[$n]  $RSTHOLD/$gaasbkgrst_lst[$n] &
+                   endif
+                   @ n++
+               end
+               wait
+           endif
+        endif
+
   endif
 
   /bin/mv -f fvpsas.log  $EXPID.gcm.log.$rtags.txt
@@ -5705,11 +5861,28 @@ endif
        /bin/mv $EXPID.*rst*iter*.$RSTSUFFIX $FVHOME/recycle/hold
     endif
     cd $FVHOME/recycle/hold
-    tar cvf $FVWORK/$EXPID.rst.${rtag3}.tar $EXPID.* 
+    tar cvf $FVWORK/$EXPID.rst.${rtag}.tar $EXPID.* 
+    /bin/mv $FVWORK/$EXPID.xinc*$NCSUFFIX .
+    if ( ! $status ) then
+       tar cvf $FVWORK/$EXPID.incrst.${rtag3}.tar $EXPID.xinc*$NCSUFFIX
+       /bin/rm $EXPID.xinc*$NCSUFFIX
+    endif
     if ( $DO4DVAR ) then
        /bin/rm $EXPID.*rst*iter*.$RSTSUFFIX
     endif
     cd -
+    set lsttrajrst = `ls $EXPID.traj_lcv_rst.*$NCSUFFIX`
+    if ( ${%lsttrajrst}  ) then
+       tar cvf $FVWORK/$EXPID.trajrst.${rtag3}.tar $lsttrajrst
+       /bin/rm $lsttrajrst
+    endif
+    if ( $DO4DIAU ) then
+       set lstagcmrst = `ls $EXPID.agcm_import_rst.*$NCSUFFIX`
+       if ( ${%lstagcmrst}  ) then
+          tar cvf $FVWORK/$EXPID.agcmrst.${rtag3}.tar $lstagcmrst
+          /bin/rm $lstagcmrst
+       endif
+    endif
   endif
 
   exit 0

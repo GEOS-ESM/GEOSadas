@@ -1,3 +1,137 @@
+05Jan2021
+---------
+- Change to allow use of South Pole Raob (read_prepbufr)
+- Change to handle SatWind updates from EUMETSAT (read_obs.F90 and read_satwnd.f90)
+- Update gmao_global_satinfo.rc: new handle of CrIS-FSR (N20 and NPP), ocean only; only used data participate in cloud screaning
+- Trigger for decimal-like qc flag: gsi.rc.tmpl, gsi_sens.rc.tmpl, obs1gsi_mean.rc and obs1gsi_member.rc
+- Turn on CrIS-FSR Ozone-sensitive channels
+- Update RCOV files for CrIS-FSR (handling O3 sensitive channels), RC file: gmao_global_anavinfo_rcov
+- Revise CrIS-FSR info in gmao_global_tlapmean.rc 
+
+Note: changes in gsi.rc (and similar files) to trigger use of decimal QC flag
+      also affect handling of O3 sensitive channels in the AIRS and IASI
+      instruments (these were not being handled correctly before)
+
+14Oct2020
+---------
+- g5pert: take into consideration eps_eer when converting pert to energy and when calculating total 
+          energy - this has been wrong for a while (fixed for M2 obsimp)
+- add tarball in ensemble for saving cubed trajectory (background) files for JEDI
+- central DAS can store traj_lcv_rst files in own tar ball (for JEDI)
+- updates from GEOSadas-5_27_0_DryMass: zero diff to default (LLT)
+- add sigO to xvec slot of AOD output ODS files (required for DFS)
+- agcm_import files (IAU increment) now truly nc4 (little mistake before had changed filename sfx but not content)
+- add COSMIC-2; obsys-nccs includes period of concatenated GPSRO files before
+  NCEP had COSMIC-2 in the official stream
+- add back treatment of channel-correlated CrIS-FSR for both NPP and NOAA-20 (Wei)
+- adjustment to MHS QC for allsky (MJK)
+- revise automatic forecasts when forecast sensitivities are requested; now
+  creating 24 and 30 hour sensitivities automatically.
+- fully automated launching of FSOI jobs
+- when 4d, store IAU increments in agcmrst tarball
+
+- JEDI Support:
+  o knob to run JEDI analysis following GSI and optionally overwrite IAU
+    increments with those generated from JEDI analysis (i.e., cycle from JEDI analysis)
+
+16Aug2020
+---------
+- Back out CrIS-FSR NPP; revised CrIS-FSR revised channels; CrIS-FSR chn correlations
+
+21Jul2020
+---------
+- checked and unified all analysis-related ozone const converting from ppmv2gg
+  (including GSI constoz)
+- another opt in GSI to control its ozone berror (set to current choice) 
+- >>> Backout upgrade to background errors <<<
+
+26Jun2020
+---------
+- Further updates to Bkgecov software - now generate all BClim
+- Hermes updates to support latest bkgecov
+- update new Bclim 26Jun2020 (note: D resolution points to x0041rt)
+- Updates to bring CrIS FSR
+- Updates to allow alternative GPSRO bending angle profile integration
+- Ensemble now supports OSE-type capability - only 3dvar type for now; AOD ana to be done
+
+15Jun2020
+---------
+- update NCEP_bkgecov to: rt-NCEP_bkgecov-5_17_AllSky-4-FromPerts
+  this implementes considerable changes to the original code, in particular
+  i) Clim statistics can now be generated directly from NMC perturbations; and
+  (ii) a code that took over 7 hour to process a year of statistics now works 
+  in less than 25 min.
+
+- change of BKGECOV code is require HERMES update:rt-GMAO_hermes-5_26-addRH-4bkgecov
+  this allows appending RH differences and mean RH to files create by dyndiff;
+  these in turn serve to create NMC-like perturbations.
+
+10May2020
+--------
+Revised background error statistics:
+ o  Use of Bclim calculated on the basis of f522 fcsts;
+ o  Mildly revised Bclim weights to adjust to f522;
+ o  Use of f522 NMC-like perts for ensemble inflation;
+ o  Mildly revised inflation coeffs to adjust to f522.
+
+- Corrected mistake of not accounting for hydrometeors in dry mass constraint
+
+- GSI includes a number of changes in hybrid component, but all are 
+  zero-diff to previous version unless options are invoked by desire:
+    o anavinfo allows for scaling of ensemble spreads (beyong hybens_loc_info)
+    o ensemble covariance can be form from mean other thant ensemble mean 
+    o ensemble covariance can be updated along with outer minimization
+
+25Feb2020
+---------
+* allow for high-freq backgroud (up to 1mn)
+* add gsi-nc4 to ods converters (tag: meta_nc4diag_5_25_3)
+
+05Feb2020
+---------
+- GPS addition: br_meta_MetOpC_gps
+- Turn aircraft online bias correction on by defatul. 
+  OPS will need to adjust the following files (according to tag):
+    - main central DAS job script
+    - atm_ens.j
+    - AtmEnsConfig.csh
+- add O3 sensitive IR channels to analysis (Rcov updated accordingly)
+  Note: ensemble observer intentionally does not use these o3-sens IR channels
+- considerable reduction in count of some AMV due to changes in thinning (might need revision)
+
+22Jan2020
+---------
+- GSI merge w/ NCEP, tag: jg-gsi-rt-GEOSadas-5_26_TEMP1_p1
+- back to using 2-Loops for FSOI (adjoint GSI);
+  remember to remove USRMITER env flag from OPS script
+- enable MHS all-sky; base tag: "mkim-gsi-rt-GEOSadas-5_26_TEMP1_allskyMHSadded"
+                      also tag: "meta_MetOpC_AMSUA_MHS"
+- enable AMSR2: "jjin_mk_rt-GEOSadas-5_26_TEMP1_allskyMHS_amsr2"
+- enable Metop-C; tag: "meta_MetOpC_20190917"
+- fix for passive thinning, tag (read_prepbufr):meta-gsi-5_26_TEMP1_fix-passive-thinning
+
+22Nov2019
+---------
+- model Restarts are now nc4
+  NOTE: when starting w/ bin RST files all you need to do is change the
+  extension of the names from .bin to .nc4; from the second cycle on 
+  all ensemble GCM RST files will be nc4
+- more flexible setup
+- setup for C360 ensemble
+- dual resolution ensemble DA (for C360)
+- GSI updated w/ GSIrefactOO+3obOpers_2m1-8
+- dyn_recenter capable of interpolating vertically; including NMC perturbations
+
+09Jul2019
+---------
+The following cause non-zero diff in results:
+- Add 4d-thinning from J. Jing (see gmao_global_rad_time_thin.rc)
+  tag: jjin_GEOSadas-5_25_0_RadOz_thinning
+  and: jjin_GEOSadas-5_25_0_RadOz_thinning_p1
+- Add subclasses to kx=242,250,252 in convinfo.rc 
+- Avoidance of ATMS QC check in setuprad (in GMAO version vs NCEP) after gross check
+- Bug fix in handling of PS ensemble spread (related to staticB variable)
+
 11Dec2018
 ---------
 - Update from Ben Auer in support of split cap;

@@ -1,11 +1,13 @@
 #!/bin/csh -fx
 # ------------------------------
-#SBATCH --account=g0613
-#PBS -q compute
-#SBATCH --constraint=hasw
+#SBATCH --account=>>>GID<<<
+#SBATCH --constraint=>>>NODEFLG<<<
 #SBATCH --ntasks=96
 #SBATCH --ntasks-per-node=24
+#SBATCH --time=6:00:00
 #
+#SBATCH --job-name=atm_ens
+#SBATCH --output=atm_ens.log.o%j
 #PBS -N atm_ens
 #PBS -o atm_ens.log.o%j
 #PBS -l walltime=6:00:00
@@ -23,9 +25,14 @@
 
 # Source Run Time Environment settings
 # ------------------------------------
-  setenv EXPID   u000_c72   # experiment ID
-  setenv FVHOME  /discover/nobackup/$user/$EXPID  # experiment home directory
-  if (-e $FVHOME/run/FVDAS_Run_Config) source $FVHOME/run/FVDAS_Run_Config
+  setenv EXPID   >>>EXPID<<<   # experiment ID
+  setenv FVHOME  >>>FVHOME<<<  # experiment home directory
+  if (-e $FVHOME/run/FVDAS_Run_Config) then
+      source $FVHOME/run/FVDAS_Run_Config
+  else
+      echo "atm_ens.j: cannot find $FVHOME/run/FVDAS_Run_Config, aborting ..."
+      exit(1)
+  endif
 # tell which side of the machine we are on ...
   uname -a
 
@@ -38,9 +45,14 @@
 
 # Experiment environment
 # ----------------------
-# setenv JOBGEN_QOS advda
-  setenv JOBGEN_CONSTRAINT hasw
-  setenv GID g0613
+# setenv JOBGEN_PARTITION preops
+# setenv JOBGEN_QOS dastest
+  setenv JOBGEN_CONSTRAINT >>>NODEFLG<<<
+  setenv ATMENS_QNAME compute
+  if ( $?JOBGEN_PARTITION ) then
+     setenv ATMENS_QNAME $JOBGEN_PARTITION
+  endif
+  setenv GID >>>GID<<<
   setenv group_list "SBATCH -A $GID"
   setenv ARCH `uname -s`
   setenv HOST `uname -n`
@@ -52,9 +64,9 @@
       if( `uname -m` != "ia64" ) then
          setenv FORT90L -Wl,-T
       endif
-      setenv FVWORK /discover/nobackup/$user/enswork.$BIGNAME
+      setenv FVWORK $FVHOME/../enswork.$BIGNAME
       if ($?kidwork) then  # this case, overwrite FVWORK with user-specific
-         setenv FVWORK /discover/nobackup/$user/$kidwork
+         setenv FVWORK $FVHOME/../$kidwork
       endif
   endif
   /bin/mkdir -p $FVWORK            # create working directory
@@ -89,6 +101,12 @@
     set path = ( . $FVHOME/run $FVROOT/bin /share/dasilva/opengrads/Contents $path )
   endif
 
+# A bit sad that this needs to be here instead of set in the env
+# --------------------------------------------------------------
+  if ( -e /etc/os-release ) then
+    setenv PERL5LIB /usr/lib/perl5/5.18.2/CPAN
+  endif
+
 # MPI/OpenMP Hybrid Options
 # -------------------------
   if ( -e $FVHOME/run/atmens/mkiau.rc.tmpl ) then
@@ -99,28 +117,11 @@
   set ANAX    = `which GSIsa.x`
   set SACX    = `which sac.x`
 
-# The following are from OPS parallel
-# setenv I_MPI_FABRICS shm:dapl
-# setenv I_MPI_FABRICS_LIST "dapl,ofa"
-# setenv I_MPI_FALLBACK "enable"
-# setenv I_MPI_MPD_RSH sshmpi
-# setenv I_MPI_DAPL_CHECK_MAX_RDMA_SIZE 1
-#
-# setenv DAPL_UCM_CQ_SIZE 4096
-# setenv DAPL_UCM_QP_SIZE 4096
-# setenv I_MPI_DAPL_UD_SEND_BUFFER_NUM 4096
-# setenv I_MPI_DAPL_UD_RECV_BUFFER_NUM 4096
-# setenv I_MPI_DAPL_UD_ACK_SEND_POOL_SIZE 4096
-# setenv I_MPI_DAPL_UD_ACK_RECV_POOL_SIZE 4096
-# setenv I_MPI_DAPL_UD_RNDV_EP_NUM 2
-# setenv I_MPI_DAPL_UD_REQ_EVD_SIZE 2000
-# setenv DAPL_UCM_REP_TIME 2000
-# setenv DAPL_UCM_RTU_TIME 2000
-# setenv DAPL_UCM_RETRY 7
-# setenv DAPL_ACK_RETRY 7
-# setenv DAPL_ACK_TIMER 20
-# setenv DAPL_UCM_RETRY 10
-# setenv DAPL_ACK_RETRY 10
+  if ($?I_MPI_ROOT) then
+     setenv ATMENS_MPIRUN "mpirun "
+  else
+     setenv ATMENS_MPIRUN "mpiexec_mpt "
+  endif
 
 # For reproducibility between Westmere and Sandybridge nodes
 # ----------------------------------------------------------
@@ -140,7 +141,6 @@
   setenv SPECRES    62    # should be able to revisit analyzer to avoid needing this
 
   setenv GAAS_ANA 1
-  setenv ACFTBIAS 0
 
 # Run-time mpi-related options
 # ----------------------------
@@ -171,13 +171,25 @@
 # ----------------------------------------------
   source $FVHOME/run/atmens/AtmEnsConfig.csh
 
+  if ( !($?ATMENS_BATCHSUB) ) then
+     echo "atm_ens.j: missing batch sub command"
+     exit (1)
+  endif
+# The following release any settings by the central ADAS
+# related to overwritting the climatological error cov;
+# Berr-Clim plays no role in the ensemble, but unfortunately
+# GSI observer still refers to it; in some cases, the setting
+# of these variables will require more doing than needed.
   if ( $?BERROR_FROMENS ) then
      unsetenv BERROR_FROMENS
   endif
-  setenv HYBRIDGSI     $ATMENSLOC/atmens
+  if ( $?BERROR ) then
+     unsetenv BERROR
+  endif
+  setenv HYBRIDGSI     $ATMENSLOC
   setenv STAGE4HYBGSI  $HYBRIDGSI/central   # set to /dev/null to not recenter
   setenv  DO_ATM_ENS    1
-  touch $ATMENSLOC/atmens/.no_archiving
+  touch $ATMENSLOC/.no_archiving
   if ( $?eanaonly ) then
      if ( -e $FVHOME/run/${EXPID}_scheduler.j ) then
         setenv  DO_ATM_ENS    0
@@ -219,11 +231,27 @@
   unsetenv F_UFMTENDIAN
   setenv KMP_LIBRARY turnaround
 
+# Check for Variational Aircraft Bias Correction
+# ----------------------------------------------
+  if ( (! $PREPQC ) && $ACFTBIAS == 2 ) then
+     set check_acfb = `echo $OBSCLASS | grep ncep_acftpfl_bufr`
+     if ($status) then
+        echo "Required ncep_acftpfl_bufr missing from OBSCLASS"
+        echo "Cannot perform Variational Aircraft Bias Correction"
+        echo "Aborting ..."
+        exit 1
+     endif
+  endif
 # Get date/time from restarts
 # ---------------------------
-  set nymdb    = `echo $RSTSTAGE4AENS/$EXPID.rst.lcv.????????_??z.bin | cut -d. -f4 | cut -c1-8`
+  if ( $ENSONLY_BEG == $ENSONLY_END ) then
+     set nymdb  = `echo $RSTSTAGE4AENS/$EXPID.rst.lcv.????????_??z.bin | cut -d. -f4 | cut -c1-8`
+     set hhb    = `echo $RSTSTAGE4AENS/$EXPID.rst.lcv.????????_??z.bin | cut -d. -f4 | cut -c10-11`
+  else
+     set nymdb  = `echo $ENSONLY_BEG | cut -c1-8`
+     set hhb    = `echo $ENSONLY_BEG | cut -c9-10`
+  endif
   set ddb      = `echo $nymdb | cut -c7-8`
-  set hhb      = `echo $RSTSTAGE4AENS/$EXPID.rst.lcv.????????_??z.bin | cut -d. -f4 | cut -c10-11`
   set nhmsb    = ${hhb}0000
   set yyyymmddhh = ${nymdb}${hhb}
   @ anafreq_sc = $TIMEINC * 60
@@ -236,6 +264,9 @@
   else
      if ( $?SLURM_JOBID ) then
          qalter -N ${JOBGEN_PFXNAME}_atm_ens_${JOBGEN_SFXNAME} $SLURM_JOBID
+     else
+         echo "no JOBID found, abort"
+         exit(1)
      endif
   endif
 
@@ -267,10 +298,58 @@
             cd $FVHOME/fcst
             echo "launching forecast for: $FVHOME/fcst/forecast.$fcstdtag"
             touch forecast.$fcstdtag
-            qsub g5fcst.j
+            $ATMENS_BATCHSUB g5fcst.j
             cd -
         endif
      end
+  endif
+
+# Retrieve existing random perturbations (enables for reproducibility) 
+# --------------------------------------------------------------------
+  set lst = (`ls $ATMENSLOC/*rndperts.dates*txt` )
+  if ( ! $%lst ) then
+   if ( -e $ATMENSETC/given_rndperts.acq ) then
+     if ( ! -e $FVWORK/.DONE_MEM001_GETRNDPERTS.$yyyymmddhh) then
+      if(! -d $STAGE4HYBGSI ) mkdir -p $STAGE4HYBGSI
+      set spool = "-s $FVWORK/spool"
+      jobgen.pl \
+             -q datamove \
+             getrndperts         \
+             $GID                \
+             $OBSVR_WALLCLOCK    \
+             "acquire -v -strict -rc $ATMENSETC/given_rndperts.acq -d $STAGE4HYBGSI $spool -ssh $anymd $anhms 060000 1" \
+             $STAGE4HYBGSI       \
+             $myname             \
+             $FVWORK/.DONE_MEM001_GETRNDPERTS.$yyyymmddhh \
+             "Main job script Failed for Get Central Analysis"
+
+             if ( -e getrndperts.j ) then
+                if ( $ATMENS_BATCHSUB == "sbatch" ) then
+                   $ATMENS_BATCHSUB  -W getrndperts.j
+                else
+                   $ATMENS_BATCHSUB  -W block=true getrndperts.j
+                endif
+                touch .SUBMITTED
+             else
+                echo " $myname: Failed for Get Rnd-Perturbations, Aborting ... "
+                touch $FVWORK/.FAILED
+                exit(1)
+             endif
+     endif
+     set lst = (`ls $STAGE4HYBGSI/*rndperts.dates*txt` )
+     if ( $%lst ) then
+         if ( $#lst == 1 ) then 
+            /bin/mv $STAGE4HYBGSI/*rndperts.dates*txt $ATMENSLOC
+         else
+            ls $STAGE4HYBGSI/*rndperts.dates*txt
+            echo "Main: too many rndperts-dates files found, aborting."
+            exit(1)
+         endif
+     else
+         echo "Main: failed in retrieve rndperts-dates file, aborting."
+         exit(1)
+     endif
+   endif
   endif
 
 # In case additive inflation, prepare the perturbations
@@ -301,7 +380,11 @@
              "Main job script Failed for Get Central Analysis"
 
              if ( -e getcentral.j ) then
-                qsub  -W block=true getcentral.j
+                if ( $ATMENS_BATCHSUB == "sbatch" ) then
+                   $ATMENS_BATCHSUB  -W getcentral.j
+                else
+                   $ATMENS_BATCHSUB  -W block=true getcentral.j
+                endif
                 touch .SUBMITTED
              else
                 echo " $myname: Failed for Get Central Analysis, Aborting ... "
@@ -309,35 +392,6 @@
                 exit(1)
              endif
      endif
-  endif
-
-# Retrieve existing random perturbations (enables for reproducibility) 
-# --------------------------------------------------------------------
-  if ( -e $ATMENSETC/given_rndperts.rc ) then
-     if ( ! -e $FVWORK/.DONE_MEM001_GETRNDPERTS.$yyyymmddhh) then
-      if(! -d $STAGE4HYBGSI ) mkdir -p $STAGE4HYBGSI
-      set spool = "-s $FVWORK/spool"
-      jobgen.pl \
-             -q datamove \
-             getrndperts         \
-             $GID                \
-             $OBSVR_WALLCLOCK    \
-             "acquire -v -strict -rc $ATMENSETC/given_rndperts.rc  -d $STAGE4HYBGSI $spool -ssh $anymd $anhms 060000 1" \
-             $STAGE4HYBGSI       \
-             $myname             \
-             $FVWORK/.DONE_MEM001_GETRNDPERTS.$yyyymmddhh \
-             "Main job script Failed for Get Central Analysis"
-
-             if ( -e getrndperts.j ) then
-                qsub  -W block=true getrndperts.j
-                touch .SUBMITTED
-             else
-                echo " $myname: Failed for Get Rnd-Perturbations, Aborting ... "
-                touch $FVWORK/.FAILED
-                exit(1)
-             endif
-     endif
-     /bin/mv $STAGE4HYBGSI/*rndperts.dates*txt $ATMENSLOC/atmens
   endif
 
 
@@ -474,9 +528,9 @@
 # ---------------------------------
   if( $RUN_AENSFCST || $DO_ATM_ENS ) then
       # RT: I don't like this way of determining the dimension, but so be it for now
-      if ( -e $FVHOME/atmens/ensmean/$EXPID.bkg.eta.${nymdb}_${hhb}z.$NCSUFFIX ) then
+      if ( -e $FVHOME/atmens/ensmean/$EXPID.bkg.eta.${nymdb}_${hhb}00z.$NCSUFFIX ) then
          zeit_ci.x gcm_ens
-         set ens_mres  = `getgfiodim.x $FVHOME/atmens/ensmean/$EXPID.bkg.eta.${nymdb}_${hhb}z.$NCSUFFIX`
+         set ens_mres  = `getgfiodim.x $FVHOME/atmens/ensmean/$EXPID.bkg.eta.${nymdb}_${hhb}00z.$NCSUFFIX`
          set ens_nlons = $ens_mres[1]
          set ens_nlats = $ens_mres[2]
          @ tfcst_hh  = 2 * $TIMEINC / 60
@@ -487,7 +541,7 @@
          endif
          zeit_co.x gcm_ens
       else
-         echo "cannot find $ATMENSLOC/atmens/ensmean/$EXPID.bkg.eta.${nymdb}_${hhb}z.$NCSUFFIX "
+         echo "cannot find $ATMENSLOC/ensmean/$EXPID.bkg.eta.${nymdb}_${hhb}00z.$NCSUFFIX "
          echo "gcm_ensemble unable to run"
          exit(1)
       endif
@@ -510,8 +564,8 @@
 # Store updated ensemble for archiving and prepare for next cycle
 # ---------------------------------------------------------------
   if( $DO_ATM_ENS ) then
-    /bin/mv $ATMENSLOC/atmens    $ATMENSLOC/atmens4arch.${nymdb}_${hhb}
-    /bin/mv $FVWORK/updated_ens  $ATMENSLOC/atmens
+    /bin/mv $ATMENSLOC           $FVHOME/atmens4arch.${nymdb}_${hhb}
+    /bin/mv $FVWORK/updated_ens  $ATMENSLOC
   endif
  
 # Calculate statitics (mean and possibly rms) from updated ensemble
@@ -531,7 +585,9 @@
 # Summarize timings
 # -----------------
   zeit_pr.x
-  /bin/cp .zeit $ATMENSLOC/atmens4arch.${nymdb}_${hhb}/$EXPID.atmens_zeit.log.${nymdb}_${hhb}z.txt 
+  if ( $DO_ATM_ENS ) then
+     /bin/cp .zeit $FVHOME/atmens4arch.${nymdb}_${hhb}/$EXPID.atmens_zeit.log.${nymdb}_${hhb}z.txt 
+  endif
 
 # Submit job to run DAS
 # ---------------------
@@ -541,7 +597,8 @@
         if( -e ${EXPID}_scheduler.j ) then
            touch $FVHOME/.DONE_MEM001_atm_ens.${yyyymmddhh}
         else
-           qsub g5das.j
+           #$ATMENS_BATCHSUB >>>JOBNJ<<<
+           sbatch >>>JOBNJ<<<
         endif
      endif
 
@@ -566,7 +623,7 @@
       mkdrstdate.x $nextseg
       /bin/mv d_rst $EXPID.rst.lcv.${nymdb}_${hhb}z.bin
       cd $FVHOME/run
-      qsub atm_ens.j
+      $ATMENS_BATCHSUB atm_ens.j
 
   endif
 

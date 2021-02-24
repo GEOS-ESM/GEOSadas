@@ -82,7 +82,7 @@
   character(len=*), parameter:: myname_='readgriddata'
   character(len=120) :: filename
   character(len=3) charnanal
-  character(len=12) geosdate, geosdate0, fcstdate
+  character(len=14) geosdate, geosdate0, fcstdate
 
   real(r_single) kap,kapr,kap1
   real(r_kind) cptr,qweight,rdtrpr
@@ -111,9 +111,9 @@
 
 ! Tick clock to initial time of background/forecast
 ! -------------------------------------------------
-  read(datestring,'(i8,i2)') nymd0, nhms0
-  write(geosdate0,'(i8.8,a,i2.2,a)') nymd0, '_', nhms0/10000, 'z'
-  nhms0 = nhms0 * 10000
+  read(datestring,'(i8,i2)') nymd0, nhms0; nhms0 = 100 * nhms0 ! nhms0 has hhmn, w/ mn=00
+  write(geosdate0,'(i8.8,a,i4.4,a)') nymd0, '_', nhms0, 'z'
+  nhms0 = nhms0 * 100
   anymd = nymd0; anhms = nhms0 
   call tick (nymd0,nhms0,-6*3600)
 
@@ -149,28 +149,28 @@
      if(fso_have_ferr .or. fso_have_fsen) weighit=.false.
 !    fnymd(2)=nymd;fnhms(2)=nhms
 !    call tick (fnymd(2),fnhms(2),evalft*3600)
-     write(fcstdate,'(i8.8,a,i2.2,a)') fnymd(1), '_', fnhms(1)/10000, 'z'
-     write(geosdate,'(i8.8,a,i2.2,a)') fnymd(2), '_', fnhms(2)/10000, 'z'
+     write(fcstdate,'(i8.8,a,i4.4,a)') fnymd(1), '_', fnhms(1)/100, 'z'
+     write(geosdate,'(i8.8,a,i4.4,a)') fnymd(2), '_', fnhms(2)/100, 'z'
      if (nanal==0) then
         if (ft==0) then ! read initial non-inflated analysis 
            if(present(infilename)) then
               if (mode==1) then
                  if (fso_inc_test) then
-                    read(datestring,'(i8,i2)') nymd, nhms
-                    write(geosdate,'(i8.8,a,i2.2,a)') nymd, '_', nhms/10000, 'z'
+                    read(datestring,'(i8,i2)') nymd, nhms; nhms = 100*nhms
+                    write(geosdate,'(i8.8,a,i4.4,a)') nymd, '_', nhms, 'z'
                     filename = trim(adjustl(datapath))//"ensmean"//"/"//trim(expid)//".bkg.eta."//geosdate//".nc4"
                  else
                     nymd=fnymd(2);nhms=fnhms(2)
-                    write(geosdate,'(i8.8,a,i2.2,a)') nymd, '_', nhms/10000, 'z'
+                    write(geosdate,'(i8.8,a,i4.4,a)') nymd, '_', nhms/100, 'z'
                     filename = trim(adjustl(datapath))//"prog/fcsterr"//"/"//trim(expid)//"."//trim(vertype4fso)//".eta."//geosdate//".nc4"
                  endif
               endif
               if (mode==0) then
-                 write(geosdate,'(i8.8,a,i2.2,a)') nymd, '_', nhms/10000, 'z'
+                 write(geosdate,'(i8.8,a,i4.4,a)') nymd, '_', nhms/100, 'z'
                  filename = trim(adjustl(datapath))//"mem"//charnanal//"/"//trim(expid)//"."//trim(anatype4fso)//".eta."//geosdate//".nc4"
               endif
            else
-              write(geosdate,'(i8.8,a,i2.2,a)') nymd, '_', nhms/10000, 'z'
+              write(geosdate,'(i8.8,a,i4.4,a)') nymd, '_', nhms/100, 'z'
               filename = trim(adjustl(datapath))//"ensmean"//"/"//trim(expid)//"."//trim(anatype4fso)//".eta."//geosdate//".nc4"
            endif
         else            ! otherwise read forecast 
@@ -179,14 +179,14 @@
               scaleit=.false.
               nymd=fnymd(2); nhms=fnhms(2) ! hack for now - only works for 3d
            else if (fso_have_fsen) then
-              read(datestring,'(i8,i2)') nymd, nhms ! hack for now - only works for 3d
-              write(geosdate,'(i8.8,a,i2.2,a)') nymd, '_', nhms/10000, 'z'
+              read(datestring,'(i8,i2)') nymd, nhms; nhms = 100*nhms ! hack for now - only works for 3d
+              write(geosdate,'(i8.8,a,i4.4,a)') nymd, '_', nhms, 'z'
               filename = trim(adjustl(datapath))//"prog/fcsterr/fsens.eta."//geosdate//".nc4"
               scaleit=.false.
            else
               if (fso_inc_test) then
-                 read(datestring,'(i8,i2)') nymd, nhms
-                 write(geosdate,'(i8.8,a,i2.2,a)') nymd, '_', nhms/10000, 'z'
+                 read(datestring,'(i8,i2)') nymd, nhms; nhms = 100*nhms
+                 write(geosdate,'(i8.8,a,i4.4,a)') nymd, '_', nhms, 'z'
                  filename = trim(adjustl(datapath))//"ensmean"//"/"//trim(expid)//"."//trim(anatype4fso)//".eta."//geosdate//".nc4"
               else
                  filename = trim(adjustl(datapath))//"prog/fcsterr"//"/"//trim(expid)//".prog.eta."//fcstdate//"+"//geosdate//".nc4"
@@ -200,8 +200,8 @@
         endif
         write(charnanal,'(i3.3)') nanal ! ensemble member identifier
         if (fso_inc_test.or.fso_have_fsen) then
-            read(datestring,'(i8,i2)') nymd, nhms
-            write(geosdate,'(i8.8,a,i2.2,a)') nymd, '_', nhms/10000, 'z'
+            read(datestring,'(i8,i2)') nymd, nhms; nhms = 100*nhms
+            write(geosdate,'(i8.8,a,i4.4,a)') nymd, '_', nhms, 'z'
             filename = trim(adjustl(datapath))//"mem"//charnanal//"/"//trim(expid)//"."//trim(anatype4fso)//".eta."//geosdate//".nc4"
         else
            filename = trim(adjustl(datapath))//"prog/"//fcstdate//"/mem"//charnanal//"/"//trim(expid)//".prog.eta."//geosdate//".nc4"
@@ -209,7 +209,7 @@
         endif
      endif
   else
-     write(geosdate,'(i8.8,a,i2.2,a)') nymd, '_', nhms/10000, 'z'
+     write(geosdate,'(i8.8,a,i4.4,a)') nymd, '_', nhms/100, 'z'
      write(charnanal,'(i3.3)') nanal ! ensemble member identifier
      if(present(infilename)) then
         filename = trim(adjustl(datapath))//"mem"//charnanal//"/"//trim(expid)//"."//trim(anatype4fso)//".eta."//geosdate//".nc4"
@@ -362,7 +362,7 @@
   character(len=*), parameter:: myname_='writegriddata'
   type (dyn_vect) :: x_a
   character(len=3) charnanal
-  character(len=12) geosdate
+  character(len=14) geosdate
   character(len=120):: filename
   real(r_single) kap,kapr,kap1,clip
   integer nymd0,nhms0
@@ -391,7 +391,7 @@
   nymd=nymd0;nhms=nhms0
   call tick (nymd,nhms,nhr_anal(nb)*3600)
 
-  write(geosdate,'(i8.8,a,i2.2,a)') nymd, '_', nhms/10000, 'z'
+  write(geosdate,'(i8.8,a,i4.4,a)') nymd, '_', nhms/100, 'z'
   write(charnanal,'(i3.3)') nanal ! ensemble member identifier
   filename = trim(adjustl(datapath))//"mem"//charnanal//"/"//trim(expid)//".bkg.eta."//geosdate//".nc4"
 ! filename = trim(adjustl(datapath))//"sfg_"//datestring//"_fhr06_mem"//charnanal
@@ -510,7 +510,7 @@
   integer(i_kind) nlevsin
   integer(i_kind) i,j,k,iunitsig,iret
   integer(i_kind) nymd,nhms
-  character(len=12) geosdate
+  character(len=14) geosdate
 
 ! if(fso_have_ferr.or.fso_have_fsen) return
 
@@ -518,7 +518,7 @@
   allocate(grweight(npts))
   ! Read analysis data
   read(datestring,'(i8,i2)') nymd, nhms
-  write(geosdate,'(i8.8,a,i2.2,a)') nymd, '_', nhms/10000, 'z'
+  write(geosdate,'(i8.8,a,i4.4,a)') nymd, '_', nhms*100, 'z'
   filename = trim(adjustl(datapath))//"ensmean"//"/"//trim(expid)//"."//trim(anatype4fso)//".eta."//geosdate//".nc4"
   call dyn_get ( filename, nymd, nhms, x_m, iret, timidx=0, freq=freq, nstep=nstep, vectype=5 )
   if (iret /= 0) then

@@ -87,7 +87,9 @@ my %list = (rs5_core     => \@rs5_core,
                    ptrj_prs_rst );
 
 # these restarts are currently not in use
-@rs5_notused = qw ( carma_internal_rst
+@rs5_notused = qw ( aiau_import_rst
+                    aiau_import_checkout
+                    carma_internal_rst
                     geosachem_internal_rst
                     gmichem_internal_rst
                     gmichem_import_rst
@@ -245,6 +247,10 @@ sub ed_g5agcm_rc {
             $comment{"AGCM_BETA"}     = 1;
     #   }
     }
+
+    # comment aiau restart in both fcst and run
+    # -----------------------------------------
+    $comment{"AIAU_IMPORT"} = 1;
 
     # comment these lines unless CARMA tracers turned on
     #---------------------------------------------------
