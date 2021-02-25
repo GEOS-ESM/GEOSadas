@@ -4,13 +4,14 @@ setenv dry_run #echo
 setenv SIMULATE_ENSEMBLE 0
 setenv ATMENS_VERBOSE 1
 setenv DOANA 0
-setenv NEW  0
+setenv NEW  1  # when set to 1 will submit little job to queue; other do work on interactve queue
 
 setenv JOBGEN_QOS advda
+#setenv JOBGEN_PARTITION preops
 setenv JOBGEN_CONSTRAINT hasw
 
 # to run pegcm stats in parallel
-setenv PEGCM_NCPUS 28
+setenv PEGCM_NCPUS 4
 setenv PEGCM_WALLCLOCK 1:30:00
 setenv PEGCM_QNAME compute
 
@@ -22,11 +23,11 @@ setenv ATMENSETC $FVHOME/run/atmens
 setenv TIMEINC 360
 setenv ASYNBKG 180
 
+setenv ATMENS_BATCHSUB qsub
 setenv GID g0613
 setenv ENSPARALLEL 1
-setenv AENSTAT_NCPUS 28
+setenv AENSTAT_NCPUS 4
 setenv AENSTAT_WALLCLOCK 1:00:00
-setenv AENSTAT_MPIRUN "mpiexec_mpt -np $AENSTAT_NCPUS mp_stats.x"
 setenv AENSTAT_QNAME compute
 
 setenv MYNAME ut_atmens_stats.csh
@@ -35,6 +36,13 @@ if( $SIMULATE_ENSEMBLE ) setenv dry_run echo
 
 set path = ( . $FVROOT/bin $path )
 source $FVROOT/bin/g5_modules
+
+if ($?I_MPI_ROOT) then
+   setenv ATMENS_MPIRUN "mpirun "
+else
+   setenv ATMENS_MPIRUN "mpiexec_mpt "
+endif
+setenv AENSTAT_MPIRUN "$ATMENS_MPIRUN -np $AENSTAT_NCPUS mp_stats.x"
 
 set nmem = 32
 
@@ -67,7 +75,7 @@ else
      set this_hh   = `echo $this_nhms | cut -c1-2`
      set this_yyyymmddhh = ${this_nymd}${this_hh}
      if (! -e $ENSWORK/.DONE_redone_bkgstat_$MYNAME.$this_yyyymmddhh ) then
-       foreach ftype ( bkg.eta bkg.sfc abkg.eta gaas_bkg.sfc )
+       foreach ftype ( bkg.eta bkg.sfc cbkg.eta abkg.eta gaas_bkg.sfc )
           $dry_run atmens_stats.csh $nmem $ftype $ENSWORK/atmens $this_nymd $this_nhms
           if($status) then
              echo "Failed"

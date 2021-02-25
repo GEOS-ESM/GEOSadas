@@ -21,12 +21,22 @@ ecbuild_add_executable (
        GEOS_PertShared GEOSphysicsPert_GridComp GEOSradiationPert_GridComp GEOSgwdPert_GridComp
        GEOSmoistPert_GridComp GEOSturbulencePert_GridComp GEOSsurfacePert_GridComp GEOSchemPert_GridComp
        GEOSpchemPert_GridComp fvdycorepert Tapenade GEOSdynamicsPert_GridComp Chem_Base MAPL_Base
-       GMAO_pFIO NCEP_gfsio NCEP_nemsio NCEP_bacio_r4i4 NCEP_bufr_r8i4 NCEP_w3_r8i4 NCEP_sp_r8i4
+       NCEP_gfsio NCEP_nemsio NCEP_bacio_r4i4 NCEP_bufr_r8i4 NCEP_w3_r8i4 NCEP_sp_r8i4
        NCEP_sfcio MAPL_cfio_r4 GMAO_mpeu nc_diag_read nc_diag_write)
 
 ecbuild_add_executable (
   TARGET gsidiag_bin2txt.x
   SOURCES gsidiag_bin2txt.f90 gauss_lat_nmc.f
+  LIBS GEOSaana_GridComp NCEP_bufr_r8i4 NCEP_w3_r8i4)
+
+ecbuild_add_executable (
+  TARGET gsidiag_conv_bin2nc4.x
+  SOURCES gsidiag_conv_bin2nc4.f90 m_diag_conv.f90
+  LIBS GEOSaana_GridComp NCEP_bufr_r8i4 NCEP_w3_r8i4)
+
+ecbuild_add_executable (
+  TARGET gsidiag_rad_bin2nc4.x
+  SOURCES gsidiag_rad_bin2nc4.f90
   LIBS GEOSaana_GridComp NCEP_bufr_r8i4 NCEP_w3_r8i4)
 
 install(PROGRAMS fvssi  DESTINATION bin) 

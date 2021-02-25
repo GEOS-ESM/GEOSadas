@@ -9,13 +9,13 @@
 #                     substr call below on mpirun *always* does something so if using
 #                     MPT we must prevent this.
 #  30Mar2017 Todling  Hack to fix env that looks for missing lib under messed up NCCS batch system
+#  21Feb2020 Todling  Allow for high freq bkg (up to 1mn)
 #-----------------------------------------------------------------------------------------------------
 
 use Env;                 # make env vars readily available
 use File::Basename;      # for basename(), dirname()
 use File::Copy "cp";     # for cp()
 use Getopt::Long;        # load module with GetOptions function
-use Shell qw(cat rm);    # cat and rm commands
 use Time::Local;         # time functions
 use FindBin;             # so we can find where this script resides
 
@@ -97,6 +97,7 @@ sub init {
 
 # FVROOT is where the binaries have been installed
 # ------------------------------------------------
+   $fvhome  = $ENV{FVHOME};
    $fvroot  = $ENV{FVROOT};
    $fvwork  = $ENV{FVWORK}; if ( "$fvwork" eq "" ) { $fvwork = "./" };
    
@@ -158,6 +159,9 @@ sub gen {
 
  print  SCRIPT <<"EOF";
 #\!/bin/csh -xvf
+#SBATCH --job-name=$jobname
+#SBATCH --output=$jobname.log
+#SBATCH --time=$pbs_wallclk
 #PBS -N $jobname
 #PBS -o $jobname.log
 #PBS -l walltime=$pbs_wallclk
@@ -215,8 +219,8 @@ EOF
  if ( $opt_q ne "NULL" ) {
     if ( $opt_q eq "datamove" ) {
     print  SCRIPT <<"EOF";
-#SBATCH --constraint=hasw
 #PBS -q $opt_q
+#SBATCH --partition=datamove
 EOF
     }
  }
@@ -230,6 +234,12 @@ EOF
      qalter -N $newjobname \$SLURM_JOBID
    endif
  endif
+EOF
+ }
+
+ if ( $fvhome ) {
+ print  SCRIPT <<"EOF";
+ setenv FVHOME $fvhome
 EOF
  }
 

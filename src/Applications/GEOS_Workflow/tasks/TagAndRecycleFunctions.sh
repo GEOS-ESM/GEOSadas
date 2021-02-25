@@ -7,7 +7,7 @@ TagAndRecycleGcm_(){
 
     grs_list=$($FVROOT/bin/grs_list.pl -rc $FVWORK/AGCM.rc)
     for rs in $grs_list; do
-	    if [ "$rs" == "agcm_import" ]; then
+	    if [ "$rs" == "agcm_import" ] || [ "$rs" == "aiau_import" ] ; then
             continue
 	    fi
 	    if [ -e ${rs}_rst ]; then
@@ -31,8 +31,11 @@ TagAndRecycleAna_(){
     # FVWORK, ACFTBIAS, EXPID, rtag, rtags, RSTHOLD, ThisScriptDir
     # ana_nymde, ana_nhmse, VAROFFSET, TIMEINC, ASYNBKG, OBSWINDOW
 
-    # satbias/satbang/acftbias
+    # satbias/satbang/satbiaspc/acftbias
     local ars_list="satbias satbang"
+    if [ $NEWRADBC -ne 0 ] || [ $ANGLEBC -ne 0 ]; then
+        ars_list="$ars_list satbiaspc"
+    fi
     if [ $ACFTBIAS -ne 0 ]; then
     	ars_list="$ars_list acftbias"
     fi

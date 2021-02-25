@@ -53,4 +53,5 @@ ${PESTOROOT}%s/atmens/Y%y4/M%m2/%s.atmens_evtk.%y4%m2%d2_%h2z.tar
 ${PESTOROOT}%s/atmens/Y%y4/M%m2/%s.atmens_fstat.%y4%m2%d2_%h2z.tar
 ${PESTOROOT}%s/atmens/Y%y4/M%m2/%s.atmens_stat.%y4%m2%d2_%h2z.tar
 ${PESTOROOT}%s/atmens/Y%y4/M%m2/%s.atmens_olog.%y4%m2%d2_%c%c%c.tar
+${PESTOROOT}%s/atmens/Y%y4/M%m2/%s.atmens_etrj.%y4%m2%d2_%h2z.tar
 #

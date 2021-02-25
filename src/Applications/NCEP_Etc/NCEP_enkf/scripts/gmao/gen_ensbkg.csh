@@ -81,6 +81,7 @@ if ( $#argv < 4 ) then
 endif
 
 setenv FAILED 0
+if ( !($?ATMENS_BATCHSUB) ) setenv FAILED 1
 if ( !($?ATMENSETC) )  setenv FAILED   1
 if ( !($?ASYNBKG)   )  setenv FAILED   1
 if ( !($?FVHOME)    )  setenv FAILED   1
@@ -236,7 +237,7 @@ foreach bkgeta ( $bkgetalst )
                   "Failed to add NMC-like perturbation to the BKG"
 
             if ( -e recenter_mem${memtag}.j ) then
-               qsub recenter_mem${memtag}.j
+               $ATMENS_BATCHSUB recenter_mem${memtag}.j
             else
                echo " ${MYNAME}: Failed to generate PBS jobs for inflating BKGs, Aborting ... "
                touch $ensloc/.FAILED

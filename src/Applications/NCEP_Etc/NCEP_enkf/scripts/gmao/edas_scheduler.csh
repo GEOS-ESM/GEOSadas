@@ -87,6 +87,7 @@ if ( $FAILED ) then
    exit 1
 endif
 
+if ( !($?ATMENS_BATCHSUB) ) setenv FAILED 1
 if (! -e $FVHOME/run/$DDASJNAME ) setenv FAILED 1
 if (! -e $FVHOME/run/atm_ens.j  ) setenv FAILED 1
 if ( $FAILED ) then
@@ -127,7 +128,11 @@ cd $FVHOME/run
 # Launch one segment of deterministic (hybrid) central DAS
 # --------------------------------------------------------
 if (! -e $FVHOME/.DONE_MEM001_ddas.${yyyymmddhh} ) then
-  qsub -v kidwork=$ddas_work $DDASJNAME
+  if ( $ATMENS_BATCHSUB == "sbatch") then
+     $ATMENS_BATCHSUB --export=kidwork=$ddas_work $DDASJNAME
+  else
+     $ATMENS_BATCHSUB -v kidwork=$ddas_work $DDASJNAME
+  endif
 
 # wait until RSTs have been copied to proper location
 # ---------------------------------------------------
@@ -141,7 +146,11 @@ endif
 # Launch ensemble observer and ensemble analysis (EnKF, EnGSI, etc)
 # ----------------------------------------------
 if (! -e $FVHOME/.DONE_MEM001_atm_ens_eana.${yyyymmddhh} ) then
-  qsub -v kidwork=$aens_work,eanaonly=1 atm_ens.j
+  if ( $ATMENS_BATCHSUB == "sbatch") then
+     $ATMENS_BATCHSUB --export=kidwork=$aens_work,eanaonly=1 atm_ens.j
+  else
+     $ATMENS_BATCHSUB -v kidwork=$aens_work,eanaonly=1 atm_ens.j
+  endif
 endif
 
 # Syncronize: monitor completion of central and ensemble analyses
@@ -160,7 +169,11 @@ endif
 # When analysis is complete, launch ensemble of backgrounds
 # ---------------------------------------------------------
 if ( -e $FVHOME/.DONE_MEM001_atm_ens_eana.${yyyymmddhh} &&  -e $FVHOME/.DONE_MEM001_analyzer.${anymd}${ahh} ) then
-   qsub -v kidwork=$aens_work atm_ens.j
+  if ( $ATMENS_BATCHSUB == "sbatch") then
+     $ATMENS_BATCHSUB --export=kidwork=$aens_work atm_ens.j
+  else
+     $ATMENS_BATCHSUB -v kidwork=$aens_work atm_ens.j
+  endif
 #  ... and monitor its completion
 #  ------------------------------
    jobmonitor.csh 1 atm_ens $FVHOME $yyyymmddhh

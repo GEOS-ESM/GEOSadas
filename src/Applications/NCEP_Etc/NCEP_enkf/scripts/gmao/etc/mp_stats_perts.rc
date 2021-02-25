@@ -1,22 +1,18 @@
 # MAPL required variables
 # -----------------------
-RUN_DT: 1800   # this is arbitrary for mkiau.x (but required by MAPL)
+RUN_DT: 21600   # for now, must be set to 6-hrs
 MAPL_ENABLE_TIMERS: NO
 PRINTSPEC: 0  # (0: OFF, 1: IMPORT & EXPORT, 2: IMPORT, 3: EXPORT)
 
+MP_STATS_FAST_READ: YES
+MP_STATS_READ_BLOCKSIZE: 2
 
-# Model Resolution and Timestep Parameters
-# 4x4 is usually enough for any resolution
-# ----------------------------------------
-NX: 1
-NY: 1
+# Model Resolution and Distribution info
+# --------------------------------------
+NX: 2
+NY: 12
 
-#MP_STATS_IM: 1152
-#MP_STATS_JM: 721
-MP_STATS_IM: 288
-MP_STATS_JM: 181
+MP_STATS_IM: 1152
+MP_STATS_JM: 721
 MP_STATS_LM: 72
-
-VNORM: YES
-EPS_EER: 1.0
 

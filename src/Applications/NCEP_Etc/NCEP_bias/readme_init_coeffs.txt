@@ -95,5 +95,9 @@ gmao_global_tlapmean.rc file or the tlapmean sample count is nonzero
 and less than 100 the program will also update the tlapmean value
 based on the lapse-rate values read in from the input diag file.
 This can be repeated for multiple dates/times to generate a 
-tlapmean value for a new instrument.
+tlapmean value for a new instrument.  You would want to cycle the 
+satbias_out back in as the satbias_in for subsequent dates.
 
+init_coeffs.x -b satbias_in $expid yyyymmddhh
+mv satbias_out satbias_in
+...

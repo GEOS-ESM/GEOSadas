@@ -1,6 +1,7 @@
 module m_GsiGrided
 
    use type_kinds, only: fp_kind,double
+   use m_die, only: die
 
    implicit none
    private ! except
@@ -25,6 +26,8 @@ module m_GsiGrided
      real(fp_kind),allocatable,dimension(:,:,:) :: qs
      real(fp_kind),allocatable,dimension(:,:,:) :: cw
      real(fp_kind),allocatable,dimension(:,:,:) :: oz
+     real(fp_kind),allocatable,dimension(:,:,:) :: rh
+     real(fp_kind),allocatable,dimension(:,:,:) :: mrh
    end type GsiGrided
 
    interface GsiGrided_init ; module procedure    &
@@ -36,7 +39,7 @@ module m_GsiGrided
 
    character(len=*),parameter :: myname='m_GsiGrided'
    real(fp_kind),parameter :: kPa_per_Pa=.001
-   real(fp_kind),parameter :: GG_per_PPMV=1.657e-6
+   real(fp_kind),parameter :: PPMV2GG=1.6571e-6
    real(fp_kind),parameter :: CPD    = 1004.64
    real(fp_kind),parameter :: RGAS   = 287.04
    real(fp_kind),parameter :: KAPPA = RGAS/CPD
@@ -65,6 +68,8 @@ contains
      allocate(ob%qs  (nlat,nlon,nsig))
      allocate(ob%cw  (nlat,nlon,nsig))
      allocate(ob%oz  (nlat,nlon,nsig))
+     allocate(ob%rh  (nlat,nlon,nsig))
+     allocate(ob%mrh (nlat,nlon,nsig))
 
      ob%ak  = 0
      ob%bk  = 0
@@ -79,6 +84,8 @@ contains
      ob%qs  = 0
      ob%cw  = 0
      ob%oz  = 0
+     ob%rh  = 0
+     ob%mrh = 0
 
      vectype = 5
 
@@ -89,6 +96,7 @@ contains
    use variables, only : nlat, nlon, nsig, filename
    use variables, only : lgaus,rlats,pi
    use variables, only : nGlat, nGlon, glats
+   use variables, only : readperts
 
    use m_dyn,only : dyn_vect
    use m_dyn,only : dyn_get
@@ -123,10 +131,20 @@ contains
    real(double),allocatable,dimension(:,:,:)  :: var3du,var3dv
    type(dyn_vect) :: w_fv
    type(llInterp) :: obll,obl
+   character(len=3),pointer::xtrnames(:)
+   logical dointerp
    
 
+   if (readperts) then
+     allocate(xtrnames(2))
+     xtrnames = (/'rh ','mrh'/)
+     call dyn_get(filename(fid),nymd,nhms,w_fv, &
+                  ier,timidx=1,vectype=vectype,xtrnames=xtrnames)
+     deallocate(xtrnames)
+   else
      call dyn_get(filename(fid),nymd,nhms,w_fv, &
                   ier,timidx=1,vectype=vectype)
+   endif
 
 !  Atmospheric model dimensions
      nAlon = w_fv%grid%im
@@ -139,7 +157,8 @@ contains
        stop
      end if 
 
-     if( .not. lgaus ) then
+     dointerp = lgaus.or.(mod(nlat,2)==0)
+     if( .not. dointerp ) then
        nslat=(nAlat-1)/(nlat-1)
        nslon=nAlon/nlon
        if(  nslat ==0 .or. nslon==0   .or.   &
@@ -164,16 +183,9 @@ contains
        allocate ( plk(nAlev+1) )
        do j=1,nAlat
          do i=1,nAlon
-!wgutest
            do k= nAlev+1,1,-1
              pl(k) = ob%ak(k)+ob%bk(k)*w_fv%ps(i,j)
            end do
-!wgutest
-!          pl(nAlev+1) = w_fv%ps(i,j)
-!          do k= nAlev,1,-1
-!            pl(k) = pl(k+1)-w_fv%delp(i,j,k)
-!          end do
-!wgutest
            plk = pl ** kappa
            do k = 1, nAlev
              w_fv%pt(i,j,k) = w_fv%pt(i,j,k)    &
@@ -186,13 +198,13 @@ contains
        deallocate ( plk )
      endif
 
-     if( lgaus ) then
+     if( dointerp ) then
        call llInterp_init(obll,nAlon,nAlat,nlon,nlat)
      endif
 
 !  Surface Pressure
      allocate( var2d(nlon,nlat) )
-     if(lgaus)then
+     if(dointerp)then
        call llInterp_atog(obll,w_fv%ps,var2d)
      else
        do j=1,nAlat,nslat
@@ -216,7 +228,7 @@ contains
        deallocate ( var3du, var3dv )
      endif
 
-     if(lgaus)then
+     if(dointerp)then
        allocate( var3su(nlat,nlon,nsig) )
        allocate( var3sv(nlat,nlon,nsig) )
        allocate( var3du(nlon,nlat,nsig) ) 
@@ -244,7 +256,7 @@ contains
 !  Virtual Temperature
    
      allocate( var3du(nlon, nlat, nsig) ) 
-     if(lgaus) then
+     if(dointerp) then
        call llInterp_atog(obll,w_fv%pt,var3du, vector=.false.)
      else
        do j=1,nAlat,nslat
@@ -258,7 +270,7 @@ contains
      call swapij3d_(var3du, ob%vt, nlat, nlon, nsig)
 
 !  Specific Humidity
-     if(lgaus) then
+     if(dointerp) then
        call llInterp_atog(obll,w_fv%q(:,:,:,1),var3du, &
                       vector=.false.,norder=1)
      else
@@ -273,7 +285,7 @@ contains
      call swapij3d_(var3du, ob%q, nlat, nlon, nsig)
 
 !  Ozone
-     if(lgaus) then
+     if(dointerp) then
        call llInterp_atog(obll,w_fv%q(:,:,:,2),var3du, &
                       vector=.false.,norder=1)
      else
@@ -288,7 +300,7 @@ contains
      call swapij3d_(var3du, ob%oz, nlat, nlon, nsig)
 
 ! qi,ql,qr,qs
-     if(lgaus) then
+     if(dointerp) then
        call llInterp_atog(obll,w_fv%q(:,:,:,3),var3du, &
                       vector=.false.,norder=1)
      else
@@ -302,7 +314,7 @@ contains
      endif 
      call swapij3d_(var3du, ob%qi, nlat, nlon, nsig)
 
-     if(lgaus) then
+     if(dointerp) then
        call llInterp_atog(obll,w_fv%q(:,:,:,4),var3du, &
                       vector=.false.,norder=1)
      else
@@ -316,7 +328,7 @@ contains
      endif 
      call swapij3d_(var3du, ob%ql, nlat, nlon, nsig)
 
-     if(lgaus) then
+     if(dointerp) then
        call llInterp_atog(obll,w_fv%q(:,:,:,5),var3du, &
                       vector=.false.,norder=1)
      else
@@ -330,7 +342,7 @@ contains
      endif 
      call swapij3d_(var3du, ob%qr, nlat, nlon, nsig)
 
-     if(lgaus) then
+     if(dointerp) then
        call llInterp_atog(obll,w_fv%q(:,:,:,6),var3du, &
                       vector=.false.,norder=1)
      else
@@ -344,19 +356,51 @@ contains
      endif 
      call swapij3d_(var3du, ob%qs, nlat, nlon, nsig)
 
+     if (readperts) then
+! rh diff
+        if(dointerp) then
+          call llInterp_atog(obll,w_fv%q(:,:,:,7),var3du, &
+                         vector=.false.,norder=1)
+        else
+          do j=1,nAlat,nslat
+           do i=1,nAlon,nslon
+             j1=1+(j-1)/nslat
+             i1=1+(i-1)/nslon 
+             var3du(i1,j1,1:nAlev)=w_fv%q(i,j,1:nAlev,7)
+           enddo
+          enddo
+        endif 
+        call swapij3d_(var3du, ob%rh, nlat, nlon, nsig)
+
+! mean rh
+        if(dointerp) then
+          call llInterp_atog(obll,w_fv%q(:,:,:,8),var3du, &
+                         vector=.false.,norder=1)
+        else
+          do j=1,nAlat,nslat
+           do i=1,nAlon,nslon
+             j1=1+(j-1)/nslat
+             i1=1+(i-1)/nslon 
+             var3du(i1,j1,1:nAlev)=w_fv%q(i,j,1:nAlev,8)
+           enddo
+          enddo
+        endif 
+        call swapij3d_(var3du, ob%mrh, nlat, nlon, nsig)
+     endif
+
 !  Cloud Liquid Water
 
      ob%cw = 0
 
 
-     if(lgaus)call llInterp_clean(obll)
+     if(dointerp)call llInterp_clean(obll)
      call dyn_clean(w_fv) 
      deallocate ( var3du )
 
 !  Changing Units 
      ob%ps = ob%ps * kPa_per_Pa
      ob%ak = ob%ak * kPa_per_Pa
-     ob%oz = ob%oz * GG_per_PPMV
+     ob%oz = ob%oz * PPMV2GG
  
 !  Vertical Swap 
      allocate ( var1s(nsig+1) )
@@ -388,6 +432,15 @@ contains
      ob%cw = var3su
      var3su(:,:,1:nsig) = ob%oz (:, :, nsig:1:-1)
      ob%oz = var3su
+     if (readperts) then
+        var3su(:,:,1:nsig) = ob%rh (:, :, nsig:1:-1)
+        ob%rh= var3su
+        var3su(:,:,1:nsig) = ob%mrh(:, :, nsig:1:-1)
+        ob%mrh= var3su
+     else
+        ob%rh= 0.0
+        ob%mrh= 0.0
+     endif
 
      deallocate ( var3su )
 
@@ -398,21 +451,23 @@ contains
      implicit none
      type(GsiGrided),intent(inout) :: ob
   
-     deallocate(ob%ak  )
-     deallocate(ob%bk  )
+     deallocate(ob%mrh )
+     deallocate(ob%rh  )
+     deallocate(ob%oz  )
+     deallocate(ob%cw  )
+     deallocate(ob%qs  )
+     deallocate(ob%qr  )
+     deallocate(ob%ql  )
+     deallocate(ob%qi  )
+     deallocate(ob%q   )
+     deallocate(ob%vt  )
+     deallocate(ob%sf  )
+     deallocate(ob%vp  )
 
      deallocate(ob%ps  )
-              
-     deallocate(ob%vp  )
-     deallocate(ob%sf  )
-     deallocate(ob%vt  )
-     deallocate(ob%q   )
-     deallocate(ob%qi  )
-     deallocate(ob%ql  )
-     deallocate(ob%qr  )
-     deallocate(ob%qs  )
-     deallocate(ob%cw  )
-     deallocate(ob%oz  )
+
+     deallocate(ob%bk  )
+     deallocate(ob%ak  )
 
    end subroutine clean_
 

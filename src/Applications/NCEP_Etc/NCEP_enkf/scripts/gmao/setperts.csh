@@ -13,6 +13,9 @@
 #   09Mar2013 Todling      - Rename inflating perturbation files
 #   20Jun2016 Todling      - Differentiate egress when using dyndiff
 #                            since all run in same directory
+#  31Mar2020  Todling   Jobmonitor to protect against faulty batch-block
+#  04Jun2020  Todling   revise parallelization strategy for dyndiff
+#  08Jun2020  Todling   revise use of mp_stats in present context
 #------------------------------------------------------------------
 
 if ( !($?ATMENS_VERBOSE) ) then
@@ -55,7 +58,6 @@ if ( $#argv < 6 ) then
    echo " REQUIRED ENVIRONMENT VARIABLES"
    echo "  "
    echo "   ATMENSETC - location of ensemble resource files"
-   echo "   ASYNBKG   - frequency of backgrounds (minutes)"
    echo "   FVHOME    - location of experiment            "
    echo "   FVROOT    - location of DAS build             "
    echo "   FVWORK    - work directory"
@@ -81,12 +83,13 @@ endif
 setenv FAILED 0
 
 if ( !($?AENS_PERTS_DSTJOB) ) setenv AENS_PERTS_DSTJOB 0
+if ( !($?ATMENS_BATCHSUB) ) setenv FAILED 1
 if ( !($?ATMENSETC)     ) setenv FAILED 1
-if ( !($?ASYNBKG)       ) setenv FAILED 1
 if ( !($?ENSPARALLEL)   ) setenv ENSPARALLEL 0
 if ( !($?FVHOME)        ) setenv FAILED 1
 if ( !($?FVROOT)        ) setenv FAILED 1
 if ( !($?FVWORK)        ) setenv FAILED 1
+if ( !($?PERTS_WALLCLOCK) ) setenv FAILED 1
 if ( !($?NCSUFFIX)      ) setenv NCSUFFIX nc4
 
 if ( $FAILED ) then
@@ -121,6 +124,11 @@ if ( $ENSPARALLEL ) then
    endif
 endif
 
+set dyndiffx = `which dyndiff.x`
+if ( $AENS_PERTS_DSTJOB != 0 ) then
+  set dyndiffx = "serial_run $dyndiffx"
+endif
+
 if ( -e $ENSWORK/.DONE_MEM001_${MYNAME}.$yyyymmddhh ) then
    echo "${MYNAME}: all done"
    exit(0)
@@ -137,7 +145,6 @@ set freq_hms = ${freq_hrs}0000
 # -------------------------------------------
 if ( ! -e $ENSWORK/.DONE_MEM001_ACQUIRE_ENSPERTS.$yyyymmddhh ) then 
     jobgen.pl \
-       -q datamove         \
        acqperts            \
        $GID                \
        $PERTS_WALLCLOCK    \
@@ -148,11 +155,24 @@ if ( ! -e $ENSWORK/.DONE_MEM001_ACQUIRE_ENSPERTS.$yyyymmddhh ) then
        "Acquire Perturbations Failed"
 
        if ( -e acqperts.j ) then
-          qsub -W block=true acqperts.j
+          if ( $ATMENS_BATCHSUB == "sbatch" ) then
+             $ATMENS_BATCHSUB -W acqperts.j
+          else
+             $ATMENS_BATCHSUB -W block=true acqperts.j
+          endif
        else
           echo " ${MYNAME}: Acquire Perturbations Failed, Aborting ... "
           exit(1)
        endif
+
+       # Monitor job in case block fails
+       # -------------------------------
+       jobmonitor.csh 1 ACQUIRE_ENSPERTS $ENSWORK $yyyymmddhh
+       if ($status) then
+           echo "${MYNAME}: cannot complete due to failed jobmonitor, aborting"
+           exit(1)
+       endif
+
 else 
    echo " ${MYNAME}: ACQUIRE_ENSPERTS already done."
 endif 
@@ -168,12 +188,22 @@ cd tmperts
 # ---------------------------------------------------
 if ( -e $ATMENSETC/mp_stats_perts.rc ) then
 
+   if (!($?PERTS_ENSTAT_MPIRUN)) then
+      echo "${MYNAME}: error, need PERTS_ENSTAT_MPIRUN env to run mp_stats, aborting"
+      exit(1)
+   endif
+   if (!($?PERTS_NCPUS)) then
+      echo "${MYNAME}: error, need PERTS_NCPUS env to run mp_stats, aborting"
+      exit(1)
+   endif
+
    if (! -e .MP_STATS_EGRESS_perts_${yyyymmddhh} ) then
 
       foreach fn ( `ls ../$expid.nmcpert.eta.${nymd}_${hh}z.*.$NCSUFFIX` )
          /bin/mv $fn .
       end
-      $dry_run mp_stats.x -tmpl ../${expid}.nmcpert.eta.%y4%m2%d2_%h2z -alpha -1.0 \
+
+      $dry_run $PERTS_ENSTAT_MPIRUN -tmpl ../${expid}.nmcpert.eta.%y4%m2%d2_%h2z -alpha -1.0 \
                           -rc $ATMENSETC/mp_stats_perts.rc \
                           -date $nymd ${hh}0000 -egress .MP_STATS_EGRESS_perts_${yyyymmddhh} \
                           $expid.nmcpert.eta.${nymd}_${hh}z.*.$NCSUFFIX
@@ -189,6 +219,7 @@ else
   # Calculate perturbations mean
   # ----------------------------
   if ( ! -e $ENSWORK/.DONE_PERTMEAN.$yyyymmddhh ) then
+
      foreach fn ( `ls ../$expid.nmcpert.eta.${nymd}_${hh}z.*.$NCSUFFIX` )
         /bin/mv $fn .
      end
@@ -215,10 +246,21 @@ else
      exit(1)
   endif
 
+#  If so, check on what is left to do in terms of removing mean
+#  ------------------------------------------------------------
+   if ( $ENSPARALLEL ) then
+      set nfiles = `/bin/ls .DONE_MEM*_PERTDIFF.$yyyymmddhh | grep -v ENSMEAN | wc -l`
+      echo "${MYNAME}: number of already available files  ${nfiles}"
+      @ ntodo = $nmem - $nfiles
+   endif
+
+
   # Still inside tmperts, remove mean from perturbations
   # but now place resulting mean-free member under $ploc
   # ----------------------------------------------------
   /bin/rm $ENSWORK/perts_poe.*
+  /bin/rm $ENSWORK/perts_machfile*
+  @ fpoe = 0
   @ ipoe = 0
   @ npoe = 0
   @ ic = 1
@@ -232,6 +274,8 @@ else
 
         if ( $ENSPARALLEL ) then
 
+             @ fpoe++
+
              if ( $AENS_PERTS_DSTJOB != 0 ) then # case of multiple jobs within few larger ones
                 # collect multiple pertdiff calls into jumbo file
                 if ( $ipoe < $AENS_PERTS_DSTJOB ) then # nmem better devide by AENS_PERTS_DSTJOB
@@ -240,6 +284,9 @@ else
                    echo $this_script_name >> $ENSWORK/perts_poe.$npoe
                    chmod +x $ENSWORK/perts_poe.$npoe
                 endif
+                set machfile = "-machfile $ENSWORK/perts_machfile$npoe.$ipoe"
+             else
+                set machfile = ""
              endif
 
              jobgen.pl \
@@ -248,7 +295,7 @@ else
                  pertdiff_${memtag}     \
                  $GID                   \
                  $PERTS_WALLCLOCK       \
-                 "$dry_run dyndiff.x -g5 $pertmem $pertmean -o ../$pertmem -egress DYNDIFF_EGRESS_${memtag}" \
+                 "$dry_run $dyndiffx -g5 $pertmem $pertmean -o ../$pertmem -egress DYNDIFF_EGRESS_${memtag}" \
                  $ENSWORK/$ploc/tmperts \
                  $MYNAME                \
                  $ENSWORK/.DONE_MEM${memtag}_PERTDIFF.$yyyymmddhh \
@@ -263,22 +310,23 @@ else
                    exit(1)
                 endif
 
-                if ( $ipoe == $AENS_PERTS_DSTJOB ) then
-                   @ myncpus = $AENS_PERTS_DSTJOB * $PERTS_NCPUS
+                if ( ($ipoe == $AENS_PERTS_DSTJOB) || (($fpoe == $ntodo ) && ($ipoe < $AENS_PERTS_DSTJOB) ) ) then
+                   @ myncpus = $ipoe
                    setenv JOBGEN_NCPUS $myncpus
+                   setenv PERTS_NCPUS 1  # dyndiff is a serial program
                    jobgen.pl \
                         -q $PERTS_QNAME     \
                         perts_dst${npoe}    \
                         $GID                \
                         $PERTS_WALLCLOCK    \
-                        "/usr/local/other/pods/pods.sh $ENSWORK/perts_poe.$npoe $PERTS_NCPUS" \
+                        "job_distributor.csh -machfile $ENSWORK/perts_machfile$npoe -usrcmd $ENSWORK/perts_poe.$npoe -usrntask $PERTS_NCPUS -njobs $ipoe " \
                         $ENSWORK            \
                         $MYNAME             \
                         $ENSWORK/.DONE_POE${npoe}_${MYNAME}.$yyyymmddhh \
                         "PERTS Failed for Member ${npoe}"
                    /bin/mv perts_dst${npoe}.j $ENSWORK/
                    # this job is really not monitored; the real work done by pertdiff_mem${memtag}.j is monitored
-                   qsub $ENSWORK/perts_dst${npoe}.j
+                   $ATMENS_BATCHSUB $ENSWORK/perts_dst${npoe}.j
                    touch .SUBMITTED
                    @ ipoe = 0 # reset counter
                    @ npoe++
@@ -287,7 +335,7 @@ else
              else
 
                 if ( -e pertdiff_${memtag}.j ) then
-                   qsub pertdiff_${memtag}.j
+                   $ATMENS_BATCHSUB pertdiff_${memtag}.j
                    touch .SUBMITTED
                 else
                    echo " ${MYNAME}: Failed to remove mean from perturbation, Aborting ... "
@@ -301,7 +349,7 @@ else
        else # sequential calculations
 
           cd $ENSWORK/$ploc/tmperts
-          $dry_run dyndiff.x -g5 $pertmem $pertmean -o ../$pertmem
+          $dry_run $dyndiffx -g5 $pertmem $pertmean -o ../$pertmem
           if ( $status ) then
                echo " ${MYNAME}: Failed to remove mean from perturbation, Aborting ... "
                exit(1)

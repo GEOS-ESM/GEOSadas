@@ -5,11 +5,12 @@
 #
 # !REVISION HISTORY:
 #
-#  10Dec015  Todling   Initial script
-#  22Dec016  Todling   Allows for creating Berror at resolution other
-#                      then ensemble actual resolution.
-#  02Apr018  Todling   Allow for vertical interpolation
-#  26May018  Todling   Unwired namelist from script
+#  10Dec2015  Todling   Initial script
+#  22Dec2016  Todling   Allows for creating Berror at resolution other
+#                       then ensemble actual resolution.
+#  02Apr2018  Todling   Allow for vertical interpolation
+#  26May2018  Todling   Unwired namelist from script
+#  21Feb2020  Todling   Allow for high freq bkg (up to 1mn)
 #
 # !TO DO:
 #   1. remove interp of ens mean; replace w/ re-calculation of mean
@@ -66,6 +67,7 @@ if ( $#argv < 5 ) then
    echo " OPTIONAL ENVIRONMENT VARIABLES"
    echo " "
    echo "    BERROR_FROMENS - when specified, replaces berror_stats file with that produced here"
+   echo "    BERROR_NMODES  - specify number of modes to use in balance calculation (def.: 10)"
    echo " "
    echo " REMARKS"
    echo " "
@@ -87,6 +89,7 @@ if ( !($?FVROOT)         ) setenv FAILED 1
 if ( !($?MPIRUN_CALCSTATS) ) setenv FAILED 1
 
 if ( !($?BERROR_FROMENS) )  setenv BERROR_FROMENS 0
+if ( !($?BERROR_NMODES)  )  setenv BERROR_NMODES  10
 if ( !($?NCSUFFIX) )        setenv NCSUFFIX nc4
 
 if ( $FAILED ) then
@@ -99,6 +102,7 @@ set expid = $1
 set nymd  = $2
 set nhms  = $3
 set hh    = `echo $nhms | cut -c1-2`
+set hhmn  = `echo $nhms | cut -c1-4`
 set yyyymmddhh = ${nymd}${hh}
 set idir  = $4
 set odir  = $5
@@ -136,8 +140,8 @@ cd    $WORKDIR/samples
 if ( $FROMENS ) then
 
    # figure out background dimensions
-   if ( -e $ENSWORK/ensmean/$expid.bkg.eta.${nymd}_${hh}z.$NCSUFFIX ) then
-      set mean_eta_file = $ENSWORK/ensmean/$expid.bkg.eta.${nymd}_${hh}z.$NCSUFFIX
+   if ( -e $ENSWORK/ensmean/$expid.bkg.eta.${nymd}_${hhmn}z.$NCSUFFIX ) then
+      set mean_eta_file = $ENSWORK/ensmean/$expid.bkg.eta.${nymd}_${hhmn}z.$NCSUFFIX
       set ens_mres  = `getgfiodim.x $mean_eta_file`
       set ens_nlons = $ens_mres[1]
       set ens_nlats = $ens_mres[2]
@@ -145,8 +149,6 @@ if ( $FROMENS ) then
 
       setenv NLEV   $ens_nlevs
       setenv NSIG   $ens_nlevs
-      setenv NLATFV $ens_nlats
-      setenv NLONFV $ens_nlons
       setenv NLAT   $ens_nlats
       setenv NLON   $ens_nlons
 
@@ -174,27 +176,27 @@ if ( $FROMENS ) then
 
              setenv NLEV   $want_lev
              setenv NSIG   $want_lev
-             setenv NLATFV $want_lat
-             setenv NLONFV $want_lon
              setenv NLAT   $want_lat
              setenv NLON   $want_lon
          endif
       endif
 
-   #  @ JCAP = $ens_nlats - 4
-   #  The following is somewhat of a hack ...
+   #  The following is set consistent w/ the climatological error cov
       setenv JCAP -1
       if ( $NLAT == 721 ) then
          setenv JCAP 512
       endif
       if ( $NLAT == 361 ) then
-         setenv JCAP 254
+         setenv JCAP 382
       endif
       if ( $NLAT == 181 ) then
-         setenv JCAP 126
+         setenv JCAP 142
       endif
-      if ( $NLAT <=  91 ) then
-         setenv JCAP 62
+      if ( $NLAT ==  91 ) then
+         setenv JCAP 84
+      endif
+      if ( $NLAT ==  46 ) then
+         setenv JCAP 42
       endif
       if ( $JCAP < 0 ) then
          echo " ${MYNAME}: cannot define JCAP, aborting ..."
@@ -202,18 +204,18 @@ if ( $FROMENS ) then
       endif
 
    else
-      echo " ${MYNAME}: cannot file ens-mean file $expid.bkg.eta.${nymd}_${hh}z.$NCSUFFIX, aborting ..."
+      echo " ${MYNAME}: cannot file ens-mean file $expid.bkg.eta.${nymd}_${hhmn}z.$NCSUFFIX, aborting ..."
       exit 2
    endif
 
    # bring in ensmean and take care of interpolation if needed
-   ln -sf $ENSWORK/ensmean/$expid.bkg.eta.${nymd}_${hh}z.$NCSUFFIX  $expid.bkg.eta.${nymd}_${hh}z.ensmean.$NCSUFFIX
+   ln -sf $ENSWORK/ensmean/$expid.bkg.eta.${nymd}_${hhmn}z.$NCSUFFIX  $expid.bkg.eta.${nymd}_${hhmn}z.ensmean.$NCSUFFIX
    if ( $ftype != "bkg.eta" ) then
       # convert resolution of mean state (would be more accurate to 
       #                                   recompure mean after members interp)
       echo "${MYNAME}: dyn2dyn.x -g5 -res $hres -nlevs $want_lev ..."
-      dyn2dyn.x -g5 -res $hres -nlevs $want_lev -o $expid.$ftype.${nymd}_${hh}z.ensmean.$NCSUFFIX \
-                                                   $expid.bkg.eta.${nymd}_${hh}z.ensmean.$NCSUFFIX
+      dyn2dyn.x -g5 -res $hres -nlevs $want_lev -o $expid.$ftype.${nymd}_${hhmn}z.ensmean.$NCSUFFIX \
+                                                   $expid.bkg.eta.${nymd}_${hhmn}z.ensmean.$NCSUFFIX
    endif
    # prepare fake 24-hr forecasts
    #   first copy files ...
@@ -224,7 +226,7 @@ if ( $FROMENS ) then
      set memtag  = `echo $ic |awk '{printf "%03d", $1}'`
      if ( $nn < $MAXJOBS ) then
         @ nn++
-        /bin/cp $expid.$ftype.${nymd}_${hh}z.ensmean.$NCSUFFIX ${expid}_mem$memtag.$ftype.${nymd}_${hh}z+24 &
+        /bin/cp $expid.$ftype.${nymd}_${hhmn}z.ensmean.$NCSUFFIX ${expid}_mem$memtag.$ftype.${nymd}_${hhmn}z+24 &
         if ( $nn == $MAXJOBS ) then 
             wait
             @ nn = 0
@@ -239,8 +241,8 @@ if ( $FROMENS ) then
    while ( $ic < $nmem )
      @ ic++
      set memtag  = `echo $ic |awk '{printf "%03d", $1}'`
-     echo "${MYNAME}: mean         ${expid}_mem$memtag.$ftype.${nymd}_${hh}z+24 $newdate[1] $newdate[2] $nhrinc"
-                      reset_time.x ${expid}_mem$memtag.$ftype.${nymd}_${hh}z+24 $newdate[1] $newdate[2] $nhrinc
+     echo "${MYNAME}: mean         ${expid}_mem$memtag.$ftype.${nymd}_${hhmn}z+24 $newdate[1] $newdate[2] $nhrinc"
+                      reset_time.x ${expid}_mem$memtag.$ftype.${nymd}_${hhmn}z+24 $newdate[1] $newdate[2] $nhrinc
      set newdate  = ( `tick $newdate $offset_sec` )
    end # while nmem
 
@@ -251,13 +253,13 @@ if ( $FROMENS ) then
      @ ic++
      set memtag  = `echo $ic |awk '{printf "%03d", $1}'`
 
-     ln -sf  $ENSWORK/mem$memtag/$expid.bkg.eta.${nymd}_${hh}z.$NCSUFFIX $expid.bkg.eta.${nymd}_${hh}z.mem$memtag.$NCSUFFIX
+     ln -sf  $ENSWORK/mem$memtag/$expid.bkg.eta.${nymd}_${hhmn}z.$NCSUFFIX $expid.bkg.eta.${nymd}_${hhmn}z.mem$memtag.$NCSUFFIX
      if ( $ftype != "bkg.eta" ) then
          if ( $nn < $MAXJOBS ) then
              @ nn++
               echo "${MYNAME}: dyn2dyn.x -g5 -res $hres -nlevs $want_lev ... mem$memtag ..."
-              dyn2dyn.x -g5 -res $hres -nlevs $want_lev -o $expid.$ftype.${nymd}_${hh}z.mem$memtag.$NCSUFFIX \
-                                                           $expid.bkg.eta.${nymd}_${hh}z.mem$memtag.$NCSUFFIX &
+              dyn2dyn.x -g5 -res $hres -nlevs $want_lev -o $expid.$ftype.${nymd}_${hhmn}z.mem$memtag.$NCSUFFIX \
+                                                           $expid.bkg.eta.${nymd}_${hhmn}z.mem$memtag.$NCSUFFIX &
               if ( $nn == $MAXJOBS ) then
                   wait
                   @ nn = 0
@@ -276,9 +278,9 @@ if ( $FROMENS ) then
      set memtag  = `echo $ic |awk '{printf "%03d", $1}'`
      set newdate  = ( `tick $newdate $offset_sec` )
 
-     ln -sf  $expid.$ftype.${nymd}_${hh}z.mem$memtag.$NCSUFFIX  ${expid}_mem$memtag.$ftype.${nymd}_${hh}z+48
-     echo "${MYNAME}: member       ${expid}_mem$memtag.$ftype.${nymd}_${hh}z+48 $newdate[1] $newdate[2] $nhrinc"
-                      reset_time.x ${expid}_mem$memtag.$ftype.${nymd}_${hh}z+48 $newdate[1] $newdate[2] $nhrinc
+     ln -sf  $expid.$ftype.${nymd}_${hhmn}z.mem$memtag.$NCSUFFIX  ${expid}_mem$memtag.$ftype.${nymd}_${hhmn}z+48
+     echo "${MYNAME}: member       ${expid}_mem$memtag.$ftype.${nymd}_${hhmn}z+48 $newdate[1] $newdate[2] $nhrinc"
+                      reset_time.x ${expid}_mem$memtag.$ftype.${nymd}_${hhmn}z+48 $newdate[1] $newdate[2] $nhrinc
 
    end # while nmem
 
@@ -291,10 +293,10 @@ endif
 
 cd $WORKDIR
 
-if (-e infiles1 ) /bin/rm infiles
+if (-e infiles ) /bin/rm infiles
 /bin/ls samples/*+24 >> infiles
 /bin/ls samples/*+48 >> infiles
-ln -s infiles fort.10
+ln -sf infiles fort.10
 
 # Prepare resource files
 set this_param = $FVHOME/run/berror_stats.nml.tmpl
@@ -302,11 +304,10 @@ if ( -e $this_param ) then
    if ( -e stats.param ) /bin/rm  stats.parm
    if ( -e sed_file    ) /bin/rm  sed_file
    echo "s/>>>JCAP<<</${JCAP}/1"       > sed_file
-   echo "s/>>>NLATFV<<</${NLATFV}/1"  >> sed_file
-   echo "s/>>>NLONFV<<</${NLONFV}/1"  >> sed_file
    echo "s/>>>NSIG<<</${NSIG}/1"      >> sed_file
    echo "s/>>>NLAT<<</${NLAT}/1"      >> sed_file
    echo "s/>>>NLON<<</${NLON}/1"      >> sed_file
+   echo "s/>>>NMODES<<</${BERROR_NMODES}/1"    >> sed_file
    sed -f sed_file  $this_param  > ./stats.parm
 else
    echo "${MYNAME}: cannot find $this_param ..."
@@ -361,9 +362,9 @@ if ( $FROMENS ) then
         @ ic++
         set memtag  = `echo $ic |awk '{printf "%03d", $1}'`
 
-        ln -sf  $ENSWORK/mem$memtag/$expid.$ftype.${nymd}_${hh}z.$NCSUFFIX  ${expid}_mem$memtag.$ftype.${nymd}_${hh}z+48
-        echo "member       $ENSWORK/mem$memtag/$expid.$ftype.${nymd}_${hh}z.$NCSUFFIX  $nymd $nhms $nhrinc"
-              reset_time.x $ENSWORK/mem$memtag/$expid.$ftype.${nymd}_${hh}z.$NCSUFFIX  $nymd $nhms $nhrinc
+        ln -sf  $ENSWORK/mem$memtag/$expid.$ftype.${nymd}_${hhmn}z.$NCSUFFIX  ${expid}_mem$memtag.$ftype.${nymd}_${hhmn}z+48
+        echo "member       $ENSWORK/mem$memtag/$expid.$ftype.${nymd}_${hhmn}z.$NCSUFFIX  $nymd $nhms $nhrinc"
+              reset_time.x $ENSWORK/mem$memtag/$expid.$ftype.${nymd}_${hhmn}z.$NCSUFFIX  $nymd $nhms $nhrinc
 
       end # while nmem
    endif

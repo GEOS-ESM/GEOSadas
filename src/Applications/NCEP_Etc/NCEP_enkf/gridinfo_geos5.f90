@@ -58,6 +58,7 @@ public :: ncep2gmao, gmao2ncep
 integer(i_kind),public :: nlevs_pres
 integer(i_kind),public, allocatable,dimension(:):: index_pres
 real(r_single),public :: ptop
+real(r_single),public, allocatable, dimension(:) :: aodfreq
 real(r_single),public, allocatable, dimension(:) :: lonsgrd, latsgrd
 real(r_single),public, allocatable, dimension(:,:) :: logp, gridloc
 integer(i_kind),public, allocatable,dimension(:) :: id_u, id_v, id_t, id_q
@@ -65,7 +66,7 @@ integer(i_kind),public :: id_ps
 integer,public :: npts
 integer,public :: nvarhumid ! spec hum is the nvarhumid'th var
 integer,public :: nvarozone ! ozone is the nvarozone'th var
-real, parameter:: PPMV2DU    = 1.657E-6
+real, parameter:: PPMV2GpG = 1.6571E-6 ! from ppmv to g/g
 real, parameter:: mbar_per_Pa = 0.01
 integer(i_kind), public :: ntrunc
 real(r_single),  public :: logaodeps
@@ -91,7 +92,7 @@ integer(i_kind) nymd,nhms,freq,nstep
 real(r_kind), allocatable, dimension(:,:) :: pressimn,presslmn
 real(r_kind) kap,kapr,kap1
 type(dyn_vect) x_m
-character(len=12) geosdate
+character(len=14) geosdate
 
 kap = rd/cp
 kapr = cp/rd
@@ -116,9 +117,9 @@ if (nproc .eq. 0) then
    allocate(pressimn(nlons*nlats,nlevs+1))
 ! get pressure from ensemble mean,
 ! distribute to all processors.
-   read(datestring,'(i8,i2)') nymd, nhms ! nymd hh
-   write(geosdate,'(i8.8,a,i2.2,a)') nymd, '_', nhms, 'z'
-   nhms = nhms * 10000
+   read(datestring,'(i8,i2)') nymd, nhms; nhms=100*nhms ! nymd hhmn
+   write(geosdate,'(i8.8,a,i4.4,a)') nymd, '_', nhms, 'z'
+   nhms = nhms * 100 ! hhmnss
    if (fso_flag) then
       filename = trim(adjustl(datapath))//"ensmean/"//trim(expid)//"."//trim(anatype4fso)//".eta."//geosdate//".nc4"
    else
@@ -268,6 +269,7 @@ contains
   subroutine init_(rcfile,myID,ROOT,stat)
   use m_stdio, only: stdout, stderr
   use m_inpak90
+  use m_die, only: mp_die
   implicit none
   character(len=*), intent(in) :: rcfile
   integer, intent(in)  :: myID, ROOT
@@ -275,6 +277,7 @@ contains
  
   character(len=*), parameter :: myname_=myname//':init_'
   character(len=256) :: token
+  integer ic,naodfreq
   integer iret
 
   stat=0
@@ -361,6 +364,41 @@ contains
       endif
       if(myID==ROOT) write(stdout,'(3a)') myname_,':: verification type used for EFSO: ',trim(vertype4fso)
 
+      ! first ... figure out number of AOD frequencies to handle
+      ! --------------------------------------------------------
+      call I90_label('aod_frequencies_to_analyze:', iret)
+      naodfreq=0
+      if (iret .eq. 0) then
+          do while ( iret==0 )
+             call I90_Gtoken ( token, iret )
+             if ( iret==0 ) then
+                  naodfreq = naodfreq + 1
+             endif
+          enddo
+      endif
+      ! if so, read in AOD frequencies to analyze
+      ! -----------------------------------------
+      if (naodfreq>0) then
+         allocate(aodfreq(naodfreq))
+         ic=0
+         call I90_label('aod_frequencies_to_analyze:', iret)
+         if (iret .eq. 0) then
+             do while ( iret==0 )
+                call I90_Gtoken ( token, iret )
+                if ( iret==0 ) then
+                     ic = ic + 1
+                     if (ic>naodfreq) then
+                         call mp_die(myname_,'Alloc(aod-freq...)',99)
+                     else
+                        read(token,*) aodfreq(ic)
+                        if(myID==ROOT) write(stdout,'(3a)') myname_,':: will analyze AOD freq: ',aodfreq(ic)
+                     endif
+                endif
+             enddo
+         endif
+      endif
+
+
 ! release resource file:
 ! ---------------------
   call I90_release()
@@ -397,7 +435,7 @@ subroutine gmao2ncep (x,scaleit)
   if (scaleit_) then
      x%ps         = x%ps         * mbar_per_Pa
      x%delp       = x%delp       * mbar_per_Pa
-     x%q(:,:,:,2) = x%q(:,:,:,2) * PPMV2DU
+     x%q(:,:,:,2) = x%q(:,:,:,2) * PPMV2GpG
   endif
   ! need flip so localization function applies equaly to EnKF and Hybrid-GSI
   call dyn_flip(x)
@@ -414,7 +452,7 @@ subroutine ncep2gmao (x)
   x%grid%ak    = x%grid%ak    / mbar_per_Pa
   x%ps         = x%ps         / mbar_per_Pa
   x%delp       = x%delp       / mbar_per_Pa
-  x%q(:,:,:,2) = x%q(:,:,:,2) / PPMV2DU
+  x%q(:,:,:,2) = x%q(:,:,:,2) / PPMV2GpG
   ! need flip so localization function applies equaly to EnKF and Hybrid-GSI
   call dyn_flip(x)
   ! flip N-S ?

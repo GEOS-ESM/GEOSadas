@@ -17,6 +17,9 @@
 #  28Feb2014  El Akkraoui  Revisit logic for re-submit of distributed jobs
 #  12Mar2014  Todling   Update interface to main re-center program
 #  30Jun2014  Todling   Implement energy-based adaptive inflation proceure
+#  21Feb2020  Todling   Allow for high freq bkg (up to 1mn)
+#  04Jun2020  Todling   Revise parallelization strategy
+#  23Jun2020  Todling   Redef meaning of ATMENSLOC
 #------------------------------------------------------------------
 if ( !($?ATMENS_VERBOSE) ) then
     setenv ATMENS_VERBOSE 0
@@ -70,7 +73,6 @@ if ( $#argv < 8 ) then
    echo "    AENS_ADDINFLATION  - when set, apply additive inflation to analyzed members"
    echo "    AENS_DONORECENTER  - allow bypassing recentering"
    echo "    AENS_RECENTER_DSTJOB  - distribute multiple works within smaller jobs"
-   echo "    AENS_RECENTER_DSTJOB  - distribute multiple works within smaller jobs"
    echo "    ASYNBKG            - background frequency (when adaptive inflation on)"
    echo "    CENTRAL_BLEND      - 0 or 1=to blend members with central (def: 1)"
    echo "    FVHOME             - location of experiment            "
@@ -95,6 +97,7 @@ if ( $#argv < 8 ) then
 endif
 
 setenv FAILED 0
+if ( !($?ATMENS_BATCHSUB) ) setenv FAILED 1
 if ( !($?ATMENSETC)      ) setenv FAILED 1
 if ( !($?ATMENSLOC)      ) setenv FAILED 1
 if ( !($?FVROOT)         ) setenv FAILED 1
@@ -137,6 +140,7 @@ set ensloc = $6
 set cenloc = $7
 set infloc = $8
 set hh     = `echo $nhms | cut -c1-2`
+set hhmn   = `echo $nhms | cut -c1-4`
 set yyyymmddhh = ${nymd}${hh}
 
 if ( -e $ENSWORK/.DONE_${MYNAME}_${ftype1}_${ftype2}.$yyyymmddhh ) then
@@ -153,8 +157,8 @@ endif
 
 cd $ensloc
 
-if ( -e $ATMENSLOC/atmens/$expid.add_infl.${nymd}_${hh}z.txt ) then
-   set rec_rcfile = $ATMENSLOC/atmens/$expid.add_infl.${nymd}_${hh}z.txt
+if ( -e $ATMENSLOC/$expid.add_infl.${nymd}_${hh}z.txt ) then
+   set rec_rcfile = $ATMENSLOC/$expid.add_infl.${nymd}_${hh}z.txt
 else
    if ( -e $ATMENSETC/dyn_recenter.rc ) then
       set rec_rcfile = $ATMENSETC/dyn_recenter.rc
@@ -237,18 +241,18 @@ while ( $ic < $nmem )
 
    # overwrite each ensemble analysis with corresponding recentered analysis
    set failed = 0
-   if (! -e $expid.${ftype1}.${nymd}_${hh}z.$NCSUFFIX ) then
+   if (! -e $expid.${ftype1}.${nymd}_${hhmn}z.$NCSUFFIX ) then
       set failed = 1
-      echo " ${MYNAME}: somehow can no longer find $expid.${ftype1}.${nymd}_${hh}z.$NCSUFFIX, aborting ..."
+      echo " ${MYNAME}: somehow can no longer find $expid.${ftype1}.${nymd}_${hhmn}z.$NCSUFFIX, aborting ..."
       touch $ensloc/.FAILED
    endif
-   if (! -e ../ensmean/$expid.${ftype2}.${nymd}_${hh}z.$NCSUFFIX ) then
+   if (! -e ../ensmean/$expid.${ftype2}.${nymd}_${hhmn}z.$NCSUFFIX ) then
       set failed = 1
-      echo " ${MYNAME}: somehow can no longer find ensmean/$expid.${ftype2}.${nymd}_${hh}z.$NCSUFFIX, aborting ..."
+      echo " ${MYNAME}: somehow can no longer find ensmean/$expid.${ftype2}.${nymd}_${hhmn}z.$NCSUFFIX, aborting ..."
    endif
-   if (! -e $cenloc/$expid.${ftype2}.${nymd}_${hh}z.$NCSUFFIX ) then
+   if (! -e $cenloc/$expid.${ftype2}.${nymd}_${hhmn}z.$NCSUFFIX ) then
       set failed = 1
-      echo " ${MYNAME}: somehow can no longer find $cenloc/$expid.${ftype2}.${nymd}_${hh}z.$NCSUFFIX, aborting ..."
+      echo " ${MYNAME}: somehow can no longer find $cenloc/$expid.${ftype2}.${nymd}_${hhmn}z.$NCSUFFIX, aborting ..."
    endif
    if ( $AENS_ADDINFLATION ) then
         if (! -e $infloc/$expid.nmcpert.eta.${nymd}_${hh}z.$memtag.$NCSUFFIX ) then
@@ -268,19 +272,25 @@ while ( $ic < $nmem )
          if ( ! $AENS_ADDINFLATION ) set infloc = "NONE"
 
          if ( $AENS_DONORECENTER ) then
-             set cmdline = "recenter.csh $FVROOT $expid $memtag $nymd $hh $ftype1 NONE    $blend $addinf_factor NONE $infloc $rec_rcfile"
+             set cmdline = "recenter.csh $FVROOT $expid $memtag $nymd $hhmn $ftype1 NONE    $blend $addinf_factor NONE $infloc $rec_rcfile"
          else
-             set cmdline = "recenter.csh $FVROOT $expid $memtag $nymd $hh $ftype1 $ftype2 $blend $addinf_factor $cenloc $infloc $rec_rcfile"
+             set cmdline = "recenter.csh $FVROOT $expid $memtag $nymd $hhmn $ftype1 $ftype2 $blend $addinf_factor $cenloc $infloc $rec_rcfile"
          endif
 
+
          if ( $AENS_RECENTER_DSTJOB != 0 ) then # case of multiple jobs within few larger ones
-            # collect multiple observer calls into jumbo file
-            if ( $ipoe < $AENS_RECENTER_DSTJOB ) then  # nmem better devide by AENS_OBSVR_DSTJOB
+            set cmdline = "serial_run $cmdline"
+
+            # collect multiple recenter calls into jumbo file
+            if ( $ipoe < $AENS_RECENTER_DSTJOB ) then  # nmem better devide by AENS_PERTS_DSTJOB
                @ ipoe++
                set this_script_name = `pwd`/recenter_mem${memtag}.j
                echo $this_script_name >> $ENSWORK/recenter_poe.$npoe
                chmod +x $ENSWORK/recenter_poe.$npoe
             endif
+            set machfile = "-machfile $ENSWORK/recenter_machfile$npoe.$ipoe"
+         else
+            set machfile = ""
          endif
 
          jobgen.pl \
@@ -307,16 +317,14 @@ while ( $ic < $nmem )
 
 
              if ( ($ipoe == $AENS_RECENTER_DSTJOB) || (($fpoe == $ntodo ) && ($ipoe < $AENS_RECENTER_DSTJOB) ) ) then
-                @ myncpus = $ipoe * $ENSRECENTER_NCPUS
-#            if ( $ipoe == $AENS_RECENTER_DSTJOB ) then
-#               @ myncpus = $AENS_RECENTER_DSTJOB * $ENSRECENTER_NCPUS
+                @ myncpus = $ipoe
                 setenv JOBGEN_NCPUS $myncpus
                 jobgen.pl \
                      -q $RECENTER_QNAME \
                      recenter_dst${npoe}       \
                      $GID                      \
                      $RECENTER_WALLCLOCK       \
-                     "/usr/local/other/pods/pods.sh $ENSWORK/recenter_poe.$npoe $ENSRECENTER_NCPUS" \
+                     "job_distributor.csh -machfile $ENSWORK/recenter_machfile$npoe -usrcmd $ENSWORK/recenter_poe.$npoe -usrntask $ENSRECENTER_NCPUS -njobs $ipoe " \
                      $ENSWORK  \
                      $MYNAME             \
                      $ENSWORK/.DONE_POE${npoe}_${MYNAME}.$yyyymmddhh \
@@ -327,7 +335,7 @@ while ( $ic < $nmem )
                    exit(1)
                 endif
                 /bin/mv recenter_dst${npoe}.j $ENSWORK/
-                qsub $ENSWORK/recenter_dst${npoe}.j
+                $ATMENS_BATCHSUB $ENSWORK/recenter_dst${npoe}.j
                 touch .SUBMITTED
                 @ ipoe = 0 # reset counter
                 @ npoe++
@@ -336,7 +344,7 @@ while ( $ic < $nmem )
           else
 
              if ( -e recenter_mem${memtag}.j ) then
-                qsub recenter_mem${memtag}.j
+                $ATMENS_BATCHSUB recenter_mem${memtag}.j
              else
                 echo " ${MYNAME}: Failed to generate PBS jobs for Recentering ANA, Aborting ... "
                 touch $ensloc/.FAILED
@@ -360,15 +368,15 @@ while ( $ic < $nmem )
 
           if ( $AENS_DONORECENTER ) then
              dyn_recenter.x -g5 -rc $rec_rcfile $damp $addinflation \
-                              $expid.${ftype1}.${nymd}_${hh}z.$NCSUFFIX \
+                              $expid.${ftype1}.${nymd}_${hhmn}z.$NCSUFFIX \
                               NONE \
                               NONE
                               
           else
              dyn_recenter.x -g5 -rc $rec_rcfile $damp $addinflation \
-                              $expid.${ftype1}.${nymd}_${hh}z.$NCSUFFIX \
-                              ../ensmean/$expid.${ftype2}.${nymd}_${hh}z.$NCSUFFIX \
-                              $cenloc/$expid.${ftype2}.${nymd}_${hh}z.$NCSUFFIX
+                              $expid.${ftype1}.${nymd}_${hhmn}z.$NCSUFFIX \
+                              ../ensmean/$expid.${ftype2}.${nymd}_${hhmn}z.$NCSUFFIX \
+                              $cenloc/$expid.${ftype2}.${nymd}_${hhmn}z.$NCSUFFIX
           endif
           if (! -e DYNRECENTER_EGRESS ) then
               echo " ${MYNAME}: dyn_recenter failed status($status), aborting ..."

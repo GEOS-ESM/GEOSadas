@@ -26,6 +26,9 @@
 #  21Mar2017  Todling   Edit GAAS_GridComp to set member AOD analysis when applicable
 #  13Apr2017  Todling   Add knob for GEOS EPS
 #  04Aug2018  Todling   Revisit/Update regridding option/mechanism
+#  21Feb2020  Todling   Allow for high freq bkg (up to 1mn)
+#  03May2020  Todling   Logic not to over-subscribe node
+#  22Jun2020  Todling   Add ability to run a control member (also cleaned up)
 #-------------------------------------------------------------------------------------
 
 if ( !($?ATMENS_VERBOSE) ) then
@@ -62,26 +65,6 @@ if ( $#argv < 6 ) then
    echo "   atmospheric, GCM. These integrations are, in principle, "
    echo "   forced with an ensemble of IAU-increments)."
    echo " "
-   echo "   The usual, main RC files for the GCM must be present in"
-   echo "   the directory defined by ATMENSETC. Typically, this are"
-   echo "   the files listed under REQUIRED RESOUCE FILES below."
-   echo " "
-   echo "   Furthermore, a file named lnbcs_ens must be placed under"
-   echo "   the run directory. The reason why this file is not placed"
-   echo "   under ATMENSETC is simply because executables are to live"
-   echo "   either in the bin of the build or in the run directory, and"
-   echo "   lnbcs is an executable script."
-   echo " "
-   echo "   Just as in the regular DAS, similar tricks to bootstrap restarts"
-   echo "   apply here for the ensemble of GCMs, that is, restarts can be boot-"
-   echo "   strapped by placing a file named AGCM.BOOTSTRAP.rc.tmpl under the "
-   echo "   ATMENSETC directory. Analogously, once can request the GCM to "
-   echo "   integrate beyond the usual 12-hour period per cycle by placing "
-   echo "   specific files to control those particular instances. For example,"
-   echo "   if one wishes to integrate the 00z predictions out to 24-hours, " 
-   echo "   placing files CAP_21.rc.tmpl and HISTAENS_21.rc.tmpl in the "
-   echo "   ATMENSETC directory with properly defined length of integration"
-   echo "   and desirable history will do it."
    echo " "
    echo " Example of valid command line:"
    echo " $MYNAME b541iau 20091018 210000 12 144 91"
@@ -113,9 +96,10 @@ if ( $#argv < 6 ) then
    echo "    ENSPARALLEL    - when set, runs all ensemble components in parallel "
    echo "                     (default: off)"
    echo "    ENSGCM_NCPUS   - when parallel ens on, this sets NCPUS for AGCM integration"
+   echo "    ENSCTRLONLY    - allows running control member only"
    echo "    AENS_GCM_DSTJOB- distribute multiple works within smaller jobs"
    echo "    AGCM_WALLCLOCK - wall clock time to run agcm, default 1:00:00 "
-   echo "    AGCM_QNAME     - name of queue (default: NULL, that is, let pbs pick) "
+   echo "    AGCM_QNAME     - name of queue (default: NULL, that is, let BATCH pick) "
    echo "    ATMENS_DO4DIAU - trigger to run 4DIAU "
    echo "    REGRID_QOS     - qos for regrid"
    echo "    RSTEXT         - defines extension for model rst files: nc4 or bin"
@@ -134,6 +118,7 @@ if ( $#argv < 6 ) then
    echo " SEE ALSO"
    echo "   atmos_ens2gcm.csh - calculation of IAU increments"
    echo "   atm_ens_geps.j    - main job script controlling GEPS"
+   echo "   gcm_ensset_rc.csh - set resource files"
    echo " "
    echo " AUTHOR"
    echo "   Ricardo Todling (Ricardo.Todling@nasa.gov), NASA/GMAO "
@@ -144,6 +129,7 @@ if ( $#argv < 6 ) then
 endif
 
 setenv FAILED 0
+if ( !($?ATMENS_BATCHSUB) ) setenv FAILED 1
 if ( !($?ATMENSETC)     ) setenv FAILED 1
 if ( !($?ATMENSLOC)     ) setenv FAILED 1
 if ( !($?ASYNBKG)       ) setenv FAILED 1
@@ -161,6 +147,7 @@ if ( !($?TIMEINC)       ) setenv FAILED 1
 if ( !($?ATMGEPS)       ) setenv ATMGEPS 0
 if ( !($?NCSUFFIX)      ) setenv NCSUFFIX nc4
 if ( !($?ENSPARALLEL)   ) setenv ENSPARALLEL 0
+if ( !($?ENSCTRLONLY)   ) setenv ENSCTRLONLY 0
 if ( !($?AENS_GCM_DSTJOB) ) setenv AENS_GCM_DSTJOB 0
 if ( !($?AGCM_WALLCLOCK)) setenv AGCM_WALLCLOCK 1:00:00
 if ( !($?AGCM_QNAME)    ) setenv AGCM_QNAME NULL
@@ -231,8 +218,12 @@ set nmem = $members[1]
 cd  $ENSWORK
 touch .no_archiving
 
-@ bkgfreq_hr = $ASYNBKG / 60
-set bkgfreq_hhmss = ${bkgfreq_hr}0000
+@ bkgfreq_hr  =  $ASYNBKG / 60
+@ bkgfreq_mn  =  $ASYNBKG - $bkgfreq_hr * 60
+set bkgfreq_hh = `echo $bkgfreq_hr |awk '{printf "%02d", $1}'`
+set bkgfreq_mm = `echo $bkgfreq_mn |awk '{printf "%02d", $1}'`
+set bkgfreq_hhmn = ${bkgfreq_hh}${bkgfreq_mm}
+set bkgfreq_nhms = ${bkgfreq_hhmn}00
 
 setenv LINK_RST $HYBRIDGSI 
 
@@ -313,6 +304,94 @@ else # no regridding ...
 
 endif
 
+# When a control member is participating ...
+# ------------------------------------------
+if ( -d $ENSWORK/ensctrl ) then
+   if (! -e $ENSWORK/.DONE_MEM001_ENSCTRL_${MYNAME}.$yyyymmddhh ) then
+    
+      # set up GCM resources and input data
+      # -----------------------------------
+      gcm_ensset_rc.csh $expid $nymdb $nhmsb $tfcst $nlons $nlats ensctrl
+    
+      cd $ENSWORK/ensctrl
+
+      if( -e cap_restart ) /bin/rm cap_restart
+      echo $nymdb $nhmsb > cap_restart
+
+      # Run model
+      # ---------
+      if( $ENSPARALLEL ) then
+    
+          jobgen.pl \
+               -egress EGRESS -q $AGCM_QNAME \
+               -xc "update_ens.csh $expid ensctrl bkg $ENSWORK/ensctrl NULL $NCSUFFIX" \
+               agcm_ensctrl          \
+               $GID                  \
+               $AGCM_WALLCLOCK       \
+               "$MPIRUN_ENSGCM |& tee -a $ENSWORK/agcm_ensctrl.log" \
+               $ENSWORK/ensctrl \
+               $MYNAME               \
+               $ENSWORK/.DONE_MEM001_ENSCTRL_${MYNAME}.$yyyymmddhh \
+               "Atmos GCM Failed"
+    
+          if ( -e agcm_ensctrl.j ) then
+             $ATMENS_BATCHSUB agcm_ensctrl.j
+             touch $ENSWORK/.SUBMITTED
+          else
+             echo " ${MYNAME}: Failed to generate BATCH job for control Atmos GCM, Aborting ... "
+             exit(1)
+          endif
+
+          # Monitor job in case block fails
+          # -------------------------------
+          jobmonitor.csh 1 ENSCTRL_${MYNAME} $ENSWORK $yyyymmddhh
+          if ($status) then
+             echo "${MYNAME}: cannot complete due to failed jobmonitor, aborting"
+             exit(1)
+          endif
+    
+     else
+    
+          $MPIRUN_ENSGCM |& tee -a $ENSWORK/agcm_ensctrl.log
+          /bin/ls ./EGRESS
+          set model_status = $status
+          if ( $model_status ) then
+             echo " ${MYNAME}: failed to run GCM for control, aborting ..."
+             touch $ENSWORK/.FAILED
+             exit(1)
+          endif
+          touch $ENSWORK/.DONE_MEM001_ENSCTRL_${MYNAME}.$yyyymmddhh
+    
+          # Store updated ensemble
+          # ----------------------
+          update_ens.csh $expid ensctrl bkg $ENSWORK/ensctrl NULL $NCSUFFIX
+    
+     endif
+
+     # Reposition GCM diagnostics
+     # --------------------------
+     update_ens.csh $expid ensctrl diag $ENSWORK/ensctrl HISTORY.rc $NCSUFFIX
+
+     if(! -e $ENSWORK/.DONE_UPDATE_RST_ENSCTRL.$yyyymmddhh ) then
+        gcm_ensrst_wrap.csh $expid $ionymdb $ionhmsb ensctrl
+        if($status) then
+          echo "${MYNAME}: error wrapping up control model run output, aborting"
+          exit(1)
+        else
+           touch $ENSWORK/.DONE_UPDATE_RST_ENSCTRL.$yyyymmddhh
+        endif
+     endif
+    
+     cd -
+  endif
+
+  # In only control member begin exercised, all done
+  if ( $ENSCTRLONLY ) then
+     if ( -e $ENSWORK/.DONE_UPDATE_RST_ENSCTRL.$yyyymmddhh ) then
+        touch $ENSWORK/.DONE_ENSFCST
+     endif
+  endif
+endif
 
 # If not all done yet ...
 # -----------------------
@@ -325,7 +404,7 @@ if(! -e .DONE_ENSFCST ) then
   /bin/rm $ENSWORK/agcm_machfile*
 
   if ( $ENSPARALLEL ) then
-     set nfiles = `/bin/ls $ENSWORK/.DONE_MEM*_${MYNAME}.$yyyymmddhh | wc -l`
+     set nfiles = `/bin/ls $ENSWORK/.DONE_MEM*_${MYNAME}.$yyyymmddhh | grep -v ENSCTRL | wc -l`
      echo "${MYNAME}: number of already available files  ${nfiles}"
      @ ntodo = $nmem - $nfiles 
   endif 
@@ -343,188 +422,7 @@ if(! -e .DONE_ENSFCST ) then
 
      if(! -e $ENSWORK/.DONE_MEM${memtag}_${MYNAME}.$yyyymmddhh ) then
 
-        # For now, only IAU rst is different all other rst's same
-        # -------------------------------------------------------
-        ln -sf agcm_import_mem${memtag}_rst agcm_import_rst
-
-        # Bring in restarts from HYBRIDGSI here
-        # -------------------------------------
-        if ( -e $ATMENSETC/AGCM.BOOTSTRAP.rc.tmpl ) then
-          set myagcmrc = $ATMENSETC/AGCM.BOOTSTRAP.rc.tmpl
-        else
-          set myagcmrc = $ATMENSETC/AGCM.rc.tmpl
-          if ( $ATMGEPS ) then
-              if ( -e $FVHOME/run/ageps/AGCM.rc.tmpl ) set myagcmrc = $FVHOME/run/ageps/AGCM.rc.tmpl
-          endif 
-        endif
-        echo " $MYNAME : Caution, must use restarts before hi-res GCM runs"
-        echo " $MYNAME : ================================================="
-        set grs_list = ( `grep _rst $myagcmrc | grep -vE "^[ ]*\#" | cut -d: -f2 | sed -e's/^[ ]*\(.*[^ ]\)[ ]*$/\1/' -e 's/_rst//'` )
-        set rstot = `echo $#grs_list`
-        @ id = 0
-        while ( $id < $rstot )
-          @ id++
-          if( $grs_list[$id] != "agcm_import" ) then
-             if (-e $ENSWORK/.DONE_RST_REGRID ) then # in case not all RSTs are cycled (that is, some are regrided)
-                 @ iv = 0
-                 @ found = 0
-                 while ( $iv < $rstotrgd ) #&& $found ) # loop over regridded rst's
-                      @ iv++
-                      if ( $grs_list[$id] == $grs_regrid[$iv] ) then  # if rst in AGCM.rc is one that's been regridded ...
-                         set found = 1
-                         /bin/ln -sf $ENSWORK/rst2regrid/*$grs_regrid[$iv]_rst* $grs_list[$id]_rst
-                      endif
-                 end
-                 if ( ! $found ) then # if RST in AGCM not among those regridded, then it's among those cycled ...
-                     /bin/ln -sf $HYBRIDGSI/mem${memtag}/$expid.$grs_list[$id]_rst.${nymdb}_${hhb}z.$RSTEXT $grs_list[$id]_rst
-                 endif
-             else # expect the full suite of RSTs to be cycling
-                 if ( "$LINK_RST" == "$HYBRIDGSI" ) then
-                    /bin/ln -sf $LINK_RST/mem${memtag}/$expid.$grs_list[$id]_rst.${nymdb}_${hhb}z.$RSTEXT $grs_list[$id]_rst
-                 else
-                    /bin/ln -sf $LINK_RST/$expid.$grs_list[$id]_rst.${nymdb}_${hhb}z.$RSTEXT $grs_list[$id]_rst
-                 endif
-             endif # <REGRID>
-          endif
-        end
-
-        # All of the RCs for GOCART and what not ... TBD: this mambo-jambo needs attention
-        # --------------------------------------------------------------------------------
-        /bin/ln -sf $ENSWORK/ExtData $ENSWORK/mem${memtag}/
-        /bin/cp $ATMENSETC/GEOS_ChemGridComp.rc .
-        /bin/cp $FVHOME/run/gocart/*.rc         .
-        if(-e ExtData.rc) /bin/rm -f ExtData.rc
-        set  extdata_files = `/bin/ls -1 *_ExtData.rc`
-        cat $extdata_files > $ENSWORK/mem${memtag}/ExtData.rc
-
-	if(-e $ATMENSETC/aens_stoch.rc ) /bin/ln -sf  $ATMENSETC/aens_stoch.rc $ENSWORK/mem${memtag}/stoch.rc
-
-        # Edit and copy GAAS resource files
-        # ---------------------------------
-        if ( $GAAS_ANA ) then
-            if (! -e $ATMENSETC/GAAS_GridComp.rc ) then
-                echo "${MYNAME}: missing GAAAS_GridComp.rc file, aborting"
-                exit(1)
-            endif
-            # Note: The vED command below requires FVWORK to be defined, in this case, as
-            #       the local directory ... so we temporarily reset FVWORK and set it back
-            #       to its original value at the of the for-each below.
-            setenv oriFVWORK $FVWORK
-            setenv FVWORK    $ENSWORK/mem${memtag}
-            setenv MEMTAG    $memtag
-            foreach file ( $FVHOME/run/gaas/*.rc )
-                set target = $ENSWORK/mem${memtag}/$file:t
-                if ($file:t == fvpsas.rc) continue
-                set myfile = $file
-                if ($file:t == GAAS_GridComp.rc) then
-                   set myfile = $ATMENSETC/GAAS_GridComp.rc
-                endif
-                vED -env $myfile -o $target
-                echo "cat $target"
-                cat $target
-            end
-            unsetenv MEMTAG
-            setenv   FVWORK    $oriFVWORK
-            if ( -e $ATMENSETC/GAAS.BOOTSTRAP ) then
-               # what are we supposed to do here?
-            endif
-        endif
- 
-        # FV-core layout file
-        # -------------------
-        if ( -e $ATMENSETC/fvcore_layout.rc ) then
-           /bin/cp $ATMENSETC/fvcore_layout.rc .
-        else
-           /bin/cp $FVHOME/run/fvcore_layout.rc .
-        endif
-        /bin/cp fvcore_layout.rc input.nml
-
-        # Prepare CAP
-        # -----------
-        set this_cap = $ATMENSETC/CAP.rc.tmpl
-        if ( $ATMGEPS ) then
-           if ( -e $FVHOME/run/ageps/CAP_${hhb}.rc.tmpl ) then
-              set this_cap = $FVHOME/run/ageps/CAP_${hhb}.rc.tmpl
-           else
-              if ( -e $FVHOME/run/ageps/CAP.rc.tmpl ) then
-                 set this_cap = $FVHOME/run/ageps/CAP.rc.tmpl
-              endif
-           endif
-        else
-           if ( -e $ATMENSETC/CAP_${hhb}.rc.tmpl ) then
-              set this_cap = $ATMENSETC/CAP_${hhb}.rc.tmpl
-           endif
-        endif
-        /bin/cp $this_cap  CAP.rc
-
-        set tfinal = ( `echorc.x -rc CAP.rc JOB_SGMT` )
-        @ tfinal_sc = ( $tfinal[1] * 24 + $tfinal[2] / 10000 ) * 3600
-        set fnldate = `tick $nymdb $nhmsb  $tfinal_sc`
-        set nymdf = $fnldate[1]
-        set nhmsf = $fnldate[2]
-        set hhf   = `echo $nhmsf | cut -c1-2`
-        set ionymdf = $nymdf
-        set ionhmsf = $nhmsf
-        
-
-        # Prepare AGCM
-        # ------------
-         /bin/rm -f sed_file
-         echo "s/>>>EXPID<<</${expid}/1"     > sed_file
-         echo "s/>>>RECFINL<<</NO/1"         >> sed_file
-         echo "s/>>>REFDATE<<</${ionymdb}/1" >> sed_file
-         echo "s/>>>REFTIME<<</${ionhmsb}/1" >> sed_file
-         echo "s/>>>FCSDATE<<</31760704/1"   >> sed_file
-         echo "s/>>>FCSTIME<<</000000/1"     >> sed_file
-         if ($ATMENS_DO4DIAU) then
-           echo "s/>>>FORCEDAS<<</#/1"       >> sed_file
-           echo "s/>>>4DIAUDAS<<<//1"        >> sed_file
-         else
-           echo "s/>>>FORCEDAS<<<//1"        >> sed_file
-           echo "s/>>>4DIAUDAS<<</#/1"       >> sed_file
-         endif
-         echo "s/>>>FORCEGCM<<</#/1"         >> sed_file
-         echo "s/>>>DATAOCEAN<<<//1"         >> sed_file
-         echo "s/>>>COUPLED<<</#/1"          >> sed_file
-         echo "s/>>>MEMBER<<</${memtag}/1"   >> sed_file
-         /bin/rm -f ./AGCM.rc
-         sed -f sed_file  $myagcmrc > ./AGCM.rc
-
-        # Prepare HISTORY
-        # ---------------
-         /bin/rm -f sed_file
-         echo "s/>>>EXPID<<</${expid}/1"            > sed_file
-         echo "s/>>>IOBBKGD<<</${ionymdb}/1"       >> sed_file
-         echo "s/>>>IOBBKGT<<</${ionhmsb}/1"       >> sed_file
-         echo "s/>>>IOEDATE<<</${ionymde}/1"       >> sed_file
-         echo "s/>>>IOETIME<<</${ionhmse}/1"       >> sed_file
-         echo "s/>>>IOFDATE<<</${ionymdf}/1"       >> sed_file
-         echo "s/>>>IOFTIME<<</${ionhmsf}/1"       >> sed_file
-         echo "s/>>>BKGFREQ<<</${bkgfreq_hhmss}/1" >> sed_file
-         echo "s/>>>MEMBER<<</${memtag}/1"         >> sed_file
-         echo "s/>>>HIST_IM<<</${nlons}/1"         >> sed_file
-         echo "s/>>>HIST_JM<<</${nlats}/1"         >> sed_file
-         echo "s/>>>NCSUFFIX<<</${NCSUFFIX}/1"     >> sed_file
-         /bin/rm -f ./HISTORY.rc
-         set this_hist = $ATMENSETC/HISTAENS.rc.tmpl
-         if ( $ATMGEPS ) then
-            if ( -e $FVHOME/run/ageps/HISTAGEPS_${hhb}.rc.tmpl ) then
-               set this_hist = $FVHOME/run/ageps/HISTAGEPS_${hhb}.rc.tmpl
-            else
-               if ( -e $FVHOME/run/ageps/HISTAGEPS.rc.tmpl ) then
-                  set this_hist = $FVHOME/run/ageps/HISTAGEPS.rc.tmpl
-               endif
-            endif
-         else
-            if ( -e $ATMENSETC/HISTAENS_${hhb}.rc.tmpl ) then
-               set this_hist = $ATMENSETC/HISTAENS_${hhb}.rc.tmpl
-            endif
-         endif
-         sed -f sed_file  $this_hist  > ./HISTORY.rc
-
-        # Link in BCS
-        # -----------
-        lnbcs_ens $nymdb
+        gcm_ensset_rc.csh $expid $nymdb $nhmsb $tfcst $nlons $nlats mem$memtag
 
         # Run ensemble
         # ------------
@@ -548,7 +446,7 @@ if(! -e .DONE_ENSFCST ) then
 
              jobgen.pl \
                   -egress EGRESS -q $AGCM_QNAME $machfile \
-                  -xc "update_ens.csh $expid $memtag bkg $ENSWORK/mem${memtag} NULL $NCSUFFIX" \
+                  -xc "update_ens.csh $expid mem$memtag bkg $ENSWORK/mem${memtag} NULL $NCSUFFIX" \
                   agcm_mem${memtag}     \
                   $GID                  \
                   $AGCM_WALLCLOCK       \
@@ -563,42 +461,57 @@ if(! -e .DONE_ENSFCST ) then
                 if ( -e agcm_mem${memtag}.j ) then
                    chmod +x agcm_mem${memtag}.j
                 else
-                   echo " ${MYNAME}: AGCM Failed to generate PBS jobs for Member ${memtag}, Aborting ... "
+                   echo " ${MYNAME}: AGCM Failed to generate BATCH jobs for Member ${memtag}, Aborting ... "
                    touch $ENSWORK/.FAILED
                    exit(1)
                 endif
 
                 if ( ($ipoe == $AENS_GCM_DSTJOB) || (($fpoe == $ntodo) && ($ipoe < $AENS_GCM_DSTJOB) ) ) then
-                   @ myncpus = $ipoe * $ENSGCM_NCPUS
+                   set this_ntasks_per_node = `facter processorcount`
+                   @ ncores_needed = $ENSGCM_NCPUS / $this_ntasks_per_node
+                   if ( $ncores_needed == 0 ) then
+                     @ myncpus = $this_ntasks_per_node
+                   else
+                     if ( $ENSGCM_NCPUS == $ncores_needed * $this_ntasks_per_node ) then
+                        @ myncpus = $ENSGCM_NCPUS
+                     else
+                        @ myncpus = $ENSGCM_NCPUS / $this_ntasks_per_node
+                        @ module = $myncpus * $this_ntasks_per_node - $ENSGSI_NCPUS
+                        if ( $module != 0 ) @ myncpus = $myncpus + 1
+                        @ myncpus = $myncpus * $this_ntasks_per_node
+                     endif
+                   endif
+                   @ myncpus = $ipoe * $myncpus
+                   #_ @ myncpus = $ipoe * $ENSGCM_NCPUS
                    setenv JOBGEN_NCPUS $myncpus
                    jobgen.pl \
                         -q $AGCM_QNAME \
                         agcm_dst${npoe}     \
                         $GID                \
                         $AGCM_WALLCLOCK    \
-                        "job_distributor.csh -machfile $ENSWORK/agcm_machfile$npoe -usrcmd $ENSWORK/agcm_poe.$npoe -usrntask $ENSGCM_NCPUS" \
+                        "job_distributor.csh -machfile $ENSWORK/agcm_machfile$npoe -usrcmd $ENSWORK/agcm_poe.$npoe -usrntask $ENSGCM_NCPUS -njobs $ipoe" \
                         $ENSWORK  \
                         $MYNAME             \
                         $ENSWORK/.DONE_POE${npoe}_${MYNAME}.$yyyymmddhh \
                         "AGCM Failed for Member ${npoe}"
                    if (! -e agcm_dst${npoe}.j ) then
-                      echo " ${MYNAME}: AGCM Failed to generate DST PBS jobs for Member ${memtag}, Aborting ... "
+                      echo " ${MYNAME}: AGCM Failed to generate DST BATCH jobs for Member ${memtag}, Aborting ... "
                       touch $ENSWORK/.FAILED
                       exit(1)
                    endif
                    /bin/mv agcm_dst${npoe}.j $ENSWORK/
                    # this job is really not monitored; the real work done by agcm_mem${memtag}.j is monitored
-                   qsub $ENSWORK/agcm_dst${npoe}.j
+                   $ATMENS_BATCHSUB $ENSWORK/agcm_dst${npoe}.j
                    touch .SUBMITTED
                    @ ipoe = 0 # reset counter
                    @ npoe++
                 endif 
              else
                 if ( -e agcm_mem${memtag}.j ) then
-                   qsub agcm_mem${memtag}.j
+                   $ATMENS_BATCHSUB agcm_mem${memtag}.j
                    touch $ENSWORK/.SUBMITTED
                 else
-                   echo " ${MYNAME}: Failed to generate PBS jobs for Atmos GCM, Aborting ... "
+                   echo " ${MYNAME}: Failed to generate BATCH jobs for Atmos GCM, Aborting ... "
                    exit(1)
                 endif
              endif # <DSTJOB>
@@ -617,7 +530,7 @@ if(! -e .DONE_ENSFCST ) then
 
              # Store updated ensemble
              # ----------------------
-             update_ens.csh $expid $memtag bkg $ENSWORK/mem${memtag} NULL $NCSUFFIX
+             update_ens.csh $expid mem$memtag bkg $ENSWORK/mem${memtag} NULL $NCSUFFIX
 
         endif
 
@@ -678,7 +591,7 @@ if (! -e $ENSWORK/.DONE_GCM_DIAG_UPD ) then
      @ ic++
      set memtag  = `echo $ic |awk '{printf "%03d", $1}'`
      cd mem${memtag}
-     update_ens.csh $expid $memtag diag $ENSWORK/mem${memtag} HISTORY.rc $NCSUFFIX
+     update_ens.csh $expid mem$memtag diag $ENSWORK/mem${memtag} HISTORY.rc $NCSUFFIX
      cd -
   end
   touch $ENSWORK/.DONE_GCM_DIAG_UPD
@@ -693,60 +606,16 @@ if ( "$LINK_RST" == "$HYBRIDGSI" ) then # won't do it in easy-ana case when cent
      set memtag  = `echo $ic |awk '{printf "%03d", $1}'`
      if (! -e $ENSWORK/.DONE_UPDATE_RST_MEM${memtag}.$yyyymmddhh ) then
 
-        # Get positioned
-        # --------------
-        cd $ENSWORK/mem$memtag
-
-        set chkpnt_date = `echorc.x -rc AGCM.rc RECORD_REF_DATE`
-        set store_chkpnt = 1
-        if ( $chkpnt_date[1] < 17760705 ) then
-           set store_chkpnt = 0
+        gcm_ensrst_wrap.csh $expid $ionymdb $ionhmsb mem$memtag
+        if($status) then
+          echo "${MYNAME}: error wrapping up member $memtag output, aborting"
+          exit(1)
+        else
+           touch $ENSWORK/.DONE_UPDATE_RST_MEM${memtag}.$yyyymmddhh
         endif
 
-        # Place restarts in updated directory
-        # -----------------------------------
-        if ( $store_chkpnt ) then
-        echo " $MYNAME : Moving restarts to updated location of ensemble"
-        echo " $MYNAME : ==============================================="
-        set grs_list = ( `grep _checkpoint AGCM.rc | grep -vE "^[ ]*\#" | cut -d: -f2 | sed -e's/^[ ]*\(.*[^ ]\)[ ]*$/\1/' -e 's/_checkpoint//'` )
-        set rstot = `echo $#grs_list`
-        @ id = 0
-        while ( $id < $rstot )
-          @ id++
-          if( $grs_list[$id] != "agcm_import" ) then
-              if( -e $grs_list[$id]_checkpoint.${ionymdb}_${iohhb}00z.$RSTEXT ) then
-#----
-                 if (-e $ENSWORK/.DONE_RST_REGRID ) then # in case not all RSTs are cycled (that is, some are regrided)
-                    @ iv = 0
-                    @ found = 0
-                    while ( $iv < $rstotrgd ) #&& $found ) # loop over regridded rst's
-                         @ iv++
-                         if ( $grs_list[$id] == $grs_regrid[$iv] ) then  # if rst in AGCM.rc is one that's been regridded ...
-                            set found = 1
-                         endif
-                    end
-                    if ( ! $found ) then # save only those really needed (not being re-gridded)
-                        /bin/mv $grs_list[$id]_checkpoint.${ionymdb}_${iohhb}00z.$RSTEXT \
-                                $ENSWORK/updated_ens/mem${memtag}/$expid.$grs_list[$id]_rst.${ionymdb}_${iohhb}z.$RSTEXT
-                    endif
-                 else # expect the full suite of RSTs to be cycling
-#----
-                    /bin/mv $grs_list[$id]_checkpoint.${ionymdb}_${iohhb}00z.$RSTEXT \
-                            $ENSWORK/updated_ens/mem${memtag}/$expid.$grs_list[$id]_rst.${ionymdb}_${iohhb}z.$RSTEXT
-                 endif # <REGRID>
-              else
-                 if ( $ATMENS_IGNORE_CHKPNT ) then
-                    echo " ${MYNAME}: cannot finding mem${memtag}/$grs_list[$id]_checkpoint, but continuing ..."
-                 else
-                    echo " ${MYNAME}: trouble finding mem${memtag}/$grs_list[$id]_checkpoint, aborting ..."
-                    exit(1)
-                 endif
-              endif
-          endif
-        end # <while RSTs exist>
-        endif # <store checkpoint files>
-        touch $ENSWORK/.DONE_UPDATE_RST_MEM${memtag}.$yyyymmddhh
-     endif # <check RST update>
+     endif
+
    end
 endif # recycling of RSTs
 
