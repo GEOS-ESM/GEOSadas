@@ -111,7 +111,7 @@ where `N` is the number of parallel processes. On discover head nodes, this shou
 
 ***NOTE***: Do *not* use `make -j install` with GEOSadas. The GEOSadas has a *lot* of parallelism at the beginning and the build system will gladly build as much as it can at the same time. However, the license server for the Intel compiler on discover will quickly lock up as each process accesses it, and will "break" the Intel compiler for all other users.
 
-### Run the AGCM
+### Run the GCM
 
 Once the model has built successfully, you will have an `install/` directory in your checkout. To run `gcm_setup` go to the `install/bin/` directory and run it there:
 ```
