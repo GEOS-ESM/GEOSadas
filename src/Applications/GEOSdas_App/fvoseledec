@@ -35,6 +35,7 @@ if ( ! $?FVINPUT ) then
      echo " Invalid path for SVEC bcs "
      exit 1
 endif
+if ( !($?BATCH_SUBCMD) ) setenv BATCH_SUBCMD "sbatch"
 if ( !($?CORRECT4IAU) ) setenv CORRECT4IAU 0
 if ( !($?VEXPID) ) setenv VEXPID $EXPID
 
@@ -174,6 +175,12 @@ while ( $ic < $ntp1 )
         set GID = `getsponsor.pl $gsflg`
 
         fname1 "#\!/bin/csh -xvf"
+        fname2 "#SBATCH --account=$GID"
+        fname2 "#SBATCH --job-name=acquire"
+        fname2 "#SBATCH --output=acquire.log.o%j"
+        fname2 "#SBATCH --ntasks=1"
+        fname2 "#SBATCH --time=1:00:00"
+        fname2 "#SBATCH --partition=datamove"
         fname2 "#PBS -W group_list=$GID"
         fname2 "#PBS -N acquire"
         fname2 "#PBS -o acquire.log.o%j"
@@ -188,7 +195,11 @@ while ( $ic < $ntp1 )
         fname2 " acquire -v -rc ana.acq -d . -strict $nymdb $nhmsb 060000 1 "
         fname2 "exit"
 
+        if ( $BATCH_SUBCMD == "sbatch" ) then
+           sbatch -W $fname
+        else
         qsub -W block=true $fname
+        endif
 
       endif # end of aquire (discover)
 
@@ -247,6 +258,12 @@ while ( $ic < $ntp1 )
         set GID = `getsponsor.pl $gsflg`
 
         fname1 "#\!/bin/csh -xvf"
+        fname2 "#SBATCH --account=$GID"
+        fname2 "#SBATCH --job-name=acquire"
+        fname2 "#SBATCH --output=acquire.log.o%j"
+        fname2 "#SBATCH --ntasks=1"
+        fname2 "#SBATCH --time=1:00:00"
+        fname2 "#SBATCH --partition=datamove"
         fname2 "#PBS -W group_list=$GID"
         fname2 "#PBS -N acquire"
         fname2 "#PBS -o acquire.log.o%j"
@@ -261,7 +278,11 @@ while ( $ic < $ntp1 )
         fname2 " acquire -v -rc ana.acq -d . -strict $nymdb $nhmsb 060000 1 "
         fname2 "exit"
 
+        if ( $BATCH_SUBCMD == "sbatch" ) then
+           sbatch -W $fname
+        else
         qsub -W block=true $fname
+        endif
 
       endif # end of aquire (discover)
       if ( ! -e $hires_anal[1] ) then
@@ -405,6 +426,12 @@ while ( $ic < $ntp1 )
           set GID = `getsponsor.pl $gsflg`
 
           fname1 "#\!/bin/csh -xvf"
+          fname2 "#SBATCH --account=$GID"
+          fname2 "#SBATCH --job-name=acquire"
+          fname2 "#SBATCH --output=acquire.log.o%j"
+          fname2 "#SBATCH --ntasks=1"
+          fname2 "#SBATCH --time=1:00:00"
+          fname2 "#SBATCH --partition=datamove"
           fname2 "#PBS -W group_list=$GID"
           fname2 "#PBS -N acquire"
           fname2 "#PBS -o acquire.log.o%j"
@@ -419,7 +446,11 @@ while ( $ic < $ntp1 )
           fname2 " acquire -v -rc ana.acq -d . -strict $nymde $nhmse 060000 1 "
           fname2 "exit"
 
+          if ( $BATCH_SUBCMD == "sbatch" ) then
+             sbatch -W $fname
+          else
           qsub -W block=true $fname
+          endif
 
       endif # end of aquire (discover)
 

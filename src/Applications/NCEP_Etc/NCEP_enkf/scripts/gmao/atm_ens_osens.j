@@ -5,6 +5,9 @@
 #SBATCH --ntasks=96
 #SBATCH --ntasks-per-node=24
 #
+#SBATCH --job-name=atm_ens_osens
+#SBATCH --output=atm_ens_osens.log.o%j
+#SBATCH --time=6:00:00
 #PBS -N atm_ens_osens
 #PBS -o atm_ens_osens.log.o%j
 #_PBS -l select=1:ncpus=24
@@ -158,7 +161,6 @@
   setenv SPECRES    62    # should be able to revisit analyzer to avoid needing this
 
   setenv GAAS_ANA 1
-  setenv ACFTBIAS 0
 
 # Run-time mpi-related options
 # ----------------------------
@@ -188,6 +190,11 @@
 # Internal parameters controlling system behavior
 # ----------------------------------------------
   source $FVHOME/run/atmens/AtmEnsConfig.csh
+
+  if ( !($?ATMENS_BATCHSUB) ) then
+     echo "atm_ens_osens.j: missing batch sub command"
+     exit (1)
+  endif
 
   if ( $?BERROR_FROMENS ) then
      unsetenv BERROR_FROMENS
@@ -219,7 +226,7 @@
   set aver = ana
   set prog = prg
 
-  touch $ATMENSLOC/atmens/.no_archiving
+  touch $ATMENSLOC/.no_archiving
   if ( $?eanaonly ) then
   endif
          #    The following set specific pieces separately
@@ -273,6 +280,9 @@
   else
      if ( $?SLURM_JOBID ) then
          qalter -N ${JOBGEN_PFXNAME}_atm_ens_${JOBGEN_SFXNAME} $SLURM_JOBID
+     else
+         echo "no JOBID found, abort"
+         exit(1)
      endif
   endif
 
@@ -317,7 +327,11 @@
                 "Main job script Failed for Get for Ensemble Ob-Sensitivity"
    
                 if ( -e get4aeosens.j ) then
-                   qsub  -W block=true get4aeosens.j
+                   if ( $ATMENS_BATCHSUB == "sbatch" ) then
+                      $ATMENS_BATCHSUB  -W get4aeosens.j
+                   else
+                      $ATMENS_BATCHSUB  -W block=true get4aeosens.j
+                   endif
                    touch .SUBMITTED
                 else
                    echo " $myname: Failed for Get for Ensemble Ob-Sensitivity, Aborting ... "
@@ -369,20 +383,20 @@
 # Store updated ensemble for archiving and prepare for next cycle
 # ---------------------------------------------------------------
   if( $DO_ATM_ENS ) then
-    /bin/mv $FVWORK/updated_ens  $ATMENSLOC/atmensosens4arch.${nymdb}_${hhb}
+    /bin/mv $FVWORK/updated_ens  $FVHOME/atmensosens4arch.${nymdb}_${hhb}
   endif
  
 # Summarize timings
 # -----------------
   zeit_pr.x
-  /bin/cp .zeit $ATMENSLOC/atmensosens4arch.${nymdb}_${hhb}/$EXPID.atmefso_zeit.log.${nymdb}_${hhb}z.txt 
+  /bin/cp .zeit $FVHOME/atmensosens4arch.${nymdb}_${hhb}/$EXPID.atmefso_zeit.log.${nymdb}_${hhb}z.txt 
 
 # If so, submit job for another observation sensitivity/impact case
 # -----------------------------------------------------------------
   if( $DO_ATM_ENS ) then
      if ( ! ($ENSONLY_BEG && $ENSONLY_END) ) then
         cd $FVHOME/asens
-#       qsub atm_ens_osens.j
+#       $ATMENS_BATCHSUB atm_ens_osens.j
         cd -
      endif
 

@@ -318,17 +318,17 @@ END MODULE type_kinds
 !                          -- MODIFICATION HISTORY --
 !-------------------------------------------------------------------------------
 !
-! $Id$
+! $Id: type_kinds.F90,v 1.4 2010/04/12 19:53:21 wgu Exp $
 !
-! $Date$
+! $Date: 2010/04/12 19:53:21 $
 !
-! $Revision$
+! $Revision: 1.4 $
 !
-! $Name$
+! $Name: GEOSadas-5_27_0 $
 !
-! $State$
+! $State: Exp $
 !
-! $Log$
+! $Log: type_kinds.F90,v $
 ! Revision 1.4  2010/04/12 19:53:21  wgu
 ! add oz
 !

@@ -24,7 +24,12 @@
 #=======================================================================
 use strict;
 use warnings;
+use Cwd qw(cwd);
+use File::Basename qw(basename dirname);
 use FindBin qw($Bin);
+use File::Path qw(mkpath);
+use Getopt::Long qw(GetOptions);
+
 my $fvroot;
 
 # pre-process to get $fvroot location
@@ -42,6 +47,8 @@ BEGIN {
     close DRF;
 }
 use lib "$fvroot/bin";
+use GMAO_utils qw(get_siteID);
+use Perl_Config qw(perl_config);
 use WriteLog qw(chdir_ mkpath_ unlink_ system_);
 
 # global variables
@@ -51,6 +58,10 @@ my ($EXPID, $FVHOME, $PBS_BIN, $account, $listdir, $mnthlyRC);
 my ($numnodes_mm, $numnodes_mp, $plotHISTrc, $qcmd, $rundir);
 my ($script, $siteID, $workdir, $yyyymm, %newrc, %JOBID);
 my ($walltime_cl, $walltime_mm, $walltime_mp, $walltime_pf);
+my ($MONTHLY_PARTITION, $MONTHLY_QOS);
+
+#$MONTHLY_PARTITION = "preops";
+#$MONTHLY_QOS = "dastest";
 
 my %valid = ( "fetch" => 1,
               "means" => 1,
@@ -84,12 +95,6 @@ my %valid = ( "fetch" => 1,
 # purpose - get runtime options;
 #=======================================================================
 sub init {
-    use Cwd qw(cwd);
-    use Getopt::Long qw(GetOptions);
-    use File::Basename qw(basename);
-    use GMAO_utils qw(get_siteID);
-    use Perl_Config qw(perl_config);
-
     my ($GID, $agcm_im, $agcmRC, $agrid, $debug, $help, $job_tarfile);
     my ($month, $runconfig, $user, $workarea, $year);
     my (%agrid_id, %low_res, %mid_res, %opts, @newrc);
@@ -244,12 +249,7 @@ sub init {
         $user = $ENV{"USER"};
         #--if (! $?WDIR) set WDIR = $FVSILO/monthly_temp/Y$year/M$month
 
-        if    ($siteID eq "nccs") { $workarea = "/discover/nobackup/$user" }
-        elsif ($siteID eq "nas")  { $workarea = "/nobackup/$user" }
-        else                      { $workarea = "/scratch/$user" }
-
-        die "Error. Cannot find workarea directory: $workarea;"
-            unless -d $workarea;
+        $workarea = dirname($FVHOME);
         $workdir = "$workarea/mmwork.$yyyymm.$$";
     }
 }
@@ -351,7 +351,7 @@ sub fetch_calc_tar_and_clean {
     # tar jobscripts
     #---------------
     chdir_("\n$rundir/jobscripts");
-    foreach $label qw( prefetch means tarandclean ) {
+    foreach $label (qw( prefetch means tarandclean )) {
         @list =(<$label.*.$yyyymm.j>);
         if (@list) {
             $job_tarfile = "$label.$yyyymm.j.$$.tar";
@@ -379,7 +379,6 @@ sub fetch_calc_tar_and_clean {
 # => $do_dmput: flag indicating whether to dmput the input files
 #=======================================================================
 sub fetch_inputs {
-    use File::Basename qw(basename);
     my (%opts, $filestring, $ftype, $htype, $do_dmput, $do_tar);
     my ($tmpl, $prefetch_j, $jobname, $outfile);
     my ($job_name, $time, $output, $partition, $vFLG);
@@ -456,11 +455,11 @@ sub fetch_inputs {
 # => $do_dmput: flag indicating whether to dmput data input files
 #=======================================================================
 sub calc_monthly_means {
-    use File::Basename qw(basename);
     my (%opts, $filestring, $ftype, $htype, $do_dmput);
     my ($tmpl, $means_j, $jobname, $outfile, $tasks_per_node);
     my ($job_name, $nodes, $time, $output, $per_node);
     my ($vFLG, $processors, %value, @deps, $dependFLG, $cmd);
+    my ($parFLG, $qosFLG);
 
     # input parameters
     #-----------------
@@ -479,6 +478,9 @@ sub calc_monthly_means {
     $outfile = "$listdir/$EXPID.means.$ftype.$yyyymm.log.$$.txt.FAILED";
     $tasks_per_node = 24;
 
+    $parFLG = "";
+    $qosFLG = "";
+
     if ($siteID eq "nccs") {
         $job_name = "SBATCH --job-name=$jobname";
         $time = "SBATCH --time=$walltime_mm";
@@ -486,6 +488,8 @@ sub calc_monthly_means {
         $nodes = "SBATCH --nodes=$numnodes_mm";
         $per_node = "SBATCH --tasks-per-node=$tasks_per_node";
         $vFLG = "--export=outfile=$outfile";
+        $parFLG = "SBATCH --partition=$MONTHLY_PARTITION" if $MONTHLY_PARTITION;
+        $qosFLG = "SBATCH --qos=$MONTHLY_QOS" if $MONTHLY_QOS;
     }
     else {
         $job_name = "PBS -N $jobname";
@@ -505,6 +509,9 @@ sub calc_monthly_means {
     $value{"__NODES__"}      = $nodes;
     $value{"__PER_NODE__"}   = $per_node;
     $value{"__PROCESSORS__"} = $processors;
+
+    $value{"__MONTHLY_PARTITION__"} = $parFLG;
+    $value{"__MONTHLY_QOS__"} = $qosFLG;
 
     $value{"__FILESTRING__"} = $filestring;
     $value{"__HOURTYPE__"}   = $htype;
@@ -540,7 +547,6 @@ sub calc_monthly_means {
 # => $lastFLG: flag indicating whether this is last data collection
 #=======================================================================
 sub tar_and_clean_inputs {
-    use File::Basename qw(basename);
     my (%opts, $filestring, $ftype, $do_tar, $lastFLG);
     my ($tmpl, $tarandclean_j, $jobname, $outfile);
     my ($job_name, $time, $output, $partition, $vFLG);
@@ -726,7 +732,6 @@ sub archive_monthly_files {
 # purpose - submit plotting job
 #=======================================================================
 sub monthly_plots {
-    use File::Basename qw(basename);
     my ($tmpl, $transfer_csh, $plots_j, $jobname, $outfile);
     my ($job_name, $nodes, $time, $output, $partition);
     my (%value, @deps, $dependFLG, $vFLG, $cmd);
@@ -881,9 +886,6 @@ sub finish_monthly_plots {
 #    that directory with the same filename as $infil.
 #=======================================================================
 sub replaceLabels {
-    use File::Basename qw(basename dirname);
-    use File::Path qw(mkpath);
-
     my ($infil, $outfl, %values) = @_;
     my ($outdir, $label);
 
@@ -998,7 +1000,6 @@ sub get_dependFLG {
 # => $dir: cd to this directory prior to qsub command
 #=======================================================================
 sub qsubW {
-    use Cwd ("cwd");
     my ($cmd, $dir, $wdir, $jobID_line, $jobID, $jobtype);
     $cmd = shift;
     $dir = shift;
@@ -1032,7 +1033,6 @@ sub qsubW {
 # purpose - print usage information
 #=======================================================================
 sub usage {
-
     print <<"EOF";
 purpose: calculate means, tar inputs, and/or produce plots for monthly data
 usage: $script [process options] [plot option] [other options]

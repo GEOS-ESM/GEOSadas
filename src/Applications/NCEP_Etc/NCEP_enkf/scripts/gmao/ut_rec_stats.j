@@ -7,12 +7,14 @@ setenv DOANA 0
 setenv NEW  1
 setenv STATCASE arec
 setenv GET_TAR_BATCH 1
+setenv ATMENS_BATCHSUB sbatch
 
 # to run pegcm stats in parallel
 setenv PEGCM_NCPUS 4
 setenv PEGCM_WALLCLOCK 0:30:00
 setenv PEGCM_QNAME nccs2
 
+setenv ATMENS_BATCHSUB qsub
 setenv EXPID prePP_rt
 setenv FVHOME /discover/nobackup/projects/gmao/advda/$user/$EXPID
 setenv EXPID x0028A_rt
@@ -99,7 +101,11 @@ EOF
              "Main job script Failed for Get Ensemble Analysis"
 
              if ( -e getensana.j ) then
-                qsub  -W block=true getensana.j
+                if ( $ATMENS_BATCHSUB == "sbatch" ) then
+                   $ATMENS_BATCHSUB  -W getensana.j
+                else
+                   $ATMENS_BATCHSUB  -W block=true getensana.j
+                endif
                 touch .SUBMITTED
              else
                 echo " $MYNAME: Failed for Get Ensemble Analysis, Aborting ... "

@@ -3,12 +3,15 @@ subroutine variances(mycases,numcases,npes,mype)
   use variables,  only: nlat,nlon,nsig
   use variables,  only: sfvar,vpvar,tvar,qvar,nrhvar,cvar,psvar,ozvar
   use variables,  only: qivar,qlvar,qrvar,qsvar
+  use variables,  only: lbal,tbal, vpbal,pbal
   use variables,  only: db_prec,anaclw
   use variables,  only: tcon,vpcon,pscon
-  use variables,  only: grdsf,grdvp,gridt,grdc,gridq,grdrh,gridp,grdoz
-  use variables,  only: gridqi,gridql,gridqr,gridqs
+  use variables,only: lat1,lon1
+  use variables, only: filunit,biasrm,bbt,bbs,bbv,bbp
+  use variables,only: ijn,displs_g,iglobal,ltosi,ltosj
   use variables,  only: smoothdeg
-  use variables,  only: hydromet
+  use variables, only: one
+  use delmod,    only: delvars, hydrobias,delbal  
   use postmod,    only: smoothlat
 #ifndef ibm_sp
   use m_mpif
@@ -21,14 +24,26 @@ subroutine variances(mycases,numcases,npes,mype)
   character(255) grdfile
   integer ncfggg,iret
   integer i,j,k,m,nn,kk,k2,ibin,ll,ierror,mycases,numcases,mpi_rtype,mype
+  integer :: mype_work,mm1,ni1,ni2
   integer npes
   real(fp_kind) norm
-  real(fp_kind),allocatable,dimension(:,:):: balvar
   real(fp_kind),dimension(25,nsig):: qcount,qamp
   real(fp_kind),dimension(25):: qcavg
-  real(single),allocatable,dimension(:,:,:) :: expvart
-  real(single),allocatable,dimension(:,:,:) :: expvarvp
-  real(single),allocatable,dimension(:,:) :: expvarsp
+  real(fp_kind),allocatable,dimension(:,:)  :: workgrd
+  real(fp_kind),allocatable,dimension(:)  :: work1
+  real(fp_kind),allocatable,dimension(:,:):: vptot,ttot
+  real(fp_kind),allocatable,dimension(:):: ptot
+  real(fp_kind),dimension(lat1,lon1,nsig) :: grdsf,grdvp,gridt,gridq,grdrh,grdoz,grdc
+  real(fp_kind),dimension(lat1,lon1,nsig) :: gridqi,gridql,gridqr,gridqs
+  real(fp_kind),dimension(lat1,lon1):: gridp
+  real(fp_kind),dimension(lat1,lon1,nsig) :: sf,vp,t,q,rh,oz,cw
+  real(fp_kind),dimension(lat1,lon1,nsig) :: qi,ql,qr,qs
+  real(fp_kind),dimension(lat1,lon1):: ps
+  real(fp_kind),dimension(lat1,lon1,nsig) :: tb,vpb,gvpb,gtb,twrk,vpwrk,ghold
+  real(fp_kind),dimension(lat1,lon1):: pb,gpb,pwrk
+  real(single), dimension(nlat,nsig,3):: tbal4,vpbal4
+  real(single), dimension(nlat     ,3):: pbal4
+  real(fp_kind) :: r_norm,qdiff
 
   if (db_prec) then
     mpi_rtype=mpi_real8
@@ -38,18 +53,17 @@ subroutine variances(mycases,numcases,npes,mype)
 
   if (mype==0) write(6,*) 'IN ROUTINE TO CALCULATE VARIANCES'
 
-  allocate(balvar(nlat,nlon))
-  allocate(expvart (nlat,nsig,3))
-  allocate(expvarvp(nlat,nsig,3))
-  allocate(expvarsp(nlat,3))
+  mype_work=max(0,npes/2-1)
+  mm1=mype+1
 
-  if (hydromet) then
-     qivar=0.
-     qlvar=0.
-     qrvar=0.
-     qsvar=0.
-  endif
+  allocate(workgrd(nlat,nlon))
+  allocate(work1(iglobal))
+
   qvar=0.
+  qivar=0.
+  qlvar=0.
+  qrvar=0.
+  qsvar=0.
   cvar=0.
   ozvar=0. 
   nrhvar=0.
@@ -60,232 +74,473 @@ subroutine variances(mycases,numcases,npes,mype)
   ibin=25
   qcount=0.
   qamp=0.
-  expvart=0
-  expvarvp=0
-  expvarsp=0
+  oz=0. ; sf=0. ; vp=0. ; t=0. ; q=0. ; cw=0.; ps=0.
+  qi=0.;ql=0.;qr=0.;qs=0.
 
-  do nn=1,mycases
+  r_norm=1./float(numcases)
 
-#ifdef gmao_intf
-    call m_rdgrids(nn,npes,mype,mycases)
-#else
-!    call convert2grid(nn,npes,mype,mycases) ! does not exist anymore
-#endif
+  if(lbal) then 
+     allocate(tbal(nlat,nsig))
+     allocate(vpbal(nlat,nsig))
+     allocate(pbal(nlat))
+     allocate(ttot(nlat,nsig))
+     allocate(vptot(nlat,nsig))
+     allocate(ptot(nlat))
+     tbal=0.; vpbal=0.; pbal=0.
+     vpb=0. ;  tb=0.  ;pb=0.
+     vptot=0.; ttot=0.;ptot=0.
+     vpwrk=0.;twrk=0.;pwrk=0.
+  end if 
 
-    do m=1,nsig
-      balvar=0.
-      do k=1,nsig
-        do j=1,nlon
-          do i=1,nlat
-            balvar(i,j)=balvar(i,j)+tcon(i,m,k)*grdsf(i,j,k)
-          end do
-        end do
-      end do
-      do j=1,nlon
-        do i=1,nlat
-          expvart(i,m,1)=expvart(i,m,1)+gridt(i,j,m)**2
-          expvart(i,m,2)=expvart(i,m,2)+balvar(i, j)**2
-          gridt(i,j,m)=gridt(i,j,m)-balvar(i,j)
-          expvart(i,m,3)=expvart(i,m,3)+gridt(i,j,m)**2
-        end do
-      end do
+  filunit = 1000*(mype+1)+1
+  open(filunit,form='unformatted')
+  rewind(filunit)
 
-      balvar=0.
-      do j=1,nlon
-        do i=1,nlat
-          balvar(i,j)=balvar(i,j)+vpcon(i,m)*grdsf(i,j,m)
-        end do
-      end do
-      do j=1,nlon
-        do i=1,nlat
-          expvarvp(i,m,1)=expvarvp(i,m,1)+grdvp(i,j,m)**2
-          expvarvp(i,m,2)=expvarvp(i,m,2)+balvar(i, j)**2
-          grdvp(i,j,m)=grdvp(i,j,m)-balvar(i,j)
-          expvarvp(i,m,3)=expvarvp(i,m,3)+grdvp(i,j,m)**2
-        end do
-      end do
-    end do ! end do m levs
+!  do nn=1,mycases
+  do nn=1,numcases
 
-    balvar=0.
-    do j=1,nlon
-      do i=1,nlat
-        do k=1,nsig
-          balvar(i,j)=balvar(i,j)+pscon(i,k)*grdsf(i,j,k)
-        end do
-      end do
-    end do
-    do j=1,nlon
-      do i=1,nlat
-        expvarsp(i,1)=expvarsp(i,1)+gridp(i,j)**2
-        expvarsp(i,2)=expvarsp(i,2)+balvar(i,j)**2
-        gridp(i,j)=gridp(i,j)-balvar(i,j)
-        expvarsp(i,3)=expvarsp(i,3)+gridp(i,j)**2
-      end do
-    end do
+    read(filunit) grdsf,grdvp,gridt,gridp,gridq,grdrh,gridqi,gridql,gridqr,gridqs,grdoz,grdc
+    call delvars  (grdsf,grdvp,gridt,gridp,gridq,grdoz,grdc,mype)
+    call hydrobias(gridqi,gridql,gridqr,gridqs)
 
-! compute variances for balanced and unbalanced variables
-    do k=1,nsig
-      do j=1,nlon
-        do i=1,nlat
-          sfvar(i,k)=sfvar(i,k)+grdsf(i,j,k)*grdsf(i,j,k)
-          vpvar(i,k)=vpvar(i,k)+grdvp(i,j,k)*grdvp(i,j,k)
-          tvar(i,k)=tvar(i,k)+gridt(i,j,k)*gridt(i,j,k)
-          qvar(i,k)=qvar(i,k)+gridq(i,j,k)*gridq(i,j,k)
-          ozvar(i,k)=ozvar(i,k)+grdoz(i,j,k)*grdoz(i,j,k)
-        end do
-      end do
-    end do
-    if (hydromet) then
+    if(lbal) then  
+       gvpb=0.; gtb=0. ;gpb=0.
+       call delbal(grdsf,gvpb,gtb,gpb,mype)
        do k=1,nsig
-         do j=1,nlon
-           do i=1,nlat
-             qivar(i,k)=qivar(i,k)+gridqi(i,j,k)*gridqi(i,j,k)
-             qlvar(i,k)=qlvar(i,k)+gridql(i,j,k)*gridql(i,j,k)
-             qrvar(i,k)=qrvar(i,k)+gridqr(i,j,k)*gridqr(i,j,k)
-             qsvar(i,k)=qsvar(i,k)+gridqs(i,j,k)*gridqs(i,j,k)
-           end do
-         end do
-       end do
-    endif
-    do j=1,nlon
-      do i=1,nlat
-        psvar(i)=psvar(i)+gridp(i,j)*gridp(i,j)
-      end do
-    end do
-    if(anaclw)then
-      do k=1,nsig
-        do j=1,nlon
-          do i=1,nlat
-            cvar(i,k)=cvar(i,k)+grdc(i,j,k)*grdc(i,j,k)
-          end do
+         do j=1,lon1
+           do i=1,lat1
+              vpb(i,j,k) = vpb(i,j,k) + (gvpb(i,j,k)*gvpb(i,j,k))*r_norm
+               tb(i,j,k) =  tb(i,j,k) + (gtb(i,j,k)*gtb(i,j,k))*r_norm
+              ghold(i,j,k) = gvpb(i,j,k)  + grdvp(i,j,k)
+              vpwrk(i,j,k) = vpwrk(i,j,k) + (ghold(i,j,k)*ghold(i,j,k))*r_norm
+              ghold(i,j,k) = gtb(i,j,k) + gridt(i,j,k)
+              twrk(i,j,k) =  twrk(i,j,k) + (ghold(i,j,k)*ghold(i,j,k))*r_norm
+           end do 
+         end do 
+       end do 
+       do j=1,lon1
+         do i=1,lat1
+           pb(i,j) = pb(i,j) + (gpb(i,j)*gpb(i,j))*r_norm
+           ghold(i,j,1) = gpb(i,j) + gridp(i,j)
+           pwrk(i,j) = pwrk(i,j) + (ghold(i,j,1)*ghold(i,j,1))*r_norm
+         end do 
+       end do 
+    end if 
+    do k=1,nsig
+      do j=1,lon1
+        do i=1,lat1
+          sf(i,j,k) = sf(i,j,k) + ( grdsf(i,j,k)* grdsf(i,j,k))*r_norm
+          vp(i,j,k) = vp(i,j,k) + ( grdvp(i,j,k)* grdvp(i,j,k))*r_norm
+           t(i,j,k) =  t(i,j,k) + ( gridt(i,j,k)* gridt(i,j,k))*r_norm
+           q(i,j,k) =  q(i,j,k) + ( gridq(i,j,k)* gridq(i,j,k))*r_norm
+          qi(i,j,k) = qi(i,j,k) + (gridqi(i,j,k)*gridqi(i,j,k))*r_norm
+          ql(i,j,k) = ql(i,j,k) + (gridql(i,j,k)*gridql(i,j,k))*r_norm
+          qr(i,j,k) = qr(i,j,k) + (gridqr(i,j,k)*gridqr(i,j,k))*r_norm
+          qs(i,j,k) = qs(i,j,k) + (gridqs(i,j,k)*gridqs(i,j,k))*r_norm
+          oz(i,j,k) = oz(i,j,k) + ( grdoz(i,j,k)* grdoz(i,j,k))*r_norm
+          cw(i,j,k) = cw(i,j,k) + (  grdc(i,j,k)*  grdc(i,j,k))*r_norm
         end do
       end do
-    else
-      cvar=0.
-    endif
-
+    end do
+    if(.not. anaclw) cw = 0.
+    do j=1,lon1
+      do i=1,lat1
+        ps(i,j) = ps(i,j) + (gridp(i,j)*gridp(i,j))*r_norm
+      end do
+    end do
+! Normalized RH calculations
+! this is what GSI will do: varq(i,k)=min(max(corq2x,0.00015_r_kind),one)
     do k=1,nsig
-      do j=1,nlon
-        do i=1,nlat
+      do j=1,lon1
+        do i=1,lat1
           ll=grdrh(i,j,k)*20.0+1
           ll=min0(max0(1,ll),25)
-          qamp(ll,k)=qamp(ll,k)+gridq(i,j,k)**2.
-          qcount(ll,k)=qcount(ll,k)+1.0
+          qdiff=min(one,abs(gridq(i,j,k)))**2.
+          qamp(ll,k)=qamp(ll,k)+qdiff
+          qcount(ll,k)=qcount(ll,k)+1
         end do
       end do
     end do
-  end do ! enddo over cases for mype
 
-  call mpi_allreduce((sfvar),sfvar,nlat*nsig,mpi_rtype,mpi_sum, &
-       mpi_comm_world,ierror)
-  call mpi_allreduce((vpvar),vpvar,nlat*nsig,mpi_rtype,mpi_sum, &
-       mpi_comm_world,ierror)
-  call mpi_allreduce((tvar),tvar,nlat*nsig,mpi_rtype,mpi_sum, &
-       mpi_comm_world,ierror)
-  call mpi_allreduce((qvar),qvar,nlat*nsig,mpi_rtype,mpi_sum, &
-       mpi_comm_world,ierror)
-  if (hydromet) then
-     call mpi_allreduce((qivar),qivar,nlat*nsig,mpi_rtype,mpi_sum, &
-          mpi_comm_world,ierror)
-     call mpi_allreduce((qlvar),qlvar,nlat*nsig,mpi_rtype,mpi_sum, &
-          mpi_comm_world,ierror)
-     call mpi_allreduce((qrvar),qrvar,nlat*nsig,mpi_rtype,mpi_sum, &
-          mpi_comm_world,ierror)
-     call mpi_allreduce((qsvar),qsvar,nlat*nsig,mpi_rtype,mpi_sum, &
-          mpi_comm_world,ierror)
-  endif
-  call mpi_allreduce((cvar),cvar,nlat*nsig,mpi_rtype,mpi_sum, &
-       mpi_comm_world,ierror)
-  call mpi_allreduce((ozvar),ozvar,nlat*nsig,mpi_rtype,mpi_sum, &
-       mpi_comm_world,ierror)
-  call mpi_allreduce((psvar),psvar,nlat,mpi_rtype,mpi_sum, &
-       mpi_comm_world,ierror)
+  end do ! enddo over cases
+  close(filunit)
+
+  if (lbal) then
+    do k=1,nsig
+      call mpi_gatherv(vpb(1,1,k),ijn(mm1),mpi_rtype,&
+                       work1,ijn,displs_g,mpi_rtype,&
+                       mype_work,mpi_comm_world,ierror)
+      if (mype==mype_work) then
+        do kk=1,iglobal
+          ni1=ltosi(kk); ni2=ltosj(kk)
+          workgrd(ni1,ni2)=work1(kk)
+        end do
+        do i=1,nlat
+          do j=1,nlon
+            vpbal(i,k) = vpbal(i,k) + workgrd(i,j)/float(nlon)
+          end do
+        end do
+      end if
+    end do    
+    do k=1,nsig
+      call mpi_gatherv(vpwrk(1,1,k),ijn(mm1),mpi_rtype,&
+                       work1,ijn,displs_g,mpi_rtype,&
+                       mype_work,mpi_comm_world,ierror)
+      if (mype==mype_work) then
+        do kk=1,iglobal
+          ni1=ltosi(kk); ni2=ltosj(kk)
+          workgrd(ni1,ni2)=work1(kk)
+        end do
+        do i=1,nlat
+          do j=1,nlon
+            vptot(i,k) = vptot(i,k) + workgrd(i,j)/float(nlon)
+          end do
+        end do
+      end if
+    end do    
+
+    do k=1,nsig
+      call mpi_gatherv(tb(1,1,k),ijn(mm1),mpi_rtype,&
+                       work1,ijn,displs_g,mpi_rtype,&
+                       mype_work,mpi_comm_world,ierror)
+      if (mype==mype_work) then
+        do kk=1,iglobal
+          ni1=ltosi(kk); ni2=ltosj(kk)
+          workgrd(ni1,ni2)=work1(kk)
+        end do
+        do i=1,nlat
+          do j=1,nlon
+            tbal(i,k) = tbal(i,k) + workgrd(i,j)/float(nlon)
+          end do
+        end do
+      end if
+    end do    
+    do k=1,nsig
+      call mpi_gatherv(twrk(1,1,k),ijn(mm1),mpi_rtype,&
+                       work1,ijn,displs_g,mpi_rtype,&
+                       mype_work,mpi_comm_world,ierror)
+      if (mype==mype_work) then
+        do kk=1,iglobal
+          ni1=ltosi(kk); ni2=ltosj(kk)
+          workgrd(ni1,ni2)=work1(kk)
+        end do
+        do i=1,nlat
+          do j=1,nlon
+            ttot(i,k) = ttot(i,k) + workgrd(i,j)/float(nlon)
+          end do
+        end do
+      end if
+    end do    
+
+    call mpi_gatherv(pb,ijn(mm1),mpi_rtype,&
+                     work1,ijn,displs_g,mpi_rtype,&
+                     mype_work,mpi_comm_world,ierror)
+    if (mype==mype_work) then
+      do kk=1,iglobal
+        ni1=ltosi(kk); ni2=ltosj(kk)
+        workgrd(ni1,ni2)=work1(kk)
+      end do
+      do i=1,nlat
+        do j=1,nlon
+          pbal(i) = pbal(i) + workgrd(i,j)/float(nlon)
+        end do
+      end do
+    end if
+    call mpi_gatherv(pwrk,ijn(mm1),mpi_rtype,&
+                     work1,ijn,displs_g,mpi_rtype,&
+                     mype_work,mpi_comm_world,ierror)
+    if (mype==mype_work) then
+      do kk=1,iglobal
+        ni1=ltosi(kk); ni2=ltosj(kk)
+        workgrd(ni1,ni2)=work1(kk)
+      end do
+      do i=1,nlat
+        do j=1,nlon
+          ptot(i) = ptot(i) + workgrd(i,j)/float(nlon)
+        end do
+      end do
+    end if
+  endif   ! End if lbal
+
+
+
+  do k=1,nsig
+    call mpi_gatherv(sf(1,1,k),ijn(mm1),mpi_rtype,&
+           work1,ijn,displs_g,mpi_rtype,&
+           mype_work,mpi_comm_world,ierror)
+    if (mype==mype_work) then
+      do kk=1,iglobal
+        ni1=ltosi(kk); ni2=ltosj(kk)
+        workgrd(ni1,ni2)=work1(kk)
+      end do
+      do i=1,nlat
+        do j=1,nlon
+          sfvar(i,k) = sfvar(i,k) + workgrd(i,j)/float(nlon)
+        end do
+      end do
+    end if
+  end do
+
+  do k=1,nsig
+    call mpi_gatherv(vp(1,1,k),ijn(mm1),mpi_rtype,&
+           work1,ijn,displs_g,mpi_rtype,&
+           mype_work,mpi_comm_world,ierror)
+    if (mype==mype_work) then
+      do kk=1,iglobal
+        ni1=ltosi(kk); ni2=ltosj(kk)
+        workgrd(ni1,ni2)=work1(kk)
+      end do
+      do i=1,nlat
+        do j=1,nlon
+          vpvar(i,k) = vpvar(i,k) + workgrd(i,j)/float(nlon)
+        end do
+      end do
+    end if
+  end do
+
+  do k=1,nsig
+    call mpi_gatherv(t(1,1,k),ijn(mm1),mpi_rtype,&
+           work1,ijn,displs_g,mpi_rtype,&
+           mype_work,mpi_comm_world,ierror)
+    if (mype==mype_work) then
+      do kk=1,iglobal
+        ni1=ltosi(kk); ni2=ltosj(kk)
+        workgrd(ni1,ni2)=work1(kk)
+      end do
+      do i=1,nlat
+        do j=1,nlon
+          tvar(i,k) = tvar(i,k) + workgrd(i,j)/float(nlon)
+        end do
+      end do
+    end if
+  end do
+
+  do k=1,nsig
+    call mpi_gatherv(q(1,1,k),ijn(mm1),mpi_rtype,&
+           work1,ijn,displs_g,mpi_rtype,&
+           mype_work,mpi_comm_world,ierror)
+    if (mype==mype_work) then
+      do kk=1,iglobal
+        ni1=ltosi(kk); ni2=ltosj(kk)
+        workgrd(ni1,ni2)=work1(kk)
+      end do
+      do i=1,nlat
+        do j=1,nlon
+          qvar(i,k) = qvar(i,k) + workgrd(i,j)/float(nlon)
+        end do
+      end do
+    end if
+  end do
+
+  do k=1,nsig
+    call mpi_gatherv(qi(1,1,k),ijn(mm1),mpi_rtype,&
+           work1,ijn,displs_g,mpi_rtype,&
+           mype_work,mpi_comm_world,ierror)
+    if (mype==mype_work) then
+      do kk=1,iglobal
+        ni1=ltosi(kk); ni2=ltosj(kk)
+        workgrd(ni1,ni2)=work1(kk)
+      end do
+      do i=1,nlat
+        do j=1,nlon
+          qivar(i,k) = qivar(i,k) + workgrd(i,j)/float(nlon)
+        end do
+      end do
+    end if
+  end do
+
+  do k=1,nsig
+    call mpi_gatherv(ql(1,1,k),ijn(mm1),mpi_rtype,&
+           work1,ijn,displs_g,mpi_rtype,&
+           mype_work,mpi_comm_world,ierror)
+    if (mype==mype_work) then
+      do kk=1,iglobal
+        ni1=ltosi(kk); ni2=ltosj(kk)
+        workgrd(ni1,ni2)=work1(kk)
+      end do
+      do i=1,nlat
+        do j=1,nlon
+          qlvar(i,k) = qlvar(i,k) + workgrd(i,j)/float(nlon)
+        end do
+      end do
+    end if
+  end do
+
+  do k=1,nsig
+    call mpi_gatherv(qr(1,1,k),ijn(mm1),mpi_rtype,&
+           work1,ijn,displs_g,mpi_rtype,&
+           mype_work,mpi_comm_world,ierror)
+    if (mype==mype_work) then
+      do kk=1,iglobal
+        ni1=ltosi(kk); ni2=ltosj(kk)
+        workgrd(ni1,ni2)=work1(kk)
+      end do
+      do i=1,nlat
+        do j=1,nlon
+          qrvar(i,k) = qrvar(i,k) + workgrd(i,j)/float(nlon)
+        end do
+      end do
+    end if
+  end do
+
+
+  do k=1,nsig
+    call mpi_gatherv(qs(1,1,k),ijn(mm1),mpi_rtype,&
+           work1,ijn,displs_g,mpi_rtype,&
+           mype_work,mpi_comm_world,ierror)
+    if (mype==mype_work) then
+      do kk=1,iglobal
+        ni1=ltosi(kk); ni2=ltosj(kk)
+        workgrd(ni1,ni2)=work1(kk)
+      end do
+      do i=1,nlat
+        do j=1,nlon
+          qsvar(i,k) = qsvar(i,k) + workgrd(i,j)/float(nlon)
+        end do
+      end do
+    end if
+  end do
+
+  do k=1,nsig
+    call mpi_gatherv(oz(1,1,k),ijn(mm1),mpi_rtype,&
+           work1,ijn,displs_g,mpi_rtype,&
+           mype_work,mpi_comm_world,ierror)
+    if (mype==mype_work) then
+      do kk=1,iglobal
+        ni1=ltosi(kk); ni2=ltosj(kk)
+        workgrd(ni1,ni2)=work1(kk)
+      end do
+      do i=1,nlat
+        do j=1,nlon
+          ozvar(i,k) = ozvar(i,k) + workgrd(i,j)/float(nlon)
+        end do
+      end do
+    end if
+  end do
+
+  do k=1,nsig
+    call mpi_gatherv(cw(1,1,k),ijn(mm1),mpi_rtype,&
+           work1,ijn,displs_g,mpi_rtype,&
+           mype_work,mpi_comm_world,ierror)
+    if (mype==mype_work) then
+      do kk=1,iglobal
+        ni1=ltosi(kk); ni2=ltosj(kk)
+        workgrd(ni1,ni2)=work1(kk)
+      end do
+      do i=1,nlat
+        do j=1,nlon
+          cvar(i,k) = cvar(i,k) + workgrd(i,j)/float(nlon)
+        end do
+      end do 
+    end if 
+  end do 
+
+  call mpi_gatherv(ps,ijn(mm1),mpi_rtype,&
+         work1,ijn,displs_g,mpi_rtype,&
+         mype_work,mpi_comm_world,ierror)
+  if (mype==mype_work) then
+    do kk=1,iglobal
+      ni1=ltosi(kk); ni2=ltosj(kk)
+      workgrd(ni1,ni2)=work1(kk)
+    end do
+    do i=1,nlat
+      do j=1,nlon
+        psvar(i) = psvar(i) + workgrd(i,j)/float(nlon)
+      end do
+    end do
+  end if
+
+  call mpi_barrier(mpi_comm_world,ierror)
+
   call mpi_allreduce((qamp),qamp,ibin*nsig,mpi_rtype,mpi_sum, &
        mpi_comm_world,ierror)
   call mpi_allreduce((qcount),qcount,ibin*nsig,mpi_rtype,mpi_sum, &
        mpi_comm_world,ierror)
-  call mpi_allreduce((expvart),expvart,nlat*nsig*3,mpi_rtype,mpi_sum, &
-       mpi_comm_world,ierror) 
-  call mpi_allreduce((expvarvp),expvarvp,nlat*nsig*3,mpi_rtype,mpi_sum, &
-       mpi_comm_world,ierror) 
-  call mpi_allreduce((expvarsp),expvarsp,nlat*3,mpi_rtype,mpi_sum, &
-       mpi_comm_world,ierror) 
 
-  norm=1/float(nlon*numcases)
-  sfvar=sfvar*norm
-  vpvar=vpvar*norm
-  tvar=tvar*norm
-  qvar=qvar*norm
-  if (hydromet) then
-     qivar=qivar*norm
-     qlvar=qlvar*norm
-     qrvar=qrvar*norm
-     qsvar=qsvar*norm
-  endif
-  cvar=cvar*norm
-  ozvar=ozvar*norm
-  psvar=psvar*norm
-  expvart=expvart*norm
-  expvarvp=expvarvp*norm
-  expvarsp=expvarsp*norm
-
-  call smoothlat(sfvar,nsig,smoothdeg)
-  call smoothlat(vpvar,nsig,smoothdeg)
-  call smoothlat(tvar,nsig,smoothdeg)
-  call smoothlat(qvar,nsig,smoothdeg)
-  if (hydromet) then
-     call smoothlat(qivar,nsig,smoothdeg)
-     call smoothlat(qlvar,nsig,smoothdeg)
-     call smoothlat(qrvar,nsig,smoothdeg)
-     call smoothlat(qsvar,nsig,smoothdeg)
-  endif
-  call smoothlat(cvar,nsig,smoothdeg)
-  call smoothlat(ozvar,nsig,smoothdeg)
-  call smoothlat(psvar,1,smoothdeg)
-  qcavg=0.
-  do k=1,nsig
-    do ll=1,ibin
-      if(qcount(ll,k).ne.0) then
-        qamp(ll,k)=qamp(ll,k)/qcount(ll,k)
-        nrhvar(ll,k)=qamp(ll,k)
-        qcavg(ll)=qcavg(ll)+qcount(ll,k)/float(nsig)
-      end if
-    end do
-  end do
-
-! dtk diagnostic:
-  if(mype==0) then
-    do ll=1,25
-      write(59,*) 'avg qcount for bin ',ll,' = ',qcavg(ll)
-      write(60,*),'qcount for bin at lev=44 for bin',ll,' = ',qcount(ll,44)
+  if (mype==mype_work) then
+    qcavg=0.
+    do k=1,nsig
+      do ll=1,ibin
+        if(qcount(ll,k).ne.0) then
+          qamp(ll,k)=qamp(ll,k)/qcount(ll,k)
+          nrhvar(ll,k)=qamp(ll,k)
+          qcavg(ll)=qcavg(ll)+qcount(ll,k)/float(nsig)
+        end if
+      end do
     end do
   end if
 
-  do k=1,nsig
-  do i=2,nlat-1
-    if(expvart(i,k,2).gt.expvart(i,k,1))then
-      write(128,'(1x,a10,2i4,3(f10.5))')'bal>tot@',i,k,expvart(i,k,2), &
-                                        expvart(i,k,1),expvart(i,k,1)/expvart(i,k,2)
-    endif
-  enddo
-  enddo
-   
-  if (mype==0) then
+  if (mype==mype_work) then
+    call smoothlat(sfvar,nsig,smoothdeg)
+    call smoothlat(vpvar,nsig,smoothdeg)
+    call smoothlat(tvar,nsig,smoothdeg)
+    call smoothlat(qvar,nsig,smoothdeg)
+    call smoothlat(qivar,nsig,smoothdeg)
+    call smoothlat(qlvar,nsig,smoothdeg)
+    call smoothlat(qrvar,nsig,smoothdeg)
+    call smoothlat(qsvar,nsig,smoothdeg)
+    call smoothlat(ozvar,nsig,smoothdeg)
+    call smoothlat(cvar,nsig,smoothdeg)
+    call smoothlat(psvar,1,smoothdeg)
+  end if
 
+  call mpi_barrier(mpi_comm_world,ierror)
+
+  call mpi_bcast(sfvar,nlat*nsig,mpi_rtype,mype_work,mpi_comm_world,ierror)
+  call mpi_bcast(vpvar,nlat*nsig,mpi_rtype,mype_work,mpi_comm_world,ierror)
+  call mpi_bcast(tvar,nlat*nsig,mpi_rtype,mype_work,mpi_comm_world,ierror)
+  call mpi_bcast(qvar,nlat*nsig,mpi_rtype,mype_work,mpi_comm_world,ierror)
+  call mpi_bcast(qivar,nlat*nsig,mpi_rtype,mype_work,mpi_comm_world,ierror)
+  call mpi_bcast(qlvar,nlat*nsig,mpi_rtype,mype_work,mpi_comm_world,ierror)
+  call mpi_bcast(qrvar,nlat*nsig,mpi_rtype,mype_work,mpi_comm_world,ierror)
+  call mpi_bcast(qsvar,nlat*nsig,mpi_rtype,mype_work,mpi_comm_world,ierror)
+  call mpi_bcast(nrhvar,nlat*nsig,mpi_rtype,mype_work,mpi_comm_world,ierror)
+  call mpi_bcast(ozvar,nlat*nsig,mpi_rtype,mype_work,mpi_comm_world,ierror)
+  call mpi_bcast(cvar,nlat*nsig,mpi_rtype,mype_work,mpi_comm_world,ierror)
+  call mpi_bcast(psvar,nlat,mpi_rtype,mype_work,mpi_comm_world,ierror)
+
+  if(lbal) then 
+    call mpi_bcast(vpbal,nlat*nsig,mpi_rtype,mype_work,mpi_comm_world,ierror)
+    call mpi_bcast(tbal,nlat*nsig,mpi_rtype,mype_work,mpi_comm_world,ierror)
+    call mpi_bcast(pbal,nlat,mpi_rtype,mype_work,mpi_comm_world,ierror)
+    call mpi_bcast(vptot,nlat*nsig,mpi_rtype,mype_work,mpi_comm_world,ierror)
+    call mpi_bcast(ttot,nlat*nsig,mpi_rtype,mype_work,mpi_comm_world,ierror)
+    call mpi_bcast(ptot,nlat,mpi_rtype,mype_work,mpi_comm_world,ierror)
+  end if
+  call mpi_barrier(mpi_comm_world,ierror)
+
+
+  if (mype==0 .and. lbal) then
    grdfile='balvar_sp.grd'
    ncfggg=len_trim(grdfile)
    call baopenwt(22,grdfile(1:ncfggg),iret)
-   call wryte(22,4*nlat*nsig*3,expvart)
-   call wryte(22,4*nlat*nsig*3,expvarvp)
-   call wryte(22,4*nlat*3,expvarsp)
+!   call wryte(22,4*nlat*nsig*3,expvart)
+!   call wryte(22,4*nlat*nsig*3,expvarvp)
+!   call wryte(22,4*nlat*3,expvarsp)
+   do k=1,nsig
+    do i=1,nlat
+      tbal4(i,k,1)=ttot(i,k)
+      tbal4(i,k,2)=tbal(i,k)
+      tbal4(i,k,3)=tvar(i,k)
+      vpbal4(i,k,1)=vptot(i,k)
+      vpbal4(i,k,2)=vpbal(i,k)
+      vpbal4(i,k,3)=vpvar(i,k)
+    end do
+   end do 
+   do i=1,nlat
+     pbal4(i,1) = ptot(i)
+     pbal4(i,2) = pbal(i)
+     pbal4(i,3) = psvar(i)
+   end do 
+   call wryte(22,4*nlat*nsig*3,tbal4)
+   call wryte(22,4*nlat*nsig*3,vpbal4)
+   call wryte(22,4*nlat*3,pbal4)
    call baclose(22,iret)
-
   end if
 
-  deallocate(balvar)
-  deallocate(expvart)
-  deallocate(expvarvp)
-  deallocate(expvarsp)
+  if(lbal) deallocate(tbal,vpbal,pbal)
+  if(lbal) deallocate(ttot,vptot,ptot)
+  deallocate(workgrd,work1)
 
   return
 end subroutine variances

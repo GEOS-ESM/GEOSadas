@@ -1,7 +1,7 @@
 ! mkiau.x - ESMF/MAPL application to calculate and write out IAU increment
 !
 ! 1. Read BKG file
-! 2. Defined IAU state at user's desired resolution
+! 2. Defined IAU state at user''s desired resolution
 ! 3. Invokes mkiauGridCompMod to read ANA file and create IAU increment
 !    and the resolution of the background
 ! 4. If needed regrids IAU increment to desired output resolution
@@ -10,7 +10,7 @@
 ! REMARKS: 
 !   a) This program requires an RC file: mkiau.rc
 !   b) No divr or diva options are yet available 
-!   c) Note that when increment is of DPEDT is passed via sdf we split it 
+!   c) Note that when increment of DPEDT is passed via sdf we split it 
 !      into two parts: DPEM1DT (all levels from 1 to LM) and DPSDT which
 !      is level LM+1.
 !
@@ -84,6 +84,7 @@
    type (CubedSphereGridFactory) :: factory
    type (CubedSphereGridFactory) :: cs_factory
    type (LatlonGridFactory) :: ll_factory
+   type (CubeToCubeRegridder)   :: cube_to_cube_prototype
    type (CubeToLatLonRegridder) :: cube_to_latlon_prototype
    type (LatLonToCubeRegridder) :: latlon_to_cube_prototype
 
@@ -116,6 +117,7 @@
    real,   pointer :: levels(:)=>NULL()
    character(len=ESMF_MAXSTR) :: levunits
 !
+   character(len=ESMF_MAXSTR) :: dyntyp
    character(len=ESMF_MAXSTR) :: sdf_ofname
    character(len=ESMF_MAXSTR) :: own_internal_fname
 !
@@ -133,6 +135,7 @@
    real, pointer, dimension(:,:)   :: dtsdt, sdtsdt
 
    character(len=ESMF_MAXSTR) :: bkgfname
+   character(len=ESMF_MAXSTR) :: uname,vname,qname,tname,dpname,o3name
 
    logical,save:: c2l_fwtest = .false.
    logical,save:: c2l_adtest = .false.
@@ -159,9 +162,11 @@ CONTAINS
     character(len=30) ABKGGRIDNAME
 
 !   Initialize the ESMF. For performance reasons, it is important
-!    to turn OFF ESMF's automatic logging feature
+!    to turn OFF ESMF''s automatic logging feature
 !   -------------------------------------------------------------
     call ESMF_Initialize (logKindFlag=ESMF_LOGKIND_NONE, vm=vm, __RC__)
+    call ESMF_VMGetCurrent(vm=vm, rc=status)
+    call ESMF_VMGet(vm,mpiCommunicator=comm,rc=status)
 
     call init_ ( CF, nymd, nhms, __RC__ )
 
@@ -183,19 +188,33 @@ CONTAINS
          print *, 'Starting ' // Iam // ' with ', nPET, ' PETs ...'
          print *
     end if
-    call ESMF_VMGetCurrent(vm=vm, rc=status)
-    call ESMF_VMGet(vm,mpiCommunicator=comm,rc=status)
 
+!   If bkg grid is cubed or desired iau output is cubed ...
+!   -------------------------------------------------------
+    if(trim(dyntyp)=='FV3' .or. JM_BKG==6*IM_BKG) cubed=.true.
 
 !   Create a regular Lat/Lon grid over which BKG/ANA defined
 !   --------------------------------------------------------
-    call grid_manager%add_prototype('Cubed-Sphere',factory)
-    call regridder_manager%add_prototype('Cubed-Sphere', 'LatLon', REGRID_METHOD_BILINEAR, cube_to_latlon_prototype)
-    call regridder_manager%add_prototype('LatLon', 'Cubed-Sphere', REGRID_METHOD_BILINEAR, latlon_to_cube_prototype)
+    if(cubed) then
+      call grid_manager%add_prototype('Cubed-Sphere',factory)
+    endif
     if (JM_BKG==6*IM_BKG) then
+       call regridder_manager%add_prototype('Cubed-Sphere', 'Cubed-Sphere', REGRID_METHOD_BILINEAR, cube_to_cube_prototype)
+       if ( MAPL_am_I_root() ) then
+          print *
+          print *, 'Background on the cubed grid '
+          print *
+       endif
        cs_factory = CubedSphereGridFactory(im_world=IM_BKG,lm=LM_BKG,nx=nx,ny=ny/6,__RC__)
        BKGGrid = grid_manager%make_grid(cs_factory,__RC__)
     else
+       call regridder_manager%add_prototype('Cubed-Sphere', 'LatLon', REGRID_METHOD_BILINEAR, cube_to_latlon_prototype)
+       call regridder_manager%add_prototype('LatLon', 'Cubed-Sphere', REGRID_METHOD_BILINEAR, latlon_to_cube_prototype)
+       if ( MAPL_am_I_root() ) then
+          print *
+          print *, 'Background on the lat-lon grid '
+          print *
+       endif
        call MAPL_DefGridName (IM_BKG,JM_BKG,ABKGGRIDNAME,MAPL_am_I_root())
        ll_factory = LatLonGridFactory(grid_name=trim(ABKGGRIDNAME), &
                         Nx = Nx, Ny = Ny,   &
@@ -232,8 +251,9 @@ CONTAINS
                         LM = LM_IAU, pole='PC', dateline='DC',  &
                                __RC__)
        GCMgrid = grid_manager%make_grid(ll_factory,__RC__)
-!   Validate grid
-!   -------------
+
+!      Validate grid
+!      -------------
        call ESMF_GridValidate(GCMgrid,__RC__)
     endif
 
@@ -249,7 +269,6 @@ CONTAINS
     call ESMF_FieldBundleSet ( BkgBundle, grid=BKGgrid, __RC__ )
 
     call MAPL_CFIORead  ( bkgfname, Time, BkgBundle, &
-                          only_vars='phis,ps,ts,u,v,tv,sphu,ozone,delp', &
                           TIME_IS_CYCLIC=.false., verbose=.true., __RC__ )
 
 !   Now create a component to handle the increment output
@@ -382,7 +401,6 @@ CONTAINS
 
     integer thistime(6), idum, itest, status
     character(len=ESMF_MAXSTR) :: tmpl
-    character(len=ESMF_MAXSTR) :: dyntyp
 
 !   Create Config and Initialize Clock 
 !   ----------------------------------
@@ -402,7 +420,13 @@ CONTAINS
    call ESMF_ConfigGetAttribute( CF, LM_IAU, label ='AGCM.LM:', __RC__ )
 
    call ESMF_ConfigGetAttribute( CF, DYNTYP, label ='DYCORE:', __RC__ )
-   if(trim(dyntyp)=='FV3') cubed=.true.
+
+   call ESMF_ConfigGetAttribute( CF, UNAME ,label ='UNAME:', default='u', __RC__ )
+   call ESMF_ConfigGetAttribute( CF, VNAME ,label ='VNAME:', default='v', __RC__ )
+   call ESMF_ConfigGetAttribute( CF, QNAME ,label ='QNAME:', default='sphu', __RC__ )
+   call ESMF_ConfigGetAttribute( CF, TNAME ,label ='TNAME:', default='tv', __RC__ )
+   call ESMF_ConfigGetAttribute( CF, DPNAME,label ='DPNAME:', default='delp', __RC__ )
+   call ESMF_ConfigGetAttribute( CF, O3NAME,label ='O3NAME:', default='ozone', __RC__ )
 
    call ESMF_ConfigGetAttribute( CF, itest, label ='TEST_CASE:', default=0, __RC__ )
    if(itest==1) c2l_fwtest = .true.
@@ -479,7 +503,7 @@ CONTAINS
       endif
    end subroutine info_
 
-   subroutine set_ ()
+   subroutine set_()
    
    use MAPL_SimpleBundleMod, only: MAPL_SimpleBundleCreate
    use MAPL_SimpleBundleMod, only: MAPL_SimpleBundleGetIndex
@@ -522,15 +546,17 @@ CONTAINS
    ib_ps = MAPL_SimpleBundleGetIndex ( bkg, 'ps',    2, __RC__ )
    ib_ts = MAPL_SimpleBundleGetIndex ( bkg, 'ts',    2, __RC__ )
    ib_ph = MAPL_SimpleBundleGetIndex ( bkg, 'phis',  2, __RC__ )
-   ib_q  = MAPL_SimpleBundleGetIndex ( bkg, 'sphu',  3, __RC__ )
-   ib_o3 = MAPL_SimpleBundleGetIndex ( bkg, 'ozone', 3, __RC__ )
+   ib_q  = MAPL_SimpleBundleGetIndex ( bkg, trim(QNAME),  3, __RC__ )
+   if ( trim(O3NAME) /= 'NULL' ) then
+      ib_o3 = MAPL_SimpleBundleGetIndex ( bkg, trim(O3NAME), 3, __RC__ )
+   else
+      ib_o3 = -1
+   endif
    agrid_bkg = .true.
    dgrid_bkg = .false.
-   ib_u  = MAPL_SimpleBundleGetIndex ( bkg, 'u',     3, __RC__ )
-   ib_v  = MAPL_SimpleBundleGetIndex ( bkg, 'v',     3, __RC__ )
-   if (ib_u<0 .and. ib_v<0 ) then
-       ib_u  = MAPL_SimpleBundleGetIndex ( bkg, 'uwnd',  3, __RC__ )
-       ib_v  = MAPL_SimpleBundleGetIndex ( bkg, 'vwnd',  3, __RC__ )
+   ib_u  = MAPL_SimpleBundleGetIndex ( bkg, trim(UNAME),     3, __RC__ )
+   ib_v  = MAPL_SimpleBundleGetIndex ( bkg, trim(VNAME),     3, __RC__ )
+   if (trim(UNAME)=='uwnd' .and. trim(VNAME)=='vwnd' ) then
        agrid_bkg = .false.
        dgrid_bkg = .true.
    endif
@@ -538,22 +564,19 @@ CONTAINS
    thvflag_bkg = .false.
    imb = size(bkg%r2(ib_ps)%q,1)
    jmb = size(bkg%r2(ib_ps)%q,2)
-   ib_t = MAPL_SimpleBundleGetIndex ( bkg, 'tv',    3, __RC__ )
-   if ( ib_t<0 ) then
-        ib_t    = MAPL_SimpleBundleGetIndex ( bkg, 'theta', 3, __RC__ )
-        if ( ib_t<0 ) then
-           if ( MAPL_am_I_root() ) then
-                print *
-                print *, 'Error: BKG T-slot has neither TV not THETAV, aborting ...'
-                print *
-           end if
-           status=999
-           VERIFY_(status)
-        endif
-        tvflag_bkg  = .false.
-        thvflag_bkg = .true.
+   ib_t = MAPL_SimpleBundleGetIndex ( bkg, trim(TNAME),    3, __RC__ )
+   if ( trim(TNAME) == 't' ) then ! convert to virtual-T
+       bkg%r3(ib_t)%q = bkg%r3(ib_t)%q * ( 1.0 + eps * bkg%r3(ib_q )%q )
    endif
-   ib_dp = MAPL_SimpleBundleGetIndex ( bkg, 'delp',    3, __RC__ )
+   if ( trim(TNAME) == 'theta' ) then
+       tvflag_bkg  = .false.
+       thvflag_bkg = .true.
+   endif
+   if ( trim(DPNAME) /= 'NULL' ) then
+      ib_dp = MAPL_SimpleBundleGetIndex ( bkg, 'delp',    3, __RC__ )
+   else
+      ib_dp = -1
+   endif
 
    call info_ (agrid_bkg,dgrid_bkg,tvflag_bkg,thvflag_bkg )
 
@@ -577,7 +600,13 @@ CONTAINS
    call MAPL_GetPointer(IMPORTS(BASE), q_bkg, 'QV',__RC__)
    q_bkg = bkg%r3(ib_q )%q
    call MAPL_GetPointer(IMPORTS(BASE), dp_bkg, 'DELP',__RC__)
-   dp_bkg = bkg%r3(ib_dp)%q
+   if (ib_dp>0 ) then
+      dp_bkg = bkg%r3(ib_dp)%q
+   else
+      do L=1,lm_iau
+         dp_bkg(:,:,L)=(bk(L+1)-bk(L))*bkg%r2(ib_ps)%q(:,:)
+      end do
+   endif
    call MAPL_GetPointer(IMPORTS(BASE), t_bkg, 'TV', __RC__)
    if (thvflag_bkg) then ! convert thetav to tv, assume model background is indeed on eta
       allocate(ple_bkg(imb,jmb,0:lm_iau))
@@ -600,7 +629,11 @@ CONTAINS
       t_bkg = bkg%r3(ib_t)%q  ! hold tv
    endif
    call MAPL_GetPointer(IMPORTS(BASE), o3_bkg, 'O3PPMV',__RC__)
-   o3_bkg = bkg%r3(ib_o3)%q
+   if (ib_o3>0) then
+      o3_bkg = bkg%r3(ib_o3)%q
+   else
+      o3_bkg = 0.0
+   endif
    
 !  Get pointer from Export of MKIAU (the actual increments)
 !  RC to HAVE:  COMP_EXPORT_ALLOCATE TRUE (talk to Atanas)
@@ -670,19 +703,44 @@ CONTAINS
 !       ---------------------------
         call MAPL_GetPointer(IMPORTS(STUB),  sdudt, 'DUDT' , __RC__)
         sdudt = sclinc * dudt
+        if ( MAPL_am_I_root() ) then
+           print *, 'dudt = ',maxval(sdudt), minval(sdudt) 
+        endif
         call MAPL_GetPointer(IMPORTS(STUB),  sdvdt, 'DVDT' , __RC__)
         sdvdt = sclinc * dvdt
+        if ( MAPL_am_I_root() ) then
+           print *, 'dvdt = ',maxval(sdvdt), minval(sdvdt) 
+        endif
         call MAPL_GetPointer(IMPORTS(STUB),  sdtdt, 'DTDT' , __RC__)
         sdtdt = sclinc * dtdt
+        if ( MAPL_am_I_root() ) then
+           print *, 'dtdt = ',maxval(sdtdt), minval(sdtdt) 
+        endif
         call MAPL_GetPointer(IMPORTS(STUB), sdpedt, 'DPEDT', __RC__)
         sdpedt = sclinc * dpedt
+        if ( MAPL_am_I_root() ) then
+           print *, 'dpedt = ',maxval(sdpedt), minval(sdpedt) 
+        endif
         call MAPL_GetPointer(IMPORTS(STUB), sdqvdt, 'DQVDT', __RC__)
         sdqvdt = sclinc * dqvdt
+        if ( MAPL_am_I_root() ) then
+           print *, 'dqvdt = ',maxval(sdqvdt), minval(sdqvdt) 
+        endif
         call MAPL_GetPointer(IMPORTS(STUB), sdo3dt, 'DO3DT', __RC__)
-        sdo3dt = sclinc * do3dt
+        if ( trim(O3NAME) /= 'NULL' ) then
+           sdo3dt = sclinc * do3dt
+        else
+           sdo3dt = 0.0
+        endif
+        if ( MAPL_am_I_root() ) then
+           print *, 'do3dt = ',maxval(sdo3dt), minval(sdo3dt) 
+        endif
         call MAPL_GetPointer(IMPORTS(STUB), sdtsdt, 'DTSDT', __RC__)
         if(associated(sdtsdt).and.associated(dtsdt))then
            sdtsdt = sclinc * dtsdt
+           if ( MAPL_am_I_root() ) then
+              print *, 'dtsdt = ',maxval(sdtsdt), minval(sdtsdt) 
+           endif
         endif
 
         if (SDFoutput) then
@@ -706,7 +764,7 @@ CONTAINS
         call ESMFL_State2Bundle (IMPORTS(STUB), IAUBundleStub)
 
 !       Create a bundle with IAU increment available at BKG resolution
-
+!       --------------------------------------------------------------
         IAUBundleBase = ESMF_FieldBundleCreate ( name='Original IAU bundle', __RC__ )
         call ESMF_FieldBundleSet ( IAUBundleBase, grid=BKGgrid, __RC__ )
 
@@ -733,13 +791,13 @@ CONTAINS
                      print *, 'Attention: treating winds as scalars! '
                      print *
                 end if
-                ii = MAPL_SimpleBundleGetIndex ( iaubase, 'DUDT', 3, __RC__ )
-                jj = MAPL_SimpleBundleGetIndex ( iaustub, 'DUDT', 3, __RC__ )
-                call L2C%regrid(iaubase%r3(ii)%q, iaustub%r3(jj)%q, __RC__)
+                iu = MAPL_SimpleBundleGetIndex ( iaubase, 'DUDT', 3, __RC__ )
+                ju = MAPL_SimpleBundleGetIndex ( iaustub, 'DUDT', 3, __RC__ )
+                call L2C%regrid(iaubase%r3(iu)%q, iaustub%r3(ju)%q, __RC__)
     
-                ii = MAPL_SimpleBundleGetIndex ( iaubase, 'DVDT', 3, __RC__ )
-                jj = MAPL_SimpleBundleGetIndex ( iaustub, 'DVDT', 3, __RC__ )
-                call L2C%regrid(iaubase%r3(ii)%q, iaustub%r3(jj)%q, __RC__ )
+                iv = MAPL_SimpleBundleGetIndex ( iaubase, 'DVDT', 3, __RC__ )
+                jv = MAPL_SimpleBundleGetIndex ( iaustub, 'DVDT', 3, __RC__ )
+                call L2C%regrid(iaubase%r3(iv)%q, iaustub%r3(jv)%q, __RC__ )
             endif
             iaustub%r3(ju)%q = sclinc * iaustub%r3(ju)%q
             iaustub%r3(jv)%q = sclinc * iaustub%r3(jv)%q
@@ -907,14 +965,14 @@ CONTAINS
                                      reshape(aux2,(/ndim_ll/)) )
                  call MPI_allreduce(sdot,rdot1,1,MP_TYPE(sdot),MP_SUM,comm,status)
     
-                 ! apply T' to Tx
-                 ! --------------
+                 ! apply T'' to Tx
+                 ! ---------------
                  C2L_AD = TransposeRegridder(C2L)
 
                  call C2L_AD%regrid(aux2, aux, __RC__ )
 
-                 ! < T'Tx, x >
-                 ! -----------
+                 ! < T''Tx, x >
+                 ! ------------
                  sdot=mydot_product_(reshape(iaustub%r3(jj)%q,(/ndim_cb/)), &
                                      reshape(aux,             (/ndim_cb/))  )
                  call MPI_allreduce(sdot,rdot2,1,MP_TYPE(sdot),MP_SUM,comm,status)
@@ -957,15 +1015,15 @@ CONTAINS
                                      reshape(iaustub%r3(jj)%q,(/ndim_cb/)) )
                  call MPI_allreduce(sdot,rdot1,1,MP_TYPE(sdot),MP_SUM,comm,status)
 
-                 ! apply T' to Tx
-                 ! --------------
+                 ! apply T'' to Tx
+                 ! ---------------
                  allocate(aux(im_ll,jm_ll,km_ll))
                  L2C_AD = TransposeRegridder(L2C)
 
                  call L2C_AD%regrid(iaustub%r3(jj)%q, aux, __RC__ )
 
-                 ! < T'Tx, x >
-                 ! -----------
+                 ! < T''Tx, x >
+                 ! ------------
                  sdot=mydot_product_(reshape(iaubase%r3(ii)%q,(/ndim_ll/)), &
                                      reshape(aux             ,(/ndim_ll/))  )
                  call MPI_allreduce(sdot,rdot2,1,MP_TYPE(sdot),MP_SUM,comm,status)

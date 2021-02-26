@@ -2,13 +2,14 @@ program gsidiag_bin2txt
 
   use nc_diag_read_mod,only: nc_diag_read_init
   use read_diag,only:read_radiag_header, diag_header_fix_list, diag_header_chan_list, diag_data_name_list
+  use read_diag,only: open_radiag, close_radiag
   use read_diag,only:read_radiag_data, diag_data_fix_list, diag_data_extra_list, diag_data_chan_list, set_netcdf_read
   use kinds,only: r_quad, r_single
 
   implicit none 
 
   integer nargs, iargc, n
-  character*256, allocatable ::   arg(:)
+  character*500, allocatable ::   arg(:)
 
   type(diag_header_fix_list )          ::  headfix
   type(diag_header_chan_list),allocatable  ::  headchan(:)
@@ -30,14 +31,14 @@ program gsidiag_bin2txt
 
   logical                              ::  netcdf = .false.
   logical                              ::  do_passive = .false.
-  character*256 infn, outfn
+  character*500 infn, outfn
 
 !  integer,parameter                    ::  inlun = 51
   integer                              ::  inlun
   integer,parameter                    ::  outlun= 52
   integer,parameter                    ::  nllun = 53
 
-  integer strlen, iflag
+  integer strlen, iflag, istatus
   integer iuse, ich, nch, ipr, counter
   integer iord
 
@@ -73,6 +74,7 @@ program gsidiag_bin2txt
 
 ! single variables used later for printing purposes
   integer        :: inobstotal, inobsassim
+  real(r_single) :: zero_single, tiny_single
   real(r_single) :: rvomf_nbc, rvomf_bc, rvtotbias, rvfixbias
   real(r_single),dimension(:),allocatable   :: rvbiasterms
   character(len=13),dimension(:),allocatable :: chfrwn 
@@ -148,15 +150,15 @@ program gsidiag_bin2txt
 
   iflag = 0
 
-  if (netcdf) then
-    call set_netcdf_read(.true.)
-    call nc_diag_read_init(infn, inlun)
-  else
-    inlun = 51
-    open(inlun,file=infn,form='unformatted',convert='big_endian')
-  endif
-
-  write(*,*)'File opened on lun=',inlun
+  inlun = 51
+  call set_netcdf_read(netcdf)
+  call open_radiag(infn, inlun, istatus)
+  if (istatus/=0) then
+     write(*,'(a,a)') 'gsidiag_bin2txt - problem opening ',trim(infn)
+     call abort
+  end if
+  
+  write(*,*)'File ', trim(infn), ' opened on lun=',inlun
 !  open(inlun,file=infn,form='unformatted',convert='big_endian')
 
   call read_radiag_header( inlun, npred_read, sst_ret, headfix, headchan, headname, iflag, debug )
@@ -217,6 +219,9 @@ program gsidiag_bin2txt
   vbiasterms = 0.0
   rvbiasterms = 0.0
 
+  zero_single = 0.0_r_single
+  tiny_single = tiny(zero_single)
+
   do ich=1,nch
     luse(ich) = (headchan(ich)%iuse .gt. 0) 
     if (headchan(ich)%wave .gt. 100.0) then
@@ -238,9 +243,9 @@ program gsidiag_bin2txt
 
     do ich=1,nch
       if (do_passive) then
-         lqcpass = datachan(ich)%qcmark .eq. 0
+         lqcpass = datachan(ich)%qcmark .eq. 0 .and. datachan(ich)%errinv .gt. tiny_single
       else 
-         lqcpass = luse(ich) .and. datachan(ich)%qcmark .eq. 0 
+         lqcpass = luse(ich) .and. datachan(ich)%qcmark .eq. 0 .and. datachan(ich)%errinv .gt. tiny_single
       endif
 
       ! check to make sure ob is realistic - SSMI seems to have the occasional bad ob sneak in
@@ -393,6 +398,9 @@ program gsidiag_bin2txt
            inobsassim,tbtotal(ich),tbassim(ich),omf_nbc(ich),rvomf_nbc,omf_bc(ich),rvomf_bc,sigo(ich),jo(ich),  &
            totbias(ich),rvtotbias,fixbias(ich),rvfixbias,(biasterms(ich,ipr),rvbiasterms(ipr),ipr=1,max_npred)
   enddo
+
+  call close_radiag(infn,inlun)
+ 
 end program gsidiag_bin2txt
 
 subroutine inc_var(x,arr)
@@ -438,14 +446,16 @@ subroutine usage
              "  -nc4                :  Read NC4 Diag (instead of binary)",/ &
              "  -debug              :  Set debug verbosity",/ &
              "  -sst_ret            :  SST BC term is included (default: not included)",/ &
-             "  -passivebc          :  Do Bias Correction calculations for passive channels (by default", / &
-             "                              these fields are reported as missing values.",/   &
-             "  -npred   INT        :  Number of preductors (default: 7)",/ &
-             "  -iversion INT       :  Override iversion with INT (default: use internal iversion)",/   &
+             "  -passivebc          :  Do Bias Correction calculations for passive channels ", / &
+             "                             (by default these fields are reported as ",/ & 
+             "                              missing values)",/   &
+             "  -npred   INT        :  Number of predictors (default: 7)",/ &
+             "  -iversion INT       :  Override iversion with INT ",/ &
+             "                            (default: use internal iversion)",/   &
              "  -append_txt         :  Append .txt suffix, instead of replace last three",/ &
              "                             characters (default: replaced)",/ &
              "                             Note:  The GMAO diag files end with .bin or .nc4,",/ &
-             "                               which is where fixed 3-char truncation originates",/,/,/ &
+             "                             which is where fixed 3-char truncation originates",/,/,/ &
              "  Example:",/ &
              "     gsidiag_bin2txt.x -nc4 nc_4emily_nc4.diag_airs_aqua_ges.20161202_06z.nc4",/ &
              "  Output file:",/ &

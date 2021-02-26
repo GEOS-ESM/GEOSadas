@@ -132,6 +132,7 @@ sub rename_new {
 
     if (-f $name) {
         ($newname = $name) =~ s/$expid\./$newid\./;
+        $newname =~ s/\.bin$/.nc4/;
         mv_($name, $newname);
     }
 
@@ -139,6 +140,7 @@ sub rename_new {
         $dirname = $name;
         foreach $name (<$dirname/$expid.*>) {
             ($newname = $name) =~ s/$expid\./$newid\./;
+            $newname =~ s/\.bin$/.nc4/;
             mv_($name, $newname);
         }
     }

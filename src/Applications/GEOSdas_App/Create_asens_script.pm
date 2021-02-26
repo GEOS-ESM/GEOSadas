@@ -42,6 +42,7 @@ sub asens_script {
     my $joba            = $inputparams{"joba"};
     my $group_list      = $inputparams{"group_list"};
     my $export_none     = $inputparams{"export_none"};
+    my $hyb_ens         = $inputparams{"hyb_ens"};
     my $jobqueue1       = $inputparams{"jobqueue1"};
     my $mem             = $inputparams{"mem"};
     my $nodes           = $inputparams{"nodes"};
@@ -69,12 +70,16 @@ sub asens_script {
     my $obClass         = $inputparams{"obClass"};
     my $newradbc        = $inputparams{"newradbc"};
     my $doRcorr         = $inputparams{"doRcorr"};
+    my $qsub            = $inputparams{"qsub"};
 
  # local variables
- my( $os, $siteID );
+ my( $os, $siteID, $nodeflg );
 
  $siteID = get_siteID();
- 
+ my $npn = `facter processorcount`; chomp($npn);
+ if    ( $npn == 40 ) { $nodeflg = "sky"  }
+ elsif ( $npn == 28 ) { $nodeflg = "hasw" }
+
  open(SCRIPT,">$fvhome/asens/$joba.j") or
  die ">>> ERROR <<< cannot write $fvhome/asens/$joba.j";
 
@@ -82,30 +87,17 @@ sub asens_script {
 #!/bin/csh -fx
 #$group_list
 #$jobqueue1
-#PBS -N asens
-#PBS -o asens.log.o%j.txt
-EOF
-if ($siteID eq "nccs") {
-  print SCRIPT <<"EOF";
+#SBATCH --job-name=asens
+#SBATCH --output=asens.log.o%j.txt
 #SBATCH --ntasks=$ncpus_gsi
 #SBATCH --ntasks-per-node=24
-#SBATCH --constraint=hasw
-EOF
-} else {
-  print SCRIPT <<"EOF";
+#SBATCH --constraint=$nodeflg
+#SBATCH --time=${fcswallclk}:00
+#PBS -N asens
+#PBS -o asens.log.o%j.txt
 #PBS -l ncpus=$ncpus_gsi
-EOF
-}
-  print SCRIPT <<"EOF";
-#PBS -l walltime=${fcswallclk}:00
-##PBS -l mem=$mem
 #PBS -S /bin/csh
 #PBS -j eo
-#BSUB -J asens
-#BSUB -n $ncpus_gsi
-#BSUB -W $fcswallclk
-#BSUB -o asens.log.o%J.txt
-#BSUB -e asens.log.o%J.txt
 # ----------------------------
 #
 # AnaSens driver script.
@@ -127,6 +119,7 @@ EOF
 
 # Experiment environment
 # ----------------------
+  setenv BATCH_SUBCMD $qsub
   setenv GID $gid
   setenv group_list \"$group_list\"
   setenv ARCH `uname -s`
@@ -149,7 +142,7 @@ EOF
   endif
   if( (`uname -s` == "Linux") && ((`uname -m` == "ia64") || (`uname -m` == "x86_64") )) then
      setenv FORT90L -Wl,-T
-     setenv FVWORK $mywork/\$user/tmp.\$\$
+     setenv FVWORK $fvhome/../tmp.\$\$
      if(   -d \$FVWORK ) /bin/rm -r  \$FVWORK
      /bin/mkdir -p \$FVWORK
   endif
@@ -160,7 +153,7 @@ EOF
 
 # Internal parameters controling system behavior
 # ----------------------------------------------
-# setenv ACFTBIAS $acftbias # knob for aircraft bias correction (1=on; 0=off) 
+  setenv ACFTBIAS $acftbias # knob for aircraft bias correction (1=on; 0=off) 
   setenv G5GCM   $g5gcm   # 1 = enables GEOS-5 GCM, 0 = disables GEOS-5 GCM (back to fvGCM)
 # setenv PREPQC  $prepqc  # 1 = enables NCEP-QC, 0 = disables QC
   setenv OIQC    $oiqc    # 1 = enables OIQC, 0 = disables OIQC
@@ -180,10 +173,22 @@ EOF
   setenv CONVUPA  $convupa # 1 = enables call to lcv2prs for conversion of upper-air output fields
   setenv ANASENS  1        # 0 = disable observation sensitivity;   1 = enable
   setenv NCSUFFIX $ncsuffix
-  setenv USRMITER  1       # uncomment to bypass miter from forward GSI run w/ user defined miter
+# setenv USRMITER  1       # uncomment to bypass miter from forward GSI run w/ user defined miter
+EOF
+
+  if ( $hyb_ens < 3 ) {
+    print  SCRIPT <<"EOF";
 # setenv HYBRIDGSI  \$FVHOME/atmens
 # setenv STAGE4HYBGSI  \$HYBRIDGSI/central
+EOF
+  } else {
+    print  SCRIPT <<"EOF";
+  setenv HYBRIDGSI  \$FVHOME/atmens
+  setenv STAGE4HYBGSI  \$HYBRIDGSI/central
+EOF
+  }
 
+  print  SCRIPT <<"EOF";
 # SSI/GSI specifics
 # -----------------
   setenv NCEPINPUT  $fvbcs
@@ -326,7 +331,10 @@ EOF
 
   source \$SHARE/dao_ops/opengrads/setup.csh 1.9-rc1-gmao
 
-  setenv I_MPI_FABRICS shm:ofa
+  if (\$?I_MPI_ROOT) then
+    setenv I_MPI_USE_DYNAMIC_CONNECTIONS 0
+    setenv I_MPI_FABRICS shm:ofa
+  endif
   setenv MPI_BUFS_PER_PROC 1024
 
 EOF
@@ -433,11 +441,18 @@ EOF
 
 #       Pick oldest restart for initial condition
 #       -----------------------------------------
-        set rslist = `/bin/ls -1 \$FVHOME/asens/\$EXPID.fsens_\${jgrdnrm}.eta.????????_??z+????????_??z-????????_??z.$ncsuffix`
+        if ( \$?this_nymdhh ) then
+            set rslist = `/bin/ls -1 \$FVHOME/asens/\$EXPID.fsens_\${jgrdnrm}.eta.????????_??z+????????_??z-\${this_nymdhh}z.$ncsuffix \
+                                     \$FVHOME/asens/\$EXPID.Jgradf_\${jgrdnrm}.eta.????????_??z+????????_??z-\${this_nymdhh}z.$ncsuffix`
+        else
+            set rslist = `/bin/ls -1 \$FVHOME/asens/\$EXPID.fsens_\${jgrdnrm}.eta.????????_??z+????????_??z-????????_??z.$ncsuffix \
+                                     \$FVHOME/asens/\$EXPID.Jgradf_\${jgrdnrm}.eta.????????_??z+????????_??z-????????_??z.$ncsuffix`
+        endif
         if ( \$status ) then
            echo \$myname": no gradient files found, nothing to do"
            exit 1
         endif
+        set vectyp = `echo \$rslist[1] | cut -d. -f2 | cut -c1-5`
 
 #       Get date/time of initial condition
 #       ----------------------------------
@@ -446,10 +461,33 @@ EOF
         set myrsfile = \$rslist[1]
         set itime = \$myrsfile:r
         set itime = \$itime:e
+        if ( \$vectyp == "fsens" ) then
         set xttag = `echo \$itime | cut -c1-25`
         set nymd  = `echo \$itime | cut -c27-34`
         set hh    = `echo \$itime | cut -c36-37`
         set nhms  = \${hh}0000
+        else  # in case of Jgradf analysis not in time tag ...
+           set xttag = `echo \$itime | cut -c1-12`
+           set nymd  = `echo \$itime | cut -c14-21`
+           set hh    = `echo \$itime | cut -c23-24`
+           set nhms  = \${hh}0000
+           if ( -e \$FVHOME/asens/asensrules.rc ) then
+              set rcfile = \$FVHOME/asens/asensrules.rc
+           else
+              if ( -e \$FVHOME/run/asens/asensrules.rc ) then
+                 set rcfile = \$FVHOME/run/asens/asensrules.rc
+              else
+                 echo "main: Mising asensrules.rc, aborting "
+                 exit(1)
+              endif
+           endif
+           set tauf = `echorc.x -rc \$FVHOME/asens/asensrules.rc integration_length_hrs` 
+           @ tauf_sec = \$tauf * 3600
+           set anadate = `tick \$nymd \$nhms -\$tauf_sec`
+           set nymd = \$anadate[1]
+           set nhms = \$anadate[2]
+           set xttag = \${itime} # need a two-time-stamp date btime+etime
+        endif
 
 #       Find initial time of issued forecast
 #       ------------------------------------
@@ -460,7 +498,8 @@ EOF
         set nhms0 = \${hh0}0000
 
         set sfx = `echo \$myrsfile | cut -d+ -f2`
-        set jgnlist = (`/bin/ls \$FVHOME/asens/\$EXPID.fsens_\${jgrdnrm}.eta.????????_??z+\$sfx`)
+        set jgnlist = (`/bin/ls \$FVHOME/asens/\$EXPID.fsens_\${jgrdnrm}.eta.????????_??z+\$sfx  \
+                                \$FVHOME/asens/\$EXPID.Jgradf_\${jgrdnrm}.eta.????????_??z+\$sfx`)
         foreach fn ( \$jgnlist )
            /bin/mv \$fn \$FVHOME/asens/stage
         end
@@ -511,10 +550,10 @@ EOF
   set jname = asens.arch.\${nymd}_\${hh}z
   set lname = \$FVHOME/asens/asens.arch.log.\${nymd}_\${hh}z.o%j.txt
 
-  if ( `uname -s` == "OSF1" ) then
-     bsub -J \$jname < \$FVHOME/run/fvarchive.j
+  if ( \$BATCH_SUBCMD == "sbatch" ) then
+     sbatch -W -J \$jname -o \$lname --export=arch_type=ASENS \$FVHOME/run/fvarchive.j
   else
-     qsub -W block=true -N \$jname -o \$lname -v arch_type=ASENS \$FVHOME/run/fvarchive.j
+     qsub   -W block=true -N \$jname -o \$lname -v arch_type=ASENS \$FVHOME/run/fvarchive.j
   endif
 
 # --------------------------
@@ -532,7 +571,7 @@ EOF
 
 # If forecast sucessfully completed, remove rs and resubmit
 # ---------------------------------------------------------
-  if ( \$rc == 0 || \$rc == 101 || ) then
+  if ( \$rc == 0 || \$rc == 101 ) then
 
      if ( \$INCSENS ) then
 
@@ -540,40 +579,44 @@ EOF
 
         set lstcases = `/bin/ls -1 standalone.*`
         if ( \$status ) then
-           echo \$myname": no more restart files, forecast job completed"
+           echo \$myname": no more increment files, forecast job completed"
            exit 0
         endif
         set fcst_nxt = `echo \$lstcases[1] | cut -d. -f2 | cut -d+ -f1`
         set jname = asens.\${fcst_nxt}
         set lname = \$FVHOME/asens/asens.log.\${fcst_nxt}.o%j.txt
-        if ( `uname -s` == "OSF1" ) then
-           bsub -J \$jname < $joba.j
+        if ( \$BATCH_SUBCMD == "sbatch" ) then
+           sbatch -d afterany:\${PBS_JOBID} -J \$jname -o \$lname $joba.j
         else
            qsub -W depend=afterany:\${PBS_JOBID} -N \$jname -o \$lname $joba.j
         endif
 
      else
 
-        set lst2del = (`/bin/ls \$FVHOME/asens/stage/\$EXPID.fsens_\${jgrdnrm}.eta.????????_??z+\$sfx`)
+        set lst2del = (`/bin/ls \$FVHOME/asens/stage/\$EXPID.fsens_\${jgrdnrm}.eta.????????_??z+\$sfx \
+                                \$FVHOME/asens/stage/\$EXPID.Jgradf_\${jgrdnrm}.eta.????????_??z+\$sfx`)
         foreach fn ( \$lst2del )
             /bin/rm -f \$fn
         end
 
-        set rslist = `/bin/ls -1 \$FVHOME/asens/\$EXPID.fsens_???.eta.????????_??z+????????_??z-????????_??z.$ncsuffix`
-        if ( \$status ) then
-           echo \$myname": no more restart files, forecast job completed"
-        else
-           set gsens = \$rslist[1]:r
-           set jname = \$gsens:e
-           set itime2 = \$jname:r
-           set nymd2 = `echo \$itime2 | cut -c27-34`
-           set hh2   = `echo \$itime2 | cut -c36-37`
-           set jname = asens.\${nymd2}_\${hh2}z
-           set lname = \$FVHOME/asens/asens.log.\${nymd2}_\${hh2}z.o%j.txt
-           if ( `uname -s` == "OSF1" ) then
-              bsub -J \$jname < $joba.j
+        if (! \$?this_nymdhh ) then
+           set rslist = `/bin/ls -1 \$FVHOME/asens/\$EXPID.fsens_???.eta.????????_??z+????????_??z-????????_??z.$ncsuffix \
+                                    \$FVHOME/asens/\$EXPID.Jgradf_???.eta.????????_??z+????????_??z-????????_??z.$ncsuffix`
+           if ( \$status ) then
+              echo \$myname": no more sensitivity files, forecast job completed"
            else
-              qsub -W depend=afterany:\${PBS_JOBID} -N \$jname -o \$lname $joba.j
+              set gsens = \$rslist[1]:r
+              set jname = \$gsens:e
+              set itime2 = \$jname:r
+              set nymd2 = `echo \$itime2 | cut -c27-34`
+              set hh2   = `echo \$itime2 | cut -c36-37`
+              set jname = asens.\${nymd2}_\${hh2}z
+              set lname = \$FVHOME/asens/asens.log.\${nymd2}_\${hh2}z.o%j.txt
+              if ( \$BATCH_SUBCMD == "sbatch" ) then
+                 sbatch -d afterany:\${PBS_JOBID} -J \$jname -o \$lname $joba.j
+              else
+                 qsub -W depend=afterany:\${PBS_JOBID} -N \$jname -o \$lname $joba.j
+              endif
            endif
         endif
 
@@ -582,7 +625,7 @@ EOF
      # Rename output log
      # -----------------
      set lname = \$FVHOME/asens/asens.log.\${nymd}_\${hh}z.txt
-     qalter -o \$lname \$PBS_JOBID
+     qalter -o \$lname \$SLURM_JOBID
 
      # Because on Columbia this is not a legitimate TMPDIR, remove dir to avoid pile up
      # --------------------------------------------------------------------------------

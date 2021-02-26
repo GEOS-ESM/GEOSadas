@@ -23,8 +23,17 @@
    use m_StrTemplate      
    use m_mpif90,only : MP_comm_world
    use m_mpif90,only : MP_REAL8
-   use m_zeit, only: zeit_ci,zeit_co,zeit_flush
-   use m_zeit, only: zeit_allflush
+
+   use gsi_fixture, only: fixture_config
+
+        ! Generic interface names are aliased to zeit_ to avoid some code
+        ! changes below.
+   use timermod, only: zeit_ci       => timer_on
+   use timermod, only: zeit_co       => timer_off
+   use timermod, only: zeit_flush    => timer_flush
+   use timermod, only: zeit_allflush => timer_allflush
+
+   use mpeu_util, only: perr,die
  
    implicit NONE
 
@@ -109,6 +118,8 @@
 
 !  Create Config and Initialize Clock 
 !  ----------------------------------
+   call fixture_config()
+
    call zeit_ci('GSIsa')
    cf = ESMF_ConfigCreate (rc=status)
    VERIFY_(STATUS)
@@ -261,11 +272,10 @@
 !  Show time
 !  ---------
    call zeit_co('GSIsa')
-   if(MAPL_AM_I_ROOT()) call zeit_flush(6,subname_at_end=.true.)
+   if(MAPL_AM_I_ROOT()) call zeit_flush(6)
 
 !  call ESMF_VMGet(vm,mpiCommunicator=comm,rc=status); VERIFY_(status)
-!  call zeit_allflush(comm,0,6,subname_at_end=.true.)
-   call zeit_allflush(MP_comm_world,0,6,subname_at_end=.true.)
+   call zeit_allflush(6,comm=MP_comm_world,root=0)
 
 !   All done
 !   -------- 

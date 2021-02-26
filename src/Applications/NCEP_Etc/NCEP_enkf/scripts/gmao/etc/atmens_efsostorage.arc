@@ -22,3 +22,5 @@
 #                 ---------------------------
 #
 ${PESTOROOT}%s/atmens/efso/Y%y4/M%m2/%s.eimp%c_%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+${PESTOROOT}%s/atmens/efso/Y%y4/M%m2/%s.atm_enkf_osens.log.%y4%m2%d2_%c%c%c.txt
+${PESTOROOT}%s/atmens/efso/Y%y4/M%m2/%s.atmens_eoimp.%y4%m2%d2_%c%c%c.tar
