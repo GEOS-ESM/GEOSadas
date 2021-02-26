@@ -43,6 +43,8 @@
 !     18Sep2019    Meta   Add additional OPENMB calls after READMG -
 !                         while 'subset' is the same, 'idate' may
 !                         have changed so new message may be required.
+!      4Jan2021    Meta   Add code to read new format EUMETSAT winds and
+!                         rewrite in old format used by MERRA2
 !
 !EOP
 !-----------------------------------------------------------------------
@@ -99,9 +101,10 @@
 
 ! Variables for GOES-16 conversion
       real(8) hdrdat(13), obsdat(4)
-      real(8) qcdat(3,12),  amvivr(2,2)
+      real(8) qcdat(2,12),  amvivr(2,2)
+      real(8) amvqic(2,4) 
       real pct1, qm
-      logical keep
+      logical keep, window_t
 
       integer ilev, jlev, iqlev
 
@@ -260,6 +263,7 @@
                   call w3fs21(jdate,obtime)
                   if (obtime .ge. itmin .and. obtime .le. itmax) then
                      ni=ni+1
+                     call openmb(luout,nsubsets(idx),idate)
 
 ! Read in data from new format file
                      hdrdat = bmiss
@@ -299,7 +303,7 @@
                      call ufbint(luout,hdrdat,13,1,ilev,hdrtr)
                      call ufbint(luout,obsdat,4,1,ilev,obstr)
                      call ufbrep(luout,qcdat,2,iqlev,jlev,qcstr)
-
+                     
                      call writsb(luout)
 
                   else   ! data not in time window
@@ -312,15 +316,94 @@
 
                if (iret /= 0 .or. subset /= osubset) exit flg2
                call openmb(luout,nsubsets(idx),idate)
-
+               
             end do flg2
                
             call closmg(luout)
                
+         else if ( use_flg(idx) == 3 ) then
 
+            if (dtmin(idx) == 0.0 .and. dtmax(idx) == 0.0) then
+               window_t = .false.
+               itmin = -180
+               itmax = 180
+            else
+               itmin = dtmin(idx) + itctr
+               itmax = dtmax(idx) + itctr
+               window_t = .true.
+            endif
+
+! case of new EUMETSAT format that needs to be rewritten for MERRA2
+! get time and compare to time window, qc obs inside time window
+!  and rewrite in old EUMETSAT format to output file - process all
+!  the messages that match this subset.  Allow for case without
+!  time windowing.
+
+!  We are lucky in that the defs for the old wind formats
+!  are contained in the BUFR dictionary used for the new winds
+
+            osubset = subset
+
+            call openmb(luout,nsubsets(idx),idate)
+
+            flg3: do while ( iret .eq. 0 )
+
+               readsbe: do while ( ireadsb(luin) .eq. 0 )
+
+                  call ufbint(luin,time,5,1,klev,timestr)
+                  do j = 1,5
+                     jdate(j) = int(time(j))
+                  end do
+                  call w3fs21(jdate,obtime)
+                  if ((obtime .ge. itmin .and. obtime .le. itmax) .or.
+     &                 .not. window_t)  then
+                     ni=ni+1
+                     call openmb(luout,nsubsets(idx),idate)
+
+! Read in data from new format file
+                     hdrdat = bmiss
+                     obsdat = bmiss
+                     qcdat = bmiss
+                     qm = 2
+                     
+                     call ufbint(luin,hdrdat,13,1,ilev,hdrtr0)
+                     call ufbint(luin,obsdat,4,1,ilev,obstr0)
+!
+!  skipping read of 'pct1' information since it is not used in QC of EU winds (yet)
+!  read other quality information
+                     call ufbseq(luin,amvqic,2,4,iret, 'AMVQIC') ! AMVQIC:: GNAPS PCCF
+!                    qifn = amvqic(2,2) ! QI w/ fcst does not exist in this BUFR
+!                    ee = amvqic(2,4) ! NOTE: GOES-R's ee is in [m/s]
+                     qcdat(1,4) = 2.0
+                     qcdat(2,4) = amvqic(2,2) ! qifn
+                     qcdat(1,5) = 3.0
+                     qcdat(2,5) = amvqic(2,4) ! "ee"
+                     if ( amvqic(2,2) < 85.0 ) then
+                        qm = 15
+                     end if
+                     
+                     call ufbint(luout,hdrdat,13,1,ilev,hdrtr)
+                     call ufbint(luout,obsdat,4,1,ilev,obstr)
+                     call ufbrep(luout,qcdat,2,12,jlev,qcstr)
+
+                     call writsb(luout)
+
+                  else          ! data not in time window
+                     ne = ne + 1
+                  end if
+               end do readsbe
+               call readmg(luin, subset, idate, iret)
+
+               if (iret /= 0 .or. subset /= osubset) exit flg3
+               call openmb(luout,nsubsets(idx),idate)
+
+            end do flg3
+
+            call closmg(luout)
+!
          else if ( use_flg(idx) == 0 ) then
             
-! case of nonwindowed (EUMETSAT, JMA, MODIS) - just copy the winds as they are
+! case of nonwindowed old format (EUMETSAT, JMA, MODIS) - just copy the winds as they are
 ! for all of the messages matching this subset
             osubset = subset
                
@@ -498,8 +581,8 @@
          end if
          use_flg(i) = ii
 !     
-! read time window parameters if use_flg == 1 or == 2
-         if (use_flg(i) == 1 .or. use_flg(i) == 2) then
+! read time window parameters if use_flg == 1, 2, or 3
+         if (use_flg(i) >= 1 .and. use_flg(i) <= 3) then
             ii = i90_gint(iret)
             if (iret /= 0) then
                print *,'twindow: error reading time window ',
@@ -516,7 +599,9 @@
                return
             end if
             dtmax(i) = ii
-            if (use_flg(i) == 2)  then  
+!
+! read subset name for converting new types to old
+            if (use_flg(i) == 2 .or. use_flg(i) == 3)  then  
                call i90_gtoken(str,iret)
                if (iret /= 0) then
                   print *,'twindow: Error reading new subset name,',
