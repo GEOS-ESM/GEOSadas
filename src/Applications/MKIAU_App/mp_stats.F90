@@ -37,6 +37,7 @@
 !                       - add ability to write out modified input fields
 !  14Jan2015  Todling  redef grid name following GEOS conventions (per Atanas)
 !  23Feb2017  Todling  add zeit calls
+!  05Jun2020  Todling  add opt to use read-parallel
 !----------------------------------------------------------------------------
 
 #  include "MAPL_Generic.h"
@@ -60,13 +61,14 @@
    type(ESMF_Grid)         :: INGrid    ! Input Grid
    type(ESMF_Grid)         :: OUGrid    ! Output Grid
    type(ESMF_Grid)         :: ANAgrid   ! ANA Grid
-   type(ESMF_FieldBundle)  :: InBundle  ! Bundle to hold read in fields
+   type(ESMF_FieldBundle),pointer :: InBundle(:) ! Bundle to hold read in fields
    type(ESMF_FieldBundle)  :: EnBundle  ! Bundle to hold energy
    type(ESMF_Field)        :: Field     ! Field from bundle
    type(ESMF_Field)        :: enField   ! Field holding energy
 
    type(ESMF_VM)           :: vm       ! ESMF Virtual Machine
    type(ESMF_Time)         :: Time     ! Time objects
+   type(ESMF_Time), allocatable  :: TimeList(:)
    type(ESMF_TimeInterval) :: TimeStep ! used to define a clock
    type(ESMF_Config)       :: CF       ! configuration settings
    type(MAPL_CFIO)         :: cfio
@@ -85,12 +87,13 @@
    integer :: nPET    ! The total number of PETs you are running on
 
    integer :: status, rc
-   integer :: i, j, L, n, im, jm, lm, ii, nf
+   integer :: i, j, L, n, im, jm, lm, ii, nf, nb
    integer :: ifld, i2d, i3d, rank
    integer :: nfld, n2d, n3d
-   integer :: nymd,nhms                ! work date/time
-   integer :: nymdi,nhmsi              ! input (auxiliar) date/time
+   integer,allocatable :: nymdi(:),nhmsi(:) ! input (auxiliar) date/time
    integer :: nymdo,nhmso              ! output date/time
+   integer :: nymd,nhms                ! work date/time
+   integer :: this_nymd,this_nhms      ! auxiliar date/times
 
    integer :: Nx, Ny                   ! Layout
    integer :: im_out, jm_out, lm_out   ! Full dimension of output fields
@@ -137,6 +140,7 @@
    character(len=*), parameter :: ene_fld_names(neflds) = (/ & ! name   of energy-partition fields
                       'kxe', 'ape', 'pse','qxe','txe','twe'/)
 
+   logical :: fast_read
    logical :: tv2t                            ! convert virtual T to dry T
    logical :: recursive_ene                   ! when calculating energy-based
                                               ! measure do it recursively when
@@ -144,7 +148,7 @@
                                               ! approx the same results as that
                                               ! of non-recursive, but it does it
                                               ! in a single pass of the data.
-   logical, save :: recursive_stats=.true.    ! this is never to be make optional
+   logical, save :: recursive_stats=.true.    ! this is never to be made optional
                                               ! the internal option false is
                                               ! used for debugging and
                                               ! making sure results are as
@@ -170,6 +174,7 @@
    integer :: id
    integer :: MAXFILES = 100
    integer :: nfiles
+   integer :: blocksize
    character(len=ESMF_MAXSTR),allocatable :: files(:)
    character(len=ESMF_MAXSTR)             :: mfile     ! filename for user-splied mean
    character(len=ESMF_MAXSTR)             :: ofile     ! filename for main output (1st moments)
@@ -250,23 +255,38 @@ CONTAINS
 
 !   Create bundle to hold background and read background
 !   ----------------------------------------------------
-    InBundle = ESMF_FieldBundleCreate ( name='Input bundle', __RC__ )
-    call ESMF_FieldBundleSet(InBundle, grid=INgrid, __RC__ )
+    allocate(nymdi(nfiles),nhmsi(nfiles))
+    do nf=1,nfiles
+       call inqNCdatetime_ ( trim(files(nf)), nymdi(nf), nhmsi(nf) )
+    enddo
+    if (fast_read) then
+       allocate(InBundle(nfiles))
+       allocate(TimeList(nfiles))
+       do nf=1,nfiles
+          InBundle(nf) = ESMF_FieldBundleCreate ( name='Input Bundle', __RC__ )
+          call ESMF_FieldBundleSet ( InBundle(nf), grid=InGrid, __RC__ )
+          call set_datetime_ ( nymdi(nf), nhmsi(nf), TimeList(nf) )
+       enddo
+    else
+       allocate(InBundle(1))
+       InBundle(1) = ESMF_FieldBundleCreate ( name='Input bundle', __RC__ )
+       call ESMF_FieldBundleSet(InBundle(1), grid=INgrid, __RC__ )
+    endif
 
     call zeit_ci('CFIORead')
     if (trim(ovars)=="NONE") then
-        call MAPL_CFIORead  ( trim(mfile), Time, INbundle, &
-                              doParallel=.true.,           &
+        call MAPL_CFIORead  ( trim(mfile), Time, INbundle(1), &
+                              doParallel=.true.,noread=.true.,&
                               TIME_IS_CYCLIC=.false., verbose=verbose, __RC__ )
     else
-        call MAPL_CFIORead  ( trim(mfile), Time, INbundle, &
-                              only_vars=ovars,             &
-                              doParallel=.true.,           &
+        call MAPL_CFIORead  ( trim(mfile), Time, INbundle(1), &
+                              only_vars=ovars,                &
+                              doParallel=.true.,noread=.true.,&
                               TIME_IS_CYCLIC=.false., verbose=verbose, __RC__ )
     endif
     call zeit_co('CFIORead')
 
-    call get_fields_info_ (im,jm,lm,n2d,n3d,nfld)
+    call get_fields_info_ (im,jm,lm,n2d,n3d,nfld,0)
 
 !   Testing only ...   
 !   ----------------
@@ -304,6 +324,18 @@ CONTAINS
        call gbl2lcl_(INgrid,jweights_glb,jweights_lcl) ! get lat weights in the local domain
     endif
 
+!   call it a second time to collect var names
+!   ------------------------------------------
+    call get_fields_info_ (im,jm,lm,n2d,n3d,nfld,1)
+
+!   If fast read ...
+!   ----------------
+    if (fast_read) then
+       call zeit_ci('CFIORead')
+       call MAPL_CFIOReadParallel(InBundle,files(1:nfiles),Time,blocksize=blocksize,timelist=TimeList, __RC__ )
+       call zeit_co('CFIORead')
+    endif
+
 !   If recursive mean, rms and/or stdv are required ...
 !   ---------------------------------------------------
     if (.not.skip_main) then
@@ -314,41 +346,45 @@ CONTAINS
 
 !      Check date/time and adjust clock if needed
 !      ------------------------------------------
-       call inqNCdatetime_ ( trim(files(nf)), nymdi, nhmsi )
-       if(nymdi/=nymd.or.nhmsi/=nhms) then
-          call set_datetime_  ( nymdi, nhmsi )
-          CLOCK = ESMF_ClockCreate ( name="StatsClock", timeStep=TimeStep, startTime=Time, __RC__ )
-          nymd=nymdi;nhms=nhmsi
-       endif
-       if (debug_cfioread<=0.or.debug_cfioread>1) then
-          call zeit_ci('CFIORead')
-          if (trim(ovars)=="NONE") then
-              call MAPL_CFIORead  ( trim(files(nf)), Time, INbundle, &
-                                    doParallel=.true.,               &
-                                    TIME_IS_CYCLIC=.false., verbose=verbose, __RC__ )
-          else
-              call MAPL_CFIORead  ( trim(files(nf)), Time, INbundle, &
-                                    only_vars=ovars,                 &
-                                    doParallel=.true.,               &
-                                    TIME_IS_CYCLIC=.false., verbose=verbose, __RC__ )
+       if (fast_read) then
+          nb=nf
+       else
+          nb=1
+          if(nymdi(nf)/=nymd.or.nhmsi(nf)/=nhms) then
+             call set_datetime_  ( nymdi(nf), nhmsi(nf) )
+             CLOCK = ESMF_ClockCreate ( name="StatsClock", timeStep=TimeStep, startTime=Time, __RC__ )
+             nymd=nymdi(nf);nhms=nhmsi(nf)
           endif
-          call zeit_co('CFIORead')
-       endif
+          if (debug_cfioread<=0.or.debug_cfioread>1) then
+             call zeit_ci('CFIORead')
+             if (trim(ovars)=="NONE") then
+                 call MAPL_CFIORead  ( trim(files(nf)), Time, INbundle(nb), &
+                                       doParallel=.true.,                  &
+                                       TIME_IS_CYCLIC=.false., verbose=verbose, __RC__ )
+             else
+                 call MAPL_CFIORead  ( trim(files(nf)), Time, INbundle(nb), &
+                                       only_vars=ovars,                    &
+                                       doParallel=.true.,                  &
+                                       TIME_IS_CYCLIC=.false., verbose=verbose, __RC__ )
+             endif
+             call zeit_co('CFIORead')
+          endif
 
-!      Testing only ...   
-!      ----------------
-       if (debug_cfioread>=1) then
-          if(.not.associated(debug3d)) allocate(debug3d(im,jm,lm,10))
-          call zeit_ci('MyRead')
-          call MyRead_ ( trim(files(nf)), InGrid, nymd, nhms, IM_OUT, JM_OUT, LM_OUT, debug3d )
-          call zeit_co('MyRead')
+!         Testing only ...   
+!         ----------------
+          if (debug_cfioread>=1) then
+             if(.not.associated(debug3d)) allocate(debug3d(im,jm,lm,10))
+             call zeit_ci('MyRead')
+             call MyRead_ ( trim(files(nf)), InGrid, nymd, nhms, IM_OUT, JM_OUT, LM_OUT, debug3d )
+             call zeit_co('MyRead')
+          endif
        endif
 
 !      If so, save qv
 !      --------------
        if (tv2t) then
           DO ifld=1,nfld
-              call ESMF_FieldBundleGet(INbundle, ifld, Field, __RC__ )
+              call ESMF_FieldBundleGet(INbundle(nb), ifld, Field, __RC__ )
               call ESMF_FieldGet(Field, NAME=NAME, dimCount = rank, __RC__ )
               if (rank==2) cycle
                  call ESMF_FieldGet(Field, farrayPtr=ptr3d, __RC__ )
@@ -362,17 +398,15 @@ CONTAINS
 !      Reset variables
 !      ---------------
        id  = 0
-       i2d = 0
-       i3d = 0
 
 !      Accumulate sums
 !      ---------------
        DO ifld=1,nfld
-           call ESMF_FieldBundleGet(INbundle, ifld, Field, __RC__ )
+           call ESMF_FieldBundleGet(INbundle(nb), ifld, Field, __RC__ )
            call ESMF_FieldGet(Field, NAME=NAME, dimCount = rank, __RC__ )
            if (.not. check_list_(NAME,ovars)) cycle
            if (rank==2) then
-             i2d=i2d+1
+             i2d=getindex_(trim(NAME),names2d)
              call ESMF_FieldGet(Field, farrayPtr=ptr2d, __RC__ )
              do j=1,jm
                 do i=1,im
@@ -424,7 +458,7 @@ CONTAINS
              endif
            endif ! <rank=2>
            if (rank==3) then
-             i3d=i3d+1
+             i3d=getindex_(trim(NAME),names3d)
              call ESMF_FieldGet(Field, farrayPtr=ptr3d, __RC__ )
              if(debug_cfioread)then
                if(trim(NAME)=='delp') ptr3d => debug3d(:,:,:,1)
@@ -501,37 +535,40 @@ CONTAINS
 !      Loop over files ...
 !      -------------------
        DO nf = 1,nfiles
+
 !         Check date/time and adjust clock if needed
 !         ------------------------------------------
-          call inqNCdatetime_ ( trim(files(nf)), nymdi, nhmsi )
-          if(nymdi/=nymd.or.nhmsi/=nhms) then
-             call set_datetime_  ( nymdi, nhmsi )
+          if(nymdi(nf)/=nymd.or.nhmsi(nf)/=nhms) then
+             call set_datetime_  ( nymdi(nf), nhmsi(nf) )
              CLOCK = ESMF_ClockCreate ( name="StatsClock", timeStep=TimeStep, startTime=Time, __RC__ )
-             nymd=nymdi;nhms=nhmsi
+             nymd=nymdi(nf);nhms=nhmsi(nf)
           endif
-          if (trim(ovars)=="NONE") then
-              call MAPL_CFIORead  ( trim(files(nf)), Time, INbundle, &
-                                    TIME_IS_CYCLIC=.false., verbose=verbose, __RC__ )
+          if (fast_read) then
+             nb=nf
           else
-              call MAPL_CFIORead  ( trim(files(nf)), Time, INbundle, &
-                                    only_vars=ovars, &
-                                    TIME_IS_CYCLIC=.false., verbose=verbose, __RC__ )
+             nb=1
+             if (trim(ovars)=="NONE") then
+                 call MAPL_CFIORead  ( trim(files(nf)), Time, INbundle(nb), &
+                                       TIME_IS_CYCLIC=.false., verbose=verbose, __RC__ )
+             else
+                 call MAPL_CFIORead  ( trim(files(nf)), Time, INbundle(nb), &
+                                       only_vars=ovars, &
+                                       TIME_IS_CYCLIC=.false., verbose=verbose, __RC__ )
+             endif
           endif
 
 !         Reset variables
 !         ---------------
           id  = 0
-          i2d = 0
-          i3d = 0
 
 !         Accumulate sums
 !         ---------------
           DO ifld=1,nfld
-              call ESMF_FieldBundleGet(INbundle, ifld, Field, __RC__ )
+              call ESMF_FieldBundleGet(INbundle(nb), ifld, Field, __RC__ )
               call ESMF_FieldGet(Field, NAME=NAME, dimCount = rank, __RC__ )
               if (.not. check_list_(NAME,ovars)) cycle
               if (rank==2) then
-                i2d=i2d+1
+                i2d=getindex_(trim(NAME),names2d)
                 call ESMF_FieldGet(Field, farrayPtr=ptr2d, __RC__ )
                 ! If required fields for energy calculate
                 !----------------------------------------
@@ -544,7 +581,7 @@ CONTAINS
                 endif
               endif ! <rank=2>
               if (rank==3) then
-                i3d=i3d+1
+                i3d=getindex_(trim(NAME),names3d)
                 call ESMF_FieldGet(Field, farrayPtr=ptr3d, __RC__ )
                 ! If required fields for energy calculate
                 !----------------------------------------
@@ -595,10 +632,10 @@ CONTAINS
 
       ! Write out bundle
       ! ----------------
-      call MAPL_CFIOCreate ( cfio, trim(ofile), clock, InBundle,  &
+      call MAPL_CFIOCreate ( cfio, trim(ofile), clock, InBundle(1),  &
                              FREQUENCY=freq, &
                              DESCR='Write Stats Fields', __RC__ )
-      call MAPL_CFIOWrite ( cfio, clock, InBundle, verbose=verbose, __RC__ )
+      call MAPL_CFIOWrite ( cfio, clock, InBundle(1), verbose=verbose, __RC__ )
       call MAPL_cfioDestroy ( cfio )
    endif
 
@@ -616,10 +653,10 @@ CONTAINS
 
       ! Write out bundle
       ! ----------------
-      call MAPL_CFIOCreate ( cfio, trim(sfile), clock, InBundle,  &
+      call MAPL_CFIOCreate ( cfio, trim(sfile), clock, InBundle(1),  &
                              FREQUENCY=freq, &
                              DESCR='Write Stats Fields', __RC__ )
-      call MAPL_CFIOWrite ( cfio, clock, InBundle, verbose=verbose, __RC__ )
+      call MAPL_CFIOWrite ( cfio, clock, InBundle(1), verbose=verbose, __RC__ )
       call MAPL_cfioDestroy ( cfio )
    endif
 
@@ -631,48 +668,52 @@ CONTAINS
 !      -------------------
        DO nf = 1,nfiles
 
-          ! Check date/time and adjust clock if needed
-          ! ------------------------------------------
-          call inqNCdatetime_ ( trim(files(nf)), nymdi, nhmsi )
-          if(nymdi/=nymd.or.nhmsi/=nhms) then
-             call set_datetime_  ( nymdi, nhmsi )
-             CLOCK = ESMF_ClockCreate ( name="StatsClock", timeStep=TimeStep, startTime=Time, __RC__ )
-             nymd=nymdi;nhms=nhmsi
-          endif
-          if (trim(ovars)=="NONE") then
-              call MAPL_CFIORead  ( trim(files(nf)), Time, INbundle, &
-                                    TIME_IS_CYCLIC=.false., verbose=verbose, __RC__ )
+          if (fast_read) then
+             nb=nf
           else
-              call MAPL_CFIORead  ( trim(files(nf)), Time, INbundle, &
+             ! Check date/time and adjust clock if needed
+             ! ------------------------------------------
+             if(nymdi(nf)/=nymd.or.nhmsi(nf)/=nhms) then
+                call set_datetime_  ( nymdi(nf), nhmsi(nf) )
+                CLOCK = ESMF_ClockCreate ( name="StatsClock", timeStep=TimeStep, startTime=Time, __RC__ )
+                nymd=nymdi(nf);nhms=nhmsi(nf)
+             endif
+             nb=1
+             if (trim(ovars)=="NONE") then
+                 call MAPL_CFIORead  ( trim(files(nf)), Time, INbundle(nb), &
+                                       TIME_IS_CYCLIC=.false., verbose=verbose, __RC__ )
+             else
+                 call MAPL_CFIORead  ( trim(files(nf)), Time, INbundle(nb), &
                                        only_vars=ovars, &
-                                    TIME_IS_CYCLIC=.false., verbose=verbose, __RC__ )
+                                       TIME_IS_CYCLIC=.false., verbose=verbose, __RC__ )
+             endif
           endif
 
           ! Remove mean (i.e., do: xin = xin + alpha * mean_x)
           ! --------------------------------------------------
           if (umean) then
-             call saxpy_ (alpha, umean2d, umean3d)
+             call saxpy_ (nb, alpha, umean2d, umean3d)
           else
-             call saxpy_ (alpha,  mean2d,  mean3d)
+             call saxpy_ (nb, alpha,  mean2d,  mean3d)
           endif
 
           ! Write out bundle
           ! ----------------
-          if (append_counter) then
-             write(myftmpl,'(2a,i3.3,a)') trim(ftmpl), '.', nf, '.nc4'
-          else
-             write(myftmpl,'(2a)') trim(ftmpl), '.nc4'
-          endif
           if(nymdo>0.and.nhmso>=0) then
              call set_datetime_  ( nymdo, nhmso )
              CLOCK = ESMF_ClockCreate ( name="StatsClock", timeStep=TimeStep, startTime=Time, __RC__ )
              nymd=nymdo;nhms=nhmso
           endif
-          call StrTemplate ( outfname, myftmpl, 'GRADS', nymd=nymd, nhms=nhms, stat=status)
-          call MAPL_CFIOCreate ( cfio, trim(outfname), clock, InBundle,  &
+          call StrTemplate ( myftmpl, ftmpl, 'GRADS', nymd=nymd, nhms=nhms, stat=status)
+          if (append_counter) then
+             write(outfname,'(2a,i3.3,a)') trim(myftmpl), '.', nf, '.nc4'
+          else
+             write(outfname,'(2a)') trim(myftmpl), '.nc4'
+          endif
+          call MAPL_CFIOCreate ( cfio, trim(outfname), clock, InBundle(nb),  &
                                  FREQUENCY=freq, &
                                  DESCR='Write Stats Fields', __RC__ )
-          call MAPL_CFIOWrite ( cfio, clock, InBundle, verbose=verbose, __RC__ )
+          call MAPL_CFIOWrite ( cfio, clock, InBundle(nb), verbose=verbose, __RC__ )
           call MAPL_cfioDestroy ( cfio )
 
       enddo
@@ -704,9 +745,10 @@ CONTAINS
 
   end subroutine Main
 
-  subroutine get_fields_info_ (im,jm,lm,n2d,n3d,nfld)
+  subroutine get_fields_info_ (im,jm,lm,n2d,n3d,nfld,npass)
 
   implicit none
+  integer,intent(in)  :: npass
   integer,intent(out) :: im,jm,lm,n2d,n3d,nfld
 
   integer j2d,j3d
@@ -716,32 +758,36 @@ CONTAINS
 ! ------------------
     read2d=.false.
     read3d=.false.
-    call ESMF_FieldBundleGet(INbundle,FieldCount=nfld, __RC__ )
+    call ESMF_FieldBundleGet(INbundle(1),FieldCount=nfld, __RC__ )
     n2d=0;n3d=0
     DO ifld=1,nfld
-       call ESMF_FieldBundleGet(INbundle, ifld, Field, __RC__ )
+       call ESMF_FieldBundleGet(INbundle(1), ifld, Field, __RC__ )
        call ESMF_FieldGet(Field, NAME=NAME, dimCount=rank, __RC__ )
        if (.not. check_list_(NAME,ovars)) cycle
        if(rank==2) then
           n2d=n2d+1
-          if (.not.read2d) then
+          if (.not.read2d) then ! only need read once to get dims
              call ESMF_FieldGet(Field, farrayPtr=ptr2d, __RC__ )
              im=size(ptr2d,1)
              jm=size(ptr2d,2)
              read2d=.true.
           endif
+          if(allocated(names2d)) names2d(n2d)=trim(NAME)
        endif
        if(rank==3) then
           n3d=n3d+1
-          if (.not.read3d) then
+          if (.not.read3d) then ! only need read once to get dims
              call ESMF_FieldGet(Field, farrayPtr=ptr3d, __RC__ )
              im=size(ptr3d,1)
              jm=size(ptr3d,2)
              lm=size(ptr3d,3)
              read3d=.true.
           endif
+          if(allocated(names3d)) names3d(n3d)=trim(NAME)
        endif
     END DO
+
+    if(npass>0) return
 
 !   If needed, store mean ...
 !   -------------------------
@@ -755,10 +801,10 @@ CONTAINS
              allocate(umean3d(im,jm,lm,n3d))
              umean3d = 0.0
           endif
-          call ESMF_FieldBundleGet(INbundle,FieldCount=nfld, __RC__ )
+          call ESMF_FieldBundleGet(INbundle(1),FieldCount=nfld, __RC__ )
           j2d=0;j3d=0
           DO ifld=1,nfld
-             call ESMF_FieldBundleGet(INbundle, ifld, Field, __RC__ )
+             call ESMF_FieldBundleGet(INbundle(1), ifld, Field, __RC__ )
              call ESMF_FieldGet(Field, NAME=NAME, dimCount=rank, __RC__ )
              if (.not. check_list_(NAME,ovars)) cycle
              if(rank==2) then
@@ -805,11 +851,11 @@ CONTAINS
   j2d = 0
   j3d = 0
   DO ifld=1,nfld
-     call ESMF_FieldBundleGet(INbundle, ifld, Field, __RC__ )
+     call ESMF_FieldBundleGet(INbundle(1), ifld, Field, __RC__ )
      call ESMF_FieldGet(Field, NAME=NAME, dimCount=rank, __RC__ )
      if (.not. check_list_(NAME,ovars)) cycle
      if (rank == 2) then
-       j2d=j2d+1
+       j2d=getindex_(trim(NAME),names2d)
        call ESMF_FieldGet(Field, farrayPtr=ptr2d, __RC__ )
        if (log_transf.and.log_transf_back) then
           if(.not.present(s2d)) then
@@ -850,7 +896,7 @@ CONTAINS
        endif ! <sec_mom>
      endif ! <rank=2>
      if (rank == 3) then
-       j3d=j3d+1
+       j3d=getindex_(trim(NAME),names3d)
        call ESMF_FieldGet(Field, farrayPtr=ptr3d, __RC__ )
        ptr3d = 0.0
        if (log_transf.and.log_transf_back) then
@@ -894,9 +940,10 @@ CONTAINS
 
   end subroutine fields2bundle_
 
-  subroutine saxpy_ (alpha,x2d,x3d)
+  subroutine saxpy_ (mb,alpha,x2d,x3d)
 
   implicit none
+  integer,intent(in) :: mb
   real,intent(in) :: alpha ! scaling coefficient
   real,intent(in) :: x2d(:,:,:)
   real,intent(in) :: x3d(:,:,:,:)
@@ -906,14 +953,12 @@ CONTAINS
   integer j2d,j3d
 
   ! Place stats in Inbundle
-  j2d = 0
-  j3d = 0
   DO ifld=1,nfld
-     call ESMF_FieldBundleGet(INbundle, ifld, Field, __RC__ )
+     call ESMF_FieldBundleGet(INbundle(mb), ifld, Field, __RC__ )
      call ESMF_FieldGet(Field, NAME=NAME, dimCount=rank, __RC__ )
      if (.not. check_list_(NAME,ovars)) cycle
      if (rank == 2) then
-       j2d=j2d+1
+       j2d=getindex_(trim(NAME),names2d)
        call ESMF_FieldGet(Field, farrayPtr=ptr2d, __RC__ )
        ii=size(ptr2d,1)
        jj=size(ptr2d,2)
@@ -926,7 +971,7 @@ CONTAINS
        enddo
      endif ! <rank=2>
      if (rank == 3) then
-       j3d=j3d+1
+       j3d=getindex_(trim(NAME),names3d)
        call ESMF_FieldGet(Field, farrayPtr=ptr3d, __RC__ )
        ii=size(ptr3d,1)
        jj=size(ptr3d,2)
@@ -1006,12 +1051,20 @@ CONTAINS
    call ESMF_ConfigGetAttribute( CF, JM_OUT, label ='MP_STATS_JM:', __RC__ )
    call ESMF_ConfigGetAttribute( CF, LM_OUT, label ='MP_STATS_LM:', __RC__ )
 
+   call ESMF_ConfigGetAttribute( CF, BLOCKSIZE, label ='MP_STATS_READ_BLOCKSIZE:', DEFAULT=4, __RC__ )
+
    call ESMF_ConfigGetAttribute( CF, eps_eer  , label ='EPS_EER:', DEFAULT=0.0, __RC__ )
    call ESMF_ConfigGetAttribute( CF, aux      , label ='VNORM:'  , DEFAULT="NO", __RC__ )
    if(trim(aux)/="NO") then 
       vnorm=.true.
    else
       vnorm=.false.
+   endif
+   call ESMF_ConfigGetAttribute( CF, aux, label ='MP_STATS_FAST_READ:', DEFAULT="NO", __RC__ )
+   if(trim(aux)/="NO") then 
+      fast_read=.true.
+   else
+      fast_read=.false.
    endif
 
    call ESMF_ConfigGetAttribute( CF, debug_cfioread, label ='DEBUG_CFIOREAD:', DEFAULT=0, __RC__ )
@@ -1027,10 +1080,11 @@ CONTAINS
 
    end subroutine init_
 
-   subroutine set_datetime_ (nymd, nhms)
+   subroutine set_datetime_ (nymd, nhms, This_Time)
 
    implicit none
    integer, intent(in) :: nymd, nhms
+   type(ESMF_Time),optional :: This_Time
 
    integer thistime(6)
 
@@ -1044,9 +1098,18 @@ CONTAINS
 !  Set ESMF date/time
 !  ------------------
    call ESMF_CalendarSetDefault ( ESMF_CALKIND_GREGORIAN )
-   call ESMF_TimeSet(Time, yy=thistime(1), mm=thistime(2), dd=thistime(3), &
-                            h=thistime(4), m =thistime(5),  s=thistime(6))
-   call ESMF_TimeIntervalSet( TimeStep, h=6, m=0, s=0, __RC__ )
+   if (present(This_Time))then
+     call ESMF_TimeSet(This_Time, yy=thistime(1), mm=thistime(2), dd=thistime(3), &
+                                   h=thistime(4), m =thistime(5),  s=thistime(6))
+   else
+     call ESMF_TimeSet(Time, yy=thistime(1), mm=thistime(2), dd=thistime(3), &
+                              h=thistime(4), m =thistime(5),  s=thistime(6))
+   endif
+   if (fast_read) then
+     call ESMF_TimeIntervalSet( TimeStep, h=0, m=0, s=0, __RC__ )
+   else
+     call ESMF_TimeIntervalSet( TimeStep, h=6, m=0, s=0, __RC__ )
+   endif 
 
    end subroutine set_datetime_
 
@@ -1462,9 +1525,13 @@ CONTAINS
     if (doene) then
         call ESMF_FieldBundleDestroy (EnBundle, __RC__)
     endif
-    call ESMF_FieldBundleDestroy (INBundle, __RC__)
+    do nf=size(InBundle),1,-1
+       call ESMF_FieldBundleDestroy (INBundle(nf), __RC__)
+    enddo
+    if(allocated(TimeList)) deallocate(TimeList)
     call ESMF_GridDestroy (InGrid, __RC__)
     deallocate(files)
+    deallocate(nymdi,nhmsi)
     if(allocated(mean2d)) then
        deallocate(mean2d)
        deallocate(names2d)
@@ -1579,7 +1646,7 @@ CONTAINS
 
   integer nymdf,nhmsf,timeId
   integer fid,iret,rc,ifailed,dimsize
-  character*31 dimName        ! variable name
+  character(len=31) dimName       ! variable name
 
   iret = 0
   if (MAPL_AM_I_ROOT()) then
@@ -2306,5 +2373,22 @@ CONTAINS
 
    end subroutine myscatter_
 
+   integer function getindex_(var,vars)
+   use m_die, only: die
+   implicit none
+   character(len=*),intent(in) :: var
+   character(len=*),intent(in) :: vars(:)
+   integer ii
+   getindex_=-1
+   do ii=1,size(vars)
+      if(trim(var)==vars(ii)) then
+         getindex_=ii
+         exit
+      endif
+   enddo
+   if(getindex_==-1) then
+     call die('getindex_',': cannot find var index '//trim(var),99)
+   endif
+   end function  getindex_
 
 end Program mp_stats

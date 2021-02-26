@@ -23,6 +23,9 @@
 #  05Dec2016  Todling   Halt when prepbufr not present
 #  16Apr2018  Todling   Handle Y. Zhu sat-bias-correction file
 #  31Jul2018  Todling/Gu  Allow for ens own setting of anavinfo file
+#  31Mar2020  Todling   Jobmonitor to protect against faulty batch-block
+#  03May2020  Todling   Logic not to over-subscribe node
+#  23Jun2020  Todling   Refef meaning of ATMENSLOC
 #------------------------------------------------------------------
 
 if ( !($?ATMENS_VERBOSE) ) then
@@ -97,7 +100,7 @@ if ( $#argv < 4 ) then
    echo "    ENSGSI_NCPUS     - when parallel ens on, this sets NCPUS for Observer calculation"
    echo "    AENS_OBSVR_DSTJOB- distribute multiple works within smaller jobs"
    echo "    OBSVR_WALLCLOCK  - wall clock time to run observer, default 1:00:00 "
-   echo "    OBSVR_QNAME      - name of queue (default: NULL, that is, let pbs pick) "
+   echo "    OBSVR_QNAME      - name of queue (default: NULL, that is, let BATCH pick) "
    echo " "
    echo " SEE ALSO"
    echo " "
@@ -113,6 +116,7 @@ if ( $#argv < 4 ) then
 endif
  
 setenv FAILED 0
+if ( !($?ATMENS_BATCHSUB) ) setenv FAILED 1
 if ( !($?ACFTBIAS)      ) setenv FAILED 1
 if ( !($?ATMENSETC)     ) setenv FAILED 1
 if ( !($?ATMENSLOC)     ) setenv FAILED 1
@@ -170,11 +174,11 @@ if ( -e $ENSWORK/.FAILED ) /bin/rm $ENSWORK/.FAILED   # otherwise it doesn't rer
 
 # Copy of directories from recycle locally
 # ----------------------------------------
-if (! -d $ATMENSLOC/atmens ) then
-  echo "${MYNAME}: cannot find $ATMENSLOC/atmens, aboring ..."
+if (! -d $ATMENSLOC ) then
+  echo "${MYNAME}: cannot find $ATMENSLOC, aboring ..."
   exit(1)
 endif
-set ensloc = $ATMENSLOC/atmens
+set ensloc = $ATMENSLOC
 
 # Check to make sure observer is really needed
 # --------------------------------------------
@@ -206,7 +210,7 @@ set hhb     = `echo $beg_ana[2] | cut -c1-2`
 # Run mean analysis
 # -----------------
 /bin/rm $ENSWORK/obs_ensmean.log
-if (! -e $ENSWORK/.DONE_ENSMEAN_${MYNAME}.$yyyymmddhh ) then
+if (! -e $ENSWORK/.DONE_MEM001_ENSMEAN_${MYNAME}.$yyyymmddhh ) then
 
    # get positioned
    # --------------
@@ -312,6 +316,13 @@ if (! -e $ENSWORK/.DONE_ENSMEAN_${MYNAME}.$yyyymmddhh ) then
         echo " ${MYNAME}: Unable to find satbias/bang files to run mean-observer, Aborting ... "
         exit(1)
    endif
+   if ( $ACFTBIAS ) then
+      if ( -e acftbias ) then 
+         /bin/ln -sf acftbias aircftbias_in
+      else
+         touch aircftbias_in  # this should be done only one and never again, a bit unsafe
+      endif
+   endif
 
    set yzradbc = `nmlread.py gsiparm.anl SETUP newpc4pred`
    if ( ! $status ) then
@@ -351,14 +362,26 @@ if (! -e $ENSWORK/.DONE_ENSMEAN_${MYNAME}.$yyyymmddhh ) then
              "$MPIRUN_ENSANA |& tee -a $ENSWORK/obs_ensmean.log" \
              $ENSWORK/ensmean    \
              $MYNAME             \
-             $ENSWORK/.DONE_ENSMEAN_${MYNAME}.$yyyymmddhh \
+             $ENSWORK/.DONE_MEM001_ENSMEAN_${MYNAME}.$yyyymmddhh \
              "Observer Failed for Mean "
 
              if ( -e obs_ensmean.j ) then
-                qsub -W block=true obs_ensmean.j
+                if ( $ATMENS_BATCHSUB == "sbatch" ) then
+                   $ATMENS_BATCHSUB -W obs_ensmean.j
+                else
+                   $ATMENS_BATCHSUB -W block=true obs_ensmean.j
+                endif
              else
-                echo " ${MYNAME}: Observer Failed to generate PBS jobs for Mean, Aborting ... "
+                echo " ${MYNAME}: Observer Failed to generate BATCH jobs for Mean, Aborting ... "
                 exit(1)
+             endif
+
+             # Monitor job in case block fails
+             # -------------------------------
+             jobmonitor.csh 1 ENSMEAN_${MYNAME} $ENSWORK $yyyymmddhh
+             if ($status) then
+                 echo "${MYNAME}: cannot complete due to failed jobmonitor, aborting"
+                 exit(1)
              endif
 
    else
@@ -369,7 +392,7 @@ if (! -e $ENSWORK/.DONE_ENSMEAN_${MYNAME}.$yyyymmddhh ) then
            echo " ${MYNAME}: Mean Observer Failed, Aborting ... "
            exit(1)
         endif
-        touch $ENSWORK/.DONE_ENSMEAN_${MYNAME}.$yyyymmddhh
+        touch $ENSWORK/.DONE_MEM001_ENSMEAN_${MYNAME}.$yyyymmddhh
 
         # cat all pe files into diag files
         # --------------------------------
@@ -379,21 +402,22 @@ if (! -e $ENSWORK/.DONE_ENSMEAN_${MYNAME}.$yyyymmddhh ) then
    if ( -e $ENSWORK/obs_ensmean.log ) cat fort.2* >> $ENSWORK/obs_ensmean.log
 
    cd ../
-endif
 
-set fn = obs_ensmean.log
-set nobs = `grep "Jo Global" $fn  | cut -c25-35`
-if ( $nobs == 0 ) then
-     /bin/rm $ENSWORK/.DONE_ENSMEAN_${MYNAME}.$yyyymmddhh
-     touch   $ENSWORK/.FAILED
-     echo " ${MYNAME}: observer mean FAILED to execute properly, aborting ..."
-     exit(1)
-else
-     /bin/mv $fn $expid.$fn.${nymd}_${hh0}z.txt
-     mkdir updated_ens
-     tar -cvf updated_ens/$expid.atmens_olog.${nymd}_${hh0}z.tar $expid.obs_*z.txt
-     gzip updated_ens/$expid.atmens_olog.${nymd}_${hh0}z.tar
-endif
+   set fn = obs_ensmean.log
+   set nobs = (`grep "Jo Global" $fn  | cut -c25-35`)
+   if ( $nobs[1] == 0 ) then
+       /bin/rm $ENSWORK/.DONE_MEM001_ENSMEAN_${MYNAME}.$yyyymmddhh
+       touch   $ENSWORK/.FAILED
+       echo " ${MYNAME}: observer mean FAILED to execute properly, aborting ..."
+       exit(1)
+   else
+        /bin/mv $fn $expid.$fn.${nymd}_${hh0}z.txt
+        mkdir updated_ens
+       tar -cvf updated_ens/$expid.atmens_olog.${nymd}_${hh0}z.tar $expid.obs_*z.txt
+       gzip updated_ens/$expid.atmens_olog.${nymd}_${hh0}z.tar
+   endif
+
+endif # DONE_ENSMEAN
 
 # Now perform some general checks:
 # -------------------------------
@@ -405,7 +429,7 @@ if ( $ENSMEANONLY ) then
    exit(0)
 endif
 
-if (! -e $ENSWORK/.DONE_ENSMEAN_${MYNAME}.$yyyymmddhh ) then
+if (! -e $ENSWORK/.DONE_MEM001_ENSMEAN_${MYNAME}.$yyyymmddhh ) then
    echo " ${MYNAME}: observer mean not available, bypass observer members"
    exit(1)
 endif
@@ -421,14 +445,14 @@ set ny = `echorc.x -rc ensmean/GSI_GridComp.rc "NY"`
 # Run observer for each member
 # ----------------------------
 #/bin/rm *.bkg.eta.*  *bkg.sfc.*
-setenv LOCAL_ACQUIRE 1 # this will make sure acquire of satbias/bang not via pbs
+setenv LOCAL_ACQUIRE 1 # this will make sure acquire of satbias/bang not via BATCH
 set ipoe = 0
 set npoe = 0
 /bin/rm $ENSWORK/obsvr_poe.*
 /bin/rm $ENSWORK/obsvr_machfile*
 
 if ( $ENSPARALLEL ) then
-   set nfiles = `/bin/ls $ENSWORK/.DONE_MEM*_${MYNAME}.$yyyymmddhh | wc -l`
+   set nfiles = `/bin/ls $ENSWORK/.DONE_MEM*_${MYNAME}.$yyyymmddhh | grep -v ENSMEAN | wc -l`
    echo "${MYNAME}: number of already available files  ${nfiles}"
    @ ntodo = $nmem - $nfiles 
 endif 
@@ -497,6 +521,7 @@ while ( $n < $nmem )
      ln -sf ../ensmean/GSI_GridComp_member.rc GSI_GridComp.rc
      ln -sf ../ensmean/obs_input.*       .
      ln -sf ../ensmean/satbias_in        .
+     ln -sf ../ensmean/aircftbias_in     .
      ln -sf ../ensmean/satbias_angle     .
      if(   -e ../ensmean/satbias_pc ) then
        ln -sf ../ensmean/satbias_pc      .
@@ -539,41 +564,56 @@ while ( $n < $nmem )
                 if ( -e obs_mem${nnn}.j ) then
                    chmod +x obs_mem${nnn}.j
                 else
-                   echo " ${MYNAME}: Observer Failed to generate PBS jobs for Member ${nnn}, Aborting ... "
+                   echo " ${MYNAME}: Observer Failed to generate BATCH jobs for Member ${nnn}, Aborting ... "
                    touch $ENSWORK/.FAILED
                    exit(1)
                 endif
 
                 if ( ($ipoe == $AENS_OBSVR_DSTJOB) || (($fpoe == $ntodo ) && ($ipoe < $AENS_OBSVR_DSTJOB) ) ) then
-                   @ myncpus = $ipoe * $ENSGSI_NCPUS
+                   set this_ntasks_per_node = `facter processorcount`
+                   @ ncores_needed = $ENSGSI_NCPUS / $this_ntasks_per_node
+                   if ( $ncores_needed == 0 ) then
+                     @ myncpus = $this_ntasks_per_node
+                   else
+                     if ( $ENSGSI_NCPUS == $ncores_needed * $this_ntasks_per_node ) then
+                        @ myncpus = $ENSGSI_NCPUS
+                     else
+                        @ myncpus = $ENSGSI_NCPUS / $this_ntasks_per_node
+                        @ module = $myncpus * $this_ntasks_per_node - $ENSGSI_NCPUS
+                        if ( $module != 0 ) @ myncpus = $myncpus + 1
+                        @ myncpus = $myncpus * $this_ntasks_per_node
+                     endif
+                   endif
+                   @ myncpus = $ipoe * $myncpus
+                   #_ @ myncpus = $ipoe * $ENSGSI_NCPUS
                    setenv JOBGEN_NCPUS $myncpus
                    jobgen.pl \
                         -q $OBSVR_QNAME     \
                         obsvr_dst${npoe}    \
                         $GID                \
                         $OBSVR_WALLCLOCK    \
-                        "job_distributor.csh -machfile $ENSWORK/obsvr_machfile$npoe -usrcmd $ENSWORK/obsvr_poe.$npoe -usrntask $ENSGSI_NCPUS" \
+                        "job_distributor.csh -machfile $ENSWORK/obsvr_machfile$npoe -usrcmd $ENSWORK/obsvr_poe.$npoe -usrntask $ENSGSI_NCPUS -njobs $ipoe " \
                         $ENSWORK  \
                         $MYNAME             \
                         $ENSWORK/.DONE_POE${npoe}_${MYNAME}.$yyyymmddhh \
                         "Observer Failed for Member ${npoe}"
                    if (! -e obsvr_dst${npoe}.j ) then
-                      echo " ${MYNAME}: Observer Failed to generate DST PBS jobs for Member ${nnn}, Aborting ... "
+                      echo " ${MYNAME}: Observer Failed to generate DST BATCH jobs for Member ${nnn}, Aborting ... "
                       touch $ENSWORK/.FAILED
                       exit(1)
                    endif
                    /bin/mv obsvr_dst${npoe}.j $ENSWORK/
-                   qsub $ENSWORK/obsvr_dst${npoe}.j
+                   $ATMENS_BATCHSUB $ENSWORK/obsvr_dst${npoe}.j
                    touch .SUBMITTED
                    @ ipoe = 0 # reset counter
                    @ npoe++
                 endif 
              else
                 if ( -e obs_mem${nnn}.j ) then
-                   qsub obs_mem${nnn}.j
+                   $ATMENS_BATCHSUB obs_mem${nnn}.j
                    touch .SUBMITTED
                 else
-                   echo " ${MYNAME}: Observer Failed to generate PBS jobs for Member ${nnn}, Aborting ... "
+                   echo " ${MYNAME}: Observer Failed to generate BATCH jobs for Member ${nnn}, Aborting ... "
                    touch $ENSWORK/.FAILED
                    exit(1)
                 endif
@@ -586,8 +626,8 @@ while ( $n < $nmem )
                 echo " ${MYNAME}: Observer Failed for Member ${nnn}, Aborting ... "
                 exit(1)
              endif
-             set nobs = `grep "Jo Global" obs_mem${nnn}.log | cut -c25-35`
-             if ( $nobs == 0 ) then
+             set nobs = (`grep "Jo Global" obs_mem${nnn}.log | cut -c25-35`)
+             if ( $nobs[1] == 0 ) then
                 echo "${MYNAME}: found zero obs in observer, aborting ..."
                 touch $ENSWORK/.FAILED
              else
@@ -652,8 +692,8 @@ end
 # Make sure all obs counts are meaningful
 @ nc = 0
 foreach fn ( `/bin/ls $expid.*.${nymd}_${hh0}z.txt` )
-  set nobs = `grep "Jo Global" $fn  | cut -c25-35`
-  if ( $nobs == 0 ) then
+  set nobs = (`grep "Jo Global" $fn  | cut -c25-35`)
+  if ( $nobs[1] == 0 ) then
        set nnn = `echo $fn | cut -c8-10`
        /bin/rm $ENSWORK/.DONE_MEM${nnn}_${MYNAME}.$yyyymmddhh
        touch   $ENSWORK/.FAILED

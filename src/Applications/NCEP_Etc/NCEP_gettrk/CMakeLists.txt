@@ -1,7 +1,3 @@
-#esma_set_this()
-#set (SRCS
-    #gettrk_modules.f gettrk_main.f)
-    
 # This is equivalent to FOPT= in GNU Make
 if (CMAKE_Fortran_COMPILER_ID MATCHES Intel)
    string (REPLACE "${FOPT3}" "" CMAKE_Fortran_FLAGS_RELEASE ${CMAKE_Fortran_FLAGS_RELEASE})
@@ -11,11 +7,7 @@ if (CMAKE_Fortran_COMPILER_ID MATCHES Intel)
    string (REPLACE "${NO_ALIAS}" "" CMAKE_Fortran_FLAGS_RELEASE ${CMAKE_Fortran_FLAGS_RELEASE})
 endif ()
 
-#esma_add_library (${this}
-  #SRCS ${SRCS}
-  #DEPENDENCIES NCEP_w3_r4i4 NCEP_sp_r4i4 GMAO_gfio_r4 NCEP_bufr_r4i4 NCEP_bacio_r4i4)
-
-ecbuild_add_executable(TARGET gettrk.x SOURCES gettrk_main.f gettrk_modules.f LIBS ${this} NCEP_w3_r4i4 NCEP_sp_r4i4 GMAO_gfio_r4 NCEP_bufr_r4i4 NCEP_bacio_r4i4)
+ecbuild_add_executable(TARGET gettrk.x SOURCES gettrk_main.f gettrk_modules.f LIBS NCEP_w3_r4i4 NCEP_sp_r4i4 GMAO_gfio_r4 NCEP_bufr_r4i4 NCEP_bacio_r4i4)
 
 if (EXTENDED_SOURCE)
   set_target_properties (gettrk.x PROPERTIES COMPILE_FLAGS ${EXTENDED_SOURCE})

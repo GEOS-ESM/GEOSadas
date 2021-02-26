@@ -106,6 +106,7 @@ set do_enkf  = 0  # ensemble Kalman Filter
 set do_letkf = 0  # local ensemble tranform Kalman Filter
 
 if( (-e $ATMENSETC/easyeana.rc) ) set do_eezy = 1
+if( (-e $ATMENSETC/gsi_ctrl.rc) ) set do_egsi = 1
 if( (-e $ATMENSETC/gsi_mean.rc) && (-e $ATMENSETC/gsi_member.rc) ) set do_egsi = 1
 if( (-e $ATMENSETC/obs1gsi_mean.rc) && (-e $ATMENSETC/obs1gsi_member.rc) && (-e $ATMENSETC/atmos_enkf.nml.tmpl) ) set do_enkf = 1
 

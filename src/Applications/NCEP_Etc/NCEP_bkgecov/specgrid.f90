@@ -1,6 +1,7 @@
 module specgrid
 
   use type_kinds, only: fp_kind,single,double
+  use m_die, only: die
   implicit none
 
   integer jcap,nc,ncd2
@@ -214,16 +215,13 @@ contains
 !  Transfer contents of input grid to local work array
 !  Reverse ordering in j direction from n-->s to s-->n
     if(imax .ne. nlon) then
-      write(6,*)'STOP: imax .ne. nlon'
-      stop
+      call die('fill_ns','Error: imax.ne.nlon',999)
     endif 
     if(idrt==0 .and. jmax.ne.nlat) then
-      write(6,*)'STOP:idrt==0 & jmax.ne.nlat'
-      stop
+      call die('fill_ns','Error: idrt==0 & jmax.ne.nlat',999)
     endif 
     if(idrt==4 .and. jmax.ne.nlat-2) then
-      write(6,*)'STOP:idrt==0 & jmax.ne.nlat-2'
-      stop
+      call die('fill_ns','Error: idrt==4 & jmax.ne.nlat-2',999)
     endif 
 
     if(idrt==0)then
@@ -245,7 +243,11 @@ contains
 !  Compute mean along southern and northern latitudes
     sumn=0.
     sums=0.
-    nlatm2=nlat-2
+    if(idrt==0)then
+      nlatm2=nlat
+    else if(idrt==4)then
+      nlatm2=nlat-2
+    endif
     do i=1,nlon
       sumn=sumn+grid_in(i,1)
       sums=sums+grid_in(i,nlatm2)
@@ -276,16 +278,13 @@ contains
 
 !  Transfer contents of local array to output array.
     if(imax .ne. nlon) then
-      write(6,*)'STOP: imax .ne. nlon'
-      stop
+      call die('fill_ns','Error: imax.ne.nlon',999)
     endif 
     if(idrt==0 .and. jmax.ne.nlat) then
-      write(6,*)'STOP:idrt==0 & jmax.ne.nlat'
-      stop
+      call die('fill_ns','Error: idrt==0 & jmax.ne.nlat',999) 
     endif 
     if(idrt==4 .and. jmax.ne.nlat-2) then
-      write(6,*)'STOP:idrt==0 & jmax.ne.nlat-2'
-      stop
+      call die('fill_ns','Error: idrt==4 & jmax.ne.nlat-2',999)
     endif 
     nlatm1=nlat-1
     if(idrt==4)then

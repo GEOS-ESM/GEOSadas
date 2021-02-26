@@ -4,7 +4,7 @@ esma_add_subdirectories (
   @NCEP_Shared
   )
 
-# Special case - GFDL_fms is built twice with two
+# Special case - FMS is built twice with two
 # different precisions.
-add_subdirectory (@GFDL_fms GFDL_fms_r4)
-add_subdirectory (@GFDL_fms GFDL_fms_r8)
+add_subdirectory (@FMS fms_r4)
+add_subdirectory (@FMS fms_r8)

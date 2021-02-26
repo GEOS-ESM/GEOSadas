@@ -10,8 +10,8 @@ esma_set_this ()
   #DEPENDENCIES MAPL_Base GEOSagcmPert_GridComp GEOS_PertSvecs
   #INCLUDES ${INC_ESMF})
 
-ecbuild_add_executable(TARGET GEOSgcmPert.x SOURCES GEOSgcmPert.F90 LIBS MAPL_Base GEOSagcmPert_GridComp GEOS_PertSvecs ${MKL_LIBRARIES})
-ecbuild_add_executable(TARGET SingularVectors.x SOURCES SingularVectors.F90 LIBS MAPL_Base GEOSagcmPert_GridComp GEOS_PertSvecs ${MKL_LIBRARIES} parpack arpack util putil)
+  ecbuild_add_executable(TARGET GEOSgcmPert.x SOURCES GEOSgcmPert.F90 LIBS MAPL_Base GEOSagcmPert_GridComp GEOS_PertSvecs ${MKL_LIBRARIES})
+  ecbuild_add_executable(TARGET SingularVectors.x SOURCES SingularVectors.F90 LIBS MAPL_Base GEOSagcmPert_GridComp GEOS_PertSvecs ${MKL_LIBRARIES} parpack arpack util putil)
 
 file(GLOB rc_files *.rc)
 file(GLOB tmpl_files *.tmpl)

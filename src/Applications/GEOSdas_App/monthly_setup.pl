@@ -19,6 +19,9 @@
 #   => run/monthly_plots/plot/gcm_quickplot.csh
 #   => run/monthly_plots/plot/plot.rc
 #
+# And it copies the following file from the build's etc directory
+#   => run/monthly.yyyymm.pl.tmpl
+#
 # The monthly_means_${yyyy}${mm}.pl script is created from the fvarchive.j
 # script when it is run for the first day of the following month.
 #
@@ -37,8 +40,15 @@
 use strict;
 use warnings;
 
+use File::Basename qw(basename dirname);
+use File::Copy qw(copy);
+use File::Path qw(mkpath);
+use Getopt::Long;
+
 use FindBin qw($Bin);
 use lib "$Bin";
+use GMAO_utils qw(get_siteID);
+use Perl_Config qw(perl_config);
 
 # global variables
 #-----------------
@@ -51,6 +61,7 @@ my ($rundir, $run_mp_dir, $FVHOME, $FVROOT);
     init();
     write_rcfiles();
     write_plotfiles();
+    copy_monthly_yyyymm_pl_tmpl();
 }
 
 #=======================================================================
@@ -58,11 +69,6 @@ my ($rundir, $run_mp_dir, $FVHOME, $FVROOT);
 # purpose - get runtime options; check environment variables
 #=======================================================================
 sub init {
-    use File::Basename qw(basename);
-    use File::Path qw(mkpath);
-    use Getopt::Long;
-    use GMAO_utils qw(get_siteID);
-    use Perl_Config qw(perl_config);
     my ($res, $hres, $help, %opts);
 
     $scriptname = basename($0);
@@ -145,8 +151,6 @@ sub write_rcfiles {
 #           plot.rc to $run_mp_dir directory
 #=======================================================================
 sub write_plotfiles {
-    use File::Basename qw(basename dirname);
-    use File::Copy qw(copy);
     my ($flags, $cmd, $seasons, $freq, $vvflg);
     my ($infile, $outfil, %values, @setenvs, $GEOSgcm_App);
 
@@ -157,6 +161,11 @@ sub write_plotfiles {
     print "$cmd\n";
     system($cmd);
 
+    @setenvs = ();
+    push @setenvs, "setenv I_MPI_DAPL_UD enable";
+    push @setenvs, "unsetenv SLURM_MEM_PER_GPU";
+    push @setenvs, "unsetenv SLURM_MEM_PER_NODE";
+
     # write gcm_plot.tmpl
     #--------------------
     $infile = "$FVETC/gcm_plot.tmpl";
@@ -165,13 +174,12 @@ sub write_plotfiles {
     %values = ();
     $values{"\@PLOT_T"} = "12:00:00";
     $values{"\@PLOT_P"} = "SBATCH --nodes=4";
-    $values{"\@PLOT_Q"} = "SBATCH --constraint=sp3";
+    $values{"\@PLOT_Q"} = "SBATCH --constraint=hasw";
     $values{"\@BATCH_GROUP"} = "SBATCH --account=$GID";
     $values{"\@SITE"} = uc($siteID);
     $values{"\@GEOSBIN"} = "$FVROOT/bin";
     $values{"\@GEOSSRC"} = dirname($FVROOT) ."/src";
 
-    @setenvs = ( "setenv I_MPI_DAPL_UD enable" );
     replaceLabels($infile, $outfil, \%values,\@setenvs);
         
     # write gcm_moveplot.j; copy gcm_quickplot.csh
@@ -181,13 +189,11 @@ sub write_plotfiles {
     $infile = "$GEOSgcm_App/gcm_moveplot.j";
     $outfil = "$run_mp_dir/plot/gcm_moveplot.j";
     $values{"\@MOVE_Q"} = "SBATCH --partition=datamove";
-    @setenvs = ( "setenv I_MPI_DAPL_UD enable" );
     replaceLabels($infile, $outfil, \%values,\@setenvs);
 
     $infile = "$GEOSgcm_App/gcm_quickplot.csh";
     $outfil = "$run_mp_dir/plot/gcm_quickplot.csh";
     copy($infile, $outfil);
-
 
     # write plot.rc
     #--------------
@@ -220,9 +226,6 @@ sub write_plotfiles {
 #    that directory with the same filename as $infil.
 #=======================================================================
 sub replaceLabels {
-    use File::Basename qw(basename dirname);
-    use File::Path qw(mkpath);
-
     my ($infil, $outfl, $vAddr, $sAddr) = @_;
     my (%values, @setenvs);
     my ($outdir, $line, $label);
@@ -252,6 +255,19 @@ sub replaceLabels {
     }
     close INFIL;
     close OUTFL;
+}
+
+#=======================================================================
+# name - copy_monthly_yyyymm_pl_tmpl
+# purpose - copy monthly.yyyymm.pl.tmpl file to experiment run directory
+#=======================================================================
+sub copy_monthly_yyyymm_pl_tmpl {
+    my ($source, $dest);
+
+    $source = "$FVROOT/etc/monthly.yyyymm.pl.tmpl";
+    $dest = "$FVHOME/run/monthly.yyyymm.pl.tmpl";
+
+    copy($source, $dest) or die "Error copying $source to $dest;";
 }
 
 #=======================================================================

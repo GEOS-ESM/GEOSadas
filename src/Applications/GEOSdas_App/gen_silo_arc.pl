@@ -213,9 +213,17 @@ sub restart_info {
         }
     }
     printarc("#\n# restart tar file\n#\n");
-    $lineTAR = '${PESTOROOT}%s/rs/Y%y4/M%m2/%s.rst.%y4%m2%d2_%h2z.tar';
-
+    $lineTAR = '${PESTOROOT}%s/rs/Y%y4/M%m2/%s.agcmrst.%y4%m2%d2_%h2z.tar';
     printarc("$lineTAR\n");
+    $lineTAR = '${PESTOROOT}%s/rs/Y%y4/M%m2/%s.incrst.%y4%m2%d2_%h2z.tar';
+    printarc("$lineTAR\n");
+    $lineTAR = '${PESTOROOT}%s/rs/Y%y4/M%m2/%s.rst.%y4%m2%d2_%h2z.tar';
+    printarc("$lineTAR\n");
+    $lineTAR = '${PESTOROOT}%s/rs/Y%y4/M%m2/%s.trajrst.%y4%m2%d2_%h2z.tar';
+    printarc("$lineTAR\n");
+    $lineTAR = '${PESTOROOT}%s/jedi/rs/Y%y4/M%m2/%s.jedi_agcmrst.%y4%m2%d2_%h2z.tar';
+    printarc("$lineTAR\n");
+
     closearc();
 }
 
@@ -404,29 +412,30 @@ sub append_other_info {
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.lanczvec.%c%c%c.%c%c%c%c.%c%c%c%c.%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.zlanczos.%c%c%c.%c%c%c%c.%c%c%c%c.%y4%m2%d2_%h2z.bin
 #
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.ana.eta.%y4%m2%d2.nc4
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.ana.sfc.%y4%m2%d2.nc4
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bias.eta.%y4%m2%d2.nc4
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg.eta.%y4%m2%d2.nc4
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg.sfc.%y4%m2%d2.nc4
+#
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.aana.eta.%y4%m2%d2_%h2z.iter%c.nc4
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.abkg.eta.%y4%m2%d2_%h2z.nc4
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.ana.eta.%y4%m2%d2_%h2z.nc4
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.ana.eta.%y4%m2%d2_%h2z.iter%c.nc4
-\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.ana.eta.%y4%m2%d2.nc4
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.ana%c%c.eta.%y4%m2%d2_%h2z.nc4
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.ana.inst3d_met_p.%y4%m2%d2_%h2z.nc4
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.ana.inst3d_met_p.%y4%m2%d2_%h2z.iter%c.nc4
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.ana.prs.%y4%m2%d2_%h2z.nc4
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.ana.sfc.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.ana.sfc.%y4%m2%d2.nc4
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.asm.inst3d_met_p.%y4%m2%d2_%h2z.nc4
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.asm.inst3d_met_p.%y4%m2%d2_%h2z.iter%c.nc4
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bias.eta.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bias.eta.%y4%m2%d2.nc4
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg%c%c.eta.%y4%m2%d2_%h2z.nc4
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg%c%c.sfc.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg.eta.%y4%m2%d2.nc4
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg.eta.%y4%m2%d2_%h2z.iter%c.nc4
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg.inst3d_met_p.%y4%m2%d2_%h2z.nc4
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg.inst3d_met_p.%y4%m2%d2_%h2z.iter%c.nc4
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg.prs.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg.sfc.%y4%m2%d2.nc4
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg.sfc.%y4%m2%d2_%h2z.iter%c.nc4
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.cbkg%c%c.eta.%y4%m2%d2_%h2z.nc4
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.finc.eta.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.%s.nc4
@@ -445,6 +454,42 @@ sub append_other_info {
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.xinc.eta.%y4%m2%d2_%h2z.nc4
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.xinc.eta.%y4%m2%d2_%h2z.iter%c.nc4
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.xinc%c%c.eta.%y4%m2%d2_%h2z.nc4
+#
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.aana.eta.%y4%m2%d2_%h2%n2z.iter%c.nc4
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.abkg.eta.%y4%m2%d2_%h2%n2z.nc4
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.ana.eta.%y4%m2%d2_%h2%n2z.nc4
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.ana.eta.%y4%m2%d2_%h2%n2z.iter%c.nc4
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.ana%c%c.eta.%y4%m2%d2_%h2%n2z.nc4
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.ana.inst3d_met_p.%y4%m2%d2_%h2%n2z.nc4
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.ana.inst3d_met_p.%y4%m2%d2_%h2%n2z.iter%c.nc4
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.ana.prs.%y4%m2%d2_%h2%n2z.nc4
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.ana.sfc.%y4%m2%d2_%h2%n2z.nc4
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.asm.inst3d_met_p.%y4%m2%d2_%h2%n2z.nc4
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.asm.inst3d_met_p.%y4%m2%d2_%h2%n2z.iter%c.nc4
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bias.eta.%y4%m2%d2_%h2%n2z.nc4
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg%c%c.eta.%y4%m2%d2_%h2%n2z.nc4
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg%c%c.sfc.%y4%m2%d2_%h2%n2z.nc4
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg.eta.%y4%m2%d2_%h2%n2z.iter%c.nc4
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg.inst3d_met_p.%y4%m2%d2_%h2%n2z.nc4
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg.inst3d_met_p.%y4%m2%d2_%h2%n2z.iter%c.nc4
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg.prs.%y4%m2%d2_%h2%n2z.nc4
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg.sfc.%y4%m2%d2_%h2%n2z.iter%c.nc4
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.cbkg%c%c.eta.%y4%m2%d2_%h2%n2z.nc4
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.inc.eta.%y4%m2%d2_%h2%n2z.nc4
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.inc.eta.%y4%m2%d2_%h2%n2z.iter%c.nc4
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.inc.sfc.%y4%m2%d2_%h2%n2z.nc4
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.xana.eta.%y4%m2%d2_%h2%n2z.nc4
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.xana.eta.%y4%m2%d2_%h2%n2z.iter%c.nc4
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.xana.inst2d_met_x.%y4%m2%d2_%h2%n2z.nc4
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.xana.inst3d_met_x.%y4%m2%d2_%h2%n2z.nc4
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.xana.sfc.%y4%m2%d2_%h2%n2z.nc4
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.xbkg.eta.%y4%m2%d2_%h2%n2z.nc4
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.xbkg.inst2d_met_x.%y4%m2%d2_%h2%n2z.nc4
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.xbkg.inst3d_met_x.%y4%m2%d2_%h2%n2z.nc4
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.xbkg.sfc.%y4%m2%d2_%h2%n2z.nc4
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.xinc.eta.%y4%m2%d2_%h2%n2z.nc4
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.xinc.eta.%y4%m2%d2_%h2%n2z.iter%c.nc4
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.xinc%c%c.eta.%y4%m2%d2_%h2%n2z.nc4
 #
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.cana.eta.%y4%m2%d2.nc4
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.cana.prs.%y4%m2%d2.nc4
@@ -522,20 +567,16 @@ sub append_other_info {
 #                   GEOS-5 GCM RE-START FILES
 #                   -------------------------
 #
-\${PESTOROOT}%s/rs/Y%y4/M%m2/%s.agcm_import_rst.%y4%m2%d2_%h2z.bin
-\${PESTOROOT}%s/rs/Y%y4/M%m2/%s.agcm09_import_rst.%y4%m2%d2_%h2z.bin
-\${PESTOROOT}%s/rs/Y%y4/M%m2/%s.agcm_import_rst_f.%y4%m2%d2_%h2z.bin
-\${PESTOROOT}%s/rs/Y%y4/M%m2/%s.agcm_internal_rst.%y4%m2%d2_%h2z.bin
-#\${PESTOROOT}%s/rs/Y%y4/M%m2/%s.ocean_internal_rst.%y4%m2%d2_%h2z.bin
+\${PESTOROOT}%s/rs/Y%y4/M%m2/%s.agcm_import_rst.%y4%m2%d2_%h2%n2z.%c%c%c
+\${PESTOROOT}%s/rs/Y%y4/M%m2/%s.agcm09_import_rst.%y4%m2%d2_%h2%n2z.%c%c%c
+\${PESTOROOT}%s/rs/Y%y4/M%m2/%s.agcm_import_rst_f.%y4%m2%d2_%h2z.%c%c%c
+\${PESTOROOT}%s/rs/Y%y4/M%m2/%s.agcm_internal_rst.%y4%m2%d2_%h2z.%c%c%c
+#\${PESTOROOT}%s/rs/Y%y4/M%m2/%s.ocean_internal_rst.%y4%m2%d2_%h2z.%c%c%c
 #
 #\${PESTOROOT}%s/rs/Y%y4/M%m2/%s.trak.GDA.rst.%y4%m2%d2%h2.txt
 \${PESTOROOT}%s/rs/Y%y4/M%m2/%s.traj_lcv_rst.%y4%m2%d2_%h2%n2z.nc4
 \${PESTOROOT}%s/rs/Y%y4/M%m2/%s.mtrj_lcv_rst.%y4%m2%d2_%h2%n2z.nc4
 \${PESTOROOT}%s/rs/Y%y4/M%m2/%s.ptrj_prs_rst.%y4%m2%d2_%h2%n2z.nc4
-#
-\${PESTOROOT}%s/rs/Y%y4/M%m2/%s.ana.fvcore_internal_rst.%y4%m2%d2_%h2z.iter%c.bin
-\${PESTOROOT}%s/rs/Y%y4/M%m2/%s.ana.moist_internal_rst.%y4%m2%d2_%h2z.iter%c.bin
-\${PESTOROOT}%s/rs/Y%y4/M%m2/%s.ana.pchem_internal_rst.%y4%m2%d2_%h2z.iter%c.bin
 #
 #                    -----------------------
 #                    GEOS-DAS RE-START FILES
@@ -595,6 +636,19 @@ sub append_other_info {
 \${PESTOROOT}%s/scanbuf/Y%y4/M%m2/%s.airs.%y4%m2%d2.t%h2z.log
 \${PESTOROOT}%s/scanbuf/Y%y4/M%m2/%s.eos_amsua.%y4%m2%d2.t%h2z.log
 #
+#                 -----------------
+#                   JEDI LISTING
+#                 -----------------
+\${PESTOROOT}%s/jedi/etc/Y%y4/M%m2/%s.jedi_%c%c%c.log.%y4%m2%d2_%h2z.txt
+\${PESTOROOT}%s/jedi/etc/Y%y4/M%m2/%s.jedi_%c%c%c%c.log.%y4%m2%d2_%h2z.txt
+#
+#               -------------------------
+#                    JEDI ANALYSIS
+#               -------------------------
+#
+\${PESTOROOT}%s/jedi/ana/Y%y4/M%m2/%s.jedi_ana.%y4%m2%d2_%h2z.tar
+\${PESTOROOT}%s/jedi/obs/Y%y4/M%m2/%s.jedi_hofx.%y4%m2%d2_%h2z.tar
+#
 #               -------------------------
 #                    LSM FILES
 #               -------------------------
@@ -632,6 +686,11 @@ sub append_other_info {
 #                 ---------------------------
 #                 PROGNOSTIC FILES (FORECAST)
 #                 ---------------------------
+#
+\${PESTOROOT}%s/prog/Y%y4/M%m2/D%d2/H%h2/%s.prog.inst3d_met_p.%y4%m2%d2_%h2z+%y4%m2%d2_%h2%n2z.nc4
+\${PESTOROOT}%s/prog/Y%y4/M%m2/D%d2/H%h2/%s.prog.eta.%y4%m2%d2_%h2z+%y4%m2%d2_%h2%n2z.nc4
+\${PESTOROOT}%s/prog/Y%y4/M%m2/D%d2/H%h2/%s.prog.prs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2%n2z.nc4
+\${PESTOROOT}%s/prog/Y%y4/M%m2/D%d2/H%h2/%s.prog.sfc.%y4%m2%d2_%h2z+%y4%m2%d2_%h2%n2z.nc4
 #
 \${PESTOROOT}%s/prog/Y%y4/M%m2/D%d2/H%h2/%s.prog.inst3d_met_p.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.nc4
 \${PESTOROOT}%s/prog/Y%y4/M%m2/D%d2/H%h2/%s.prog.eta.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.nc4

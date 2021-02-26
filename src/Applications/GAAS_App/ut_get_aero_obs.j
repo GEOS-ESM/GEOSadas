@@ -1,28 +1,37 @@
-#!/bin/csh
+#!/bin/csh -x
 
 # Job parameters
 # --------------
-setenv FVHOME /discover/nobackup/jstassi/C48f1
-set nymd = 20170528
-set nhms = 180000
-setenv MODIS_L2_HDF 2    #  1 = use archived data, 2 = use staged data
+setenv EXPID C48f6
+setenv FVHOME $NOBACKUP/$EXPID
 
-# MODIS_L2_STAGE_DIR is needed if MODIS_L2_HDF equals 2
-# -----------------------------------------------------
-setenv MODIS_L2_STAGE_DIR /discover/nobackup/dao_ops/intermediate/flk/modis
+set nymd = 20180706
+set nhms = 000000
+
+setenv GID g0620
+setenv group_list "SBATCH -A $GID"
+setenv FVROOT `cat $FVHOME/.FVROOT`
+
+# MODIS data; acquire or use staged data?
+# ---------------------------------------
+setenv USE_MODIS_STAGE 1
+setenv MODIS_STAGE_DIR /discover/nobackup/dao_ops/intermediate/flk/modis
+
+setenv aerosol_acquire 1
+if ($USE_MODIS_STAGE) setenv aerosol_acquire 0
 
 # Set the environment
 # -------------------
 source $FVHOME/run/FVDAS_Run_Config
-source $FVROOT/bin/g5_modules
 set path = ( . $FVHOME/run $FVROOT/bin $path )
 
 setenv NCPUS_AOD 8
 setenv MPIRUN_AOD "mpiexec_mpt "
+setenv SKIP_PSAS 1
 
 # FVWORK directory
 # ----------------
-setenv FVWORK /discover/nobackup/$user/FVWORK.$MODIS_L2_HDF
+setenv FVWORK $NOBACKUP/AODWORK.$$
 if (! -d $FVWORK ) mkdir -p $FVWORK
 echo "FVWORK: $FVWORK"
 cd $FVWORK
@@ -32,8 +41,9 @@ cd $FVWORK
 if (! -e $FVWORK/obsys-gaas.rc) then
     set rcfile = $FVHOME/run/obsys-gaas.rc
     echo "Copy to FVWORK: $rcfile"
-    /bin/cp $rcfile .
+    /bin/cp $rcfile $FVWORK
 endif
+setenv rcflag "-rc obsys-gaas.rc"
 
 # Check for aerosol bkgs in FVWORK
 # --------------------------------
@@ -78,6 +88,22 @@ if (! -d $EXTDATA) then
     /bin/ln -s /discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/AeroCom $EXTDATA/
     /bin/touch $EXTDATA/.no_archiving
 endif
+
+# Get aerosol observations
+# ------------------------
+@ delta_hrs = 3 * 60 * 60
+set date1 = ( $nymd $nhms )
+set date2 = `tick $date1 delta_hrs`
+
+set determine_aod_obsclass = 0
+if (! $?AOD_OBSCLASS) set determine_aod_obsclass = 1
+if ($determine_aod_obsclass) then
+   setenv AOD_OBSCLASS `obsclass_filter.pl all $date1 4 $rcflag`
+   setenv AOD_OBSCLASS `aod_data.py aod_filter $AOD_OBSCLASS`
+endif
+
+get_aero_obs.csh  $date1 1
+get_aero_obs.csh  $date2 1
 
 # Run the script
 # --------------

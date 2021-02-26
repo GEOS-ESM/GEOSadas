@@ -12,7 +12,6 @@ use Env;                 # make env vars readily available
 use File::Basename;      # for basename(), dirname()
 use File::Copy "cp";     # for cp()
 use Getopt::Long;        # command line options
-use Shell qw(cat rm);    # cat and rm commands
 
 # Command line options
 # --------------------
@@ -104,7 +103,7 @@ sub prepqc {                        # runs NCEP preprocessing QC subsystem
 # Rename original prepqc file to serve as input to PREPQC
 # -------------------------------------------------------
        cp("$prepqc_new","$prepqc_old");
-       rm("$prepqc_new");
+       unlink("$prepqc_new");
 
        $cmd = "gmao_prepqc -r $fvhome/run -o $prepqc_new $nymd $nhms $prepqc_old $dynf";
        print "$0: $cmd\n" unless ( $opt_q );

@@ -1,32 +1,58 @@
 #!/bin/csh
+#SBATCH --account=g0613
+#SBATCH --constraint=hasw
+#SBATCH --ntasks=28
+#SBATCH --time=12:00:00
+#SBATCH --qos=dastest
+#SBATCH --partition=preops
+#SBATCH --output=ut_nmcperts.log.o%j
 
-setenv FVROOT /discover/swdev/rtodling/g580/GEOSadas/Linux
+setenv FVROOT /discover/nobackup/projects/gmao/advda/rtodling/4OPS/g526/GEOSadas/Linux
+source $FVROOT/bin/g5_modules
 
-set expout  = e572_fp
-#set workdir = /archive/u/rtodling/NMCperts
-set workdir = /discover/nobackup/rtodling/NMCperts
-set nymd    = 20121211  # date to generate pert for
-set nhms    = 000000    # time to generate pert for
-set ndays   = 1         # number of perts to create from given date/time
+setenv GEN_NMCPERTS_NCPUS 8
+setenv GEN_NMCPERTS_LOCAL 1
+setenv OPTRH 2
+setenv DRYRUN #echo
 
-# NEED TO DO:
-# ----------
-# 20120410
-# 20120411
+set expid   = f522_fp
+set expid   = f521_fp
 
-# from Y2011/M12/??? to Y2012/M04/D07
-#set fcstdir = /archive/dao_ops/GEOS-5.7.2/GEOSadas-5_7_2_p2_m1
-#set expid   = e572p2_fp
+set expout  = $expid
+if ($OPTRH == 1) then
+   set workdir = /discover/nobackup/projects/gmao/obsdev/rtodling/fcst4berrcov.f522_fp.20190304.000000/NMCperts_geosrh
+endif
+if ($OPTRH == 2) then
+   set workdir = /discover/nobackup/projects/gmao/obsdev/rtodling/fcst4berrcov.f522_fp.20190304.000000/NMCperts_bec
+   set workdir = /discover/nobackup/projects/gmao/obsdev/rtodling/fcst4berrcov.f522_fp.20190304.000000/NMCperts_bec_test
+endif
+if ($OPTRH == 3) then
+   set workdir = /discover/nobackup/projects/gmao/obsdev/rtodling/fcst4berrcov.f522_fp.20190304.000000/NMCperts_gsi
+endif
+if ( $expid == "f521_fp" ) then
+   set nymd    = 20181101  # date to generate pert for
+   set nhms    = 000000    # time to generate pert for
+   set ndays   = 122       # number of perts to create from given date/time
+endif
 
-# from Y2012/M04/D08 to Y2012/M05/D09
-#set fcstdir = /archive/u/dao_ops/GEOS-5.7.2/GEOSadas-5_7_2_p5
-#set expid   = e572p5_fp   # expid of exp holding fcsts
-#setenv OFFSET_HR 3
+if ( $expid == "f522_fp" ) then
+  set expout  = $expid
+  set nymd    = 20190303  # date to generate pert for
+  set nhms    = 000000    # time to generate pert for
+  set ndays   = 370       # number of perts to create from given date/time
+endif
+if ( $expid == "f525_fp" ) then
+  set expout  = $expid
+  set nymd    = 20200307  # date to generate pert for
+  set nhms    = 000000    # time to generate pert for
+  set ndays   = 33        # number of perts to create from given date/time
+endif
+
+if ( ! -d $workdir ) mkdir -p $workdir
 
 # from Y2012/M05/D11 to present
-set fcstdir = /archive/u/dao_ops/GEOS-5.7.2/GEOSadas-5_7_2_p5_m1
 #set fcstdir = /archive/u/rtodling  # boundary dates
-set expid   = e572p5_fp   # expid of exp holding fcsts
+set fcstdir = /discover/nobackup/projects/gmao/obsdev/rtodling/fcst4berrcov.f522_fp.20190304.000000/ACQedFiles/
 setenv OFFSET_HR 3
 
 $FVROOT/bin/gen_nmcperts.csh  $fcstdir $workdir $expid $expout $nymd $nhms $ndays

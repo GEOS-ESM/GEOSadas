@@ -12,6 +12,8 @@
 #  20Mar2017  Todling   Handle for GAAS-related files
 #  26Mar2017  Todling   Add aconc to handle aerosol concentrations
 #  04Apr2017  Todling   Add non-inflated analysis (niana) for offline FSO
+#  19Nov2019  Todling   Add high-res (lat-lon) Bkg.eta file
+#  20Jun2020  Todling   A little more flexible member index
 #-------------------------------------------------------------------------
 
 if ( !($?ATMENS_VERBOSE) ) then
@@ -22,7 +24,7 @@ endif
 
 setenv MYNAME update_ens.csh
 
-if ( $#argv < 5 ) then
+if ( $#argv < 6 ) then
    echo " "
    echo " \\begin{verbatim} "
    echo " "
@@ -32,11 +34,11 @@ if ( $#argv < 5 ) then
    echo " "
    echo " SYNOPSIS "
    echo " "
-   echo "  $MYNAME  expid memtag type workdir rcfile ncsuffix"
+   echo "  $MYNAME  expid member type workdir rcfile ncsuffix"
    echo " "
    echo " where"
    echo "   expid    -  usual experiment name, e.g., u000\_c72"
-   echo "   memtag   -  current ensemble member"
+   echo "   member   -  current ensemble member name"
    echo "   type     -  file type, e.g. ana or bkg"
    echo "   workdir  -  work directory where run is taking place"
    echo "   rcfile   -  typically HISTORY file, otherwise NULL"
@@ -62,14 +64,14 @@ if ( $#argv < 5 ) then
    echo " "
    echo " AUTHOR"
    echo "   Ricardo Todling (Ricardo.Todling@nasa.gov), NASA/GMAO "
-   echo "     Last modified: 08Apr2013      by: R. Todling"
+   echo "     Last modified: 22Jun2020      by: R. Todling"
    echo " \\end{verbatim} "
    echo " \\clearpage "
    exit(0)
 endif
 
     set expid    = $1
-    set memtag   = $2
+    set member   = $2
     set type     = $3
     set workdir  = $4
     set rcfile   = $5
@@ -78,77 +80,88 @@ endif
     cd $workdir
 
     if ( "$type" == "bkg" ) then
-        mkdir -p ../updated_ens/mem${memtag}
+        mkdir -p ../updated_ens/$member
         touch    ../updated_ens/.no_archiving
-        foreach fntype ( bkg.eta bkg.sfc abkg.eta cbkg.eta gaas_bkg.sfc prog.eta asm.eta )
-           foreach fn ( `/bin/ls $expid.${fntype}.*.mem${memtag}.$ncsuffix` )
+        foreach fntype ( Bkg.eta bkg.eta bkg.sfc abkg.eta cbkg.eta gaas_bkg.sfc prog.eta asm.eta )
+           foreach fn ( `/bin/ls $expid.${fntype}.*.${member}.$ncsuffix` )
               set newname = `echo $fn | cut -d. -f1-4 `
-              /bin/mv $fn ../updated_ens/mem${memtag}/$newname.$ncsuffix
+              /bin/mv $fn ../updated_ens/${member}/$newname.$ncsuffix
            end # fn
         end # fntype
     endif
     if ( "$type" == "niana" ) then
-        mkdir -p ../updated_ens/mem${memtag}
+        mkdir -p ../updated_ens/${member}
         touch    ../updated_ens/.no_archiving
-        foreach fn ( `/bin/ls $expid.niana.eta.*.mem${memtag}.$ncsuffix ` )
+        foreach fn ( `/bin/ls $expid.niana.eta.*.${member}.$ncsuffix ` )
            set newname = `echo $fn | cut -d. -f1-4 `
-           /bin/mv $fn ../updated_ens/mem${memtag}/$newname.$ncsuffix
-#          ln -sf ../updated_ens/mem${memtag}/$newname.$ncsuffix $fn
+           /bin/mv $fn ../updated_ens/${member}/$newname.$ncsuffix
+#          ln -sf ../updated_ens/${member}/$newname.$ncsuffix $fn
         end
     endif
     if ( "$type" == "ana" ) then
-        mkdir -p ../updated_ens/mem${memtag}
+        mkdir -p ../updated_ens/${member}
         touch    ../updated_ens/.no_archiving
-        foreach fn ( `/bin/ls $expid.ana.eta.*.mem${memtag}.$ncsuffix $expid.inc.eta.*.mem${memtag}.$ncsuffix ` )
+        foreach fn ( `/bin/ls $expid.ana.eta.*.${member}.$ncsuffix $expid.inc.eta.*.${member}.$ncsuffix $expid.xinc.eta.*.${member}.$ncsuffix` )
            set newname = `echo $fn | cut -d. -f1-4 `
-           /bin/mv $fn ../updated_ens/mem${memtag}/$newname.$ncsuffix
-           ln -sf ../updated_ens/mem${memtag}/$newname.$ncsuffix $fn
+           /bin/mv $fn ../updated_ens/${member}/$newname.$ncsuffix
+           ln -sf ../updated_ens/${member}/$newname.$ncsuffix $fn
         end
     endif
     if ( "$type" == "aconc" ) then
-        mkdir -p ../updated_ens/mem${memtag}
+        mkdir -p ../updated_ens/${member}
         touch    ../updated_ens/.no_archiving
-        foreach fn ( `/bin/ls $expid.aana.eta.*.mem${memtag}.$ncsuffix $expid.ainc.eta.*.mem${memtag}.$ncsuffix $expid.aker.eta.*.mem${memtag}.$ncsuffix` )
+        foreach fn ( `/bin/ls $expid.aana.eta.*.${member}.$ncsuffix $expid.ainc.eta.*.${member}.$ncsuffix $expid.aker.eta.*.${member}.$ncsuffix` )
            set newname = `echo $fn | cut -d. -f1-4 `
-           /bin/mv $fn ../updated_ens/mem${memtag}/$newname.$ncsuffix
-           ln -sf ../updated_ens/mem${memtag}/$newname.$ncsuffix $fn
+           /bin/mv $fn ../updated_ens/${member}/$newname.$ncsuffix
+           ln -sf ../updated_ens/${member}/$newname.$ncsuffix $fn
         end
     endif
     if ( "$type" == "aaero" ) then
-        mkdir -p ../updated_ens/mem${memtag}
+        mkdir -p ../updated_ens/${member}
         touch    ../updated_ens/.no_archiving
-        foreach fn ( `/bin/ls $expid.aod_[a,d,k].sfc.*.mem${memtag}.$ncsuffix $expid.gaas_ana.eta.*.mem${memtag}.$ncsuffix $expid.gaas_inc.eta.*.mem${memtag}.$ncsuffix` )
+        foreach fn ( `/bin/ls $expid.aod_[a,d,k].sfc.*.${member}.$ncsuffix $expid.gaas_ana.eta.*.${member}.$ncsuffix $expid.gaas_inc.eta.*.${member}.$ncsuffix` )
            set newname = `echo $fn | cut -d. -f1-4 `
-           /bin/mv $fn ../updated_ens/mem${memtag}/$newname.$ncsuffix
-           ln -sf ../updated_ens/mem${memtag}/$newname.$ncsuffix $fn
+           /bin/mv $fn ../updated_ens/${member}/$newname.$ncsuffix
+           ln -sf ../updated_ens/${member}/$newname.$ncsuffix $fn
         end
     endif
     if ( "$type" == "baero" ) then
-        mkdir -p ../updated_ens/mem${memtag}
+        mkdir -p ../updated_ens/${member}
         touch    ../updated_ens/.no_archiving
-        foreach fn ( `/bin/ls $expid.aod_f.sfc.*.mem${memtag}.$ncsuffix $expid.gaas_bkg.eta.*.mem${memtag}.$ncsuffix` )
+        foreach fn ( `/bin/ls $expid.aod_f.sfc.*.${member}.$ncsuffix $expid.gaas_bkg.eta.*.${member}.$ncsuffix` )
            set newname = `echo $fn | cut -d. -f1-4 `
-           /bin/mv $fn ../updated_ens/mem${memtag}/$newname.$ncsuffix
-           ln -sf ../updated_ens/mem${memtag}/$newname.$ncsuffix $fn
+           /bin/mv $fn ../updated_ens/${member}/$newname.$ncsuffix
+           ln -sf ../updated_ens/${member}/$newname.$ncsuffix $fn
         end
     endif
     if ( "$type" == "fsens" ) then
-        mkdir -p ../updated_ens/mem${memtag}
+        mkdir -p ../updated_ens/${member}
         touch    ../updated_ens/.no_archiving
         foreach fn ( `/bin/ls $expid.Jnorm.*.txt $expid.Jgradf*.eta.*.$ncsuffix $expid.fsens*.eta.*.$ncsuffix` )
-           /bin/mv $fn ../updated_ens/mem${memtag}/
-           ln -sf ../updated_ens/mem${memtag}/$fn .
+           /bin/mv $fn ../updated_ens/${member}/
+           ln -sf ../updated_ens/${member}/$fn .
         end
     endif
     # The following handles HISTORY diagnostic; typically files with unconventional name template
     if ( "$type" == "diag" ) then
-        mkdir -p ../updated_ens/ensdiag/mem${memtag}
+        mkdir -p ../updated_ens/ensdiag/${member}
         touch    ../updated_ens/ensdiag/.no_archiving
-        set fntype_all = (`edhist.pl -q 3 -list inc -X bkg.eta,bkg.sfc,abkg.eta,cbkg.eta,gaas_bkg.sfc -i $rcfile`)
+        set fntype_all = (`edhist.pl -q 3 -list inc -X Bkg.eta,bkg.eta,bkg.sfc,abkg.eta,cbkg.eta,gaas_bkg.sfc -i $rcfile`)
         foreach fntype ( $fntype_all )
-           foreach fn ( `/bin/ls $expid.${fntype}.*.mem${memtag}.$ncsuffix` )
-              set newname = `echo $fn | cut -d. -f1-3 `
-              /bin/mv $fn ../updated_ens/ensdiag/mem${memtag}/$newname.$ncsuffix
-           end # fn
+           if ( $fntype == "traj_lcv" ) then
+              if ( ! -d   ../updated_ens/enstraj/${member} ) then
+                 mkdir -p ../updated_ens/enstraj/${member}
+                 touch    ../updated_ens/enstraj/.no_archiving
+                 foreach fn ( `/bin/ls $expid.${fntype}.*.${member}.$ncsuffix` )
+                    set newname = `echo $fn | cut -d. -f1-3 `
+                    /bin/mv $fn ../updated_ens/enstraj/${member}/$newname.$ncsuffix
+                 end # fn
+              endif
+           else 
+              foreach fn ( `/bin/ls $expid.${fntype}.*.${member}.$ncsuffix` )
+                 set newname = `echo $fn | cut -d. -f1-3 `
+                 /bin/mv $fn ../updated_ens/ensdiag/${member}/$newname.$ncsuffix
+              end # fn
+           endif
         end # fntype
     endif
