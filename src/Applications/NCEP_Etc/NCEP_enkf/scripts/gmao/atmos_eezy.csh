@@ -10,6 +10,8 @@
 #
 #  01Oct2012  Todling   Initial script
 #  12Mar2013  Todling   Special handle of bkg for single (non-dual) resolution
+#  21Feb2020  Todling   Allow for high freq bkg (up to 1mn)
+#  22Jun2020  Todling   Redef meaning of ATMENSLOC
 #------------------------------------------------------------------
 if ( !($?ATMENS_VERBOSE) ) then
     setenv ATMENS_VERBOSE 0
@@ -97,6 +99,7 @@ set expid = $1
 set nymd  = $2
 set nhms  = $3
 set hh     = `echo $nhms | cut -c1-2`
+set hhmn   = `echo $nhms | cut -c1-4`
 set yyyymmddhh = ${nymd}${hh}
 
 setenv ENSWORK $FVWORK
@@ -110,11 +113,11 @@ set path = ( . $FVHOME/run $FVROOT/bin $path )
 
 # Copy of directories from recycle locally
 # ----------------------------------------
-if (! -d $ATMENSLOC/atmens ) then
-  echo "${MYNAME}: cannot find $ATMENSLOC/atmens, aboring ..."
+if (! -d $ATMENSLOC ) then
+  echo "${MYNAME}: cannot find $ATMENSLOC, aboring ..."
   exit(1)
 endif
-set ensloc = $ATMENSLOC/atmens
+set ensloc = $ATMENSLOC
 
 set members = `/bin/ls -d $ensloc/mem* | wc`
 set nmem = $members[1]
@@ -143,7 +146,7 @@ endif
 # --------------------------------------------------------------------
 set eres = `echorc.x -rc $ATMENSETC/easyeana.rc ensemble_resolution`
 set cres = `echorc.x -rc $ATMENSETC/easyeana.rc central_das_resolution`
-dyn2dyn.x -g5 -res $eres -o ensmean/easy.ana.eta.${nymd}_${hh}z.$NCSUFFIX $STAGE4HYBGSI/$expid.ana.eta.${nymd}_${hh}z.$NCSUFFIX
+dyn2dyn.x -g5 -res $eres -o ensmean/easy.ana.eta.${nymd}_${hhmn}z.$NCSUFFIX $STAGE4HYBGSI/$expid.ana.eta.${nymd}_${hhmn}z.$NCSUFFIX
 if ($status) then
    echo " ${MYNAME}: trouble converting central analysis into fake analysis members "
    exit(1)
@@ -159,14 +162,14 @@ while ( $ic < $nmem )
      mkdir mem${memtag}
      /bin/cp $ensloc/mem${memtag}/*.$NCSUFFIX mem${memtag}/ 
    endif
-   /bin/cp ensmean/easy.ana.eta.${nymd}_${hh}z.$NCSUFFIX  mem${memtag}/$expid.ana.eta.${nymd}_${hh}z.mem$memtag.$NCSUFFIX &
+   /bin/cp ensmean/easy.ana.eta.${nymd}_${hhmn}z.$NCSUFFIX  mem${memtag}/$expid.ana.eta.${nymd}_${hhmn}z.mem$memtag.$NCSUFFIX &
 end
 wait
 @ ic = 0
 while ( $ic < $nmem )
    @ ic = $ic + 1
    set memtag  = `echo $ic |awk '{printf "%03d", $1}'`
-   update_ens.csh $expid $memtag ana $ENSWORK/mem${memtag} NULL $NCSUFFIX
+   update_ens.csh $expid mem$memtag ana $ENSWORK/mem${memtag} NULL $NCSUFFIX
 end
 # consistency check:
 if ( $ic != $nmem ) then
@@ -182,9 +185,9 @@ if ( "$cres" == "$eres" ) then
       @ ic = $ic + 1
       set memtag  = `echo $ic |awk '{printf "%03d", $1}'`
       # Following needs revision for 4D case
-      /bin/cp $RSTSTAGE4AENS/$expid.bkg06_eta_rst.${nymd}_${hh}z.$NCSUFFIX mem$memtag/$expid.bkg.eta.${nymd}_${hh}z.$NCSUFFIX 
+      /bin/cp $RSTSTAGE4AENS/$expid.bkg06_eta_rst.${nymd}_${hhmn}z.$NCSUFFIX mem$memtag/$expid.bkg.eta.${nymd}_${hhmn}z.$NCSUFFIX 
    end
-   /bin/cp $RSTSTAGE4AENS/$expid.bkg06_eta_rst.${nymd}_${hh}z.$NCSUFFIX ensmean/$expid.bkg.eta.${nymd}_${hh}z.$NCSUFFIX 
+   /bin/cp $RSTSTAGE4AENS/$expid.bkg06_eta_rst.${nymd}_${hhmn}z.$NCSUFFIX ensmean/$expid.bkg.eta.${nymd}_${hhmn}z.$NCSUFFIX 
 endif
 
 touch $ENSWORK/.DONE_${MYNAME}.$yyyymmddhh

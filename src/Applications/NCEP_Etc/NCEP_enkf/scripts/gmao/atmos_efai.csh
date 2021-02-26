@@ -6,6 +6,7 @@
 # !REVISION HISTORY:
 #
 #  29Nov2017  Todling   Initial version
+#  21Feb2020  Todling   Allow for high freq bkg (up to 1mn)
 #------------------------------------------------------------------
 if ( !($?ATMENS_VERBOSE) ) then
     setenv ATMENS_VERBOSE 0
@@ -79,18 +80,23 @@ set expid = $1
 set nymd  = $2
 set nhms  = $3
 set hh     = `echo $nhms | cut -c1-2`
-set yyyymmddhh = ${nymd}${hh}
+set hhmn   = `echo $nhms | cut -c1-4`
+set yyyymmddhh = ${nymd}${hhmn}
 
 setenv ENSWORK $FVWORK
-if ( -e $ENSWORK/.DONE_${MYNAME}.$yyyymmddhh ) then
+if ( -e $ENSWORK/.DONE_${MYNAME}.$yyyymmddhhmn ) then
    echo " ${MYNAME}: already done"
    exit(0)
 endif
 
 if (($?ASYNBKG)) then
-   @ bkgfreq_hrs = $ASYNBKG / 60
+   @ bkgfreq_hr  =  $ASYNBKG / 60
+   @ bkgfreq_mn  =  $ASYNBKG - $bkgfreq_hr * 60
+   set bkgfreq_hh = `echo $bkgfreq_hr |awk '{printf "%02d", $1}'`
+   set bkgfreq_mm = `echo $bkgfreq_mn |awk '{printf "%02d", $1}'`
+   set bkgfreq_hhmn = ${bkgfreq_hh}${bkgfreq_mm}
 else
-   @ bkgfreq_hrs = 3
+   @ bkgfreq_hhmn = 0300
 endif
 
 #source $FVROOT/bin/g5_modules
@@ -102,9 +108,9 @@ if ( ! -d $ENSWORK/addperts ) then
 endif
 cd $ENSWORK/addperts
 
-if (! -e $expid.bkg.eta.${nymd}_${hh}z.$NCSUFFIX ) then
-  if ( -e $ENSWORK/ensmean/$expid.bkg.eta.${nymd}_${hh}z.$NCSUFFIX ) then
-    /bin/cp $ENSWORK/ensmean/$expid.bkg.eta.${nymd}_${hh}z.$NCSUFFIX .
+if (! -e $expid.bkg.eta.${nymd}_${hhmn}z.$NCSUFFIX ) then
+  if ( -e $ENSWORK/ensmean/$expid.bkg.eta.${nymd}_${hhmn}z.$NCSUFFIX ) then
+    /bin/cp $ENSWORK/ensmean/$expid.bkg.eta.${nymd}_${hhmn}z.$NCSUFFIX .
   else
      echo " ${MYNAME}: cannot find ensemble mean background file"
      exit(1)
@@ -121,12 +127,12 @@ foreach fn (`/bin/ls $expid.nmcpert*.$NCSUFFIX`)
   @ ic++
   set memtag  = `echo $ic |awk '{printf "%03d", $1}'`
   if(! -d mem$memtag ) mkdir mem$memtag
-  if ( -e mem$memtag/$expid.bkg.eta.${nymd}_${hh}z.$NCSUFFIX ) then
+  if ( -e mem$memtag/$expid.bkg.eta.${nymd}_${hhmn}z.$NCSUFFIX ) then
      @ jc++
   else
      $DRYRUN dyn_recenter.x -g5 -damp -a $FAI_FACTOR -inflate $fn \
-                            -o mem$memtag/$expid.bkg.eta.${nymd}_${hh}z.$NCSUFFIX \
-                            $expid.bkg.eta.${nymd}_${hh}z.$NCSUFFIX \
+                            -o mem$memtag/$expid.bkg.eta.${nymd}_${hhmn}z.$NCSUFFIX \
+                            $expid.bkg.eta.${nymd}_${hhmn}z.$NCSUFFIX \
                             NONE NONE
      if ( $status ) then
         echo " ${MYNAME}: failed to generated augmented member $ic, aborting ..."
@@ -142,16 +148,16 @@ end
 #  this will serve to allow tuning spread of "model error" component
 if ( ($?AENSTAT_MPIRUN) ) then
    if ( -e $ATMENSETC/mp_stats.rc ) then
-     if(! -e .MP_STATS_EGRESS_bkg.eta_${nymd}${hh} ) then
+     if(! -e .MP_STATS_EGRESS_bkg.eta_${nymd}${hhmn} ) then
         if (! -d ensmean ) mkdir ensmean
         if (! -d ensrms  ) mkdir ensrms
         $AENSTAT_MPIRUN -rc $ATMENSETC/mp_stats.rc \
-                         -o ensmean/$expid.bkg.eta.${nymd}_${hh}z.$NCSUFFIX \
-                       -stdv ensrms/$expid.bkg.eta.${nymd}_${hh}z.$NCSUFFIX \
-                        -ene ensrms/$expid.bene.err.${nymd}_${hh}z.$NCSUFFIX \
-                        -inc ${bkgfreq_hrs}0000 \
-                        -egress .MP_STATS_EGRESS_bkg.eta_${nymd}${hh} \
-                        mem*/$expid.bkg.eta.${nymd}_${hh}z.$NCSUFFIX 
+                         -o ensmean/$expid.bkg.eta.${nymd}_${hhmn}z.$NCSUFFIX \
+                       -stdv ensrms/$expid.bkg.eta.${nymd}_${hhmn}z.$NCSUFFIX \
+                        -ene ensrms/$expid.bene.err.${nymd}_${hhmn}z.$NCSUFFIX \
+                        -inc ${bkgfreq_hhmn}00 \
+                        -egress .MP_STATS_EGRESS_bkg.eta_${nymd}${hhmn} \
+                        mem*/$expid.bkg.eta.${nymd}_${hhmn}z.$NCSUFFIX 
      endif
    endif
 endif
@@ -160,7 +166,7 @@ endif
 # if made it here, then all is done
 # ---------------------------------
 if ( $jc == $nmem ) then
-   touch $ENSWORK/.DONE_${MYNAME}.$yyyymmddhh
+   touch $ENSWORK/.DONE_${MYNAME}.$yyyymmddhhmn
    echo " ${MYNAME}: Complete "
    exit(0)
 else

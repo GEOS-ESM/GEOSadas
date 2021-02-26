@@ -28,6 +28,7 @@
 #  03Sep2012 Todling   Add IDF call
 #  29Apr2016 Todling   Update interface to Diag2ODS
 #  02May2016 Todling   Add GAAS analysis; only run in first iteration
+#  13Jun2020 Todling   Time aerosol analysis
 #
 #-----------------------------------------------------------------------------
 
@@ -327,7 +328,9 @@
                             set aod_date = $gaasDateBeg
                             set aod_time = $gaasTimeBeg
 
+                                                       zeit_ci.x AeroAna
                             Call AerosolAnalysis_()
+                                                       zeit_co.x AeroAna
 
 #                           Restore pre-BOOTSTRAP HISTORY collections and
 #                           reset ENABLE_GAAS in GEOS_ChemGridComp.rc, if necessary

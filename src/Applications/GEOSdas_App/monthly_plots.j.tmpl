@@ -174,11 +174,13 @@ sleep 5
 # truncate ${pbs_tag}_PLT to match 15-char limit in gcmpost.script
 #-----------------------------------------------------------------
 set PLT_TAG = `echo $pbs_tag | cut -c1-15`
-qstat -a -u $USER | grep $PLT_TAG
+#--qstat -a -u $USER | grep $PLT_TAG
+squeue -a -u $USER | grep $PLT_TAG
 
 # get plot job ids
 #-----------------
-set jobids = ( `qstat -a -u $USER | grep $PLT_TAG | cut -d" " -f1` )
+#set jobids = ( `qstat -a -u $USER | grep $PLT_TAG | cut -d" " -f1` )
+set jobids = ( `squeue -a -u $USER -o "%A %j" | grep $PLT_TAG | cut -d" " -f1` )
 set jobcnt = $#jobids
 
 set depflg = ""
@@ -215,6 +217,15 @@ else
    set listdir = "$FVHOME/etc/Y$yyyy/M$mm"
    set outfile = "$listdir/$EXPID.plots.$yyyymm.log.$$.txt";
 endif
-$PBS_BIN/qalter -o $outfile $PBS_JOBID
+if ( $?SLURM_JOBID ) then
+  $PBS_BIN/qalter -o $outfile $SLURM_JOBID
+else
+  if ( $?PBS_JOBID ) then
+     $PBS_BIN/qalter -o $outfile $PBS_JOBID
+  else
+     echo "monthly_means.j: cannot find JOBID, aborting"
+     exit(1)
+  endif
+endif
 
 exit 0

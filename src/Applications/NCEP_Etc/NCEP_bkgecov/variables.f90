@@ -1,10 +1,16 @@
 module variables
 
-  use type_kinds, only: fp_kind, double, single
+  use type_kinds, only: ip_kind, fp_kind, double, single
   implicit none
 
+! These will be made flexible via namelist argument ... easy to do later
+  integer, parameter :: n3d = 12
+  integer, parameter :: n2d = 1
+  character(len=4), parameter :: vars3d(n3d) = (/  &
+      'sf  ', 'vp  ', 't   ', 'oz  ', 'q   ',  'cw  ', 'qi  ','ql  ', 'qr  ', 'qs  ', 'rh  ', 'mrh ' /) 
+  character(len=4), parameter :: vars2d(n2d) = (/  &
+      'ps  ' /)
 ! general
-! integer mype
   integer maxcases
   integer filunit,filunit1,filunit2
 
@@ -13,31 +19,59 @@ module variables
   integer,allocatable,dimension(:):: na,nb
 
 ! from GSI gridmod:
-  logical hybrid,db_prec,anaclw,lgaus,lsmver,biasrm,laddoz
+  logical hybrid,db_prec,anaclw,lgaus,lsmver,biasrm,laddoz,lbal
   logical hydromet
+  logical readperts
+  logical calchrzscl,calcvrtscl
   logical smooth_vert_variances
-  integer nlat,nlon,nsig,dimbig,option
+  integer nlat,nlon,nsig,dimbig,option,lat1,lon1
   integer nGlat,nGlon
-  integer nlatfv,nlonfv
+  integer nreaders
+  real(fp_kind),dimension(2):: rhbounds
   real(fp_kind) smoothdeg,fnm0
   real(fp_kind) :: taj
+  real(fp_kind) :: hrzsfactor
   real(fp_kind),allocatable,dimension(:):: sigl,sigi,ak5,bk5
   real(fp_kind),allocatable,dimension(:):: rlats,rlons
   real(fp_kind),allocatable,dimension(:):: glats,glons
-  real(fp_kind),allocatable,dimension(:):: latfv,lonfv
   real(fp_kind),allocatable,dimension(:,:):: vsmth,vsmc
+
+! MPI related stuff
+  integer mype,npe,iglobal,itotsub
+  integer(ip_kind),allocatable,dimension(:):: jstart  ! start lon of the whole array on each pe
+  integer(ip_kind),allocatable,dimension(:):: istart  ! start lat of the whole array on each pe
+  integer(ip_kind),allocatable,dimension(:):: ilat1   ! no. of lats for each subdomain (no buffer)
+  integer(ip_kind),allocatable,dimension(:):: jlon1   ! no. of lons for each subdomain (no buffer)
+  integer(ip_kind),allocatable,dimension(:):: ijn_s   ! no. of horiz. points for each subdomain (with buffer)
+  integer(ip_kind),allocatable,dimension(:):: ijn     ! no. of horiz. points for each subdomain (no buffer)
+  integer(ip_kind),allocatable,dimension(:):: isc_g   ! no. array, count for send to global; size of subdomain
+
+                                                 ! comm. array ...
+  integer(ip_kind),allocatable,dimension(:):: irc_s     !   count for receive on subdomain
+  integer(ip_kind),allocatable,dimension(:):: ird_s     !   displacement for receive on subdomain
+  integer(ip_kind),allocatable,dimension(:):: isd_g     !   displacement for send to global
+  integer(ip_kind),allocatable,dimension(:):: displs_s  !   displacement for send from subdomain
+  integer(ip_kind),allocatable,dimension(:):: displs_g  !   displacement for receive on global grid
+
+                                                 ! array element indices for location of ...
+  integer(ip_kind),allocatable,dimension(:):: ltosi   !   lats in iglobal array excluding buffer
+  integer(ip_kind),allocatable,dimension(:):: ltosj   !   lons in iglobal array excluding buffer
+  integer(ip_kind),allocatable,dimension(:):: ltosi_s !   lats in itotsub array including buffer
+  integer(ip_kind),allocatable,dimension(:):: ltosj_s !   lons in itotsub array including buffer
+
+  integer(ip_kind) :: fcst_origin                     ! specifies fcst field origin
+                                                      !   0=GFS (default)
+                                                      !   1=GMAO
+
 
 ! allocateable arrays
   real(fp_kind),allocatable,dimension(:):: sweight
   real(fp_kind),allocatable,dimension(:,:  ) :: bbp
   real(fp_kind),allocatable,dimension(:,:,:) :: bbt,bbs,bbv
   real(fp_kind),allocatable,dimension(:,:,:) :: bboz,bbq,bbqi,bbql,bbqr,bbqs
-!  real(fp_kind),allocatable,dimension(:,:) :: bcorrt,bcorrd,bcorrv
-!  real(fp_kind),allocatable,dimension(:,:) :: bbiast,bbiasd,bbiasv
-!  real(fp_kind),allocatable,dimension(:  ) :: bcorrp,bbiasp
 
 ! smoothing coefficients
-   integer,parameter :: nlmax=200
+  integer, parameter :: nlmax=200
   real(fp_kind) :: hcoeffs(nlmax)
   real(fp_kind) :: vcoeffs(nlmax)
 
@@ -52,6 +86,9 @@ module variables
   real(fp_kind),allocatable,dimension(:,:) :: qivar,qlvar,qrvar,qsvar
   real(fp_kind),allocatable,dimension(:  ) :: psvar
 
+! balances
+  real(fp_kind),allocatable,dimension(:,:) :: vpbal,tbal
+  real(fp_kind),allocatable,dimension(:  ) :: pbal
 ! horizontal length scales
   real(fp_kind),allocatable,dimension(:,:) :: sfhln,vphln,thln
   real(fp_kind),allocatable,dimension(:,:) :: qhln,chln,ozhln
@@ -67,19 +104,6 @@ module variables
   integer,allocatable,dimension(:,:) :: updex,bmdex
   real(fp_kind),allocatable,dimension(:,:,:) :: tcon
   real(fp_kind),allocatable,dimension(:,:  ) :: pscon,vpcon
-
-  real(fp_kind),allocatable,dimension(:,:,:) :: grdsf
-  real(fp_kind),allocatable,dimension(:,:,:) :: grdvp
-  real(fp_kind),allocatable,dimension(:,:,:) :: gridt
-  real(fp_kind),allocatable,dimension(:,:,:) :: gridq
-  real(fp_kind),allocatable,dimension(:,:,:) :: gridqi
-  real(fp_kind),allocatable,dimension(:,:,:) :: gridql
-  real(fp_kind),allocatable,dimension(:,:,:) :: gridqr
-  real(fp_kind),allocatable,dimension(:,:,:) :: gridqs
-  real(fp_kind),allocatable,dimension(:,:,:) :: grdrh
-  real(fp_kind),allocatable,dimension(:,:,:) :: grdc
-  real(fp_kind),allocatable,dimension(:,:,:) :: grdoz
-  real(fp_kind),allocatable,dimension(:,:)   :: gridp
 
 ! from GSI constants:
   integer izero
@@ -121,8 +145,6 @@ contains
     nsig=72
     nlat=258
     nlon=512
-    nlatfv=361
-    nlonfv=540
     fnm0=nsig
     lgaus=.true.
     lsmver=.false.
@@ -133,13 +155,21 @@ contains
     taj=1
     biasrm=.false.
     laddoz=.false.
-    hydromet=.false.
+    lbal=.false.
+    hydromet=.true.
     smooth_vert_variances=.false. ! to correspond to Wei''s original code this
                                   ! needs to be set to true; false corresponds
                                   ! to what Amal used in 513 or so.
-
+    nreaders=4
+    readperts=.false.
+    calchrzscl=.true.             ! it is sometimes useful to bypass calc of horz scales
+    calcvrtscl=.true.             ! it is sometimes useful to bypass calc of vert scales
+    rhbounds(1) = -0.25           ! lower bound on rh differences
+    rhbounds(2) =  1.25           ! upper bound on rh differences
+    hrzsfactor=-1.0               ! apply factor to horizontal scales (when >0)
 
   end subroutine init_vars
+
   subroutine init_smooth_vars(nsig)
   integer,intent(in) :: nsig
     hcoeffs=0.0
@@ -178,10 +208,10 @@ contains
     endif
   end subroutine init_smooth_vars
 
-  subroutine create_grids(nlat,nlon,jcap,lgaus)
+  subroutine create_grids(nlat,nlon,jcap,lgauss)
     implicit none
 
-    logical,intent(in) :: lgaus
+    logical,intent(in) :: lgauss
     integer,intent(in) :: nlat,nlon,jcap
 
 !  local variables 
@@ -189,48 +219,39 @@ contains
     real(fp_kind) dlon,pih
     real(double),allocatable,dimension(:) :: dlats 
 
-
-!    if(jcap==46)then
-!      nGlat=90; nGlon=144
-!    elseif(jcap==58)then
-!      nGlat=90; nGlon=180
-!    elseif(jcap==62)then
-!      nGlat=96; nGlon=192
-!    elseif(jcap==88)then  !
-!      nGlat=180; nGlon=270
-!    elseif(jcap==94)then  !
-!      nGlat=180; nGlon=288
-!    elseif(jcap==118)then  !
-!      nGlat=180; nGlon=360
-!    elseif(jcap==254)then
-!      nGlat=258; nGlon=512
-!    elseif(jcap==268)then  !
-!      nGlat=360; nGlon=540
-!    elseif(jcap==382)then
-!      nGlat=386; nGlon=768
-!    elseif(jcap==538)then
-!      nGlat=542; nGlon=1080
-!    else
-!      print*,"stop: this jcap not considered yet"
-!      stop
-!    endif
-
-!    if( lgaus .and. (nlat .ne. nGlat .or. nlon.ne.nGlon) )then
-!      print*,"GAUSSIAN GRID: nGlat .ne. nlat"
-!      print*,"GAUSSIAN GRID: nGlon .ne. nlon"
-!      stop
-!    endif
-
-    if (jcap==254) then 
-       nGlat=360; nGlon=576
-    else 
-       nGlat = nlat
-       nGlon = nlon
-    endif 
+    if (lgauss) then
+       if (jcap==21) then
+          nGlat=32; nGlon=64
+       elseif (jcap==42) then
+          nGlat=64; nGlon=128
+       elseif (jcap==62) then
+          nGlat=94; nGlon=192
+       elseif (jcap==85) then
+          nGlat=128; nGlon=256
+       elseif (jcap==254) then
+          nGlat=360; nGlon=576
+       elseif(jcap==268) then
+         nGlat=360; nGlon=540
+       elseif(jcap==382) then
+         nGlat=384; nGlon=768
+       elseif (jcap==574) then
+          nGlat=578; nGlon=1152
+       elseif (jcap==878) then
+          nGlat=880; nGlon=1760
+       else 
+          nGlat = nlat; nGlon = nlon
+       endif 
+    else
+       nGlat = nlat; nGlon = nlon
+    endif
+    if (mype==0) then
+       write(6,*) 'create_grids:  jcap         ',  jcap
+       write(6,*) 'create_grids:  nlat,  nlon= ',  nlat,  nlon
+       write(6,*) 'create_grids: nGlat, nGlon= ', nGlat, nGlon
+    endif
 
     allocate(rlats(nlat),rlons(nlon))
     allocate(glats(nGlat),glons(nGlon))
-    allocate(latfv(nlatfv),lonfv(nlonfv))
 
 ! constant for deg/radians conversion
     deg2rad=acos(-1.0)/180.0
@@ -242,9 +263,7 @@ contains
       rlons(i)=float(i-1)*dlon
     end do
 
-    dlon=4*pih/float(nlonfv)
-
-    if( lgaus ) then
+    if( lgauss ) then
       glons(:)=rlons(:)
     else
       dlon=4*pih/float(nGlon)
@@ -253,7 +272,7 @@ contains
       end do
     endif 
       
-    if(.not. lgaus ) then  ! lat-lon grid
+    if(.not. lgauss ) then  ! lat-lon grid
       do i=1, nlat
         rlats(i)=-pih + (i-1)*pi / float(nlat-1)
       end do
@@ -275,54 +294,71 @@ contains
 
     return
   end subroutine create_grids
-  
+
+  subroutine create_mapping
+    implicit none
+    integer(ip_kind) i
+
+    allocate(jstart(npe),istart(npe),&
+             ilat1(npe),jlon1(npe),&
+             ijn_s(npe),irc_s(npe),ird_s(npe),displs_s(npe),&
+             ijn(npe),isc_g(npe),isd_g(npe),displs_g(npe))
+
+    do i=1,npe
+      jstart(i)    = 0
+      istart(i)    = 0
+      ilat1(i)     = 0
+      jlon1(i)     = 0
+      ijn_s(i)     = 0
+      irc_s(i)     = 0
+      ird_s(i)     = 0
+      displs_s(i)  = 0
+      ijn(i)       = 0
+      isc_g(i)     = 0
+      isd_g(i)     = 0
+      displs_g(i)  = 0
+    end do
+
+    return
+  end subroutine create_mapping
+
+
   subroutine create_bias_g(nlat0,nlon0,nsig0)
     implicit none
     integer, intent(in) :: nlat0,nlon0,nsig0
 
-    allocate( bbp (nlat0,nlon0)       )
+    allocate( bbp (nlat0,nlon0)      )
     allocate( bbt (nlat0,nlon0,nsig0) )
     allocate( bbs (nlat0,nlon0,nsig0) )
     allocate( bbv (nlat0,nlon0,nsig0) )
     allocate( bbq (nlat0,nlon0,nsig0) )
-    if (hydromet) then
-       allocate( bbqi (nlat0,nlon0,nsig0))
-       allocate( bbql (nlat0,nlon0,nsig0))
-       allocate( bbqr (nlat0,nlon0,nsig0))
-       allocate( bbqs (nlat0,nlon0,nsig0))
+    if (hydromet ) then
+       allocate( bbqi (nlat0,nlon0,nsig0) )
+       allocate( bbql (nlat0,nlon0,nsig0) )
+       allocate( bbqr (nlat0,nlon0,nsig0) )
+       allocate( bbqs (nlat0,nlon0,nsig0) )
     endif
-    allocate( bboz (nlat0,nlon0,nsig0))
+    allocate( bboz (nlat0,nlon0,nsig0) )
+    bbp=0.
+    bbt=0.
+    bbs=0.
+    bbv=0.
+    bboz=0.
+    if (hydromet) then
+       bbqi=0.
+       bbql=0.
+       bbqr=0.
+       bbqs=0.
+    endif
+
     return
   end subroutine create_bias_g
 
-  subroutine create_intvar(nlat0,nlon0,nsig0)
-    implicit none
-    integer, intent(in) :: nlat0,nlon0,nsig0
-    integer k
 
-    allocate( grdsf(nlat0,nlon0,nsig0) )
-    allocate( grdvp(nlat0,nlon0,nsig0) )
-    allocate( gridt(nlat0,nlon0,nsig0) )
-    allocate( gridq(nlat0,nlon0,nsig0) )
-    if (hydromet) then
-       allocate( gridqi(nlat0,nlon0,nsig0))
-       allocate( gridql(nlat0,nlon0,nsig0))
-       allocate( gridqr(nlat0,nlon0,nsig0))
-       allocate( gridqs(nlat0,nlon0,nsig0))
-    endif
-    allocate( grdrh(nlat0,nlon0,nsig0) )
-    allocate( grdc (nlat0,nlon0,nsig0) )
-    allocate( grdoz(nlat0,nlon0,nsig0) )
-    allocate( gridp(nlat0,nlon0) )
-
-    return
-  end subroutine create_intvar
-
-  subroutine create_vars(nlat0,nlon0,nsig0,mype)
+  subroutine create_vars(nlat0,nlon0,nsig0)
 
     implicit none
     integer,intent(in) :: nlat0, nlon0, nsig0
-    integer,intent(in) :: mype
     real(fp_kind) onetest
     real(double) onedouble
 
@@ -333,9 +369,7 @@ contains
     else
       db_prec=.true.
     endif
-    if (mype==0) then
-        write(6,*) 'INITVARS: DB_PREC = ',db_prec
-    endif
+    if(mype==0) write(6,*) 'INITVARS: DB_PREC = ',db_prec
 
     allocate(filename(dimbig)     )
     allocate(na      (dimbig)     )
@@ -352,14 +386,14 @@ contains
     allocate(vpvar(nlat0,nsig0)   )
     allocate(tvar (nlat0,nsig0)   )
     allocate(qvar (nlat0,nsig0)   )
-    if (hydromet) then
+    if (hydromet ) then
        allocate(qivar (nlat0,nsig0)   )
        allocate(qlvar (nlat0,nsig0)   )
        allocate(qrvar (nlat0,nsig0)   )
        allocate(qsvar (nlat0,nsig0)   )
     endif
     allocate(cvar (nlat0,nsig0)   )
-    allocate(ozvar (nlat0,nsig0)   )
+    allocate(ozvar (nlat0,nsig0)  )
     allocate(psvar(nlat0      )   )
 
     allocate(nrhvar(nlat0,nsig0))
@@ -368,14 +402,14 @@ contains
     allocate(vphln(nlat0,nsig0)   )
     allocate(thln (nlat0,nsig0)   )
     allocate(qhln (nlat0,nsig0)   )
-    if (hydromet) then
-       allocate(qihln (nlat0,nsig0)   )
-       allocate(qlhln (nlat0,nsig0)   )
-       allocate(qrhln (nlat0,nsig0)   )
-       allocate(qshln (nlat0,nsig0)   )
+    if (hydromet ) then
+        allocate(qihln (nlat0,nsig0)   )
+        allocate(qlhln (nlat0,nsig0)   )
+        allocate(qrhln (nlat0,nsig0)   )
+        allocate(qshln (nlat0,nsig0)   )
     endif
-    allocate(chln  (nlat0,nsig0)   )
-    allocate(ozhln (nlat0,nsig0)   )
+    allocate(chln (nlat0,nsig0)   )
+    allocate(ozhln (nlat0,nsig0)  )
     allocate(pshln(nlat0)         )
 
     allocate(sfvln(nlat0,nsig0)   )
@@ -383,13 +417,13 @@ contains
     allocate(tvln (nlat0,nsig0)   )
     allocate(qvln (nlat0,nsig0)   )
     if (hydromet) then
-       allocate(qivln(nlat0,nsig0)   )
-       allocate(qlvln(nlat0,nsig0)   )
-       allocate(qrvln(nlat0,nsig0)   )
-       allocate(qsvln(nlat0,nsig0)   )
+       allocate(qivln (nlat0,nsig0)   )
+       allocate(qlvln (nlat0,nsig0)   )
+       allocate(qrvln (nlat0,nsig0)   )
+       allocate(qsvln (nlat0,nsig0)   )
     endif
     allocate(cvln (nlat0,nsig0)   )
-    allocate(ozvln(nlat0,nsig0)   )
+    allocate(ozvln (nlat0,nsig0)  )
 
     allocate(updex(nlat0,nsig0) )
     allocate(bmdex(nlat0,nsig0) )
@@ -410,10 +444,10 @@ contains
     deallocate(sfvar,vpvar,tvar,qvar,cvar,psvar,ozvar)
     deallocate(sfhln,vphln,thln,qhln,chln,pshln,ozhln)
     deallocate(sfvln,vpvln,tvln,qvln,cvln,ozvln)
-    if (hydromet) then
-       deallocate(qivar,qlvar,qrvar,qsvar)
-       deallocate(qihln,qlhln,qrhln,qshln)
-       deallocate(qivln,qlvln,qrvln,qsvln)
+    if(hydromet) then
+      deallocate(qivar,qlvar,qrvar,qsvar)
+      deallocate(qihln,qlhln,qrhln,qshln)
+      deallocate(qivln,qlvln,qrvln,qsvln)
     endif
     deallocate(updex,bmdex)
     deallocate(tcon,vpcon,pscon)
@@ -423,38 +457,33 @@ contains
 
   end subroutine destroy_vars
 
+  subroutine destroy_mapping
+    implicit none
+    deallocate(ltosi,ltosj,ltosi_s,ltosj_s)
+    deallocate(jstart,istart,ilat1,jlon1,&
+               ijn_s,displs_s,&
+               ijn,isc_g,isd_g,displs_g)
+
+    return
+  end subroutine destroy_mapping
+
   subroutine destroy_bias_g
     deallocate(bbt,bbs,bbv)
     deallocate(bboz,bbq)
-    if (hydromet) deallocate(bbqi,bbql,bbqr,bbqs)
+    if(hydromet) then
+      deallocate(bbqi,bbql,bbqr,bbqs)
+    endif
     deallocate(bbp)
     return
   end subroutine destroy_bias_g
 
-  subroutine destroy_intvar
-    deallocate( grdsf )
-    deallocate( grdvp )
-    deallocate( gridt )
-    deallocate( gridq )
-    if (hydromet) then
-       deallocate( gridqi)
-       deallocate( gridql)
-       deallocate( gridqr)
-       deallocate( gridqs)
-    endif
-    deallocate( grdrh )
-    deallocate( grdc  )
-    deallocate( grdoz )
-    deallocate( gridp )
-    return
-  end subroutine destroy_intvar
-
-
   subroutine destroy_grids
     deallocate(rlats,rlons)
     deallocate(glats,glons)
-    deallocate(latfv,lonfv)
     return
   end subroutine destroy_grids
+
+  subroutine setvars
+  end subroutine setvars
 
 end module variables

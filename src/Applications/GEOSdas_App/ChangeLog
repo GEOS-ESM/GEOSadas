@@ -9,11 +9,105 @@
 IMPORTANT: This file should only be updated by the fvDAS Integration Group.
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Tag:     GEOSadas-5_25_3
+Module:  GEOSadas-5_25
+Date:    Feb2020
+Status:  active
+GCM:     Jason-3_4
+GSI:     from rt-GEOSadas-5_25_2_almost-O3sensIR
+Summary: GSI updates
+Restart Changes: 
+
+Details:
+
+NOTE: This tag is an update to the GEOSadas-5_25_1_p3 tag, not the GEOSadas-5_25_2 tag.
+
+R.Todling
+---------
+* script now handle SLURM-only case (in addition to PBS)
+* expanded time-tag of eta files to include minutes of day from hh to hhmn
+* when setting non-M2 runs: observations now taken from live disk (LOCAL_ARCHIVE); no going to archive
+* nc4 AGCM_IMPORT_RST now (careful w/ regrid utility: it should not be remapping when interpolating)
+* Default ens RSTs are now nc4 - if only have bin, rename them to nc4 extension in initial cycle 
+* GPS addition: br_meta_MetOpC_gps
+* Turn aircraft online bias correction on by defatul. 
+  OPS will need to adjust the following files (according to tag):
+    - main central DAS job script
+    - atm_ens.j
+    - AtmEnsConfig.csh
+* add O3 sensitive IR channels to analysis (Rcov updated accordingly)
+  Note: ensemble observer intentionally does not use these o3-sens IR channels
+* considerable reduction in count of some AMV due to changes in thinning (might need revision)
+* add Meta''s converters taking nc4 gsi-diag to ods
+
+* GSI merge w/ NCEP, tag: jg-gsi-rt-GEOSadas-5_26_TEMP1_p1
+* back to using 2-Loops for FSOI (adjoint GSI);
+  remember to remove USRMITER env flag from OPS script
+* enable MHS all-sky; base tag: "mkim-gsi-rt-GEOSadas-5_26_TEMP1_allskyMHSadded"
+                      also tag: "meta_MetOpC_AMSUA_MHS"
+* enable AMSR2: "jjin_mk_rt-GEOSadas-5_26_TEMP1_allskyMHS_amsr2"
+* enable Metop-C; tag: "meta_MetOpC_20190917"
+* fix for passive thinning, tag (read_prepbufr):meta-gsi-5_26_TEMP1_fix-passive-thinning
+
+
+Takacs,    CVS Tag: Jason-3_6_p1 (non-zero diff to Jason-3_6)
+------     Module: GEOSagcm
+
+       ------------------------------------------------------------------------------
+      1) Fixed "zero-diff" issue related to GF evaporation vs
+       total rain, fixed GF cloud-mass-flux scaling issue
+      2) Updates for additional QUICKPLOTS (aerosol time
+       series and QLTOT, QITOT closeness)
+
+       Restart Changes: None.
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_25_2
 Module:  GEOSadas-5_25
+Date:    Aug2019
 Status:  active
 GCM:     Jason-3_2
-GSI:     same GEOSadas-5_24_0 to GEOSadas-5_25_2
+GSI:     same as GEOSadas-5_24_0
+Summary: Mostly analysis updates
+Restart Changes: NLv3 (land) is now default
+
+Details:
+
+R.Todling
+---------
+This version failed its testing and is deemed invalid.
+
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Tag:     GEOSadas-5_25_1_p4
+Module:  GEOSadas-5_25
+Date:    Feb2020
+Status:  active
+GCM:     Jason-3_6
+GSI:     same as GEOSadas-5_25_1_p3
+Summary: see Details below
+Restart Changes: none
+
+Details:
+
+L.Takacs
+--------
+* RRTMG updates for version 4.10 from Eli
+* updates to the model run scripts in the GEOSgcm_App directory
+* updates for computing forecast stats in the stratosphere in the GEOS_Util/plots directory
+* minor, zero-diff updates in GEOSmoist_GridComp from compiler checks
+
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Tag:     GEOSadas-5_25_1_p3
+Module:  GEOSadas-5_25
+Date:    Jan2020
+Status:  active
+GCM:     Jason-3_3 & Jason-3_4
+GSI:     same as GEOSadas-5_25_1_p2
 Summary: new GCM
 Restart Changes: none
 
@@ -21,16 +115,65 @@ Details:
 
 L.Takacs
 --------
-See the GEOSgcm_App ChangeLog file for GCM updates from Jason-3_1 to Jason-3_2
+See the GEOSgcm_App ChangeLog file for GCM updates for Jason-3_3 & Jason-3_4
+
+R.Todling
+---------
+* Move scavenging of aerosols from GOCART to MOIST; adjust aerosol levels to better match f522_fp
+* Fix naming convention for nitrates in GAAS regristry rc file
+* Fix transport of nitrates by MOIST
+* Fix regrid utility to correctly handle NLv3 option of land (catch) restarts
+* Additions to plotting package
+
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Tag:     GEOSadas-5_25_1_p2
+Module:  GEOSadas-5_25
+Date:    Nov2019
+Status:  active
+GCM:     Jason-3_2_UNCOUPLED
+GSI:     Ricardo's rt-GEOSadas-5_25_1_p2_Final
+Summary: see details
+Restart Changes: none
+
+Details:
+
+L.Takacs
+--------
+See the GEOSgcm_App ChangeLog file for GCM updates for Jason-3_2_UNCOUPLED
+
+R.Todling
+--------
+* rt-GEOSadas-5_25_1_p2_Final tag
+
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Tag:     GEOSadas-5_25_1_p1
+Module:  GEOSadas-5_25
+Date:    Oct2019
+Status:  active
+GCM:     Jason-3_2_UNCOUPLED
+GSI:     same as GEOSadas-5_25_1
+Summary: see details
+Restart Changes: none
+
+Details:
+
+R.Todling
+--------
+Changes for fvcore_layout k_split
 
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_25_1
 Module:  GEOSadas-5_25
+Date:    Aug2019
 Status:  active
 GCM:     Jason-3_2_UNCOUPLED
-GSI:     same GEOSadas-5_24_0 to GEOSadas-5_25_2
+GSI:     Ricardo's rt-GEOSadas-5_25_1-NLv3 tag
 Summary: new GCM
 Restart Changes: none
 
@@ -38,19 +181,21 @@ Details:
 
 L.Takacs
 --------
-Tag: Jason-3_2_UNCOUPLED, non-zero diff to Jason-3_2
-----------------------------------------------------
-Uncoupled version of Jason-3_2.  This version has identical Moist Physics and FV3 Dynamics compared with
-the Coupled Jason-3_2.  However, the Surface Interface Layer has been reverted back to Jason-2_2.
+See the GEOSgcm_App ChangeLog file for GCM updates for Jason-3_2_UNCOUPLED
+
+R.Todling
+--------
+Changes for fvcore_layout k_split
 
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_25_0_p1
 Module:  GEOSadas-5_25
+Date:    May2019
 Status:  active
 GCM:     Jason-3_0
-GSI:     same GEOSadas-5_24_0 to GEOSadas-5_25_2
+GSI:     same GEOSadas-5_25_0
 Summary: new options in setup procedures and offline programs
 Restart Changes: none
 
@@ -75,9 +220,10 @@ J.Stassi
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_25_0
 Module:  GEOSadas-5_25
+Date:    May2019
 Status:  active
 GCM:     Jason-3_0
-GSI:     same as GEOSadas-5_24_0 to GEOSadas-5_25_2
+GSI:     same as GEOSadas-5_24_1
 Summary: new GCM
 Restart Changes: none
 
@@ -90,12 +236,57 @@ See the GEOSgcm_App ChangeLog file for GCM updates from Jason-2_0 to Jason-3_0
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Tag:     GEOSadas-5_24_1
+Module:  GEOSadas-5_24
+Date:    Apr2019
+Status:  active
+GCM:     Jason-2_1
+GSI:     same as GEOSadas-5_24_0_p1
+Summary: new GCM tag
+Restart Changes: turb_import_rst,  Simply Bootstrap.
+                 surf_import_rst,  Simply Bootstrap.
+                 irrad_internal_rst (passive, for clear-sky diagnostics only), Simply Bootstrap
+Details:
+
+L.Takacs
+--------
+Tag: Jason-2_1, zero-diff to Jason-2_0 in Default Mode
+------------------------------------------------------
+1) Retuning when using NewLand.
+2) Addition of Optional RRTMPG (off by Default).
+3) Modifications for New RRTMG diagnostics.
+4) Updates for regrid.pl and related code.
+5) StratChem updated to tag: Jason-2_0_MEM_1
+6) GIT related updates.
+
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Tag:     GEOSadas-5_24_0_p1
+Module:  GEOSadas-5_24
+Date:    Mar2019
+Status:  active
+GCM:     Jason-2_0
+GSI:     same as GEOSadas-5_24_0
+Summary: see details
+Restart Changes: none
+
+Details:
+
+M.Sienkiewicz
+-------------
+Updates for handling MetOp-C GPS data.
+
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_24_0
 Module:  GEOSadas-5_24
+Date:    Mar2019
 Status:  active
 GCM:     Jason-2_0
 GSI:     from Ricardo's EnADAS-5_23_0p2 tag
-Summary: see details
+Summary: new GCM
 Restart Changes: solar_internal_rst (must do full bootstrap)
                  gocart_import_rst, tr_import_rst (can do partial bootstrap)
 Details:
@@ -154,14 +345,31 @@ M.Sienkiewicz
 
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Tag:     GEOSadas-5_23_0_p2
+Module:  GEOSadas-5_23
+Date:    Jan2019
+Status:  active
+GCM:     Jason-1_0_BETA
+GSI:     same as GEOSadas-5_23_0_p1
+Summary: see details
+Restart Changes: none
+
+Details:
+
+Stassi
+------
+Modifications for setting up an ensemble job.
+
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_23_0_p1
 Module:  GEOSadas-5_23
+Date:    Dec2018
 Status:  active
 GCM:     Jason-1_0_BETA
-GSI:     from Ricardo's EnADAS-5_23_0p1 tag
+GSI:     Ricardo's EnADAS-5_23_0p1 tag
 Summary: see details
 Restart Changes: none
 
@@ -179,6 +387,7 @@ R.Todling/B.Auer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_23_0
 Module:  GEOSadas-5_23
+Date:    Dec2018
 Status:  active
 GCM:     Jason-1_0_BETA
 GSI:     from Ricardo's EnADAS-5_23_0 tag
@@ -199,6 +408,7 @@ R.Todling
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_22_0_p2
 Module:  GEOSadas-5_22
+Date:    Oct2018
 Status:  active
 GCM:     Jason-1_0_BETA
 GSI:     from Ricardo's EnADAS-5_22_0p1 tag
@@ -227,6 +437,7 @@ Stassi
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_22_0_p1
 Module:  GEOSadas-5_22
+Date:    Oct2018
 Status:  active
 GCM:     Jason-1_0_BETA
 GSI:     from Ricardo's EnADAS-5_22_0p1 tag
@@ -247,6 +458,7 @@ R.Todling (EnADAS-5_22_0p1)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_22_0
 Module:  GEOSadas-5_22
+Date:    Sep2018
 Status:  active
 GCM:     Jason-1_0_BETA
 GSI:     from Ricardo's EnADAS-5_22_0 tag
@@ -291,6 +503,7 @@ L.Takacs (Jason-1_0_BETA, non-zero diff to Icarus-3_4_ESMF7)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_21_3_p1
 Module:  GEOSadas-5_21
+Date:    Jul2018
 Status:  active
 GCM:     Icarus-3_4_ESMF7
 GSI:     from Ricardo's EnADAS-5_21_3p1 tag
@@ -315,6 +528,7 @@ Brief on changes:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_21_2
 Module:  GEOSadas-5_21
+Date:    Jun2018
 Status:  active
 GCM:     Icarus-3_3_p2
 GSI:     from Ricardo's EnADAS-5_21_2 tag
@@ -336,6 +550,7 @@ R.Todling
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_21_0
 Module:  GEOSadas-5_21
+Date:    May2018
 Status:  active
 GCM:     Icarus-3_3_p2
 GSI:     from GEOSadas-5_19_0
@@ -367,6 +582,7 @@ R.Lucchesi
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_20_0p2
 Module:  GEOSadas-5_20
+Date:    May2018
 Status:  active
 GCM:     Icarus-3_3_p2
 GSI:     from GEOSadas-5_19_0
@@ -390,6 +606,7 @@ W.McCarty
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_20_0p1
 Module:  GEOSadas-5_20
+Date:    May2018
 Status:  active
 GCM:     Icarus-3_3_p2 (non-zero diff to Icarus-3_3_p1)
 GSI:     from GEOSadas-5_19_0
@@ -417,6 +634,7 @@ R.Lucchesi
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_20_0
 Module:  GEOSadas-5_20
+Date:    Mar2018
 Status:  active
 GCM:     Icarus-3_3_p1 (non-zero diff to Icarus-3_3)
 GSI:     from GEOSadas-5_19_0
@@ -434,6 +652,7 @@ R.Todling
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_19_0
 Module:  GEOSadas-5_19
+Date:    Feb2018
 Status:  UNSTABLE
 GCM:     Icarus-3_2_p9
 GSI:     from GEOSadas-5_18_3_p1
@@ -456,6 +675,7 @@ new model tag: Icarus-3_2_p9 (non-zero diff to Icarus-3_2_p8)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_18_3_p1
 Module:  GEOSadas-5_18
+Date:    Jan2018
 Status:  active
 GCM:     Icarus-3_2_p8
 GSI:     from GEOSadas-5_18_3
@@ -477,6 +697,7 @@ M.Thompson
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_18_3
 Module:  GEOSadas-5_18
+Date:    Jan2018
 Status:  active
 GCM:     Icarus-3_2_p8
 GSI:     from GEOSadas-5_18_2
@@ -504,6 +725,7 @@ M.Sienkiewicz
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_18_2
 Module:  GEOSadas-5_18
+Date:    Jan2018
 Status:  active
 GCM:     Icarus-3_2_p7
 GSI:     from GEOSadas-5_18_1
@@ -522,6 +744,7 @@ No resolution dependency for AGCM.rc file.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_18_1
 Module:  GEOSadas-5_18
+Date:    Dec2017
 Status:  active
 GCM:     Icarus-3_2_p6
 GSI:     from rt-GEOSadas-5_18_1_4Joe_11Dec2017
@@ -543,6 +766,7 @@ L.Takacs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_17_0p5M
 Module:  GEOSadas-5_17
+Date:    May2018
 Status:  active
 GCM:     Icarus-1_0_p1
 GSI:     start with OPS tag, GEOSadas-5_17_0_p5L_OPS
@@ -559,6 +783,7 @@ W.McCarty
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_17_0p5I
 Module:  GEOSadas-5_17
+Date:    Jan2018
 Status:  active
 GCM:     Icarus-1_0_p1
 GSI:     start with OPS tag, GEOSadas-5_17_0p5H_OPS
@@ -574,6 +799,7 @@ M.Thompson
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_17_0p5B
 Module:  GEOSadas-5_17
+Date:    Oct2017
 Status:  retired
 GCM:     Icarus-1_0_p1
 GSI:     start with GEOSadas-5_17_0p5A
@@ -592,6 +818,7 @@ R.Lucchesi
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_17_0p5A
 Module:  GEOSadas-5_17
+Date:    Sep2017
 Status:  retired
 GCM:     Icarus-1_0_p1
 GSI:     EnADAS-5_17_0p5A
@@ -605,6 +832,7 @@ Details:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_16_3_p1
 Module:  GEOSadas-5_16
+Date:    Oct2016
 Status:  UNSTABLE
 GCM:     Heracles-5_4_p2
 GSI:     EnADAS-5_16_3p1
@@ -622,6 +850,7 @@ R.Todling
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_15_3
 Module:  GEOSadas-5_15
+Date:    Jul2016
 Status:  UNSTABLE
 GCM:     Heracles-5_2_BETA
 GSI:     EnADAS-5_15_3
@@ -634,6 +863,7 @@ Details:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_14_2
 Module:  GEOSadas-5_14
+Date:    Jun2016
 Status:  retired
 GCM:     Heracles-5_3
 GSI:     rt-GEOSadas-5_14
@@ -646,6 +876,7 @@ Details:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_14_1_p1
 Module:  GEOSadas-5_14
+Date:    Jun2016
 Status:  retired
 GCM:     Heracles-5_2_p1
 GSI:     rt-GEOSadas-5_14
@@ -658,6 +889,7 @@ Details: (see GCM ChangeLog)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_14_1
 Module:  GEOSadas-5_14
+Date:    Apr2016
 Status:  retired
 GCM:     Heracles-5_2
 GSI:     rt-GEOSadas-5_14
@@ -670,6 +902,7 @@ Details: (see GCM ChangeLog)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_14_0
 Module:  GEOSadas-5_14
+Date:    Jan2016
 Status:  retired
 GCM:     Heracles-5_1
 GSI:     rt-GEOSadas-5_14
@@ -682,6 +915,7 @@ Details: (see GCM ChangeLog)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_13_2
 Module:  GEOSadas-5_13
+Date:    Oct2015
 Status:  INTERIM
 GCM:     Heracles-1_1
 GSI:     EnADAS-5_13_7p4
@@ -694,6 +928,7 @@ Details: (see GCM ChangeLog)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_13_1_p3
 Module:  GEOSadas-5_13
+Date:    Oct2015
 Status:  active
 GCM:     Ganymed-4_1
 GSI:     From EnADAS-5_13_7p2
@@ -715,6 +950,7 @@ R.Lucchesi
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_13_1_p2
 Module:  GEOSadas-5_13
+Date:    Aug2015
 Status:  retired
 GCM:     Ganymed-4_1
 GSI:     from EnADAS-5_13_7p2
@@ -738,6 +974,7 @@ R.Lucchesi
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_13_1_p1
 Module:  GEOSadas-5_13
+Date:    Jul2015
 Status:  retired
 GCM:     Ganymed-4_1
 GSI:     From EnADAS-5_13_7p2
@@ -762,6 +999,7 @@ R.Todling
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_13_1
 Module:  GEOSadas-5_13
+Date:    Mar2015
 Status:  UNSTABLE
 GCM:     Ganymed-4_1
 GSI:     from EnADAS-5_13_7
@@ -833,6 +1071,7 @@ include:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_13_0_p2
 Module:  GEOSadas-5_13
+Date:    Aug2014
 Status:  active
 GCM:     Ganymed-4_0
 Summary: Changes to active_channels.tbl, available.tbl, active.tbl, obsys-nccs.rc, etc.
@@ -860,6 +1099,7 @@ M.Sienkiewicz
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_13_0_p1
 Module:  GEOSadas-5_13
+Date:    Jul2014
 Status:  active
 GCM:     Ganymed-4_0
 Summary: 
@@ -911,6 +1151,7 @@ GCM Tag: Ganymed-4_0 (zero diffs from Ganymed-4_0_BETA12, except when using RRTM
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_13_0
 Module:  GEOSadas-5_13
+Date:    Jun2014
 Status:  active
 GCM:     MERRA-2_AGCM_p1 (plus additional updates)
 Summary: 
@@ -971,6 +1212,7 @@ additional updates to GCM tag, MERRA-2_AGCM_p1
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     EnADAS-5_13_3
 Module:  GEOSadas-5_13
+Date:    Mar2014
 Status:  (Ricardo's tag)
 GCM:     Ganymed-4_0_BETA9
 GSI:     aana-r36859-crtm_aero-fix     
@@ -1008,6 +1250,7 @@ That is, have it pointing to the GEOS OPS AOD files and renamed to G5NCEP's expe
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_12_5_p6
 Module:  GEOSadas-5_12
+Date:    Feb2017
 Status:  active 
 GCM:     MERRA-2_AGCM_p2
 Summary: Update to read_satwnd.f90 to allow more satwnd data to be read into the GSI
@@ -1024,6 +1267,7 @@ R.Lucchesi
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_12_5_p5
 Module:  GEOSadas-5_12
+Date:    Oct2016
 Status:  active 
 GCM:     MERRA-2_AGCM_p2
 Summary: Updates to allow MERRA-2 to assimilate observations from AMSU-A on Metop-B
@@ -1046,6 +1290,7 @@ W.McCarty
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_12_5_p4
 Module:  GEOSadas-5_12
+Date:    Sep2016
 Status:  active 
 GCM:     MERRA-2_AGCM_p2
 Summary: update to active_channels.tbl
@@ -1064,6 +1309,7 @@ W.McCarty
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_12_5_p3
 Module:  GEOSadas-5_12
+Date:    Feb2016
 Status:  retired
 GCM:     MERRA-2_AGCM_p2
 Summary: minor changes to the OMPS nadir implementation; ozinfo.dp/active.tbl update
@@ -1102,6 +1348,7 @@ W.McCarty
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_12_5_p2
 Module:  GEOSadas-5_12
+Date:    Dec2015
 Status:  retired
 GCM:     MERRA-2_AGCM_p2
 Summary: All prepQC fixes and updates to "new" NCEP WCOSS versions of programs
@@ -1133,6 +1380,7 @@ All prepQC fixes and updates to "new" NCEP WCOSS versions of programs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_12_5_p1
 Module:  GEOSadas-5_12
+Date:    Aug2015
 Status:  retired
 GCM:     MERRA-2_AGCM_p2
 Summary: bug correction in gsi.rc.tmpl; active_channels.tbl updates
@@ -1156,6 +1404,7 @@ W.McCarty
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_12_5
 Module:  GEOSadas-5_12
+Date:    Mar2015
 Status:  retired
 GCM:     MERRA-2_AGCM_p2
 Summary: Update MERRA-2 tag (GEOSadas-5_12_4_p3) to build and run on sp3 nodes (Hazwell)
@@ -1170,6 +1419,7 @@ Details:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_12_4_p8
 Module:  GEOSadas-5_12
+Date:    Feb2017
 Status:  active 
 GCM:     MERRA-2_AGCM_p2
 Summary: Update to read_satwnd.f90 to allow more satwnd data to be read into the GSI
@@ -1186,6 +1436,7 @@ R.Lucchesi
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_12_4_p7
 Module:  GEOSadas-5_12
+Date:    Oct2016
 Status:  active 
 GCM:     MERRA-2_AGCM_p2
 Summary: Updates to allow MERRA-2 to assimilate observations from AMSU-A on Metop-B
@@ -1208,6 +1459,7 @@ W.McCarty
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_12_4_p6
 Module:  GEOSadas-5_12
+Date:    Sep2016
 Status:  active 
 GCM:     MERRA-2_AGCM_p2
 Summary: update to active_channels.tbl
@@ -1226,6 +1478,7 @@ W.McCarty
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_12_4_p5
 Module:  GEOSadas-5_12
+Date:    Dec2015
 Status:  retired
 GCM:     MERRA-2_AGCM_p2
 Summary: All prepQC fixes and updates to "new" NCEP WCOSS versions of programs
@@ -1257,6 +1510,7 @@ All prepQC fixes and updates to "new" NCEP WCOSS versions of programs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_12_4_p4
 Module:  GEOSadas-5_12
+Date:    Aug2015
 Status:  retired
 GCM:     MERRA-2_AGCM_p2
 Summary: bug correction in gsi.rc.tmpl; active_channels.tbl updates
@@ -1280,6 +1534,7 @@ W.McCarty
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_12_4_p3
 Module:  GEOSadas-5_12
+Date:    Apr2015
 Status:  retired
 GCM:     MERRA-2_AGCM_p2
 Summary: Update MERRA-2 tag (GEOSadas-5_12_4_p3) to build and run on sp1 nodes (SandyBridge) after
@@ -1293,6 +1548,7 @@ Details:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_12_4_p2
 Module:  GEOSadas-5_12
+Date:    Apr2015
 Status:  retired
 GCM:     MERRA-2_AGCM_p2
 Summary: 
@@ -1327,6 +1583,7 @@ R.Lucchesi
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_12_4_p1
 Module:  GEOSadas-5_12
+Date:    Aug2014
 Status:  retired
 GCM:     MERRA-2_AGCM_p2
 Summary: 
@@ -1356,6 +1613,7 @@ W.McCarty
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_12_4
 Module:  GEOSadas-5_12
+Date:    Mar2014
 Status:  retired
 GCM:     MERRA-2_AGCM (plus additional updates)
 Summary: 
@@ -1441,6 +1699,7 @@ additional updates to GCM tag, MERRA-2_AGCM
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_12_3
 Module:  GEOSadas-5_12
+Date:    Jan2014
 Status:  retired
 GCM:     Ganymed-4_0_BETA9 (plus additional updates)
 Summary: 
@@ -1577,6 +1836,7 @@ additional updates to GCM tag, Ganymed-4_0_BETA9
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_12_2
 Module:  GEOSadas-5_12
+Date:    Nov2013
 Status:  retired
 GCM:     Ganymed-4_0_BETA6
 GSI:     EnADAS-5_12_1_p9
@@ -1648,6 +1908,7 @@ Stassi
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_12_1
 Module:  GEOSadas-5_12
+Date:    Nov2013
 Status:  retired
 GCM:     Ganymed-4_0_BETA6
 Summary: Added AVHRR option to GAAS processing
@@ -1664,6 +1925,7 @@ A.daSilva/Stassi: Updated files in the GAAS_App and GMAO_pyobs directories to in
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_12_0
 Module:  GEOSadas-5_12
+Date:    Sep2013
 Status:  retired
 GCM:     Ganymed-4_0_BETA2
 Summary: 
@@ -1749,6 +2011,7 @@ WARNING-WARNING-WARNING-WARNING-WARNING-WARNING-WARNING-WARNING-WARNING
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     EnADAS-5_11_0_p7
 Module:  GEOSadas-5_11
+Date:    Aug2013
 Status:  (Ricardo's tag)
 GCM:     Ganymed-3_0_p2 (unstable; snapshot: rt-Ganymed-3_0_p2_21jun13_2pm)
 Summary: See GEOSadas-5_11_0
@@ -1848,6 +2111,7 @@ internal correction to ps due to water changes by physics.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_11_0_p2
 Module:  GEOSadas-5_11
+Date:    May2013
 Status:  retired
 GCM:     GEOSadas-5_10_0_p1_OPS_REGRID-SNOWMELT_FIX
 Summary: Taken from GEOSadas-5_11_0_p2_OPS
@@ -1858,6 +2122,7 @@ Restart Changes: none
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_11_0_p1
 Module:  GEOSadas-5_11
+Date:    May2013
 Status:  retired
 GCM:     GEOSadas-5_10_0_p1_OPS_REGRID-SNOWMELT_FIX
 Summary: See GEOSadas-5_11_0
@@ -1878,7 +2143,8 @@ mkiau.rc.tmpl - wired-in bkg/ana grads-like filename templates replaced with gen
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_11_0
 Module:  GEOSadas-5_11
-Status:  
+Date:    May2013
+Status:  active
 GCM:     GEOSadas-5_10_0_p1_OPS_REGRID-SNOWMELT_FIX
 Summary: See GEOSadas-5_10_0_p2
 Restart Changes: none
@@ -1895,6 +2161,7 @@ duplicate tag names. The UNSTABLE tag was later labeled as "rejected".
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_10_0_p2
 Module:  GEOSadas-5_10
+Date:    Apr2013
 Status:  UNSTABLE
 GCM:     GEOSadas-5_10_0_p1_OPS_REGRID-SNOWMELT_FIX
 Summary: Combo satellite obs update and GCM snow melt fix
@@ -1932,6 +2199,7 @@ Post:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_10_0_p1
 Module:  GEOSadas-5_10
+Date:    Mar2013
 Status:  UNSTABLE
 GCM:     Ganymed-2_1_p5
 Summary: New GSI
@@ -1968,6 +2236,7 @@ DAS Tag: rt-GEOSadas-5_10_0-22mar13_tlad_WeiB_p1
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_10_0
 Module:  GEOSadas-5_10
+Date:    Mar2013
 Status:  active
 GCM:     Ganymed-2_1_p5
 Summary: (non-zero diffs) Updated GCM; Added MLS standard ozone and temperature capability to GSI
@@ -2056,6 +2325,7 @@ Changes to GSI to add MLS standard ozone and temperature capability for NCA-rean
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_9_1_p12
 Module:  GEOSadas-5_9
+Date:    Feb2016
 Status:  active
 GCM:     Ganymed-1_0_p7
 Summary: update for OPS to use for running jobs on sp3 nodes
@@ -2073,6 +2343,7 @@ A.Trayanov
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_9_1_p11
 Module:  GEOSadas-5_9
+Date:    Oct2013
 Status:  active
 GCM:     Ganymed-1_0_p7
 Summary: update to fix vortex relocator
@@ -2096,6 +2367,7 @@ Updates to fix NCEP_vtxreloc
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_9_1_p10
 Module:  GEOSadas-5_9
+Date:    Apr2013
 Status:  retired
 GCM:     Ganymed-1_0_p7
 Summary: fix mkiau.x
@@ -2116,6 +2388,7 @@ mkiau.rc.tmpl - wired-in bkg/ana grads-like filename templates replaced with gen
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_9_1_p9
 Module:  GEOSadas-5_9
+Date:    Mar2013
 Status:  retired
 GCM:     Ganymed-1_0_p7
 Summary: see details
@@ -2140,6 +2413,7 @@ R.Todling
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_9_1_p8
 Module:  GEOSadas-5_9
+Date:    Feb2013
 Status:  retired
 GCM:     Ganymed-1_0_p7
 Summary: (non-zero diffs for 1/2 grids) Changed default HEARTBEAT from 900 to 450 for 1/2-deg grids
@@ -2163,6 +2437,7 @@ GCM Tag: Ganymed-1_0_p7 (zero diffs from Ganymed-1_0_p6 for HEARTBEAT=900 at 1/2
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_9_1_p7
 Module:  GEOSadas-5_9
+Date:    Jan2013
 Status:  retired
 GCM:     Ganymed-1_0_p5
 Summary: (non-zero diffs) New GCM (conservative remapping, correct Chemistry regression problem in cube)
@@ -2193,6 +2468,7 @@ GCM Tag: Ganymed-1_0_p4 (zero diffs from Ganymed-1_0_p3 for Lat/Lon Grid,
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_9_1_p6
 Module:  GEOSadas-5_9
+Date:    Jan2013
 Status:  retired
 GCM:     Ganymed-1_0_p3
 Summary: (non-zero diffs) GSI reduced number of iterations in 2nd loop from 150 to 100
@@ -2220,6 +2496,7 @@ M.Sienkiewicz
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_9_1_p5
 Module:  GEOSadas-5_9
+Date:    Jan2013
 Status:  retired
 GCM:     Ganymed-1_0_p3
 Summary: Correct problems in 591p4 tag
@@ -2249,6 +2526,7 @@ than in FVHOME.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_9_1_p4
 Module:  GEOSadas-5_9
+Date:    Dec2012
 Status:  retired
 GCM:     Ganymed-1_0_p3
 Summary: Correct problems in 591p3 tag
@@ -2274,6 +2552,7 @@ longitude of 0-degrees where shifted incorrectly.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_9_1_p3
 Module:  GEOSadas-5_9
+Date:    Dec2012
 Status:  retired
 GCM:     Ganymed-1_0_p2
 Summary: Correct problems in 591p2 tag
@@ -2313,6 +2592,7 @@ R.Todling
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_9_1_p2
 Module:  GEOSadas-5_9
+Date:    Nov2012
 Status:  retired
 GCM:     Ganymed-1_0_p1
 Summary: Correct problems in 591p1 tag
@@ -2334,6 +2614,7 @@ M.Sienkiewicz
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_9_1_p1
 Module:  GEOSadas-5_9
+Date:    Nov2012
 Status:  retired
 GCM:     Ganymed-1_0_p1
 Summary: Updates to GEOSadas-5_9_1 in the GCM to correct problems
@@ -2364,6 +2645,7 @@ GCM Tag, Ganymed-1_0_p1
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_9_1 (based on Ricardo's EnADAS-600-Ganymed_try-p17 tag)
 Module:  GEOSadas-5_9
+Date:    Nov2012
 Status:  retired
 GCM:     Ganymed-1_0
 Summary: updated GCM and GSI
@@ -2468,6 +2750,7 @@ L.Takacs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_9_0 (equivalent to Ricardo's EnADAS-600-Ganymed_try-p9 tag)
 Module:  GEOSadas-5_9
+Date:    Apr2012
 Status:  retired UNSTABLE
 GCM:     Ganymed-1_0_BETA4
 Summary: updated GCM; new GSI brings in full cubed-DAS capability
@@ -2498,6 +2781,7 @@ compressibility.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Tag:     GEOSadas-5_8_0 (equivalent to Ricardo's EnADAS-600-pre573_p5 tag)
 Module:  GEOSadas-5_8
+Date:    Apr2012
 Status:  available
 GCM:     Ganymed-1_0_BETA3
 Summary: New GSI and GCM

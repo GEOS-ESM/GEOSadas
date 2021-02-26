@@ -904,7 +904,7 @@ sub run_fvsetup {
     else          { $output = ">     $fvsuLOG" }
 
     $cmd = "$fvsetup < $rawinput $output";
-    $cmd = "($cmd) 2> $fvsuERR" unless $verbose;
+    $cmd = "($cmd) 2> $fvsuERR" unless $debug or $verbose;
     print "\n$cmd\n\n" if $verbose;
 
     # run fvsetup
@@ -976,7 +976,7 @@ sub run_fvsetup {
 
 #=======================================================================
 # name - submit_job
-# purpose - submit job to queue with system qsub command
+# purpose - submit job to queue with system sbatch command
 #=======================================================================
 sub submit_job {
     use Cwd;
@@ -992,7 +992,7 @@ sub submit_job {
     return unless yes($ans);
 
     my_chdir("$fvhome{$key}/run");
-    my_system("qsub $jobn");
+    my_system("sbatch $jobn");
     my_chdir($here);
     pause() unless $noloop;
 }

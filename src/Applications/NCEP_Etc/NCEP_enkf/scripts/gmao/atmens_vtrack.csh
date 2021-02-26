@@ -5,6 +5,7 @@
 # !REVISION HISTORY:
 #
 #  01Sep2015  Todling   Initial script
+#  23Jun2020  Todling   Redef meaning of ATMENSLOC (is it needed here?)
 #------------------------------------------------------------------
 
 if ( !($?ATMENS_VERBOSE) ) then
@@ -84,7 +85,9 @@ if ( $#argv < 3 ) then
 endif
  
 setenv FAILED 0
+if ( !($?ATMENS_BATCHSUB) ) setenv FAILED 1
 if ( !($?ATMENSETC)     ) setenv FAILED 1
+if ( !($?ATMENSLOC)     ) setenv FAILED 1
 if ( !($?FVHOME)        ) setenv FAILED 1
 if ( !($?FVROOT)        ) setenv FAILED 1
 if ( !($?FVWORK)        ) setenv FAILED 1
@@ -93,10 +96,10 @@ if ( !($?VAROFFSET)     ) setenv FAILED 1
 if ( !($?VTRKFRQF)      ) setenv FAILED 1
 if ( !($?VTXLEVS)       ) setenv FAILED 1
 
-if ( !($?ATMENSLOC)     ) setenv ATMENSLOC $FVHOME
 if ( !($?NCSUFFIX)      ) setenv NCSUFFIX nc4
 if ( !($?ENSPARALLEL)   ) setenv ENSPARALLEL 0
 if ( !($?STRICT)        ) setenv STRICT 1
+if ( !($?LOCAL_ACQUIRE) ) setenv LOCAL_ACQUIRE 0
 if ( !($?VTRACK_WALLCLOCK))setenv VTRACK_WALLCLOCK 1:00:00
 if ( !($?VTRACK_QNAME))    setenv VTRACK_QNAME NULL
 
@@ -131,6 +134,13 @@ if ( ! -e $ATMENSETC/vtrack.rc ) then
    touch $ENSWORK/.DONE_${MYNAME}.$yyyymmddhh
    echo "${MYNAME}: nothing to do"
    exit(0)
+endif
+
+if ( $?FVSPOOL ) then
+   set spool = "-s $FVSPOOL "
+else
+   set diren = `dirname $FVHOME`
+   set spool = "-s $diren/spool "
 endif
 
 #source $FVROOT/bin/g5_modules
@@ -180,31 +190,49 @@ set tcvitals_class = `grep tcvitals $FVHOME/run/obsys.rc | grep BEGIN | cut -d" 
 @ adjust_fcsthrs = $fcsthrs - $offset_hrs
 @ fcsthrs_by6 = $adjust_fcsthrs / 6
 
- if( -e .FAILED_ACQ_TCV ) /bin/rm .FAILED_ACQ_TCV
- set fname = "acquire_tcv.pbs"
- alias fname1 "echo \!* >! $fname"
- alias fname2 "echo \!* >> $fname"
- set qsub_acquire = 1
+ if ( (`uname -n` !~ borg[a-z]???) || ( $LOCAL_ACQUIRE ) ) then
 
- fname1 "#\!/bin/csh -xvf"
- fname2 "#SBATCH --account=$GID"
- fname2 "#PBS -N acquire"
- fname2 "#PBS -l nodes=1:ppn=1"
- fname2 "#PBS -l walltime=1:00:00"
- fname2 "#PBS -q datamove"
- fname2 "#PBS -S /bin/csh"
- fname2 "#PBS -V"
- fname2 "#PBS -j eo"
- fname2 ""
- fname2 "cd $FVWORK"
- fname2 "acquire_obsys -v -drc $ENSWORK/vtrack/obsys.rc -d $ENSWORK/vtrack $strict $nymda $nhmsa 060000 $fcsthrs_by6 $tcvitals_class"
- fname2 "if ( $status ) then"
- fname2 "   touch .FAILED_ACQ_TCV"
- fname2 "endif"
- fname2 "exit"
+     acquire_obsys -v -d $FVWORK $spool $strict -ssh  \
+                         $nymda $nhmsa 060000 1 $tcvitals_class  # acquire tcvitals (6-hrs back); 
+     if ( $status ) then
+        touch .FAILED_ACQ_TCV
+     endif
+    
+ else
 
- qsub -W block=true $fname
- sleep 2
+     if( -e .FAILED_ACQ_TCV ) /bin/rm .FAILED_ACQ_TCV
+     set fname = "acquire_tcv.pbs"
+     alias fname1 "echo \!* >! $fname"
+     alias fname2 "echo \!* >> $fname"
+     set qsub_acquire = 1
+     
+     fname1 "#\!/bin/csh -xvf"
+     fname2 "#SBATCH --account=$GID"
+     fname2 "#SBATCH --partition=datamove"
+     fname2 "#SBATCH --time=2:00:00"
+     fname2 "#SBATCH --job-name=acquire"
+     fname2 "#SBATCH --ntasks=1"
+     fname2 "#PBS -N acquire"
+     fname2 "#PBS -l nodes=1:ppn=1"
+     fname2 "#PBS -S /bin/csh"
+     fname2 "#PBS -V"
+     fname2 "#PBS -j eo"
+     fname2 ""
+     fname2 "cd $FVWORK"
+     fname2 "acquire_obsys -v -drc $ENSWORK/vtrack/obsys.rc -d $ENSWORK/vtrack $strict $nymda $nhmsa 060000 $fcsthrs_by6 $tcvitals_class"
+     fname2 "if ( $status ) then"
+     fname2 "   touch .FAILED_ACQ_TCV"
+     fname2 "endif"
+     fname2 "exit"
+     
+     if ( $ATMENS_BATCHSUB == "sbatch" ) then
+        $ATMENS_BATCHSUB -W $fname
+     else
+        $ATMENS_BATCHSUB -W block=true $fname
+     endif
+     sleep 2
+
+ endif
 
  if( -e .FAILED_ACQ_TCV ) then
     echo " \e[0;31m ${MYNAME}: Failed to acquire tcvitals, aborting ... \e[0m"

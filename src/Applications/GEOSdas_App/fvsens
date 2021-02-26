@@ -90,6 +90,7 @@ if ( ! $?SHARE ) then
      echo " Invalid path for share directory "
      exit 1
 endif
+if ( !($?BATCH_SUBCMD)  ) setenv BATCH_SUBCMD "sbatch"
 if ( !($?FCSTVERIFY)  ) setenv FCSTVERIFY asm
 if ( !($?CORRECT4IAU) ) setenv CORRECT4IAU 0
 if ( !($?VEXPID)      ) setenv VEXPID $EXPID
@@ -434,6 +435,14 @@ while ( $ic < $ntp1 )
 
           fname1 "#\!/bin/csh -xvf"
           fname2 "#$group_list"
+          fname2 "#SBATCH --job-name=acquire"
+          fname2 "#SBATCH --output=acquire.log.o%j"
+          fname2 "#SBATCH --ntasks=1"
+          fname2 "#SBATCH --time=1:00:00"
+          fname2 "#SBATCH --partition=$data_queue"
+          fname2 "#SBATCH --account=$GID"
+          fname2 "#SBATCH --partition=datamove"
+          fname2 "#SBATCH --time=1:00:00"
           fname2 "#PBS -N acquire"
           fname2 "#PBS -o acquire.log.o%j"
           fname2 "#PBS -l nodes=1:ppn=1"
@@ -451,7 +460,11 @@ while ( $ic < $ntp1 )
           endif
           fname2 "exit"
 
+          if ( $BATCH_SUBCMD == "sbatch" ) then
+             sbatch -W $fname
+          else
           qsub -W block=true $fname
+          endif
 
       endif # end of aquire (discover)
 
@@ -660,6 +673,14 @@ while ( $ic < $ntp1 )
 
         fname1 "#\!/bin/csh -xvf"
         fname2 "#$group_list"
+        fname2 "#SBATCH --job-name=acquire"
+        fname2 "#SBATCH --output=acquire.log.o%j"
+        fname2 "#SBATCH --ntasks=1"
+        fname2 "#SBATCH --time=1:00:00"
+        fname2 "#SBATCH --partition=$data_queue"
+        fname2 "#SBATCH --account=$GID"
+        fname2 "#SBATCH --partition=datamove"
+        fname2 "#SBATCH --time=1:00:00"
         fname2 "#PBS -N acquire"
         fname2 "#PBS -o acquire.log.o%j"
         fname2 "#PBS -l nodes=1:ppn=1"
@@ -674,7 +695,11 @@ while ( $ic < $ntp1 )
         fname2 " acquire -v -rc $avfacq $spool -d . -strict $nymdb $nhmsb 060000 1 "
         fname2 "exit"
 
+        if ( $BATCH_SUBCMD == "sbatch" ) then
+           sbatch -W $fname
+        else
         qsub -W block=true $fname
+        endif
 
       endif # end of aquire (discover)
 

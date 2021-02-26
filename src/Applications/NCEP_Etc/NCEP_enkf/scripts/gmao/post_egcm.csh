@@ -8,6 +8,7 @@
 #  19Apr2013  Todling   Linked w/ HISTORY to automatically select
 #                       streams to work on and do stats for
 #  21Apr2014  Todling   Implement parallelization of stats calculation
+#  21Feb2020  Todling   Allow for high freq bkg (up to 1mn)
 #------------------------------------------------------------------
 
 if ( !($?ATMENS_VERBOSE) ) then
@@ -88,6 +89,7 @@ if ( $#argv < 5 ) then
 endif
 
 setenv FAILED 0
+if ( !($?ATMENS_BATCHSUB) ) setenv FAILED 1
 if ( !($?ASYNBKG)       ) setenv FAILED 1
 if ( !($?ATMENSETC)     ) setenv FAILED 1
 if ( !($?FVHOME)        ) setenv FAILED 1
@@ -120,11 +122,12 @@ set nhmsb   = $3
 set toffset = $4
 set ensloc  = $5
 
-set hhb   = `echo $nhmsb | cut -c1-2`
-set yyyymmddhh = ${nymdb}${hhb}
+set hhb     = `echo $nhmsb | cut -c1-2`
+set hhmnb   = `echo $nhmsb | cut -c1-4`
+set yyyymmddhhmn = ${nymdb}${hhmnb}
 
 setenv ENSWORK $ensloc
-if (-e $ENSWORK/.DONE_${MYNAME}.$yyyymmddhh ) then
+if (-e $ENSWORK/.DONE_${MYNAME}.$yyyymmddhhmn ) then
    echo " ${MYNAME}: already done"
    exit(0)
 endif
@@ -147,12 +150,9 @@ set nmem = $members[1]
 cd  $ENSWORK
 touch .no_archiving
 
-@ bkgfreq_hr = $ASYNBKG / 60
-set bkgfreq_hhmss = ${bkgfreq_hr}0000
-
 # Calculate mean/rms of newly generated ensemble
 # ----------------------------------------------
-if (! -e $ENSWORK/.DONE_redone_allbkgstat_$MYNAME.$yyyymmddhh ) then
+if (! -e $ENSWORK/.DONE_redone_allbkgstat_$MYNAME.$yyyymmddhhmn ) then
 
   cd $ENSWORK
 
@@ -191,9 +191,9 @@ if (! -e $ENSWORK/.DONE_redone_allbkgstat_$MYNAME.$yyyymmddhh ) then
      @ n++
      set this_nymd = $adate[1]
      set this_nhms = $adate[2]
-     set this_hh   = `echo $this_nhms | cut -c1-2`
-     set this_yyyymmddhh = ${this_nymd}${this_hh}
-     if (! -e $ENSWORK/.DONE_redone_bkgstat_$MYNAME.$this_yyyymmddhh ) then
+     set this_hhmn = `echo $this_nhms | cut -c1-4`
+     set this_yyyymmddhhmn = ${this_nymd}${this_hhmn}
+     if (! -e $ENSWORK/.DONE_redone_bkgstat_$MYNAME.$this_yyyymmddhhmn ) then
        foreach outkind ( $alltyps )
           @ m++
           set mmm = `echo $m | awk '{printf "%03d", $1}'`
@@ -204,7 +204,7 @@ if (! -e $ENSWORK/.DONE_redone_allbkgstat_$MYNAME.$yyyymmddhh ) then
                 echo " ${MYNAME}: trouble calculating stats for $this_nymd $this_nhms, aborting ..."
                 exit(1)
              else
-                touch $ENSWORK/.DONE_redone_${outkind}stat_$MYNAME.$this_yyyymmddhh
+                touch $ENSWORK/.DONE_redone_${outkind}stat_$MYNAME.$this_yyyymmddhhmn
              endif
 
           else # submit stat calls as independent jobs
@@ -216,14 +216,14 @@ if (! -e $ENSWORK/.DONE_redone_allbkgstat_$MYNAME.$yyyymmddhh ) then
                  pegcm_$mmm            \
                  $GID                  \
                  $PEGCM_WALLCLOCK      \
-                 "atmens_stats.csh $nmem $outkind $ENSWORK $this_nymd $this_nhms |& tee -a $ENSWORK/pegcm_${outkind}.$this_yyyymmddhh.log"\
+                 "atmens_stats.csh $nmem $outkind $ENSWORK $this_nymd $this_nhms |& tee -a $ENSWORK/pegcm_${outkind}.$this_yyyymmddhhmn.log"\
                  $ENSWORK              \
                  $MYNAME               \
-                 $ENSWORK/.DONE_MEM${mmm}_${MYNAME}.$yyyymmddhh \
+                 $ENSWORK/.DONE_MEM${mmm}_${MYNAME}.$yyyymmddhhmn \
                  "PEGCM Failed"
 
                  if ( -e pegcm_${mmm}.j ) then
-                    qsub pegcm_${mmm}.j
+                    $ATMENS_BATCHSUB pegcm_${mmm}.j
                     touch .SUBMITTED
                  else
                     echo " ${MYNAME}: PostEGCM Failed to generate PBS jobs for Member ${mmm}, Aborting ... "
@@ -242,20 +242,20 @@ endif
 # In case of doing separated jobs, monitor their completion
 # ---------------------------------------------------------
 if( ! $PEGCM_SERIAL ) then
-   jobmonitor.csh $nall $MYNAME $ENSWORK $yyyymmddhh
+   jobmonitor.csh $nall $MYNAME $ENSWORK $yyyymmddhhmn
    if ($status) then
        echo "${MYNAME}: cannot complete due to failed jobmonitor, aborting"
        exit(1)
    endif
    # clean up
    # --------
-   /bin/rm pegcm_*.j
+   /bin/rm pegcm_*.j pegcm_*.j.*
    /bin/rm pegcm_*.log
 endif
-touch $ENSWORK/.DONE_redone_allbkgstat_$MYNAME.$yyyymmddhh
+touch $ENSWORK/.DONE_redone_allbkgstat_$MYNAME.$yyyymmddhhmn
 
 # made it down here, all done
 # ---------------------------
-touch $ENSWORK/.DONE_${MYNAME}.$yyyymmddhh
+touch $ENSWORK/.DONE_${MYNAME}.$yyyymmddhhmn
 echo " ${MYNAME}: Complete "
 exit(0)

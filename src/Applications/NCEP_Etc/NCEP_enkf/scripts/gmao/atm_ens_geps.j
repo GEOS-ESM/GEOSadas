@@ -5,13 +5,9 @@
 #SBATCH --ntasks=96
 #SBATCH --ntasks-per-node=24
 #
-#PBS -N atm_ens_ageps
-#PBS -o atm_ens_ageps.log.o%j
-#_PBS -l select=1:ncpus=24
-#PBS -l walltime=6:00:00
-##PBS -l mem=4gb
-#PBS -S /bin/csh
-#PBS -j eo
+#SBATCH --job-name=atm_ens_ageps
+#SBATCH --output=atm_ens_ageps.log.o%j
+#SBATCH --time=6:00:00
 # ------------------------------
 #
 # fvDAS driver script.
@@ -41,8 +37,13 @@
 
 # Experiment environment
 # ----------------------
-# setenv JOBGEN_QOS advda
+  setenv JOBGEN_QOS dastest
+  setenv JOBGEN_PARTITION preops
   setenv JOBGEN_CONSTRAINT hasw
+  setenv ATMENS_QNAME compute
+  if ( $?JOBGEN_PARTITION ) then
+     setenv ATMENS_QNAME $JOBGEN_PARTITION
+  endif
   setenv GID g0613
   setenv group_list "SBATCH -A $GID"
   setenv ARCH `uname -s`
@@ -118,6 +119,12 @@
   /bin/rm -f $EXTDATA/enAdas
   /bin/ln -s /discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/enAdas $EXTDATA/
 
+  if ($?I_MPI_ROOT) then
+     setenv ATMENS_MPIRUN "mpirun "
+  else
+     setenv ATMENS_MPIRUN "mpiexec_mpt "
+  endif
+
 # MPI/OpenMP Hybrid Options
 # -------------------------
   if ( -e $FVHOME/run/atmens/mkiau.rc.tmpl ) then
@@ -168,7 +175,6 @@
   setenv SPECRES    62    # should be able to revisit analyzer to avoid needing this
 
   setenv GAAS_ANA 1
-  setenv ACFTBIAS 0
 
 # Run-time mpi-related options
 # ----------------------------
@@ -199,6 +205,11 @@
 # ----------------------------------------------
   source $FVHOME/run/atmens/AtmEnsConfig.csh
 
+  if ( !($?ATMENS_BATCHSUB) ) then
+     echo "atm_ens_geps.j: missing  batch command"
+     exit(1)
+  endif
+
 # Costumize what to be save from offline forecasts
 # ------------------------------------------------
 # setenv ENSARCH_FIELDS "eprg,edia,fstat"
@@ -206,10 +217,10 @@
 
   setenv HYBRIDGSI     $FVWORK
   setenv STAGE4HYBGSI  $FVWORK
-  setenv ATMENSLOC     $FVWORK
+  setenv ATMENSLOC     $FVWORK/atmens
   setenv STAGEEFSENS   $FVHOME/asens
   setenv  DO_ATM_ENS    0
-  touch $ATMENSLOC/atmens/.no_archiving
+  touch $ATMENSLOC/.no_archiving
   if ( $?eanaonly ) then
      if ( -e $FVHOME/run/${EXPID}_scheduler.j ) then
         setenv  DO_ATM_ENS    0
@@ -228,7 +239,7 @@
          setenv  RUN_AENSFCST   1
          setenv  RUN_POSTFCST   0
          setenv  RUN_AENSEFS    0
-         setenv  RUN_AENSADFC   1
+         setenv  RUN_AENSADFC   0
          setenv  RUN_AENSVTRACK 0
          setenv  RUN_ARCHATMENS 0
   # To trigger ensemble-only set following dates to anything but 0 (as yyyymmddhh)
@@ -240,7 +251,7 @@
   setenv DATADIR /archive/u/dao_it
   setenv SRCEXPID x0033_SBC
   setenv ATMGEPS 1
-  setenv ATMENS_GEPS_RECENTER 1
+  setenv ATMENS_GEPS_RECENTER 0
 # setenv ATMENS_GEPS_FROM_CENTRAL 1
   setenv AENS_DONORECENTER    0
   setenv AENS_ADDINFLATION    0
@@ -286,6 +297,9 @@
   else
      if ( $?SLURM_JOBID ) then
          qalter -N ${JOBGEN_PFXNAME}_atm_ens_${JOBGEN_SFXNAME} $SLURM_JOBID
+     else
+         echo "no JOBID found, abort"
+         exit(1)
      endif
   endif
 
@@ -313,7 +327,8 @@
 
 #    Acquire required fields/files for running analysis
 #    --------------------------------------------------
-     if ( -e ageps.rc ) then
+     if ( ! -e .DONE_atmens_prepgeps.csh_setrc.$yyyymmddhh ) then
+      if ( -e ageps.rc ) then
         if ( ! -e $FVWORK/.DONE_MEM001_GET4AGEPS.$yyyymmddhh) then 
          if(! -d $STAGE4HYBGSI ) mkdir -p $STAGE4HYBGSI
          set spool = "-s $FVWORK/spool"        
@@ -329,7 +344,11 @@
                 "Main job script Failed for Get for Ensemble Prediction System"
    
                 if ( -e get4ageps.j ) then
-                   qsub  -W block=true get4ageps.j
+                   if ( $ATMENS_BATCHSUB == "sbatch" ) then
+                      $ATMENS_BATCHSUB  -W get4ageps.j
+                   else
+                      $ATMENS_BATCHSUB  -W block=true get4ageps.j
+                   endif
                    touch .SUBMITTED
                 else
                    echo " $myname: Failed for Get for AGEPS, Aborting ... "
@@ -337,6 +356,7 @@
                    exit(1)
                 endif
         endif
+      endif
      endif
 
 #    Create RC file with files required to run ensemble analysis/ob-impact
@@ -371,9 +391,9 @@
 # ---------------------------------
   if( $RUN_AENSFCST || $DO_ATM_ENS ) then
       # RT: I don't like this way of determining the dimension, but so be it for now
-      if ( -e mem001/$EXPID.bkg.eta.${nymdb}_${hhb}z.$NCSUFFIX ) then
+      if ( -e mem001/$EXPID.bkg.eta.${nymdb}_${hhb}00z.$NCSUFFIX ) then
          zeit_ci.x gcm_ens
-         set ens_mres  = `getgfiodim.x mem001/$EXPID.bkg.eta.${nymdb}_${hhb}z.$NCSUFFIX`
+         set ens_mres  = `getgfiodim.x mem001/$EXPID.bkg.eta.${nymdb}_${hhb}00z.$NCSUFFIX`
          set ens_nlons = $ens_mres[1]
          set ens_nlats = $ens_mres[2]
          @ tfcst_hh  = 2 * $TIMEINC / 60
@@ -384,7 +404,7 @@
          endif
          zeit_co.x gcm_ens
       else
-         echo "cannot find $ATMENSLOC/atmens/ensmean/$EXPID.bkg.eta.${nymdb}_${hhb}z.$NCSUFFIX "
+         echo "cannot find $ATMENSLOC/ensmean/$EXPID.bkg.eta.${nymdb}_${hhb}00z.$NCSUFFIX "
          echo "gcm_ensemble unable to run"
          exit(1)
       endif
@@ -446,7 +466,8 @@
 # ---------------------------------------------------------------
   if( $DO_ATM_ENS ) then
     cd $FVWORK/updated_ens/
-    /bin/rm mem0*/*.bin  # _RT: for now, make sure to remove RSTs before setting for archive
+    /bin/rm mem0*/*_import_rst*   # _RT: for now, make sure to remove RSTs before setting for archive
+    /bin/rm mem0*/*_internal_rst* # _RT: for now, make sure to remove RSTs before setting for archive
     if ( -e ensmean ) /bin/mv ensmean ensmeanf
     if ( -e ensrms  ) /bin/mv ensrms  ensrmsf
     cd -
@@ -475,7 +496,7 @@
       /bin/mv running.$lstcases[1] done.$lstcases[1]
       set lstcases = `/bin/ls -1 standalone_ageps.*`
       if (! $status ) then
-         qsub atm_ens_geps.j
+         $ATMENS_BATCHSUB atm_ens_geps.j
       endif
 
   endif

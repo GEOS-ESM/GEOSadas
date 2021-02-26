@@ -391,14 +391,18 @@ endif
 
 # rename output file for successful run
 #--------------------------------------
-if ($?PBS_JOBID) then
+if ($?SLURM_JOBID || $PBS_JOBID) then
     if ($?outfile) then
         set outfile = `echo $outfile | sed -e "s|.FAILED||"`
     else
         set listdir = "$FVHOME/etc/Y$yyyy/M$mm"
         set outfile = "$listdir/$EXPID.plots_transfer.$yyyymm.log.$$.txt";
     endif
-    $PBS_BIN/qalter -o $outfile $PBS_JOBID
+    if ($?SLURM_JOBID) then
+       $PBS_BIN/qalter -o $outfile $SLURM_JOBID
+    else
+       $PBS_BIN/qalter -o $outfile $PBS_JOBID
+    endif
 endif
 
 unset echo

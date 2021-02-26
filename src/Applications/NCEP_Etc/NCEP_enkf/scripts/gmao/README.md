@@ -1,52 +1,129 @@
-From jet:
---------
- runobs_hybrid.csh  - runs fwrd oper (mult instances of run_gsi_hybrid)
- runobs_enkf.csh    - same (frwd oper)
- run_gsi_hybrid     - runs 1 single observer (and if so, runs min as well)
- run_gfs_new        - runs gfs model
- run_gefs           - runs gfs ensemble
- run_fg_gfs3        - runs multiple instances of model (analog. to runobs_enkf.csh)
- run_fg_gfs
- run_enkf_hybrid1
- run_enkf_gfs       - runs EnKF
- makeenspost.csh
- incdate
- gfsenkf_t190x.csh  - runs the whole thing
- gfsenkf_hybrid.csh
- drive_gfs3
- drive_gfs
+GEOS Ensemble Data Assimilation System
+======================================
 
 Sequence of calls:
 ------------------
-0) gen_ensemble.csh      - generate (fake/initial) ensemble from existing experiment
-   gen_ensrst.csh        - generate initial set of restarts for each member, by linking 
-                           to a fixed set of restarts (when full res. these can be those 
-                           initial rsts under recycle; when dual a set of rsts at proper
-                           resolution must be provided)
-1) setobsvr.csh          - set up observer
-2) obsvr_ensemble.csh    - run observer (GSIsa.x-type)
-3) atmos_enkf.csh        - run EnkF
-4) atmens_recenter.csh   - recenter analysis around central analysis (i.e., hybrid GSI)
-5) atmos_ens2gcm.csh     - convert EnKF output to required IAU/RST files
-   makeiau.csh           - explicit call to makeiau
-6) gcm_ensemble.csh      - run ensemble of GCMs
-7) atmens_arch.csh       - archives ensemble members and stats
+1) setobsvr.csh             - set up observer
+2) obsvr_ensemble.csh       - run observer (GSIsa.x-type)
+3) analyses:
+   3a) atmos_enkf.csh       - run AOD analysis (multiple opts)
+   3b) atmos_enkf.csh       - run EnkF
+4) post_eana                - post-ensemble analysis
+   4a) atmens_stats.csh     - ensemble mean analysis
+   4b) atmens_recenter.csh  - recenter analysis around central analysis (i.e., hybrid GSI)
+5) atmos_ens2gcm.csh        - convert EnKF output to required IAU/RST files
+6) gcm_ensemble.csh         - run ensemble of GCMs
+7) atmens_arch.csh          - archives ensemble members and stats
 
 Auxiliar functions:
 ------------------
 AtmEnsConfig.csh         - env var settings
+
 acquire_atmens.csh       - acquires existing ensemble; used for replay and obs. impact
-atm_ens.j                - job control script
+
+atm_ens.j                - main job control script
+
 atmens_stats.csh         - calculates ensemble statistics (mean/rms); called by ensemble scripts
+
 dry_atm_ens.j            - runs dry-case (no-actual run, just stub)
+
 jobgen.pl                - generates general pbs job script
+
 jobmonitor.csh           - monitor present jobs in pbs
+
+makeiau.csh              - explicit call to makeiau
+
 update_ens.csh           - move ensemble to proper update location
 
-atmos_enkf.nml.tmpl
+Resource files handled in default settings of atmens_setup.pl
+-------------------------------------------------------------
 
-                                                                             status
-First analysis runs:     <ens_bkg>+obs+bkg    -> CentralANA -> inc             *  
+aens_stoch.rc        - settings related to stochastic physics tendencies (SPPT)
+
+AGCM.rc.tmpl         - parameter settings controlling GCM options
+
+AtmEnsConfig.csh     - configuration of EnADAS
+
+atmens_storage.arc   - template names for various output entries
+
+atmos_enkf.nml.tmpl  - namelists parameters for meterology EnKF
+
+CAP.rc.tmpl          - model CAP parameters
+
+dyn_recenter.rc:     - control recentering parameters
+
+* dyn_recenter_l132.rc       - for L132 model w/o SPPT
+
+* dyn_recenter_l132_sppt.rc  - for L132 model w/ SPPT
+
+* dyn_recenter_l72.rc        - for L72 model w/o SPPT
+
+* dyn_recenter_l72_sppt.rc   - for L72 model w/ SPPT
+
+GAAS_GridComp.rc
+
+GEOS_ChemGridComp.rc
+
+GSI_GridComp_ensfinal.rc.tmpl  - final GSI observer (OmA) 
+
+GSI_GridComp.rc.tmpl           - GSI observers (mean and members)
+
+HISTAENS.rc.tmpl               - diagnostic output from model members
+
+mkiau.rc.tmpl                  - IAU generation settings
+
+mp_stats_perts.rc              - settings for program calculating mean NMC perturbations
+
+mp_stats.rc                    - settings for program calculating ensemble mean
+
+nmcperts.rc                    - settings for NMC perturbations
+
+obs1gsi_mean.rc                - GSI namelists for mean observer
+
+obs1gsi_member.rc              - GSI nemalists for member observers
+
+odsstats_ktonly.rc             - list of KTs used to calculate summary of obs residual statitics
+
+post_egcm.rc                   - controls what gets model output ensemble means/spread are calculated for
+
+
+Resource files handling addition (non-default) options
+------------------------------------------------------
+aero_enkf_nml.tmpl   - 
+
+ana_aodmean.rc
+
+ana_aodmember.rc
+
+atmens_berror.rc
+
+atmens_efsens.rc
+
+atmens_efsostorage.arc
+
+atmens_incenergy.rc.tmpl
+
+atmens_rst_regrid.rc
+
+AtmOSEConfig.csh
+
+atmos_enkf_sens.nml.tmpl
+
+central_ana.rc
+
+easyeana.rc
+
+ene_adaptinf.rc
+
+HISTAGEPS.rc.tmpl
+
+HISTAOSE.rc.tmpl
+
+obs_aodmean.rc
+
+obs_aodmember.rc
+
+First analysis runs:      <ens_bkg>+obs+bkg   -> CentralANA -> inc             *  
 Then atmos-model integration can take place as usual:
                           inc + rst           -> GCM        -> bkg/rst         *  
 Concurrently to usual DAS run we have:
@@ -261,4 +338,3 @@ E) Variations on EnGSI:
    The script can then easily take care of linking these vectors to the member 
    directories w/ proper names, so all else would go on merrily.
 
-F) TBD: revisit dealloc in statevec.f90 (EnKF)

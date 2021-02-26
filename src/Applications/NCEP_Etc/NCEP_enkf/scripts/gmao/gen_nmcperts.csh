@@ -6,6 +6,8 @@
 # !REVISION HISTORY:
 #
 #  30Mar2013  Todling   Initial script
+#  13Jun2020  Todling   Update to add rh info to perturbation files
+#                       Mild parallelization.
 #
 #######################################################################
 
@@ -57,7 +59,9 @@ if ( $#argv < 7 ) then
    echo " "
    echo " OPTIONAL ENVIRONMENT VARIABLE"
    echo " "
+   echo "    ATMENSETC      - alternative location for RC nmcperts.rc file"
    echo "    ATMENS_VERBOSE - set verbose on"
+   echo "    GEN_NMCPERTS_NCPUS - allows for mild parallelization"
    echo "    NCSUFFIX       - suffix for SDF files (default: nc4)"
    echo " "
    echo " SEE ALSO"
@@ -65,15 +69,22 @@ if ( $#argv < 7 ) then
    echo " "
    echo " AUTHOR"
    echo "   Ricardo Todling (Ricardo.Todling@nasa.gov), NASA/GMAO "
-   echo "     Last modified: 08Apr2013      by: R. Todling"
+   echo "     Last modified: 13Jun2020      by: R. Todling"
    echo " \\end{verbatim} "
    echo " \\clearpage "
    exit 0
 endif
 
 setenv FAILED 0
-if ( !($?DRYRUN)   ) setenv DRYRUN
 if ( !($?FVROOT)   ) setenv FAILED 1
+
+if ( !($?ATMENSETC)) then
+   setenv ATMENSETC $FVROOT/etc/atmens   
+endif
+if ( !($?GEN_NMCPERTS_NCPUS) ) setenv GEN_NMCPERTS_NCPUS 1
+if ( !($?GEN_NMCPERTS_LOCAL) ) setenv GEN_NMCPERTS_LOCAL 0
+if ( !($?OPTRH)    ) setenv OPTRH 2
+if ( !($?DRYRUN)   ) setenv DRYRUN
 if ( !($?NCSUFFIX) ) setenv NCSUFFIX nc4
 if ( !($?OFFSET_HR) ) setenv OFFSET_HR 3
 
@@ -102,6 +113,7 @@ endif
 set nymd = $nymdb
 set nhms = $nhmsb
 @ ofs_sc = $OFFSET_HR * 3600 # time offset (usually 3-hr) in seconds 
+@ mype = 0
 @ nd = 0
 while ( $nd < $ndays )
   @ nd++
@@ -142,23 +154,42 @@ while ( $nd < $ndays )
 
    # form path of 48/24-hr files
    # ---------------------------
-   set fname48 = $fcstdir/$expid/prog/Y$yyyy51/M$mm51/D$dd51/H$hh51/$expid.prog.eta.${ttag51}+${ttagv}.$NCSUFFIX
-   set fname24 = $fcstdir/$expid/prog/Y$yyyy27/M$mm27/D$dd27/H$hh27/$expid.prog.eta.${ttag27}+${ttagv}.$NCSUFFIX
+   if ($GEN_NMCPERTS_LOCAL) then
+     set fname48 = $fcstdir/$expid.prog.eta.${ttag51}+${ttagv}.$NCSUFFIX
+     set fname24 = $fcstdir/$expid.prog.eta.${ttag27}+${ttagv}.$NCSUFFIX
+   else
+     set fname48 = $fcstdir/$expid/prog/Y$yyyy51/M$mm51/D$dd51/H$hh51/$expid.prog.eta.${ttag51}+${ttagv}.$NCSUFFIX
+     set fname24 = $fcstdir/$expid/prog/Y$yyyy27/M$mm27/D$dd27/H$hh27/$expid.prog.eta.${ttag27}+${ttagv}.$NCSUFFIX
+   endif
 
    if (! -e $fname48 ) then
       echo "${MYNAME}: failed to find 48-hour forecast file at ${ttagv}, $fname48" 
-      exit (1)
+      exit (48)
    endif
    if (! -e $fname24 ) then
       echo "${MYNAME}: failed to find 24-hour forecast file at ${ttagv}, $fname24" 
-      exit (1)
+      exit (24)
+   endif
+
+   if (! $GEN_NMCPERTS_LOCAL ) then
+      $DRYRUN dmget $fname48 $fname24
    endif
 
    if (! -d $workdir ) mkdir -p $workdir
-   $DRYRUN dmget $fname48 $fname24
-   $DRYRUN dyndiff.x -g5 $fname48 $fname24 -o $workdir/$expout.f48m24.eta.${ttagv}.$NCSUFFIX
+   set pertfname = `echorc.x -rc $ATMENSETC/nmcperts.rc -template dummy $nymd ${hh}0000 nmc_perts_fnametmpl`
+   
+   if (! -e $workdir/$expout.f48m24_rh.eta.${ttagv}.$NCSUFFIX ) then
+      $DRYRUN dyndiff.x -g5 $fname48 $fname24 -addrh -$OPTRH -o $workdir/$expout.f48m24_rh.eta.${ttagv}.$NCSUFFIX &
+      if ( $mype < $GEN_NMCPERTS_NCPUS ) then
+         @ mype++
+      else
+        wait
+        @ mype = 0
+      endif
+   endif
 
    set newdate = `tick $nymd $nhms $hr24_sc`
    set nymd = $newdate[1]
    set nhms = $newdate[2]
 end # <ndays>
+wait

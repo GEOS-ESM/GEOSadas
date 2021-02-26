@@ -6,6 +6,7 @@ subroutine m_calap(grd,itype)
   use specgrid,   only: jcap,enn1,nc,ncd2,factvml,factsml
   use specgrid,   only: sptez_s,load_grid,fill_ns
   use specgrid,   only: init_spec_grid,destroy_spec_grid
+  use specgrid,   only: init_spec_vars,destroy_spec_vars
   use specgrid,   only: imax,jmax
 
   use m_llInterp, only : llInterp
@@ -23,36 +24,37 @@ subroutine m_calap(grd,itype)
   real(fp_kind),allocatable,dimension(:) :: wrkspec
   real(fp_kind),allocatable,dimension(:,:) :: grid
   real(fp_kind),allocatable,dimension(:,:) :: grds
-  real(double),allocatable,dimension(:):: tlats
   real(double),allocatable,dimension(:,:) :: grdd
   real(double),allocatable,dimension(:,:) :: grdg
   type(llInterp) :: obll
 
-  allocate ( wrkspec(nc) ) 
 
+  call init_spec_vars(jcap)
   call init_spec_grid(nGlat,nGlon,.true.)
-  allocate ( tlats(nGlat) )
-  allocate ( grds(nGlat, nGlon) )
-  allocate ( grid (imax, jmax) )
 
-!  tlats = glats * 180.0 / pi
+! interpolate to gaussian grid
   call llInterp_init(obll,nlon,nlat,nGlon,nGlat)
-  deallocate ( tlats )
-
+  allocate( grds(nGlat,nGlon))
+  allocate( grid(imax, jmax) )
   allocate( grdd(nlon, nlat) )
-  allocate( grdg(nGlon,nGlat) )
+  allocate( grdg(nGlon,nGlat))
 
   call swapij2_(grd,grdd,nlat,nlon)
   call llInterp_atog(obll,grdd,grdg, vector=.false.)
   call swapij2d_(grdg,grds,nGlat,nGlon)
 
+  deallocate (grdg)
+  deallocate (grdd)
   call llInterp_clean(obll)
-  deallocate (grdd, grdg )
 
+! spectrally decompose
   call load_grid(grds,nGlat,nGlon,grid)
+  deallocate(grds)
+  allocate ( wrkspec(nc) ) 
   call sptez_s(wrkspec,grid,-1)
-  deallocate(grid,grds)
-    
+  deallocate(grid)
+
+! filter out
   if(itype==1)then
     do i=1,ncd2
       i2=2*i; i2m1=i2-1
@@ -68,20 +70,20 @@ subroutine m_calap(grd,itype)
   endif
 
   call destroy_spec_grid
+  call destroy_spec_vars
 
+! reconstruct field
+  call init_spec_vars(jcap)
   call init_spec_grid(nlat,nlon,lgaus)
-  allocate ( grds (nlat,nlon) )
-  allocate ( grid (imax, jmax) )
+  allocate ( grid(imax,jmax) )
 
   call sptez_s(wrkspec,grid,1)
-  call fill_ns(grid,nlat,nlon,grds)
-  grd = grds  
+  call fill_ns(grid,nlat,nlon,grd)
 
-  deallocate ( grds )
   deallocate ( grid )
   deallocate ( wrkspec )
-
   call destroy_spec_grid
+  call destroy_spec_vars
 
   return
 

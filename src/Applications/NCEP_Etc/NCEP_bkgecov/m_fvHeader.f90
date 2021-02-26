@@ -2,8 +2,7 @@ module m_fvHeader
 
   use type_kinds, only: double
   use variables, only : filename
-  use variables, only : nlatfv,nlonfv
-  use variables, only : latfv,lonfv
+  use m_die, only: die
 
   implicit none
   private ! except
@@ -29,6 +28,7 @@ contains
   character(len=nch)              :: title, source, contact, levunits
   character(len=nch), allocatable :: vname(:), vtitle(:), vunits(:)
                                                                                 
+  character(len=*),parameter :: myname_=myname//':read_'
   integer :: ierror
   integer :: fid, err, ngatts, timinc
   integer :: im, jm, km, lm, nvars
@@ -74,22 +74,6 @@ contains
       call mpi_finalize(ierror)
       stop     
     end if
-
-    if(nlatfv .ne. jm .or. nlonfv .ne. im) then
-      write(6,*)'STOP: nlatfv .ne. jm .or. nlonfv .ne. im'
-      write(6,*)'im= ',im,' jm=',jm
-      call clean_()
-      call mpi_finalize(ierror)
-    else
-      if(allocated(lonfv).and.allocated(latfv)) then
-         lonfv=lon
-         latfv=lat
-      else
-         write(6,*)'Fishy ... lonfv/lavfv not alloc, abort'
-         call clean_()
-         call mpi_finalize(ierror)
-      endif
-    endif
 
     if(loop == 1 .and. mype == 0) then
       write(6,*)'nlat_fv= ',jm,' nlon_fv= ',im,' km_fv= ',km
