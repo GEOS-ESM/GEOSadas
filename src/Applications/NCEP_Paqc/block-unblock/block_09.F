@@ -25,6 +25,7 @@ C                          'crbmg' is non-zero, use that (last one) as
 C                           Fortran exit code.
 C 2016-10-17  Sienkiewicz  Bump up size of maximum bufr record to match bufrlib
 C                          value.
+C 2019-10-08  Sienkiewicz  Change to use BUFRLIB module to get max bufr record
 C
 C     Error codes from 'crbmg':
 C                  1 = overflow of BMG array
@@ -53,10 +54,12 @@ C$$$
 
       program cwordsh
 
+      use modv_mxmsgl
+
       implicit NONE
 
-      integer,parameter :: mxbufr=600000      ! bufrlib variable: MXMSGL
-      integer,parameter :: mxbufrd4=mxbufr/4
+!     integer,parameter :: mxbufr=600000      ! bufrlib variable: MXMSGL
+!     integer,parameter :: mxbufrd4=mxbufr/4
 
       character*256 argv0
       integer nargs, iargc
@@ -65,8 +68,8 @@ C$$$
 
       character(len=256) bfile,ufile
       character(len=8)  cword
-      character(len=1)  bufr(mxbufr)
-      integer    mbay(mxbufrd4)
+      character(len=1)  bufr(mxmsgl)
+      integer    mbay(mxmsgld4)
       equivalence  (bufr(1),mbay(1))
 
       integer nbyt, npbyt, ntbyt
@@ -112,14 +115,14 @@ c     Open the input and output files.
 
 c     Read the next message from the input file.
 
-      call crbmg(bufr,mxbufr,nbyt,ierr)
+      call crbmg(bufr,mxmsgl,nbyt,ierr)
       do while(ierr.ge.0)
         if(ierr.eq.0) then
 
 c         Pad the end of the message with zeroed-out bytes up to the
 c         next 8-byte boundary.
 
-          call padmsg(mbay,mxbufrd4,npbyt)
+          call padmsg(mbay,mxmsgld4,npbyt)
           ntbyt = nbyt + npbyt
 
 c         Write the message plus padding to the output file...
@@ -141,7 +144,7 @@ c           using a C write.
      .           '; message not written to output'
           iersv = ierr
         endif
-        call crbmg(bufr,mxbufr,nbyt,ierr)
+        call crbmg(bufr,mxmsgl,nbyt,ierr)
       enddo
 
 c     Close the input and output files.
