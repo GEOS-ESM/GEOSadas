@@ -9,8 +9,10 @@
 
    program gsi
 
+   use gsi_fixture, only: my_fixture_config => fixture_config
+
    use gsimod, only: gsimain_initialize,gsimain_run,gsimain_finalize
-   use gsi_4dvar, only: l4dvar,idmodel
+   use gsi_4dvar, only: l4dvar
    use gsi_4dcouplermod, only: gsi_4dcoupler_init_traj
    use gsi_4dcouplermod, only: gsi_4dcoupler_final_traj
    use timermod, only: timer_pri
@@ -89,7 +91,6 @@
 !   2006-01-10  treadon - move deallocate array calls from gsisub to gsimain
 !   2006-01-27  guo     - add namelist to handle gmao grid
 !   2006-02-03  derber  - modify for new obs control and obs count
-!   2006-02-27  todling - introduced ndatmax (set in obsmod)
 !   2006-03-01  eliu    - add logical variable gmao_rtm to the namelist to handle gmao rtm
 !   2006-03-21  treadon - modify optional perturbation to observation
 !   2006-04-06  middlecoff - added three exit states
@@ -107,7 +108,6 @@
 !   2006-10-25  sienkiewicz - add blacklist flag to namelist
 !   2006-11-30  todling - add fpsproj parameter to bkgerr namelist
 !   2007-03-12       su - add perturb_obs,perturb_fact,c_varqc
-!   2007-03-20  rancic  - incorporate foto
 !   2007-04-10  todling - split following C.Cruz and da Silva's modification to ESMF
 !   2007-04-13  tremolet - add error code 100
 !   2007-06-08  kleist/treadon - add init_directories
@@ -124,6 +124,13 @@
 !   2011-03-14  guo     - Moved gsi_4dcoupler calls into here, to split
 !			  gsi_4dcoupler_init_traj() from gsimain_initialize(),
 !			  and gsi_4dcoupler_final_traj() from gsimain_finalize(),
+!   2011-08-01  lueken  - replaced F90 with f90 (no machine logic)
+!   2013-07-02  parrish - remove error message 328 - tlnmc_type > 2 not allowed
+!   2018-02-15  wu      - add fv3_regional
+!   2017-11-29  apodaca - add information, source codes, and exit states
+!                         related to the GOES/GLM lightnig assimilation
+!   2019-07-09  todling - add initialization of abstract layer defining use of GFS ensemble
+!   2019-08-04  guo     - moved ensemble object configuration into module gsi_fixture.
 !
 ! usage:
 !   input files:
@@ -137,6 +144,7 @@
 !     satbias_angle - satellite angle dependent file
 !     satbias_in    - satellite bias correction coefficient file
 !     satinfo       - satellite channel info file
+!     lightinfo     - lightning flash rate observation info file
 !     sfcf**        - background surface files (typically sfcf03,sfcf06 and sfcf09)
 !     sigf**        - background forecast files (typically sigf03,sigf06 and sigf09)
 !     spectral_coefficients       - radiative transfer spectral coefficient file
@@ -175,26 +183,26 @@
 !         fill_mass_grid2, fill_nmm_grid2, fpvsx_ad, gengrid_vars, genqsat,
 !         glbsoi, grdcrd, grdsphdp, grid2sub, gridmod, gscond_ad,
 !         gsimain, gsisub, guess_grids, half_nmm_grid2, hopers, iceem_amsu,
-!         inguesfc, inisph, init_commvars, intall, intall_qc, intdw, intlimq,
+!         inguesfc, inisph, intall, intall_qc, intdw, intlight, intlimq,
 !         intoz, intpcp, intps, intpw, intq, intrad, intref, intbend, intrp2a, intrp3,
-!         intrp3oz, intrppx, intrw, intspd, intsrw, intsst, intt, intw, jfunc,
-!         kinds, landem, locatelat_reg, mpimod, nlmsas_ad, obs_para, obsmod,
-!         omegas_ad, oneobmod, ozinfo, pcgsoi, pcpinfo, polcarf, precpd_ad,
-!         prewgt, prewgt_reg, psichi2uv_reg, psichi2uvt_reg,
+!         intrp3oz, intrppx, intrw, intspd, intsst, intt, intw, jfunc,
+!         kinds, landem, lightbias, lightinfo, locatelat_reg, mpimod, nlmsas_ad, 
+!         obs_para, obsmod, omegas_ad, oneobmod, ozinfo, pcgsoi, pcpinfo, polcarf, 
+!         precpd_ad, prewgt, prewgt_reg, psichi2uv_reg, psichi2uvt_reg,
 !         qcmod, rad_tran_k, radinfo, rdgesig, rdgstat_reg, rdsfull,
 !         read_airs, read_avhrr_navy, read_bufrtovs, read_files, read_goesimg,
-!         read_goesndr, read_gps_ref, read_guess, read_ieeetovs, read_lidar,
-!         read_obs, read_ozone, read_pcp, read_prepbufr, read_radar, 
+!         read_goesglm, read_goesndr, read_gps_ref, read_guess, read_ieeetovs, 
+!         read_lidar, read_obs, read_ozone, read_pcp, read_prepbufr, read_radar, 
 !         read_superwinds, read_wrf_mass_files, read_wrf_mass_guess, 
 !         read_wrf_nmm_files, read_wrf_nmm_guess, rfdpar, rsearch, satthin,
 !         setupdw, setupoz, setuppcp, setupps, setuppw, setupq, setuprad,
-!         setupref, setupbend, setuprhsall, setuprw, setupspd, setupsrw, setupsst,
+!         setupref, setupbend, setuplight, setuprhsall, setuprw, setupspd, setupsst,
 !         setupt, setupw, simpin1, simpin1_init, smooth121, smoothrf,
 !         smoothwwrf, smoothzrf, snwem_amsu, specmod, 
-!         sst_retrieval, statsconv, statsoz, statspcp, statsrad, stop2, stpbend,
-!         stpcalc, stpcalc_qc, stpdw, stplimq, stpoz, stppcp, stpps, stppw,
-!         stpq, stprad, stpref, stprw, stpspd, stpsrw, stpsst, stpt, stpw,
-!         stvp2uv, stvp2uv_reg, sub2grid, tbalance, tintrp2a, tintrp3,
+!         sst_retrieval, statsconv, statslight, statsoz, statspcp, statsrad, stop2, stpbend,
+!         stpcalc, stpcalc_qc, stpdw, stplight, stplimq, stpoz, stppcp, stpps, stppw,
+!         stpq, stprad, stpref, stprw, stpspd, stpsst, stpt, stpw,
+!         stvp2uv, stvp2uv_reg, sub2grid, sumslightbias, tbalance, tintrp2a, tintrp3,
 !         tpause, tpause_t, transform, tstvp2uv, tstvp2uv_reg, unfill_mass_grid2,
 !         unfill_nmm_grid2, unhalf_nmm_grid2, update_ggrid, wrf_binary_interface,
 !         wrf_netcdf_interface, write_all, wrsfca, wrsiga, wrwrfmassa, wrwrfnmma,
@@ -242,6 +250,7 @@
 !          =  51 - invalid pflag (convthin:make3grids)
 !          =  54 - data handling mix up(setuprhsall)
 !          =  55 - NOBS > NSDATA (setuprhsall-tran)
+!          =  56 - iobs > maxobs (read_amsr2)
 !          =  59 - problems reading sst analysis (rdgrbsst)
 !          =  60 - inconsistent dimensions (rdgrbsst)
 !          =  61 - odd number of longitudes (inisph)
@@ -306,7 +315,7 @@
 !          = 124 - enorm_state: error in ilat
 !          = 125 - evaljo: obscounts not allocated
 !          = 126 - check_bks: troubled vertical coord system
-!          = 127 - 
+!          = 127 -
 !          = 128 - 
 !          = 129 - 
 !          = 130 - 
@@ -314,7 +323,7 @@
 !          = 132 - gsi_4dvar: Error in observation binning
 !          = 133 - gsi_4dvar: Error in sub-windows definition
 !          = 134 - setup_4dvar: unable to fullfil request for increment output
-!          = 135 - setup_4dvar: lwrtinc l4dvar inconsistent
+!          = 135 - setup_4dvar: iwrtinc or lwrite4danl inconsistent
 !          = 136 - time_4dvar: minutes should be 0
 !          = 137 - gsimod: adjoint computation requires contrad
 !          = 138 - setup_congrad: kamxit>maxiter
@@ -325,7 +334,7 @@
 !          = 143 - m_stats: MPI_allreduce(dot-sum)
 !          = 144 - m_stats: MPI_allreduce(min-max)
 !          = 145 - m_stats: MPI_allreduce(dim)
-!          = 146 - model2control: assumes lsqrtb
+!          = 146 - control2model_ad: assumes lsqrtb
 !          = 147 - model_tl: error nstep
 !          = 148 - model_tl: error nfrctl
 !          = 149 - model_tl: error nfrobs
@@ -472,9 +481,6 @@
 !          = 289 - setupspd: failure to allocate obsdiags
 !          = 290 - setupspd: failure to allocate obsdiags
 !          = 291 - setupspd: index error
-!          = 292 - setupsrw: failure to allocate obsdiags
-!          = 293 - setupsrw: failure to allocate obsdiags
-!          = 294 - setupsrw: index error
 !          = 295 - setupsst: failure to allocate obsdiags
 !          = 296 - setupsst: failure to allocate obsdiags
 !          = 297 - setupsst: index error
@@ -491,10 +497,9 @@
 !          = 308 - sqrtmin: congrad requires ltlint
 !          = 309 - sqrtmin: congrad requires ltlint
 !          = 310 - sqrtmin: error estimated gradient
-!          = 311 - state2control: not for sqrt(B)
+!          = 311 - control2state_ad: not for sqrt(B)
 !          = 312 - allocate_state: state already allocated
 !          = 313 - allocate_state:  error length
-!          = 314 - stpspd:ltlint & foto not compatible at this time
 !          = 315 - test_obsens: only for validation
 !          = 316 - write_obsdiags: error open
 !          = 317 - bkerror: not for use with lsqrtb
@@ -508,7 +513,7 @@
 !          = 325 - setup_precond: r_kind is neither default real nor double precision
 !          = 326 - setup_precond:  SSYEV/DSYEV returned non-zero return code
 !          = 327 - PRECOND: invalid value for kmat
-!          = 328 - jcstrong_option > 2 not allowed except for regional=.true.
+!          = 328 -
 !          = 329 - problem with logicals or collective obs selection info file
 !          = 330 - grid --> spectral transform not safe for sptranf_s,v_b
 !          = 331 - trouble writing analysis errors
@@ -516,6 +521,16 @@
 !          = 333 - mismatch between variable info file and background error fixed file
 !          = 334 - newpc4pred: not for use with lsqrtb
 !          = 335 - error reading radiance diagnostic file
+!          = 336 - invalid namlist setting for nhsrf
+!          = 337 - inconsitent tlnmc namelist settings
+!          = 338 - error reading MLS vertical levels from MLS bufr 
+!          = 339 - error:more than one MLS  data type not allowed
+!          = 340 - error reading aircraft temperature bias file
+!          = 341 - aircraft tail number exceeds maximum
+!          = 342 - setuplight: failure to allocate obsdiags
+!          = 343 - setuplight: failure to allocate obsdiags
+!          = 344 - setuplight: index error
+!          = 899 - foto no longer available
 !
 !
 ! remarks: resolution, unit numbers and several constants are
@@ -565,6 +580,7 @@
 !      new regional model added:
 !
 !             nems_nmmb_regional = .true.  input is from NEMS NMMB model
+!             fv3_regional = .true.  input is from fv3 model
 !             cmaq_regional = .true.  input is from CMAQ model
 !
 !     For a regional run, several additional namelist parameters must be specified:
@@ -601,23 +617,28 @@
 
    call gsimain_initialize
 
+   call my_fixture_config()     ! Choose configurable extensions for a
+                                ! particular system fixture.  Note a user
+                                ! defined gsi_fixture implementation is uniquely
+                                ! selected in CMakeLists.txt at build-time.
+
 ! Initialize atmospheric AD and TL model trajectory
 !  if(l4dvar) then
-!    call gsi_4dcoupler_init_traj(idmodel,rc=ier)
-!    	if(ier/=0) call die(myname,'gsi_4dcoupler_init_traj(), rc =',ier)
+!     call gsi_4dcoupler_init_traj(idmodel,rc=ier)
+!     if(ier/=0) call die(myname,'gsi_4dcoupler_init_traj(), rc =',ier)
 !  endif
 
    call gsimain_run(init_pass=.true.,last_pass=.true.)
 
 ! Finalize atmospheric AD and TL model trajectory
    if(l4dvar) then
-     call gsi_4dcoupler_final_traj(rc=ier)
-     	if(ier/=0) call die(myname,'gsi_4dcoupler_final_traj(), rc =',ier)
+      call gsi_4dcoupler_final_traj(rc=ier)
+      if(ier/=0) call die(myname,'gsi_4dcoupler_final_traj(), rc =',ier)
    endif
 
-   call gsimain_finalize
-
    call timer_pri(6)
+
+   call gsimain_finalize
 
    end program gsi
 

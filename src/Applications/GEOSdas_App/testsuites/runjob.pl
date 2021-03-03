@@ -393,6 +393,7 @@ sub getRawInputs {
     open INPUT, "< $input" or die ">> Error << opening $input: $!";
     while (<INPUT>) {
         chomp; s/^\s+|\s+$//g;
+        $_ = envsubst($_);
 
         # get heading info
         #-----------------
@@ -458,6 +459,35 @@ sub getRawInputs {
     # save output filename in global hash
     #------------------------------------
     $rawInFile{$key} = $rawinput;
+}
+
+#=======================================================================
+# name - envsubst
+# purpose - replace environment variables in a string with their values
+#=======================================================================
+sub envsubst {
+    my ($string, @envVarList, $var);
+    $string = shift @_;
+
+    # list of environment variables to substitute
+    #--------------------------------------------
+    @envVarList = (qw/USER HOME ARCHIVE/);
+
+    foreach $var (@envVarList) {
+
+        # substitute for format $variable
+        #--------------------------------
+        if ($string =~ m/(\$$var)/) {
+            $string =~ s/\$$var/$ENV{$var}/g if $ENV{$var};
+        }
+
+        # substitute for format ${variable}
+        #----------------------------------
+        if ($string =~ m/(\${$var})/) {
+            $string =~ s/\${$var}/$ENV{$var}/g if $ENV{$var};
+        }
+    }
+    return $string;
 }
 
 #=======================================================================
@@ -874,7 +904,7 @@ sub run_fvsetup {
     else          { $output = ">     $fvsuLOG" }
 
     $cmd = "$fvsetup < $rawinput $output";
-    $cmd = "($cmd) 2> $fvsuERR" unless $verbose;
+    $cmd = "($cmd) 2> $fvsuERR" unless $debug or $verbose;
     print "\n$cmd\n\n" if $verbose;
 
     # run fvsetup
@@ -946,7 +976,7 @@ sub run_fvsetup {
 
 #=======================================================================
 # name - submit_job
-# purpose - submit job to queue with system qsub command
+# purpose - submit job to queue with system sbatch command
 #=======================================================================
 sub submit_job {
     use Cwd;
@@ -962,7 +992,7 @@ sub submit_job {
     return unless yes($ans);
 
     my_chdir("$fvhome{$key}/run");
-    my_system("qsub $jobn");
+    my_system("sbatch $jobn");
     my_chdir($here);
     pause() unless $noloop;
 }

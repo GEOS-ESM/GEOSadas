@@ -13,7 +13,6 @@ use File::Basename;      # for basename(), dirname()
 use File::Path;          # for mkpath()
 use File::Copy "cp";     # for cp()
 use Getopt::Long;        # load module with GetOptions function
-use Shell qw(cat rm);    # cat and rm commands
 use Time::Local;         # time functions
 use FindBin;             # so we can find where this script resides
 
@@ -155,12 +154,12 @@ sub gocart4merra2 {
 
   rename("$filename","$filename.original");
 
-  if ( -e "xtmp"   ) {rm("xtmp")};
-  if ( -e "ytmp"   ) {rm("ytmp")};
-  if ( -e "xmerra" ) {rm("xmerra")};
+  if ( -e "xtmp"   ) {unlink("xtmp")};
+  if ( -e "ytmp"   ) {unlink("ytmp")};
+  if ( -e "xmerra" ) {unlink("xmerra")};
 
   $merra = (`grep $token ${filename}.original > xmerra`);
-  $merra = (`grep MERRA2 xmerra > ytmp`); rm("xmerra");
+  $merra = (`grep MERRA2 xmerra > ytmp`); unlink("xmerra");
   if ( -z "ytmp" ) {
      cp("$filename.original","$filename");
      print "\n nothing done with file $filename \n";
@@ -175,9 +174,9 @@ sub gocart4merra2 {
   system($cmd);
   print "\n done with file $filename \n";
 
-  if ( -e "xtmp"   ) {rm("xtmp")};
-  if ( -e "ytmp"   ) {rm("ytmp")};
-  if ( -e "xmerra" ) {rm("xmerra")};
+  if ( -e "xtmp"   ) {unlink("xtmp")};
+  if ( -e "ytmp"   ) {unlink("ytmp")};
+  if ( -e "xmerra" ) {unlink("xmerra")};
 }
 #......................................................................
 sub ed_gsi_rc {

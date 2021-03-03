@@ -11,7 +11,7 @@ use   Time::Local;
 use Getopt::Std;
 use   File::Basename;
 use   Data::Dumper;
-use Shell qw(cp);
+use File::Copy "cp";     # for cp()
 use Cwd 'realpath';
 
 # Initialize
@@ -89,6 +89,23 @@ DATE:  for $dtg ( @DTG ) {
         }
       }
 
+#     Create Larry DDFs
+#     ----------------------
+      elsif ( $opt_L ) {
+
+         # LOOP over collections
+         my $nCollections = @COLLECTIONS;
+         for (my $iCollection=0; $iCollection<$nCollections; $iCollection++) {
+            print "collection: $COLLECTIONS[$iCollection]\n";
+            $FTYPES = get_ftypes("$coll_dirs[$iCollection]",$yyyy,$mm,$dd,$hh);
+            for $ftype ( @{$FTYPES} ) {
+               $rc = create_DDF ( "$ddir",$ftype,"$coll_dirs[$iCollection]",
+                  $yyyy,$mm,$dd,$hh );
+               die "cannot create DDF for file type $ftype " if ( $rc );
+            } # ftype
+         }
+      }
+
 #     Create Forecast DDFs
 #     --------------------
       else {
@@ -142,7 +159,7 @@ sub Initialize {
 
 # Parse cmd line args
 # -------------------
-  getopts('cNMAahvVd:p:w:s:x:F:E:X:T:');
+  getopts('cLNMAahvVd:p:w:s:x:F:E:X:T:');
   my $argc = @ARGV;
   usage() if ( $opt_h || $argc < 1 );
 
@@ -165,7 +182,7 @@ sub Initialize {
 
   unless ( $Style = $opt_s ) {
       $Style = "by_ftype";
-      $Style = "flat" if ( $opt_A or $opt_N );
+      $Style = "flat" if ( $opt_A or $opt_N or $opt_L );
   }
 
 # For nature run, create list of collections
@@ -183,6 +200,9 @@ sub Initialize {
       # 0.5000_deg/tavg
       my @tmp_coll_dirs = split(" ", `/bin/ls -1d $expdir/DATA/0.5000_deg/tavg/*mo_*`);
       push(@coll_dirs, @tmp_coll_dirs);
+      # 0.5000_deg/tdav
+      my @tmp_coll_dirs = split(" ", `/bin/ls -1d $expdir/DATA/0.5000_deg/tdav/*mo_*`);
+      push(@coll_dirs, @tmp_coll_dirs);
       # 0.0625_deg/inst
       my @tmp_coll_dirs = split(" ", `/bin/ls -1d $expdir/DATA/0.0625_deg/inst/*mo_*`);
       push(@coll_dirs, @tmp_coll_dirs);
@@ -196,6 +216,9 @@ sub Initialize {
       push(@coll_dirs, @tmp_coll_dirs);
       # 0.5000_deg/tavg
       my @tmp_coll_dirs = split(" ", `/bin/ls -1d $expdir/DATA/0.5000_deg/tavg/* | grep -v "mo_"`);
+      push(@coll_dirs, @tmp_coll_dirs);
+      # 0.5000_deg/tdav
+      my @tmp_coll_dirs = split(" ", `/bin/ls -1d $expdir/DATA/0.5000_deg/tdav/* | grep -v "mo_"`);
       push(@coll_dirs, @tmp_coll_dirs);
       # 0.0625_deg/inst
       my @tmp_coll_dirs = split(" ", `/bin/ls -1d $expdir/DATA/0.0625_deg/inst/* | grep -v "mo_"`);
@@ -216,6 +239,27 @@ sub Initialize {
     print "collections: @COLLECTIONS\n";
   }
 
+# For Larry Experiments, create list of collections
+# -------------------------------------------------
+  if ($opt_L){
+
+    @coll_dirs = ();
+    @COLLECTIONS = ();
+
+    my @tmp_coll_dirs = split(" ", `/bin/ls -1d $expdir/holding/*`);
+    push(@coll_dirs, @tmp_coll_dirs);
+
+    my $base;
+    chomp(@coll_dirs);
+    for $dir ( @coll_dirs ) {
+      $base = `basename $dir`;
+      $base =~ s/\n//g;
+      push(@COLLECTIONS, $base);
+    }
+
+    print "collections: @COLLECTIONS\n";
+  }
+
 # Hardwired titles
 # ----------------
   set_Titles();
@@ -224,7 +268,7 @@ sub Initialize {
 
 # Some options do not make sense in analysis/nature run mode
 # ----------------------------------------------------------
-  if ( $opt_A or $opt_N ) {
+  if ( $opt_A or $opt_N or $opt_L ) {
        $opt_a = undef;
        if ( "$yyyy" eq "latest" ) {
              $argc = 1;
@@ -261,6 +305,8 @@ sub Initialize {
 	   @DTG = find_DTGS ( "$expdir/das", "first" );
       } elsif ( $opt_N ) {
 	   @DTG = find_DTGS ( "$coll_dirs[0]", "first");
+      } elsif ( $opt_L ) {
+	   @DTG = find_DTGS ( "$coll_dirs[0]", "first");
       } else {
 	   usage();    # error in forecast mode
       }
@@ -293,6 +339,8 @@ sub find_DTGS {
       } else{
 	$alldirs = `/bin/ls -1d $rootdir/Y????/M??/D??`;
       }
+    } elsif ( $opt_L ) {
+      $alldirs = `/bin/ls -1d $rootdir/Y????/M??/D??`;
     } else {
       $alldirs = `/bin/ls -1d $rootdir/Y????/M??/D??/H??`;
     }
@@ -347,6 +395,11 @@ sub get_ftypes {
       } else {
 	$idir = "$rootdir/Y$yyyy/M$mm/D$dd";
       }
+    }
+
+    #mat: Larry is like nature run
+    if ( $opt_L ) {
+        $idir = "$rootdir/Y$yyyy/M$mm/D$dd";
     }
 
     my @files = get_flist("$idir","*.$xpat");
@@ -535,6 +588,8 @@ sub create_DDF {
       } else{
 	print "- Creating Nature Run DDF for file type <$ftype> ..." if ($opt_v);
       }
+    } elsif ($opt_L){
+       print "- Creating Larry Experiment DDF for file type <$ftype> ..." if ($opt_v);
     } else {
       print "- Creating Forecast DDF for file type <$ftype> ... " if ( $opt_v );
     }
@@ -548,6 +603,8 @@ sub create_DDF {
       } else {
 	$idir = "$rootdir/Y????/M??/D??";
       }
+    } elsif ($opt_L){
+         $idir = "$rootdir/Y????/M??/D??";
     } else {
       $idir = "$rootdir/Y$iyyyy/M$imm/D$idd/H$ihh";
     }
@@ -646,6 +703,8 @@ sub create_DDF {
     } else {
         die "cannot template valid time = <$vtime> ";
     }
+    $tnum = int($tnum); # pchakrab: not sure if this is reqd, but doesn't hurt
+
     $template = "$itime+$template" if ( $itime );
 
     #
@@ -695,6 +754,9 @@ sub create_DDF {
         $dset = "$rootdir" . '/Y%y4/M%m2/D%d2' . "/$expid.$ftype.$template.$fex";
 	$kind = "";
       }
+    } elsif ( $opt_L ) {
+        $dset = "$rootdir" . '/Y%y4/M%m2/D%d2' . "/$expid.$ftype.$template.$fex";
+	$kind = "";
     } else  {
       $dset = dirname("$files[0]") . "/$expid.$ftype.$template.$fex";
       $kind = "fcast";
@@ -733,8 +795,8 @@ sub create_DDF {
 	    $ctl = "$dir/$ftype.ctl";
 	}
     } elsif ($ opt_N ) {
-#   Special handling for nature run
-#   -------------------------------
+      #   Special handling for nature run
+      #   -------------------------------
 	my @tmpoutarr = split("/", $rootdir);
 	pop(@tmpoutarr);
 	$tmpout = join("/", @tmpoutarr);
@@ -749,6 +811,11 @@ sub create_DDF {
 	if ( $makectl ) {
 	    $ctl = "$dir/$ftype.ctl";
 	}
+   } elsif ( $opt_L ) {
+       $ddf = "$dir/$ftype";
+       if ( $makectl )  {
+          $ctl = "$dir/$ftype.ctl";
+       }
     } else {
 	$ddf = "$dir/$ftype.$itime";
 	if( $makectl )  {
@@ -798,18 +865,15 @@ EOF
 
     if( $makectl ) {
 	if ( $opt_A ) {
-	    print "- Creating Assimilation CTL for file type <$ftype> ... "
-		if ( $opt_v )	;
+          print "- Creating Assimilation CTL for file type <$ftype> ... " if ( $opt_v )	;
+       } elsif ( $opt_N ) {
+          print "- Creating Nature Run CTL for file type <$ftype> ... " if ( $opt_v )	;
+       } elsif ( $opt_L ) {
+          print "- Creating Larry Run CTL for file type <$ftype> ... " if ( $opt_v )	;
+       } else {
+          print "- Creating Forecast CTL for file type <$ftype> ... " if ( $opt_v )	;
 	}
-	elsif ( $opt_N ) {
-	    print "- Creating Nature Run CTL for file type <$ftype> ... "
-		if ( $opt_v )	;
-	}
-	else {
-	    print "- Creating Forecast CTL for file type <$ftype> ... "
-		if ( $opt_v )	;
-	}
-
+       
 	my $dsetpath = undef;
 	if( $opt_p ) {
 	    $dsetpath = $opt_p ;
@@ -866,7 +930,7 @@ sub parse_dir {
       $mm   = substr($tokens[$n-2],1,2);
       $yyyy = substr($tokens[$n-3],1,4);
     } elsif ($opt_N) {
-      if ($opt_M){
+      if ($opt_M) {
 	$hh   = "00"; # why not?
 	$dd   = "01"; # again, why not?
 	$mm   = substr($tokens[$n-1],1,2);
@@ -877,6 +941,11 @@ sub parse_dir {
 	$mm   = substr($tokens[$n-2],1,2);
 	$yyyy = substr($tokens[$n-3],1,4);
       }
+    } elsif ($opt_L) {
+      $hh   = "00"; # why not?
+      $dd   = substr($tokens[$n-1],1,2);
+      $mm   = substr($tokens[$n-2],1,2);
+      $yyyy = substr($tokens[$n-3],1,4);
     } else {
       $hh   = substr($tokens[$n-1],1,2);
       $dd   = substr($tokens[$n-2],1,2);
@@ -1184,6 +1253,7 @@ DESCRIPTION
 
 OPTIONS
      -A        assimilation mode
+     -L        Larry Takacs experiment mode
      -N        nature run mode [does NOT create montly DSET]
      -M        create monthly DSET [ONLY for nature runs]
      -a        all times starting at yyyy mm dd hh
@@ -1249,6 +1319,9 @@ EXAMPLES
 
     9) For nature run (only monthly dset)
      % g5_ddf.pl -N -M -v -c -d . /path/to/expdir
+
+    10) For runs made with the Larry Takacs script
+     % g5_ddf.pl -L -v -c -d . /path/to/expdir
 
 BUGS
      The time step for each DDF is determined by examining the first and the

@@ -1,13 +1,18 @@
  &NAMSTAT
+!  jcap=42 ,lgaus=.false.,lsmver=.true.,nsig=72,nlat=46,nlon=72,
+!  jcap=84 ,lgaus=.false.,lsmver=.true.,nsig=72,nlat=91,nlon=144,
+!  jcap=142,lgaus=.false.,lsmver=.true.,nsig=72,nlat=181,nlon=288,
+!  jcap=382,lgaus=.false.,lsmver=.true.,nsig=72,nlat=361,nlon=576,
+!  jcap=512,lgaus=.false.,lsmver=.true.,nsig=72,nlat=721,nlon=1152,hrzsfactor=0.6,
    jcap=>>>JCAP<<<,lgaus=.false.,lsmver=.true.,nsig=>>>NSIG<<<,nlat=>>>NLAT<<<,nlon=>>>NLON<<<,
-   nlatfv=>>>NLATFV<<<,nlonfv=>>>NLONFV<<<,maxcases=500,hybrid=.true.,smoothdeg=0.5,
+   maxcases=500,hybrid=.true.,smoothdeg=0.5,
 !  note: biasrm=.false. means do bias correction - go figure!
-   fnm0= 25,vectype=5,biasrm=.false.,laddoz=.false.,
-   hydromet=.true.,
-! The following recovers MERRA version of vertical smoothing
-!  smooth_vert_variances=.true.,
-! The following belongs to MERRA-2 version of this software
-!  LBAL=.true.,
+   fnm0=>>>NMODES<<<,vectype=5,biasrm=.false.,laddoz=.false.,
+   LBAL=.true.,
+   nreaders=8,
+   readperts=.true.,
+!  Debug only:
+!  calchrzscl=.false.,
  /
  &SMOOTHVARS
  /

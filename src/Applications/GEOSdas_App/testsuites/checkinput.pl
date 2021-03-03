@@ -434,6 +434,7 @@ sub getInputs {
             # remove leading and trailing blanks
             #-----------------------------------
             chomp; s/^\s+|\s+$//g;
+            $_ = envsubst($_);
 
             # get heading info
             #-----------------
@@ -503,6 +504,35 @@ sub getInputs {
 }
 
 #=======================================================================
+# name - envsubst
+# purpose - replace environment variables in a string with their values
+#=======================================================================
+sub envsubst {
+    my ($string, @envVarList, $var);
+    $string = shift @_;
+
+    # list of environment variables to substitute
+    #--------------------------------------------
+    @envVarList = (qw/USER HOME ARCHIVE/);
+
+    foreach $var (@envVarList) {
+
+        # substitute for format $variable
+        #--------------------------------
+        if ($string =~ m/(\$$var)/) {
+            $string =~ s/\$$var/$ENV{$var}/g if $ENV{$var};
+        }
+
+        # substitute for format ${variable}
+        #----------------------------------
+        if ($string =~ m/(\${$var})/) {
+            $string =~ s/\${$var}/$ENV{$var}/g if $ENV{$var};
+        }
+    }
+    return $string;
+}
+
+#=======================================================================
 # name - runSetup
 # purpose - run fvsetup to create another .input file
 #
@@ -565,7 +595,8 @@ sub runSetup {
         $flags .=  " -header 'def: $var = $def0{$var}'";
     }
 
-    $cmd  = "($fvsetupScript $flags < $rawInFile $output) 2> $fvsuERR";
+    $cmd = "$fvsetupScript $flags < $rawInFile $output";
+    $cmd = "($cmd) 2> $fvsuERR" unless $debug;
     print "\n  $cmd\n" if $verbose;
 
     $status = system $cmd; print "\n\n";

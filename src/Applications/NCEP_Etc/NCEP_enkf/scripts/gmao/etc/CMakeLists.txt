@@ -5,7 +5,6 @@ set (ALLETC
    ana_aodmean.rc
    ana_aodmember.rc
    atmens_incenergy.rc.tmpl
-   atmens_replay.acq
    atmens_rst_regrid.rc
    atmens_storage.arc
    atmos_enkf.nml.tmpl

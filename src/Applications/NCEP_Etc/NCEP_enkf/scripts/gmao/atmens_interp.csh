@@ -4,7 +4,8 @@
 #
 # !REVISION HISTORY:
 #
-#  05May018  Todling   Initial script
+#  05May2018  Todling   Initial script
+#  21Feb2020  Todling   Allow for high freq bkg (up to 1mn)
 #
 # !TO DO:
 #   1. remove interp of ens mean; replace w/ re-calculation of mean
@@ -92,10 +93,12 @@ set nhms  = $3
 set nlon  = $4
 set nlat  = $5
 set nlev  = $6
-set hh    = `echo $nhms | cut -c1-2`
-set yyyymmddhh = ${nymd}${hh}
 set idir  = $7
 set odir  = $8
+
+set hh    = `echo $nhms | cut -c1-2`
+set hhmn  = `echo $nhms | cut -c1-4`
+set yyyymmddhh = ${nymd}${hh}
 
 setenv MAXJOBS 7
 if ( -d $idir/atmens ) then
@@ -137,13 +140,13 @@ cd    $WORKDIR/interp_ens
 if ( $FROMENS ) then
 
    set ihave_ens_mean = 0
-   if ( -e $ENSWORK/atmens/ensmean/$expid.$ftype.${nymd}_${hh}z.$NCSUFFIX ) then
+   if ( -e $ENSWORK/atmens/ensmean/$expid.$ftype.${nymd}_${hhmn}z.$NCSUFFIX ) then
       set ihave_ens_mean = 1
    endif
 
    # figure out background dimensions
-   if ( -e $ENSWORK/atmens/mem001/$expid.$ftype.${nymd}_${hh}z.$NCSUFFIX ) then
-      set mem001_eta_file = $ENSWORK/atmens/mem001/$expid.$ftype.${nymd}_${hh}z.$NCSUFFIX
+   if ( -e $ENSWORK/atmens/mem001/$expid.$ftype.${nymd}_${hhmn}z.$NCSUFFIX ) then
+      set mem001_eta_file = $ENSWORK/atmens/mem001/$expid.$ftype.${nymd}_${hhmn}z.$NCSUFFIX
       set ens_mres  = `getgfiodim.x $mem001_eta_file`
       set ens_nlons = $ens_mres[1]
       set ens_nlats = $ens_mres[2]
@@ -169,7 +172,7 @@ if ( $FROMENS ) then
       endif
 
    else
-      echo " ${MYNAME}: cannot file ens-mem001 file $expid.$ftype.${nymd}_${hh}z.$NCSUFFIX, aborting ..."
+      echo " ${MYNAME}: cannot file ens-mem001 file $expid.$ftype.${nymd}_${hhmn}z.$NCSUFFIX, aborting ..."
       exit 2
    endif
 

@@ -69,3 +69,7 @@ foreach (target ${this} raobcore.x hradcor.x read_prepbufr.x)
    endforeach ()
 endforeach ()
 
+if (EXTENDED_SOURCE)
+  set_target_properties (${this} PROPERTIES COMPILE_FLAGS ${EXTENDED_SOURCE})
+endif()
+

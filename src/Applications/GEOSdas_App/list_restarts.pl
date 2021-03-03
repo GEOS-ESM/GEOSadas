@@ -21,7 +21,7 @@ my $tempcnt = 0;
 {
     use Manipulate_time "tick";
     my ($pattern, %rstfiles);
-    my ($bymd, $bhms, $bhr, $delta_time);
+    my ($bymd, $bhm, $bhms, $bhr, $delta_time);
     my ($altdir, $label, $last);
     my ($minus3hrs, $tymd, $thms, $thr);
 
@@ -89,6 +89,8 @@ my $tempcnt = 0;
             # get 03/06/09 bkg files
             #-----------------------
             $bhr = substr($bhms, 0, 2);
+            $bhm = substr($bhms, 0, 4);
+
             while (length($label) < 2) { $label = "0".$label }
 
             # bkg
@@ -97,9 +99,17 @@ my $tempcnt = 0;
             foreach (get_filelist($pattern, $rstdir)) { $rstfiles{$_} = 1 }
             foreach (get_filelist($pattern, $altdir)) { $rstfiles{$_} = 1 }
 
+            $pattern = "${expid}.bkg${label}_*.${bymd}_${bhm}z.nc4";
+            foreach (get_filelist($pattern, $rstdir)) { $rstfiles{$_} = 1 }
+            foreach (get_filelist($pattern, $altdir)) { $rstfiles{$_} = 1 }
+
             # cbkg
             #-----
             $pattern = "${expid}.cbkg${label}_*.${bymd}_${bhr}z.nc4";
+            foreach (get_filelist($pattern, $rstdir)) { $rstfiles{$_} = 1 }
+            foreach (get_filelist($pattern, $altdir)) { $rstfiles{$_} = 1 }
+
+            $pattern = "${expid}.cbkg${label}_*.${bymd}_${bhm}z.nc4";
             foreach (get_filelist($pattern, $rstdir)) { $rstfiles{$_} = 1 }
             foreach (get_filelist($pattern, $altdir)) { $rstfiles{$_} = 1 }
 
@@ -110,7 +120,15 @@ my $tempcnt = 0;
                 foreach (get_filelist($pattern, $rstdir)) { $rstfiles{$_} = 1 }
                 foreach (get_filelist($pattern, $altdir)) { $rstfiles{$_} = 1 }
 
+                $pattern = "${expid}.gaas_bkg_*_rst.${bymd}_${bhm}z.nc4";
+                foreach (get_filelist($pattern, $rstdir)) { $rstfiles{$_} = 1 }
+                foreach (get_filelist($pattern, $altdir)) { $rstfiles{$_} = 1 }
+
                 $pattern = "${expid}.*bkg_*_rst.${bymd}_${bhr}z.nc4";
+                foreach (get_filelist($pattern, $rstdir)) { $rstfiles{$_} = 1 }
+                foreach (get_filelist($pattern, $altdir)) { $rstfiles{$_} = 1 }
+
+                $pattern = "${expid}.*bkg_*_rst.${bymd}_${bhm}z.nc4";
                 foreach (get_filelist($pattern, $rstdir)) { $rstfiles{$_} = 1 }
                 foreach (get_filelist($pattern, $altdir)) { $rstfiles{$_} = 1 }
             }

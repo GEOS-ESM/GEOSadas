@@ -2,6 +2,10 @@
 # ------------------------------
 #SBATCH --account=g0613
 #
+#SBATCH --job-name=scheduler
+#SBATCH --output=scheduler.log.o%j
+#SBATCH --time=4:00:00
+#SBATCH --ntasks=1
 #PBS -N scheduler
 #PBS -o scheduler.log.o%j
 #PBS -l select=1:ncpus=1:mpiprocs=1
@@ -22,6 +26,7 @@
   setenv FVWDIR  /discover/nobackup/$user # root location of work directory
   setenv VAROFFSET 180    # abs value of time off from 1st synoptic hour of var window
   setenv JOBMONITOR_MAXSLEEP_MIN 120
+  setenv ATMENS_BATCHSUB "qsub"
 
   set path = ( . $FVHOME/run $FVROOT/bin $path )
 
@@ -44,6 +49,9 @@
   else
      if ( $?SLURM_JOBID ) then
          qalter -N ${JOBGEN_PFXNAME}_escheduler_${JOBGEN_SFXNAME} $SLURM_JOBID
+     else
+         echo "no JOBID found, abort"
+         exit(1)
      endif
   endif
 
@@ -58,4 +66,4 @@
 # re-submit this script
 # ---------------------
   cd $FVHOME/run
-  qsub ${EXPID}_scheduler.j
+  $ATMENS_BATCHSUB ${EXPID}_scheduler.j

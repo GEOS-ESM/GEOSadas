@@ -17,6 +17,7 @@
 #                        eoi0 - arch obs-imp on analysis
 #                        eprg - arch prognostic fields of all members
 #                        erst - arch rst's of all members
+#                        etrj - arch trj's of all members
 #                        evtk - arch vortex tracker information
 #                        eoimp- arch ensemble obs-impact-related output
 #                        fstat- arch forecast statistics
@@ -34,6 +35,9 @@
 #  21Mar2017  Todling   Revisit aerosol-related tar balls
 #  15Apr2017  Todling   RC file passed as argument
 #  15May2017  Todling   Arch dir name also passed as argument
+#  11Feb2020  Todling   Add ENSSILO_KEEP
+#  20Feb2020  Todling   Add ENSARCHJOB_KEEP
+#  21Feb2020  Todling   Allow for high freq bkg (up to 1mn)
 #------------------------------------------------------------------
 
 if ( !($?ATMENS_VERBOSE) ) then
@@ -87,8 +91,10 @@ if ( $#argv < 6 ) then
    echo "                          (Default: arch only central bkg files)"
    echo "    ENSARCH_KEEP      - when set will not remove dir with files for arch"
    echo "    ENSARCH_FIELDS    - components (list separate by comma), e.g.,"
-   echo "                          eana,ebkg,edia,eprg,easm,erst,eoi0,stat,xtra "
+   echo "                          eana,ebkg,edia,eprg,easm,erst,etrj,eoi0,stat,xtra "
    echo "                          (Default: stat)          "
+   echo "    ENSSILO_KEEP      - when set will not remove siloens dir for current date/time"
+   echo "    ENSARCHJOB_KEEP   - will keep cp of archiving script under FVHOME"
    echo "    ENSARCH_WALLCLOCK - location of archive, e.g., /archive/u/$user"
    echo "    NCSUFFIX          - SDF suffix (detault: nc4)"
    echo " "
@@ -113,6 +119,7 @@ set yyyymmddhh = ${nymdb}${hhb}
 
 setenv FAILED 0
 if ( !($?ARCHLOC)       ) setenv FAILED 1
+if ( !($?ATMENS_BATCHSUB) ) setenv FAILED 1
 if ( !($?ATMENS4ARCH)   ) setenv FAILED 1
 if ( !($?ATMENSETC)     ) setenv FAILED 1
 if ( !($?FVHOME)        ) setenv FAILED 1
@@ -125,6 +132,8 @@ if ( !($?ENSARCH_ALLBKG)   ) setenv ENSARCH_ALLBKG 0
 if ( !($?ENSARCH_FIELDS)   ) setenv ENSARCH_FIELDS "stat"
 if ( !($?ENSARCH_WALLCLOCK)) setenv ENSARCH_WALLCLOCK 2:00:00
 if ( !($?ENSARCH_KEEP)     ) setenv ENSARCH_KEEP 0 
+if ( !($?ENSSILO_KEEP)     ) setenv ENSSILO_KEEP 0 
+if ( !($?ENSARCHJOB_KEEP)  ) setenv ENSARCHJOB_KEEP 0 
 
 if ( $FAILED ) then
   env
@@ -169,22 +178,35 @@ end
 # store background members only ...
 set myball = $expid.atmens_ebkg.${nymdb}_${hhb}z
 set syndate = ( `tick $nymdb $nhmsb $offset_sec` )
-set nymds = `echo $syndate[1]`
-set hhs   = `echo $syndate[2] | cut -c1-2`
+set snymd = `echo $syndate[1]`
+set shhmn = `echo $syndate[2] | cut -c1-4`
 set doall = 1
 if ( $doall && (-d $myball) ) then
+   if ( -d mem001 ) then
+      cd mem001
+   else
+      if ( -d $myball/mem001 ) then
+         cd $myball/mem001
+      endif
+   endif
+   if ( $ENSARCH_ALLBKG ) then
+      set lst = `ls *.bkg.eta.*$NCSUFFIX *.bkg.sfc.*$NCSUFFIX *.Bkg.eta.*$NCSUFFIX `
+   else
+      set lst = `ls *.bkg.eta.${snymd}_${shhmn}z.$NCSUFFIX *.bkg.sfc.${snymd}_${shhmn}z.$NCSUFFIX *.Bkg.eta.${snymd}_${shhmn}z.$NCSUFFIX`
+   endif
+   cd -
    @ ic = 0
    while ( $ic < $nmem )
       @ ic++
       set memtag  = `echo $ic |awk '{printf "%03d", $1}'`
       mkdir -p $myball/mem$memtag
       if ( $ENSARCH_ALLBKG ) then
-         foreach type ( "bkg.eta" "bkg.sfc" )
-            /bin/mv mem$memtag/*.${type}.*.$NCSUFFIX $myball/mem$memtag/
+         foreach fn ( $lst )
+            /bin/mv mem$memtag/${fn} $myball/mem$memtag/
          end
       else
-         foreach type ( "bkg.eta.${nymds}_${hhs}z" "bkg.sfc.${nymds}_${hhs}z" )
-            /bin/mv mem$memtag/*.${type}.$NCSUFFIX $myball/mem$memtag/
+         foreach fn ( $lst )
+            /bin/mv mem$memtag/${fn} $myball/mem$memtag/
          end
       endif
    end
@@ -192,8 +214,8 @@ endif
 # store background members only ...
 set myball = $expid.atmens_ecbkg.${nymdb}_${hhb}z
 set syndate = ( `tick $nymdb $nhmsb $offset_sec` )
-set nymds = `echo $syndate[1]`
-set hhs   = `echo $syndate[2] | cut -c1-2`
+set snymd = `echo $syndate[1]`
+set shhmn = `echo $syndate[2] | cut -c1-4`
 set doall = 1
 if ( $doall && (-d $myball) ) then
    @ ic = 0
@@ -206,7 +228,7 @@ if ( $doall && (-d $myball) ) then
             /bin/mv mem$memtag/*.${type}.*.$NCSUFFIX $myball/mem$memtag/
          end
       else
-         foreach type ( "cbkg.eta.${nymds}_${hhs}z" )
+         foreach type ( "cbkg.eta.${snymd}_${shhmn}z" )
             /bin/mv mem$memtag/*.${type}.$NCSUFFIX $myball/mem$memtag/
          end
       endif
@@ -215,8 +237,8 @@ endif
 # store aerosol background fields only ...
 set myball = $expid.atmens_ebaer.${nymdb}_${hhb}z
 set syndate = ( `tick $nymdb $nhmsb $offset_sec` )
-set nymds = `echo $syndate[1]`
-set hhs   = `echo $syndate[2] | cut -c1-2`
+set snymd = `echo $syndate[1]`
+set shh   = `echo $syndate[2] | cut -c1-2`
 set doall = 1
 if ( $doall && (-d $myball) ) then
    @ ic = 0
@@ -229,7 +251,7 @@ if ( $doall && (-d $myball) ) then
             /bin/mv mem$memtag/*.${type}.*.$NCSUFFIX $myball/mem$memtag/
          end
       else
-         foreach type ( "gaas_bkg.sfc.${nymds}_${hhs}z" "abkg.eta.${nymds}_${hhs}z" "aod_f.sfc.${nymds}_${hhs}00z" )
+         foreach type ( "gaas_bkg.sfc.${snymd}_${shh}z" "abkg.eta.${snymd}_${shh}z" "aod_f.sfc.${snymd}_${shh}00z" )
             /bin/mv mem$memtag/*.${type}.$NCSUFFIX $myball/mem$memtag/
          end
       endif
@@ -238,8 +260,8 @@ endif
 # store aerosol analysis fields only ...
 set myball = $expid.atmens_eaaer.${nymdb}_${hhb}z
 set syndate = ( `tick $nymdb $nhmsb $offset_sec` )
-set nymds = `echo $syndate[1]`
-set hhs   = `echo $syndate[2] | cut -c1-2`
+set snymd = `echo $syndate[1]`
+set shh   = `echo $syndate[2] | cut -c1-2`
 set doall = 1
 if ( $doall && (-d $myball) ) then
    @ ic = 0
@@ -252,9 +274,9 @@ if ( $doall && (-d $myball) ) then
             /bin/mv mem$memtag/*.${type}.*.$NCSUFFIX $myball/mem$memtag/
          end
       else
-         foreach type ( "gaas_ana.sfc.${nymds}_${hhs}z" "aana.eta.${nymds}_${hhs}z" "aker.eta.${nymds}_${hhs}z" \
-                        "aod_a.sfc.${nymds}_${hhs}00z" "aod_d.sfc.${nymds}_${hhs}00z" "aod_k.sfc.${nymds}_${hhs}00z" \
-                        "recalc_aod_a.sfc.${nymds}_${hhs}00z")
+         foreach type ( "gaas_ana.sfc.${snymd}_${shh}z" "aana.eta.${snymd}_${shh}z" "aker.eta.${snymd}_${shh}z" \
+                        "aod_a.sfc.${snymd}_${shh}00z" "aod_d.sfc.${snymd}_${shh}00z" "aod_k.sfc.${snymd}_${shh}00z" \
+                        "recalc_aod_a.sfc.${snymd}_${shh}00z")
             /bin/mv mem$memtag/*.${type}.$NCSUFFIX $myball/mem$memtag/
          end
       endif
@@ -263,8 +285,8 @@ endif
 # store asm.eta fields only ...
 set myball = $expid.atmens_easm.${nymdb}_${hhb}z
 set syndate = ( `tick $nymdb $nhmsb $offset_sec` )
-set nymds = `echo $syndate[1]`
-set hhs   = `echo $syndate[2] | cut -c1-2`
+set snymd = `echo $syndate[1]`
+set shh   = `echo $syndate[2] | cut -c1-2`
 set doall = 1
 if ( $doall && (-d $myball) ) then
    @ ic = 0
@@ -280,8 +302,8 @@ endif
 # store prognostic fields only ...
 set myball = $expid.atmens_eprg.${nymdb}_${hhb}z
 set syndate = ( `tick $nymdb $nhmsb $offset_sec` )
-set nymds = `echo $syndate[1]`
-set hhs   = `echo $syndate[2] | cut -c1-2`
+set snymd = `echo $syndate[1]`
+set shh   = `echo $syndate[2] | cut -c1-2`
 set doall = 1
 if ( $doall && (-d $myball) ) then
    @ ic = 0
@@ -297,8 +319,8 @@ endif
 # store vortex tracker results only ...
 set myball = $expid.atmens_evtk.${nymdb}_${hhb}z
 set syndate = ( `tick $nymdb $nhmsb $offset_sec` )
-set nymds = `echo $syndate[1]`
-set hhs   = `echo $syndate[2] | cut -c1-2`
+set snymd = `echo $syndate[1]`
+set shh   = `echo $syndate[2] | cut -c1-2`
 set doall = 1
 if ( $doall && (-d $myball) ) then
    /bin/mv $expid.tcvitals*txt $myball/
@@ -319,8 +341,8 @@ endif
 # store non-inflated analysis members only ...
 set myball = $expid.atmens_eniana.${nymdb}_${hhb}z
 set syndate = ( `tick $nymdb $nhmsb -$offset_sec` )
-set nymds = `echo $syndate[1]`
-set hhs   = `echo $syndate[2] | cut -c1-2`
+set snymd = `echo $syndate[1]`
+set shh   = `echo $syndate[2] | cut -c1-2`
 set doall = 1
 if ( $doall && (-d $myball) ) then
    @ ic = 0
@@ -336,8 +358,8 @@ endif
 # store analysis/increment members only ...
 set myball = $expid.atmens_eana.${nymdb}_${hhb}z
 set syndate = ( `tick $nymdb $nhmsb -$offset_sec` )
-set nymds = `echo $syndate[1]`
-set hhs   = `echo $syndate[2] | cut -c1-2`
+set snymd = `echo $syndate[1]`
+set shhmn = `echo $syndate[2] | cut -c1-4`
 set doall = 1
 if ( $doall && (-d $myball) ) then
    @ ic = 0
@@ -345,12 +367,18 @@ if ( $doall && (-d $myball) ) then
       @ ic++
       set memtag  = `echo $ic |awk '{printf "%03d", $1}'`
       mkdir -p $myball/mem$memtag
-#     foreach type ( "ana.eta.${nymds}_${hhs}z" "inc.eta.${nymds}_${hhs}z" )
+#     foreach type ( "ana.eta.${snymd}_${shhmn}z" "inc.eta.${snymd}_${shhmn}z" )
 #        /bin/mv mem$memtag/*.${type}.$NCSUFFIX $myball/mem$memtag/
       foreach type ( "ana.eta" )
          /bin/mv mem$memtag/*.${type}.*.$NCSUFFIX $myball/mem$memtag/
       end
    end
+endif
+# store trj_lcv files
+set myball = $expid.atmens_etrj.${nymdb}_${hhb}z
+if ( -d $myball ) then
+   mkdir -p $myball
+  /bin/mv enstraj $myball
 endif
 # store obs-imp on analysis ...
 set myball = $expid.atmens_eoi0.${nymdb}_${hhb}z
@@ -447,10 +475,18 @@ endif
 
 set adate =
 
-if ( $ENSARCH_KEEP ) then
-   set xcmd = "echo"
-else
-   set xcmd = "/bin/rm -r"
+set xcmd = "/bin/rm -r $ATMENS4ARCH/$dir4arc $ATMENS4ARCH/siloens/$yyyymmddhh "
+if ( $ENSARCH_KEEP || $ENSSILO_KEEP ) then
+  if ( $ENSARCH_KEEP && $ENSSILO_KEEP ) then
+     set xcmd = "echo $ATMENS4ARCH/$dir4arc $ATMENS4ARCH/siloens/$yyyymmddhh "
+  else 
+     if ( $ENSARCH_KEEP && (! $ENSSILO_KEEP) ) then
+        set xcmd = "/bin/rm -r $ATMENS4ARCH/siloens/$yyyymmddhh"
+     endif
+     if ( (! $ENSARCH_KEEP) && $ENSSILO_KEEP ) then
+        set xcmd = "/bin/rm -r $ATMENS4ARCH/$dir4arc"
+     endif
+  endif
 endif
 
 # Finally generate archiving job script and submit it
@@ -460,8 +496,8 @@ endif
   jobgen.pl \
        -expid $expid         \
        -q datamove           \
-       -xc "$xcmd $ATMENS4ARCH/$dir4arc" \
-       arch_atmens           \
+       -xc "$xcmd "          \
+       arch_atmens_$yyyymmddhh \
        $GID                  \
        $ENSARCH_WALLCLOCK    \
        "fvarchive $adate -r $ARCHLOC -H $FVHOME -A $ATMENS4ARCH/siloens/$yyyymmddhh -a $arcfile " \
@@ -470,8 +506,11 @@ endif
        $ATMENS4ARCH/siloens/$yyyymmddhh/.DONE_${MYNAME}_${workid}.$yyyymmddhh \
        "Archive AtmEns Failed"
 
-       if ( -e arch_atmens.j ) then
-          qsub arch_atmens.j
+       if ( -e arch_atmens_${yyyymmddhh}.j ) then
+          if ($ENSARCHJOB_KEEP) then
+             /bin/cp arch_atmens_${yyyymmddhh}.j $FVHOME/run
+          endif
+          $ATMENS_BATCHSUB arch_atmens_${yyyymmddhh}.j
        else
           echo " \e[0;31m ${MYNAME}: Failed to generate PBS jobs to archive Atmos Ensemble, Aborting ... \e[0m"
           exit(1)

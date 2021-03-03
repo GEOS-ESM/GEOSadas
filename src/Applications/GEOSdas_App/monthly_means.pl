@@ -594,6 +594,9 @@ sub calculate_means {
     #------------------------------------
     $mpirun_mm = $ENV{"MPIRUN_MM"};
 
+    delete $ENV{"SLURM_MEM_PER_GPU"} if $ENV{"SLURM_MEM_PER_GPU"};
+    delete $ENV{"SLURM_MEM_PER_NODE"} if $ENV{"SLURM_MEM_PER_NODE"};
+
     if ($ignore) { $strict = "-strict .false." }
     else         { $strict = ""                }
 

@@ -10,6 +10,7 @@ setenv DRYRUN
 # !REVISION HISTORY:
 #
 #  23Apr2017  Todling   Initial script
+#  03May2020  Todling   Logic not to over-subscribe node
 #------------------------------------------------------------------
 
 if ( !($?ATMENS_VERBOSE) ) then
@@ -75,6 +76,7 @@ if ( $#argv < 5 ) then
 endif
 
 setenv FAILED 0
+if ( !($?ATMENS_BATCHSUB) ) setenv FAILED 1
 if ( !($?AENSTAT_MPIRUN)) setenv FAILED 1
 if ( !($?ATMENSETC)     ) setenv FAILED 1
 if ( !($?FVWORK)        ) setenv FAILED 1
@@ -264,7 +266,7 @@ set nmem = $members[1]
                 set machfile = ""
              endif
 
-#                 -xc "update_ens.csh $expid $memtag bkg $ENSWORK/mem${memtag} NULL $NCSUFFIX" \
+#                 -xc "update_ens.csh $expid mem$memtag bkg $ENSWORK/mem${memtag} NULL $NCSUFFIX" \
              jobgen.pl \
                   -egress EGRESS -q $AGCMADJ_QNAME $machfile \
                   agcmadj_mem${memtag}     \
@@ -287,14 +289,29 @@ set nmem = $members[1]
                 endif
 
                 if ( ($ipoe == $AENS_GCMADJ_DSTJOB) || (($fpoe == $ntodo) && ($ipoe < $AENS_GCMADJ_DSTJOB) ) ) then
-                   @ myncpus = $ipoe * $ENSGCMADJ_NCPUS
+                   set this_ntasks_per_node = `facter processorcount`
+                   @ ncores_needed = $ENSGCMADJ_NCPUS / $this_ntasks_per_node
+                   if ( $ncores_needed == 0 ) then
+                    @ myncpus = $this_ntasks_per_node
+                   else
+                     if ( $ENSGCMADJ_NCPUS == $ncores_needed * $this_ntasks_per_node ) then
+                        @ myncpus = $ENSGCMADJ_NCPUS
+                     else
+                        @ myncpus = $ENSGCMADJ_NCPUS / $this_ntasks_per_node
+                        @ module = $myncpus * $this_ntasks_per_node - $ENSGCMADJ_NCPUS
+                        if ( $module != 0 ) @ myncpus = $myncpus + 1
+                        @ myncpus = $myncpus * $this_ntasks_per_node
+                     endif
+                   endif
+                   @ myncpus = $ipoe * $myncpus
+                   #_ @ myncpus = $ipoe * $ENSGCMADJ_NCPUS
                    setenv JOBGEN_NCPUS $myncpus
                    jobgen.pl \
                         -egress AGCMADJ_DST_EGRESS -q $AGCMADJ_QNAME \
                         agcmadj_dst${npoe}     \
                         $GID                \
                         $AGCMADJ_WALLCLOCK    \
-                        "job_distributor.csh -machfile $ENSWORK/agcmadj_machfile$npoe -usrcmd $ENSWORK/agcmadj_poe.$npoe -usrntask $ENSGCMADJ_NCPUS" \
+                        "job_distributor.csh -machfile $ENSWORK/agcmadj_machfile$npoe -usrcmd $ENSWORK/agcmadj_poe.$npoe -usrntask $ENSGCMADJ_NCPUS -njobs $ipoe" \
                         $ENSWORK  \
                         $MYNAME             \
                         $ENSWORK/.DONE_POE${npoe}_${MYNAME}.$yyyymmddhh \
@@ -306,14 +323,14 @@ set nmem = $members[1]
                    endif
                    /bin/mv agcmadj_dst${npoe}.j $ENSWORK/
                    # this job is really not monitored; the real work done by agcmadj_mem${memtag}.j is monitored
-                   qsub $ENSWORK/agcmadj_dst${npoe}.j
+                   $ATMENS_BATCHSUB $ENSWORK/agcmadj_dst${npoe}.j
                    touch .SUBMITTED
                    @ ipoe = 0 # reset counter
                    @ npoe++
                 endif 
              else
                 if ( -e agcmadj_mem${memtag}.j ) then
-                   qsub agcmadj_mem${memtag}.j
+                   $ATMENS_BATCHSUB agcmadj_mem${memtag}.j
                    touch $ENSWORK/.SUBMITTED
                 else
                    echo " ${MYNAME}: Failed to generate PBS jobs for Atmos GCMADJ, Aborting ... "
@@ -350,7 +367,7 @@ set nmem = $members[1]
 
 #  Apply extended time tag to Jnorm/Jgrad/fsens
 
-#  update_ens.csh $expid $memtag fsens $ENSWORK/mem${memtag} NULL $NCSUFFIX
+#  update_ens.csh $expid mem$memtag fsens $ENSWORK/mem${memtag} NULL $NCSUFFIX
 
 # end loop over members
 

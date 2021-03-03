@@ -8,14 +8,13 @@
 #  02Mar2017 Todling  Update to cubed-SST BCs
 #  18Apr2017 Todling  Update to Icarus-1_0 BCs (revised topo)
 #  28Jul2017 Todling  Update to fixed(lakes) version of Icarus-cubed BCs
+#  23Oct2019 Todling  Add arg to hand Land BCs
 #
 #-----------------------------------------------------------------------------------------------------
 
 use Env;                 # make env vars readily available
 use File::Basename;      # for basename(), dirname()
-use File::Copy "cp";     # for cp()
 use Getopt::Long;        # load module with GetOptions function
-use Shell qw(cat rm);    # cat and rm commands
 use Time::Local;         # time functions
 use FindBin;             # so we can find where this script resides
 
@@ -60,13 +59,14 @@ my $scriptname = basename($0);
 #......................................................................
 sub init {
 
-   if ( $#ARGV  <  2 ) {
+   if ( $#ARGV  <  3 ) {
      print STDERR " Missing arguments; see usage:\n";
      usage();
    } else {              # required command line args
      $agcm_im     = $ARGV[0];
      $agcm_jm     = $ARGV[1];
      $ogcm        = $ARGV[2];
+     $lndbcs      = $ARGV[3];
    }
 
 $cubed = 0;
@@ -96,7 +96,7 @@ if ($ogcm eq "c") {
     $ogcm_im  = 360;
     $ogcm_jm  = 180;
     $ogrid    = "${ogcm_im}x${ogcm_jm}";
-    $BCSTAG = "Icarus_Updated/Icarus_Reynolds";
+    $BCSTAG = "$lndbcs/Icarus_Reynolds";
     $fvrtbcs = "g5gcm/bcs/realtime/SST";
     $sstfile = "dataoceanfile_MERRA_sst_1971-current.$ogrid.LE";
     $icefile = "dataoceanfile_MERRA_fraci_1971-current.$ogrid.LE";
@@ -105,7 +105,7 @@ elsif ($ogcm eq "e") {
     $ogcm_im  = 1440;
     $ogcm_jm  =  720;
     $ogrid    = "${ogcm_im}x${ogcm_jm}";
-    $BCSTAG = "Icarus_Updated/Icarus_MERRA-2";
+    $BCSTAG = "$lndbcs/Icarus_MERRA-2";
     $fvrtbcs = "g5gcm/bcs/SST";
     $sstfile = "dataoceanfile_MERRA2_SST.$ogrid.\$year.data";
     $icefile = "dataoceanfile_MERRA2_ICE.$ogrid.\$year.data";
@@ -114,7 +114,11 @@ elsif ($ogcm eq "f") {
     $ogcm_im  = 2880;
     $ogcm_jm  = 1440;
     $ogrid    = "${ogcm_im}x${ogcm_jm}";
-    $BCSTAG = "Icarus_Updated/Icarus_Ostia";
+    if ( $lndbcs eq "Icarus-NLv3" ) {
+       $BCSTAG = "$lndbcs/Icarus-NLv3_Ostia";
+    } else {
+       $BCSTAG = "$lndbcs/Icarus_Ostia";
+    }
     $fvrtbcs = "g5gcm/bcs/realtime/OSTIA_REYNOLDS";
     $sstfile = "dataoceanfile_OSTIA_REYNOLDS_SST.$ogrid.\$year.data";
     $icefile = "dataoceanfile_OSTIA_REYNOLDS_ICE.$ogrid.\$year.data";
@@ -123,7 +127,11 @@ elsif ($ogcm eq "C") {  # Cubed-Ocean
     $ogcm_im  = $agcm_im;
     $ogcm_jm  = $agcm_jm;
     $ogrid    = "${ogcm_im}x${ogcm_jm}";
-    $BCSTAG = "Icarus_Updated/Icarus_Ostia";
+    if ( $lndbcs eq "Icarus-NLv3" ) {
+       $BCSTAG = "$lndbcs/Icarus-NLv3_Ostia";
+    } else {
+       $BCSTAG = "$lndbcs/Icarus_Ostia";
+    }
     $fvrtbcs = "g5gcm/bcs/realtime/OSTIA_REYNOLDS";
     $sstfile = "dataoceanfile_OSTIA_REYNOLDS_SST.$ogrid.\$year.data";
     $icefile = "dataoceanfile_OSTIA_REYNOLDS_ICE.$ogrid.\$year.data";
@@ -328,6 +336,7 @@ DESCRIPTION
      ogcm     c, e, and f for low-res, MERRA-2, high res SST
               or
               C for cubed ocean BCs consistent with atmosphere res
+     lndbcs   Icarus_Updated (or Icarus-NLv3)
 
 OPTIONS
 
@@ -349,7 +358,7 @@ OPTIONAL ENVIRONMENT
 AUTHOR
 
      Ricardo Todling (Ricardo.Todling\@nasa.gov), NASA/GSFC/GMAO
-     Last modified: 28Feb2017      by: R. Todling
+     Last modified: 23Oct2019      by: R. Todling
 
 
 EOF

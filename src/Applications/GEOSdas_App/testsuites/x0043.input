@@ -1,19 +1,19 @@
-#------------------
-# C360C_x0036.input
-#------------------
+#------------
+# x0043.input
+#------------
 
-description: C360C_x0036__GEOSadas-5_25_0__agrid_C360__ogrid_C
-tag: GEOSadas-5_25_0
+description: x0043__GEOSadas-5_27_1_p2__agrid_C360__ogrid_C
+tag: GEOSadas-5_27_1_p2
 
 ---ENDHEADERS---
 
-Remote account for Intranet plots? [jstassi@train]
+Remote account for Intranet plots? [dao_it@train]
 > 
 
 Is this a MERRA2 experiment (y/n)? [n]
 > 
 
-AGCM Horizontal Resolution? [C180]
+AGCM Horizontal Resolution? [C48]
 > C360
 
 AGCM Vertical Resolution? [72]
@@ -28,16 +28,19 @@ EXPID? [u000_C360]
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [C360C_x0036__GEOSadas-5_25_0__agrid_C360__ogrid_C]
+EXPDSC? [x0043__GEOSadas-5_27_1_p2__agrid_C360__ogrid_C]
 > 
 
-Land Surface Model choice [1]
+Land Boundary Conditions? [Icarus_Updated]
+> Icarus-NLv3
+
+Catchment Model choice? [1]
 > 
 
-FVHOME? [/discover/nobackup/jstassi/C360C_x0036]
-> 
+FVHOME? [/discover/nobackup/dao_it/x0043]
+> /discover/nobackup/projects/gmao/dadev/dao_it/$expid
 
-The directory /discover/nobackup/jstassi/C360C_x0036 does not exist. Create it now? [y]
+The directory /discover/nobackup/projects/gmao/obsdev/dao_it/x0043 already exists. Clean it? [y]
 > 
 
 Which case of variational analysis? [1]
@@ -70,17 +73,8 @@ MERRA2? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/MERRA2]
 AeroCom? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/AeroCom]
 > 
 
-FVICS? [/archive/u/jstassi/restarts/5C0/CF0360x6C]
-> /archive/u/jstassi/restarts/GEOSadas-5_24_0
-
-Starting year-month-day? [20130902]
-> 20171203
-
-Starting hour-min-sec? [210000]
-> 
-
-Name of experiment where ICs come from: [x0036]
-> 
+FVICS? [/archive/u/jstassi/restarts/GEOSadas-5_24_0]
+> /archive/u/jstassi/restarts/GEOSadas-5_27_0/x0041like.rst.20191119_21z.tar
 
 Run model-adjoint-related applications (0=no,1=yes)? [0]
 > 1
@@ -97,11 +91,11 @@ Run singular vector experiments (0=n,1=yes)? [0]
 Run analysis-sensitivity applications (0=no,1=yes)? [0]
 > 1
 
-Verifying experiment id: [C360C_x0036]
+Verifying experiment id: [x0043]
 > 
 
-Ending year-month-day? [20171205]
-> 20180808
+Ending year-month-day? [20191121]
+> 20200206
 
 Length of FORECAST run segments (in hours)? [123]
 > 
@@ -116,7 +110,7 @@ Number of PEs in the meridional direction (NY)? [48]
 > 
 
 Job nickname? [g5das]
-> x36
+> x43
 
 Run in split executable mode (1=yes;0=no)? [1]
 > 
@@ -140,16 +134,16 @@ Ensemble Hybrid (<0;3=3dHyb;4=Hyb4d)? [-1]
 > 4
 
 Number of procs in the zonal direction (NX)? [12]
-> 
+> 16
 
 Number of procs in the meridional direction (NY)? [20]
-> 
+> 42
 
 Which main class of ObsSys (1: NRT; 2: MERRA; 3: MERRA-2)? [1]
 > 
 
 OBSERVING SYSTEM CLASSES?
-> ncep_ssmis_bufr,ncep_1bamua_bufr,ncep_prep_bufr,ncep_tcvitals,ncep_mhs_bufr,ncep_1bhrs4_bufr,ncep_goesfv_bufr,ncep_gpsro_bufr,ncep_mtiasi_bufr,ncep_atms_bufr,ncep_cris_bufr,ncep_satwnd_bufr,ncep_sevcsr_bufr,ncep_avcsam_bufr,ncep_avcspm_bufr,ncep_aura_omi_bufr,disc_airs_bufr,disc_amsua_bufr,mls_nrt_nc,gmao_gmi_bufr
+> disc_airs_bufr,disc_amsua_bufr,gmao_amsr2_bufr,gmao_gmi_bufr,mls_nrt_nc,ncep_1bamua_bufr,ncep_1bhrs4_bufr,ncep_acftpfl_bufr,ncep_atms_bufr,ncep_aura_omi_bufr,ncep_avcsam_bufr,ncep_avcspm_bufr,ncep_cris_bufr,ncep_crisfsr_bufr,ncep_goesfv_bufr,ncep_gpsro_bufr,ncep_mhs_bufr,ncep_mtiasi_bufr,ncep_prep_bufr,ncep_satwnd_bufr,ncep_sevcsr_bufr,ncep_ssmis_bufr,ncep_tcvitals,npp_ompsnm_bufr
 
 CHECKING OBSYSTEM? [2]
 > 
@@ -160,7 +154,7 @@ Which RADCOR option? [NONE]
 Use sat channel-correlated observation errors (y/n)? [y]
 > 
 
-Use aircraft bias correction (y/n)? [n]
+Use aircraft bias correction (y/n)? [y]
 > 
 
 Use unified radiance bias correction (y/n)? [y]
@@ -197,7 +191,7 @@ Include GOCART tracers (CO,CO2,aerosols,etc) (y/n)? [y]
 > 
 
 Select GOCART Emission Files to use: [OPS]
-> OPS
+> 
 
 Do Aerosol Analysis (y/n)? [y]
 > 
@@ -217,17 +211,8 @@ Which template? [GCMPROG.rc.tmpl]
 Output Restart TYPE (bin or nc4) [nc4]
 > 
 
-Select group: [g0620]
-> 
-
-Continue without missing resource files? [y]
-> 
-
-Edit COLLECTIONS list in run/HISTORY.rc.tmpl (y/n)? [n]
-> 
-
-Edit COLLECTIONS list in fcst/HISTORY.rc.tmpl (y/n)? [n]
-> 
+Select group: [s0818]
+> g0613
 
 Replayed Ensemble (from OPS)?  [yes]
 > no
@@ -239,6 +224,15 @@ Ensemble Resolution?  [C90]
 > 
 
 Ensemble Vertical Levels?  [72]
+> 
+
+Experiment archive directory for ensemble restarts or 'later': [/archive/u/rtodling/x0043]
+> /archive/u/dao_it/x0041
+
+Edit COLLECTIONS list in run/HISTORY.rc.tmpl (y/n)? [n]
+> 
+
+Edit COLLECTIONS list in fcst/HISTORY.rc.tmpl (y/n)? [n]
 > 
 
 Edit files in run directory for CERES configuration (y/n)? [n]

@@ -3,7 +3,8 @@
 #PBS -l walltime=1:00:00
 #PBS -S /bin/csh
 #PBS -j eo
-#SBATCH --constraint=hasw
+#SBATCH --constraint=>>>MYNODES<<<
+#SBATCH --time=1:00:00
 #------------------------------
 setenv FVHOME >>>FVHOME<<<
 
@@ -12,8 +13,8 @@ if ($#argv > 0) then
    shift
 else
    setenv aod_parallel_flag 0
-   setenv PATH $PBS_O_PATH
    source $FVHOME/run/FVDAS_Run_Config
+   set path = ( . $FVHOME/run $FVROOT/bin $BASEDIR/$ARCH/bin $path )
 endif
 
 #------------------------------
@@ -30,6 +31,7 @@ setenv AODWORK        >>>AODWORK<<<
 setenv FVWORK         >>>FVWORK<<<
 setenv GAASFAIL       >>>GAASFAIL<<<
 setenv MPIRUN_AOD    ">>>MPIRUN_AOD<<<"
+setenv MPIRUN_PSAS   ">>>MPIRUN_PSAS<<<"
 setenv NCPUS_AOD      >>>NCPUS_AOD<<<
 setenv nhms           >>>NHMS<<<
 setenv nymd           >>>NYMD<<<
@@ -60,17 +62,19 @@ endif
 # use AOD_list nodes for parallel runs which need to share nodes
 #---------------------------------------------------------------
 if ($aod_parallel_flag) then
-   setenv AOD_NODEFILE "PBS_NODEFILE=$AODWORK/AOD_list;"
-else
-   if ( $?PBS_NODEFILE ) then
-       setenv AOD_NODEFILE "PBS_NODEFILE=${PBS_NODEFILE};"
-   else
-       setenv AOD_NODEFILE 
-   endif
+   setenv PBS_NODEFILE $AODWORK/AOD_list
 endif
 
-if ( $NCPUS_AOD == 1 ) setenv AOD_NODEFILE
-setenv MPIRUN "$AOD_NODEFILE $MPIRUN_AOD -np $NCPUS_AOD"
+if ( ! $?MPIRUN_AOD ) then
+   echo "ana_aod.j: missing MPIRUN_AOD env definition, aborting ..."
+   exit (1)
+endif
+if ( $?MPIRUN_PSAS ) then
+   setenv MPIRUN "$MPIRUN_PSAS"
+else
+   echo "ana_aod.j: missing MPIRUN_PSAS env definition, aborting ..."
+   exit (1)
+endif
 
 # loop for two time steps
 #------------------------
@@ -121,7 +125,7 @@ foreach time_offset ( 000000 030000 )
    #--------------
    if (-e ANAAOD_EGRESS) /bin/rm ANAAOD_EGRESS
    set flags = "-a $aod_a -d $aod_d -f $aod_f -k $aod_k"
-   $MPIRUN $ANAAODX -v -x $EXPID $flags -o $ods_a $aer_f
+   $MPIRUN_AOD $ANAAODX -v -x $EXPID $flags -o $ods_a $aer_f
    if (! -e ANAAOD_EGRESS) then
       @ errcnt = $errcnt + 1
    endif

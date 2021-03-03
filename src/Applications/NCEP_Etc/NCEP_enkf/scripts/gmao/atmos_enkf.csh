@@ -13,6 +13,8 @@
 #  03Jan2018  Todling   Allow EnKF to run even when FFEn is set to run
 #  05Mar2018  Todling   Allow storage of non-inflated EnKF ana when FFEn is running 
 #  31Jul2018  Todling/Gu  Allow for ens own setting of anavinfo file
+#  21Feb2020  Todling   Allow for high freq bkg (up to 1mn)
+#  31Mar2020  Todling   Jobmonitor to protect against faulty batch-block
 #------------------------------------------------------------------
 if ( !($?ATMENS_VERBOSE) ) then
     setenv ATMENS_VERBOSE 0
@@ -90,6 +92,7 @@ if ( $#argv < 3 ) then
 endif
 
 setenv FAILED 0
+if ( !($?ATMENS_BATCHSUB) ) setenv FAILED 1
 if ( !($?ATMENSETC)      ) setenv FAILED 1
 if ( !($?FVHOME)         ) setenv FAILED 1
 if ( !($?FVROOT)         ) setenv FAILED 1
@@ -121,7 +124,10 @@ set expid = $1
 set nymd  = $2
 set nhms  = $3
 set hh     = `echo $nhms | cut -c1-2`
+set mn     = `echo $nhms | cut -c3-4`
+set hhmn   = ${hh}${mn}
 set yyyymmddhh = ${nymd}${hh}
+set yyyymmddhhmn = ${nymd}${hhmn}
 
 setenv ENSWORK $FVWORK
 if ( -e $ENSWORK/.DONE_${MYNAME}.$yyyymmddhh ) then
@@ -145,7 +151,7 @@ if( (-e $ATMENSETC/easyeana.rc) ) then
    set doing_eezy = 1
 endif
 
-if ( -e $ENSWORK/.DONE_ENKFX_${MYNAME}.$yyyymmddhh ) then
+if ( -e $ENSWORK/.DONE_MEM001_ENKFX_${MYNAME}.$yyyymmddhh ) then
   echo " ${MYNAME}: already run EnKF executable, skipping to next step ...."
 else
 
@@ -178,16 +184,16 @@ else
   # -----------------
   set ENKFNML = $ATMENSETC/atmos_enkf.nml.tmpl
   set ENKFOUT = atm_enkf
-  if ( -e ensmean/$expid.bkg.eta.${nymd}_${hh}z.$NCSUFFIX ) then
-     set mean_eta_file = ensmean/$expid.bkg.eta.${nymd}_${hh}z.$NCSUFFIX
+  if ( -e ensmean/$expid.bkg.eta.${nymd}_${hhmn}z.$NCSUFFIX ) then
+     set mean_eta_file = ensmean/$expid.bkg.eta.${nymd}_${hhmn}z.$NCSUFFIX
   else
-     if ( -e ensmean/$expid.niana.eta.${nymd}_${hh}z.$NCSUFFIX ) then
+     if ( -e ensmean/$expid.niana.eta.${nymd}_${hhmn}z.$NCSUFFIX ) then
         set ENKFNML = $ATMENSETC/atmos_enkf_sens.nml.tmpl
-        set mean_eta_file = ensmean/$expid.niana.eta.${nymd}_${hh}z.$NCSUFFIX
+        set mean_eta_file = ensmean/$expid.niana.eta.${nymd}_${hhmn}z.$NCSUFFIX
      else
-        if ( -e ensmean/$expid.ana.eta.${nymd}_${hh}z.$NCSUFFIX ) then
+        if ( -e ensmean/$expid.ana.eta.${nymd}_${hhmn}z.$NCSUFFIX ) then
            set ENKFNML = $ATMENSETC/atmos_enkf_sens.nml.tmpl
-           set mean_eta_file = ensmean/$expid.ana.eta.${nymd}_${hh}z.$NCSUFFIX
+           set mean_eta_file = ensmean/$expid.ana.eta.${nymd}_${hhmn}z.$NCSUFFIX
         else
            echo " ${MYNAME}: cannnot determine ensemble dim, aborting ..."
            exit(1)
@@ -211,12 +217,12 @@ else
   # Prepare namelist
   # ----------------
    /bin/rm -f sed_file
-   echo "s/>>>EXPID<<</${expid}/1"            > sed_file
+   echo "s/>>>EXPID<<</${expid}/1"                > sed_file
    echo "s/>>>YYYYMMDDHH<<</${yyyymmddhh}/1" >> sed_file
-   echo "s/>>>ENS_NLATS<<</${ens_nlats}/1"   >> sed_file
-   echo "s/>>>ENS_NLONS<<</${ens_nlons}/1"   >> sed_file
-   echo "s/>>>ENS_NLEVS<<</${ens_nlevs}/1"   >> sed_file
-   echo "s/>>>NMEM<<</${nmem}/1"             >> sed_file
+   echo "s/>>>ENS_NLATS<<</${ens_nlats}/1"       >> sed_file
+   echo "s/>>>ENS_NLONS<<</${ens_nlons}/1"       >> sed_file
+   echo "s/>>>ENS_NLEVS<<</${ens_nlevs}/1"       >> sed_file
+   echo "s/>>>NMEM<<</${nmem}/1"                 >> sed_file
    /bin/rm -f ./enkf.nml
    sed -f sed_file  $ENKFNML  > ./enkf.nml
 
@@ -238,14 +244,26 @@ else
              "$MPIRUN_ATMENKF |& tee -a $ENSWORK/atm_enkf.log" \
              $ENSWORK            \
              $MYNAME             \
-             $ENSWORK/.DONE_ENKFX_${MYNAME}.$yyyymmddhh \
+             $ENSWORK/.DONE_MEM001_ENKFX_${MYNAME}.$yyyymmddhh \
              "AtmosEnKF Failed"
 
              if ( -e aenkf.j ) then
-                qsub -W block=true aenkf.j
+                if ( $ATMENS_BATCHSUB == "sbatch" ) then
+                   $ATMENS_BATCHSUB -W aenkf.j
+                else
+                   $ATMENS_BATCHSUB -W block=true aenkf.j
+                endif
              else
                 echo " ${MYNAME}: Failed to generate PBS jobs for AtmEnKF, Aborting ... "
                 exit(1)
+             endif
+
+             # Monitor job in case block fails
+             # -------------------------------
+             jobmonitor.csh 1 ENKFX_${MYNAME}  $ENSWORK $yyyymmddhh
+             if ($status) then
+                 echo "${MYNAME}: cannot complete due to failed jobmonitor, aborting"
+                 exit(1)
              endif
 
    else
@@ -255,7 +273,7 @@ else
            echo " ${MYNAME}: failed, aborting ..."
            exit(1)
         else
-           touch $ENSWORK/.DONE_ENKFX_${MYNAME}.$yyyymmddhh
+           touch $ENSWORK/.DONE_MEM001_ENKFX_${MYNAME}.$yyyymmddhh
         endif
 
    endif
@@ -276,7 +294,7 @@ else
 endif # if not already done
 
 # if made it hear, make sure EnKF is really done ...
-if(! -e $ENSWORK/.DONE_ENKFX_${MYNAME}.$yyyymmddhh ) then
+if(! -e $ENSWORK/.DONE_MEM001_ENKFX_${MYNAME}.$yyyymmddhh ) then
    echo " ${MYNAME}: failed, aborting ..."
    exit(1)
 endif
@@ -316,7 +334,7 @@ else
   while ( $ic < $nmem )
      @ ic++
      set memtag  = `echo $ic |awk '{printf "%03d", $1}'`
-     update_ens.csh $expid $memtag   ana $ENSWORK/mem${memtag} NULL $NCSUFFIX
+     update_ens.csh $expid mem$memtag   ana $ENSWORK/mem${memtag} NULL $NCSUFFIX
   end
   # consistency check:
   if ( $ic != $nmem ) then
@@ -335,7 +353,7 @@ if ( $store4fso == "True" ) then
    while ( $ic < $nmem )
       @ ic++
       set memtag  = `echo $ic |awk '{printf "%03d", $1}'`
-      update_ens.csh $expid $memtag niana $ENSWORK/mem${memtag} NULL $NCSUFFIX
+      update_ens.csh $expid mem$memtag niana $ENSWORK/mem${memtag} NULL $NCSUFFIX
    end
    # consistency check:
    if ( $ic != $nmem ) then

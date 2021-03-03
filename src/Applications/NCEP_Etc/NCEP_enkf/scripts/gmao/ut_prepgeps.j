@@ -1,5 +1,6 @@
 #!/bin/csh
 
+setenv ATMENS_BATCHSUB qsub
 setenv EXPID x0026
 setenv FVHOME /discover/nobackup/projects/gmao/obsdev/$user/$EXPID
 setenv FVROOT `cat $FVHOME/.FVROOT`

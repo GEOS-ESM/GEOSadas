@@ -16,12 +16,19 @@
 #  18Jan2015  Todling   Adjustment to allow scheduler to run
 #  26Oct2017  MJ Kim    Add references to Y. Zhu sat-bias-correction files
 #  16Apr2018  Todling   Revise access to Y. Zhu sat-bias-correction files
+#  15Feb2020  Todling   Allow acquire to work as non-batch call
+#  20Jun2020  Todling   Minor changes for flexible location of RC files
 #------------------------------------------------------------------
 
   if ( !($?ATMENS_VERBOSE) ) then
       setenv ATMENS_VERBOSE 0
   else
       if ( $ATMENS_VERBOSE )  set echo
+  endif
+
+  if ( !($?ATMENS_BATCHSUB) ) then
+     echo "setobvr.csh: missing batch command"
+     exit(1)
   endif
 
 # This scripts acquires data from storage and runs the analyzer
@@ -39,14 +46,17 @@
   setenv FAILED 0
   setenv SATBNOW 0
   if ( !($?ASYNBKG)        )  setenv ASYNBKG  360
+  if ( !($?ATMENSETC)      )  setenv FAILED   1
   if ( !($?ENSOBSVR)       )  setenv ENSOBSVR 1
   if ( !($?ENSPARALLEL)    )  then
         setenv SATBNOW  $ENSOBSVR
   else
         setenv SATBNOW  $ENSPARALLEL
   endif
+  if ( $ENSOBSVR < 0       )  setenv SATBNOW  $ENSOBSVR
   if ( !($?GID)            )  setenv FAILED   1
   if ( !($?LOCAL_ACQUIRE)  )  setenv LOCAL_ACQUIRE 0
+  if ( !($?ACFTBIAS)       )  setenv FAILED 1
   if ( !($?NCSUFFIX)       )  setenv NCSUFFIX nc4
   if ( !($?SPECRES)        )  setenv FAILED   1
   if ( !($?STRICT)         )  setenv STRICT   0
@@ -122,6 +132,7 @@
 
        set specres   = $SPECRES
        set expid     = $EXPID
+       set hh        = `echo $HMS | cut -c1-2`
   endif
 
 # Check relevant env variables
@@ -168,8 +179,8 @@
 
 # Overwrite rc-files from run-dir with application specific files
 # ---------------------------------------------------------------
-  /bin/cp $FVHOME/run/atmens/GSI_GridComp.rc.tmpl .
-  /bin/cp $FVHOME/run/atmens/satbias.acq          .
+  /bin/cp $ATMENSETC/GSI_GridComp.rc.tmpl .
+  /bin/cp $ATMENSETC/satbias.acq          .
 
 
   # acquire initial conditions
@@ -198,17 +209,18 @@
   set buf = `tick $YMD $HMS -$varwindow_sec` # tick clock 6-hr back
   set nymd1 = $buf[1]
   set nhms1 = $buf[2]
+  set hh1   = `echo $nhms1 | cut -c1-2`
 
   if ( $obsclass != "NONE" ) then
 
-#    if ( (`uname -n` !~ borg[a-z]???) || ( $LOCAL_ACQUIRE ) ) then
-#  
-#         acquire_obsys -v -d $FVWORK $spool $strict -ssh  \
-#                             $nymd1 $nhms1 060000 1 ncep_tcvitals  # acquire tcvitals (6-hrs back); 
+     if ( (`uname -n` !~ borg[a-z]???) || ( $LOCAL_ACQUIRE ) ) then
+   
+          acquire_obsys -v -d $FVWORK $spool $strict -ssh  \
+                              $nymd1 $nhms1 060000 1 ncep_tcvitals  # acquire tcvitals (6-hrs back); 
 
-#         acquire_obsys -v -d $FVWORK $spool $strict -ssh $YMD $HMS 060000 $notimes $obsclass
+          acquire_obsys -v -d $FVWORK $spool $strict -ssh $YMD $HMS 060000 $notimes $obsclass
 
-#    else # if on discover, acquire via PBS job
+     else # if on discover, acquire via PBS job
           # -----------------------------------
            set fname = "acquire_obs.pbs" 
            alias fname1 "echo \!* >! $fname"
@@ -218,6 +230,10 @@
 
            fname1 "#\!/bin/csh -xvf"
            fname2 "#SBATCH --account=$GID"
+           fname2 "#SBATCH --partition=datamove"
+           fname2 "#SBATCH --time=2:00:00"
+           fname2 "#SBATCH --job-name=acquire"
+           fname2 "#SBATCH --ntasks=1"
            fname2 "#PBS -N acquire"
            fname2 "#PBS -l nodes=1:ppn=1"
            fname2 "#PBS -l walltime=1:00:00"
@@ -231,10 +247,14 @@
            fname2 "acquire_obsys -v -d $FVWORK $spool $strict -ssh $YMD $HMS 060000 $notimes $obsclass"
            fname2 "exit"
    
-           qsub -W block=true $fname
+           if ( $ATMENS_BATCHSUB == "sbatch" ) then
+              $ATMENS_BATCHSUB -W $fname
+           else
+              $ATMENS_BATCHSUB -W block=true $fname
+           endif
            sleep 2
 
-#    endif # <acquire block>
+     endif # <acquire block>
 
 # Get info about pre-qc files to be combined for QC
 # ------------------------------------------------------
@@ -288,12 +308,16 @@
 # ---------------------
   if ( (`uname -n` !~ borg[a-z]???) || ( $LOCAL_ACQUIRE ) ) then
 
-       if ($ENSOBSVR ) then
-           if ( $SATBNOW == 2 ) then
-               acquire -v -rc satbias.acq -d $FVWORK $spool -ssh $nymdm $nhmsm 060000 1
-           else 
-               acquire -v -rc satbias.acq -d $FVWORK $spool -ssh $YMD $HMS     060000 1
-           endif
+       if ($ENSOBSVR) then
+           if ($ENSOBSVR < 0) then
+              echo "Bias correction files expected to be local"
+           else
+             if ( $SATBNOW == 2 ) then
+                 acquire -v -rc satbias.acq -d $FVWORK $spool -ssh $nymdm $nhmsm 060000 1
+             else 
+                 acquire -v -rc satbias.acq -d $FVWORK $spool -ssh $YMD $HMS     060000 1
+             endif
+          endif
        else
            acquire -v -rc satbias.acq -d $FVWORK $spool -ssh $nymd0 $nhms0 060000 1
        endif
@@ -308,6 +332,10 @@
 
         fname1 "#\!/bin/csh -xvf"
         fname2 "#SBATCH --account=$GID"
+        fname2 "#SBATCH --job-name=acquire"
+        fname2 "#SBATCH --ntasks=1"
+        fname2 "#SBATCH --time=1:00:00"
+        fname2 "#SBATCH --partition=datamove"
         fname2 "#PBS -N acquire"
         fname2 "#PBS -l nodes=1:ppn=1"
         fname2 "#PBS -l walltime=1:00:00"
@@ -317,18 +345,26 @@
         fname2 "#PBS -j eo"
         fname2 ""
         fname2 "cd $FVWORK"
-        if ($ENSOBSVR ) then
-           if ( $SATBNOW == 2 ) then
-               fname2 "acquire -v -rc satbias.acq -d $FVWORK $spool -ssh $nymdm $nhmsm 060000 1"
-           else 
-               fname2 "acquire -v -rc satbias.acq -d $FVWORK $spool -ssh $YMD $HMS     060000 1"
-           endif 
+        if ($ENSOBSVR) then
+           if ($ENSOBSVR < 0) then
+              echo "Bias correction files expected to be local"
+           else
+              if ( $SATBNOW == 2 ) then
+                  fname2 "acquire -v -rc satbias.acq -d $FVWORK $spool -ssh $nymdm $nhmsm 060000 1"
+              else 
+                  fname2 "acquire -v -rc satbias.acq -d $FVWORK $spool -ssh $YMD $HMS     060000 1"
+              endif 
+           endif
         else
            fname2 "acquire -v -rc satbias.acq -d $FVWORK $spool -ssh $nymd0 $nhms0 060000 1"
         endif
         fname2 "exit"
 
-        qsub -W block=true $fname
+        if ( $ATMENS_BATCHSUB == "sbatch" ) then
+           $ATMENS_BATCHSUB -W $fname
+        else
+           $ATMENS_BATCHSUB -W block=true $fname
+        endif
         sleep 2
 
   endif # <acquire block>
@@ -336,24 +372,40 @@
 # Satellite biases need to be from previous time
 # ----------------------------------------------
   if ( $ENSOBSVR ) then
-     if ( $SATBNOW == 1 ) then
-          set hh0 = `echo $HMS | cut -c1-2`
-          if(-e $expid.ana.satbias.${YMD}_${hh0}z.txt) /bin/mv $expid.ana.satbias.${YMD}_${hh0}z.txt satbias
-          if(-e $expid.ana.satbang.${YMD}_${hh0}z.txt) /bin/mv $expid.ana.satbang.${YMD}_${hh0}z.txt satbang
-          if(-e $expid.ana.satbiaspc.${YMD}_${hh0}z.txt) /bin/mv $expid.ana.satbiaspc.${YMD}_${hh0}z.txt satbiaspc
-     else if ( $SATBNOW == 2 ) then
-          if(-e $expid.ana.satbias.${nymdm}_${hhm}z.txt) /bin/mv $expid.ana.satbias.${nymdm}_${hhm}z.txt satbias
-          if(-e $expid.ana.satbang.${nymdm}_${hhm}z.txt) /bin/mv $expid.ana.satbang.${nymdm}_${hhm}z.txt satbang
-          if(-e $expid.ana.satbiaspc.${nymdm}_${hhm}z.txt) /bin/mv $expid.ana.satbiaspc.${nymdm}_${hhm}z.txt satbiaspc
+     if ( $SATBNOW < 0 ) then
+        if(-e $expid.ana.satbias.${nymd1}_${hh1}z.txt) /bin/mv $expid.ana.satbias.${nymd1}_${hh1}z.txt satbias
+        if(-e $expid.ana.satbang.${nymd1}_${hh1}z.txt) /bin/mv $expid.ana.satbang.${nymd1}_${hh1}z.txt satbang
+        if(-e $expid.ana.satbiaspc.${nymd1}_${hh1}z.txt) /bin/mv $expid.ana.satbiaspc.${nymd1}_${hh1}z.txt satbiaspc
+        if ($ACFTBIAS) then
+           if(-e $expid.ana.acftbias.${nymd1}_${hh1}z.txt) /bin/mv $expid.ana.acftbias.${nymd1}_${hh1}z.txt acftbias
+        endif
      else
-          echo " ${myname}: trouble, cannot obtain satbias/bang files, aborting ..."
-          exit(1)
+        if ( $SATBNOW == 1 ) then
+             if(-e $expid.ana.satbias.${YMD}_${hh}z.txt) /bin/mv $expid.ana.satbias.${YMD}_${hh}z.txt satbias
+             if(-e $expid.ana.satbang.${YMD}_${hh}z.txt) /bin/mv $expid.ana.satbang.${YMD}_${hh}z.txt satbang
+             if(-e $expid.ana.satbiaspc.${YMD}_${hh}z.txt) /bin/mv $expid.ana.satbiaspc.${YMD}_${hh}z.txt satbiaspc
+             if ($ACFTBIAS) then
+               if(-e $expid.ana.cftbias.${YMD}_${hh}z.txt) /bin/mv $expid.ana.acftbias.${YMD}_${hh}z.txt acftbias
+             endif
+        else if ( $SATBNOW == 2 ) then
+             if(-e $expid.ana.satbias.${nymdm}_${hhm}z.txt) /bin/mv $expid.ana.satbias.${nymdm}_${hhm}z.txt satbias
+             if(-e $expid.ana.satbang.${nymdm}_${hhm}z.txt) /bin/mv $expid.ana.satbang.${nymdm}_${hhm}z.txt satbang
+             if(-e $expid.ana.satbiaspc.${nymdm}_${hhm}z.txt) /bin/mv $expid.ana.satbiaspc.${nymdm}_${hhm}z.txt satbiaspc
+             if ($ACFTBIAS) then
+                if(-e $expid.ana.acftbias.${nymdm}_${hhm}z.txt) /bin/mv $expid.ana.acftbias.${nymdm}_${hhm}z.txt acftbias
+             endif
+        else
+             echo " ${myname}: trouble, cannot obtain satbias/bang files, aborting ..."
+             exit(1)
+        endif
      endif
   else
-     set hh0 = `echo $nhms1 | cut -c1-2`
-     if(-e $expid.ana.satbias.${nymd0}_${hh0}z.txt) /bin/mv $expid.ana.satbias.${nymd0}_${hh0}z.txt satbias
-     if(-e $expid.ana.satbang.${nymd0}_${hh0}z.txt) /bin/mv $expid.ana.satbang.${nymd0}_${hh0}z.txt satbang
-     if(-e $expid.ana.satbiaspc.${nymd0}_${hh0}z.txt) /bin/mv $expid.ana.satbiaspc.${nymd0}_${hh0}z.txt satbiaspc
+     if(-e $expid.ana.satbias.${nymd1}_${hh1}z.txt) /bin/mv $expid.ana.satbias.${nymd1}_${hh1}z.txt satbias
+     if(-e $expid.ana.satbang.${nymd1}_${hh1}z.txt) /bin/mv $expid.ana.satbang.${nymd1}_${hh1}z.txt satbang
+     if(-e $expid.ana.satbiaspc.${nymd1}_${hh1}z.txt) /bin/mv $expid.ana.satbiaspc.${nymd1}_${hh1}z.txt satbiaspc
+     if ($ACFTBIAS) then
+        if(-e $expid.ana.acftbias.${nymd1}_${hh1}z.txt) /bin/mv $expid.ana.acftbias.${nymd1}_${hh1}z.txt acftbias
+     endif
   endif
 
 # Append observation table to the grid-comp
@@ -380,7 +432,6 @@
 
 # All done: echo files available at working diretory
 # --------------------------------------------------
-  set hh1 = `echo $nhms1 | cut -c1-2`
   if(-e $expid.ana.eta.${nymd1}_${hh1}z.$NCSUFFIX ) /bin/rm $expid.ana.eta.${nymd1}_${hh1}z.$NCSUFFIX
   echo ""
   /bin/ls -la
@@ -427,6 +478,8 @@ OPTIONS
 
 ENVIRONMENT VARIABLES
 
+  FVHOME      experiment home diretory
+  ATMENSETC   location of ensemble RC files (e.g., FVHOME/run/atmens)
   SPECRES     resolution of spectral backgrounds (254 for T254, 62 for T62, etc)
   VAROFFSET   time offset (abs value) between analysis time and initial time of ana window
   TIMEINC     analysis time window (6-hr for 3dvar; 6,12,18,24,etc for 4dvar)
@@ -444,7 +497,7 @@ SEE ALSO
 AUTHOR
     Based on fvssi initially coded by Carlos Cruz
     Ricardo Todling (Ricardo.Todling@nasa.gov), NASA/GMAO 
-    Last modified: 08Apr2013      by: R. Todling
+    Last modified: 20Jun2020      by: R. Todling
 
 \end{verbatim}
 \clearpage

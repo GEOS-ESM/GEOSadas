@@ -951,7 +951,7 @@ The statements below show how this is handled in {\tt atm\_ens.j}:
         if( -e ${EXPID}_scheduler.j ) then
            touch $FVHOME/.DONE_MEM001_atm_ens.${yyyymmddhh}
         else
-           qsub g5das.j
+           $ATMENS_BATCHSUB  g5das.j
         endif
 \end{verbatim}
 }
@@ -1662,7 +1662,7 @@ If the job needs to be re-started from the beginning, say for the cycle on 17760
 work directories {\tt fvwork\_EXPID\_1776070415}, {\tt enswork\_EXPID\_1776070415}, and resubmit the scheduler
 with the refresh option, that is,
 \begin{verbatim}
-   qsub -v refreshdate=1776070415 EXPID_scheduler.j
+   $ATMENS_BATCHSUB -v refreshdate=1776070415 EXPID_scheduler.j
 \end{verbatim}
 
 Following the framework developed to control completion status of various procedures for the EnADAS, the 
@@ -2601,7 +2601,11 @@ when we provided a step-by-step description for what takes place in this driver.
              "Main job script Failed for Get Central Analysis"
 
              if ( -e getcentral.j ) then
-                qsub  -W block=true getcentral.j
+                if ( $ATMENS_BATCHSUB == "sbatch ) then
+                   $ATMENS_BATCHSUB  -W getcentral.j
+                else
+                   $ATMENS_BATCHSUB  -W block=true getcentral.j
+                endif
                 touch .SUBMITTED
              else
                 echo " $myname: Failed for Get Central Analysis, Aborting ... "
@@ -2847,6 +2851,11 @@ experiments. In these instances, it might be hard to revive the experiment.
 %\begin{verbatim}
 %#!/bin/csh -xvf
 %#SBATCH --account=g0613
+%#SBATCH --job-name=agcm_mem014
+%#SBATCH --time=1:00:00
+%#SBATCH --partition=nccs1
+%#SBATCH --ntasks=48
+%#SBATCH --ntasks-per-node=8
 %#PBS -N agcm_mem014
 %#PBS -l select=6:ncpus=8:mpiprocs=8
 %#PBS -l walltime=1:00:00

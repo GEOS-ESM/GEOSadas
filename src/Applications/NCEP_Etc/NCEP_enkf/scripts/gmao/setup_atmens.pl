@@ -9,6 +9,7 @@
 #  08Dec2017 Todling  Edits to allow auto setup for diff resolutions
 #  16Apr2018 Todling  Settings for Y. Zhu sat-bias-correction
 #  02May2018 Todling  Unwired number of levels
+#  08Jun2020 Todling  Export mp_stats_perts
 #
 #-----------------------------------------------------------------------------------------------------
 
@@ -17,7 +18,6 @@ use File::Basename;      # for basename(), dirname()
 use File::Path;          # for mkpath()
 use File::Copy "cp";     # for cp()
 use Getopt::Long;        # load module with GetOptions function
-use Shell qw(cat rm);    # cat and rm commands
 use Time::Local;         # time functions
 use FindBin;             # so we can find where this script resides
 
@@ -38,6 +38,7 @@ my $scriptname = basename($0);
 # Command line options
 
   GetOptions ( "atmens=s",
+               "acftbc=s",
                "expdir=s",
                "fvhome=s",
                "nlevs=s",
@@ -45,6 +46,8 @@ my $scriptname = basename($0);
                "radbc",
                "vtxrlc",
                "nosppt",
+               "ose",
+               "rcorr",
                "h" );
 
   usage() if $opt_h;
@@ -75,7 +78,7 @@ my $scriptname = basename($0);
 
 sub init {
 
-   if ( $#ARGV  <  4 ) {
+   if ( $#ARGV  <  5 ) {
      print STDERR " Missing arguments; see usage:\n";
      usage();
    } else {              # required command line args
@@ -84,6 +87,7 @@ sub init {
      $aim         = $ARGV[2];
      $ajm         = $ARGV[3];
      $ogrid       = $ARGV[4];
+     $lndbcs      = $ARGV[5];
    }
 
 # process options
@@ -109,9 +113,11 @@ sub init {
       $setvtx = 1;
    }
 
-   $lsmodel = 1;
-   if ( $opt_lsmcm ) {
-        $lsmodel = 2;
+   $lsmchoice = 1;
+   if ( "$lndbcs" eq "Icarus-NLv3" ) {
+      if ( $opt_lsmcm ) {
+           $lsmchoice = 2;
+      }
    }
 
    $setradbc = 0;
@@ -128,6 +134,22 @@ sub init {
       $dosppt = 0;
    }
 
+   $setacftbc = 0;
+   if ( $opt_acftbc ) {
+      $setacftbc = $opt_acftbc;
+   }
+
+   $dorcorr = 0;
+   if ( $opt_rcorr ) {
+      $dorcorr = 1;
+   }
+
+   $doose = 0;
+   if ( $opt_ose ) {
+      $doose = 1;
+      $dosppt = 0; # make sure to deactivate SPPT regardless of what command line might be
+      $ATMOSE = "$FVHOME/atmose";
+   }
 
 # define location where ensemble members will reside
    if ( $opt_atmens ) {
@@ -187,19 +209,45 @@ sub init {
 # define layout depending on resolution
   $agcm_nx = 4; $agcm_ny = 12;
   if ( $agcm_im == 90 ){
+     $enkf_cpus = 192;
      $agcm_nx =    4; $agcm_ny =   12;
      $miau_nx =    2; $miau_ny =   12;
      $obsv_nx =    4; $obsv_ny =    8;
      $stat_nx =    2; $stat_ny =    2;
+     $chis_im =   90; $chis_jm =  540;  # cubed-resolution
+     $dhis_im =  288; $dhis_jm =  181;  # diag-resolution output
+     $hhis_im =  288; $hhis_jm =  181;  # high-resolution output
+     $lhis_im =  288; $lhis_jm =  181;  #  low-resolution output
      $obsv_im =  288; $obsv_jm =  181; $obsv_lm = $nlevs; $obsv_jcap = 126;
   }
   if ( $agcm_im == 180 ){
+     $enkf_cpus = 224;
      $agcm_nx =    7; $agcm_ny =   12;
      $miau_nx =    2; $miau_ny =   12;
      $obsv_nx =    4; $obsv_ny =   14;
      $stat_nx =    2; $stat_ny =   14;
+     $chis_im =  180; $chis_jm = 1080;  # cubed-resolution
+     $dhis_im =  288; $dhis_jm =  181;
+     $hhis_im =  576; $hhis_jm =  361;
+     $lhis_im =  576; $lhis_jm =  361;
      $obsv_im =  576; $obsv_jm =  361; $obsv_lm = $nlevs; $obsv_jcap = 254;
   }
+  if ( $agcm_im == 360 ){
+     $enkf_cpus = 224;
+     $agcm_nx =    3; $agcm_ny =   72;
+     $miau_nx =    4; $miau_ny =   24;
+     $obsv_nx =    4; $obsv_ny =   14;
+     $stat_nx =    3; $stat_ny =   12;
+     $chis_im =  360; $chis_jm = 2160;  # cubed-resolution
+     $dhis_im =  288; $dhis_jm =  181;
+     $hhis_im = 1152; $hhis_jm =  721;
+     $lhis_im =  576; $lhis_jm =  361;
+     $obsv_im =  576; $obsv_jm =  361; $obsv_lm = $nlevs; $obsv_jcap = 254;
+  }
+  $agcm_cpus = $agcm_nx * $agcm_ny;
+  $miau_cpus = $miau_nx * $miau_ny;
+  $obsv_cpus = $obsv_nx * $obsv_ny;
+  $stat_cpus = $stat_nx * $stat_ny;
 
 # build internal variables
 
@@ -219,7 +267,22 @@ sub init {
                     HISTAENS.rc.tmpl
                     mkiau.rc.tmpl
                     mp_stats.rc
+                    mp_stats_perts.rc
                     nmcperts.rc
+                    odsstats_ktonly.rc
+                    post_egcm.rc );
+
+  @osercs =    qw ( AGCM.rc.tmpl
+                    AtmOSEConfig.csh
+                    atmens_storage.arc
+                    atmens_efsostorage.arc
+                    CAP.rc.tmpl
+                    GAAS_GridComp.rc
+                    GEOS_ChemGridComp.rc
+                    GSI_GridComp.rc.tmpl
+                    HISTAOSE.rc.tmpl
+                    mkiau.rc.tmpl
+                    mp_stats.rc
                     odsstats_ktonly.rc
                     post_egcm.rc );
 
@@ -239,6 +302,8 @@ sub init {
 
 # location where ensemble RC files reside
   $AENSHOME = "$FVHOME/run/atmens";
+# location where OSE RC files reside
+  $AOSEHOME = "$FVHOME/run/atmose";
 
 }
 #......................................................................
@@ -301,7 +366,7 @@ if ( $setvtx ) {
 cp("$FVROOT/bin/atm_ens.j","$FVHOME/run");
 
 # generate boundary condition script
-$cmd = "$FVROOT/bin/gen_lnbcs.pl $cubed -o $FVHOME/run/lnbcs_ens $aim $ajm $ogrid";
+$cmd = "$FVROOT/bin/gen_lnbcs.pl $cubed -o $FVHOME/run/lnbcs_ens $aim $ajm $ogrid $lndbcs";
 $rc = system($cmd);
 
 # make sure .no_archiving exists in ATMENS
@@ -318,6 +383,10 @@ ed_miau_rc ("$AENSHOME");
 ed_obsv_rc ("$AENSHOME");
 ed_enkf_rc ("$AENSHOME");
 ed_stat_rc ("$AENSHOME");
+ed_conf_rc ("$AENSHOME","AtmEnsConfig.csh");
+if ( $doose ) {
+   ed_conf_rc("$AOSEHOME","AtmOSEConfig.csh");
+}
 
 # take care of satbias acq
 ed_satbias_acq ("$AENSHOME");
@@ -365,11 +434,10 @@ sub ed_agcm_rc {
            if($rcd =~ /\@AENS_DOSPPT/) {$rcd=~ s/\@AENS_DOSPPT/0/g; }
         }
 
-        if ( $lsmodel == 2 ) {
-           if($rcd =~ /\@LSM_CHOICE/) {$rcd=~ s/\@LSM_CHOICE/2/g; }
+        if($rcd =~ /\@LSM_CHOICE/) {$rcd=~ s/\@LSM_CHOICE/$lsmchoice/g; }
+        if ( "$lndbcs" eq "Icarus-NLv3" ) {
            if($rcd =~ /\@LSM_PARMS/) {$rcd=~ s/\@LSM_PARMS/ /g; }
         } else {
-           if($rcd =~ /\@LSM_CHOICE/) {$rcd=~ s/\@LSM_CHOICE/1/g; }
            if($rcd =~ /\@LSM_PARMS/) {$rcd=~ s/\@LSM_PARMS/#/g; }
         }
 
@@ -392,6 +460,9 @@ sub ed_hist_rc {
 
   $tmprc  = "$mydir/tmp.rc";
   $thisrc = "$mydir/HISTAENS.rc.tmpl";
+  if ($doose) {
+     $thisrc = "$mydir/HISTAOSE.rc.tmpl";
+  }
 
      open(LUN,"$thisrc")  || die "Fail to open $thisrc $!\n";
      open(LUN2,">$tmprc") || die "Fail to open tmp.rc $!\n";
@@ -400,11 +471,25 @@ sub ed_hist_rc {
      #---------------------------------------
      while( defined($rcd = <LUN>) ) {
         chomp($rcd);
+        if ( $hhis_im == $lhis_im ) {
+           if($rcd =~ /\@HRESAENS/) {$rcd=~ s/\@HRESAENS/#/g; }
+        } else {
+           if($rcd =~ /\@HRESAENS/) {$rcd=~ s/\@HRESAENS/ /g; }
+        }
         if ( $dosppt ) {
            if($rcd =~ /\@AENS_DOSPPT/) {$rcd=~ s/\@AENS_DOSPPT/ /g; }
         } else {
            if($rcd =~ /\@AENS_DOSPPT/) {$rcd=~ s/\@AENS_DOSPPT/#/g; }
         }
+        if($rcd =~ /\@CHIS_IM/) {$rcd=~ s/\@CHIS_IM/$chis_im/g; }
+        if($rcd =~ /\@CHIS_JM/) {$rcd=~ s/\@CHIS_JM/$chis_jm/g; }
+        if($rcd =~ /\@DHIS_IM/) {$rcd=~ s/\@DHIS_IM/$dhis_im/g; }
+        if($rcd =~ /\@DHIS_JM/) {$rcd=~ s/\@DHIS_JM/$dhis_jm/g; }
+        if($rcd =~ /\@HHIS_IM/) {$rcd=~ s/\@HHIS_IM/$hhis_im/g; }
+        if($rcd =~ /\@HHIS_JM/) {$rcd=~ s/\@HHIS_JM/$hhis_jm/g; }
+        if($rcd =~ /\@LHIS_IM/) {$rcd=~ s/\@LHIS_IM/$lhis_im/g; }
+        if($rcd =~ /\@LHIS_JM/) {$rcd=~ s/\@LHIS_JM/$lhis_jm/g; }
+        if($rcd =~ /\@AGCM_LM/) {$rcd=~ s/\@AGCM_LM/$agcm_lm/g; }
 
         print(LUN2 "$rcd\n");
      }
@@ -568,17 +653,56 @@ sub ed_stat_rc {
 
 }
 #......................................................................
+sub ed_conf_rc {
+
+  my($mydir,$conffn) = @_;
+
+  my($acq);
+
+  $tmprc  = "$mydir/tmp.rc";
+  $thisrc = "$mydir/$conffn";
+
+     open(LUN,"$thisrc")  || die "Fail to open $thisrc $!\n";
+     open(LUN2,">$tmprc") || die "Fail to open tmp.rc $!\n";
+
+     # Change variables to the correct inputs
+     #---------------------------------------
+     while( defined($rcd = <LUN>) ) {
+        chomp($rcd);
+        if($rcd =~ /\@ACFTBIAS/)  {$rcd=~ s/\@ACFTBIAS/$setacftbc/g;  }
+        if($rcd =~ /\@AGCM_CPUS/) {$rcd=~ s/\@AGCM_CPUS/$agcm_cpus/g; }
+        if($rcd =~ /\@DORCORR/)   {$rcd=~ s/\@DORCORR/$dorcorr/g; }
+        if($rcd =~ /\@MIAU_CPUS/) {$rcd=~ s/\@MIAU_CPUS/$miau_cpus/g; }
+        if($rcd =~ /\@OBSV_CPUS/) {$rcd=~ s/\@OBSV_CPUS/$obsv_cpus/g; }
+        if($rcd =~ /\@STAT_CPUS/) {$rcd=~ s/\@STAT_CPUS/$stat_cpus/g; }
+        if($rcd =~ /\@ENKF_CPUS/) {$rcd=~ s/\@ENKF_CPUS/$enkf_cpus/g; }
+        print(LUN2 "$rcd\n");
+     }
+
+     close(LUN);
+     close(LUN2);
+     cp($tmprc, $thisrc);
+     unlink $tmprc;
+
+}
+#......................................................................
 sub ed_satbias_acq {
 
   my($mydir) = @_;
 
   my($acq);
 
+  if( $setacftbc ) {
+    $mysetacftbc = "$ATMENS/RST/$expid.ana_acftbias_rst.%y4%m2%d2_%h2z.txt => $expid.ana.acftbias.%y4%m2%d2_%h2z.txt"; 
+    chomp($mysetacftbc);
+  } else {
+    $mysetacftbc = "#$ATMENS/RST/$expid.ana_acftbias_rst.%y4%m2%d2_%h2z.txt => $expid.ana.acftbias.%y4%m2%d2_%h2z.txt"; 
+  }
   if( $setradbc ) {
     $mysatbiaspc = "$ATMENS/RST/$expid.ana_satbiaspc_rst.%y4%m2%d2_%h2z.txt => $expid.ana.satbiaspc.%y4%m2%d2_%h2z.txt"; 
     chomp($mysatbiaspc);
   } else {
-    $mysatbiaspc = "";
+    $mysatbiaspc = "#$ATMENS/RST/$expid.ana_satbiaspc_rst.%y4%m2%d2_%h2z.txt => $expid.ana.satbiaspc.%y4%m2%d2_%h2z.txt"; 
   }
 
   $acq = "$mydir/satbias.acq";
@@ -589,10 +713,10 @@ sub ed_satbias_acq {
 #$ATMENS/central/$expid.ana.acftbias.%y4%m2%d2_%h2z.txt
 #$ATMENS/central/$expid.ana.satbias.%y4%m2%d2_%h2z.txt
 #$ATMENS/central/$expid.ana.satbang.%y4%m2%d2_%h2z.txt
-#$ATMENS/RST/$expid.ana_acftbias_rst.%y4%m2%d2_%h2z.txt => $expid.ana.acftbias.%y4%m2%d2_%h2z.txt
 $ATMENS/RST/$expid.ana_satbias_rst.%y4%m2%d2_%h2z.txt => $expid.ana.satbias.%y4%m2%d2_%h2z.txt
 $ATMENS/RST/$expid.ana_satbang_rst.%y4%m2%d2_%h2z.txt => $expid.ana.satbang.%y4%m2%d2_%h2z.txt
 $mysatbiaspc
+$mysetacftbc
 EOF
 }
 #......................................................................
@@ -628,6 +752,7 @@ SYNOPSIS
                                      aim
                                      ajm
                                      ogrid
+                                     lndbcs
           
 DESCRIPTION
 
@@ -639,6 +764,7 @@ DESCRIPTION
      aim      number of x-grid points in Atmos GCM
      ajm      number of y-grid points in Atmos GCM
      ogrid    c, f, or C for low- or high-resolution Ocean GCM
+     lndbcs   land BCS: Icarus_Updated or Icarus-NLv3
 
 
 OPTIONS
@@ -646,15 +772,19 @@ OPTIONS
      -atmens       location of ensemble members (default: \$FVHOME/atmens)
      -expdir       experiment location (default: /discover/nobackup/user)
      -fvhome       location of experiment home directory (default: \$expdir/\$expid)
-     -nlevs        number of atmospheric levels (default: 72)
-     -radbc        set up to run with Y. Zhu satellite bias correction
-     -vtxrlc       use vortex tracker and relocator
+     -acftbc BC    controls aircraft bias correction (0,1,2,or 3)
+     -lsmcm        catchment option (only applicable when pointing to Icarus-NLv3)
+     -nlevs  LEVS  number of atmospheric levels (default: 72)
      -nosppt       use to deactive SPPT scheme; use non-perturbed members
+     -ose          set up ensemble as an OSE-type experiment (NOT ALL READY YET)
+     -radbc        set up to run with Y. Zhu satellite bias correction
+     -rcorr        when specified will apply channel correlations
+     -vtxrlc       use vortex tracker and relocator
      -h            prints this usage notice
 
 EXAMPLE COMMAND LINE
 
-     setup_atmens.pl enkf u000_C72 90 540 C
+     setup_atmens.pl enkf u000_C72 90 540 C Icarus_Updated
 
 NECESSARY ENVIRONMENT
 
@@ -663,7 +793,7 @@ OPTIONAL ENVIRONMENT
 AUTHOR
 
      Ricardo Todling (Ricardo.Todling\@nasa.gov), NASA/GSFC/GMAO
-     Last modified: 16Apr2018      by: R. Todling
+     Last modified: 05Feb2020      by: R. Todling
 
 
 EOF
