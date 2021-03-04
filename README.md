@@ -121,4 +121,5 @@ cd install/bin
 
 ### Run the ADAS
 
-Like the AGCM step above, the ADAS setup scripts are also `install/bin/`
+Documentation for Running the ADAS can be found in the GEOS ADAS Wiki page [here]
+(https://github.com/GEOS-ESM/GEOSadas/wiki/GEOS-ADAS)
