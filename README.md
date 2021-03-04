@@ -121,5 +121,5 @@ cd install/bin
 
 ### Run the ADAS
 
-Documentation for Running the ADAS can be found in the GEOS ADAS Wiki page [here]
-(https://github.com/GEOS-ESM/GEOSadas/wiki/GEOS-ADAS)
+Documentation for Running the ADAS can be found in the GEOS ADAS Wiki page 
+https://github.com/GEOS-ESM/GEOSadas/wiki/GEOS-ADAS
