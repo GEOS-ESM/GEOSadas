@@ -29,7 +29,7 @@ GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
   tag: cvs/GEOSadas-5_27_1_p3
-  develop: main
+  develop: dev/adas
 
 MAPL:
   local: ./src/Shared/@MAPL
