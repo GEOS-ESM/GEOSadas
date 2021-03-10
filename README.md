@@ -44,7 +44,7 @@ An important note is for users to realize that cloning of the Fixture does not g
 
 ---
 
-### Single Step Building of the Model
+### Single Step Building of GEOS ADAS
 
 If all you wish is to build the model, you can run `parallel_build.csh` from a head node. Doing so will checkout all the external repositories of the model and build it. When done, the resulting model build will be found in `build/` and the installation will be found in `install/` with setup scripts like `gcm_setup` and `fvsetup` in `install/bin`.
 
@@ -54,7 +54,7 @@ To obtain a debug version, you can run `parallel_build.csh -debug` which will bu
 
 ---
 
-### Multiple Steps for Building the Model
+### Multiple Steps for Building of GEOS ADAS
 
 The steps detailed below are essentially those that `parallel_build.csh` performs for you. Either method should yield identical builds.
 
@@ -112,7 +112,7 @@ where `N` is the number of parallel processes. On discover head nodes, this shou
 
 ***NOTE***: Do *not* use `make -j install` with GEOSadas. The GEOSadas has a *lot* of parallelism at the beginning and the build system will gladly build as much as it can at the same time. However, the license server for the Intel compiler on discover will quickly lock up as each process accesses it, and will "break" the Intel compiler for all other users.
 
-### Run the AGCM
+### Run AGCM
 
 Once the model has built successfully, you will have an `install/` directory in your checkout. To run `gcm_setup` go to the `install/bin/` directory and run it there:
 ```
@@ -120,7 +120,7 @@ cd install/bin
 ./gcm_setup
 ```
 
-### Run the ADAS
+### Run ADAS
 
 Documentation for Running the ADAS can be found in the GEOS ADAS Wiki page 
 https://github.com/GEOS-ESM/GEOSadas/wiki
