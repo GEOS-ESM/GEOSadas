@@ -35,11 +35,12 @@ module load GEOSenv
 ```
 which obtains the latest `git`, `CMake`, and `manage_externals` modules.
 
-#### Obtain the Model
+#### Obtain the GEOSADAS Fixture
 
 ```
 git clone git@github.com:GEOS-ESM/GEOSadas.git
 ```
+An important note is for users to realize that cloning of the Fixture does not give a complete set of required components to work or build the ADAS. Only by doing a "mepo clone" (below) or by running the "parallel_build" script (which embeds the mepo call; below) will the user extract of full set of source components. Before users start working with the ADAS, it is highly recommended they clone the whole system by using either one of these modes.
 
 ---
 
@@ -122,4 +123,4 @@ cd install/bin
 ### Run the ADAS
 
 Documentation for Running the ADAS can be found in the GEOS ADAS Wiki page 
-https://github.com/GEOS-ESM/GEOSadas/wiki/GEOS-ADAS
+https://github.com/GEOS-ESM/GEOSadas/wiki
