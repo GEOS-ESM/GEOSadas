@@ -141,6 +141,11 @@
   setenv SPECRES    62    # should be able to revisit analyzer to avoid needing this
 
   setenv GAAS_ANA 1
+#sqz---merge--start
+  setenv LDAS_ANA >>>LDAS_ANA<<<
+  setenv LDHOME4ens >>>LDHOME4ens<<<
+#---end 
+
 
 # Run-time mpi-related options
 # ----------------------------
@@ -150,7 +155,6 @@
   setenv DAPL_RNR_TIMER 28
   setenv I_MPI_MPD_TMPDIR /tmp
   setenv I_MPI_USE_DYNAMIC_CONNECTIONS 0
-  setenv I_MPI_JOB_STARTUP_TIMEOUT 10000
   setenv I_MPI_RDMA_RNDV_WRITE 1
 
 # MVAPICH variables
@@ -449,6 +453,20 @@
          zeit_co.x eaod
       endif
   endif
+
+# sqz---merge--start
+# LDAS ens analysis at ens gcm resolution 
+# -----------------------------------
+  if ( $LDAS_ANA ) then
+         zeit_ci.x eldas
+         atmos_eldas.csh $EXPID $anymd $anhms 030000 |& tee -a atm_ens.log
+         if( $status) then
+            echo "eldas failed"
+            exit(1)
+         endif
+         zeit_co.x eldas
+  endif 
+#---end 
  
 # Run ensemble of atmospheric analyses
 # ------------------------------------

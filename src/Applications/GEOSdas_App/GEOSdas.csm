@@ -1876,6 +1876,15 @@ exit 1
        /bin/cp $FVHOME/recycle/$EXPID.ana_radstat_rst.*.tar radstat
      endif
 
+#sqz--merge--start
+     # lfo files held from last segment for ldas coupling 
+     #--------------------------------------------------- 
+      if( $LDAS_ANA ) then
+      /bin/mv $FVHOME/recycle/holdforc/*2d_lfo*nc4  $FVWORK/.
+      endif
+#sqz---merge-end
+
+
      # GAAS restart files
      #-------------------
      if ( ! $DO4DVAR ) then
@@ -3189,53 +3198,100 @@ endif
 # ------------------------------
   Sub LandAnalysisRun_() 
 # ------------------------------
+
+#sqz--merge--start
+
   if ( $?ECHO___ ) set echo
 
-  cd $FVWORK
+  if ( ! $LDAS_ANA ) exit 0
+
+    cd $FVWORK
+#   link $FVWORK for ldas met_forcing  access 
+       /bin/rm -f $FVHOME/lana/forc
+       /bin/ln -s $FVWORK $FVHOME/lana/forc
+
   set rstdate = ( `rst_date ./d_rst` )
-  set mydate = (`tick $rstdate -21600`)  # tick back 6 hours
+  set enddate = (`tick $rstdate 21600`)
 
-  set DURATION = "060000"
-  set SUBDIR = "ldas.$mydate[1].$mydate[2]"
-  set LDINPUT_FORCE = "$FVWORK"
-  set EXPDOMAIN = "GLOBAL"
-  set RESOLUTION = "144x91"
-  set THREEHOURS = 10800
+# go to LDHOME to run ldas
+      cd $LDHOME/run
+# compare the starting time
+      echo "ldas_home_dir: ", $LDHOME
+      set lcapdat = `cat cap_restart | cut -c1-8`
+      set lcaptim = `cat cap_restart | cut -c10-15`
+      echo "ldas_6h_window starting at: ", $lcapdat, $lcaptim
+      echo "adas_anal_window starting at: ", $rstdate[1], $rstdate[2]
 
-  ldsetup -expid $EXPID \
-          -nymd $mydate[1] \
-          -nhms $mydate[2] \
-          -duration $DURATION \
-          -fvroot $FVROOT \
-          -fvhome $FVHOME \
-          -fvwork $FVWORK \
-          -fvwork_subdir $SUBDIR \
-          -expdomain $EXPDOMAIN \
-          -resolution $RESOLUTION \
-          -ldinput_force $FVWORK \
-          -mettag $EXPID \
-          -forcedtstep $THREEHOURS \
-          -rstrtdir $FVWORK \
-          -rstrtid $EXPID \
-          -gid $GID \
-          -noprompt
+# submit job and capture job ID 
 
-  echo y | lenkf.pl
-
-# Move output to top FVWORK directory
-# -----------------------------------
-  cd $FVWORK
-  foreach file ( `find $SUBDIR -name $EXPID\*.txt`)
-     /bin/mv $file .
-  end
-  foreach file ( `find $SUBDIR -name $EXPID\.ens\*`)
-     /bin/mv $file .
-  end
+       set jobldas = "lenkf.j"
+       set jobIDlong = `$PBS_BIN/sbatch $jobldas`
+       set jobID = `echo $jobIDlong  |awk -F'[ ]' '{print $4}'`
+       cd -
+       setenv ldasJobIDs  $jobID
+       echo $ldasJobIDs ": LDAS coupling lenkf jobID in LandAnalysisRun"
+       cd $FVWORK
 
                               # Last line of LandAnalysisRun_()
 \end
 
+#sqz---merge--end
 #.............................................................................
+
+## sqz--merge--start
+#------------------------
+  Sub StageLdasIncr_()
+#-----------------------
+   if ( $?ECHO___ ) set echo
+
+    cd $FVWORK
+
+    set LINC_DIR=$LDHOME/output/*/cat/ens_avg/
+
+    # default: 
+    set ldas_int = 10800
+    set adas_int = 21600
+
+      set  lincr_native_name = catch_progn_incr
+      set  lincr_default_name = ldas_incr
+
+      /bin/rm -f ${FVWORK}/${lincr_default_name}.*
+
+
+      @ cent_int = ($ldas_int / 2)
+      set adas_strt = ( `rst_date ./d_rst` )
+
+      set secs = 0
+
+     while ( $secs  < $adas_int )
+         # the begining time of the window secs=0 
+           set ldas_strt = ( `tick $adas_strt $secs` )
+         # for ldas_incr, use centered time 
+           set ldas_cntr = ( `tick $ldas_strt $cent_int` )
+          # ldas anal time
+           set ldas_anlt = ( `tick $ldas_strt $ldas_int` )
+
+         set yyyy_a=`echo $ldas_anlt[1] | cut -c1-4`
+         set mm_a=`echo $ldas_anlt[1]   | cut -c5-6`
+         set dd_a=`echo $ldas_anlt[1]   | cut -c7-8`
+         set tttt_a=`echo $ldas_anlt[2] | cut -c1-4`
+         set tttt_c=`echo $ldas_cntr[2] | cut -c1-4`
+
+# default name for AGCM: ldas_inc.yyyymmdd_hhnn00
+       /bin/cp  ${LINC_DIR}/Y${yyyy_a}/M${mm_a}/*.${lincr_native_name}.$ldas_anlt[1]_${tttt_a}z.nc4\
+        ${FVWORK}/ldas_inc.$ldas_cntr[1]_${tttt_c}00
+
+       /bin/ln -s  ${LINC_DIR}/Y${yyyy_a}/M${mm_a}/*.${lincr_native_name}.$ldas_anlt[1]_${tttt_a}z.nc4\
+        ${FVHOME}/lana/ldas_inc.$ldas_cntr[1]_${tttt_c}00
+
+         @ secs = $secs + $ldas_int
+         end
+
+                                                # Last line of StageLdasIncr
+\end
+
+#.............................................................................
+#sqz---merge--end 
 
 # ------------------------------
   Sub EvolveAinc0_( Viter_, Final_ )
@@ -5694,6 +5750,15 @@ endif
               /bin/mv radstat $EXPID.ana_radstat_rst.$rtag.tar
               /bin/cp $EXPID.ana_radstat_rst.$rtag.tar $RSTHOLD/ &
             endif
+
+#sqz--merge--start
+        # hold lfo files for the next segment of ldas coupling
+        #----------------------------------------------------------
+           if  ( $LDAS_ANA ) then
+           mkdir -p       $FVHOME/recycle/holdforc
+          /bin/cp  *2d_lfo*nc4  $FVHOME/recycle/holdforc/.
+           endif
+#---------
 
         # local copy to be moved by pesto, 2nd copy to be dealt w/ by recycle
         #--------------------------------------------------------------------
