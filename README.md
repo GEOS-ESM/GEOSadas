@@ -8,34 +8,10 @@
 
 In your `.bashrc` or `.tcshrc` or other rc file add a line:
 
-##### NCCS (SLES11)
-
-```
-module use -a /discover/swdev/gmao_SIteam/modulefiles-SLES11
-```
-
-##### NCCS (SLES12)
+##### NCCS
 
 ```
 module use -a /discover/swdev/gmao_SIteam/modulefiles-SLES12
-```
-###### Auto detection of OS
-To better automate this, you can have for bash:
-```
-if [[ -e /etc/os-release ]]
-then
-   module use -a /discover/swdev/gmao_SIteam/modulefiles-SLES12
-else
-   module use -a /discover/swdev/gmao_SIteam/modulefiles-SLES11
-fi
-```
-or for tcsh:
-```
-if (-e /etc/os-release) then
-   module use -a /discover/swdev/gmao_SIteam/modulefiles-SLES12
-else
-   module use -a /discover/swdev/gmao_SIteam/modulefiles-SLES11
-endif
 ```
 
 ##### NAS
@@ -75,39 +51,20 @@ If all you wish is to build the model, you can run `parallel_build.csh` from a h
 
 To obtain a debug version, you can run `parallel_build.csh -debug` which will build with debugging flags. This will build in `build-Debug/` and install into `install-Debug/`.
 
-#### Mepo Version of GEOS ADAS
-
-GEOS ADAS will soon be transitioning from using `checkout_externals` to
-using [`mepo`](https://github.com/GEOS-ESM/mepo), a GMAO-developed
-multi-repository management tool. If you wish to use it via
-`parallel_build.csh` you can run:
-```
-parallel_build.csh -mepo
-```
-along with any other flags you usually use.
-
 ---
 
 ### Multiple Steps for Building the Model
 
 The steps detailed below are essentially those that `parallel_build.csh` performs for you. Either method should yield identical builds.
 
-#### Checkout externals
+#### Mepo
 
-Using the `checkout_externals` command to compose the model is done by:
+The GEOS ADAS is comprised of a set of sub-repositories. These are
+managed by a tool called [mepo](https://github.com/GEOS-ESM/mepo). To
+clone all the sub-repos, you can run `mepo clone` inside the fixture:
 
 ```
 cd GEOSadas
-checkout_externals
-```
-
-#### Mepo
-
-To checkout the full model with the
-[`mepo`](https://github.com/GEOS-ESM/mepo) tool, you run:
-
-```
-mepo init
 mepo clone
 ```
 
@@ -150,7 +107,9 @@ and CMake will install there.
 ```
 make -jN install
 ```
-where `N` is the number of parallel processes. On discover head nodes, this should only be as high as 2 due to limits on the head nodes. On a compute node, you can set `N` has high as you like, though 8-12 is about the limit of parallelism in our model's make system.
+where `N` is the number of parallel processes. On discover head nodes, this should only be as high as 2 due to limits on the head nodes. On a compute node, you can set `N` from 6 to 10 which is about the limit of useful parallelism in our model's make system.
+
+***NOTE***: Do *not* use `make -j install` with GEOSadas. The GEOSadas has a *lot* of parallelism at the beginning and the build system will gladly build as much as it can at the same time. However, the license server for the Intel compiler on discover will quickly lock up as each process accesses it, and will "break" the Intel compiler for all other users.
 
 ### Run the AGCM
 

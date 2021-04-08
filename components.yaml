@@ -1,23 +1,23 @@
 GEOSadas:
   fixture: true
-  develop: main
+  develop: develop
 
 env:
   local: ./@env
   remote: ../ESMA_env.git
-  tag: v3.0.1
+  tag: v3.2.0
   develop: main
 
 cmake:
   local: ./@cmake
   remote: ../ESMA_cmake.git
-  tag: v3.2.1
+  tag: v3.3.7
   develop: develop
 
 ecbuild:
   local: ./@cmake/@ecbuild
   remote: ../ecbuild.git
-  tag: geos/v1.0.5
+  tag: geos/v1.0.6
 
 NCEP_Shared:
   local: ./src/Shared/@NCEP_Shared
@@ -28,81 +28,88 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  branch: feature/mathomp4/update-to-geosadas527
-  develop: main
+  tag: v1.3.10
+  develop: dev/adas
 
 MAPL:
   local: ./src/Shared/@MAPL
   remote: ../MAPL.git
-  tag: v2.3.4
+  tag: v2.6.4
   develop: develop
 
 FMS:
   local: ./src/Shared/@FMS
   remote: ../FMS.git
-  tag: geos/2019.01.02+noaff.1
+  tag: geos/2019.01.02+noaff.6
   develop: geos/release/2019.01
 
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  tag: v1.1.1
+  tag: v1.3.0
   develop: develop
 
 GEOSgcm_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp
   remote: ../GEOSgcm_GridComp.git
-  tag: v1.11.2
+  tag: v1.11.6
   sparse: ./config/GEOSgcm_GridComp.sparse
   develop: develop
 
 g5pert:
   local: ./src/Components/@g5pert
   remote: ../g5pert.git
-  tag: v1.1.0
-  develop: develop
+  tag: v1.1.2
+  develop: main
 
 GEOSagcmPert_GridComp:
   local: ./src/Components/@GEOSagcmPert_GridComp
   remote: ../GEOSagcmPert_GridComp.git
   tag: v1.1.0
-  develop: develop
+  develop: main
 
 FVdycoreCubed_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSsuperdyn_GridComp/@FVdycoreCubed_GridComp
   remote: ../FVdycoreCubed_GridComp.git
-  tag: v1.2.5
+  tag: v1.2.11
   develop: develop
 
 fvdycore:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSsuperdyn_GridComp/@FVdycoreCubed_GridComp/@fvdycore
   remote: ../GFDL_atmos_cubed_sphere.git
-  tag: geos/v1.1.3
+  tag: geos/v1.1.5
   develop: geos/develop
 
 GEOSchem_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSphysics_GridComp/@GEOSchem_GridComp
   remote: ../GEOSchem_GridComp.git
-  tag: v1.4.1
+  tag: v1.4.4
+  develop: develop
+
+GOCART:
+  local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSphysics_GridComp/@GEOSchem_GridComp/@GOCART
+  remote: ../GOCART.git
+  sparse: ./config/GOCART.sparse
+  tag: v1.0.1
   develop: develop
 
 mom:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSogcm_GridComp/GEOSocean_GridComp/GuestOcean_GridComp/MOM_GEOS5PlugMod/@mom
   remote: git@github.com:GEOS-ESM/MOM5.git
-  tag: geos/5.1.0+1.1.1
+  tag: geos/v1.0.1
   develop: geos5
 
 mom6:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSogcm_GridComp/GEOSocean_GridComp/GuestOcean_GridComp/MOM6_GEOSPlug/@mom6
   remote: ../MOM6.git
-  tag: geos/v1.1.0
-  develop: geos
+  tag: geos/v2.0.1
+  develop: dev/gfdl
   recurse_submodules: True
 
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  tag: cvs/GEOSadas-5_27_1
+  tag: v1.3.16
   develop: develop
 
 UMD_Etc:

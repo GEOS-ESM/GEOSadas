@@ -56,7 +56,7 @@
  /
  &OBSQC
    dfact=0.75,dfact1=3.0,noiqc=.false.,oberrflg=.true.,c_varqc=0.02,blacklst=.true.,
-   use_poq7=.true.,qc_noirjaco3=.true.,qc_satwnds=.false.,
+   use_poq7=.true.,qc_noirjaco3=.true.,qc_satwnds=.false.,cld_det_dec2bin=.true.,
 !  tcp_ermin=0.75,tcp_ermax=0.75,
    >>>AIRCFT_BIAS<<<
  /

@@ -1,3 +1,17 @@
+05Jan2021
+---------
+- Change to allow use of South Pole Raob (read_prepbufr)
+- Change to handle SatWind updates from EUMETSAT (read_obs.F90 and read_satwnd.f90)
+- Update gmao_global_satinfo.rc: new handle of CrIS-FSR (N20 and NPP), ocean only; only used data participate in cloud screaning
+- Trigger for decimal-like qc flag: gsi.rc.tmpl, gsi_sens.rc.tmpl, obs1gsi_mean.rc and obs1gsi_member.rc
+- Turn on CrIS-FSR Ozone-sensitive channels
+- Update RCOV files for CrIS-FSR (handling O3 sensitive channels), RC file: gmao_global_anavinfo_rcov
+- Revise CrIS-FSR info in gmao_global_tlapmean.rc 
+
+Note: changes in gsi.rc (and similar files) to trigger use of decimal QC flag
+      also affect handling of O3 sensitive channels in the AIRS and IASI
+      instruments (these were not being handled correctly before)
+
 14Oct2020
 ---------
 - g5pert: take into consideration eps_eer when converting pert to energy and when calculating total 

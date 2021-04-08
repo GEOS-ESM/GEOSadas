@@ -30,13 +30,13 @@ if ( $#argv < 4 ) then
    echo " "
    echo " SYNOPSIS "
    echo " "
-   echo "  $MYNAME  expid nymd nhms rcfile "
+   echo "  $MYNAME  expid nymd nhms acqfile "
    echo " "
    echo "  where"
    echo "   expid  -  usual experiment name, e.g., b541iau"
    echo "   nymd   -  analysis date, as in YYYYMMDD "
    echo "   nhms   -  analysis time, as HHMMSS"
-   echo "   rcfile -  full path name of acquire rc file"
+   echo "   acqfile - full path name of acquire rc file"
    echo " "
    echo " DESCRIPTION "
    echo " "
@@ -107,10 +107,10 @@ endif
 set expid  = $1
 set nymda  = $2
 set nhmsa  = $3
-set rcfile = $4
+set acqfile = $4
 
-if (! -e $rcfile ) then
-   echo " ${MYNAME}: $rcfile not found, cannot acquire ensemble. Aborting ..."
+if (! -e $acqfile ) then
+   echo " ${MYNAME}: $acqfile not found, cannot acquire ensemble. Aborting ..."
    touch $FVWORK/.FAILED
    exit(1)
 endif
@@ -145,7 +145,7 @@ set yyyymmddhh = ${nymdb}${hhb}
        acq_atmens            \
        $GID                  \
        $ENSACQ_WALLCLOCK     \
-       "acquire -v -rc $rcfile -d $ENSWORK $spool -ssh $nymdb $nhmsb ${anafreq_hr}0000 1" \
+       "acquire -v -rc $acqfile -d $ENSWORK $spool -ssh $nymdb $nhmsb ${anafreq_hr}0000 1" \
        $ENSWORK              \
        $MYNAME               \
        $ENSWORK/.DONE_${MYNAME}.$yyyymmddhh \
@@ -165,14 +165,21 @@ set yyyymmddhh = ${nymdb}${hhb}
 
 # unravel existing ensemble
 # -------------------------
-if ( -d $ATMENSLOC ) then
-   /bin/rm -r $ATMENSLOC
+if (! -d $ATMENSLOC ) then
+   mkdir $ATMENSLOC
 endif
-mkdir $ATMENSLOC
 
 # check that tar ball was indeed retrieved
 # ----------------------------------------
-foreach ball ( stat ebkg eprg ) # do not reorder the first two
+set tarballtyps = 
+foreach typ ( stat eprg ebkg ) # do not reorder the first two
+   grep atmens_${typ} $acqfile
+   if (! $status ) then
+      set tarballtyps = ( $tarballtyps $typ )
+   endif
+end
+
+foreach ball ( $tarballtyps ) # do not reorder the first two
    if ( -e $expid.atmens_${ball}.${nymdb}_${hhb}z.tar.gz ) then
       set zipped = 1
    else
@@ -196,12 +203,17 @@ foreach ball ( stat ebkg eprg ) # do not reorder the first two
       tar -xvf $expid.atmens_${ball}.${nymdb}_${hhb}z.tar
       set dummy = (`/bin/ls -1d *.atmens_${ball}.${nymdb}_${hhb}z`)
       set oldexpid = `echo $dummy[1] | cut -d. -f1`
-      if ( "$oldexpid" != "$expid" ) /bin/mv -T $oldexpid.atmens_${ball}.${nymdb}_${hhb}z $expid.atmens_${ball}.${nymdb}_${hhb}z
-      if ( $ball == "stat" || $ball == "ebkg" ) then
+      if ( "$oldexpid" != "$expid" ) then
+         if ( ! -d $expid.atmens_${ball}.${nymdb}_${hhb}z ) then
+            /bin/mv -T $oldexpid.atmens_${ball}.${nymdb}_${hhb}z $expid.atmens_${ball}.${nymdb}_${hhb}z
+         endif
+      endif
+      if ( $ball == "stat" ) then
          /bin/mv  $expid.atmens_${ball}.${nymdb}_${hhb}z/* $ATMENSLOC
       else  # members already exist 
          cd $expid.atmens_${ball}.${nymdb}_${hhb}z
          foreach dir ( `/bin/ls -d mem*` ) 
+            if (! -d $ATMENSLOC/$dir/ ) mkdir -p $ATMENSLOC/$dir/ # just make sure dir exists
             /bin/mv $dir/* $ATMENSLOC/$dir/
          end
          cd - 
