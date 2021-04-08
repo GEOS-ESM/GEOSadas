@@ -22,7 +22,7 @@ ecbuild_add_executable (
        GEOSmoistPert_GridComp GEOSturbulencePert_GridComp GEOSsurfacePert_GridComp GEOSchemPert_GridComp
        GEOSpchemPert_GridComp fvdycorepert Tapenade GEOSdynamicsPert_GridComp Chem_Base MAPL
        NCEP_gfsio NCEP_nemsio NCEP_bacio_r4i4 NCEP_bufr_r8i4 NCEP_w3_r8i4 NCEP_sp_r8i4
-       NCEP_sfcio MAPL_cfio_r4 GMAO_mpeu nc_diag_read nc_diag_write)
+       NCEP_sfcio MAPL_cfio_r4 GMAO_mpeu nc_diag_read nc_diag_write OpenMP::OpenMP_Fortran)
 
 ecbuild_add_executable (
   TARGET gsidiag_bin2txt.x

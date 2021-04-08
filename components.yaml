@@ -47,7 +47,7 @@ GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
   tag: v1.3.0
-  develop: develop
+  develop: feature/bmuaer/adas_with_mapl2
 
 GEOSgcm_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp
@@ -66,7 +66,7 @@ GEOSagcmPert_GridComp:
   local: ./src/Components/@GEOSagcmPert_GridComp
   remote: ../GEOSagcmPert_GridComp.git
   tag: v1.1.0
-  develop: main
+  develop: feature/bmuaer/adas_with_mapl2
 
 FVdycoreCubed_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSsuperdyn_GridComp/@FVdycoreCubed_GridComp
@@ -96,7 +96,7 @@ GOCART:
 mom:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSogcm_GridComp/GEOSocean_GridComp/GuestOcean_GridComp/MOM_GEOS5PlugMod/@mom
   remote: git@github.com:GEOS-ESM/MOM5.git
-  tag: geos/v1.0.1
+  tag: geos/5.1.0+1.1.1
   develop: geos5
 
 mom6:
