@@ -28,7 +28,7 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  tag: main
+  branch: main
   develop: dev/adas
 
 MAPL:
@@ -46,7 +46,7 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  tag: feature/bmuaer/adas_with_mapl2
+  branch: feature/bmuaer/adas_with_mapl2
   develop: main
 
 GEOSgcm_GridComp:
@@ -65,7 +65,7 @@ g5pert:
 GEOSagcmPert_GridComp:
   local: ./src/Components/@GEOSagcmPert_GridComp
   remote: ../GEOSagcmPert_GridComp.git
-  tag: feature/bmuaer/adas_with_mapl2
+  branch: feature/bmuaer/adas_with_mapl2
   develop: main
 
 FVdycoreCubed_GridComp:
