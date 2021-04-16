@@ -58,10 +58,10 @@ my ($EXPID, $FVHOME, $PBS_BIN, $account, $listdir, $mnthlyRC);
 my ($numnodes_mm, $numnodes_mp, $plotHISTrc, $qcmd, $rundir);
 my ($script, $siteID, $workdir, $yyyymm, %newrc, %JOBID);
 my ($walltime_cl, $walltime_mm, $walltime_mp, $walltime_pf);
-my ($MONTHLY_PARTITION, $MONTHLY_QOS);
+my ($partition, $qos);
 
-#$MONTHLY_PARTITION = "preops";
-#$MONTHLY_QOS = "dastest";
+#$partition = "preops";
+#$qos = "dastest";
 
 my %valid = ( "fetch" => 1,
               "means" => 1,
@@ -114,6 +114,9 @@ sub init {
                 "plots"        => \$plotsFLG,
                 "finish_plots" => \$finish,
                 "nopush"       => \$nopush,
+
+                "partition=s" => \$partition,
+                "qos=s"       => \$qos,
 
                 "rc|mrc=s" => \$mnthlyRC,
                 "newrc:s"  => \@newrc,
@@ -381,7 +384,7 @@ sub fetch_calc_tar_and_clean {
 sub fetch_inputs {
     my (%opts, $filestring, $ftype, $htype, $do_dmput, $do_tar);
     my ($tmpl, $prefetch_j, $jobname, $outfile);
-    my ($job_name, $time, $output, $partition, $vFLG);
+    my ($job_name, $time, $output, $parFLG, $vFLG);
     my (%value, @deps, $dependFLG, $cmd);
 
     # input arguments
@@ -405,14 +408,14 @@ sub fetch_inputs {
         $job_name = "SBATCH --job-name=$jobname";
         $time = "SBATCH --time=$walltime_pf";
         $output = "SBATCH --output=$outfile";
-        $partition = "SBATCH --partition=datamove";
+        $parFLG = "SBATCH --partition=datamove";
         $vFLG = "--export=outfile=$outfile";
     }
     else {
         $job_name = "PBS -N $jobname";
         $time = "PBS -l walltime=$walltime_pf";
         $output = "PBS -o $outfile";
-        $partition = "";
+        $parFLG = "";
         $vFLG = "-v outfile=$outfile";
     }
 
@@ -421,7 +424,7 @@ sub fetch_inputs {
     $value{"__TIME__"}       = $time;
     $value{"__ACCOUNT__"}    = $account;
     $value{"__OUTPUT__"}     = $output;
-    $value{"__PARTITION__"}  = $partition;
+    $value{"__PARTITION__"}  = $parFLG;
 
     $value{"__FILESTRING__"} = $filestring;
     $value{"__HOURTYPE__"}   = $htype;
@@ -488,8 +491,8 @@ sub calc_monthly_means {
         $nodes = "SBATCH --nodes=$numnodes_mm";
         $per_node = "SBATCH --tasks-per-node=$tasks_per_node";
         $vFLG = "--export=outfile=$outfile";
-        $parFLG = "SBATCH --partition=$MONTHLY_PARTITION" if $MONTHLY_PARTITION;
-        $qosFLG = "SBATCH --qos=$MONTHLY_QOS" if $MONTHLY_QOS;
+        $parFLG = "SBATCH --partition=$partition" if $partition;
+        $qosFLG = "SBATCH --qos=$qos" if $qos;
     }
     else {
         $job_name = "PBS -N $jobname";
@@ -549,7 +552,7 @@ sub calc_monthly_means {
 sub tar_and_clean_inputs {
     my (%opts, $filestring, $ftype, $do_tar, $lastFLG);
     my ($tmpl, $tarandclean_j, $jobname, $outfile);
-    my ($job_name, $time, $output, $partition, $vFLG);
+    my ($job_name, $time, $output, $parFLG, $vFLG);
     my (%value, $walltime, @deps, $dependFLG, $cmd);
 
     # input arguments
@@ -572,14 +575,14 @@ sub tar_and_clean_inputs {
         $job_name = "SBATCH --job-name=$jobname";
         $time = "SBATCH --time=$walltime_cl";
         $output = "SBATCH --output=$outfile";
-        $partition = "SBATCH --partition=datamove";
+        $parFLG = "SBATCH --partition=datamove";
         $vFLG = "--export=outfile=$outfile";
     }
     else {
         $job_name = "PBS -N $jobname ";
         $time = "PBS -l walltime=$walltime_cl";
         $output = "PBS -o $outfile";
-        $partition = "";
+        $parFLG = "";
         $vFLG = "-v outfile=$outfile";
     }
 
@@ -588,7 +591,7 @@ sub tar_and_clean_inputs {
     $value{"__TIME__"}       = $time;
     $value{"__ACCOUNT__"}    = $account;
     $value{"__OUTPUT__"}     = $output;
-    $value{"__PARTITION__"}  = $partition;
+    $value{"__PARTITION__"}  = $parFLG;
 
     $value{"__FILESTRING__"} = $filestring;
     $value{"__YYYYMM__"}     = $yyyymm;
@@ -733,7 +736,7 @@ sub archive_monthly_files {
 #=======================================================================
 sub monthly_plots {
     my ($tmpl, $transfer_csh, $plots_j, $jobname, $outfile);
-    my ($job_name, $nodes, $time, $output, $partition);
+    my ($job_name, $nodes, $time, $output, $parFLG);
     my (%value, @deps, $dependFLG, $vFLG, $cmd);
 
     # create plots transfer job script
@@ -747,14 +750,14 @@ sub monthly_plots {
         $job_name = "SBATCH --job-name=$jobname";
         $time = "SBATCH --time=$walltime_cl";
         $output = "SBATCH --output=$outfile";
-        $partition = "SBATCH --partition=datamove";
+        $parFLG = "SBATCH --partition=datamove";
         $vFLG = "--export=outfile=$outfile";
     }
     else {
         $job_name = "PBS -N $jobname";
         $time = "PBS -l walltime=$walltime_cl";
         $output = "PBS -o $outfile";
-        $partition = "";
+        $parFLG = "";
         $vFLG = "-v outfile=$outfile";
     }
 
@@ -763,7 +766,7 @@ sub monthly_plots {
     $value{"__TIME__"}      = $time;
     $value{"__ACCOUNT__"}   = $account;
     $value{"__OUTPUT__"}    = $output;
-    $value{"__PARTITION__"} = $partition;
+    $value{"__PARTITION__"} = $parFLG;
 
     $value{"__TRANSFER__"}  = basename($transfer_csh);
     $value{"__RUNDIR__"}    = $rundir;
@@ -1038,21 +1041,25 @@ purpose: calculate means, tar inputs, and/or produce plots for monthly data
 usage: $script [process options] [plot option] [other options]
 
 process options (see Notes below)
-  -means             calculate monthly means
-  -tar               tar input files
-  -plots             produce monthly plots from monthly means
-  -finish_plots      finish monthly plots job which stopped before completion
+  -means                calculate monthly means
+  -tar                  tar input files
+  -plots                produce monthly plots from monthly means
+  -finish_plots         finish monthly plots job which stopped before completion
 
 plot option (only valid when used with -plots or -finish_plots)
-  -nopush            do not transfer gif files to Web server after plotting
+  -nopush               do not transfer gif files to Web server after plotting
+
+slurm directive options
+  -partition partition  send monthly means jobs to specified partition
+  -qos qos              send monthly means jobs to specified qos
 
 other options
-  -rc mnthlyRC       name of monthly rc file [run/monthly.rc]
-  -newrc [n]         re-create resource files prior to any other processing
-                     if n==1, then write new monthly rc file
-                     if n==2, then write new plots HISTORY.rc_tmpl
-                     if no value for n is given, then n==1,2
-  -h                 print usage information
+  -rc mnthlyRC          name of monthly rc file [run/monthly.rc]
+  -newrc [n]            re-create resource files prior to any other processing
+                        if n==1, then write new monthly rc file
+                        if n==2, then write new plots HISTORY.rc_tmpl
+                        if no value for n is given, then n==1,2
+  -h                    print usage information
 
 Notes:
 1. Plots cannot be produced unless monthly means are calculated
