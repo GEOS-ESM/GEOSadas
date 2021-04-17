@@ -559,14 +559,6 @@
          Call RenameRstCheckPoint_( 1 )
                                                        zeit_co.x RenameRstCheckPoint
 
-#        Run Land analysis
-#        -----------------
-         if ( $LDAS_ANA ) then         
-                                                       zeit_ci.x LandAnalysisRun
-              Call LandAnalysisRun_()
-                                                       zeit_co.x LandAnalysisRun
-         endif
-
 #        Run the vortex tracker
 #        ----------------------
                                                        zeit_ci.x VortexTrack
