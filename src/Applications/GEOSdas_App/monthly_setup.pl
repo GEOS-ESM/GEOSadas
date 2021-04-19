@@ -178,7 +178,7 @@ sub write_plotfiles {
     $values{"\@BATCH_GROUP"} = "SBATCH --account=$GID";
     $values{"\@SITE"} = uc($siteID);
     $values{"\@GEOSBIN"} = "$FVROOT/bin";
-    $values{"\@GEOSSRC"} = dirname($FVROOT) ."/src";
+    $values{"\@GEOSSRC"} = $ENV{"GEOSUTIL"};
 
     replaceLabels($infile, $outfil, \%values,\@setenvs);
         
