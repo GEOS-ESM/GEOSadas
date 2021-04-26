@@ -73,14 +73,14 @@
    type(ESMF_State)   ,pointer :: EXPORTS(:)
    type(ESMF_State)   ,pointer :: INTERNAL
    type(ESMF_Clock)    :: CLOCK
-   type(MAPL_MetaComp) :: MAPLOBJ
+   type(MAPL_MetaComp), pointer :: MAPLOBJ
 
    type (CubedSphereGridFactory) :: factory
    type (CubedSphereGridFactory) :: cs_factory
    type (LatlonGridFactory) :: ll_factory
-   type (CubeToCubeRegridder)   :: cube_to_cube_prototype
-   type (CubeToLatLonRegridder) :: cube_to_latlon_prototype
-   type (LatLonToCubeRegridder) :: latlon_to_cube_prototype
+   !type (CubeToCubeRegridder)   :: cube_to_cube_prototype
+   !type (CubeToLatLonRegridder) :: cube_to_latlon_prototype
+   !type (LatLonToCubeRegridder) :: latlon_to_cube_prototype
 
 !  Basic information about the parallel environment
 !         PET = Persistent Execution Threads
@@ -148,8 +148,8 @@
 
 !                             -----
    class (BaseProfiler), pointer :: t_p
-   type(MAPL_MetaComp), pointer :: child_maplobj
-   !type (MAPL_Communicators) :: mapl_comm
+   type(ESMF_GridComp) :: temp_gc
+   type(ESMF_Config) :: temp_config
     
     call Main()
 
@@ -201,10 +201,10 @@ CONTAINS
 !   Create a regular Lat/Lon grid over which BKG/ANA defined
 !   --------------------------------------------------------
     if(cubed) then
-      call grid_manager%add_prototype('Cubed-Sphere',factory)
+      !call grid_manager%add_prototype('Cubed-Sphere',factory)
     endif
     if (JM_BKG==6*IM_BKG) then
-       call regridder_manager%add_prototype('Cubed-Sphere', 'Cubed-Sphere', REGRID_METHOD_BILINEAR, cube_to_cube_prototype)
+       !call new_regridder_manager%add_prototype('Cubed-Sphere', 'Cubed-Sphere', REGRID_METHOD_BILINEAR, cube_to_cube_prototype)
        if ( MAPL_am_I_root() ) then
           print *
           print *, 'Background on the cubed grid '
@@ -214,8 +214,8 @@ CONTAINS
        cs_factory = CubedSphereGridFactory(im_world=IM_BKG,lm=LM_BKG,nx=nx_cube,ny=ny_cube,__RC__)
        BKGGrid = grid_manager%make_grid(cs_factory,__RC__)
     else
-       call regridder_manager%add_prototype('Cubed-Sphere', 'LatLon', REGRID_METHOD_BILINEAR, cube_to_latlon_prototype)
-       call regridder_manager%add_prototype('LatLon', 'Cubed-Sphere', REGRID_METHOD_BILINEAR, latlon_to_cube_prototype)
+       !call new_regridder_manager%add_prototype('Cubed-Sphere', 'LatLon', REGRID_METHOD_BILINEAR, cube_to_latlon_prototype)
+       !call new_regridder_manager%add_prototype('LatLon', 'Cubed-Sphere', REGRID_METHOD_BILINEAR, latlon_to_cube_prototype)
        if ( MAPL_am_I_root() ) then
           print *
           print *, 'Background on the lat-lon grid '
@@ -280,8 +280,15 @@ CONTAINS
 
 !   Now create a component to handle the increment output
 !   -----------------------------------------------------
-    !call MAPL_Set(MAPLOBJ, mapl_comm = mapl_Comm, rc = status)
-    !VERIFY_(status)
+    temp_config=ESMF_ConfigCreate()
+    temp_gc = ESMF_GridCompCreate(name="cap_name", config=temp_config, rc=status)
+    VERIFY_(status)
+
+    maplobj => null()
+    call MAPL_InternalStateCreate(temp_gc, maplobj, rc=status)
+    VERIFY_(status)
+   call MAPL_InternalStateRetrieve(temp_gc, maplobj, RC=status)
+   VERIFY_(status)
     BASE = MAPL_AddChild ( MAPLOBJ, Grid=BKGgrid,    &
                                        ConfigFile=myRC,   &
                                           name= 'ABKG',   &
@@ -319,9 +326,9 @@ CONTAINS
          exportState=EXPORTS(STUB), clock=CLOCK, userRC=userRC, RC=STATUS)
     ASSERT_(userRC==ESMF_SUCCESS .and. STATUS==ESMF_SUCCESS)
 
-    if ( cubed ) then ! initialize GetWeights and FMS mambo-jambo
-         call GetWeights_init (6,1,im_iau,im_iau,lm_iau,Nx_cube,Ny_cube*6,.true.,.false.,comm)
-    endif
+    !if ( cubed ) then ! initialize GetWeights and FMS mambo-jambo
+         !call GetWeights_init (6,1,im_iau,im_iau,lm_iau,Nx_cube,Ny_cube*6,.true.,.false.,comm)
+    !endif
 
 #if 0
     if ( MAPL_AM_I_ROOT() ) then
@@ -776,7 +783,7 @@ CONTAINS
 
 !           Create transform from cubed to lat-lon
 !           --------------------------------------
-            L2C => regridder_manager%make_regridder(BKGGrid, GCMGrid, REGRID_METHOD_BILINEAR,__RC__)
+            L2C => new_regridder_manager%make_regridder(BKGGrid, GCMGrid, REGRID_METHOD_BILINEAR,__RC__)
 
             if (proper_winds) then
                 iu = MAPL_SimpleBundleGetIndex ( iaubase, 'DUDT', 3, __RC__ )
@@ -882,7 +889,7 @@ CONTAINS
 
 !                Create transform from lat-lon to cubed
 !                --------------------------------------
-                 C2L => regridder_manager%make_regridder(GCMGrid, BKGGrid, REGRID_METHOD_BILINEAR,__RC__)
+                 C2L => new_regridder_manager%make_regridder(GCMGrid, BKGGrid, REGRID_METHOD_BILINEAR,__RC__)
 
                  jj = MAPL_SimpleBundleGetIndex ( iaustub, 'DUDT', 3, __RC__ )
                  call C2L%regrid(iaustub%r3(jj)%q, aux, __RC__ )
@@ -935,7 +942,7 @@ CONTAINS
 
 !                Create transform from lat-lon to cubed
 !                --------------------------------------
-                 C2L => regridder_manager%make_regridder(GCMGrid, BKGGrid, REGRID_METHOD_BILINEAR,__RC__)
+                 C2L => new_regridder_manager%make_regridder(GCMGrid, BKGGrid, REGRID_METHOD_BILINEAR,__RC__)
 
 !                Create adjoint of transform from cube to lat-lon
 !                ------------------------------------------------

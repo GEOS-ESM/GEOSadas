@@ -101,7 +101,12 @@
    character(len=ESMF_MAXSTR) :: enableTimers
    character(len=*), parameter :: Iam = 'GSIsa'
    class (BaseProfiler), pointer :: t_p
-   type(MAPL_MetaComp), pointer :: child_maplobj 
+   type(MAPL_MetaComp), pointer :: child_maplobj, maplobj
+   type(ESMF_GridComp) :: temp_gc
+   integer :: aana_root
+   type(ESMF_GridComp), allocatable :: child_gcs(:)
+   type(ESMF_State), allocatable :: child_imports(:), child_exports(:)
+   type(ESMF_Config) :: temp_config
 
 ! start
 
@@ -157,29 +162,39 @@
 
 !  States
 !  ------ 
-   expAANA = ESMF_StateCreate (name="AANA_Export",      &
-        stateIntent = ESMF_STATEINTENT_EXPORT, &
-        RC=STATUS )
-   VERIFY_(STATUS)
-   impAANA = ESMF_StateCreate (name="AANA_Import",      &       
-        stateIntent = ESMF_STATEINTENT_IMPORT, & 
-        RC=STATUS ) 
-   VERIFY_(STATUS)
+   !expAANA = ESMF_StateCreate (name="AANA_Export",      &
+        !stateIntent = ESMF_STATEINTENT_EXPORT, &
+        !RC=STATUS )
+   !VERIFY_(STATUS)
+   !impAANA = ESMF_StateCreate (name="AANA_Import",      &       
+        !stateIntent = ESMF_STATEINTENT_IMPORT, & 
+        !RC=STATUS ) 
+   !VERIFY_(STATUS)
 
 !  Create component
-!  ----------------
-   gcAANA = ESMF_GridCompCreate ( name='AANAaana', &
-        configfile="GSI_GridComp.rc", &
-        grid=gridAANA, &
-!        gridcompType=ESMF_ATM, &
-        rc=status)
+!  ---------------
+    temp_config=ESMF_ConfigCreate()
+    temp_gc = ESMF_GridCompCreate(name="cap_name", config=temp_config, rc=status)
+    VERIFY_(status)
+
+    child_maplobj => null()
+    call MAPL_InternalStateCreate(temp_gc, child_maplobj, rc=status)
+    VERIFY_(status)
+   call MAPL_InternalStateRetrieve(temp_gc, child_maplobj, RC=status)
+   VERIFY_(status)
+
+   !gcAANA = ESMF_GridCompCreate ( name='AANAaana', &
+        !configfile="GSI_GridComp.rc", &
+        !grid=gridAANA, &
+!!        gridcompType=ESMF_ATM, &
+        !rc=status)
 
 !  Make sure aana G.C. gets its grid
 !  ---------------------------------
-   call ESMF_GridCompSet(gcAANA, grid=gridAANA, rc=STATUS); VERIFY_(STATUS)
+   !call ESMF_GridCompSet(gcAANA, grid=gridAANA, rc=STATUS); VERIFY_(STATUS)
 
-   call MAPL_InternalStateRetrieve(gcAANA, CHILD_MAPLOBJ, RC=status)
-   VERIFY_(status)
+   !call MAPL_InternalStateRetrieve(gcAANA, CHILD_MAPLOBJ, RC=status)
+   !VERIFY_(status)
    CHILD_MAPLOBJ%t_profiler = TimeProfiler('AANAaana', comm_world = MPI_COMM_WORLD)
 !
 !  Register component
@@ -187,8 +202,20 @@
   call CHILD_MAPLOBJ%t_profiler%start(rc=status)
    VERIFY_(status)
   call CHILD_MAPLOBJ%t_profiler%start('SetService',rc=status)
+   !VERIFY_(status)
+   !call ESMF_GridCompSetServices ( gcAANA, SetServices, rc=STATUS ); VERIFY_(STATUS)
+
+   call MAPL_Set(CHILD_MAPLOBJ, CF=CF, RC=STATUS)
+   VERIFY_(STATUS)
+   aana_root = MAPL_AddChild(child_maplobj,grid=gridAANA,name="AANAaana",ss=SetServices,rc=status)
    VERIFY_(status)
-   call ESMF_GridCompSetServices ( gcAANA, SetServices, rc=STATUS ); VERIFY_(STATUS)
+   call MAPL_Get(child_maplobj,childrens_gridcomps=child_gcs, &
+    childrens_import_states = child_imports, childrens_export_states = child_exports, rc = status)
+   VERIFY_(status)
+   impAANA=child_imports(aana_root)
+   expAANA=child_exports(aana_root)
+   gcAANA=child_gcs(aana_root)
+
   call CHILD_MAPLOBJ%t_profiler%stop('SetService',rc=status)
    VERIFY_(status)
   call CHILD_MAPLOBJ%t_profiler%stop(rc=status)
@@ -201,6 +228,17 @@
         userRC=userRC, RC=STATUS)
    ASSERT_(userRC==ESMF_SUCCESS .and. STATUS==ESMF_SUCCESS)
 
+   block
+   type(ESMF_Field) :: field
+   integer :: rank
+   call ESMF_StateGet(impAANA,'frlake',field,rc=status)
+   VERIFY_(status)
+   call ESMF_FieldValidate(field,rc=status)
+   VERIFY_(status)
+   call ESMF_FieldGet(field,dimCount=rank,rc=status)
+   VERIFY_(status)
+   end block
+
 !  Advance clock
 !  -------------
    call ESMF_ClockAdvance ( clock = clock, rc=status ); VERIFY_(status)
@@ -209,7 +247,6 @@
 !  Start main loop over time
 !  -------------------------
    do 
-
       !  Read/Update background
       !  ----------------------  
       call Populate_State ( cf, clock, gridAANA, impAANA, expAANA, rc=status ); VERIFY_(status)
@@ -358,6 +395,19 @@
    integer:: status, ntgases, naero, nbuns, ib, ic
    character(len=ESMF_MAXSTR):: tgaslist
    character(len=ESMF_MAXSTR):: exp_vars
+   type(ESMF_VM) :: vm
+
+
+   block
+   type(ESMF_Field) :: field
+   integer :: rank
+   call ESMF_StateGet(impAANA,'frlake',field,rc=status)
+   VERIFY_(status)
+   call ESMF_FieldValidate(field,rc=status)
+   VERIFY_(status)
+   call ESMF_FieldGet(field,dimCount=rank,rc=status)
+   VERIFY_(status)
+   end block
 
    if(present(rc)) rc=0
 
@@ -416,7 +466,6 @@
    endif
 
    call ESMFL_Bundle2State (AnaBundleIn, impAANA,rc=status)
-   !VERIFY_(status)
 
    do ib=1,nbuns
        call ESMF_FieldBundleDestroy ( XBundles(ib), rc=STATUS )
@@ -431,12 +480,12 @@
    VERIFY_(status)
    call ESMF_FieldBundleSet ( AnaBundleOut, grid=gridAANA, rc=status )
    VERIFY_(status)
+   call ESMF_VMBarrier(vm)
    call  MAPL_CFIORead ( bupafname, currTime, AnaBundleOut, rc=status, &
         verbose=.true., noread=.true., TIME_IS_CYCLIC=.false.,&
         only_vars=trim(exp_vars))
    VERIFY_(status)
    call ESMFL_Bundle2State (AnaBundleOut, expAANA, rc=status)
-   !VERIFY_(status)
    call ESMF_FieldBundleDestroy ( AnaBundleOut, rc=STATUS )
    VERIFY_(STATUS)
 

@@ -11,7 +11,7 @@ env:
 cmake:
   local: ./@cmake
   remote: ../ESMA_cmake.git
-  tag: v3.3.7
+  tag: v3.3.9
   develop: develop
 
 ecbuild:
@@ -34,7 +34,7 @@ GMAO_Shared:
 MAPL:
   local: ./src/Shared/@MAPL
   remote: ../MAPL.git
-  tag: develop
+  branch: feature/bmauer/fix_bundle2state
   develop: develop
 
 FMS:
