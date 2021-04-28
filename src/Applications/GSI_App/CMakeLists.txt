@@ -35,6 +35,16 @@ ecbuild_add_executable (
   LIBS GEOSaana_GridComp NCEP_bufr_r8i4 NCEP_w3_r8i4)
 
 ecbuild_add_executable (
+  TARGET gsidiag_oz_lay_bin2nc4.x
+  SOURCES gsidiag_oz_lay_bin2nc4.f90
+  LIBS GEOSaana_GridComp NCEP_bufr_r8i4 NCEP_w3_r8i4)
+
+ecbuild_add_executable (
+  TARGET gsidiag_oz_lev_bin2nc4.x
+  SOURCES gsidiag_oz_lev_bin2nc4.f90
+  LIBS GEOSaana_GridComp NCEP_bufr_r8i4 NCEP_w3_r8i4)
+
+ecbuild_add_executable (
   TARGET gsidiag_rad_bin2nc4.x
   SOURCES gsidiag_rad_bin2nc4.f90
   LIBS GEOSaana_GridComp NCEP_bufr_r8i4 NCEP_w3_r8i4)
