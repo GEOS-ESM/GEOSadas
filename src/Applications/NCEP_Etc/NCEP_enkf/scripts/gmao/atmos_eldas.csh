@@ -8,7 +8,7 @@ endif
 
 setenv MYNAME atmos_eldas.csh
 
-if ( $#argv < 4 ) then
+if ( $#argv < 5 ) then
    echo " "
    echo " \\begin{verbatim} "
    echo " "
@@ -18,13 +18,14 @@ if ( $#argv < 4 ) then
    echo " "
    echo " SYNOPSIS "
    echo " "
-   echo "  $MYNAME  expid nymd nhms freq "
+   echo "  $MYNAME  expid nymd nhms freql freqa "
    echo " "
    echo " where"
    echo "   expid  -  usual experiment name, e.g., b541iau"
    echo "   nymd   -  date of current anal as in YYYYMMDD"
    echo "   nhms   -  time of current anal as in HHMMSS"
-   echo "   freq   -  frequency of LDAS4en analysis, as in HHMMSS"
+   echo "   freql   -  frequency of LDAS4en analysis, as in HHMMSS"
+   echo "   freqa   -  frequency of ADASen analysis, as in HHMMSS"
    echo " "
    echo " "
    echo "    This procedures handles the LDAS coupling in the ensembe DAS. In its simplest form "
@@ -32,7 +33,7 @@ if ( $#argv < 4 ) then
    echo "  ensemble."
    echo " "
    echo "  Example of valid command line:"
-   echo "  $MYNAME b541iau 20091019 000000 030000 "
+   echo "  $MYNAME b541iau 20091019 000000 030000 060000"
    echo " "
    echo " REQUIRED ENVIRONMENT VARIABLES"
    echo " "
@@ -63,7 +64,9 @@ endif
 set expid = $1
 set nymd  = $2
 set nhms  = $3
-set freq  = $4
+set freql  = $4
+set freqa  = $5
+
 set hh     = `echo $nhms | cut -c1-2`
 set yyyymmddhh  = ${nymd}${hh} 
 
@@ -122,8 +125,10 @@ endif
       end  #foreach dir 
       cd - 
 
-    set ldas_int = 10800
-    set adas_int = 21600
+     @ ldas_int = $freql / 10000
+     @ ldas_int = $ldas_int * 3600
+     @ adas_int = $freqa / 10000
+     @ adas_int = $adas_int * 3600 
 
       set  lincr_native_name = catch_progn_incr
       set  lincr_default_name = ldas_inc

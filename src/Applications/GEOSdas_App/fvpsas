@@ -417,19 +417,22 @@
 
          endif
 
-## sqz--merge---start  ldas-coupling  
+#--------------------------------------
 #        Run Land analysis
 #        -----------------
 
          if ( $LDAS_ANA ) then
             echo "  LDAS coupling: fvpsas LDAS_ANA  run lenkf "
-
-                                                       zeit_ci.x LandAnalysisRun
-              Call LandAnalysisRun_()
-                                                       zeit_co.x LandAnalysisRun
+                                                       zeit_ci.x ldasRun
+         ldas_run.csh 0 030000 060000 |& tee -a ldasrun.log
+         if( $status) then
+            echo "ldasRun failed"
+            exit(1)
+         endif
+                                                       zeit_co.x ldasRun
          endif
 
-##----------sqz-merge---end 
+##---------------------------------
 
 
 #        Run the analysis if not doing replay
@@ -490,37 +493,21 @@
             endif
          endif
 
-# sqz-merge---start for ldas-coupling  
-#        Wait here for Land analysis if it is being fed back to GCM
-#        ------------------------------------------------------------- 
-
+#------------------------------------------------
+#  check ldas job status and stage ldas increments 
+#--------------------------------------------------
        if ( ( $LDAS_ANA ) && ( $LDASFDBK ) ) then
-        echo " LDAS coupling:fvpsas job status and Increments files "
+        echo " LDAS coupling: stage 1"
+                                                      zeit_ci.x ldasStage
+       ldas_run.csh 1 030000 060000 |& tee -a ldasrun.log
+      if( $status) then
+            echo "ldas_run stage 1  failed"
+            exit(1)
+         endif
+                                                       zeit_co.x ldasStage
+  endif
 
-               if ($?ldasJobIDs) then
-                    $FVROOT/bin/jobIDfilter -w $ldasJobIDs
-                    unsetenv ldasJobIDs
-                endif
-          set lenkf_status_file = ${FVHOME}/lana/lenkf_job_completed.txt
-               rm -f $lenkf_status_file
-               cp $LDHOME/run/lenkf_job_completed.txt  $lenkf_status_file
-
-               set lenkf_status = `cat $lenkf_status_file`
-               echo $lenkf_status
-               echo  $lenkf_status ": lenkf_status"
-              if ($lenkf_status =~  SUCCEEDED )  then
-
-               echo "LDAS coupling fvpsas Lenkf job SUCCEEDED, stageLdasIncr"
-                                                      zeit_ci.x StageLdasIncr
-                 Call StageLdasIncr_()
-                                                      zeit_co.x StageLdasIncr
-              else
-                 echo "LDAS coupling fvpsas  Lenkf job failed"
-                 exit 90
-
-              endif
-        endif
-#--sqz-merge--end 
+#-----------------------
 
 #        Convert analysis eta file into GCM restart
 #        ------------------------------------------

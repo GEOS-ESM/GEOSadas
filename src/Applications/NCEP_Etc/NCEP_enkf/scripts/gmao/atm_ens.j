@@ -155,6 +155,7 @@
   setenv DAPL_RNR_TIMER 28
   setenv I_MPI_MPD_TMPDIR /tmp
   setenv I_MPI_USE_DYNAMIC_CONNECTIONS 0
+  setenv I_MPI_JOB_STARTUP_TIMEOUT 10000
   setenv I_MPI_RDMA_RNDV_WRITE 1
 
 # MVAPICH variables
@@ -459,7 +460,7 @@
 # -----------------------------------
   if ( $LDAS_ANA ) then
          zeit_ci.x eldas
-         atmos_eldas.csh $EXPID $anymd $anhms 030000 |& tee -a atm_ens.log
+         atmos_eldas.csh $EXPID $anymd $anhms 030000 060000 |& tee -a atm_ens.log
          if( $status) then
             echo "eldas failed"
             exit(1)
