@@ -28,7 +28,7 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  branch: feature/bmauer/protect_psas_mpiinit
+  branch: feature/bmauer/fix_mpi_psas
   develop: dev/adas
 
 MAPL:
