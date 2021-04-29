@@ -36,6 +36,7 @@
       use  m_StrTemplate
       use  m_inpak90
       use  m_psas
+      use mpi
 
       implicit NONE
 
@@ -114,10 +115,12 @@
 
 
       logical:: test_nan
-      integer k,l
+      integer k,l,ierr
 
-
+      call MPI_Init(ierr)
+      write(*,*)"bmaa: ",__FILE__,__LINE__
       call zeit_ci ( 'ana_aod' )
+      write(*,*)"bmaa: ",__FILE__,__LINE__
 
 !     Parse command line
 !     ------------------
@@ -125,10 +128,12 @@
      &             aer_a, aod_a, aod_d, aod_f, aod_k, pos_ods, bias_rs, bias_ck,
      &             do_sbc, do_avk, alpha, chAOD, skipPSAS,      
      &             pick, nymd, nhms, im_so, jm_so, nODS, verbose )
+      write(*,*)"bmaa: ",__FILE__,__LINE__
      
 !     Initialize PSAS
 !     ---------------
       call psas_init(topology = PURE_OMP)
+      write(*,*)"bmaa: ",__FILE__,__LINE__
 
 !                                     -------------------
 !                                     Gridded Background
@@ -137,12 +142,15 @@
 !     Registries
 !     ----------
       aerReg = Chem_RegistryCreate ( rc, 'GAAS_AerRegistry.rc' )
+      write(*,*)"bmaa: ",__FILE__,__LINE__
       if ( rc == 0 ) then
          call Chem_RegistryPrint(aerReg)
       else
          call die(myname,'could not read Chem Registry for species')
       end if
+      write(*,*)"bmaa: ",__FILE__,__LINE__
       aodReg = Chem_RegistryCreate ( rc, 'GAAS_AodRegistry.rc' )
+      write(*,*)"bmaa: ",__FILE__,__LINE__
       if ( rc .ne. 0 ) then
          call die(myname,'could not read Chem Registry for AOD')
       end if
@@ -151,6 +159,7 @@
 !     Load AOD background
 !     -------------------
       call AOD_GetDims (aerFile, im, jm, km, rc)
+      write(*,*)"bmaa: ",__FILE__,__LINE__
       if ( rc /= 0 ) then
          print *, ' rc = ', rc
          call die(myname, 
@@ -615,6 +624,7 @@
 !                                   Parse Command Line
 !                                 ----------------------
 
+      write(*,*)"bmaa: ",__FILE__,__LINE__
       argc =  iargc()
       if ( argc < 1 ) call usage_()
       nODS = 0
@@ -693,6 +703,7 @@
          end if
       end do
 
+      write(*,*)"bmaa: ",__FILE__,__LINE__
 !     Derived parameters
 !     ------------------
       if ( aod_k(1:4) == 'NONE' ) then
@@ -708,6 +719,7 @@
 
 !     Load resource
 !     -------------
+      write(*,*)"bmaa: ",__FILE__,__LINE__
       call i90_loadf ( rcfile, ier )
       if ( ier .eq. 0 ) then
          if (trim(rcfile)/='ana.rc') then
@@ -719,6 +731,7 @@
          call die(myname, 'could not read rc file '//trim(rcfile) )
       endif
 
+      write(*,*)"bmaa: ",__FILE__,__LINE__
 !     Read resource file if pre-analysis ODS files have not been specified
 !     --------------------------------------------------------------------
       if ( nODS .eq. 0 ) then
