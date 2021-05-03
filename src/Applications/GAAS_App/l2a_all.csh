@@ -21,7 +21,7 @@ if ( ! $?ESMADIR ) then
 endif
 
 set path = ( . $ESMADIR/$ARCH/bin $path )
-setenv PYTHONPATH /opt/epd/lib/python2.6/site-packages/:$ESMADIR/$ARCH/lib/Python 
+setenv PYTHONPATH /opt/epd/lib/python2.6/site-packages/:$ESMADIR/$ARCH/lib/Python2
 
 set nymd = $nymd_beg
 while ( $nymd <= $nymd_end )
