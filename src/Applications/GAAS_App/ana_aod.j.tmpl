@@ -19,10 +19,12 @@ endif
 
 #------------------------------
 # Odd variables that offend MPT-built execs
-unsetenv PMI_RANK
-unsetenv PMI_FD
-unsetenv PMI_JOBID
-unsetenv PMI_SIZE
+if ($?MPT_VERSION) then
+  unsetenv PMI_RANK
+  unsetenv PMI_FD
+  unsetenv PMI_JOBID
+  unsetenv PMI_SIZE
+endif
 #------------------------------
 setenv PATMOSX        >>>PATMOSX<<<
 setenv MODIS_L2_HDF   >>>MODIS_L2_HDF<<<
@@ -40,7 +42,7 @@ cd $AODWORK
 ls
 
 setenv PYTHONPATH $FVROOT/lib/Python
-setenv PSAS_NUM_MPI $NCPUS_AOD
+setenv PSAS_NUM_MPI 1 # $NCPUS_AOD
 
 set aod_modis_pcf = $AODWORK/modis_l2a.pcf
 set aod_avhrr_pcf = $AODWORK/avhrr_l2a.pcf

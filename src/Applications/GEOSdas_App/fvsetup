@@ -2140,10 +2140,15 @@ sub ed_g5fvlay_rc {
   open(LUN2,">$ft") || die "Fail to open tmp.rc: $!\n";
 
   # Change variables to the correct inputs
+  # RT: Only hydrostatic option supported for now - will revise for non-hydro case later
   #---------------------------------------
   while( defined($rcd = <LUN>) ) {
      chomp($rcd);
-     if($rcd =~ /\@HYDROSTATIC/)  {$rcd=~ s/\@HYDROSTATIC/TRUE/g; }
+     if($rcd =~ /\@FV_HYDRO/)  {$rcd=~ s/\@FV_HYDRO/hydrostatic = .T./g; }
+     if($rcd =~ /\@FV_MAKENH/) {$rcd=~ s/\@FV_MAKENH/Make_NH = .F./g; }
+     if($rcd =~ /\@FV_SATADJ/) {$rcd=~ s/\@FV_SATADJ/do_sat_adj  = .F./g; }
+     if($rcd =~ /\@FV_ZTRACER/){$rcd=~ s/\@FV_ZTRACER/z_tracer = .T./g; }
+     if($rcd =~ /\@FV_NWAT/)   {$rcd=~ s/\@FV_NWAT/ /g; }
      print(LUN2 "$rcd\n");
   }
 
@@ -4514,6 +4519,7 @@ EOF
   $nx_pert = 1;
   $ny_pert = 6 * $nx_pert;
   $use_shmem = 0;
+  $ios_nds = 1;
   if ( "$res" eq "c" && "$vres" eq "55" ) {
        $anahgrd = substr($res,0,1);
        $nx = 4;
@@ -4821,6 +4827,7 @@ EOF
        $ana_jm_ens = $ana_jm;
   } elsif ( "$res" eq "C180" ) {  # Cubed-sphere
        $cubed = 1;
+#      $ios_nds = 2;
        $specres = "254";
        $jcap = "254";
        $agcm_grid_type = "Cubed-Sphere";
@@ -4857,6 +4864,7 @@ EOF
        $ana_jm_ens = 181;
   } elsif ( "$res" eq "C360" ) {  # Cubed-sphere
        $cubed = 1;
+#      $ios_nds = 2;
        $specres = "254";
        $jcap = "254";
        $agcm_grid_type = "Cubed-Sphere";
@@ -4894,6 +4902,7 @@ EOF
        $ana_jm_ens = 181;
   } elsif ( "$res" eq "C720" ) {  # Cubed-sphere
        $cubed = 1;
+#      $ios_nds = 3;
        $specres = "254";
        $jcap = "254";
        $agcm_grid_type = "Cubed-Sphere";
@@ -4931,6 +4940,7 @@ EOF
        $ana_jm_ens = 361;
   } elsif ( "$res" eq "C1440" ) {  # Cubed-sphere
        $cubed = 1;
+#      $ios_nds = 4;
        $specres = "254";
        $jcap = "254";
        $agcm_grid_type = "Cubed-Sphere";
@@ -7487,6 +7497,7 @@ print  SCRIPT <<"EOF";
 
 # Load BASEDIR and modules
 # ------------------------
+  unsetenv LD_LIBRARY_PATH
   source \$FVROOT/bin/g5_modules
 
 # Internal parameters controlling system behavior
@@ -7616,8 +7627,8 @@ print  SCRIPT <<"EOF";
   setenv NUMBER_CPUS_IN_MACHINE      \$NCPUS    # Total No CPU on this queue
   setenv OMP_NUM_THREADS             \$NCPUS    # Number OMP Threads (generic)
   setenv OMP_SET_NUMTHREADS          1         # allows dynamic change of #threads
-  setenv PSAS_NUM_MPI                $pmpi      # No. MPI processes for PSAS
-  setenv PSAS_NUM_THREADS            $pthread[$pi]      # No. OMP threads   for PSAS
+  setenv PSAS_NUM_MPI                1 # $pmpi      # No. MPI processes for PSAS
+  setenv PSAS_NUM_THREADS            1 # $pthread[$pi]      # No. OMP threads   for PSAS
   setenv AGCM_N_PROCESSES            $ampi      # N_PROC X N_THREADS = NCPUS
   setenv AGCM_N_THREADS_PER_PROCESS  $athreads
   setenv AGCM_NUM_MPI                \$AGCM_N_PROCESSES           # No. MPI processes for GCM
@@ -7646,14 +7657,14 @@ print  SCRIPT <<"EOF";
 
   if (\$?I_MPI_ROOT) then
 #    The following as recommended by Scott and SI Team
-     setenv I_MPI_USE_DYNAMIC_CONNECTIONS 0
+#    setenv I_MPI_USE_DYNAMIC_CONNECTIONS 0
      setenv I_MPI_SHM_HEAP_VSIZE   512
      setenv PSM2_MEMORY            large
      setenv I_MPI_ADJUST_GATHERV   3
      setenv I_MPI_ADJUST_ALLREDUCE 12
-     setenv I_MPI_EXTRA_FILESYSTEM 1
-     setenv I_MPI_EXTRA_FILESYSTEM_LIST gpfs
-     setenv ROMIO_FSTYPE_FORCE         "gpfs:"
+#    setenv I_MPI_EXTRA_FILESYSTEM 1
+#    setenv I_MPI_EXTRA_FILESYSTEM_LIST gpfs
+#    setenv ROMIO_FSTYPE_FORCE         "gpfs:"
 #    setenv I_MPI_FABRICS shm:dapl
 #    setenv I_MPI_FABRICS_LIST "dapl,ofa"
 #    setenv I_MPI_FALLBACK "enable"
@@ -7808,8 +7819,10 @@ print  SCRIPT <<"EOF";
     setenv MPIRUN_AOD    "mpirun -np \$NCPUS_AOD"
     setenv MPIRUN_PSAS   "mpiexec_mpt -np \$NCPUS_AOD"
   else
-    setenv MPIRUN_AOD    "esma_mpirun -np \$NCPUS_AOD"
-    setenv MPIRUN_PSAS   "esma_mpirun -np \$NCPUS_AOD"
+#   setenv MPIRUN_AOD    "esma_mpirun -np \$NCPUS_AOD"
+#   setenv MPIRUN_PSAS   "esma_mpirun -np \$NCPUS_AOD"
+    setenv MPIRUN_AOD    ""
+    setenv MPIRUN_PSAS   ""
   endif
   setenv RUN_OPT_BLEND "esma_mpirun -np \$NCPUS \$HDF2RSX"
   if (\$G5GCM ) then
@@ -8662,8 +8675,8 @@ print  SCRIPT <<"EOF";
 # --------------------------------------
   setenv NUMBER_CPUS_IN_MACHINE       \$NCPUS    # Total No CPU on this queue
   setenv OMP_NUM_THREADS              \$NCPUS    # Number OMP Threads (generic)
-  setenv PSAS_NUM_MPI                 $pmpi      # No. MPI processes for PSAS
-  setenv PSAS_NUM_THREADS             $pthread[$pi]                  # No. OMP threads   for PSAS
+  setenv PSAS_NUM_MPI                 1 # $pmpi      # No. MPI processes for PSAS
+  setenv PSAS_NUM_THREADS             1 # $pthread[$pi]                  # No. OMP threads   for PSAS
   setenv AGCM_N_PROCESSES             $ampi                          # N_PROC X N_THREADS = NCPUS
   setenv AGCM_N_THREADS_PER_PROCESS   $athread[$ai]                  # number of CPUs
   setenv AGCM_NUM_MPI                 \$AGCM_N_PROCESSES             # No. MPI processes for GCM
@@ -8690,7 +8703,7 @@ print  SCRIPT <<"EOF";
 # MPT env variables
 # -----------------
   if (\$?I_MPI_ROOT) then
-     setenv I_MPI_USE_DYNAMIC_CONNECTIONS 0
+#    setenv I_MPI_USE_DYNAMIC_CONNECTIONS 0
 #    setenv I_MPI_FABRICS shm:dapl
 #    setenv I_MPI_FABRICS_LIST "dapl,ofa"
 #    setenv I_MPI_FALLBACK "enable"
@@ -9362,9 +9375,13 @@ sub init_agcm_rc {
     AGCM_label_subst("\@GRID_TYPE", $agcm_grid_type);
     AGCM_label_subst("\@CUBE_AGCM", $cube_agcm);
     AGCM_label_subst("\@LATLON_AGCM", $latlon_agcm);
+    AGCM_label_subst("\@IOS_NDS", $ios_nds);
 
     AGCM_label_subst("\@AANA_IM", $ana_im);
     AGCM_label_subst("\@AANA_JM", $ana_jm);
+
+    AGCM_label_subst("\@MP_MG1", "#");
+    AGCM_label_subst("\@MP_GFDL", "#");
 
     AGCM_label_subst("\@NX", $nx);
     AGCM_label_subst("\@NY", $ny);

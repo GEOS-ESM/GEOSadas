@@ -30,6 +30,7 @@
       use  m_simul
 
 
+      use m_mpif90, only : mp_init
       use  m_die
       use  m_zeit   ! timer
       use  m_FileResolv
@@ -115,9 +116,12 @@
 
 
       logical:: test_nan
-      integer k,l,ierr
+      integer k,l,ier
 
-      call MPI_Init(ierr)
+
+      Call mp_init(ier)
+      if ( ier /= 0) call mp_die ( myname, 'MP_INIT()',ier)
+
       call zeit_ci ( 'ana_aod' )
 
 !     Parse command line
