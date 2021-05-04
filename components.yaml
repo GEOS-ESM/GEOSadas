@@ -109,7 +109,7 @@ mom6:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  tag: v1.3.16
+  branch: feature/rtodling/GEOSadas-5_27_MAPL2
   develop: develop
 
 UMD_Etc:
