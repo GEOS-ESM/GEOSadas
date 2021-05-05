@@ -28,13 +28,13 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  branch: feature/bmauer/fix_mpi_psas
+  branch: feature/rtodling/GEOSadas-5_27_MAPL2
   develop: dev/adas
 
 MAPL:
   local: ./src/Shared/@MAPL
   remote: ../MAPL.git
-  branch: develop
+  tag: v2.6.6
   develop: develop
 
 FMS:
@@ -109,7 +109,7 @@ mom6:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  tag: v1.3.16
+  branch: feature/rtodling/GEOSadas-5_27_MAPL2
   develop: develop
 
 UMD_Etc:

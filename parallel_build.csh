@@ -21,14 +21,10 @@ setenv ESMADIR $srcdir
 set origargv = "$argv"
 
 setenv DEVELOP FALSE
-setenv USEMEPO TRUE
+
 while ($#argv)
    if ("$1" == "-develop") then
       setenv DEVELOP TRUE
-   endif
-
-   if ("$1" == "-mepo") then
-      setenv USEMEPO TRUE
    endif
 
    shift

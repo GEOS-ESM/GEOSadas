@@ -394,6 +394,15 @@ sub outputAGCM {
         print(LUN2 "# ------------------------------------------------\n");
         print(LUN2 "DEFAULT_CHECKPOINT_TYPE: ");
         print(LUN2 $subst{'@DFLT_CHECKPOINT_TYPE'} ."\n");
+
+        print(LUN2 "\n# Tracers definition \n");
+        print(LUN2 "# ---------------------\n");
+        print(LUN2 "TRI_increments:: \n");
+        print(LUN2 "PCHEM::OX \n");
+        print(LUN2 ":: \n");
+        print(LUN2 "MTRI_increments:: \n");
+        print(LUN2 "PCHEM::OX \n");
+        print(LUN2 ":: \n");
     }
     close(LUN1);
     close(LUN2);
