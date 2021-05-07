@@ -34,13 +34,13 @@ GMAO_Shared:
 MAPL:
   local: ./src/Shared/@MAPL
   remote: ../MAPL.git
-  tag: v2.6.6
+  branch: feature/bmauer/fix_geosgcmpert
   develop: develop
 
 FMS:
   local: ./src/Shared/@FMS
   remote: ../FMS.git
-  tag: geos/2019.01.02+noaff.6
+  branch: feature/mathomp4/enable-efp-in-sum_ad
   develop: geos/release/2019.01
 
 GEOSana_GridComp:

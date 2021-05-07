@@ -16,6 +16,7 @@ Program GEOS5_Main
 
    use ESMF
    use MAPL
+   use MPI
 
    use MAPL_HistoryGridCompMod, only : FHist_SetServices => SetServices
    use MAPL_HistoryGridCompMod, only : BHist_SetServices => SetServices
@@ -155,6 +156,7 @@ Program GEOS5_Main
    integer                      :: LDIMS(3)
    integer                      :: shapiro_filter
    type(LatLonGridFactory)      :: ll_factory
+   type(ServerManager)          :: pert_server
 
    character(len=30) PERTGRIDNAME
 
@@ -170,6 +172,11 @@ Program GEOS5_Main
    call ESMF_Initialize (vm=vm, logKindFlag=ESMF_LOGKIND_NONE, rc=status)
 #endif
    VERIFY_(STATUS)
+
+   call MAPL_Initialize(rc=status)
+   VERIFY_(status)
+   call pert_server%initialize(mpi_comm_world,rc=status)
+   VERIFY_(status)
 
    AmIRoot_ = MAPL_Am_I_Root(vm)
    if (present(AmIRoot)) then
@@ -353,9 +360,13 @@ Program GEOS5_Main
    VERIFY_(STATUS)
    call MAPL_ConfigSetAttribute(cf_fhist, value=NY,  Label="NY:",  rc=status)
    VERIFY_(STATUS)
+   call MAPL_ConfigSetAttribute(cf_fhist, value=RUN_DT,  Label="RUN_DT:",  rc=status)
+   VERIFY_(STATUS)
    call MAPL_ConfigSetAttribute(cf_bhist, value=NX,  Label="NX:",  rc=status)
    VERIFY_(STATUS)
    call MAPL_ConfigSetAttribute(cf_bhist, value=NY,  Label="NY:",  rc=status)
+   VERIFY_(STATUS)
+   call MAPL_ConfigSetAttribute(cf_bhist, value=RUN_DT,  Label="RUN_DT:",  rc=status)
    VERIFY_(STATUS)
 
    call MAPL_Set(MAPLOBJ,cf=cf_fhist,rc=status)
