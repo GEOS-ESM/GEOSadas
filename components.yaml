@@ -34,7 +34,7 @@ GMAO_Shared:
 MAPL:
   local: ./src/Shared/@MAPL
   remote: ../MAPL.git
-  branch: feature/bmauer/fix_geosgcmpert
+  branch: develop
   develop: develop
 
 FMS:
