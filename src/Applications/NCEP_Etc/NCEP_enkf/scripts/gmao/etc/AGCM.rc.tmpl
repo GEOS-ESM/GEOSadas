@@ -12,7 +12,7 @@ AGCM_GRIDNAME: PE@AGCM_IMx@AGCM_JM-CF
 
       AGCM.GRID_TYPE: @GRID_TYPE
       AGCM.GRIDNAME: PE@AGCM_IMx@AGCM_JM-CF
-      >>>CUBE_AGCM<<< AGCM.NF: @AGCM_NF
+      AGCM.NF: @AGCM_NF
       AGCM.LM: @AGCM_LM
       AGCM.IM_WORLD: @AGCM_IM
       AGCM.JM_WORLD: @AGCM_JM
@@ -118,7 +118,7 @@ PRINTRC: 1
 # Set the number of parallel I/O processes to use when
 # RESTART_TYPE and or CHECKPOINT_TYPE are set to pbinary or pnc4
 #---------------------------------------------------------------
-PARALLEL_READFORCING: 1
+PARALLEL_READFORCING: 0
 NUM_READERS: 1
 NUM_WRITERS: 1
 
@@ -137,6 +137,19 @@ RECORD_FINAL:  >>>RECFINL<<<
 RECORD_FREQUENCY: 000000       000000
 RECORD_REF_DATE: >>>REFDATE<<< >>>FCSDATE<<<
 RECORD_REF_TIME: >>>REFTIME<<< >>>FCSTIME<<<
+
+# Define default checkpoint type (pbinary or pnc4)
+# ------------------------------------------------
+DEFAULT_CHECKPOINT_TYPE: pnc4
+
+# Tracers definition 
+# ---------------------
+TRI_increments:: 
+PCHEM::OX 
+:: 
+MTRI_increments:: 
+PCHEM::OX 
+:: 
 
 
 ###################################################################################################
@@ -524,9 +537,8 @@ LANDICE_INTERNAL_CHECKPOINT_FILE:       landice_internal_checkpoint
 CATCH_INTERNAL_RESTART_FILE:            catch_internal_rst
 CATCH_INTERNAL_CHECKPOINT_FILE:         catch_internal_checkpoint
 
-CATCHCN_INTERNAL_RESTART_FILE:            catchcn_internal_rst
-CATCHCN_INTERNAL_CHECKPOINT_FILE:         catchcn_internal_checkpoint
-CATCHCN_INTERNAL_CHECKPOINT_TYPE:         @CHECKPOINT_TYPE
+#CATCHCN_INTERNAL_RESTART_FILE:            catchcn_internal_rst
+#CATCHCN_INTERNAL_CHECKPOINT_FILE:         catchcn_internal_checkpoint
 
 MOIST_INTERNAL_RESTART_FILE:            moist_internal_rst
 MOIST_INTERNAL_CHECKPOINT_FILE:         moist_internal_checkpoint
@@ -534,8 +546,8 @@ MOIST_INTERNAL_CHECKPOINT_FILE:         moist_internal_checkpoint
 
 # Boot-Strapable AGCM Model Restart Files
 # ---------------------------------------
-AIAU_IMPORT_RESTART_FILE:               aiau_import_rst
-AIAU_IMPORT_CHECKPOINT_FILE:            aiau_import_checkpoint
+#AIAU_IMPORT_RESTART_FILE:               aiau_import_rst
+#AIAU_IMPORT_CHECKPOINT_FILE:            aiau_import_checkpoint
 
 GWD_IMPORT_RESTART_FILE:                gwd_import_rst
 GWD_IMPORT_CHECKPOINT_FILE:             gwd_import_checkpoint
@@ -561,8 +573,8 @@ TURBULENCE_IMPORT_CHECKPOINT_FILE:      turb_import_checkpoint
 PCHEM_INTERNAL_RESTART_FILE:            pchem_internal_rst
 PCHEM_INTERNAL_CHECKPOINT_FILE:         pchem_internal_checkpoint
 
-H2O_INTERNAL_RESTART_FILE:              h2o_internal_rst
-H2O_INTERNAL_CHECKPOINT_FILE:           h2o_internal_checkpoint
+#H2O_INTERNAL_RESTART_FILE:              h2o_internal_rst
+#H2O_INTERNAL_CHECKPOINT_FILE:           h2o_internal_checkpoint
 
 # Chemistry/AEROSOL Model Restart Files
 # -------------------------------------
@@ -572,11 +584,11 @@ GOCART_IMPORT_CHECKPOINT_FILE:          gocart_import_checkpoint
 GOCART_INTERNAL_RESTART_FILE:           gocart_internal_rst
 GOCART_INTERNAL_CHECKPOINT_FILE:        gocart_internal_checkpoint
 
-GOCART.data_INTERNAL_RESTART_FILE:      gocartdata_internal_rst
-GOCART.data_INTERNAL_CHECKPOINT_FILE:   gocartdata_internal_checkpoint
+#GOCART.data_INTERNAL_RESTART_FILE:      gocartdata_internal_rst
+#GOCART.data_INTERNAL_CHECKPOINT_FILE:   gocartdata_internal_checkpoint
 
-CARMA_INTERNAL_RESTART_FILE:            carma_internal_rst
-CARMA_INTERNAL_CHECKPOINT_FILE:         carma_internal_checkpoint
+#CARMA_INTERNAL_RESTART_FILE:            carma_internal_rst
+#CARMA_INTERNAL_CHECKPOINT_FILE:         carma_internal_checkpoint
 
 #STRATCHEM_INTERNAL_RESTART_FILE:        stratchem_internal_rst
 #STRATCHEM_INTERNAL_CHECKPOINT_FILE:     stratchem_internal_checkpoint
@@ -596,23 +608,23 @@ CARMA_INTERNAL_CHECKPOINT_FILE:         carma_internal_checkpoint
 #GEOSCHEMCHEM_IMPORT_RESTART_FILE:            geoschemchem_import_rst
 #GEOSCHEMCHEM_IMPORT_CHECKPOINT_FILE:         geoschemchem_import_checkpoint
 
-MAM_INTERNAL_RESTART_FILE:              mam_internal_rst
-MAM_INTERNAL_CHECKPOINT_FILE:           mam_internal_checkpoint
+#MAM_INTERNAL_RESTART_FILE:              mam_internal_rst
+#MAM_INTERNAL_CHECKPOINT_FILE:           mam_internal_checkpoint
 
-GEOSACHEM_INTERNAL_RESTART_FILE:        geosachem_internal_rst
-GEOSACHEM_INTERNAL_CHECKPOINT_FILE:     geosachem_internal_checkpoint
+#GEOSACHEM_INTERNAL_RESTART_FILE:        geosachem_internal_rst
+#GEOSACHEM_INTERNAL_CHECKPOINT_FILE:     geosachem_internal_checkpoint
 
-TR_INTERNAL_RESTART_FILE:               tr_internal_rst
-TR_INTERNAL_CHECKPOINT_FILE:            tr_internal_checkpoint
+#TR_INTERNAL_RESTART_FILE:               tr_internal_rst
+#TR_INTERNAL_CHECKPOINT_FILE:            tr_internal_checkpoint
 
-TR_IMPORT_RESTART_FILE:                 tr_import_rst
-TR_IMPORT_CHECKPOINT_FILE:              tr_import_checkpoint
+#TR_IMPORT_RESTART_FILE:                 tr_import_rst
+#TR_IMPORT_CHECKPOINT_FILE:              tr_import_checkpoint
 
-HEMCO_INTERNAL_RESTART_FILE:            hemco_internal_rst
-HEMCO_INTERNAL_CHECKPOINT_FILE:         hemco_internal_checkpoint
+#HEMCO_INTERNAL_RESTART_FILE:            hemco_internal_rst
+#HEMCO_INTERNAL_CHECKPOINT_FILE:         hemco_internal_checkpoint
 
-HEMCO_IMPORT_RESTART_FILE:              hemco_import_rst
-HEMCO_IMPORT_CHECKPOINT_FILE:           hemco_import_checkpoint
+#HEMCO_IMPORT_RESTART_FILE:              hemco_import_rst
+#HEMCO_IMPORT_CHECKPOINT_FILE:           hemco_import_checkpoint
 
 # OCEAN Model Restart Files
 # -------------------------
@@ -686,7 +698,7 @@ USE_RRTMG_IRRAD: 1.0
 USE_RRTMG_SORAD: 1.0
 ISOLVAR: 2
 USE_NRLSSI2: .TRUE.
-SOLAR_CYCLE_FILE_NAME: ExtData/g5gcm/solar/NRLSSI2.v2017.txt
+SOLAR_CYCLE_FILE_NAME: ExtData/g5gcm/solar/NRLSSI2.v2020.txt
 
 # GOCART broadband aerosol optics tables
 # -----------------------------------------------------
@@ -771,15 +783,15 @@ USE_SATSIM_MISR:  @MISR_SATSIM
 >>>COUPLED<<<steady_state_ocean: 0
 >>>COUPLED<<<OCEAN_PICE_SCALING: 0.0
 
-# For running coupled model in dual ocean mode, uncomment three lines below, 
+# For running MOM5 coupled model in dual ocean mode, uncomment three lines below, 
 # make sure that regular replay is enabled, proper PRECIP_FILE is chosen,
 # sst.data and fraci.data are pointing to read forcing files on tripolar grid,
 # the run starts at 21z/03z/09z/15z, 
 # HISTORY.rc collections have proper ref_time field
 # ---------------------------------------------------------------------------
-#DUAL_OCEAN: 1
-#DATA_SST_FILE: sst.data
-#DATA_FRT_FILE: fraci.data
+>>>MOM5<<<#DUAL_OCEAN: 1
+>>>MOM5<<<#DATA_SST_FILE: sst.data
+>>>MOM5<<<#DATA_FRT_FILE: fraci.data
 
 >>>COUPLED<<<
 >>>COUPLED<<<# Section for CICE 

@@ -26,6 +26,7 @@
    use m_StrTemplate, only: StrTemplate
    use m_zeit, only: zeit_ci,zeit_co,zeit_flush
    use m_zeit, only: zeit_allflush
+   
 
    implicit NONE
 
@@ -55,13 +56,11 @@
    type(ESMF_State)   ,pointer :: EXPORTS(:)
    type(ESMF_State)   ,pointer :: INTERNAL
    type(ESMF_Clock)    :: CLOCK
-   type(MAPL_MetaComp) :: MAPLOBJ
+   type(MAPL_MetaComp),pointer :: MAPLOBJ
 
    type (CubedSphereGridFactory) :: factory
    type (CubedSphereGridFactory) :: cs_factory
    type (LatlonGridFactory) :: ll_factory
-   type (CubeToLatLonRegridder) :: cube_to_latlon_prototype
-   type (LatLonToCubeRegridder) :: latlon_to_cube_prototype
 
 !  Basic information about the parallel environment
 !         PET = Persistent Execution Threads
@@ -78,6 +77,7 @@
    integer :: nymd,nhms
 
    integer :: Nx, Ny                   ! Layout
+   integer :: nx_cube, ny_cube
    integer :: im_bkg, jm_bkg, lm_bkg   ! Bkg Grid dimensions
    integer :: im_iau, jm_iau, lm_iau   ! IAU Grid dimensions (revisit for cubed)
 
@@ -114,10 +114,13 @@
 !  Coordinate variables
 !  --------------------
    character(len=ESMF_MAXSTR)    :: name
-!  real, pointer, dimension(:,:) :: Array, newArray 
 
    character(len=*), parameter :: Iam = 'dyn2cubed'
    character(len=*), parameter :: myRC= 'dyn2cubed.rc'
+
+   type(ESMF_GridComp) :: temp_gc
+   type(ESMF_Config) :: temp_config
+
 
 !                             -----
     
@@ -135,6 +138,9 @@ CONTAINS
     call ESMF_Initialize (logKindFlag=ESMF_LOGKIND_NONE, vm=vm, __RC__)
     call ESMF_VMGetCurrent(vm=vm, rc=status)
     call ESMF_VMGet(vm,mpiCommunicator=comm,rc=status)
+
+    call MAPL_Initialize(rc=status)
+    VERIFY_(status)
 
     call init_ ( CF, nymd, nhms, __RC__ )
 
@@ -160,11 +166,9 @@ CONTAINS
 
 !   Create a regular Lat/Lon grid over which BKG/ANA defined
 !   --------------------------------------------------------
-    call grid_manager%add_prototype('Cubed-Sphere',factory)
-    call regridder_manager%add_prototype('Cubed-Sphere', 'LatLon', REGRID_METHOD_BILINEAR, cube_to_latlon_prototype)
-    call regridder_manager%add_prototype('LatLon', 'Cubed-Sphere', REGRID_METHOD_BILINEAR, latlon_to_cube_prototype)
     if (JM_BKG==6*IM_BKG) then
-       cs_factory = CubedSphereGridFactory(im_world=IM_BKG,lm=LM_BKG,nx=nx,ny=ny/6,__RC__)
+      print *, "I am cubed "
+       cs_factory = CubedSphereGridFactory(im_world=IM_BKG,lm=LM_BKG,nx=nx_cube,ny=ny_cube,__RC__)
        BKGGrid = grid_manager%make_grid(cs_factory,__RC__)
     else
        call MAPL_DefGridName (IM_BKG,JM_BKG,ABKGGRIDNAME,MAPL_am_I_root())
@@ -184,15 +188,7 @@ CONTAINS
 !   Create either a regular Lat/Lon grid or cubed grid over which IAU defined
 !   -------------------------------------------------------------------------
     if (cubed) then
-       ! check for pert-get-weights
-       if (Ny/=6*Nx) then
-          if ( MAPL_am_I_root() ) then
-             print *, 'Error: expecting Ny=6*Nx, since this uses old get-weights'
-             print *, 'Error: aborting ...'
-          end if
-          ASSERT_(.FALSE.)
-       endif
-       cs_factory = CubedSphereGridFactory(im_world=IM_IAU,lm=LM_IAU,nx=nx,ny=ny/6,__RC__)
+       cs_factory = CubedSphereGridFactory(im_world=IM_IAU,lm=LM_IAU,nx=nx_cube,ny=ny_cube,__RC__)
        GCMGrid = grid_manager%make_grid(cs_factory,__RC__)
     else
        call MAPL_DefGridName (IM_IAU,JM_IAU,ABKGGRIDNAME,MAPL_am_I_root())
@@ -203,6 +199,7 @@ CONTAINS
                         LM = LM_IAU, pole='PC', dateline='DC',  &
                                __RC__)
        GCMgrid = grid_manager%make_grid(ll_factory,__RC__)
+
 !   Validate grid
 !   -------------
        call ESMF_GridValidate(GCMgrid,__RC__)
@@ -227,10 +224,6 @@ CONTAINS
 !   Create bundle to hold cubed-fields
 !   ----------------------------------
     GCMBundle = BundleClone(BKGBundle,GCMgrid,__RC__)
-
-    if (cubed) then
-       call GetWeights_init (6,1,im_iau,im_iau,lm_iau,Nx,Ny,.true.,.false.,comm)
-    endif
 
 !   Convert to cubed-sphere
 !   -----------------------
@@ -267,6 +260,7 @@ CONTAINS
           close(999)
     end if
     call final_
+    call MAPL_Finalize()
     call ESMF_Finalize(__RC__)
 
   end subroutine Main
@@ -367,8 +361,8 @@ CONTAINS
    rc = 0
    cubed = .false.
 
-   call ESMF_ConfigGetAttribute( CF, NX, label ='NX:', __RC__ )
-   call ESMF_ConfigGetAttribute( CF, NY, label ='NY:', __RC__ )
+   call MAPL_MakeDecomposition(nx,ny,__RC__)
+   call MAPL_MakeDecomposition(nx_cube,ny_cube,reduceFactor=6,__RC__)
 
    call ESMF_ConfigGetAttribute( CF, IM_IAU, label ='AGCM.IM_WORLD:', __RC__ )
    call ESMF_ConfigGetAttribute( CF, JM_IAU, label ='AGCM.JM_WORLD:', __RC__ )
@@ -377,7 +371,7 @@ CONTAINS
    call ESMF_ConfigGetAttribute( CF, proper_winds, label ='PROPER_WINDS:', default=proper_winds, __RC__ )
 
    call ESMF_ConfigGetAttribute( CF, DYNTYP, label ='DYCORE:', __RC__ )
-   if(trim(dyntyp)=='FV3') cubed=.true.
+   if(trim(dyntyp)=='FV3' .or. JM_BKG==6*IM_BKG) cubed=.true.
 
    call ESMF_ConfigGetAttribute( CF, ivars, label ='INPUT_VARS:', __RC__ )
 
@@ -679,9 +673,9 @@ CONTAINS
 !  Create transform from cubed to lat-lon
 !  --------------------------------------
    if (ll2cc) then
-      L2C => regridder_manager%make_regridder(BKGGrid, GCMGrid, REGRID_METHOD_BILINEAR,__RC__)
+      L2C => new_regridder_manager%make_regridder(BKGGrid, GCMGrid, REGRID_METHOD_BILINEAR,__RC__)
    else
-      C2L => regridder_manager%make_regridder(GCMGrid, BKGGrid, REGRID_METHOD_BILINEAR,__RC__)
+      C2L => new_regridder_manager%make_regridder(GCMGrid, BKGGrid, REGRID_METHOD_BILINEAR,__RC__)
    endif
    call ESMF_FieldBundleGet(InpBundle,FieldCount=nfld, __RC__ )
    n2d=0;n3d=0

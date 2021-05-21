@@ -384,6 +384,7 @@ my ($remNODE, $remID);
 my ($qsub);
 my ($acqloc);
 my ($fcstimes,$fcswait_hrs,$asnwait_hrs);
+my ($landbcs);
 
 my ($sysfile, $nodeflg);
 my (@rmTilde);
@@ -1317,6 +1318,38 @@ sub ed_g5hist_rc_new {
     system $cmd;
 }
 
+#=======================================================================
+sub ed_g5surfGC_rc {
+
+  return 0 unless ( $g5gcm );
+
+  my($mydir,$which) = @_;
+  my($ft, $fhis, $fdfn, $rcd);
+
+  $ft   = "$fvhome/$mydir/tmp.rc";
+  $fhis = "$fvhome/$mydir/$which";
+
+  open(LUN,"$fhis") || die "Fail to open $which: $!\n";
+  open(LUN2,">$ft") || die "Fail to open tmp.rc: $!\n";
+
+# Change variables to the correct inputs
+# --------------------------------------
+  while( defined($rcd = <LUN>) ) {
+    chomp($rcd);
+    if($rcd =~ /\# GEOSagcm=>/)    {$rcd=~ s/\# GEOSagcm=>/      /g; }
+    if ( "$landbcs" ne "Icarus-NLv3" ) {
+      if($rcd =~ /\  LAND_PARAMS:/)    {$rcd=~ s/NRv7.2/Icarus/g; }
+      if($rcd =~ /\  Z0_FORMULATION:/) {$rcd=~ s/4/2/g; }
+    }
+    print(LUN2 "$rcd\n");
+  }
+  close(LUN);
+  close(LUN2);
+
+  cp($ft,$fhis);
+  unlink $ft;
+
+}
 #=======================================================================
 sub ed_g5prog_rc {
 
@@ -9168,7 +9201,7 @@ print  SCRIPT <<"EOF";
 
 # Reset CAP
 # ---------
-  if ( -e \$FVHOME/fcst/CAP_\${hh}.rc.tmpl ) /bin/cp \$FVHOME/fcst/CAP_\${hh}.rc.tmpl \$FVHOME/fcst/CAP.rc.tmpl
+# if ( -e \$FVHOME/fcst/CAP_\${hh}.rc.tmpl ) /bin/cp \$FVHOME/fcst/CAP_\${hh}.rc.tmpl \$FVHOME/fcst/CAP.rc.tmpl
 
 # Check for Bootstrap
 # -------------------
@@ -9178,7 +9211,7 @@ print  SCRIPT <<"EOF";
 # Make the forecast run as 1 job segment
 # --------------------------------------
   if (! -e .SUBMITTED.\$itime) touch .SUBMITTED.\$itime
-  fvpsas \$fcst_opts -fcst \$itime \$FVHOME \$FVWORK
+  fvpsas \$fcst_opts -fcst \$itime -ihh0 \$hh \$FVHOME \$FVWORK
 
   set rc = \$status
   if ( \$rc > 0 && \$rc < 100 ) then
@@ -9250,40 +9283,43 @@ endif
        /bin/rm -f \$rsf
      end
 
-     set rslist = `/bin/ls -1 \$FVHOME/fcst/\$EXPID.rst.lcv.????????_??z.bin`
-     if ( \$status ) then
-         if( -e forecast.\${nymd}_\${hh}z.RUNNING ) /bin/rm forecast.\${nymd}_\${hh}z.RUNNING
-         if ( !(\$?this_nymdhh) ) then
-            set fclist = `/bin/ls -1 forecast.????????_??z`
-            if ( \$status ) then
-               echo \$myname": no more restart files, forecast job completed"
-            else
-               set itime2 = \$fclist[1]:e
-               set jname2 = fcst.\$itime2
-               set lname2 = fcst.log.\${itime2}.o%j.txt
-            endif
-         endif
+     if (\$?this_nymdhh) then
+         if( -e forecast.\${this_nymdhh}z.RUNNING ) /bin/rm forecast.\${this_nymdhh}z.RUNNING
      else
-         set itime2 = \$rslist[1]:r:e
-         set jname2 = fcst.\$itime2
-         set lname2 = fcst.log.\${itime2}.o%j.txt
-     endif
-
-     if ( \$\?itime2 ) then
-         if ( ! -e .SUBMITTED.\$itime2 ) then
-            touch .SUBMITTED.\$itime2
-            if ( \$BATCH_SUBCMD == "sbatch" ) then
-               sbatch -d afterany:\${SLURM_JOBID} -J \$jname2 -o \$lname2 $jobf.j
-            else
-               qsub -W depend=afterany:\${PBS_JOBID} -N \$jname2 -o \$lname2 $jobf.j
-            endif
+         set rslist = `/bin/ls -1 \$FVHOME/fcst/\$EXPID.rst.lcv.????????_??z.bin`
+         if ( \$status ) then
+             if( -e forecast.\${nymd}_\${hh}z.RUNNING ) /bin/rm forecast.\${nymd}_\${hh}z.RUNNING
+             set fclist = `/bin/ls -1 forecast.????????_??z`
+             if ( \$status ) then
+                echo \$myname": no more restart files, forecast job completed"
+             else
+                set itime2 = \$fclist[1]:e
+                set jname2 = fcst.\$itime2
+                set lname2 = fcst.log.\${itime2}.o%j.txt
+             endif
+         else
+             set itime2 = \$rslist[1]:r:e
+             set jname2 = fcst.\$itime2
+             set lname2 = fcst.log.\${itime2}.o%j.txt
          endif
-     endif
 
-     # Rename output log
-     # -----------------
-     set lname = \$FVHOME/fcst/fcst.log.\${itime}.txt
-     qalter -o \$lname \$SLURM_JOBID
+         if ( \$\?itime2 ) then
+             if ( ! -e .SUBMITTED.\$itime2 ) then
+                touch .SUBMITTED.\$itime2
+                if ( \$BATCH_SUBCMD == "sbatch" ) then
+                   sbatch -d afterany:\${SLURM_JOBID} -J \$jname2 -o \$lname2 $jobf.j
+                else
+                   qsub -W depend=afterany:\${PBS_JOBID} -N \$jname2 -o \$lname2 $jobf.j
+                endif
+             endif
+         endif
+
+         # Rename output log
+         # -----------------
+         set lname = \$FVHOME/fcst/fcst.log.\${itime}.txt
+         qalter -o \$lname \$SLURM_JOBID
+
+     endif
 
      # Because on Columbia this is not a legitimate TMPDIR, remove dir to avoid pile up
      # --------------------------------------------------------------------------------
@@ -9671,6 +9707,7 @@ sub copy_resources {
   ed_g5cap_rc("run","CAP.rc.tmpl",-1);
   #--ed_g5prog_rc_new("run","GCMPROG.rc.tmpl");
   ed_g5hist_rc_new("run","HISTORY.rc.tmpl");
+  ed_g5surfGC_rc("run","GEOS_SurfaceGridComp.rc");
   writeSaverst($fcsthrs, "$fvhome/run");
   ed_blendacq("fcst");
 
