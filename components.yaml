@@ -46,7 +46,7 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  tag: v1.3.0
+  branch: feature/rtodling/advsens
   develop: develop
 
 GEOSgcm_GridComp:
@@ -95,7 +95,7 @@ mom:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  tag: cvs/GEOSadas-5_27_1_p3
+  branch: feature/rtodling/g5271p3_hist4jedi
   develop: develop
 
 UMD_Etc:
