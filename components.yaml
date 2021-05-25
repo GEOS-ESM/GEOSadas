@@ -22,7 +22,7 @@ ecbuild:
 NCEP_Shared:
   local: ./src/Shared/@NCEP_Shared
   remote: ../NCEP_Shared.git
-  tag: v1.1.0
+  tag: feature/rtodling/rt-GEOSadas-5_28_0
   develop: main
 
 GMAO_Shared:
