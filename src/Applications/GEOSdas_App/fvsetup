@@ -2290,6 +2290,8 @@ sub ed_aens_das_replay_acq {
 $replay_arcdir/atmens/Y%y4/M%m2/$aens_replay_expid.atmens_ebkg.%y4%m2%d2_%h2z.tar => $expid.atmens_ebkg.%y4%m2%d2_%h2z.tar
 EOF
 
+  if ($doasens) {cp($acq,$fvhome/asens/atmens_asens.acq)};
+
 }
 #=======================================================================
 sub ddd_hhmmss {
