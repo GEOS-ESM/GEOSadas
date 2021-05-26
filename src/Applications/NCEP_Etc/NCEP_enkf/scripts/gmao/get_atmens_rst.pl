@@ -1,10 +1,12 @@
 #!/usr/bin/env perl
 use strict;
 use warnings;
-use Cwd qw(cwd);
+use Cwd qw(abs_path cwd);
 use File::Basename qw(basename dirname);
 use File::Copy qw(cp mv);
 use File::Path qw(mkpath rmtree);
+use Getopt::Long qw(GetOptions);
+
 use FindBin qw($Bin);
 use lib "$Bin";
 use Manipulate_time qw(tick);
@@ -30,7 +32,7 @@ my %vopts = ( "verbose" => 1 );
     my ($atmens_stat_dir, $atmens_ebkg_dir, $atmens_erst_dir, $atmens_ecbkg_dir);
     my ($tarfile, $tarpath, $label, $pid);
     my ($ens, $mem, $mfile, $mfile_new);
-    my (@tarList);
+    my (@archList, @tarList);
     
     init();
     chdir($atmens_dir);
@@ -52,12 +54,12 @@ my %vopts = ( "verbose" => 1 );
     foreach $label ("stat", "ebkg", "ecbkg", "erst") {
         $tarfile = "$expid.atmens_$label.${yyyymmdd}_${hh}z.tar";
         $tarpath = "$atmens_date_dir/$tarfile";
+        push @archList, $tarpath if archFile($tarpath);
         push @tarList, $tarpath;
     }
-
     defined($pid = fork) or die "Error while attempting to fork;";
     unless ($pid) {
-        system "dmget @tarList";
+        system "dmget @archList";
         exit;
     }
     foreach $tarpath (@tarList) { system_("tar xvf $tarpath") }
@@ -88,7 +90,6 @@ my %vopts = ( "verbose" => 1 );
 # purpose - get runtime parameters and flags
 #=======================================================================
 sub init {
-    use Getopt::Long qw(GetOptions);
     my ($fvhome, $help, $exparcdir);
 
     GetOptions("fvhome=s" => \$fvhome,
@@ -102,6 +103,7 @@ sub init {
     ($exparcdir, $newid, $yyyymmdd, $hh) = @ARGV;
 
     $exparcdir =~ s/[\s\/]*$//;
+    $exparcdir = abs_path($exparcdir);
     $arcdir = dirname($exparcdir);
     $expid = basename($exparcdir);
 
@@ -121,6 +123,20 @@ sub init {
     $atmens_dir = "$fvhome/atmens";
     mkpath($atmens_dir, \%vopts) unless -d $atmens_dir;
     
+}
+
+#=======================================================================
+# name - archFile
+# purpose - Return true (1) if $file is an archive file;
+#           Return false (0) if not
+#=======================================================================
+sub archFile {
+    my ($file, $dmLine, $dmFLG);
+    $file = shift @_;
+    $dmLine = `dmls -l $file`;
+    $dmFLG = 1;
+    $dmFLG = 0 if $dmLine =~ m|(N/A)|;
+    return $dmFLG;
 }
 
 #=======================================================================
