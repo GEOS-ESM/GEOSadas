@@ -2,12 +2,12 @@
 # geos_it.input
 #--------------
 
-description: geos_it__GEOSadas-5_28_0__agrid_C90__ogrid_CS
-tag: GEOSadas-5_28_0
+description: geos_it__b95f691__agrid_C360__ogrid_C
+tag: b95f691
 
 ---ENDHEADERS---
 
-Remote account for Intranet plots? [rtodling@train]
+Remote account for Intranet plots? [dao_ops@train]
 > 
 
 Is this a MERRA2 experiment (y/n)? [n]
@@ -20,22 +20,25 @@ AGCM Vertical Resolution? [72]
 > 
 
 OGCM Resolution? [f]
-> CS
+> C
 
-EXPID? [u000_C90]
+EXPID? [u000_C360]
 > $expid
 
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [geos_it__GEOSadas-5_28_0__agrid_C90__ogrid_CS]
+EXPDSC? [geos_it__b95f691__agrid_C360__ogrid_C]
 > 
 
 Land Boundary Conditions? [Icarus_Updated]
 > Icarus-NLv3
 
+Catchment Model choice? [1]
+> 
+
 FVHOME? [/discover/nobackup/rtodling/geos_it]
-> /discover/nobackup/projects/gmao/dadev/rtodling/geos_it
+> /discover/nobackup/dao_ops/$expid
 
 The directory /discover/nobackup/projects/gmao/dadev/rtodling/geos_it does not exist. Create it now? [y]
 > 
@@ -71,7 +74,7 @@ AeroCom? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/AeroCom]
 > 
 
 FVICS? [/archive/u/jstassi/restarts/GEOSadas-5_24_0]
-> /discover/nobackup/projects/gmao/dadev/rtodling/archive/x0044/rs/Y2020/M12/x0044.rst.20201215_21z.tar
+> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_28/geosit_test/rs/Y2017/M12/geosit_test.rst.20171215_21z.tar
 
 Run model-adjoint-related applications (0=no,1=yes)? [0]
 > 
@@ -79,23 +82,23 @@ Run model-adjoint-related applications (0=no,1=yes)? [0]
 Run analysis-sensitivity applications (0=no,1=yes)? [0]
 > 
 
-Ending year-month-day? [20201217]
+Ending year-month-day? [20210117]
 > 
 
 Length of FORECAST run segments (in hours)? [123]
-> 27
+> 
 
 Number of one-day DAS segments per PBS job? [1]
 > 
 
-Number of PEs in the zonal direction (NX)? [4]
-> 6
+Number of PEs in the zonal direction (NX)? [8]
+> 
 
-Number of PEs in the meridional direction (NY)? [24]
-> 36
+Number of PEs in the meridional direction (NY)? [48]
+> 
 
 Job nickname? [g5das]
-> geosit
+> git
 
 Run in split executable mode (1=yes;0=no)? [1]
 > 
@@ -112,23 +115,23 @@ Analysis vertical levels (sig))? [72]
 GSI grid resolution? [NA]
 > 
 
-GEOS grid resolution instead? [c]
-> d
+GEOS grid resolution instead? [d]
+> 
 
 Ensemble Hybrid (<0;3=3dHyb;4=Hyb4d)? [-1]
 > 
 
-Number of procs in the zonal direction (NX)? [4]
+Number of procs in the zonal direction (NX)? [12]
 > 6
 
-Number of procs in the meridional direction (NY)? [12]
+Number of procs in the meridional direction (NY)? [20]
 > 36
 
 Which main class of ObsSys (1: NRT; 2: MERRA; 3: MERRA-2)? [1]
-> 1
+> 
 
 OBSERVING SYSTEM CLASSES?
-> disc_airs_bufr,disc_amsua_bufr,mls_nrt_nc,ncep_1bamua_bufr,ncep_1bhrs4_bufr,ncep_acftpfl_bufr,ncep_atms_bufr,ncep_aura_omi_bufr,ncep_avcsam_bufr,ncep_avcspm_bufr,ncep_crisfsr_bufr,ncep_goesfv_bufr,ncep_gpsro_bufr,ncep_mhs_bufr,ncep_mtiasi_bufr,ncep_prep_bufr,ncep_satwnd_bufr,ncep_sevcsr_bufr,ncep_ssmis_bufr,ncep_tcvitals,npp_ompsnp_nc,npp_ompsnmeff_nc,aura_omieff_nc
+> ncep_ssmis_bufr,ncep_1bamua_bufr,ncep_prep_bufr,ncep_tcvitals,ncep_mhs_bufr,ncep_1bhrs4_bufr,ncep_goesfv_bufr,ncep_gpsro_bufr,ncep_mtiasi_bufr,ncep_atms_bufr,ncep_cris_bufr,ncep_crisfsr_bufr,ncep_satwnd_bufr,ncep_sevcsr_bufr,ncep_avcsam_bufr,ncep_avcspm_bufr,disc_airs_bufr,disc_amsua_bufr,ncep_acftpfl_bufr,aura_omieff_nc,npp_ompsnp_nc,npp_ompsnmeff_nc,ncep_osbuv_bufr
 
 CHECKING OBSYSTEM? [2]
 > 1
@@ -157,10 +160,10 @@ Frequency for surface (2D) DIAGNOSTIC fields? [010000]
 Frequency for upper air (3D) DIAGNOSTIC fields? [030000]
 > 
 
-Dimension of output in zonal direction? [288]
+Dimension of output in zonal direction? [1152]
 > 
 
-Dimension of output in meridional direction? [181]
+Dimension of output in meridional direction? [721]
 > 
 
 Would you like 2D diagnostics? [y]
@@ -176,7 +179,7 @@ Include GOCART tracers (CO,CO2,aerosols,etc) (y/n)? [y]
 > 
 
 Select GOCART Emission Files to use: [OPS]
-> OPS
+> 
 
 Do Aerosol Analysis (y/n)? [y]
 > 
@@ -200,10 +203,7 @@ Select group: [g0613]
 > 
 
 Edit COLLECTIONS list in run/HISTORY.rc.tmpl (y/n)? [n]
-> y
-
-COLLECTIONS?
-> gaas_bkg.sfc,bkg.eta,bkg.sfc,cbkg.eta,vtx.mix,asm.eta,inst3_2d_gas_Nx,inst3_3d_gas_Nv,inst3_3d_asm_Np,inst3_3d_asm_Nv,tavg3_3d_cld_Cp,tavg3_3d_mst_Ne
+> 
 
 Edit COLLECTIONS list in fcst/HISTORY.rc.tmpl (y/n)? [n]
 > 
