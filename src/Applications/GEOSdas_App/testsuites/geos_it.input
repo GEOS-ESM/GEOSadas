@@ -14,7 +14,7 @@ Is this a MERRA2 experiment (y/n)? [n]
 > 
 
 AGCM Horizontal Resolution? [C48]
-> C360
+> C180
 
 AGCM Vertical Resolution? [72]
 > 
@@ -94,8 +94,8 @@ Number of one-day DAS segments per PBS job? [1]
 Number of PEs in the zonal direction (NX)? [8]
 > 
 
-Number of PEs in the meridional direction (NY)? [48]
-> 
+Number of PEs in the meridional direction (NY)? [30]
+> 48
 
 Job nickname? [g5das]
 > git
@@ -122,10 +122,10 @@ Ensemble Hybrid (<0;3=3dHyb;4=Hyb4d)? [-1]
 > 
 
 Number of procs in the zonal direction (NX)? [12]
-> 6
+> 16
 
 Number of procs in the meridional direction (NY)? [20]
-> 36
+> 24
 
 Which main class of ObsSys (1: NRT; 2: MERRA; 3: MERRA-2)? [1]
 > 
