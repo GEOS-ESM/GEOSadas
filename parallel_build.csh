@@ -13,7 +13,7 @@ if ($name != $name:t) then
    set scriptname = $name:t
    cd $name:h
 endif
-set srcdir = `pwd`
+set srcdir = `pwd -L`
 setenv ESMADIR $srcdir
 
 # Save the original argv because I'm not a good

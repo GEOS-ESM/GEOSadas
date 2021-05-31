@@ -379,7 +379,7 @@ my ($gocart_tracers, $radcor, $emiss, $lsmodel_flag, $rroute_flag);
 my ($agcm_rst_flg, $sensdeg, %setupfile, @otherheaders);
 my ($checkFLG, $dbqueue, $runjobFLG, $saveFLG, $stopFLG);
 my (@fvprompt, @fvANS1, @fvANS2, $fvsetupflags);
-my ($fvhome, $fvroot, $fvbin, $checkID, $siteID);
+my ($fvhome, $fvroot, $fvbin, $bindir, $pwdL, $pwdP, $checkID, $siteID);
 my ($remNODE, $remID);
 my ($qsub);
 my ($acqloc);
@@ -394,12 +394,42 @@ system clear;
 get_runtime_values();
 $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
 
-# FVROOT is directory above bin dir where binaries have been installed
-# --------------------------------------------------------------------
-  $fvroot = dirname($FindBin::Bin);
-  $fvroot =~ s|/u/.realmounts/share|/share|;   # for portability across
-                                               # NAS machines
-  $fvbin = "$fvroot/bin";
+# FVROOT is directory above fvbin where binaries have been installed
+# ------------------------------------------------------------------
+  $fvbin = $FindBin::Bin;  # absolute path of fvbin
+
+  chomp($pwdL = `pwd -L`); # logical path of calling program
+  chomp($pwdP = `pwd -P`); # physical (absolute) path of calling program
+
+  # if fvsetup is called from local directory
+  #------------------------------------------
+  if ($pwdP eq $FindBin::Bin) { $fvbin = $pwdL }
+
+  # if fvsetup is called from remote directory
+  #-------------------------------------------
+  else {
+      $bindir = dirname($0);
+
+      # remove single-dot (".") path segments
+      #--------------------------------------
+      while ($bindir =~ m|^\./|) { $bindir =~ s|^\./|| }
+      while ($bindir =~ m|/\./|) { $bindir =~ s|/\./|/| }
+      while ($bindir =~ m|/\.$|) { $bindir =~ s|/\.$|| }
+
+      # remove leading double-dot ("..") path segments
+      #-----------------------------------------------
+      while ($bindir =~ m|^\.\.|) {
+          $bindir =~ s|^\.\.||;
+          $pwdL = dirname($pwdL);
+          $bindir =~ s|^/||;
+      }
+
+      # determine path of fvbin
+      #------------------------
+      $bindir = "$pwdL/$bindir" unless $bindir =~ m|^/|;
+      $fvbin = $bindir if -e $bindir and abs_path($bindir) eq $fvbin;
+  }
+  $fvroot = dirname($fvbin);
   $fvetc = "$fvroot/etc";
   $user = getpwuid($<) unless ($user = $ENV{"USER"});
 
