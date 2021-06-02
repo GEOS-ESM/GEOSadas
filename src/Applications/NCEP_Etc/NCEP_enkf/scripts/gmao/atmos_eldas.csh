@@ -8,7 +8,7 @@ endif
 
 setenv MYNAME atmos_eldas.csh
 
-if ( $#argv < 5 ) then
+if ( $#argv < 4 ) then
    echo " "
    echo " \\begin{verbatim} "
    echo " "
@@ -18,13 +18,12 @@ if ( $#argv < 5 ) then
    echo " "
    echo " SYNOPSIS "
    echo " "
-   echo "  $MYNAME  expid nymd nhms freql freqa "
+   echo "  $MYNAME  expid nymd nhms freqa "
    echo " "
    echo " where"
    echo "   expid  -  usual experiment name, e.g., b541iau"
    echo "   nymd   -  date of current anal as in YYYYMMDD"
    echo "   nhms   -  time of current anal as in HHMMSS"
-   echo "   freql   -  frequency of LDAS4en analysis, as in HHMMSS"
    echo "   freqa   -  frequency of ADASen analysis, as in HHMMSS"
    echo " "
    echo " "
@@ -33,7 +32,7 @@ if ( $#argv < 5 ) then
    echo "  ensemble."
    echo " "
    echo "  Example of valid command line:"
-   echo "  $MYNAME b541iau 20091019 000000 030000 060000"
+   echo "  $MYNAME b541iau 20091019 000000  060000"
    echo " "
    echo " REQUIRED ENVIRONMENT VARIABLES"
    echo " "
@@ -64,8 +63,7 @@ endif
 set expid = $1
 set nymd  = $2
 set nhms  = $3
-set freql  = $4
-set freqa  = $5
+set freqa  = $4
 
 set hh     = `echo $nhms | cut -c1-2`
 set yyyymmddhh  = ${nymd}${hh} 
@@ -86,7 +84,7 @@ endif
        set jobIDlong = `$PBS_BIN/sbatch $jobldas`
        set jobID = `echo $jobIDlong  |awk -F'[ ]' '{print $4}'`
        setenv ldasJobIDs  $jobID
-       echo $ldasJobIDs ": LDAS4ens coupling lenkf jobID in LandAnalysisRun"
+       echo $ldasJobIDs ": LDAS4ens coupling lenkf jobID "
 
 ## back to fvwork 
       cd $FVWORK
@@ -125,18 +123,30 @@ endif
       end  #foreach dir 
       cd - 
 
-     @ ldas_int = $freql / 10000
-     @ ldas_int = $ldas_int * 3600
      @ adas_int = $freqa / 10000
-     @ adas_int = $adas_int * 3600 
+     @ adas_int = $adas_int * 3600  
+
+     set ldas_int = 10800
+     set ldasDT  = `grep LANDASSIM_DT: ${LDHOME4ens}/run/LDAS.rc | cut -d':' -f2`
+      if ( ${ldasDT} > 0 ) then
+      set ldas_int  = ${ldasDT}
+      endif
+
+     set ldas_t0 = 013000
+     set ldasT0 = `grep LANDASSIM_T0:  ${LDHOME4ens}/run/LDAS.rc | cut -d':' -f2`
+      if ( ${ldasT0} > 0 ) then
+       set ldas_t0 = ${ldasT0}
+      endif
+     set t0hh = `echo ${ldas_t0} | cut -c1-2`
+     set t0mm = `echo ${ldas_t0} | cut -c3-4`
+     @ cent_int = $t0hh * 3600 + $t0mm * 60
+
 
       set  lincr_native_name = catch_progn_incr
       set  lincr_default_name = ldas_inc
 
-      
-      @ cent_int = ($ldas_int / 2)  
 
-     /bin/cp  $RSTSTAGE4AENS/$EXPID.rst.lcv.*.bin my_d_rst
+     /bin/cp  $RSTSTAGE4AENS/*.rst.lcv.*.bin my_d_rst
      set adas_strt = ( `rst_date ./my_d_rst` )  
 
       set secs = 0
@@ -144,16 +154,13 @@ endif
      while ( $secs  < $adas_int )
          # the begining time of the window secs=0 
            set ldas_strt = ( `tick $adas_strt $secs` )
-         # for ldas_incr, use centered time 
-           set ldas_cntr = ( `tick $ldas_strt $cent_int` )
           # ldas anal time
-           set ldas_anlt = ( `tick $ldas_strt $ldas_int` )
+           set ldas_anlt = ( `tick $ldas_strt $cent_int` )
 
          set yyyy_a=`echo $ldas_anlt[1] | cut -c1-4`
          set mm_a=`echo $ldas_anlt[1]   | cut -c5-6`
          set dd_a=`echo $ldas_anlt[1]   | cut -c7-8`
          set tttt_a=`echo $ldas_anlt[2] | cut -c1-4`
-         set tttt_c=`echo $ldas_cntr[2] | cut -c1-4`
 # default name for AGCM: ldas_inc.yyyymmdd_hhnn00
        @ n = 0
 while ($n < $nmem)
@@ -163,7 +170,7 @@ echo $lentag
 set memtag = `echo $n | awk '{printf "%03d", $1}'`
 echo $memtag
       /bin/ln -s  ${LINC_DIR}/Y${yyyy_a}/M${mm_a}/*.${lincr_native_name}${lentag}.$ldas_anlt[1]_${tttt_a}z.nc4\
-        ${FVHOME}/atmens/enslana/mem$memtag/ldas_inc.$ldas_cntr[1]_${tttt_c}00 
+        ${FVHOME}/atmens/enslana/mem$memtag/ldas_inc.$ldas_anlt[1]_${tttt_a}00 
    end 
 
 ## copy to FVWORK 
@@ -171,8 +178,8 @@ echo $memtag
      set dirs = (`/bin/ls -d mem0*`)
      foreach dir ($dirs)
         set nnn = `echo $dir | cut -c4-6`
-        /bin/cp  ${FVHOME}/atmens/enslana/mem${nnn}/ldas_inc.$ldas_cntr[1]_${tttt_c}00\
-           ${FVWORK}/mem${nnn}/ldas_inc.$ldas_cntr[1]_${tttt_c}00 
+        /bin/cp  ${FVHOME}/atmens/enslana/mem${nnn}/ldas_inc.$ldas_anlt[1]_${tttt_a}00\
+           ${FVWORK}/mem${nnn}/ldas_inc.$ldas_anlt[1]_${tttt_a}00 
       end  #foreach dir 
 #---
          @ secs = $secs + $ldas_int
