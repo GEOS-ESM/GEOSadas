@@ -474,21 +474,6 @@
    call ESMF_FieldBundleDestroy ( AnaBundleIn, rc=STATUS )
    VERIFY_(STATUS)
 
-!  Define export state (don't like this being tied up to file)
-!  -----------------------------------------------------------
-   AnaBundleOut = ESMF_FieldBundleCreate ( name='AANA bundle', rc=status )
-   VERIFY_(status)
-   call ESMF_FieldBundleSet ( AnaBundleOut, grid=gridAANA, rc=status )
-   VERIFY_(status)
-   call ESMF_VMBarrier(vm)
-   call  MAPL_CFIORead ( bupafname, currTime, AnaBundleOut, rc=status, &
-        verbose=.true., noread=.true., TIME_IS_CYCLIC=.false.,&
-        only_vars=trim(exp_vars))
-   VERIFY_(status)
-   call ESMFL_Bundle2State (AnaBundleOut, expAANA, rc=status)
-   call ESMF_FieldBundleDestroy ( AnaBundleOut, rc=STATUS )
-   VERIFY_(STATUS)
-
    call zeit_co ('GSIsa_populate')
 
    RETURN_(ESMF_SUCCESS)
