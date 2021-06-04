@@ -39,6 +39,8 @@ Program GEOS5_Main
    use GEOS_PertSharedMod,       only: GetShapiroCoeff
    use GEOS_PertSharedMod,       only: shapiro_coeff_=>pert_shapiro_coeff
 
+   use MAPL_Profiler, only: BaseProfiler, get_global_time_profiler
+
    implicit none
 
 !EOP
@@ -103,6 +105,8 @@ Program GEOS5_Main
    type(ESMF_Config)            :: config,cf_fhist,cf_bhist
    type(ESMF_Config)            :: cf
    type(ESMF_Clock)             :: clock
+
+   class (BaseProfiler),pointer :: t_p
 
 ! ErrLog variables
 !-----------------
@@ -175,6 +179,8 @@ Program GEOS5_Main
 
    call MAPL_Initialize(rc=status)
    VERIFY_(status)
+   t_p => get_global_time_profiler()
+   call t_p%start("geosgcmpert.x")
    call pert_server%initialize(mpi_comm_world,rc=status)
    VERIFY_(status)
 
@@ -777,6 +783,7 @@ Program GEOS5_Main
               if(abs(rdot(2)>0.d0)) &
               print *, 'rel error = ', abs(rdot(2)-rdot(3))/rdot(2)
               print *
+              call ESMF_FieldBundleDestroy (X0PertBundle, __RC__)
           endif
 
     endif
@@ -814,10 +821,12 @@ Program GEOS5_Main
           close(999)
     end if
 
-   call ESMF_Finalize (RC=status)
-   VERIFY_(STATUS)
-
-   RETURN_(ESMF_SUCCESS)
+   call ESMF_FieldBundleDestroy (OutBundle, __RC__)
+   call ESMF_FieldBundleDestroy (IniBundle, __RC__)
+   call ESMF_FieldBundleDestroy (LLPertBundle, __RC__)
+   call t_p%stop('geosgcmpert.x')
+   call MAPL_Finalize()
+!  call ESMF_Finalize (__RC__)
 
  end subroutine PERT_CAP
 
