@@ -5,7 +5,7 @@ GEOSadas:
 env:
   local: ./@env
   remote: ../ESMA_env.git
-  tag: v1.4.2
+  tag: v1.4.3
   develop: main
 
 cmake:
@@ -29,7 +29,7 @@ GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
   tag: cvs/GEOSadas-5_27_1_p3
-  develop: main
+  develop: dev/adas
 
 MAPL:
   local: ./src/Shared/@MAPL
@@ -88,14 +88,14 @@ GEOSchem_GridComp:
 
 mom:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSogcm_GridComp/GEOSocean_GridComp/GuestOcean_GridComp/MOM_GEOS5PlugMod/@mom
-  remote: git@github.com:GEOS-ESM/MOM5.git
+  remote: ../MOM5.git
   tag: geos/v1.0.1
   develop: geos5
 
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  tag: cvs/GEOSadas-5_27_1
+  tag: cvs/GEOSadas-5_27_1_p3
   develop: develop
 
 UMD_Etc:
