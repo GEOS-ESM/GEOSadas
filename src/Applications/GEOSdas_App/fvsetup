@@ -2285,7 +2285,7 @@ sub ed_aens_das_replay_acq {
   $replay_expid = basename(abs_path($replay_arcdir));
 
   $acq = "$fvhome/$mydir/atmens_replay.acq";
-  open(SCRIPT,">$acq") or die ">>> ERROR  <<< cannot write $acq";
+  open(SCRIPT,">$acq") or die ">>> ERROR <<< cannot write $acq";
   print  SCRIPT <<"EOF";
 $replay_arcdir/atmens/Y%y4/M%m2/$replay_expid.atmens_ebkg.%y4%m2%d2_%h2z.tar => $expid.atmens_ebkg.%y4%m2%d2_%h2z.tar
 EOF
