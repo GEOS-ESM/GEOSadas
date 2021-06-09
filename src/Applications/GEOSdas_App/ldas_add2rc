@@ -1,0 +1,74 @@
+#!/bin/bash
+
+MYNAME="ldas_add2rc"
+if [[ $# -ne 2 ]]; then 
+   echo " "
+   echo " NAME "
+   echo " "
+   echo "  $MYNAME  - precedure to modify land premeters in AGCM.rc "
+   echo " "
+   echo " SYNOPSIS  "
+   echo " "
+   echo "  $MYNAME  FVHOME  LDHOME"
+   echo " "
+   echo " where"
+   echo "   FVHOME  -  location of  adas experiment "
+   echo "   LDHOME  -  location of  ldas experiment "
+   echo " "
+   echo " DESCRIPTION"
+   echo " "
+   echo "    This procedure modifies the land parameters in AGCM.rc" 
+   echo " "
+   echo "    to be consistent with LDAS.rc in LADAS experiment "
+   echo " "
+   echo "   It should be run after fvsetup and ldas_setup  "
+   exit 0
+fi
+
+FVHOME="$1" 
+LDHOME="$2" 
+
+cd $FVHOME/run
+cp AGCM.rc.tmpl  AGCM.rc.tmpl.original 
+cp AGCM.rc.tmpl  input.txt 
+
+SEARCH="Z0_FORMULATION:.*"
+REPLACE="$(grep $SEARCH $LDHOME/run/LDAS.rc)"
+
+if [[ 1 -eq $(grep -c $SEARCH AGCM.rc.tmpl ) ]]; then
+sed "s|$SEARCH|$REPLACE|g" AGCM.rc.tmpl > input.txt 
+else
+sed -i "/LAND_PARAMS/ i\ $REPLACE" input.txt
+fi 
+
+list="LANDASSIM_DT LANDASSIM_T0 " 
+  for var in $list 
+do
+    grep $var $LDHOME/run/LDAS.rc >> add.txt
+done
+
+sed -i '/LDAS_INCR/r add.txt' input.txt 
+
+mv input.txt AGCM.rc.tmpl
+
+echo "The land parameters modified in AGCM.rc: " 
+echo $REPLACE 
+for var in $list
+do
+echo "$(grep $var add.txt)"
+done
+
+mv add.txt $FVHOME/run/atmens/. 
+cd $FVHOME/run/atmens/ 
+cp AGCM.rc.tmpl AGCM.rc.tmpl.original 
+cp AGCM.rc.tmpl input.txt 
+
+if [[ 1 -eq $(grep -c $SEARCH AGCM.rc.tmpl ) ]]; then
+sed "s|$SEARCH|$REPLACE|g" AGCM.rc.tmpl > input.txt 
+else
+sed -i "/LAND_PARAMS/ i\ $REPLACE" input.txt
+fi
+sed -i '/LDAS_INCR/r add.txt' input.txt
+
+mv input.txt AGCM.rc.tmpl
+rm -rf add.txt
