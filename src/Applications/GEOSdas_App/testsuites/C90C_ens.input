@@ -2,8 +2,8 @@
 # C90C_ens.input
 #---------------
 
-description: C90C_ens__GEOSadas-5_28_0__agrid_C90__ogrid_C
-tag: GEOSadas-5_28_0
+description: C90C_ens__GEOSadas-5_29_0__agrid_C90__ogrid_C
+tag: GEOSadas-5_29_0
 
 ---ENDHEADERS---
 
@@ -28,7 +28,7 @@ EXPID? [u000_C90]
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [C90C_ens__GEOSadas-5_28_0__agrid_C90__ogrid_C]
+EXPDSC? [C90C_ens__GEOSadas-5_29_0__agrid_C90__ogrid_C]
 > 
 
 Land Boundary Conditions? [Icarus_Updated]

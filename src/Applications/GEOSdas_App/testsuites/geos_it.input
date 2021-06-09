@@ -74,7 +74,7 @@ AeroCom? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/AeroCom]
 > 
 
 FVICS? [/archive/u/jstassi/restarts/GEOSadas-5_24_0]
-> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_28/geosit_test/rs/Y2017/M12/geosit_test.rst.20171219_21z.tar
+> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_29/geosit_test/rs/Y2017/M12/geosit_test.rst.20171219_21z.tar
 
 Run model-adjoint-related applications (0=no,1=yes)? [0]
 > 
