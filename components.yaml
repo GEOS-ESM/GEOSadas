@@ -28,7 +28,7 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  branch: feature/rtodling/m_dyn_util_ene
+  branch: feature/rtodling/GEOSadas-5_29_o
   develop: dev/adas
 
 MAPL:
@@ -46,8 +46,8 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  branch: feature/bmuaer/adas_with_mapl2
-  develop: main
+  branch: feature/rtodling/GEOSadas-5_29_0
+  develop: develop
 
 GEOSgcm_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp
@@ -121,7 +121,7 @@ mom6:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  tag: v1.5.0
+  branch: feature/rtodling/GEOSadas-5_29_0
   develop: develop
 
 UMD_Etc:

@@ -341,7 +341,7 @@
 # 25Jul2017 Holdaway   Added resource files associated with NGGPS FV3 tlm/adjoint, sens and svec
 # 19Jul2018 Wargan     Additions for OMPS
 #-------------------------------------------------------------------------
-use Cwd qw(cwd);
+use Cwd qw(abs_path cwd);
 use English;
 use Env;                 # make env vars readily available
 use File::Basename qw(basename dirname);
@@ -379,7 +379,7 @@ my ($gocart_tracers, $radcor, $emiss, $lsmodel_flag, $rroute_flag);
 my ($agcm_rst_flg, $sensdeg, %setupfile, @otherheaders);
 my ($checkFLG, $dbqueue, $runjobFLG, $saveFLG, $stopFLG);
 my (@fvprompt, @fvANS1, @fvANS2, $fvsetupflags);
-my ($fvhome, $fvroot, $fvbin, $checkID, $siteID);
+my ($fvhome, $fvroot, $fvbin, $bindir, $pwdL, $pwdP, $checkID, $siteID);
 my ($remNODE, $remID);
 my ($qsub);
 my ($acqloc);
@@ -395,12 +395,42 @@ system clear;
 get_runtime_values();
 $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
 
-# FVROOT is directory above bin dir where binaries have been installed
-# --------------------------------------------------------------------
-  $fvroot = dirname($FindBin::Bin);
-  $fvroot =~ s|/u/.realmounts/share|/share|;   # for portability across
-                                               # NAS machines
-  $fvbin = "$fvroot/bin";
+# FVROOT is directory above fvbin where binaries have been installed
+# ------------------------------------------------------------------
+  $fvbin = $FindBin::Bin;  # absolute path of fvbin
+
+  chomp($pwdL = `pwd -L`); # logical path of calling program
+  chomp($pwdP = `pwd -P`); # physical (absolute) path of calling program
+
+  # if fvsetup is called from local directory
+  #------------------------------------------
+  if ($pwdP eq $FindBin::Bin) { $fvbin = $pwdL }
+
+  # if fvsetup is called from remote directory
+  #-------------------------------------------
+  else {
+      $bindir = dirname($0);
+
+      # remove single-dot (".") path segments
+      #--------------------------------------
+      while ($bindir =~ m|^\./|) { $bindir =~ s|^\./|| }
+      while ($bindir =~ m|/\./|) { $bindir =~ s|/\./|/| }
+      while ($bindir =~ m|/\.$|) { $bindir =~ s|/\.$|| }
+
+      # remove leading double-dot ("..") path segments
+      #-----------------------------------------------
+      while ($bindir =~ m|^\.\.|) {
+          $bindir =~ s|^\.\.||;
+          $pwdL = dirname($pwdL);
+          $bindir =~ s|^/||;
+      }
+
+      # determine path of fvbin
+      #------------------------
+      $bindir = "$pwdL/$bindir" unless $bindir =~ m|^/|;
+      $fvbin = $bindir if -e $bindir and abs_path($bindir) eq $fvbin;
+  }
+  $fvroot = dirname($fvbin);
   $fvetc = "$fvroot/etc";
   $user = getpwuid($<) unless ($user = $ENV{"USER"});
 
@@ -2305,6 +2335,7 @@ sub ed_aens_replay_acq {
   my($frun, $ft, $acq);
 
   $acq = "$fvhome/$mydir/$myacq";
+  if (-e "$acq") {return 0};
  open(SCRIPT,">$acq") or
  die ">>> ERROR <<< cannot write $acq";
  print  SCRIPT <<"EOF";
@@ -2316,16 +2347,31 @@ EOF
 #=======================================================================
 sub ed_aens_das_replay_acq {
   my($mydir) = @_;
-  my($replay_arcdir, $acq);
+  my($replay_arcdir, $aens_replay_expid, $acq);
 
-  $replay_arcdir = "/home/dao_ops/f517_fp/run/.../archive";
+  $aens_replay_expid = "x0044";
+  $replay_arcdir = query("Replay exp name?", $aens_replay_expid);
+  $replay_arcdir = "/discover/nobackup/projects/gmao/advda/rtodling/archive/x0044";
   $replay_arcdir = query("Replay archive directory?", $replay_arcdir);
 
   $acq = "$fvhome/$mydir/atmens_replay.acq";
   open(SCRIPT,">$acq") or die ">>> ERROR <<< cannot write $acq";
   print  SCRIPT <<"EOF";
-$replay_arcdir/atmens/Y%y4/M%m2/f517_fp.atmens_ebkg.%y4%m2%d2_%h2z.tar => $expid.atmens_ebkg.%y4%m2%d2_%h2z.tar
+$replay_arcdir/atmens/Y%y4/M%m2/$aens_replay_expid.atmens_ebkg.%y4%m2%d2_%h2z.tar => $expid.atmens_ebkg.%y4%m2%d2_%h2z.tar
 EOF
+
+  if ( $mydir eq "run") { 
+     $acq = "$fvhome/anasa/atmens_replay.acq";
+     open(SCRIPT,">$acq") or die ">>> ERROR <<< cannot write $acq";
+     print  SCRIPT <<"EOF";
+$replay_arcdir/atmens/Y%y4/M%m2/$aens_replay_expid.atmens_ebkg.%y4%m2%d2_%h2z.tar => $expid.atmens_ebkg.%y4%m2%d2_%h2z.tar
+EOF
+     $acq = "$fvhome/asens/atmens_asens.acq";
+     open(SCRIPT,">$acq") or die ">>> ERROR <<< cannot write $acq";
+     print  SCRIPT <<"EOF";
+$replay_arcdir/atmens/Y%y4/M%m2/$aens_replay_expid.atmens_ebkg.%y4%m2%d2_%h2z.tar => $expid.atmens_ebkg.%y4%m2%d2_%h2z.tar
+EOF
+  }
 
 }
 #=======================================================================
@@ -3462,7 +3508,7 @@ sub set_atmens {
 
 EOF
 
-  $aens_replay = query("  Replayed Ensemble (from OPS)? ", $aens_replay);
+  $aens_replay = query("  Replayed Ensemble? ", $aens_replay);
   if ( $aens_replay eq "yes"   ) {
      ed_aens_das_replay_acq("run");
      return 0;
@@ -5305,7 +5351,9 @@ sub archiving_rules {
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpuv_npp_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpvis_npp_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnm_npp_%c%c%c.%y4%m2%d2_%h2z.bin
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnmeff_npp_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnp_npp_%c%c%c.%y4%m2%d2_%h2z.bin
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnpnc_npp_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_pcp_tmi_%c%c%c%c_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_pcp_ssmi_dmsp%c%c_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_pcp_ssmi_dmsp_%c%c%c.%y4%m2%d2_%h2z.bin
@@ -5360,7 +5408,9 @@ sub archiving_rules {
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpuv_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpvis_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnm_npp.%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnmeff_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnp_npp.%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnpnc_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_pcp_ssmi_dmsp%c%c.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_pcp_ssmi_dmsp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_pcp_tmi_%c%c%c%c.%y4%m2%d2_%h2z.ods
@@ -5414,7 +5464,9 @@ sub archiving_rules {
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_ompslpuv_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_ompslpvis_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_ompsnm_npp.%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_ompsnmeff_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_ompsnp_npp.%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_ompsnpnc_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_pcp_ssmi_%c%c%c%c.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_pcp_tmi_%c%c%c%c.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_pcp_ssmi_%c%c%c%c_%c%c%c.%y4%m2%d2_%h2z.ods
@@ -6721,7 +6773,9 @@ sub arch_asens {
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpnm_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpnp_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompsnm_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompsnmeff_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompsnp_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompsnpnc_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_o3lev_aura.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_pcp_ssmi_dmsp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_pcp_tmi_trmm.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods

@@ -2,8 +2,8 @@
 # prePP.input
 #------------
 
-description: prePP__GEOSadas-5_27_1_p3__agrid_C720__ogrid_C
-tag: GEOSadas-5_27_1_p3
+description: prePP__GEOSadas-5_28_0__agrid_C720__ogrid_C
+tag: GEOSadas-5_28_0
 
 ---ENDHEADERS---
 
@@ -28,7 +28,7 @@ EXPID? [u000_C720]
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [prePP__GEOSadas-5_27_1_p3__agrid_C720__ogrid_C]
+EXPDSC? [prePP__GEOSadas-5_28_0__agrid_C720__ogrid_C]
 > 
 
 Land Boundary Conditions? [Icarus_Updated]
