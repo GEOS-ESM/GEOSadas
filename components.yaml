@@ -28,7 +28,7 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  branch: feature/rtodling/GEOSadas-5_29_o
+  branch: feature/rtodling/GEOSadas-5_29_0
   develop: dev/adas
 
 MAPL:
