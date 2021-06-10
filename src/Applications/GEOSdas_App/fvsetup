@@ -2418,8 +2418,8 @@ sub ed_lcv2prs_rc {
      #---------------------------------------
      while( defined($rcd = <LUN>) ) {
         chomp($rcd);
-        if($rcd =~ /\@IM/) {$rcd=~ s/\@IM/$hist_im/g; }
-        if($rcd =~ /\@JM/) {$rcd=~ s/\@JM/$hist_jm/g; }
+        if($rcd =~ /\@IM/) {$rcd=~ s/\@IM/$ana_im/g; }
+        if($rcd =~ /\@JM/) {$rcd=~ s/\@JM/$ana_jm/g; }
         print(LUN2 "$rcd\n");
      }
 
