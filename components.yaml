@@ -65,7 +65,7 @@ g5pert:
 GEOSagcmPert_GridComp:
   local: ./src/Components/@GEOSagcmPert_GridComp
   remote: ../GEOSagcmPert_GridComp.git
-  branch: feature/bmuaer/adas_with_mapl2
+  tag: v5.29.0
   develop: main
 
 FVdycoreCubed_GridComp:
