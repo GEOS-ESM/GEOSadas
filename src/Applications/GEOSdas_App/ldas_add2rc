@@ -18,7 +18,7 @@ if [[ $# -ne 2 ]]; then
    echo " DESCRIPTION"
    echo " "
    echo "    This procedure inserts additional land parameters in AGCM.rc" 
-   echo "    and verify if land parameters in AFCM.rc are consistent "
+   echo "    and verify if land parameters in AGCM.rc are consistent "
    echo "    with LDAS.rc in LADAS experiment "
    echo " "
    echo "   It should be run after fvsetup and ldas_setup  "
