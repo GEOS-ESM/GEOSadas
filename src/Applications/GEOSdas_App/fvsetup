@@ -538,12 +538,12 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
   $rc = system("$fvbin/fix_gocart_rc.csh $vres $fvhome/run/gocart");
   die "Failed to fix GOCART levels-referencing $!" if ( $rc );
 
-#  LDAS Setup is done seperately, follow instructions in GEOS ldas   
-#-----------------------------------------------------------------
+# LDAS Setup is done separately, follow instructions in GEOSldas/README.md   
+# ------------------------------------------------------------------------
     print "\n checkprintout  ldas_ana == 1 ($ldas_ana)\n";
     if ($ldas_ana == 1 ) {
-    print "\n please run ldas_setup in the GEOS ldas setup directory\n";
-    print "\n requires prepared exp_exeinp.txt exp_batinp.txt\n" ;
+    print "\n Please run ldas_setup following instructions in GEOSldas/README.md\n";
+    print "\n requires config input files: YOUR_exeinp.txt, YOUR_batinp.txt.\n" ;
     print "\n example LDROOT: /discover/nobackup/$user/GEOSldas\n" ;
     print "\n example LDHOME: /discover/nobackup/$user/ldascoup_C180\n" ;
     print "\n example cd $LDROOT/install/bin/ \n";
@@ -7561,8 +7561,8 @@ print  SCRIPT <<"EOF";
   setenv GAAS_ANA $gaas_ana # 1 = aerosol analysis, 0 = disables it
   setenv GAASFDBK $gaasfdbk # 1 = feedback aerosol analysis into GCM, 0 = don't
   setenv SKIP_PSAS 0 #  sets do_you_want_to_skip_PSAS in ana.rc.tmpl; 0 = no, 1 = yes
-  setenv LDAS_ANA $ldas_ana # 1 = land analysis,  0 = disables it 
-  setenv LDASFDBK $ldasfdbk # 1 = feedback land analysis into GCM, 0 = don't 
+  setenv LDAS_ANA $ldas_ana # 1 = land analysis, 0 = disables it 
+  setenv LDASFDBK $ldasfdbk # 1 = read land analysis incr into GCM (feedback), 0 = don't 
   setenv LDHOME  $ldashome  # land analysis home dir (ldas_exp/) for central 
   setenv LDHOME4ens $ldashome4ens  # land analysis home dir for atm_ens  
   setenv IGNORE_0 1   # 1 = ignore 0 length obs files in acquire
