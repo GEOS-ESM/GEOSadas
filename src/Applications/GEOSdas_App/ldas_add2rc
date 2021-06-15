@@ -5,28 +5,30 @@ if [[ $# -ne 2 ]]; then
    echo " "
    echo " NAME "
    echo " "
-   echo "  $MYNAME  - precedure to add/verify land premeters in AGCM.rc "
+   echo "  $MYNAME  - reconcile GEOSldas and AGCM configurations in weakly-coupled LADAS "
    echo " "
    echo " SYNOPSIS  "
    echo " "
    echo "  $MYNAME  FVHOME  LDHOME"
    echo " "
    echo " where"
-   echo "   FVHOME  -  location of  adas experiment "
-   echo "   LDHOME  -  location of  ldas experiment "
+   echo "   FVHOME  -  location of  ADAS experiment "
+   echo "   LDHOME  -  location of  LDAS experiment "
    echo " "
    echo " DESCRIPTION"
    echo " "
-   echo "    This procedure inserts additional land parameters in AGCM.rc" 
-   echo "    and verify if land parameters in AGCM.rc are consistent "
-   echo "    with LDAS.rc in LADAS experiment "
+   echo "    This procedure inserts select GEOSldas resource parameters into AGCM.rc and " 
+   echo "    verifies consistency between LDAS.rc and AGCM.rc for other resource parameters "
    echo " "
-   echo "   It should be run after fvsetup and ldas_setup  "
+   echo "   $MYNAME should be run after fvsetup and ldas_setup  "
    exit 0
 fi
 
 FVHOME="$1" 
 LDHOME="$2" 
+
+# ----------------------------------------------------------------
+# extract the following parameters from LDAS.rc and add to AGCM.rc
 
 cd $FVHOME/run
 cp AGCM.rc.tmpl  AGCM.rc.tmpl.original 
@@ -45,6 +47,18 @@ do
 echo "$(grep $var add.txt)"
 done
 
+# add same resource parameters into AGCM.rc for atm ens
+mv add.txt $FVHOME/run/atmens/. 
+cd $FVHOME/run/atmens/ 
+cp AGCM.rc.tmpl AGCM.rc.tmpl.original 
+
+sed -i '/LDAS_INCR/r add.txt' AGCM.rc.tmpl
+
+rm -rf add.txt
+
+# ------------------------------------------------------------------------
+# check consistency of the following parameter between LDAS.rc and AGCM.rc
+
 clist=" Z0_FORMULATION:.*  LAND_PARAMS:.*  LSM_CHOICE:.* "
   for var in $clist 
 do 
@@ -54,18 +68,10 @@ lv="$(echo $Lset | cut -d " " -f 2)"
 av="$(echo $Aset | cut -d " " -f 2)"
 if [ "$lv" != "$av" ]; then
 echo " " 
-echo "Please make the following parameter value consistent in AGCM.rc and LDAS.rc:"
+echo "Please repeat setup such that the following parameter values are consistent in AGCM.rc and LDAS.rc:"
 echo "in AGCM.rc: $Aset "  
 echo "in LDAS.rc: $Lset "
 echo " " 
 fi 
 done   
 
-###atmens
-mv add.txt $FVHOME/run/atmens/. 
-cd $FVHOME/run/atmens/ 
-cp AGCM.rc.tmpl AGCM.rc.tmpl.original 
-
-sed -i '/LDAS_INCR/r add.txt' AGCM.rc.tmpl
-
-rm -rf add.txt
