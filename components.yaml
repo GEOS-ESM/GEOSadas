@@ -1,6 +1,6 @@
 GEOSadas:
   fixture: true
-  develop: main
+  develop: develop
 
 env:
   local: ./@env
@@ -28,7 +28,7 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  tag: cvs/GEOSadas-5_27_1_p2
+  tag: cvs/GEOSadas-5_27_1_p3
   develop: main
 
 MAPL:
@@ -47,12 +47,12 @@ GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
   tag: v1.3.0
-  develop: main
+  develop: develop
 
 GEOSgcm_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp
   remote: ../GEOSgcm_GridComp.git
-  tag: cvs/GEOSadas-5_27_1_p2
+  tag: cvs/GEOSadas-5_27_1_p3
   sparse: ./config/GEOSgcm_GridComp.sparse
   develop: develop
 
