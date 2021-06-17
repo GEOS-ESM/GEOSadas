@@ -46,7 +46,7 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  branch: feature/rtodling/GEOSadas-5_29_0
+  tag: v5.29.0
   develop: develop
 
 GEOSgcm_GridComp:
