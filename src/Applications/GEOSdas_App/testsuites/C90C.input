@@ -193,6 +193,9 @@ Which template? [HISTORY.rc.tmpl]
 Which template? [GCMPROG.rc.tmpl]
 > 
 
+Pyradmon code location? [/discover/nobackup/jstassi/GEOSadas/pyradmon]
+> 
+
 Output Restart TYPE (bin or nc4) [nc4]
 > 
 
