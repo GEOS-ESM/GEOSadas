@@ -53,5 +53,3 @@ install(
    FILES ${PROJECT_BINARY_DIR}/.gitignore
    DESTINATION ${CMAKE_INSTALL_PREFIX}
    )
-
-
