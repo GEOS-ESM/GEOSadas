@@ -1,8 +1,8 @@
-#------------
-# x0045.input
-#------------
+#-------------
+# x0045a.input
+#-------------
 
-description: x0045__GEOSadas-5_28_0__agrid_C360__ogrid_C
+description: x0045a__GEOSadas-5_28_0__agrid_C360__ogrid_C
 tag: GEOSadas-5_28_0
 
 ---ENDHEADERS---
@@ -28,7 +28,7 @@ EXPID? [u000_C360]
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [x0045__GEOSadas-5_28_0__agrid_C360__ogrid_C]
+EXPDSC? [x0045a__GEOSadas-5_28_0__agrid_C360__ogrid_C]
 > 
 
 Land Boundary Conditions? [Icarus_Updated]
@@ -37,10 +37,10 @@ Land Boundary Conditions? [Icarus_Updated]
 Catchment Model choice? [1]
 > 
 
-FVHOME? [/discover/nobackup/dao_it/x0045]
+FVHOME? [/discover/nobackup/dao_it/x0045a]
 > /discover/nobackup/projects/gmao/dadev/dao_it/$expid
 
-The directory /discover/nobackup/projects/gmao/obsdev/dao_it/x0045 already exists. Clean it? [y]
+The directory /discover/nobackup/projects/gmao/obsdev/dao_it/x0045a already exists. Clean it? [y]
 > 
 
 Which case of variational analysis? [1]
@@ -91,7 +91,7 @@ Run singular vector experiments (0=n,1=yes)? [0]
 Run analysis-sensitivity applications (0=no,1=yes)? [0]
 > 1
 
-Verifying experiment id: [x0045]
+Verifying experiment id: [x0045a]
 > 
 
 Ending year-month-day? [20191121]
@@ -226,7 +226,7 @@ Ensemble Resolution?  [C90]
 Ensemble Vertical Levels?  [72]
 > 
 
-Experiment archive directory for ensemble restarts or 'later': [/archive/u/rtodling/x0045]
+Experiment archive directory for ensemble restarts or 'later': [/archive/u/rtodling/x0045a]
 > /discover/nobackup/projects/gmao/dadev/rtodling/archive/x0044
 
 Edit COLLECTIONS list in run/HISTORY.rc.tmpl (y/n)? [n]

@@ -1,8 +1,8 @@
-#------------
-# x0045_replay.input
-#------------
+#-------------
+# x0045a_replay.input
+#-------------
 
-description: x0045_replay__GEOSadas-5_28_0__agrid_C360__ogrid_C
+description: x0045a_replay__GEOSadas-5_28_0__agrid_C360__ogrid_C
 tag: GEOSadas-5_28_0
 
 ---ENDHEADERS---
@@ -28,7 +28,7 @@ EXPID? [u000_C360]
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [x0045_replay__GEOSadas-5_28_0__agrid_C360__ogrid_C]
+EXPDSC? [x0045a_replay__GEOSadas-5_28_0__agrid_C360__ogrid_C]
 > 
 
 Land Boundary Conditions? [Icarus_Updated]
@@ -37,10 +37,10 @@ Land Boundary Conditions? [Icarus_Updated]
 Catchment Model choice? [1]
 > 
 
-FVHOME? [/discover/nobackup/dao_it/x0045_replay]
+FVHOME? [/discover/nobackup/dao_it/x0045a_replay]
 > /discover/nobackup/projects/gmao/dadev/dao_it/$expid
 
-The directory /discover/nobackup/projects/gmao/obsdev/dao_it/x0045_replay already exists. Clean it? [y]
+The directory /discover/nobackup/projects/gmao/obsdev/dao_it/x0045a_replay already exists. Clean it? [y]
 > 
 
 Which case of variational analysis? [1]
@@ -91,7 +91,7 @@ Run singular vector experiments (0=n,1=yes)? [0]
 Run analysis-sensitivity applications (0=no,1=yes)? [0]
 > 1
 
-Verifying experiment id: [x0045_replay]
+Verifying experiment id: [x0045a_replay]
 > 
 
 Ending year-month-day? [20191121]
