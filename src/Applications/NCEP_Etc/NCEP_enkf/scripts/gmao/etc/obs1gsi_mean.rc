@@ -160,7 +160,7 @@ OBS_INPUT::
 !  gomebufr       gome        metop-b     gome_metop-b          0.0     2      0        test
    amsuabufr      amsua       metop-c     amsua_metop-c         0.0     1      0        ncep_1bamua_bufr
    mhsbufr        mhs         metop-c     mhs_metop-c           0.0     1      0        ncep_mhs_bufr
-   iasibufr       iasi        metop-c     iasi_metop-c          0.0     3      0        ncep_mtiasi_bufr
+!  iasibufr       iasi        metop-c     iasi_metop-c          0.0     3      0        ncep_mtiasi_bufr
    atmsbufr       atms        npp         atms_npp              0.0     1      0        ncep_atms_bufr
    atmsbufr       atms        n20         atms_n20              0.0     1      0        ncep_atms_bufr
 !  crisbufr       cris        npp         cris_npp              0.0     3      0        ncep_cris_bufr
