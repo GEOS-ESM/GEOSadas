@@ -22,13 +22,13 @@ ecbuild:
 NCEP_Shared:
   local: ./src/Shared/@NCEP_Shared
   remote: ../NCEP_Shared.git
-  tag: feature/rtodling/rt-GEOSadas-5_28_0
+  tag: rt-GEOSadas-5_28_0_p4
   develop: main
 
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  branch: feature/rtodling/GEOSadas-5_27_1_p4
+  tag: rt-GEOSadas-5_28_0_p4
   develop: dev/adas
 
 MAPL:
@@ -46,7 +46,7 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  branch: feature/rtodling/GEOSadas-5_28_0_m1
+  tag: rt-GEOSadas-5_28_0_p4
   develop: develop
 
 GEOSgcm_GridComp:
@@ -95,7 +95,7 @@ mom:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  branch: feature/rtodling/g5271p3_hist4jedi
+  tag: rt-GEOSadas-5_28_0_p4
   develop: develop
 
 UMD_Etc:
