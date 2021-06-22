@@ -758,7 +758,9 @@ sub defaults {
                    gmao_airs_bufr.tbl
                    gmao_global_aeroinfo.rc
                    gmao_global_anavinfo.rc
+                   gmao_global_anavinfo_l91.rc
                    gmao_global_anavinfo_l132.rc
+                   gmao_global_anavinfo_l181.rc
                    gmao_global_anavinfo_rcov.rc
                    gmao_global_blacklist.rc
                    gmao_global_cloudy_radiance_info.rc
@@ -766,8 +768,12 @@ sub defaults {
                    gmao_global_convinfo.rc
                    gmao_global_hybens_info.x288y181l72.rc
                    gmao_global_hybens_info.x576y361l72.rc
+                   gmao_global_hybens_info.x288y181l91.rc
+                   gmao_global_hybens_info.x576y361l91.rc
                    gmao_global_hybens_info.x288y181l132.rc
                    gmao_global_hybens_info.x576y361l132.rc
+                   gmao_global_hybens_info.x288y181l181.rc
+                   gmao_global_hybens_info.x576y361l181.rc
                    gmao_global_insituinfo.rc
                    gmao_global_ozinfo.rc
                    gmao_global_pcpinfo.rc
@@ -3445,7 +3451,7 @@ EOF
           $berror_env  = "setenv BERROR  $berror_file";
        }
   }
-  if ( $siglevs == 72 || $siglevs == 132 || $siglevs == 137 ) { $hybrid  = ".true." };
+  if ( $siglevs == 72 || $siglevs == 91 || $siglevs == 132 || $siglevs == 137 || $siglevs == 181 ) { $hybrid  = ".true." };
 
   $ans = query("  Ensemble Hybrid (<0;3=3dHyb;4=Hyb4d)?", $hyb_ens);
   if ($ans > 0) {$hyb_ens = $ans};

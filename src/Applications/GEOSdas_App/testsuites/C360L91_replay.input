@@ -1,8 +1,8 @@
 #------------
-# x0046_replay.input
+# C360L91_replay.input
 #------------
 
-description: x0046_replay__GEOSadas-5_29_0__agrid_C360__ogrid_C
+description: C360L91_replay__GEOSadas-5_29_0__agrid_C360__ogrid_C
 tag: GEOSadas-5_29_0
 
 ---ENDHEADERS---
@@ -17,7 +17,7 @@ AGCM Horizontal Resolution? [C48]
 > C360
 
 AGCM Vertical Resolution? [72]
-> 
+> 91
 
 OGCM Resolution? [f]
 > C
@@ -28,7 +28,7 @@ EXPID? [u000_C360]
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [x0046_replay__GEOSadas-5_29_0__agrid_C360__ogrid_C]
+EXPDSC? [C360L91_replay__GEOSadas-5_29_0__agrid_C360__ogrid_C]
 > 
 
 Land Boundary Conditions? [Icarus_Updated]
@@ -37,10 +37,10 @@ Land Boundary Conditions? [Icarus_Updated]
 Catchment Model choice? [1]
 > 
 
-FVHOME? [/discover/nobackup/dao_it/x0046_replay]
+FVHOME? [/discover/nobackup/dao_it/C360L91_replay]
 > /discover/nobackup/projects/gmao/dadev/dao_it/$expid
 
-The directory /discover/nobackup/projects/gmao/obsdev/dao_it/x0046_replay already exists. Clean it? [y]
+The directory /discover/nobackup/projects/gmao/obsdev/dao_it/C360L91_replay already exists. Clean it? [y]
 > 
 
 Which case of variational analysis? [1]
@@ -74,7 +74,7 @@ AeroCom? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/AeroCom]
 > 
 
 FVICS? [/archive/u/jstassi/restarts/GEOSadas-5_24_0]
-> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/x0045/rs/Y2020/M11/x0045.rst.20201129_21z.tar
+> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/x0045_l91/rs/Y2020/M11/x0045_l91.rst.20201129_21z.tar
 
 Run model-adjoint-related applications (0=no,1=yes)? [0]
 > 1
@@ -91,7 +91,7 @@ Run singular vector experiments (0=n,1=yes)? [0]
 Run analysis-sensitivity applications (0=no,1=yes)? [0]
 > 1
 
-Verifying experiment id: [x0046_replay]
+Verifying experiment id: [C360L91_replay]
 > 
 
 Ending year-month-day? [20191121]
@@ -122,7 +122,7 @@ Triangular spectral truncation? [254]
 > 
 
 Analysis vertical levels (sig))? [72]
-> 
+> 91
 
 GSI grid resolution? [NA]
 > 
