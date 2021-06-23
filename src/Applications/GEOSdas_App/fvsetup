@@ -1750,8 +1750,10 @@ sub ed_ncep_rc {
 	   
        if ( $siglevs <= 72 ) {
           if($rcd =~ /\@NLEV_EXT/) {$rcd=~ s/\@NLEV_EXT/13/g; }
-       } else {
+       } elsif ( $siglevs > 72 & $siglevs <= 132 ) {
           if($rcd =~ /\@NLEV_EXT/) {$rcd=~ s/\@NLEV_EXT/15/g; }
+       } elsif ( $siglevs > 132 ) {
+          if($rcd =~ /\@NLEV_EXT/) {$rcd=~ s/\@NLEV_EXT/25/g; }
        }
        if ( $hyb_ens < 0 ) {
           if($rcd =~ /\@NITER1/) {$rcd=~ s/\@NITER1/100/g; }

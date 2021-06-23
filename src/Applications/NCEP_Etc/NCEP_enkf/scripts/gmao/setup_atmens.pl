@@ -543,9 +543,19 @@ sub ed_obsv_rc {
                          obs1gsi_mean.rc
                          obs1gsi_member.rc );
   $nsig_ext = 13;
-  if ( $obsv_lm > 72 ) {
+  if ( $obsv_lm > 72 & $obsv_lm <= 132 ) {
     $nsig_ext = 15;
+  } elsif ( $obsv_lm > 132 ) {
+    $nsig_ext = 25;
   }
+
+  if ( $siglevs <= 72 ) {
+     if($rcd =~ /\@NLEV_EXT/) {$rcd=~ s/\@NLEV_EXT/13/g; }
+       } elsif ( $siglevs > 72 & $siglevs <= 132 ) {
+          if($rcd =~ /\@NLEV_EXT/) {$rcd=~ s/\@NLEV_EXT/15/g; }
+       } elsif ( $siglevs > 132 ) {
+          if($rcd =~ /\@NLEV_EXT/) {$rcd=~ s/\@NLEV_EXT/21/g; }
+       }
 
   foreach $file (@observer_files) {
 
