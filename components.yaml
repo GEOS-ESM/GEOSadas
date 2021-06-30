@@ -22,14 +22,14 @@ ecbuild:
 NCEP_Shared:
   local: ./src/Shared/@NCEP_Shared
   remote: ../NCEP_Shared.git
-  tag: rt-GEOSadas-5_29_0_prep3
+  tag: v1.2.0
   develop: main
 
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  tag: rt-GEOSadas-5_29_0_prep3
-  develop: dev/adas
+  tag: v1.4.5
+  develop: main
 
 MAPL:
   local: ./src/Shared/@MAPL
@@ -46,13 +46,13 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  tag: rt-GEOSadas-5_29_0_prep3
+  tag: v1.4.0
   develop: develop
 
 GEOSgcm_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp
   remote: ../GEOSgcm_GridComp.git
-  tag: rt-GEOSadas-5_29_0_prep3
+  tag: v1.12.3
   sparse: ./config/GEOSgcm_GridComp.sparse
   develop: develop
 
@@ -65,7 +65,7 @@ g5pert:
 GEOSagcmPert_GridComp:
   local: ./src/Components/@GEOSagcmPert_GridComp
   remote: ../GEOSagcmPert_GridComp.git
-  tag: rt-GEOSadas-5_29_0_prep3
+  tag: v1.2.0
   develop: main
 
 FVdycoreCubed_GridComp:
@@ -107,7 +107,7 @@ GOCART:
 
 mom:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSogcm_GridComp/GEOSocean_GridComp/GuestOcean_GridComp/MOM_GEOS5PlugMod/@mom
-  remote: git@github.com:GEOS-ESM/MOM5.git
+  remote: ../MOM5.git
   tag: geos/5.1.0+1.1.1
   develop: geos5
 
@@ -121,7 +121,7 @@ mom6:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  tag: rt-GEOSadas-5_29_0_prep3
+  tag: v1.4.1
   develop: develop
 
 UMD_Etc:
