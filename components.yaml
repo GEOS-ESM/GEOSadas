@@ -30,7 +30,6 @@ GMAO_Shared:
   remote: ../GMAO_Shared.git
   tag: v1.4.5
   develop: main
-  develop: dev/adas
 
 MAPL:
   local: ./src/Shared/@MAPL
