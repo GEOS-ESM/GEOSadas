@@ -15,8 +15,8 @@ Program GEOS5_Main
 
 
    use ESMF
-   use MAPL_Mod
-   use MAPL_CFIOMod
+   use MAPL
+   use MPI
 
    use MAPL_HistoryGridCompMod, only : FHist_SetServices => SetServices
    use MAPL_HistoryGridCompMod, only : BHist_SetServices => SetServices
@@ -38,7 +38,8 @@ Program GEOS5_Main
    use GEOS_PertSharedMod,       only: bk=>pert_bk
    use GEOS_PertSharedMod,       only: GetShapiroCoeff
    use GEOS_PertSharedMod,       only: shapiro_coeff_=>pert_shapiro_coeff
-   use MAPL_GridManagerMod,      only: grid_manager
+
+   use MAPL_Profiler, only: BaseProfiler, get_global_time_profiler
 
    implicit none
 
@@ -105,6 +106,8 @@ Program GEOS5_Main
    type(ESMF_Config)            :: cf
    type(ESMF_Clock)             :: clock
 
+   class (BaseProfiler),pointer :: t_p
+
 ! ErrLog variables
 !-----------------
 
@@ -157,6 +160,7 @@ Program GEOS5_Main
    integer                      :: LDIMS(3)
    integer                      :: shapiro_filter
    type(LatLonGridFactory)      :: ll_factory
+   type(ServerManager)          :: pert_server
 
    character(len=30) PERTGRIDNAME
 
@@ -172,6 +176,13 @@ Program GEOS5_Main
    call ESMF_Initialize (vm=vm, logKindFlag=ESMF_LOGKIND_NONE, rc=status)
 #endif
    VERIFY_(STATUS)
+
+   call MAPL_Initialize(rc=status)
+   VERIFY_(status)
+   t_p => get_global_time_profiler()
+   call t_p%start("geosgcmpert.x")
+   call pert_server%initialize(mpi_comm_world,rc=status)
+   VERIFY_(status)
 
    AmIRoot_ = MAPL_Am_I_Root(vm)
    if (present(AmIRoot)) then
@@ -355,9 +366,13 @@ Program GEOS5_Main
    VERIFY_(STATUS)
    call MAPL_ConfigSetAttribute(cf_fhist, value=NY,  Label="NY:",  rc=status)
    VERIFY_(STATUS)
+   call MAPL_ConfigSetAttribute(cf_fhist, value=RUN_DT,  Label="RUN_DT:",  rc=status)
+   VERIFY_(STATUS)
    call MAPL_ConfigSetAttribute(cf_bhist, value=NX,  Label="NX:",  rc=status)
    VERIFY_(STATUS)
    call MAPL_ConfigSetAttribute(cf_bhist, value=NY,  Label="NY:",  rc=status)
+   VERIFY_(STATUS)
+   call MAPL_ConfigSetAttribute(cf_bhist, value=RUN_DT,  Label="RUN_DT:",  rc=status)
    VERIFY_(STATUS)
 
    call MAPL_Set(MAPLOBJ,cf=cf_fhist,rc=status)
@@ -768,6 +783,7 @@ Program GEOS5_Main
               if(abs(rdot(2)>0.d0)) &
               print *, 'rel error = ', abs(rdot(2)-rdot(3))/rdot(2)
               print *
+              call ESMF_FieldBundleDestroy (X0PertBundle, __RC__)
           endif
 
     endif
@@ -805,10 +821,12 @@ Program GEOS5_Main
           close(999)
     end if
 
-   call ESMF_Finalize (RC=status)
-   VERIFY_(STATUS)
-
-   RETURN_(ESMF_SUCCESS)
+   call ESMF_FieldBundleDestroy (OutBundle, __RC__)
+   call ESMF_FieldBundleDestroy (IniBundle, __RC__)
+   call ESMF_FieldBundleDestroy (LLPertBundle, __RC__)
+   call t_p%stop('geosgcmpert.x')
+   call MAPL_Finalize()
+!  call ESMF_Finalize (__RC__)
 
  end subroutine PERT_CAP
 
@@ -1239,10 +1257,6 @@ Program GEOS5_Main
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! This allows zeroing out fields from input bundle to help test ADM/TLM
    subroutine mychopit ( Bundle )
-   use MAPL_SimpleBundleMod, only: MAPL_SimpleBundleCreate
-   use MAPL_SimpleBundleMod, only: MAPL_SimpleBundleGetIndex
-   use MAPL_SimpleBundleMod, only: MAPL_SimpleBundle
-   use MAPL_SimpleBundleMod, only: MAPL_SimpleBundlePrint
    implicit none
    type(ESMF_FieldBundle)  :: Bundle
    type(MAPL_SimpleBundle) :: bnd
@@ -1286,10 +1300,6 @@ Program GEOS5_Main
 
    subroutine BundleExt2Int (DynBundle,IntBundle)
 !  This subroutine maps the internal bundle onto a dyn-like vector
-   use MAPL_SimpleBundleMod, only: MAPL_SimpleBundleCreate
-   use MAPL_SimpleBundleMod, only: MAPL_SimpleBundleGetIndex
-   use MAPL_SimpleBundleMod, only: MAPL_SimpleBundle
-   use MAPL_SimpleBundleMod, only: MAPL_SimpleBundlePrint
    implicit none
    type(ESMF_FieldBundle)  :: DynBundle ! dyn-like vector
    type(ESMF_FieldBundle)  :: IntBundle ! internal bundle
@@ -1317,10 +1327,6 @@ Program GEOS5_Main
 
    subroutine BundleInt2Ext (thisphase,bk,IntBundle,DynBundle)
 !  This subroutine maps the internal bundle onto a dyn-like vector
-   use MAPL_SimpleBundleMod, only: MAPL_SimpleBundleCreate
-   use MAPL_SimpleBundleMod, only: MAPL_SimpleBundleGetIndex
-   use MAPL_SimpleBundleMod, only: MAPL_SimpleBundle
-   use MAPL_SimpleBundleMod, only: MAPL_SimpleBundlePrint
    use m_mpif90,only : MP_comm_rank
    use m_mpif90,only : MP_comm_world
    use m_mpif90,only : MP_REAL8

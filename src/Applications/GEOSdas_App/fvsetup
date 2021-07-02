@@ -341,7 +341,7 @@
 # 25Jul2017 Holdaway   Added resource files associated with NGGPS FV3 tlm/adjoint, sens and svec
 # 19Jul2018 Wargan     Additions for OMPS
 #-------------------------------------------------------------------------
-use Cwd qw(cwd);
+use Cwd qw(abs_path cwd);
 use English;
 use Env;                 # make env vars readily available
 use File::Basename qw(basename dirname);
@@ -379,11 +379,12 @@ my ($gocart_tracers, $radcor, $emiss, $lsmodel_flag, $ldas_flag, $rroute_flag);
 my ($agcm_rst_flg, $sensdeg, %setupfile, @otherheaders);
 my ($checkFLG, $dbqueue, $runjobFLG, $saveFLG, $stopFLG);
 my (@fvprompt, @fvANS1, @fvANS2, $fvsetupflags);
-my ($fvhome, $fvroot, $fvbin, $checkID, $siteID);
+my ($fvhome, $fvroot, $fvbin, $bindir, $pwdL, $pwdP, $checkID, $siteID);
 my ($remNODE, $remID);
 my ($qsub);
 my ($acqloc);
 my ($fcstimes,$fcswait_hrs,$asnwait_hrs);
+my ($landbcs);
 
 my ($sysfile, $nodeflg);
 my (@rmTilde);
@@ -394,12 +395,42 @@ system clear;
 get_runtime_values();
 $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
 
-# FVROOT is directory above bin dir where binaries have been installed
-# --------------------------------------------------------------------
-  $fvroot = dirname($FindBin::Bin);
-  $fvroot =~ s|/u/.realmounts/share|/share|;   # for portability across
-                                               # NAS machines
-  $fvbin = "$fvroot/bin";
+# FVROOT is directory above fvbin where binaries have been installed
+# ------------------------------------------------------------------
+  $fvbin = $FindBin::Bin;  # absolute path of fvbin
+
+  chomp($pwdL = `pwd -L`); # logical path of calling program
+  chomp($pwdP = `pwd -P`); # physical (absolute) path of calling program
+
+  # if fvsetup is called from local directory
+  #------------------------------------------
+  if ($pwdP eq $FindBin::Bin) { $fvbin = $pwdL }
+
+  # if fvsetup is called from remote directory
+  #-------------------------------------------
+  else {
+      $bindir = dirname($0);
+
+      # remove single-dot (".") path segments
+      #--------------------------------------
+      while ($bindir =~ m|^\./|) { $bindir =~ s|^\./|| }
+      while ($bindir =~ m|/\./|) { $bindir =~ s|/\./|/| }
+      while ($bindir =~ m|/\.$|) { $bindir =~ s|/\.$|| }
+
+      # remove leading double-dot ("..") path segments
+      #-----------------------------------------------
+      while ($bindir =~ m|^\.\.|) {
+          $bindir =~ s|^\.\.||;
+          $pwdL = dirname($pwdL);
+          $bindir =~ s|^/||;
+      }
+
+      # determine path of fvbin
+      #------------------------
+      $bindir = "$pwdL/$bindir" unless $bindir =~ m|^/|;
+      $fvbin = $bindir if -e $bindir and abs_path($bindir) eq $fvbin;
+  }
+  $fvroot = dirname($fvbin);
   $fvetc = "$fvroot/etc";
   $user = getpwuid($<) unless ($user = $ENV{"USER"});
 
@@ -741,7 +772,9 @@ sub defaults {
                    gmao_airs_bufr.tbl
                    gmao_global_aeroinfo.rc
                    gmao_global_anavinfo.rc
+                   gmao_global_anavinfo_l91.rc
                    gmao_global_anavinfo_l132.rc
+                   gmao_global_anavinfo_l181.rc
                    gmao_global_anavinfo_rcov.rc
                    gmao_global_blacklist.rc
                    gmao_global_cloudy_radiance_info.rc
@@ -749,8 +782,12 @@ sub defaults {
                    gmao_global_convinfo.rc
                    gmao_global_hybens_info.x288y181l72.rc
                    gmao_global_hybens_info.x576y361l72.rc
+                   gmao_global_hybens_info.x288y181l91.rc
+                   gmao_global_hybens_info.x576y361l91.rc
                    gmao_global_hybens_info.x288y181l132.rc
                    gmao_global_hybens_info.x576y361l132.rc
+                   gmao_global_hybens_info.x288y181l181.rc
+                   gmao_global_hybens_info.x576y361l181.rc
                    gmao_global_insituinfo.rc
                    gmao_global_ozinfo.rc
                    gmao_global_pcpinfo.rc
@@ -842,7 +879,8 @@ sub defaults {
                      GCMPROG.rc.tmpl
                      HISTORY.rc.tmpl
                      OBS_GridComp.rc.tmpl
-                     saverst.rc );
+                     saverst.rc 
+                     GEOS_SurfaceGridComp.rc );
 
   @coupled_files = qw( BC_GridComp_ExtData-clim.rc
                        CO_GridComp_ExtData-clim.rc
@@ -1331,6 +1369,38 @@ sub ed_g5hist_rc_new {
 }
 
 #=======================================================================
+sub ed_g5surfGC_rc {
+
+  return 0 unless ( $g5gcm );
+
+  my($mydir,$which) = @_;
+  my($ft, $fhis, $fdfn, $rcd);
+
+  $ft   = "$fvhome/$mydir/tmp.rc";
+  $fhis = "$fvhome/$mydir/$which";
+
+  open(LUN,"$fhis") || die "Fail to open $which: $!\n";
+  open(LUN2,">$ft") || die "Fail to open tmp.rc: $!\n";
+
+# Change variables to the correct inputs
+# --------------------------------------
+  while( defined($rcd = <LUN>) ) {
+    chomp($rcd);
+    if($rcd =~ /\# GEOSagcm=>/)    {$rcd=~ s/\# GEOSagcm=>/      /g; }
+    if ( "$landbcs" ne "Icarus-NLv3" ) {
+      if($rcd =~ /\  LAND_PARAMS:/)    {$rcd=~ s/NRv7.2/Icarus/g; }
+      if($rcd =~ /\  Z0_FORMULATION:/) {$rcd=~ s/4/2/g; }
+    }
+    print(LUN2 "$rcd\n");
+  }
+  close(LUN);
+  close(LUN2);
+
+  cp($ft,$fhis);
+  unlink $ft;
+
+}
+#=======================================================================
 sub ed_g5prog_rc {
 
   return 0 unless ( $g5gcm );
@@ -1694,8 +1764,10 @@ sub ed_ncep_rc {
 	   
        if ( $siglevs <= 72 ) {
           if($rcd =~ /\@NLEV_EXT/) {$rcd=~ s/\@NLEV_EXT/13/g; }
-       } else {
+       } elsif ( $siglevs > 72 & $siglevs <= 132 ) {
           if($rcd =~ /\@NLEV_EXT/) {$rcd=~ s/\@NLEV_EXT/15/g; }
+       } elsif ( $siglevs > 132 ) {
+          if($rcd =~ /\@NLEV_EXT/) {$rcd=~ s/\@NLEV_EXT/25/g; }
        }
        if ( $hyb_ens < 0 ) {
           if($rcd =~ /\@NITER1/) {$rcd=~ s/\@NITER1/100/g; }
@@ -2153,10 +2225,15 @@ sub ed_g5fvlay_rc {
   open(LUN2,">$ft") || die "Fail to open tmp.rc: $!\n";
 
   # Change variables to the correct inputs
+  # RT: Only hydrostatic option supported for now - will revise for non-hydro case later
   #---------------------------------------
   while( defined($rcd = <LUN>) ) {
      chomp($rcd);
-     if($rcd =~ /\@HYDROSTATIC/)  {$rcd=~ s/\@HYDROSTATIC/TRUE/g; }
+     if($rcd =~ /\@FV_HYDRO/)  {$rcd=~ s/\@FV_HYDRO/hydrostatic = .T./g; }
+     if($rcd =~ /\@FV_MAKENH/) {$rcd=~ s/\@FV_MAKENH/Make_NH = .F./g; }
+     if($rcd =~ /\@FV_SATADJ/) {$rcd=~ s/\@FV_SATADJ/do_sat_adj  = .F./g; }
+     if($rcd =~ /\@FV_ZTRACER/){$rcd=~ s/\@FV_ZTRACER/z_tracer = .T./g; }
+     if($rcd =~ /\@FV_NWAT/)   {$rcd=~ s/\@FV_NWAT/ /g; }
      print(LUN2 "$rcd\n");
   }
 
@@ -2280,6 +2357,7 @@ sub ed_aens_replay_acq {
   my($frun, $ft, $acq);
 
   $acq = "$fvhome/$mydir/$myacq";
+  if (-e "$acq") {return 0};
  open(SCRIPT,">$acq") or
  die ">>> ERROR <<< cannot write $acq";
  print  SCRIPT <<"EOF";
@@ -2291,16 +2369,31 @@ EOF
 #=======================================================================
 sub ed_aens_das_replay_acq {
   my($mydir) = @_;
-  my($replay_arcdir, $acq);
+  my($replay_arcdir, $aens_replay_expid, $acq);
 
-  $replay_arcdir = "/home/dao_ops/f517_fp/run/.../archive";
+  $aens_replay_expid = "x0044";
+  $replay_arcdir = query("Replay exp name?", $aens_replay_expid);
+  $replay_arcdir = "/discover/nobackup/projects/gmao/advda/rtodling/archive/x0044";
   $replay_arcdir = query("Replay archive directory?", $replay_arcdir);
 
   $acq = "$fvhome/$mydir/atmens_replay.acq";
   open(SCRIPT,">$acq") or die ">>> ERROR <<< cannot write $acq";
   print  SCRIPT <<"EOF";
-$replay_arcdir/atmens/Y%y4/M%m2/f517_fp.atmens_ebkg.%y4%m2%d2_%h2z.tar => $expid.atmens_ebkg.%y4%m2%d2_%h2z.tar
+$replay_arcdir/atmens/Y%y4/M%m2/$aens_replay_expid.atmens_ebkg.%y4%m2%d2_%h2z.tar => $expid.atmens_ebkg.%y4%m2%d2_%h2z.tar
 EOF
+
+  if ( $mydir eq "run") { 
+     $acq = "$fvhome/anasa/atmens_replay.acq";
+     open(SCRIPT,">$acq") or die ">>> ERROR <<< cannot write $acq";
+     print  SCRIPT <<"EOF";
+$replay_arcdir/atmens/Y%y4/M%m2/$aens_replay_expid.atmens_ebkg.%y4%m2%d2_%h2z.tar => $expid.atmens_ebkg.%y4%m2%d2_%h2z.tar
+EOF
+     $acq = "$fvhome/asens/atmens_asens.acq";
+     open(SCRIPT,">$acq") or die ">>> ERROR <<< cannot write $acq";
+     print  SCRIPT <<"EOF";
+$replay_arcdir/atmens/Y%y4/M%m2/$aens_replay_expid.atmens_ebkg.%y4%m2%d2_%h2z.tar => $expid.atmens_ebkg.%y4%m2%d2_%h2z.tar
+EOF
+  }
 
 }
 #=======================================================================
@@ -2347,8 +2440,8 @@ sub ed_lcv2prs_rc {
      #---------------------------------------
      while( defined($rcd = <LUN>) ) {
         chomp($rcd);
-        if($rcd =~ /\@IM/) {$rcd=~ s/\@IM/$hist_im/g; }
-        if($rcd =~ /\@JM/) {$rcd=~ s/\@JM/$hist_jm/g; }
+        if($rcd =~ /\@IM/) {$rcd=~ s/\@IM/$ana_im/g; }
+        if($rcd =~ /\@JM/) {$rcd=~ s/\@JM/$ana_jm/g; }
         print(LUN2 "$rcd\n");
      }
 
@@ -3392,7 +3485,7 @@ EOF
           $berror_env  = "setenv BERROR  $berror_file";
        }
   }
-  if ( $siglevs == 72 || $siglevs == 132 || $siglevs == 137 ) { $hybrid  = ".true." };
+  if ( $siglevs == 72 || $siglevs == 91 || $siglevs == 132 || $siglevs == 137 || $siglevs == 181 ) { $hybrid  = ".true." };
 
   $ans = query("  Ensemble Hybrid (<0;3=3dHyb;4=Hyb4d)?", $hyb_ens);
   if ($ans > 0) {$hyb_ens = $ans};
@@ -3455,7 +3548,7 @@ sub set_atmens {
 
 EOF
 
-  $aens_replay = query("  Replayed Ensemble (from OPS)? ", $aens_replay);
+  $aens_replay = query("  Replayed Ensemble? ", $aens_replay);
   if ( $aens_replay eq "yes"   ) {
      ed_aens_das_replay_acq("run");
      return 0;
@@ -4547,6 +4640,7 @@ EOF
   $nx_pert = 1;
   $ny_pert = 6 * $nx_pert;
   $use_shmem = 0;
+  $ios_nds = 1;
   if ( "$res" eq "c" && "$vres" eq "55" ) {
        $anahgrd = substr($res,0,1);
        $nx = 4;
@@ -4854,6 +4948,7 @@ EOF
        $ana_jm_ens = $ana_jm;
   } elsif ( "$res" eq "C180" ) {  # Cubed-sphere
        $cubed = 1;
+#      $ios_nds = 2;
        $specres = "254";
        $jcap = "254";
        $agcm_grid_type = "Cubed-Sphere";
@@ -4890,6 +4985,7 @@ EOF
        $ana_jm_ens = 181;
   } elsif ( "$res" eq "C360" ) {  # Cubed-sphere
        $cubed = 1;
+#      $ios_nds = 2;
        $specres = "254";
        $jcap = "254";
        $agcm_grid_type = "Cubed-Sphere";
@@ -4927,6 +5023,7 @@ EOF
        $ana_jm_ens = 181;
   } elsif ( "$res" eq "C720" ) {  # Cubed-sphere
        $cubed = 1;
+#      $ios_nds = 3;
        $specres = "254";
        $jcap = "254";
        $agcm_grid_type = "Cubed-Sphere";
@@ -4964,6 +5061,7 @@ EOF
        $ana_jm_ens = 361;
   } elsif ( "$res" eq "C1440" ) {  # Cubed-sphere
        $cubed = 1;
+#      $ios_nds = 4;
        $specres = "254";
        $jcap = "254";
        $agcm_grid_type = "Cubed-Sphere";
@@ -5294,7 +5392,9 @@ sub archiving_rules {
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpuv_npp_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpvis_npp_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnm_npp_%c%c%c.%y4%m2%d2_%h2z.bin
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnmeff_npp_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnp_npp_%c%c%c.%y4%m2%d2_%h2z.bin
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnpnc_npp_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_pcp_tmi_%c%c%c%c_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_pcp_ssmi_dmsp%c%c_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_pcp_ssmi_dmsp_%c%c%c.%y4%m2%d2_%h2z.bin
@@ -5349,7 +5449,9 @@ sub archiving_rules {
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpuv_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpvis_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnm_npp.%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnmeff_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnp_npp.%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnpnc_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_pcp_ssmi_dmsp%c%c.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_pcp_ssmi_dmsp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_pcp_tmi_%c%c%c%c.%y4%m2%d2_%h2z.ods
@@ -5403,7 +5505,9 @@ sub archiving_rules {
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_ompslpuv_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_ompslpvis_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_ompsnm_npp.%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_ompsnmeff_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_ompsnp_npp.%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_ompsnpnc_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_pcp_ssmi_%c%c%c%c.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_pcp_tmi_%c%c%c%c.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_pcp_ssmi_%c%c%c%c_%c%c%c.%y4%m2%d2_%h2z.ods
@@ -6710,7 +6814,9 @@ sub arch_asens {
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpnm_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpnp_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompsnm_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompsnmeff_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompsnp_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompsnpnc_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_o3lev_aura.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_pcp_ssmi_dmsp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_pcp_tmi_trmm.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
@@ -7519,7 +7625,9 @@ print  SCRIPT <<"EOF";
 
 # Load BASEDIR and modules
 # ------------------------
+  unsetenv LD_LIBRARY_PATH
   source \$FVROOT/bin/g5_modules
+  setenv LD_LIBRARY_PATH \${LD_LIBRARY_PATH}:\${BASEDIR}/\${ARCH}/lib:\${FVROOT}/lib
 
 # Internal parameters controlling system behavior
 # ----------------------------------------------
@@ -7651,8 +7759,8 @@ print  SCRIPT <<"EOF";
   setenv NUMBER_CPUS_IN_MACHINE      \$NCPUS    # Total No CPU on this queue
   setenv OMP_NUM_THREADS             \$NCPUS    # Number OMP Threads (generic)
   setenv OMP_SET_NUMTHREADS          1         # allows dynamic change of #threads
-  setenv PSAS_NUM_MPI                $pmpi      # No. MPI processes for PSAS
-  setenv PSAS_NUM_THREADS            $pthread[$pi]      # No. OMP threads   for PSAS
+  setenv PSAS_NUM_MPI                1 # $pmpi      # No. MPI processes for PSAS
+  setenv PSAS_NUM_THREADS            1 # $pthread[$pi]      # No. OMP threads   for PSAS
   setenv AGCM_N_PROCESSES            $ampi      # N_PROC X N_THREADS = NCPUS
   setenv AGCM_N_THREADS_PER_PROCESS  $athreads
   setenv AGCM_NUM_MPI                \$AGCM_N_PROCESSES           # No. MPI processes for GCM
@@ -7681,14 +7789,14 @@ print  SCRIPT <<"EOF";
 
   if (\$?I_MPI_ROOT) then
 #    The following as recommended by Scott and SI Team
-     setenv I_MPI_USE_DYNAMIC_CONNECTIONS 0
+#    setenv I_MPI_USE_DYNAMIC_CONNECTIONS 0
      setenv I_MPI_SHM_HEAP_VSIZE   512
      setenv PSM2_MEMORY            large
      setenv I_MPI_ADJUST_GATHERV   3
      setenv I_MPI_ADJUST_ALLREDUCE 12
-     setenv I_MPI_EXTRA_FILESYSTEM 1
-     setenv I_MPI_EXTRA_FILESYSTEM_LIST gpfs
-     setenv ROMIO_FSTYPE_FORCE         "gpfs:"
+#    setenv I_MPI_EXTRA_FILESYSTEM 1
+#    setenv I_MPI_EXTRA_FILESYSTEM_LIST gpfs
+#    setenv ROMIO_FSTYPE_FORCE         "gpfs:"
 #    setenv I_MPI_FABRICS shm:dapl
 #    setenv I_MPI_FABRICS_LIST "dapl,ofa"
 #    setenv I_MPI_FALLBACK "enable"
@@ -7843,8 +7951,10 @@ print  SCRIPT <<"EOF";
     setenv MPIRUN_AOD    "mpirun -np \$NCPUS_AOD"
     setenv MPIRUN_PSAS   "mpiexec_mpt -np \$NCPUS_AOD"
   else
-    setenv MPIRUN_AOD    "esma_mpirun -np \$NCPUS_AOD"
-    setenv MPIRUN_PSAS   "esma_mpirun -np \$NCPUS_AOD"
+#   setenv MPIRUN_AOD    "esma_mpirun -np \$NCPUS_AOD"
+#   setenv MPIRUN_PSAS   "esma_mpirun -np \$NCPUS_AOD"
+    setenv MPIRUN_AOD    ""
+    setenv MPIRUN_PSAS   ""
   endif
   setenv RUN_OPT_BLEND "esma_mpirun -np \$NCPUS \$HDF2RSX"
   if (\$G5GCM ) then
@@ -8659,6 +8769,7 @@ print  SCRIPT <<"EOF";
 # ------------------------
   unsetenv LD_LIBRARY_PATH
   source \$FVROOT/bin/g5_modules
+  setenv LD_LIBRARY_PATH \${LD_LIBRARY_PATH}:\${BASEDIR}/\${ARCH}/lib:\${FVROOT}/lib
 
 # Until a better handle of GEOS_Util is agreed upon (should not refer to things in src)
 # -------------------------------------------------------------------------------------
@@ -8697,8 +8808,8 @@ print  SCRIPT <<"EOF";
 # --------------------------------------
   setenv NUMBER_CPUS_IN_MACHINE       \$NCPUS    # Total No CPU on this queue
   setenv OMP_NUM_THREADS              \$NCPUS    # Number OMP Threads (generic)
-  setenv PSAS_NUM_MPI                 $pmpi      # No. MPI processes for PSAS
-  setenv PSAS_NUM_THREADS             $pthread[$pi]                  # No. OMP threads   for PSAS
+  setenv PSAS_NUM_MPI                 1 # $pmpi      # No. MPI processes for PSAS
+  setenv PSAS_NUM_THREADS             1 # $pthread[$pi]                  # No. OMP threads   for PSAS
   setenv AGCM_N_PROCESSES             $ampi                          # N_PROC X N_THREADS = NCPUS
   setenv AGCM_N_THREADS_PER_PROCESS   $athread[$ai]                  # number of CPUs
   setenv AGCM_NUM_MPI                 \$AGCM_N_PROCESSES             # No. MPI processes for GCM
@@ -8725,7 +8836,7 @@ print  SCRIPT <<"EOF";
 # MPT env variables
 # -----------------
   if (\$?I_MPI_ROOT) then
-     setenv I_MPI_USE_DYNAMIC_CONNECTIONS 0
+#    setenv I_MPI_USE_DYNAMIC_CONNECTIONS 0
 #    setenv I_MPI_FABRICS shm:dapl
 #    setenv I_MPI_FABRICS_LIST "dapl,ofa"
 #    setenv I_MPI_FALLBACK "enable"
@@ -9190,7 +9301,7 @@ print  SCRIPT <<"EOF";
 
 # Reset CAP
 # ---------
-  if ( -e \$FVHOME/fcst/CAP_\${hh}.rc.tmpl ) /bin/cp \$FVHOME/fcst/CAP_\${hh}.rc.tmpl \$FVHOME/fcst/CAP.rc.tmpl
+# if ( -e \$FVHOME/fcst/CAP_\${hh}.rc.tmpl ) /bin/cp \$FVHOME/fcst/CAP_\${hh}.rc.tmpl \$FVHOME/fcst/CAP.rc.tmpl
 
 # Check for Bootstrap
 # -------------------
@@ -9200,7 +9311,7 @@ print  SCRIPT <<"EOF";
 # Make the forecast run as 1 job segment
 # --------------------------------------
   if (! -e .SUBMITTED.\$itime) touch .SUBMITTED.\$itime
-  fvpsas \$fcst_opts -fcst \$itime \$FVHOME \$FVWORK
+  fvpsas \$fcst_opts -fcst \$itime -ihh0 \$hh \$FVHOME \$FVWORK
 
   set rc = \$status
   if ( \$rc > 0 && \$rc < 100 ) then
@@ -9272,40 +9383,43 @@ endif
        /bin/rm -f \$rsf
      end
 
-     set rslist = `/bin/ls -1 \$FVHOME/fcst/\$EXPID.rst.lcv.????????_??z.bin`
-     if ( \$status ) then
-         if( -e forecast.\${nymd}_\${hh}z.RUNNING ) /bin/rm forecast.\${nymd}_\${hh}z.RUNNING
-         if ( !(\$?this_nymdhh) ) then
-            set fclist = `/bin/ls -1 forecast.????????_??z`
-            if ( \$status ) then
-               echo \$myname": no more restart files, forecast job completed"
-            else
-               set itime2 = \$fclist[1]:e
-               set jname2 = fcst.\$itime2
-               set lname2 = fcst.log.\${itime2}.o%j.txt
-            endif
-         endif
+     if (\$?this_nymdhh) then
+         if( -e forecast.\${this_nymdhh}z.RUNNING ) /bin/rm forecast.\${this_nymdhh}z.RUNNING
      else
-         set itime2 = \$rslist[1]:r:e
-         set jname2 = fcst.\$itime2
-         set lname2 = fcst.log.\${itime2}.o%j.txt
-     endif
-
-     if ( \$\?itime2 ) then
-         if ( ! -e .SUBMITTED.\$itime2 ) then
-            touch .SUBMITTED.\$itime2
-            if ( \$BATCH_SUBCMD == "sbatch" ) then
-               sbatch -d afterany:\${SLURM_JOBID} -J \$jname2 -o \$lname2 $jobf.j
-            else
-               qsub -W depend=afterany:\${PBS_JOBID} -N \$jname2 -o \$lname2 $jobf.j
-            endif
+         set rslist = `/bin/ls -1 \$FVHOME/fcst/\$EXPID.rst.lcv.????????_??z.bin`
+         if ( \$status ) then
+             if( -e forecast.\${nymd}_\${hh}z.RUNNING ) /bin/rm forecast.\${nymd}_\${hh}z.RUNNING
+             set fclist = `/bin/ls -1 forecast.????????_??z`
+             if ( \$status ) then
+                echo \$myname": no more restart files, forecast job completed"
+             else
+                set itime2 = \$fclist[1]:e
+                set jname2 = fcst.\$itime2
+                set lname2 = fcst.log.\${itime2}.o%j.txt
+             endif
+         else
+             set itime2 = \$rslist[1]:r:e
+             set jname2 = fcst.\$itime2
+             set lname2 = fcst.log.\${itime2}.o%j.txt
          endif
-     endif
 
-     # Rename output log
-     # -----------------
-     set lname = \$FVHOME/fcst/fcst.log.\${itime}.txt
-     qalter -o \$lname \$SLURM_JOBID
+         if ( \$\?itime2 ) then
+             if ( ! -e .SUBMITTED.\$itime2 ) then
+                touch .SUBMITTED.\$itime2
+                if ( \$BATCH_SUBCMD == "sbatch" ) then
+                   sbatch -d afterany:\${SLURM_JOBID} -J \$jname2 -o \$lname2 $jobf.j
+                else
+                   qsub -W depend=afterany:\${PBS_JOBID} -N \$jname2 -o \$lname2 $jobf.j
+                endif
+             endif
+         endif
+
+         # Rename output log
+         # -----------------
+         set lname = \$FVHOME/fcst/fcst.log.\${itime}.txt
+         qalter -o \$lname \$SLURM_JOBID
+
+     endif
 
      # Because on Columbia this is not a legitimate TMPDIR, remove dir to avoid pile up
      # --------------------------------------------------------------------------------
@@ -9398,9 +9512,13 @@ sub init_agcm_rc {
     AGCM_label_subst("\@GRID_TYPE", $agcm_grid_type);
     AGCM_label_subst("\@CUBE_AGCM", $cube_agcm);
     AGCM_label_subst("\@LATLON_AGCM", $latlon_agcm);
+    AGCM_label_subst("\@IOS_NDS", $ios_nds);
 
     AGCM_label_subst("\@AANA_IM", $ana_im);
     AGCM_label_subst("\@AANA_JM", $ana_jm);
+
+    AGCM_label_subst("\@MP_MG1", "#");
+    AGCM_label_subst("\@MP_GFDL", "#");
 
     AGCM_label_subst("\@NX", $nx);
     AGCM_label_subst("\@NY", $ny);
@@ -9691,6 +9809,7 @@ sub copy_resources {
   ed_g5cap_rc("run","CAP.rc.tmpl",-1);
   #--ed_g5prog_rc_new("run","GCMPROG.rc.tmpl");
   ed_g5hist_rc_new("run","HISTORY.rc.tmpl");
+  ed_g5surfGC_rc("run","GEOS_SurfaceGridComp.rc");
   writeSaverst($fcsthrs, "$fvhome/run");
   ed_blendacq("fcst");
 
