@@ -62,6 +62,7 @@
    use ESMF
    use MAPL_Mod
    use MAPL_CFIOMod
+   use pflogger, only: pfl_initialize => initialize
    use m_StrTemplate, only: StrTemplate
    use m_set_eta, only: set_eta
 
@@ -202,6 +203,8 @@ CONTAINS
 
     call ESMF_VMGetCurrent(vm=vm, rc=status)
     call ESMF_VMGet(vm,mpiCommunicator=comm,rc=status)
+
+    call pfl_initialize()
 
     call cmdline_ ( myRC, nymdo, nhmso )
 
