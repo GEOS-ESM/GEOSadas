@@ -28,7 +28,8 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  tag: rt-GEOSadas-5_29_0_prep3
+  tag: v1.4.5
+  develop: main
   develop: dev/adas
 
 MAPL:
