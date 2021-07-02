@@ -22,7 +22,7 @@ ecbuild:
 NCEP_Shared:
   local: ./src/Shared/@NCEP_Shared
   remote: ../NCEP_Shared.git
-  tag: rt-GEOSadas-5_29_0_prep3
+  tag: v1.2.0
   develop: main
 
 GMAO_Shared:
@@ -65,7 +65,7 @@ g5pert:
 GEOSagcmPert_GridComp:
   local: ./src/Components/@GEOSagcmPert_GridComp
   remote: ../GEOSagcmPert_GridComp.git
-  tag: rt-GEOSadas-5_29_0_prep3
+  tag: v1.2.0
   develop: main
 
 FVdycoreCubed_GridComp:
@@ -107,7 +107,7 @@ GOCART:
 
 mom:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSogcm_GridComp/GEOSocean_GridComp/GuestOcean_GridComp/MOM_GEOS5PlugMod/@mom
-  remote: git@github.com:GEOS-ESM/MOM5.git
+  remote: ../MOM5.git
   tag: geos/5.1.0+1.1.1
   develop: geos5
 
@@ -121,7 +121,7 @@ mom6:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  tag: rt-GEOSadas-5_29_0_prep3
+  tag: v1.4.1
   develop: develop
 
 UMD_Etc:
