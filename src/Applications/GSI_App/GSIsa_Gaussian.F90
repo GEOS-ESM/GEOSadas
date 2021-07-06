@@ -587,7 +587,7 @@
 ! Open file
 !----------
 
-!!  only_vars='phis,ps,uwnd,vwnd,theta,sphu,ozone,qitot,qltot')
+!!  only_vars='phis,ps,PBLH,uwnd,vwnd,theta,sphu,ozone,qitot,qltot')
 
 !I/O
 
@@ -602,6 +602,11 @@
    call ESMF_StateGetField(impSt, 'ps', Efield, rc=status)
    VERIFY_(STATUS)
    call FieldRead (unit, Efield, rc=status)
+   VERIFY_(STATUS)
+
+   call ESMF_StateGetField(impSt, 'PBLH', Efield, rc=status)
+   VERIFY_(STATUS)
+   call FieldRead (unit, Efield, rc=status) !PBLH
    VERIFY_(STATUS)
 
    call ESMF_StateGetField(impSt, 'theta', Efield, rc=status)
@@ -958,15 +963,15 @@
     real, pointer                :: lons_in(:), lats_in(:)
     real, pointer                ::  PTR2(:,:),  PTR3(:,:,:)
     character(len=ESMF_MAXSTR)   :: NAME
-    character(len=ESMF_MAXSTR) :: difnam(16), defnam(7)
-    integer                    :: difdim(16), defdim(7)
+    character(len=ESMF_MAXSTR) :: difnam(17), defnam(8)
+    integer                    :: difdim(17), defdim(8)
 
-   data difnam /'phis','ps','uwnd','vwnd','theta','sphu','ozone',&
+   data difnam /'phis','ps','PBLH','uwnd','vwnd','theta','sphu','ozone',&
               'qitot','qltot','TSKIN','U10M','V10M','SNOWDP', &
               'GWETTOP','TSOIL1','ORO'/
-   data difdim /2,2,3,3,3,3,3,3,3,2,2,2,2,2,2,2/
-   data defnam /'dps','du','dv','dt','dq','doz','dql'/
-   data defdim /2,3,3,3,3,3,3/
+   data difdim /2,2,2,3,3,3,3,3,3,3,2,2,2,2,2,2,2/
+   data defnam /'dps','dpblh','du','dv','dt','dq','doz','dql'/
+   data defdim /2,2,3,3,3,3,3,3/
 
 ! Start
 
