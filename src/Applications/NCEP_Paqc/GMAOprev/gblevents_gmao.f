@@ -257,6 +257,10 @@ C 2014-05-08 JWhiting -- altered print statement (2 format) in GBLEVN10
 C     subroutine; increased field width for spectral resolution to 
 C     accommodate models w/ up to 5-digit resolution (I3 to I5).
 C
+C 2020-11-19 M.SIENKIEWICZ -- IN GBLEVN06, MODIFY INTERPOLATION TO 
+C     CORRECT ARRAY ACCESS FOR SP STATION.  (AFTER CHANGE TO PREPDATA
+C     AND/OR BUFR LIBRARY THE SP LATITUDE LOADED IN YOB WAS SLIGHTLY
+C     LESS THAN -90 AND THUS LED TO TRY TO ACCESS INDEX 0 INSTEAD OF 1.)
 C
 C USAGE:    CALL GBLEVENTS(IDATEP,IUNITF,IUNITE,IUNITP,IUNITS,SUBSET,
 C          $               NEWTYP)
@@ -1874,6 +1878,7 @@ C  --------------------------------------------
 
       WY = (YOB+90.)/DLAT + 1.0
       J0 = WY
+      if (j0 .lt. 1) j0 = 1
       J1 = MIN(J0+1,JMAX)
       WY = WY-J0
 

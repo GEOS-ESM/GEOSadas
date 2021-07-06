@@ -149,7 +149,9 @@ sub asens_script {
 
 # Load BASEDIR and modules
 # ------------------------
+  unsetenv LD_LIBRARY_PATH
   source \$FVROOT/bin/g5_modules
+  setenv LD_LIBRARY_PATH \${LD_LIBRARY_PATH}:\${BASEDIR}/\${ARCH}/lib:\${FVROOT}/lib
 
 # Internal parameters controling system behavior
 # ----------------------------------------------
@@ -442,10 +444,10 @@ EOF
 #       Pick oldest restart for initial condition
 #       -----------------------------------------
         if ( \$?this_nymdhh ) then
-            set rslist = `/bin/ls -1 \$FVHOME/asens/\$EXPID.fsens_\${jgrdnrm}.eta.????????_??z+????????_??z-\${this_nymdhh}z.$ncsuffix \
+            set rslist = `/bin/ls -1 \$FVHOME/asens/\$EXPID.fsens_\${jgrdnrm}.eta.????????_??z+????????_??z-\${this_nymdhh}z.$ncsuffix \\
                                      \$FVHOME/asens/\$EXPID.Jgradf_\${jgrdnrm}.eta.????????_??z+????????_??z-\${this_nymdhh}z.$ncsuffix`
         else
-            set rslist = `/bin/ls -1 \$FVHOME/asens/\$EXPID.fsens_\${jgrdnrm}.eta.????????_??z+????????_??z-????????_??z.$ncsuffix \
+            set rslist = `/bin/ls -1 \$FVHOME/asens/\$EXPID.fsens_\${jgrdnrm}.eta.????????_??z+????????_??z-????????_??z.$ncsuffix \\
                                      \$FVHOME/asens/\$EXPID.Jgradf_\${jgrdnrm}.eta.????????_??z+????????_??z-????????_??z.$ncsuffix`
         endif
         if ( \$status ) then
@@ -462,10 +464,10 @@ EOF
         set itime = \$myrsfile:r
         set itime = \$itime:e
         if ( \$vectyp == "fsens" ) then
-        set xttag = `echo \$itime | cut -c1-25`
-        set nymd  = `echo \$itime | cut -c27-34`
-        set hh    = `echo \$itime | cut -c36-37`
-        set nhms  = \${hh}0000
+           set xttag = `echo \$itime | cut -c1-25`
+           set nymd  = `echo \$itime | cut -c27-34`
+           set hh    = `echo \$itime | cut -c36-37`
+           set nhms  = \${hh}0000
         else  # in case of Jgradf analysis not in time tag ...
            set xttag = `echo \$itime | cut -c1-12`
            set nymd  = `echo \$itime | cut -c14-21`
@@ -498,7 +500,7 @@ EOF
         set nhms0 = \${hh0}0000
 
         set sfx = `echo \$myrsfile | cut -d+ -f2`
-        set jgnlist = (`/bin/ls \$FVHOME/asens/\$EXPID.fsens_\${jgrdnrm}.eta.????????_??z+\$sfx  \
+        set jgnlist = (`/bin/ls \$FVHOME/asens/\$EXPID.fsens_\${jgrdnrm}.eta.????????_??z+\$sfx  \\
                                 \$FVHOME/asens/\$EXPID.Jgradf_\${jgrdnrm}.eta.????????_??z+\$sfx`)
         foreach fn ( \$jgnlist )
            /bin/mv \$fn \$FVHOME/asens/stage
@@ -593,14 +595,14 @@ EOF
 
      else
 
-        set lst2del = (`/bin/ls \$FVHOME/asens/stage/\$EXPID.fsens_\${jgrdnrm}.eta.????????_??z+\$sfx \
+        set lst2del = (`/bin/ls \$FVHOME/asens/stage/\$EXPID.fsens_\${jgrdnrm}.eta.????????_??z+\$sfx \\
                                 \$FVHOME/asens/stage/\$EXPID.Jgradf_\${jgrdnrm}.eta.????????_??z+\$sfx`)
         foreach fn ( \$lst2del )
             /bin/rm -f \$fn
         end
 
         if (! \$?this_nymdhh ) then
-           set rslist = `/bin/ls -1 \$FVHOME/asens/\$EXPID.fsens_???.eta.????????_??z+????????_??z-????????_??z.$ncsuffix \
+           set rslist = `/bin/ls -1 \$FVHOME/asens/\$EXPID.fsens_???.eta.????????_??z+????????_??z-????????_??z.$ncsuffix \\
                                     \$FVHOME/asens/\$EXPID.Jgradf_???.eta.????????_??z+????????_??z-????????_??z.$ncsuffix`
            if ( \$status ) then
               echo \$myname": no more sensitivity files, forecast job completed"
