@@ -52,7 +52,9 @@ COLLECTIONS: 'bkg.eta'
 # Land output
 #            'tavg1_2d_lfo_Nx'
 #            'inst1_2d_lfo_Nx'
-#            'tavg1_2d_lnd_Nx'  
+#            'tavg1_2d_lnd_Nx' 
+#            'tavg1_2d_lfo_Nx+-'
+#            'inst1_2d_lfo_Nx+-' 
 # Vortex track/relocator
 #             'vtx.mix'
 # Cubed trajectory (background for JEDI)
@@ -625,6 +627,43 @@ COLLECTIONS: 'bkg.eta'
                                'SPWATR'    , 'SURFACE'  ,
                                'SPSNOW'    , 'SURFACE'  ,
                                ::
+
+  tavg1_2d_lfo_Nx+-.format:    'CFIO',
+  tavg1_2d_lfo_Nx+-.descr:     '2d,1-Hourly,Time-Averaged,Single-Level,Forecast,Land forcing' ,
+  tavg1_2d_lfo_Nx+-.template:  '%y4%m2%d2_%h2%n2z.nc4',
+  tavg1_2d_lfo_Nx+-.mode:      'time-averaged',
+  tavg1_2d_lfo_Nx+-.ref_date:   >>>IOBBKGD<<< ,
+  tavg1_2d_lfo_Nx+-.ref_time:   >>>IOBBKGT<<< ,
+  tavg1_2d_lfo_Nx+-.end_date:   >>>IOEBKGD<<< ,
+  tavg1_2d_lfo_Nx+-.end_time:   >>>IOEBKGT<<< ,
+  tavg1_2d_lfo_Nx+-.frequency:  010000,
+  tavg1_2d_lfo_Nx+-.duration:   010000 ,
+  tavg1_2d_lfo_Nx+-.fields:      'SLRSF'   , 'SOLAR'    , 'SWGDN'    ,
+                               'SWLAND'  , 'SURFACE'  ,
+                               'LWS'     , 'IRRAD'    , 'LWGAB'    ,
+                               'PCU'     , 'SURFACE'  , 'PRECCU'   ,
+                               'PLS'     , 'SURFACE'  , 'PRECLS'   ,
+                               'SNO'     , 'SURFACE'  , 'PRECSNO'  ,
+                               'DFPAR'   , 'SOLAR'    , 'PARDF'    ,
+                               'DRPAR'   , 'SOLAR'    , 'PARDR'    ,
+                               ::
+
+  inst1_2d_lfo_Nx+-.format:    'CFIO',
+  inst1_2d_lfo_Nx+-.descr:     '2d,1-Hourly,Instantaneous,Single-Level,Forecast,land forcing'
+  inst1_2d_lfo_Nx+-.template:  '%y4%m2%d2_%h2%n2z.nc4',
+  inst1_2d_lfo_Nx+-.mode:      'instantaneous' ,
+  inst1_2d_lfo_Nx+-.ref_date:   >>>IOBBKGD<<< ,
+  inst1_2d_lfo_Nx+-.ref_time:   >>>IOBBKGT<<< ,
+  inst1_2d_lfo_Nx+-.end_date:   >>>IOEBKGD<<< ,
+  inst1_2d_lfo_Nx+-.end_time:   >>>IOEBKGT<<< ,
+  inst1_2d_lfo_Nx+-.frequency:  010000,
+  inst1_2d_lfo_Nx+-.duration:   010000 ,
+  inst1_2d_lfo_Nx+-.fields:      'DZ'     , 'DYN'  , 'HLML'      ,
+                               'TA'     , 'DYN'  , 'TLML'      ,
+                               'QA'     , 'DYN'  , 'QLML'      ,
+                               'SPEED'  , 'DYN'  , 'SPEEDLML'  ,
+                               'PS'     , 'DYN'  ,
+                                ::
 
 
 # Caution: this stream does not follow convention of output from
