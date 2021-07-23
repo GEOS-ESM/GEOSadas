@@ -15,8 +15,8 @@ my ($ARCH, $HOST);
 my ($FVHOME, $FVROOT, $RUNDIR);
 my ($AOD_OBSCLASS, $BERROR, $DO_ECS_OUT, $DO_REM_SYNC, $EXPID, $FVARCH,
     $FVBCS, $GID, $MONTHLY_MEANS, $MP_SET_NUMTHREADS, $NCEPINPUT, $NOBACKUP,
-    $OBSCLASS, $OBSCLASS_NOAIRS, $OMP_NUM_THREADS, $RUN_QUADS, $VTRACK,
-    $VTXLEVS, $VTXRELOC);
+    $OBSCLASS, $OBSCLASS_NOAIRS, $OMP_NUM_THREADS, $RUN_QUADS, $PYRADMON,
+    $VTRACK, $VTXLEVS, $VTXRELOC);
 my ($BASEDIR, $FCSTID, $FVDMGET, $G5MODULES, $PLOTS_LOC, $GEOSUTIL, $GTAG);
 my ($qalter, $PBS_BIN, $DISCOVERSHARE);
 my ($FVSHARE, $SHARE, $REM_GRADS_CONFIG, $G5MGRAM, $LATS4DLOC, $FVBIN,
@@ -97,6 +97,7 @@ sub init {
     $OBSCLASS          = $ENV{"OBSCLASS"};
     $OBSCLASS_NOAIRS   = $ENV{"OBSCLASS_NOAIRS"};
     $OMP_NUM_THREADS   = $ENV{"OMP_NUM_THREADS"};
+    $PYRADMON          = $ENV{"PYRADMON"};
     $RUN_QUADS         = $ENV{"RUN_QUADS"};
     $VTRACK            = $ENV{"VTRACK"};
     $VTXLEVS           = $ENV{"VTXLEVS"};
@@ -278,6 +279,7 @@ sub writefile {
     print RUNCONF "setenv FVARCH $FVARCH\n" if $FVARCH;
     print RUNCONF "setenv FVSPOOL $FVSPOOL\n" if $FVSPOOL;
     print RUNCONF "setenv BASEDIR $BASEDIR\n" if $BASEDIR;
+    print RUNCONF "setenv PYRADMON $PYRADMON\n" if $PYRADMON;
     print RUNCONF "#------------------------------\n";
     print RUNCONF "setenv G5MODULES \"$G5MODULES\"\n" if $G5MODULES;
     print RUNCONF "source \$FVROOT/bin/g5_modules\n";

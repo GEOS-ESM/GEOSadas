@@ -86,7 +86,7 @@ sub init {
     # check for needed executables and rc
     #------------------------------------
     $edhist_pl = "$fvroot/bin/edhist.pl";
-    $echorc_x = "$fvroot/bin/echorc.x";
+    $echorc_x = "$fvroot/bin/echorc.pl";
     $gsidiags_rc = "$fvroot/etc/gsidiags.rc";
 
     die "Error. Cannot find $edhist_pl;"   unless -x $edhist_pl;
