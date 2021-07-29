@@ -221,6 +221,9 @@ Output Restart TYPE (bin or nc4) [nc4]
 Select group: [g0613]
 > 
 
+Continue without missing resource files? [y]
+> 
+
 Edit COLLECTIONS list in run/HISTORY.rc.tmpl (y/n)? [n]
 > y
 
