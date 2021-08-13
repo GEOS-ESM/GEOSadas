@@ -514,6 +514,7 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
   if ($DAO == 0) { while3 ( \&get_mhost ) }
   while3 ( \&get_output );
   while3 ( \&get_history );
+  while3 ( \&get_pyradmon );
   while3 ( \&get_rstype );
   while3 ( \&get_GID );
 
@@ -4591,6 +4592,29 @@ sub get_GID {
 }
 
 #=======================================================================
+sub get_pyradmon {
+
+    #=========================================================#
+    # FOR NOW, TAKE DEFAULT RATHER THAN QUERYING FOR LOCATION #
+    #=========================================================#
+    $pyradmon = "/discover/nobackup/jstassi/GEOSadas/pyradmon";
+    return;
+    #=========================================================#
+
+    print "\n------------------------\n"
+        .   "Pyradmon Source Location\n"
+        .   "------------------------\n";
+
+    $pyradmon_dflt = "/discover/nobackup/jstassi/GEOSadas/pyradmon";
+    $pyradmon = query("\n  Pyradmon code location?", $pyradmon_dflt);
+    if (-d $pyradmon) {
+        $ENV{"PYRADMON"} = $pyradmon;
+        return;
+    }
+    return 1;
+}
+
+#=======================================================================
 sub get_dimsg5gcm {
 
     return 0 unless ( $g5gcm );
@@ -5217,9 +5241,11 @@ sub secs2hhmmss {
 #=========================================================================
 sub mkdir_fvhome {  # create directories on FVHOME
   print "\nSetting up FVHOME directory for $expid experiment ...\n";
-  foreach $dir (qw(ana diag daotovs etc obs prog rs run recycle fcst lana asens anasa)) {
-      mkpath("$fvhome/$dir")
-          or die ">>> ERROR <<< creating directory $fvhome/$dir;";
+  foreach $dir (qw(ana diag daotovs etc obs prog radmon)) {
+      mkpath("$fvhome/$dir") or die ">>> ERROR <<< creating directory $fvhome/$dir;";
+  }
+  foreach $dir (qw(rs run recycle fcst lana asens anasa)) {
+      mkpath("$fvhome/$dir") or die ">>> ERROR <<< creating directory $fvhome/$dir;";
   }
   foreach $subdir (qw( gaas gocart )) {
       mkpath("$fvhome/run/$subdir")
@@ -7346,9 +7372,10 @@ if ((\$arch_type == "ADAS") && (\$\?yyyymm) && (\$\?dd)) then
 
       # defaults
       #---------
-      if (! \$\?MONTHLY_MEANS ) set MONTHLY_MEANS = 1
-      if (! \$\?MONTHLY_TAR )   set MONTHLY_TAR   = 1
-      if (! \$\?MONTHLY_PLOTS ) set MONTHLY_PLOTS = 0
+      if (! \$\?MONTHLY_MEANS )  set MONTHLY_MEANS  = 1
+      if (! \$\?MONTHLY_TAR )    set MONTHLY_TAR    = 1
+      if (! \$\?MONTHLY_PLOTS )  set MONTHLY_PLOTS  = 0
+      if (! \$\?MONTHLY_RADMON ) set MONTHLY_RADMON = 0
 
       # create job script for monthly post processing
       #----------------------------------------------
@@ -7368,14 +7395,12 @@ if ((\$arch_type == "ADAS") && (\$\?yyyymm) && (\$\?dd)) then
           # execute job script for monthly means processing
           #------------------------------------------------
           set flags = ""
-          if (\$MONTHLY_MEANS) set flags = "\$flags -means"
-          if (\$MONTHLY_TAR)   set flags = "\$flags -tar"
-          if (\$MONTHLY_PLOTS) set flags = "\$flags -plots"
+          if (\$MONTHLY_MEANS)  set flags = "\$flags -means"
+          if (\$MONTHLY_TAR)    set flags = "\$flags -tar"
+          if (\$MONTHLY_PLOTS)  set flags = "\$flags -plots"
+          if (\$MONTHLY_RADMON) set flags = "\$flags -radmon \$MONTHLY_RADMON"
 
-          if (\$MONTHLY_MEANS || \$MONTHLY_TAR || \$MONTHLY_PLOTS) then
-              \$monthlyPost \$flags
-          endif
-
+          if (\$flags != "") \$monthlyPost \$flags
       endif  
    endif
 endif
@@ -7664,6 +7689,7 @@ print  SCRIPT <<"EOF";
   setenv MONTHLY_MEANS $monthly_means   # 1 = submit monthly means at end of month;     0 = don't
   setenv MONTHLY_TAR $monthly_tar   # 1 = submit monthly tar job at end of month;   0 = don't
   setenv MONTHLY_PLOTS $monthly_plots   # 1 = submit monthly plots job at end of month; 0 = don't
+  setenv MONTHLY_RADMON 0 # 1 = submit monthly radmon job; 2 = 2 jobs/month; 3 = 3 jobs/month; 0 = don't
   setenv NCSUFFIX $ncsuffix
   setenv STAGE4FSENS /dev/null
   setenv GAAS_ANA $gaas_ana # 1 = aerosol analysis, 0 = disables it
@@ -8446,6 +8472,10 @@ EOF
 
       if (\$\?MONTHLY_PLOTS) then
          set vars = "\$vars,MONTHLY_PLOTS=\$MONTHLY_PLOTS"
+      endif
+
+      if (\$\?MONTHLY_RADMON) then
+         set vars = "\$vars,MONTHLY_RADMON=\$MONTHLY_RADMON"
       endif
 
 #     submit archive job
@@ -10003,6 +10033,12 @@ sub copy_resources {
   $fname = "fvsavecf"; # config saving script
   $rc = system("/bin/cp $fvbin/$fname $fvhome/run/$fname");
   die "Cannot write file $fvhome/run/$fname: $!" if ( $rc );
+
+  # Copy radmon.defaults.rc file to FVHOME/radmon
+  #----------------------------------------------
+  if (-e "$pyradmon/scripts/radmon.defaults.rc") {
+      cp("$pyradmon/scripts/radmon.defaults.rc", "$fvhome/radmon");
+  }
 }
  
 #=======================================================================

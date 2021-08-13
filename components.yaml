@@ -5,13 +5,13 @@ GEOSadas:
 env:
   local: ./@env
   remote: ../ESMA_env.git
-  tag: v3.2.1
+  tag: v3.3.0
   develop: main
 
 cmake:
   local: ./@cmake
   remote: ../ESMA_cmake.git
-  tag: v3.4.2
+  tag: v3.5.2
   develop: develop
 
 ecbuild:
@@ -34,7 +34,7 @@ GMAO_Shared:
 MAPL:
   local: ./src/Shared/@MAPL
   remote: ../MAPL.git
-  tag: v2.6.7
+  tag: v2.7.0
   develop: develop
 
 FMS:
@@ -46,7 +46,7 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  tag: v1.4.1
+  tag: v1.4.2
   develop: develop
 
 GEOSgcm_GridComp:
@@ -71,7 +71,7 @@ GEOSagcmPert_GridComp:
 FVdycoreCubed_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSsuperdyn_GridComp/@FVdycoreCubed_GridComp
   remote: ../FVdycoreCubed_GridComp.git
-  tag: v1.2.13
+  tag: v1.2.15
   develop: develop
 
 fvdycore:
@@ -101,8 +101,8 @@ geos-chem:
 GOCART:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSphysics_GridComp/@GEOSchem_GridComp/@GOCART
   remote: ../GOCART.git
-  sparse: ./config/GOCART.sparse
   tag: v1.0.1
+  sparse: ./config/GOCART.sparse
   develop: develop
 
 mom:
@@ -116,12 +116,12 @@ mom6:
   remote: ../MOM6.git
   tag: geos/v2.0.1
   develop: dev/gfdl
-  recurse_submodules: True
+  recurse_submodules: true
 
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  tag: v1.4.1
+  tag: v1.5.2
   develop: develop
 
 UMD_Etc:
