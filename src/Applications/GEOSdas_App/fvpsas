@@ -302,31 +302,25 @@
         exit 100
      endif
   endif
-                                                       zeit_ci.x acquire
 
 # Acquire "replay" analysis or observations
 # -----------------------------------------
   if ( ! $FORECAST && $AnaFreqEpoch[2] > 0 ) then
 
+                                                       zeit_ci.x acquire
+
 #    Determine relevant time/frequency information
 #    ---------------------------------------------
      Call DetermineAcquireTimes_()
 
-#    Acquire replay analysis...
-#    -----------------------------------------
-     if ( -e replay.acq ) then  
-
-          Call AcquireReplayAnalysis_()
-
-#    .. or observational data
-#    ------------------------
-     else if ( $DOING_ANA ) then
+#    If so, aquire observational data
+#    --------------------------------
+     if ( $DOING_ANA ) then
 
           Call AcquireObservations_() 
 
      endif
 
-  endif
                                                        zeit_co.x acquire
 
 # Pre-analysis Quality Control
@@ -370,6 +364,14 @@
 #     ----------------
       @ seg = 0
       while ( $seg < $nsegs )
+
+#         Acquire replay analysis...
+#         --------------------------
+          if ( -e replay.acq ) then  
+
+              Call AcquireReplayAnalysis_()
+
+          endif
 
 #        Determines times/frequencies for this segment
 #        ---------------------------------------------

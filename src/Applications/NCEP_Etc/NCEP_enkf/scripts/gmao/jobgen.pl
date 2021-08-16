@@ -222,6 +222,11 @@ EOF
 #PBS -q $opt_q
 #SBATCH --partition=datamove
 EOF
+      if ( $ENV{JOBGEN_ARCH_CONSTRAINT} ) {
+    print  SCRIPT <<"EOF";
+#SBATCH --constraint=$ENV{JOBGEN_ARCH_CONSTRAINT}
+EOF
+      }
     }
  }
 

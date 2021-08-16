@@ -397,6 +397,7 @@ sub fetch_inputs {
     my (%opts, $filestring, $ftype, $htype, $do_dmput, $do_tar);
     my ($tmpl, $prefetch_j, $jobname, $outfile);
     my ($job_name, $time, $output, $parFLG, $vFLG);
+    my ($constraint);
     my (%value, @deps, $dependFLG, $cmd);
 
     # input arguments
@@ -421,6 +422,7 @@ sub fetch_inputs {
         $time = "SBATCH --time=$walltime_pf";
         $output = "SBATCH --output=$outfile";
         $parFLG = "SBATCH --partition=datamove";
+        $constraint = "$DATAMOVE_CONSTRAINT":
         $vFLG = "--export=outfile=$outfile";
     }
     else {
@@ -428,6 +430,7 @@ sub fetch_inputs {
         $time = "PBS -l walltime=$walltime_pf";
         $output = "PBS -o $outfile";
         $parFLG = "";
+        $constraint = "";
         $vFLG = "-v outfile=$outfile";
     }
 
@@ -437,6 +440,7 @@ sub fetch_inputs {
     $value{"__ACCOUNT__"}    = $account;
     $value{"__OUTPUT__"}     = $output;
     $value{"__PARTITION__"}  = $parFLG;
+    $value{"__CONSTRAINT__"} = $constraint;
 
     $value{"__FILESTRING__"} = $filestring;
     $value{"__HOURTYPE__"}   = $htype;
@@ -565,6 +569,7 @@ sub tar_and_clean_inputs {
     my (%opts, $filestring, $ftype, $do_tar, $lastFLG);
     my ($tmpl, $tarandclean_j, $jobname, $outfile);
     my ($job_name, $time, $output, $parFLG, $vFLG);
+    my ($constraint);
     my (%value, $walltime, @deps, $dependFLG, $cmd);
 
     # input arguments
@@ -588,6 +593,7 @@ sub tar_and_clean_inputs {
         $time = "SBATCH --time=$walltime_cl";
         $output = "SBATCH --output=$outfile";
         $parFLG = "SBATCH --partition=datamove";
+        $constraint = "$DATAMOVE_CONSTRAINT";
         $vFLG = "--export=outfile=$outfile";
     }
     else {
@@ -595,6 +601,7 @@ sub tar_and_clean_inputs {
         $time = "PBS -l walltime=$walltime_cl";
         $output = "PBS -o $outfile";
         $parFLG = "";
+        $constraint = "";
         $vFLG = "-v outfile=$outfile";
     }
 
@@ -604,6 +611,7 @@ sub tar_and_clean_inputs {
     $value{"__ACCOUNT__"}    = $account;
     $value{"__OUTPUT__"}     = $output;
     $value{"__PARTITION__"}  = $parFLG;
+    $value{"__CONSTRAINT__"} = $constraint;
 
     $value{"__FILESTRING__"} = $filestring;
     $value{"__YYYYMM__"}     = $yyyymm;
@@ -639,6 +647,7 @@ sub tar_and_clean_inputs {
 sub archive_monthly_keep_files {
     my ($outfile, $vars, $vFLG, $outFLG, $qFLGs, @deps, $dependFLG);
     my ($KEEParc_csh, $cmd, $cmd_save);
+    my ($constraint,$dummy);
 
     # command flags
     #--------------
@@ -648,10 +657,14 @@ sub archive_monthly_keep_files {
         .   "outfile=$outfile";
 
     if ($siteID eq "nccs") {
+        $constraint = "";
+        if ($DATAMOVE_CONSTRAINT) {
+           ($dummy, $constraint) = (split / /, $DATAMOVE_CONSTRAINT)[0, 1];
+        }
         $vFLG = "--export=$vars";
         $outFLG = "--output=$outfile";
         $qFLGs = "--job-name=KEEParc.$yyyymm --time=$walltime_cl"
-            .    " --partition=datamove";
+            .    " --partition=datamove $constraint";
     }
     else {
         $vFLG = "-v $vars";
@@ -695,6 +708,7 @@ sub archive_monthly_keep_files {
 sub archive_monthly_files {
     my ($outfile, $vars, $vFLG, $outFLG, $qFLGs, @deps, $dependFLG);
     my ($MPParc_csh, $cmd, $cmd_save);
+    my ($dummy, $constraint);
 
     # command flags
     #--------------
@@ -705,10 +719,14 @@ sub archive_monthly_files {
         .   "mmid=$$";
 
     if ($siteID eq "nccs") {
+        $constraint = "";
+        if ($DATAMOVE_CONSTRAINT) {
+           ($dummy, $constraint) = (split / /, $DATAMOVE_CONSTRAINT)[0, 1];
+        }
         $vFLG = "--export=$vars";
         $outFLG = "--output=$outfile";
         $qFLGs = "--job-name=MPParc.$yyyymm --nodes=1 --time=$walltime_cl"
-            .    " --partition=datamove";
+            .    " --partition=datamove $constraint";
     }
     else {
         $vFLG = "-v $vars";

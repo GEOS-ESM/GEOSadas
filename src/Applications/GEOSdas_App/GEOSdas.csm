@@ -118,6 +118,7 @@
   if ( !($?CONVPROG) )            setenv CONVPROG      0
   if ( !($?CONVSFC) )             setenv CONVSFC       0
   if ( !($?CONVUPA) )             setenv CONVUPA       0
+  if ( !($?DATAMOVE_CONSTRAINT) ) setenv DATAMOVE_CONSTRAINT NULL
   if ( !($?DIAG2ODS) )            setenv DIAG2ODS      0
   if ( !($?DIAGTAR) )             setenv DIAGTAR       0
   if ( !($?DO_0HR_IMP) )          setenv DO_0HR_IMP    0
@@ -173,12 +174,6 @@
   endif
 
 #_RT  if ( !($?STAGE4FCST) )    setenv STAGE4FCST  0   # need to resolve redundancies
-
-# Sanity setting
-# --------------
-  if ( $SKIPANA ) then
-       setenv ASYNBKG   360
-  endif
 
   if ( $?RUN_OPT_BEGIN ) then
         set run_opt_begin = ( $RUN_OPT_BEGIN ) 
@@ -448,7 +443,7 @@ exit 1
 # Cannot do GAASFDBK unless GAAS_ANA is on 
 # ----------------------------------------
   if ( ! $FORECAST ) then
-     if ( $GAASFDBK && ( ! $GAAS_ANA ) ) then
+     if ( $GAAS_ANA && ( ! $GAASFDBK ) ) then
        echo $myname": GAAS inconsistency, GAASFDBK=$GAASFDBK, GAAS_ANA=$GAAS_ANA"
        exit 1
      endif
@@ -498,7 +493,6 @@ exit 1
 # -----------------------------------------------------
   if ( !($?obsclass) && !($?req_obsclass) ) then
         setenv SKIPANA 1   # no ANALYSIS
-        setenv ASYNBKG 360
   endif
 
 # For readability, introduce DOING_ANA
@@ -564,7 +558,7 @@ exit 1
 
 # Set HISTORY gaas products on or off
 # -----------------------------------
-  if ( $GAAS_ANA ) then
+  if ( $GAAS_ANA || -e replay_aod.rc ) then
        foreach hist ( `ls HIST*.rc.tmpl` )
           edhist.pl $hist -i -Ipm gaas_bkg
        end
@@ -1583,6 +1577,7 @@ exit 1
         fname2 "#SBATCH --ntasks=1"
         fname2 "#SBATCH --time=2:00:00"
         fname2 "#SBATCH --partition=$data_queue"
+        fname2 "#$DATAMOVE_CONSTRAINT"
         fname2 "#SBATCH --account=$GID"
         fname2 "#PBS -N acqfcst"
         fname2 "#PBS -o acqfcst.log.$acqdate.txt"
@@ -1789,6 +1784,7 @@ exit 1
         fname2 "#SBATCH --ntasks=1"
         fname2 "#SBATCH --time=2:00:00"
         fname2 "#SBATCH --partition=$data_queue"
+        fname2 "#$DATAMOVE_CONSTRAINT"
         fname2 "#SBATCH --account=$GID"
         fname2 "#PBS -N acqaod4fcst"
         fname2 "#PBS -o acqaod4fcst.log.$acqdate.txt"
@@ -2325,11 +2321,17 @@ exit 1
   Sub AcquireReplayAnalysis_()
 # ---------------------------------
   if ( $?ECHO___ ) set echo
+
+     if ( (! $?rpl_nymdb) && (! $?rpl_nhmsb)) then
+        set rpl_nymdb = $bnymd
+        set rpl_nhmsb = $bnhms
+     endif
+
      # Acquire anlysis data for replay locally
      # ----------------------------------------
      if ( (`uname -n` !~ borg*) || ( $LOCAL_ACQUIRE ) ) then
            acquire -v -rc replay.acq -s $spool -d $FVWORK -la $nlook -ssh  \
-                      $strict $bnymd $bnhms $inhms $nstep 
+                      $strict $rpl_nymdb $rpl_nhmsb $inhms $nstep 
      else
 
         # Do something special when on NCCS linux cluster
@@ -2342,77 +2344,52 @@ exit 1
            set data_queue=""
         endif
 
-        if ( $nstep > 4 ) set nstep = 4
-
         set qsub_acquire = 1
         set fname = "acqreplay1.pbs"
         set acqdate = ${bnymd}_`echo $bnhms | cut -c1-2`z
         set acqlog = $FVHOME/run/acqreplay1.log.$acqdate.txt
-        while ( ( $bnymd <= $enymd[1] ) && ( ! -e "${FVWORK}/acquire.FAILED" ) )
-             fname1 "#\!/bin/csh -xvf"
-             fname2 "#$group_list"
-             fname2 "#SBATCH --job-name=acqreplay1"
-             fname2 "#SBATCH --output=acqreplay1.log.$acqdate.txt"
-             fname2 "#SBATCH --ntasks=1"
-             fname2 "#SBATCH --time=2:00:00"
-             fname2 "#SBATCH --partition=$data_queue"
-             fname2 "#SBATCH --account=$GID"
-             fname2 "#PBS -N acqreplay1"
-             fname2 "#PBS -o acqreplay1.log.$acqdate.txt"
-             fname2 "#PBS -l nodes=1:ppn=1"
-             fname2 "#PBS -l walltime=2:00:00"
-             fname2 "#PBS -q $data_queue"
-             fname2 "#PBS -S /bin/csh"
-             fname2 "#PBS -j eo"
-             fname2 ""
-             fname2 "setenv DO_DMGET $DO_DMGET"
-             fname2 "set path = ( $path )"
-             fname2 "cd $FVWORK"
-             fname2 "acquire -v -rc replay.acq -s $spool -d $FVWORK -ssh $strict $bnymd $bnhms 060000 4"
-             fname2 "exit"
+        @ hours = $ASYNBKG * 60
+        set init_date = (`tick $rpl_nymdb $rpl_nhmsb -$hours` )
+        fname1 "#\!/bin/csh -xvf"
+        fname2 "#$group_list"
+        fname2 "#SBATCH --job-name=acqreplay1"
+        fname2 "#SBATCH --output=acqreplay1.log.$acqdate.txt"
+        fname2 "#SBATCH --ntasks=1"
+        fname2 "#SBATCH --time=2:00:00"
+        fname2 "#SBATCH --partition=$data_queue"
+        fname2 "#$DATAMOVE_CONSTRAINT"
+        fname2 "#SBATCH --account=$GID"
+        fname2 "#PBS -N acqreplay1"
+        fname2 "#PBS -o acqreplay1.log.$acqdate.txt"
+        fname2 "#PBS -l nodes=1:ppn=1"
+        fname2 "#PBS -l walltime=2:00:00"
+        fname2 "#PBS -q $data_queue"
+        fname2 "#PBS -S /bin/csh"
+        fname2 "#PBS -j eo"
+        fname2 ""
+        fname2 "setenv DO_DMGET $DO_DMGET"
+        fname2 "set path = ( $path )"
+        fname2 "cd $FVWORK"
+        fname2 "acquire -v -rc replay.acq -s $spool -d $FVWORK -ssh $strict $rpl_nymdb $rpl_nhmsb 060000 1"
+        fname2 "if ( -e replay_aod.acq ) then"
+        fname2 "   acquire -v -rc replay_aod.acq -s $spool -d $FVWORK -ssh $strict $rpl_nymdb $rpl_nhmsb 030000 2"
+        fname2 "endif"
+        fname2 "if ( -e replay_agcm.acq ) then"
+        fname2 "   acquire -v -rc replay_agcm.acq -s $spool -d $FVWORK -ssh $strict $init_date[1] $init_date[2] 060000 1"
+        fname2 "endif"
+        fname2 ""
+        fname2 "exit"
 
-             if ( $BATCH_SUBCMD == "sbatch" ) then
-                sbatch -W -o $acqlog $fname
-             else
-                qsub -W block=true -o $acqlog $fname
-             endif
-             sleep 2
-             set bnymd=`tick $bnymd`
-        end
-
-        # Now do an acquire for tomorrows data
-        #-------------------------------------
-        if ( ( $nlook ) &&  ( ! -e "${FVWORK}/acquire.FAILED" ) ) then
-             set la_dtg=`tick $enymd 86400`
-
-             set fname = "acqreplay2.pbs"
-             set acqdate = ${la_dtg[1]}_`echo $la_dtg[2] | cut -c1-2`z
-             set acqlog = $FVHOME/run/acqreplay2.log.$acqdate.txt
-             fname1 "#\!/bin/csh -xvf"
-             fname2 "#$group_list"
-             fname2 "#SBATCH --job-name=acqreplay2"
-             fname2 "#SBATCH --output=acqreplay2.log.$acqdate.txt"
-             fname2 "#SBATCH --ntasks=1"
-             fname2 "#SBATCH --time=2:00:00"
-             fname2 "#SBATCH --partition=$data_queue"
-             fname2 "#SBATCH --account=$GID"
-             fname2 "#PBS -N acqreplay2"
-             fname2 "#PBS -o acqreplay2.log.$acqdate.txt"
-             fname2 "#PBS -l nodes=1:ppn=1"
-             fname2 "#PBS -l walltime=2:00:00"
-             fname2 "#PBS -q $data_queue"
-             fname2 "#PBS -S /bin/csh"
-             fname2 "#PBS -j eo"
-             fname2 ""
-             fname2 "setenv DO_DMGET $DO_DMGET"
-             fname2 "set path = ( $path )"
-             fname2 "cd $FVWORK"
-             fname2 "acquire -v -rc replay.acq -d $spool -s $spool -ssh $la_dtg[1] $la_dtg[2] 06000 4"
-             fname2 "exit"
-
-             $BATCH_SUBCMD -o $acqlog $fname
-             set acq_status = $status
-        endif # if nlook
+        if ( $BATCH_SUBCMD == "sbatch" ) then
+           sbatch -W -o $acqlog $fname
+        else
+           qsub -W block=true -o $acqlog $fname
+        endif
+        sleep 2
+        @ cyc_sec = $TIMEINC * 60
+        set next_cycle = (`tick $rpl_nymdb $rpl_nhmsb $cyc_sec`)
+        set rpl_nymdb = $next_cycle[1]
+        set rpl_nhmsb = $next_cycle[2]
 
      endif # test for borg*
 
@@ -3484,16 +3461,34 @@ endif
                     
                      if ( -e mkiau.rc.tmpl ) then
                   
-                         /bin/rm -f sed_file
-                         echo "s/>>>EXPID<<</${EXPID}/1"         > sed_file
-                         echo "s/>>>BKGFNAME<<</${bkg4iau}/1"   >> sed_file
-                         echo "s/>>>ANAFNAME<<</${anafile}/1"   >> sed_file
-                         echo "s/>>>NCSUFFIX<<</${NCSUFFIX}/1"  >> sed_file
-                         echo "s/>>>ANADATE<<</${nymdb}/1"      >> sed_file
-                         echo "s/>>>ANATIME<<</${nhmsb}/1"      >> sed_file
-                         /bin/rm -f ./mkiau.rc
-                         sed -f sed_file  ./mkiau.rc.tmpl  > ./mkiau.rc
-                         $makeiaux
+                         if ( -e replay.acq && -e replay_agcm.acq ) then
+                            touch IAU_EGRESS
+                            set myiau_full = `echorc.x -template $EXPID $gcm_nymd0 $gcm_nhms0 iau_tendency_filename`
+                            set myiau_shrt = `echorc.x -rc mkiau.rc.tmpl -template $EXPID $gcm_nymd0 $gcm_nhms0 AGCM_INTERNAL_CHECKPOINT_FILE`
+                            if ( -e $myiau_full ) then
+                               /bin/cp $myiau_full $myiau_shrt
+                            else
+                               echo "Cannot find: $myiau_full"
+                               set status = 1
+                               if ( ${status} ) then
+                                   Call AbnormalExit_( 4 )
+                                endif
+                            endif
+                         else
+
+                            /bin/rm -f sed_file
+
+                            echo "s/>>>EXPID<<</${EXPID}/1"         > sed_file
+                            echo "s/>>>BKGFNAME<<</${bkg4iau}/1"   >> sed_file
+                            echo "s/>>>ANAFNAME<<</${anafile}/1"   >> sed_file
+                            echo "s/>>>NCSUFFIX<<</${NCSUFFIX}/1"  >> sed_file
+                            echo "s/>>>ANADATE<<</${nymdb}/1"      >> sed_file
+                            echo "s/>>>ANATIME<<</${nhmsb}/1"      >> sed_file
+                            /bin/rm -f ./mkiau.rc
+                            sed -f sed_file  ./mkiau.rc.tmpl  > ./mkiau.rc
+                            $makeiaux
+
+                         endif
 
                      else
 
@@ -5688,11 +5683,6 @@ endif
   if ( $FORECAST ) then
        /bin/rm d_rst
        mkdrstdate.x $fcst_end    # create d_rst with current date and time
-  else if ( $SKIPANA ) then
-        set GcmEndDate = $GcmEndEpoch[1]
-        set GcmEndTime = $GcmEndEpoch[2]
-       /bin/rm d_rst
-       mkdrstdate.x $GcmEndDate $GcmEndTime
   endif
 
   set buf  = `rst_date d_rst`

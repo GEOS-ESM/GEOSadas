@@ -47,6 +47,7 @@
 # ----------------------
 # setenv JOBGEN_PARTITION preops
 # setenv JOBGEN_QOS dastest
+# setenv JOBGEN_ARCH_CONSTRAINT cssrw
   setenv JOBGEN_CONSTRAINT >>>NODEFLG<<<
   setenv ATMENS_QNAME compute
   if ( $?JOBGEN_PARTITION ) then

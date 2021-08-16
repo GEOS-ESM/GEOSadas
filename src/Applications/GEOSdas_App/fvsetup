@@ -7220,6 +7220,7 @@ print  SCRIPT <<"EOF";
 #$group_list
 ##$export_none
 #$jobqueue2
+##SBATCH --constraint=cssrw
 #SBATCH --time=${arcwallclk}:00
 #SBATCH --job-name=arch_$expid
 #SBATCH --output=arch_$expid.log.o%j.txt
@@ -8490,7 +8491,11 @@ EOF
            echo2 "#SBATCH --partition=datamove"
            echo2 "#SBATCH --time=1:00:00"
            echo2 "##SBATCH --export=NONE"
-           echo2 "#SBATCH --constraint=$nodeflg"
+           if ( \$?DATAMOVE_CONSTRAINT ) then
+              echo2 "#\$DATAMOVE_CONSTRAINT"
+           else
+              echo2 "#SBATCH --constraint=$nodeflg"
+           endif
            echo2 ""
            echo2 "setenv FVHOME \$FVHOME"
            echo2 "set Bin = \$Bin"
@@ -9223,6 +9228,7 @@ print  SCRIPT <<"EOF";
     fname2 "#SBATCH --ntasks=1"
     fname2 "#SBATCH --time=1:00:00"
     fname2 "#SBATCH --partition=datamove"
+    fname2 "#\$DATAMOVE_CONSTRAINT"
     fname2 "#SBATCH --account=$gid"
     fname2 "#SBATCH --output=acq.log.o%j.txt"
     fname2 "#PBS -N acquire"

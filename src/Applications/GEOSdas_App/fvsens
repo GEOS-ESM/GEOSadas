@@ -93,6 +93,7 @@ endif
 if ( !($?BATCH_SUBCMD)  ) setenv BATCH_SUBCMD "sbatch"
 if ( !($?FCSTVERIFY)  ) setenv FCSTVERIFY asm
 if ( !($?CORRECT4IAU) ) setenv CORRECT4IAU 0
+if ( !($?DATAMOVE_CONSTRAINT)  ) setenv DATAMOVE_CONSTRAINT NULL
 if ( !($?VEXPID)      ) setenv VEXPID $EXPID
 if ( !($?NCVRFANA)    ) setenv NCVRFANA  0
 if ( !($?LOCJGRADF)   ) setenv LOCJGRADF 0
@@ -441,8 +442,8 @@ while ( $ic < $ntp1 )
           fname2 "#SBATCH --ntasks=1"
           fname2 "#SBATCH --time=1:00:00"
           fname2 "#SBATCH --partition=$data_queue"
+          fname2 "#$DATAMOVE_CONSTRAINT"
           fname2 "#SBATCH --account=$GID"
-          fname2 "#SBATCH --partition=datamove"
           fname2 "#SBATCH --time=1:00:00"
           fname2 "#PBS -N acquire"
           fname2 "#PBS -o acquire.log.o%j"
@@ -679,8 +680,8 @@ while ( $ic < $ntp1 )
         fname2 "#SBATCH --ntasks=1"
         fname2 "#SBATCH --time=1:00:00"
         fname2 "#SBATCH --partition=$data_queue"
+        fname2 "#$DATAMOVE_CONSTRAINT"
         fname2 "#SBATCH --account=$GID"
-        fname2 "#SBATCH --partition=datamove"
         fname2 "#SBATCH --time=1:00:00"
         fname2 "#PBS -N acquire"
         fname2 "#PBS -o acquire.log.o%j"
