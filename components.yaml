@@ -28,7 +28,7 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  tag: v1.4.5
+  branch: feature/rtodling/rt-cssrwNreplay
   develop: main
 
 MAPL:
@@ -46,7 +46,7 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  tag: v1.4.2
+  branch: feature/rtodling/ncdiag_append_fix
   develop: develop
 
 GEOSgcm_GridComp:
