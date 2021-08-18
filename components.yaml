@@ -46,7 +46,7 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  branch: feature/rtodling/ncdiag_append_fix
+  branch: feature/rtodling/reviseGPSRO_for_5_29
   develop: develop
 
 GEOSgcm_GridComp:
