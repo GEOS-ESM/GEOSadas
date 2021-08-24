@@ -307,21 +307,20 @@
 # -----------------------------------------
   if ( ! $FORECAST && $AnaFreqEpoch[2] > 0 ) then
 
-                                                       zeit_ci.x acquire
 
 #    Determine relevant time/frequency information
 #    ---------------------------------------------
      Call DetermineAcquireTimes_()
 
-#    If so, aquire observational data
-#    --------------------------------
+#    If so, acquire observational data
+#    ---------------------------------
      if ( $DOING_ANA ) then
-
+                                                       zeit_ci.x acquire
           Call AcquireObservations_() 
-
+                                                       zeit_co.x acquire
      endif
 
-                                                       zeit_co.x acquire
+  endif
 
 # Pre-analysis Quality Control
 # ----------------------------

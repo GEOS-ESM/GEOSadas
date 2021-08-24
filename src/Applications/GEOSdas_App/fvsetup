@@ -2359,7 +2359,7 @@ sub ed_aens_das_replay_acq {
   my($replay_arcdir, $aens_replay_expid, $acq);
 
   $aens_replay_expid = "x0044";
-  $replay_arcdir = query("Replay exp name?", $aens_replay_expid);
+  $aens_replay_expid = query("Replay exp name?", $aens_replay_expid);
   $replay_arcdir = "/discover/nobackup/projects/gmao/advda/rtodling/archive/x0044";
   $replay_arcdir = query("Replay archive directory?", $replay_arcdir);
 
@@ -7674,6 +7674,7 @@ print  SCRIPT <<"EOF";
   setenv NEWRADBC $newradbc
   setenv ANGLEBC  $newradbc
   setenv GSI_NETCDF_DIAG 1
+  setenv GSI_DIAG2TXT 1
 # setenv DO_0HR_IMP 1
 
   if ( -e \$FVHOME/run/replay.acq ) then
@@ -8715,6 +8716,9 @@ print SCRIPT <<"EOF";
 
 # Experiment environment
 # ----------------------
+  if ( ! (\$?DATAMOVE_CONSTRAINT) ) then
+    setenv DATAMOVE_CONSTRAINT NULL
+  endif
   setenv BATCH_SUBCMD $qsub
   setenv GID $gid
   setenv group_list \"$group_list1\"
