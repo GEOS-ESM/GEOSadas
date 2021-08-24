@@ -4560,18 +4560,19 @@ sub get_GID {
 #=======================================================================
 sub get_pyradmon {
 
+    $pyradmon_dflt = "/discover/nobackup/jstassi/GEOSadas/pyradmon";
+
     #=========================================================#
     # FOR NOW, TAKE DEFAULT RATHER THAN QUERYING FOR LOCATION #
     #=========================================================#
-    $pyradmon = "/discover/nobackup/jstassi/GEOSadas/pyradmon";
+    $pyradmon = $pyradmon_dflt;
+    $ENV{"PYRADMON"} = $pyradmon;
     return;
     #=========================================================#
 
     print "\n------------------------\n"
         .   "Pyradmon Source Location\n"
         .   "------------------------\n";
-
-    $pyradmon_dflt = "/discover/nobackup/jstassi/GEOSadas/pyradmon";
     $pyradmon = query("\n  Pyradmon code location?", $pyradmon_dflt);
     if (-d $pyradmon) {
         $ENV{"PYRADMON"} = $pyradmon;
