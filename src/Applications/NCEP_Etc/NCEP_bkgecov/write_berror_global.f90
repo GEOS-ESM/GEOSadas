@@ -9,20 +9,24 @@
 !
 !   Declare local variables
 
+  program write_berror_global
+
+  use m_nc_berror, only: berror_vars
+  use m_nc_berror, only: write_nc_berror
   implicit none
 
-  type berror_vars
-     integer :: nlon,nlat,nsig
-     real(4),allocatable,dimension(:,:,:):: tcon
-     real(4),allocatable,dimension(:,:)  :: sfvar,vpvar,tvar,qvar,cvar,nrhvar,ozvar
-     real(4),allocatable,dimension(:,:)  :: qivar,qlvar,qrvar,qsvar
-     real(4),allocatable,dimension(:,:)  :: sfhln,vphln,thln,qhln,chln,ozhln
-     real(4),allocatable,dimension(:,:)  :: qihln,qlhln,qrhln,qshln
-     real(4),allocatable,dimension(:,:)  :: sfvln,vpvln,tvln,qvln,cvln,ozvln
-     real(4),allocatable,dimension(:,:)  :: qivln,qlvln,qrvln,qsvln
-     real(4),allocatable,dimension(:,:)  :: vpcon,pscon,varsst,corlsst
-     real(4),allocatable,dimension(:)    :: psvar,pshln
-  end type berror_vars
+! type berror_vars
+!    integer :: nlon,nlat,nsig
+!    real(4),allocatable,dimension(:,:,:):: tcon
+!    real(4),allocatable,dimension(:,:)  :: sfvar,vpvar,tvar,qvar,cvar,nrhvar,ozvar
+!    real(4),allocatable,dimension(:,:)  :: qivar,qlvar,qrvar,qsvar
+!    real(4),allocatable,dimension(:,:)  :: sfhln,vphln,thln,qhln,chln,ozhln
+!    real(4),allocatable,dimension(:,:)  :: qihln,qlhln,qrhln,qshln
+!    real(4),allocatable,dimension(:,:)  :: sfvln,vpvln,tvln,qvln,cvln,ozvln
+!    real(4),allocatable,dimension(:,:)  :: qivln,qlvln,qrvln,qsvln
+!    real(4),allocatable,dimension(:,:)  :: vpcon,pscon,varsst,corlsst
+!    real(4),allocatable,dimension(:)    :: psvar,pshln
+! end type berror_vars
 
   real(4),allocatable,dimension(:)::  corp_avn,hwllp_avn
   real(4),allocatable,dimension(:,:):: corsst_avn,hwllsst_avn
@@ -80,6 +84,7 @@
      write(6,'(a)') ' Finish interpolation.'
   endif
   call berror_write_(ivars,merra2current)
+  call be_write_nc_(ivars)
   call berror_write_grads_(ivars)
 
   call final_berror_vars_(ivars)
@@ -667,4 +672,31 @@ contains
 
   end subroutine vinterp_berror_vars_
 
-  end
+  subroutine be_write_nc_(ivars)
+
+  use m_set_eta, only: set_eta
+  use m_set_eta, only: get_ref_plevs
+  implicit none
+
+  type(berror_vars), intent(in) :: ivars
+
+  real(4),allocatable,dimension(:,:) :: aux
+  real(4),allocatable,dimension(:) :: plevs
+  real(4),allocatable,dimension(:) :: ak,bk
+  real(4) ptop, pint
+  integer k,ks
+
+  allocate(plevs(ivars%nsig))
+  allocate(ak(ivars%nsig+1),bk(ivars%nsig+1))
+  call set_eta ( ivars%nsig, ks, ptop, pint, ak, bk )
+  call get_ref_plevs ( ak, bk, ptop, plevs )
+  plevs = plevs(ivars%nsig:1:-1) ! reorient GEOS-5 levs to be consistent w/ GSI(Berror)
+
+  call write_nc_berror('try.nc',ivars,plevs)
+
+  deallocate(ak,bk)
+  deallocate(plevs)
+
+  end subroutine be_write_nc_
+
+  end program write_berror_global

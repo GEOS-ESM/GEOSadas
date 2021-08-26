@@ -8,7 +8,7 @@ set (SRCS
   m_stvp.f90 sstmod.f90 m_speclap.f90 m_calap.f90 compact_diffs.f90
   comm_mod.f90 deter_subdomain.f90 init_commvars.f90
   type_kinds.F90 variables.f90 variances.F90
-  vertlength.F90 addoz.f90
+  vertlength.F90 addoz.f90 m_nc_berror.f90
   )
 
 # This is equivalent to FOPT=$(FOPT3) in GNU Make
