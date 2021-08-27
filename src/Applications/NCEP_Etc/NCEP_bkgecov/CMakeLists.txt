@@ -29,6 +29,7 @@ target_compile_definitions(${this} PRIVATE _LAPACK_ gmao_intf)
 
 ecbuild_add_executable(TARGET calcstats.x SOURCES statsmain.F90 LIBS ${this} ${MKL_LIBRARIES})
 ecbuild_add_executable(TARGET write_berror_global.x SOURCES write_berror_global.f90 LIBS ${this} ${MKL_LIBRARIES})
+ecbuild_add_executable(TARGET ut_sst_berror.x SOURCES ut_sst_berror.f90 LIBS ${this} ${MKL_LIBRARIES})
 
 file (GLOB tmpl_files *.tmpl)
 install (FILES ${tmpl_files} DESTINATION etc)

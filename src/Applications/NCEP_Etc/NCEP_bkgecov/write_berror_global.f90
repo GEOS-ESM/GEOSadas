@@ -6,6 +6,8 @@
 !    ????????? El Akkraoui - changes to make it look more like NMC-code itself
 !    10May2018 Todling     - a little more strealined in preparation for interp
 !                          - add ability to vertically interpolate berror
+!    27Aug2021 Todling     - introduce NetCDF version
+!                          - considerable bug fix in orientation of SST fields
 !
 !   Declare local variables
 
@@ -34,12 +36,18 @@
 
   character(len=256)  argv, ifname, ofname
   character(255) grdfile
-  character*5 var(40)
+  character(len=5) var(40)
+  character(len=256) ncfile
   logical merra2current ! convert older format to current format
   logical hydromet
+  logical fix_sst_orientation
+  logical viewASgsi
 
   hydromet = .true.
+  fix_sst_orientation = .false.
+  viewASgsi = .true.
   merra2current =.false.
+  ncfile = 'NULL'
 
   call init_()
 
@@ -71,8 +79,12 @@
      call vinterp_berror_vars_(xvars,ivars)
      write(6,'(a)') ' Finish interpolation.'
   endif
+  if (fix_sst_orientation) then
+     call bkgerror_ncep2geos_flip(ivars%varsst ,'yz')
+     call bkgerror_ncep2geos_flip(ivars%corlsst,'yz')
+  endif
   call berror_write_(ivars,merra2current)
-  call be_write_nc_(ivars)
+  if(trim(ncfile)/='NULL') call be_write_nc_(ncfile,ivars,viewASgsi)
   call berror_write_grads_(ivars)
 
   call final_berror_vars_(ivars)
@@ -91,7 +103,14 @@ contains
      print *, "Usage: write_berror_global.x [options] ifname ofname nlon nlat nlev"
      print *
      print *, " OPTIONS:"
-     print *, "   -nohyro  -  handles case w/o hydrometeors"
+     print *, "   -nohyro     - handles case w/o hydrometeors"
+     print *, "   -fixsst     - reorients SST fields as expected by GSI (bug fix)"
+     print *, "   -viewASgeos - allow for NetCDF output to be oriented using"
+     print *, "               - conventions (default: GSI convention)"
+     print *, ""
+     print *, " Remarks: "
+     print *, "  1. choosing to get reoriented NC4 output does not affect the  "
+     print *, "     orientation of the binary output typically used in GSI.    "
      print *
      stop
   end if
@@ -103,8 +122,15 @@ contains
      if ( iarg .gt. argc ) exit
      call GetArg ( iarg, argv )
      select case (trim(argv))
+       case('-fixsst')
+          fix_sst_orientation = .true. 
        case('-nohydro')
           hydromet = .false.
+       case('-viewASgeos')
+          viewASgsi = .false.
+       case('-nc')
+          iarg = iarg + 1
+          call GetArg ( iarg, ncfile )
        case default
           ncount = ncount + 1
           if (ncount > fixargs) exit
@@ -486,11 +512,11 @@ contains
   call baopenwt(lugrd,'sst.grd',iret)
 
   aux = transpose(vars%varsst)
-  call bkgerror_ncep2geos_flip(aux)
+  if(.not. viewASgsi) call bkgerror_ncep2geos_flip(aux,'xy')
   call wryte(lugrd,4*nlat*nlon,aux)
 
   aux = transpose(vars%corlsst)
-  call bkgerror_ncep2geos_flip(aux)
+  if(.not. viewASgsi) call bkgerror_ncep2geos_flip(aux,'xy')
   call wryte(lugrd,4*nlat*nlon,aux)
 
   call baclose(lugrd,iret)
@@ -626,7 +652,7 @@ contains
      ! interpolation. It shuld be done as in 
      !             Bnew = T Bold T', 
      ! where T is the interpolation matrix and T' its transpose.
-     ! No all interpolants will preserve covariance properties. 
+     ! Not all interpolants will preserve covariance properties. 
      aux=0.0
      do k=1,ivars%nsig
         call spline( plevi, plevo, ivars%tcon(j,k,:), aux(k,:) )
@@ -677,13 +703,15 @@ contains
 
   end subroutine vinterp_berror_vars_
 
-  subroutine be_write_nc_(ivars)
+  subroutine be_write_nc_(fname,ivars,viewASgsi)
 
   use m_set_eta, only: set_eta
   use m_set_eta, only: get_ref_plevs
   implicit none
 
+  character(len=*),  intent(in) :: fname
   type(berror_vars), intent(in) :: ivars
+  logical, intent(in) :: viewASgsi
 
   real(4),allocatable,dimension(:,:) :: aux
   real(4),allocatable,dimension(:) :: plevs
@@ -697,7 +725,7 @@ contains
   call get_ref_plevs ( ak, bk, ptop, plevs )
   plevs = plevs(ivars%nsig:1:-1) ! reorient GEOS-5 levs to be consistent w/ GSI(Berror)
 
-  call write_nc_berror('try.nc',ivars,plevs)
+  call write_nc_berror(trim(fname),ivars,plevs,viewASgsi)
 
   deallocate(ak,bk)
   deallocate(plevs)

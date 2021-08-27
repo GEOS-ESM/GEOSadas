@@ -3,6 +3,11 @@ use netcdf
 implicit none
 private
 
+public :: berror_vars
+public :: read_nc_berror
+public :: write_nc_berror
+public :: bkgerror_ncep2geos_flip
+
 type berror_vars
    integer :: nlon,nlat,nsig
    real(4),allocatable,dimension(:,:,:):: tcon
@@ -16,38 +21,33 @@ type berror_vars
    real(4),allocatable,dimension(:)    :: psvar,pshln
 end type berror_vars
 
-   integer, parameter :: nv1d = 2
-   character(len=4),parameter :: cvars1d(nv1d) = (/ 'ps  ', 'hps ' /)
+integer, parameter :: nv1d = 2
+character(len=4),parameter :: cvars1d(nv1d) = (/ 'ps  ', 'hps ' /)
 
-   integer, parameter :: nv2d = 33
-   character(len=5),parameter :: cvars2d(nv2d) = (/ &
-                                                 'sf   ', 'hsf  ', 'vsf  ', &
-                                                 'vp   ', 'hvp  ', 'vvp  ', &
-                                                 't    ', 'ht   ', 'vt   ', &
-                                                 'q    ', 'hq   ', 'vq   ', &
-                                                 'qi   ', 'hqi  ', 'vqi  ', &
-                                                 'ql   ', 'hql  ', 'vql  ', &
-                                                 'qr   ', 'hqr  ', 'vqr  ', &
-                                                 'qs   ', 'hqs  ', 'vqs  ', &
-                                                 'oz   ', 'hoz  ', 'voz  ', &
-                                                 'cw   ', 'hcw  ', 'vcw  ', &
-                                                 'pscon', 'vpcon', 'nrh  '  &
-                                                 /)
+integer, parameter :: nv2d = 33
+character(len=5),parameter :: cvars2d(nv2d) = (/ &
+                                              'sf   ', 'hsf  ', 'vsf  ', &
+                                              'vp   ', 'hvp  ', 'vvp  ', &
+                                              't    ', 'ht   ', 'vt   ', &
+                                              'q    ', 'hq   ', 'vq   ', &
+                                              'qi   ', 'hqi  ', 'vqi  ', &
+                                              'ql   ', 'hql  ', 'vql  ', &
+                                              'qr   ', 'hqr  ', 'vqr  ', &
+                                              'qs   ', 'hqs  ', 'vqs  ', &
+                                              'oz   ', 'hoz  ', 'voz  ', &
+                                              'cw   ', 'hcw  ', 'vcw  ', &
+                                              'pscon', 'vpcon', 'nrh  '  &
+                                              /)
 
-   integer, parameter :: nvmll = 1  ! meriodional, level, level
-   character(len=4),parameter :: cvarsMLL(nvmll) = (/ 'tcon' /)
+integer, parameter :: nvmll = 1  ! meriodional, level, level
+character(len=4),parameter :: cvarsMLL(nvmll) = (/ 'tcon' /)
 
-   integer, parameter :: nv2dx = 2
-   character(len=7),parameter :: cvars2dx(nv2dx) = (/ 'sst    ', 'sstcorl' /)
-
-public :: berror_vars
-public :: read_nc_berror
-public :: write_nc_berror
-
-public :: bkgerror_ncep2geos_flip
+integer, parameter :: nv2dx = 2
+character(len=7),parameter :: cvars2dx(nv2dx) = (/ 'sst    ', 'sstcorl' /)
 
 interface bkgerror_ncep2geos_flip
-  module procedure hflip2d_ 
+  module procedure yflip_ 
+  module procedure xyflip_ 
 end interface
 
 contains
@@ -104,14 +104,15 @@ contains
   end subroutine check  
 end subroutine read_nc_berror
 
-subroutine write_nc_berror (fname,bvars,plevs)
+subroutine write_nc_berror (fname,bvars,plevs,viewASgsi)
   implicit none
   character(len=*), intent(in)    :: fname ! input filename
   type(berror_vars),intent(in)    :: bvars ! background error variables
   real(4), intent(in) :: plevs(:)
-
-! This is the name of the data file we will create.
-  character (len = *), parameter :: FILE_NAME = "simple_xy.nc"
+  logical, intent(in) :: viewASgsi         ! determines whether output is 
+                                           ! to be GSI or GEOS compliant;
+                                           ! clearly only the former can
+                                           ! be used for GSI purposes.
 
   integer, parameter :: NDIMS = 3
 
@@ -136,17 +137,30 @@ subroutine write_nc_berror (fname,bvars,plevs)
   nlev=bvars%nsig
 
 ! Create some pretend data. If this wasn't an example program, we
-  ! would have some real data to write, for example, model output.
-  dlat=180./(nlat-1.0)
-  allocate(lats(nlat))
-  do jj = 1, nlat
-     lats(jj) = -90.0 + (jj-1.0)*dlat 
-  enddo
-  dlon=360./nlon
-  allocate(lons(nlon))
-  do ii = 1, nlon
-     lons(ii) = -180.0 + ii*dlon 
-  enddo
+! would have some real data to write, for example, model output.
+  if (viewASgsi) then
+    dlat=180./(nlat-1.0)
+    allocate(lats(nlat))
+    do jj = nlat,1,-1
+       lats(jj) = -90.0 + (jj-1.0)*dlat 
+    enddo
+    dlon=360./nlon
+    allocate(lons(nlon))
+    do ii = 1, nlon
+       lons(ii) = 0.0 + ii*dlon 
+    enddo
+  else
+    dlat=180./(nlat-1.0)
+    allocate(lats(nlat))
+    do jj = 1, nlat
+       lats(jj) = -90.0 + (jj-1.0)*dlat 
+    enddo
+    dlon=360./nlon
+    allocate(lons(nlon))
+    do ii = 1, nlon
+       lons(ii) = -180.0 + ii*dlon 
+    enddo
+  endif
 
 ! Always check the return code of every netCDF function call. In
 ! this example program, wrapping netCDF calls with "call check()"
@@ -211,6 +225,7 @@ subroutine write_nc_berror (fname,bvars,plevs)
   do nv = 1, nv1d
      if(trim(cvars1d(nv))=="ps"  ) data_out(1,:,1) = bvars%psvar
      if(trim(cvars1d(nv))=="hps" ) data_out(1,:,1) = bvars%pshln
+     if(.not.viewASgsi) call bkgerror_ncep2geos_flip(data_out(1,:,1))
      call check( nf90_put_var(ncid, varid1d(nv), data_out(1,:,1)))
   enddo
   deallocate(data_out)
@@ -260,6 +275,7 @@ subroutine write_nc_berror (fname,bvars,plevs)
      if(trim(cvars2d(nv))=="pscon") data_out(1,:,:) = bvars%pscon
      if(trim(cvars2d(nv))=="vpcon") data_out(1,:,:) = bvars%vpcon
 !
+     if(.not.viewASgsi) call bkgerror_ncep2geos_flip(data_out(1,:,:),'yz')
      call check( nf90_put_var(ncid, varid2d(nv), data_out(1,:,:)) )
   enddo
 
@@ -270,6 +286,7 @@ subroutine write_nc_berror (fname,bvars,plevs)
         nn = nn + 1
         write(cindx,'(i4.4)') nl
         if(trim(cvarsMLL(nv))=="tcon") data_out(1,:,:) = bvars%tcon(:,:,nl)
+        if(.not.viewASgsi) call bkgerror_ncep2geos_flip(data_out(1,:,:),'yz')
         call check( nf90_put_var(ncid, varidMLL(nn), data_out(1,:,:)) )
      enddo
   enddo
@@ -278,13 +295,13 @@ subroutine write_nc_berror (fname,bvars,plevs)
 ! use of hflip should be for visualization only
   allocate(data_out(nlon,nlat,1))
   do nv = 1, nv2dx
-     if(trim(cvars2dx(nv))=="sst"    ) then
+     if(trim(cvars2dx(nv))=="sst"     ) then
         data_out(:,:,1) = transpose(bvars%varsst)
-!       call hflip2d_(data_out(:,:,1))
+        if(.not.viewASgsi) call bkgerror_ncep2geos_flip(data_out(:,:,1),'xy')
      endif
      if(trim(cvars2dx(nv))=="sstcorl" ) then 
         data_out(:,:,1) = transpose(bvars%corlsst)
-!       call hflip2d_(data_out(:,:,1))
+        if(.not.viewASgsi) call bkgerror_ncep2geos_flip(data_out(:,:,1),'xy')
      endif
      call check( nf90_put_var(ncid, varid2dx(nv), data_out(:,:,1)) )
   enddo
@@ -313,28 +330,76 @@ contains
   end subroutine check  
 end subroutine write_nc_berror
 
-subroutine hflip2d_ (q)
+subroutine yflip_ (q)
+real(4),intent(inout) :: q(:)
+real(4),allocatable :: dum(:)
+integer :: j,jm
+jm=size(q)
+allocate(dum(jm))
+dum=q
+do j=1,jm
+   q(jm-j+1) = dum(j)
+enddo
+deallocate(dum)
+end subroutine yflip_
+
+subroutine xyflip_ (q,flag)
 real(4),intent(inout) :: q(:,:)
 real(4),allocatable :: dum(:)
-integer :: i,j,k,im,jm
-im=size(q,1);jm=size(q,2)
-allocate(dum(im))
-do j=1,jm
-   do i=1,im/2
-      dum(i) = q(i+im/2,j)
-      dum(i+im/2) = q(i,j)
-   enddo
-   q(:,j) = dum(:)
-enddo
-deallocate(dum)
-allocate(dum(jm))
-do i=1,im
-   dum = q(i,:)
+character(len=2), intent(in) :: flag
+integer :: i,j,k,im,jm,km
+if (trim(flag)=='xy') then
+   im=size(q,1);jm=size(q,2)
+   allocate(dum(im))
    do j=1,jm
-      q(i,jm-j+1) = dum(j)
+      do i=1,im/2
+         dum(i) = q(i+im/2,j)
+         dum(i+im/2) = q(i,j)
+      enddo
+      q(:,j) = dum(:)
    enddo
-enddo
-deallocate(dum)
-end subroutine hflip2d_
+   deallocate(dum)
+   allocate(dum(jm))
+   do i=1,im
+      dum = q(i,:)
+      do j=1,jm
+         q(i,jm-j+1) = dum(j)
+      enddo
+   enddo
+   deallocate(dum)
+else if (trim(flag)=='yx') then
+   jm=size(q,1);im=size(q,2)
+   allocate(dum(im))
+   do j=1,jm
+      do i=1,im/2
+         dum(i) = q(j,i+im/2)
+         dum(i+im/2) = q(j,i)
+      enddo
+      q(j,:) = dum(:)
+   enddo
+   deallocate(dum)
+   allocate(dum(jm))
+   do i=1,im
+      dum = q(:,i)
+      do j=1,jm
+         q(jm-j+1,i) = dum(j)
+      enddo
+   enddo
+   deallocate(dum)
+else if (trim(flag)=='yz') then
+   jm=size(q,1);km=size(q,2)
+   allocate(dum(jm))
+   do k=1,km
+      dum = q(:,k)
+      do j=1,jm
+         q(jm-j+1,k) = dum(j)
+      enddo
+   enddo
+   deallocate(dum)
+else
+  print *,'flip: bad flag choice, aborting ...'
+  call exit(999) 
+endif
+end subroutine xyflip_
 
 end module m_nc_berror
