@@ -38,11 +38,17 @@ end type berror_vars
    character(len=4),parameter :: cvarsMLL(nvmll) = (/ 'tcon' /)
 
    integer, parameter :: nv2dx = 2
-   character(len=6),parameter :: cvars2dx(nv2dx) = (/ 'sst   ', 'sstcor' /)
+   character(len=7),parameter :: cvars2dx(nv2dx) = (/ 'sst    ', 'sstcorl' /)
 
 public :: berror_vars
 public :: read_nc_berror
 public :: write_nc_berror
+
+public :: bkgerror_ncep2geos_flip
+
+interface bkgerror_ncep2geos_flip
+  module procedure hflip2d_ 
+end interface
 
 contains
 
@@ -274,11 +280,11 @@ subroutine write_nc_berror (fname,bvars,plevs)
   do nv = 1, nv2dx
      if(trim(cvars2dx(nv))=="sst"    ) then
         data_out(:,:,1) = transpose(bvars%varsst)
-        call hflip_(data_out(:,:,1))
+!       call hflip2d_(data_out(:,:,1))
      endif
-     if(trim(cvars2dx(nv))=="sstcor" ) then 
+     if(trim(cvars2dx(nv))=="sstcorl" ) then 
         data_out(:,:,1) = transpose(bvars%corlsst)
-        call hflip_(data_out(:,:,1))
+!       call hflip2d_(data_out(:,:,1))
      endif
      call check( nf90_put_var(ncid, varid2dx(nv), data_out(:,:,1)) )
   enddo
@@ -307,7 +313,7 @@ contains
   end subroutine check  
 end subroutine write_nc_berror
 
-subroutine hflip_ (q)
+subroutine hflip2d_ (q)
 real(4),intent(inout) :: q(:,:)
 real(4),allocatable :: dum(:)
 integer :: i,j,k,im,jm
@@ -329,6 +335,6 @@ do i=1,im
    enddo
 enddo
 deallocate(dum)
-end subroutine hflip_
+end subroutine hflip2d_
 
 end module m_nc_berror

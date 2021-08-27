@@ -13,20 +13,8 @@
 
   use m_nc_berror, only: berror_vars
   use m_nc_berror, only: write_nc_berror
+  use m_nc_berror, only: bkgerror_ncep2geos_flip
   implicit none
-
-! type berror_vars
-!    integer :: nlon,nlat,nsig
-!    real(4),allocatable,dimension(:,:,:):: tcon
-!    real(4),allocatable,dimension(:,:)  :: sfvar,vpvar,tvar,qvar,cvar,nrhvar,ozvar
-!    real(4),allocatable,dimension(:,:)  :: qivar,qlvar,qrvar,qsvar
-!    real(4),allocatable,dimension(:,:)  :: sfhln,vphln,thln,qhln,chln,ozhln
-!    real(4),allocatable,dimension(:,:)  :: qihln,qlhln,qrhln,qshln
-!    real(4),allocatable,dimension(:,:)  :: sfvln,vpvln,tvln,qvln,cvln,ozvln
-!    real(4),allocatable,dimension(:,:)  :: qivln,qlvln,qrvln,qsvln
-!    real(4),allocatable,dimension(:,:)  :: vpcon,pscon,varsst,corlsst
-!    real(4),allocatable,dimension(:)    :: psvar,pshln
-! end type berror_vars
 
   real(4),allocatable,dimension(:)::  corp_avn,hwllp_avn
   real(4),allocatable,dimension(:,:):: corsst_avn,hwllsst_avn
@@ -433,9 +421,11 @@ contains
   subroutine berror_write_grads_(vars)
 
    type(berror_vars) vars
-   integer j,nsig,nlat,iret
+   integer j,nsig,nlat,nlon,iret
+   real(4),allocatable,dimension(:,:) :: aux
 
    nlat=vars%nlat 
+   nlon=vars%nlon 
    nsig=vars%nsig 
    
    call baopenwt(lugrd,'bgstats_sp.grd',iret)
@@ -490,6 +480,21 @@ contains
      write(luout) vars%tcon(j,:,:)
   enddo 
   close(luout)
+
+! Put out SST info to on a separate grads file
+  allocate(aux(nlon,nlat))
+  call baopenwt(lugrd,'sst.grd',iret)
+
+  aux = transpose(vars%varsst)
+  call bkgerror_ncep2geos_flip(aux)
+  call wryte(lugrd,4*nlat*nlon,aux)
+
+  aux = transpose(vars%corlsst)
+  call bkgerror_ncep2geos_flip(aux)
+  call wryte(lugrd,4*nlat*nlon,aux)
+
+  call baclose(lugrd,iret)
+  deallocate(aux)
 
   end subroutine berror_write_grads_
   subroutine final_berror_vars_(vr)
