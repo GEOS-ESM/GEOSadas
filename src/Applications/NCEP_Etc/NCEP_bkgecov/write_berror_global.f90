@@ -13,6 +13,7 @@
   program write_berror_global
 
   use m_nc_berror, only: berror_vars
+  use m_nc_berror, only: read_nc_berror
   use m_nc_berror, only: write_nc_berror
   implicit none
 
@@ -38,6 +39,7 @@
   character(len=256) ncfile
   logical merra2current ! convert older format to current format
   logical hydromet
+  logical :: nc_read_test = .true.
 
   hydromet = .true.
   merra2current =.false.
@@ -72,9 +74,19 @@
      call copy_berror_vars_(xvars,ivars)
      call vinterp_berror_vars_(xvars,ivars)
      write(6,'(a)') ' Finish interpolation.'
+     call destroy_berror_vars_(xvars)
   endif
   call berror_write_(ivars,merra2current)
-  if(trim(ncfile)/='NULL') call be_write_nc_(ncfile,ivars)
+  if(trim(ncfile)/='NULL') then
+     call be_write_nc_(ncfile,ivars)
+     if ( nc_read_test ) then
+        call init_berror_vars_(xvars,ivars%nlon,ivars%nlat,ivars%nsig)
+        call read_nc_berror(ncfile,xvars)
+        call be_write_nc_('again.nc',xvars)
+        call comp_berror_vars_(ivars,xvars)
+        call destroy_berror_vars_(xvars)
+     endif
+  endif
   call berror_write_grads_(ivars)
 
   call final_berror_vars_(ivars)
@@ -207,6 +219,79 @@ contains
   allocate(vr%tcon(nlat,nsig,nsig))
   allocate(vr%psvar(nlat),vr%pshln(nlat))
   end subroutine init_berror_vars_
+
+  subroutine destroy_berror_vars_(vr)
+  type(berror_vars) vr
+! deallocate arrays
+  deallocate(vr%sfvar,vr%vpvar,vr%tvar,vr%qvar,  &  
+             vr%qivar,vr%qlvar,vr%qrvar,vr%qsvar,&
+             vr%cvar,vr%nrhvar,vr%ozvar)
+  deallocate(vr%sfhln,vr%vphln,vr%thln,vr%qhln,  &
+             vr%qihln,vr%qlhln,vr%qrhln,vr%qshln,&
+             vr%chln, vr%ozhln)
+  deallocate(vr%sfvln,vr%vpvln,vr%tvln,vr%qvln,  &
+             vr%qivln,vr%qlvln,vr%qrvln,vr%qsvln,&
+             vr%cvln, vr%ozvln)
+  deallocate(vr%pscon,vr%vpcon)
+  deallocate(vr%varsst,vr%corlsst)
+  deallocate(vr%tcon)
+  deallocate(vr%psvar,vr%pshln)
+  end subroutine destroy_berror_vars_
+
+  subroutine comp_berror_vars_(va,vb)
+  type(berror_vars) va
+  type(berror_vars) vb
+  integer :: ii,jj,ier(50)
+  logical failed
+  real :: tolerance = 10.e-10
+  ii=0;ier=0
+  ii=ii+1; if(abs(sum(va%sfvar - vb%sfvar)) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%vpvar - vb%vpvar)) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%tvar  - vb%tvar))  >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%qvar  - vb%qvar )) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%qivar - vb%qivar)) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%qlvar - vb%qlvar)) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%qrvar - vb%qrvar)) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%qsvar - vb%qsvar) )>tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%cvar  - vb%cvar )) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%nrhvar- vb%nrhvar))>tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%ozvar - vb%ozvar)) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%sfhln - vb%sfhln)) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%vphln - vb%vphln ))>tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%thln  - vb%thln))  >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%qhln  - vb%qhln) ) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%qihln - vb%qihln)) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%qlhln - vb%qlhln)) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%qrhln - vb%qrhln) )>tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%qshln - vb%qshln ))>tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%chln  - vb%chln )) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%ozhln - vb%ozhln)) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%sfvln - vb%sfvln)) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%vpvln - vb%vpvln)) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%tvln  - vb%tvln))  >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%qvln  - vb%qvln )) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%qivln - vb%qivln)) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%qlvln - vb%qlvln)) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%qrvln - vb%qrvln)) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%qsvln - vb%qsvln) )>tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%cvln  - vb%cvln )) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%ozvln - vb%ozvln)) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%pscon - vb%pscon)) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%vpcon - vb%vpcon)) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%varsst- vb%varsst))>tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%corlsst-vb%corlsst))>tolerance)ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%tcon  - vb%tcon))  >tolerance) ier(ii)=ii
+  failed=.false.
+  do jj=1,ii
+     if(ier(jj)/=0) then
+       print *, 'Found field ', jj, ' not to match'
+       failed=.true.
+     endif
+  enddo
+  if (.not.failed) then
+       print *, 'Comp finds all fields to match'
+  endif
+  end subroutine comp_berror_vars_
 
   subroutine berror_read_(vr)
 

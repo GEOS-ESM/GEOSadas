@@ -55,9 +55,9 @@ subroutine read_nc_berror (fname,bvars)
   integer :: ncid, varid
 
 ! Local variables
-  integer ii,jj,nlat,nlon,nlev
-  real(4), allocatable :: data1d(:)
-  real(4), allocatable :: data2d(:,:)
+  character(len=4) :: cindx
+  integer nv,nl,nlat,nlon,nlev
+  real(4), allocatable :: data_in(:,:,:)
    
 ! Set dims
   nlat=bvars%nlat
@@ -69,21 +69,97 @@ subroutine read_nc_berror (fname,bvars)
 
   call check( nf90_open(fname, NF90_NOWRITE, ncid) )
 
-! Allocate dims
-  allocate(data2d(nlat,nlev))
+! Read data to file
+  allocate(data_in(1,nlat,1))
+  do nv = 1, nv1d
+     call check( nf90_inq_varid(ncid, trim(cvars1d(nv)), varid) )
+     call check( nf90_get_var(ncid, varid, data_in(1,:,1)))
+     if(trim(cvars1d(nv))=="ps"  ) bvars%psvar = data_in(1,:,1)
+     if(trim(cvars1d(nv))=="hps" ) bvars%pshln = data_in(1,:,1)
+  enddo
+  deallocate(data_in)
+  allocate(data_in(1,nlat,nlev))
+  do nv = 1, nv2d
+     call check( nf90_inq_varid(ncid, trim(cvars2d(nv)), varid) )
+     call check( nf90_get_var(ncid, varid, data_in(1,:,:)) )
 
-! Get the varid of the data variable, based on its name.
-  call check( nf90_inq_varid(ncid, "d", varid) )
+     if(trim(cvars2d(nv))=="sf" ) bvars%sfvar = data_in(1,:,:)
+     if(trim(cvars2d(nv))=="hsf") bvars%sfhln = data_in(1,:,:)
+     if(trim(cvars2d(nv))=="vsf") bvars%sfvln = data_in(1,:,:)
+!
+     if(trim(cvars2d(nv))=="vp" ) bvars%vpvar = data_in(1,:,:)
+     if(trim(cvars2d(nv))=="hvp") bvars%vphln = data_in(1,:,:)
+     if(trim(cvars2d(nv))=="vvp") bvars%vpvln = data_in(1,:,:)
+!
+     if(trim(cvars2d(nv))=="t"  ) bvars%tvar = data_in(1,:,:)
+     if(trim(cvars2d(nv))=="ht" ) bvars%thln = data_in(1,:,:)
+     if(trim(cvars2d(nv))=="vt" ) bvars%tvln = data_in(1,:,:)
+!
+     if(trim(cvars2d(nv))=="q"  ) bvars%qvar = data_in(1,:,:)
+     if(trim(cvars2d(nv))=="hq" ) bvars%qhln = data_in(1,:,:)
+     if(trim(cvars2d(nv))=="vq" ) bvars%qvln = data_in(1,:,:)
+!
+     if(trim(cvars2d(nv))=="qi" ) bvars%qivar = data_in(1,:,:)
+     if(trim(cvars2d(nv))=="hqi") bvars%qihln = data_in(1,:,:)
+     if(trim(cvars2d(nv))=="vqi") bvars%qivln = data_in(1,:,:)
+!
+     if(trim(cvars2d(nv))=="ql" ) bvars%qlvar = data_in(1,:,:)
+     if(trim(cvars2d(nv))=="hql") bvars%qlhln = data_in(1,:,:)
+     if(trim(cvars2d(nv))=="vql") bvars%qlvln = data_in(1,:,:)
+!
+     if(trim(cvars2d(nv))=="qr" ) bvars%qrvar = data_in(1,:,:)
+     if(trim(cvars2d(nv))=="hqr") bvars%qrhln = data_in(1,:,:)
+     if(trim(cvars2d(nv))=="vqr") bvars%qrvln = data_in(1,:,:)
+!
+     if(trim(cvars2d(nv))=="nrh") bvars%nrhvar = data_in(1,:,:)
+     if(trim(cvars2d(nv))=="qs" ) bvars%qsvar = data_in(1,:,:)
+     if(trim(cvars2d(nv))=="hqs") bvars%qshln = data_in(1,:,:)
+     if(trim(cvars2d(nv))=="vqs") bvars%qsvln = data_in(1,:,:)
+!
+     if(trim(cvars2d(nv))=="cw" ) bvars%cvar = data_in(1,:,:)
+     if(trim(cvars2d(nv))=="hcw") bvars%chln = data_in(1,:,:)
+     if(trim(cvars2d(nv))=="vcw") bvars%cvln = data_in(1,:,:)
+!
+     if(trim(cvars2d(nv))=="oz" ) bvars%ozvar = data_in(1,:,:)
+     if(trim(cvars2d(nv))=="hoz") bvars%ozhln = data_in(1,:,:)
+     if(trim(cvars2d(nv))=="voz") bvars%ozvln = data_in(1,:,:)
+!
+     if(trim(cvars2d(nv))=="pscon") bvars%pscon = data_in(1,:,:)
+     if(trim(cvars2d(nv))=="vpcon") bvars%vpcon = data_in(1,:,:)
+!
+  enddo
 
-! Read data
-  call check( nf90_get_var(ncid, varid, data2d) )
+! Get matrix NLATxNLEVxNLEV that has been written as NLEV 2d-fields 
+  do nv = 1, nvmll
+     do nl = 1, nlev
+        write(cindx,'(i4.4)') nl
+        if(trim(cvarsMLL(nv))=="tcon") then
+           call check( nf90_inq_varid(ncid, trim(cvarsMLL(nv))//cindx, varid) )
+           call check( nf90_get_var(ncid, varid, data_in(1,:,:)) )
+           bvars%tcon(:,:,nl) = data_in(1,:,:)
+        endif
+     enddo
+  enddo
+  deallocate(data_in)
 
-  deallocate(data2d)
+! Write out lat/lon fields
+  allocate(data_in(nlon,nlat,1))
+  do nv = 1, nv2dx
+     call check( nf90_inq_varid(ncid, trim(cvars2dx(nv)), varid) )
+     call check( nf90_get_var(ncid, varid, data_in(:,:,1)) )
+     if(trim(cvars2dx(nv))=="sst"     ) then
+        bvars%varsst = transpose(data_in(:,:,1))
+     endif
+     if(trim(cvars2dx(nv))=="sstcorl" ) then 
+        bvars%corlsst = transpose(data_in(:,:,1))
+     endif
+  enddo
+  deallocate(data_in)
 
-  ! Close the file, freeing all resources.
+! Close the file, freeing all resources.
   call check( nf90_close(ncid) )
 
-  print *,"*** Finish reading file ", fname, "! "
+  print *,"*** Finish reading file: ", trim(fname)
 
   return
 
@@ -253,7 +329,7 @@ subroutine write_nc_berror (fname,bvars,plevs,lats,lons)
   enddo
   deallocate(data_out)
 
-! use of hflip should be for visualization only
+! Write out lat/lon fields
   allocate(data_out(nlon,nlat,1))
   do nv = 1, nv2dx
      if(trim(cvars2dx(nv))=="sst"     ) then
