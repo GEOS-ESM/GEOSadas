@@ -7,7 +7,6 @@
 !    10May2018 Todling     - a little more strealined in preparation for interp
 !                          - add ability to vertically interpolate berror
 !    27Aug2021 Todling     - introduce NetCDF version
-!                          - considerable bug fix in orientation of SST fields
 !
 !   Declare local variables
 
@@ -15,7 +14,6 @@
 
   use m_nc_berror, only: berror_vars
   use m_nc_berror, only: write_nc_berror
-  use m_nc_berror, only: bkgerror_ncep2geos_flip
   implicit none
 
   real(4),allocatable,dimension(:)::  corp_avn,hwllp_avn
@@ -40,12 +38,8 @@
   character(len=256) ncfile
   logical merra2current ! convert older format to current format
   logical hydromet
-  logical fix_sst_orientation
-  logical viewASgsi
 
   hydromet = .true.
-  fix_sst_orientation = .false.
-  viewASgsi = .true.
   merra2current =.false.
   ncfile = 'NULL'
 
@@ -79,12 +73,8 @@
      call vinterp_berror_vars_(xvars,ivars)
      write(6,'(a)') ' Finish interpolation.'
   endif
-  if (fix_sst_orientation) then
-     call bkgerror_ncep2geos_flip(ivars%varsst ,'yz')
-     call bkgerror_ncep2geos_flip(ivars%corlsst,'yz')
-  endif
   call berror_write_(ivars,merra2current)
-  if(trim(ncfile)/='NULL') call be_write_nc_(ncfile,ivars,viewASgsi)
+  if(trim(ncfile)/='NULL') call be_write_nc_(ncfile,ivars)
   call berror_write_grads_(ivars)
 
   call final_berror_vars_(ivars)
@@ -104,13 +94,8 @@ contains
      print *
      print *, " OPTIONS:"
      print *, "   -nohyro     - handles case w/o hydrometeors"
-     print *, "   -fixsst     - reorients SST fields as expected by GSI (bug fix)"
-     print *, "   -viewASgeos - allow for NetCDF output to be oriented using"
-     print *, "               - conventions (default: GSI convention)"
+     print *, "   -nc  FNAME  - output errors in NetCDF format to file FNAME"
      print *, ""
-     print *, " Remarks: "
-     print *, "  1. choosing to get reoriented NC4 output does not affect the  "
-     print *, "     orientation of the binary output typically used in GSI.    "
      print *
      stop
   end if
@@ -122,12 +107,8 @@ contains
      if ( iarg .gt. argc ) exit
      call GetArg ( iarg, argv )
      select case (trim(argv))
-       case('-fixsst')
-          fix_sst_orientation = .true. 
        case('-nohydro')
           hydromet = .false.
-       case('-viewASgeos')
-          viewASgsi = .false.
        case('-nc')
           iarg = iarg + 1
           call GetArg ( iarg, ncfile )
@@ -446,6 +427,7 @@ contains
   end subroutine berror_write_
   subroutine berror_write_grads_(vars)
 
+   use sstmod, only: write_grads_ctl
    type(berror_vars) vars
    integer j,nsig,nlat,nlon,iret
    real(4),allocatable,dimension(:,:) :: aux
@@ -512,15 +494,14 @@ contains
   call baopenwt(lugrd,'sst.grd',iret)
 
   aux = transpose(vars%varsst)
-  if(.not. viewASgsi) call bkgerror_ncep2geos_flip(aux,'xy')
   call wryte(lugrd,4*nlat*nlon,aux)
 
   aux = transpose(vars%corlsst)
-  if(.not. viewASgsi) call bkgerror_ncep2geos_flip(aux,'xy')
   call wryte(lugrd,4*nlat*nlon,aux)
 
   call baclose(lugrd,iret)
   deallocate(aux)
+  call write_grads_ctl('sst',lugrd,nlon,nlat)
 
   end subroutine berror_write_grads_
   subroutine final_berror_vars_(vr)
@@ -703,7 +684,7 @@ contains
 
   end subroutine vinterp_berror_vars_
 
-  subroutine be_write_nc_(fname,ivars,viewASgsi)
+  subroutine be_write_nc_(fname,ivars)
 
   use m_set_eta, only: set_eta
   use m_set_eta, only: get_ref_plevs
@@ -711,13 +692,14 @@ contains
 
   character(len=*),  intent(in) :: fname
   type(berror_vars), intent(in) :: ivars
-  logical, intent(in) :: viewASgsi
 
   real(4),allocatable,dimension(:,:) :: aux
+  real(4),allocatable,dimension(:) :: lats,lons
   real(4),allocatable,dimension(:) :: plevs
   real(4),allocatable,dimension(:) :: ak,bk
-  real(4) ptop, pint
-  integer k,ks
+  real(4) ptop, pint, dlon, dlat
+  integer :: nlat,nlon
+  integer ii,jj,k,ks
 
   allocate(plevs(ivars%nsig))
   allocate(ak(ivars%nsig+1),bk(ivars%nsig+1))
@@ -725,10 +707,23 @@ contains
   call get_ref_plevs ( ak, bk, ptop, plevs )
   plevs = plevs(ivars%nsig:1:-1) ! reorient GEOS-5 levs to be consistent w/ GSI(Berror)
 
-  call write_nc_berror(trim(fname),ivars,plevs,viewASgsi)
+! The following defines lat/lon per GSI orientation
+  nlon=ivars%nlon; nlat=ivars%nlat
+  allocate(lons(nlon),lats(nlat))
+  dlat=180./(nlat-1.0)
+  do jj = nlat,1,-1
+     lats(jj) = -90.0 + (jj-1.0)*dlat 
+  enddo
+  dlon=360./nlon
+  do ii = 1, nlon
+     lons(ii) = (ii-1.0)*dlon 
+  enddo
+  
+  call write_nc_berror(trim(fname),ivars,plevs,lats,lons)
 
   deallocate(ak,bk)
   deallocate(plevs)
+  deallocate(lons,lats)
 
   end subroutine be_write_nc_
 

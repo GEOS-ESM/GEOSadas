@@ -5,13 +5,11 @@ module sstmod
 ! $$$
   use type_kinds, only: fp_kind
   use m_spline, only: spline
-  use m_nc_berror, only: bkgerror_ncep2geos_flip
   implicit none
 
   real(fp_kind),allocatable,dimension(:,:):: varsst,corlsst
 
   logical :: do_spline=.false.
-  logical :: orient_sst_per_gsi_std=.true.  ! implements a bug fix
 
 contains
 
@@ -142,12 +140,6 @@ contains
 
    endif
 
-   if ( orient_sst_per_gsi_std ) then
-!    This reorients the field as expected by GSI: [0,360] and [90,-90]
-     call bkgerror_ncep2geos_flip(varsst,'yz')
-     call bkgerror_ncep2geos_flip(corlsst,'yz')
-   endif
-
    call sst_grads_(luo,'sst4gsi',real(varsst,4),real(corlsst,4),.true.)
 
    deallocate(sstv1,sstc1)
@@ -188,7 +180,10 @@ contains
    endif
    end subroutine sst_grads_
 
-   subroutine write_grads_ctl (fname, lu,im,jm)
+ end subroutine sst_stats
+
+ subroutine write_grads_ctl (fname, lu,im,jm)
+   implicit none
    character(len=*), intent(in) :: fname
    integer, intent(in) :: lu,im,jm
 
@@ -208,10 +203,7 @@ contains
    close(lu)
 
    
-   end subroutine write_grads_ctl
-
- end subroutine sst_stats
-
+ end subroutine write_grads_ctl
 
  subroutine gdcrdp(d,nd,x,nx)
    use type_kinds, only: fp_kind
