@@ -3,6 +3,9 @@ use netcdf
 implicit none
 private
 
+public :: init_berror_vars
+public :: final_berror_vars
+public :: comp_berror_vars
 public :: berror_vars
 public :: read_nc_berror
 public :: write_nc_berror
@@ -19,6 +22,8 @@ type berror_vars
    real(4),allocatable,dimension(:,:)  :: vpcon,pscon,varsst,corlsst
    real(4),allocatable,dimension(:)    :: psvar,pshln
 end type berror_vars
+
+character(len=*), parameter :: myname = 'm_nc_berror'
 
 integer, parameter :: nv1d = 2
 character(len=4),parameter :: cvars1d(nv1d) = (/ 'ps  ', 'hps ' /)
@@ -44,21 +49,46 @@ character(len=4),parameter :: cvarsMLL(nvmll) = (/ 'tcon' /)
 integer, parameter :: nv2dx = 2
 character(len=7),parameter :: cvars2dx(nv2dx) = (/ 'sst    ', 'sstcorl' /)
 
+interface read_nc_berror; module procedure    &
+  read_berror_ ; end interface
+interface write_nc_berror; module procedure    &
+  write_berror_ ; end interface
+interface init_berror_vars; module procedure    &
+  init_berror_vars_ ; end interface
+interface final_berror_vars; module procedure    &
+  final_berror_vars_ ; end interface
+interface comp_berror_vars; module procedure    &
+  comp_berror_vars_ ; end interface
+
 contains
 
-subroutine read_nc_berror (fname,bvars)
+subroutine read_berror_ (fname,bvars,rc, myid,root)
   implicit none
   character(len=*), intent(in)    :: fname ! input filename
   type(berror_vars),intent(inout) :: bvars ! background error variables
+  integer, intent(out) :: rc
+  integer, intent(in), optional :: myid,root        ! accommodate MPI calling programs
 
 ! This will be the netCDF ID for the file and data variable.
   integer :: ncid, varid
 
 ! Local variables
+  character(len=*), parameter :: myname_ = myname//"::read_"
   character(len=4) :: cindx
-  integer nv,nl,nlat,nlon,nlev
+  integer :: nv,nl,nlat,nlon,nlev
+  integer :: ndims_, nvars_, ngatts_, unlimdimid_
+  integer :: nlat_,nlon_,nlev_
   real(4), allocatable :: data_in(:,:,:)
+  logical :: verbose
+  
    
+! Return code (status)
+  rc = 0  
+  verbose=.true.
+  if(present(myid).and.present(root) )then
+    if(myid/=root) verbose=.false.
+  endif
+ 
 ! Set dims
   nlat=bvars%nlat
   nlon=bvars%nlon
@@ -68,6 +98,27 @@ subroutine read_nc_berror (fname,bvars)
 ! the file.
 
   call check( nf90_open(fname, NF90_NOWRITE, ncid) )
+
+! Read global attributes
+  call check( nf90_inquire(ncid, ndims_, nvars_, ngatts_, unlimdimid_) )
+  call check( nf90_inq_dimid(ncid, "lon", varid) )
+  call check( nf90_inquire_dimension(ncid, varid, len=nlon_) )
+  call check( nf90_inq_dimid(ncid, "lat", varid) )
+  call check( nf90_inquire_dimension(ncid, varid, len=nlat_) )
+  call check( nf90_inq_dimid(ncid, "lev", varid) )
+  call check( nf90_inquire_dimension(ncid, varid, len=nlev_) )
+
+! Consistency check
+  if (nlon_ /= nlon .or. nlat_ /=nlat .or. nlev_/=nlev ) then
+     rc=1
+     if(myid==root) then
+       print *, 'nlat(file) = ', nlat_, 'nlat(required) = ', nlat
+       print *, 'nlon(file) = ', nlon_, 'nlon(required) = ', nlon
+       print *, 'nlev(file) = ', nlev_, 'nlev(required) = ', nlev
+       print *, myname_,  'Inconsistent dimensions, aborting ... '
+     endif
+     return
+  endif
 
 ! Read data to file
   allocate(data_in(1,nlat,1))
@@ -159,7 +210,7 @@ subroutine read_nc_berror (fname,bvars)
 ! Close the file, freeing all resources.
   call check( nf90_close(ncid) )
 
-  print *,"*** Finish reading file: ", trim(fname)
+  if(verbose) print *,"*** Finish reading file: ", trim(fname)
 
   return
 
@@ -172,16 +223,19 @@ contains
       stop "Stopped"
     end if
   end subroutine check  
-end subroutine read_nc_berror
+end subroutine read_berror_
 
-subroutine write_nc_berror (fname,bvars,plevs,lats,lons)
+subroutine write_berror_ (fname,bvars,plevs,lats,lons,rc, myid,root)
   implicit none
   character(len=*), intent(in)    :: fname ! input filename
   type(berror_vars),intent(in)    :: bvars ! background error variables
   real(4), intent(in) :: lats(:)           ! latitudes  per GSI: increase index from South to North Pole
   real(4), intent(in) :: lons(:)           ! longitudea per GSI: increase index from East to West
   real(4), intent(in) :: plevs(:)
+  integer, intent(out) :: rc
+  integer, intent(in), optional :: myid,root        ! accommodate MPI calling programs
 
+  character(len=*), parameter :: myname_ = myname//"::read_"
   integer, parameter :: NDIMS = 3
 
 ! When we create netCDF files, variables and dimensions, we get back
@@ -192,10 +246,18 @@ subroutine write_nc_berror (fname,bvars,plevs,lats,lons)
   integer :: lon_varid, lat_varid, lev_varid
   integer :: ii,jj,nl,nv,nn,nlat,nlon,nlev
   integer, allocatable :: varid1d(:), varid2d(:), varid2dx(:), varidMLL(:)
+  logical :: verbose
   
 ! This is the data array we will write. It will just be filled with
 ! a progression of integers for this example.
   real(4), allocatable :: data_out(:,:,:)
+
+! Return code (status)
+  rc = 0  
+  verbose=.true.
+  if(present(myid).and.present(root) )then
+    if(myid/=root) verbose=.false.
+  endif
 
 ! Set dims
   nlat=bvars%nlat
@@ -361,6 +423,125 @@ contains
       stop "Stopped"
     end if
   end subroutine check  
-end subroutine write_nc_berror
+end subroutine write_berror_
+
+subroutine init_berror_vars_(vr,nlon,nlat,nsig)
+
+  integer,intent(in) :: nlon,nlat,nsig
+  type(berror_vars) vr
+
+  vr%nlon=nlon 
+  vr%nlat=nlat
+  vr%nsig=nsig
+
+! allocate single precision arrays
+  allocate(vr%sfvar(nlat,nsig),vr%vpvar(nlat,nsig),vr%tvar(nlat,nsig),vr%qvar(nlat,nsig),  &  
+           vr%qivar(nlat,nsig),vr%qlvar(nlat,nsig),vr%qrvar(nlat,nsig),vr%qsvar(nlat,nsig),&
+           vr%cvar(nlat,nsig),vr%nrhvar(nlat,nsig),vr%ozvar(nlat,nsig))
+  allocate(vr%sfhln(nlat,nsig),vr%vphln(nlat,nsig),vr%thln(nlat,nsig),vr%qhln(nlat,nsig),  &
+           vr%qihln(nlat,nsig),vr%qlhln(nlat,nsig),vr%qrhln(nlat,nsig),vr%qshln(nlat,nsig),&
+           vr%chln(nlat,nsig), vr%ozhln(nlat,nsig))
+  allocate(vr%sfvln(nlat,nsig),vr%vpvln(nlat,nsig),vr%tvln(nlat,nsig),vr%qvln(nlat,nsig),  &
+           vr%qivln(nlat,nsig),vr%qlvln(nlat,nsig),vr%qrvln(nlat,nsig),vr%qsvln(nlat,nsig),&
+           vr%cvln(nlat,nsig), vr%ozvln(nlat,nsig))
+  allocate(vr%pscon(nlat,nsig),vr%vpcon(nlat,nsig))
+  allocate(vr%varsst(nlat,nlon),vr%corlsst(nlat,nlon))
+  allocate(vr%tcon(nlat,nsig,nsig))
+  allocate(vr%psvar(nlat),vr%pshln(nlat))
+  end subroutine init_berror_vars_
+
+  subroutine final_berror_vars_(vr)
+  type(berror_vars) vr
+! deallocate arrays
+  deallocate(vr%sfvar,vr%vpvar,vr%tvar,vr%qvar,  &  
+             vr%qivar,vr%qlvar,vr%qrvar,vr%qsvar,&
+             vr%cvar,vr%nrhvar,vr%ozvar)
+  deallocate(vr%sfhln,vr%vphln,vr%thln,vr%qhln,  &
+             vr%qihln,vr%qlhln,vr%qrhln,vr%qshln,&
+             vr%chln, vr%ozhln)
+  deallocate(vr%sfvln,vr%vpvln,vr%tvln,vr%qvln,  &
+             vr%qivln,vr%qlvln,vr%qrvln,vr%qsvln,&
+             vr%cvln, vr%ozvln)
+  deallocate(vr%pscon,vr%vpcon)
+  deallocate(vr%varsst,vr%corlsst)
+  deallocate(vr%tcon)
+  deallocate(vr%psvar,vr%pshln)
+end subroutine final_berror_vars_
+
+subroutine comp_berror_vars_(va,vb,rc, myid,root)
+  type(berror_vars) va
+  type(berror_vars) vb
+  integer, intent(out) :: rc
+  integer, intent(in), optional :: myid,root        ! accommodate MPI calling programs
+  character(len=*), parameter :: myname_ = myname//"::comp_berror_vars_"
+  integer :: ii,jj,ier(50)
+  logical :: verbose, failed
+  real :: tolerance = 10.e-10
+!
+  rc=0
+  verbose=.true.
+  if(present(myid).and.present(root) )then
+    if(myid/=root) verbose=.false.
+  endif
+! Consistency check
+  if (va%nlon/=vb%nlon .or. va%nlat/=vb%nlat .or. va%nsig/=vb%nsig ) then
+     rc=1
+     if(myid==root) then
+       print *, 'nlat(va) = ', va%nlat, 'nlat(vb) = ', vb%nlat
+       print *, 'nlon(va) = ', va%nlon, 'nlon(vb) = ', vb%nlon
+       print *, 'nlev(va) = ', va%nsig, 'nlev(vb) = ', vb%nsig
+       print *, myname_,  'Inconsistent dimensions, aborting ... '
+     endif
+     return
+  endif
+
+  ii=0;ier=0
+  ii=ii+1; if(abs(sum(va%sfvar - vb%sfvar)) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%vpvar - vb%vpvar)) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%tvar  - vb%tvar))  >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%qvar  - vb%qvar )) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%qivar - vb%qivar)) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%qlvar - vb%qlvar)) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%qrvar - vb%qrvar)) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%qsvar - vb%qsvar) )>tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%cvar  - vb%cvar )) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%nrhvar- vb%nrhvar))>tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%ozvar - vb%ozvar)) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%sfhln - vb%sfhln)) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%vphln - vb%vphln ))>tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%thln  - vb%thln))  >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%qhln  - vb%qhln) ) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%qihln - vb%qihln)) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%qlhln - vb%qlhln)) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%qrhln - vb%qrhln) )>tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%qshln - vb%qshln ))>tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%chln  - vb%chln )) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%ozhln - vb%ozhln)) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%sfvln - vb%sfvln)) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%vpvln - vb%vpvln)) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%tvln  - vb%tvln))  >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%qvln  - vb%qvln )) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%qivln - vb%qivln)) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%qlvln - vb%qlvln)) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%qrvln - vb%qrvln)) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%qsvln - vb%qsvln) )>tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%cvln  - vb%cvln )) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%ozvln - vb%ozvln)) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%pscon - vb%pscon)) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%vpcon - vb%vpcon)) >tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%varsst- vb%varsst))>tolerance) ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%corlsst-vb%corlsst))>tolerance)ier(ii)=ii
+  ii=ii+1; if(abs(sum(va%tcon  - vb%tcon))  >tolerance) ier(ii)=ii
+  failed=.false.
+  do jj=1,ii
+     if(ier(jj)/=0.and.verbose) then
+       print *, 'Found field ', jj, ' not to match'
+       failed=.true.
+     endif
+  enddo
+  if (.not.failed) then
+       if(verbose) print *, 'Comp finds all fields to match'
+  endif
+end subroutine comp_berror_vars_
 
 end module m_nc_berror

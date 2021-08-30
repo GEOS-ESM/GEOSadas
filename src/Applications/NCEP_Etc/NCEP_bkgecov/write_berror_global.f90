@@ -12,6 +12,9 @@
 
   program write_berror_global
 
+  use m_nc_berror, only: init_berror_vars
+  use m_nc_berror, only: final_berror_vars
+  use m_nc_berror, only: comp_berror_vars
   use m_nc_berror, only: berror_vars
   use m_nc_berror, only: read_nc_berror
   use m_nc_berror, only: write_nc_berror
@@ -32,6 +35,7 @@
   integer isig,ilat,ilon  ! dims in file
   integer msig,mlat,mlon  ! user dims
   integer i,j,k,m,ncfggg,iret,kindex
+  integer status
 
   character(len=256)  argv, ifname, ofname
   character(255) grdfile
@@ -49,7 +53,7 @@
 
   call get_berror_dims_(ilon,ilat,isig)
 
-  call init_berror_vars_(ivars,ilon,ilat,isig)
+  call init_berror_vars(ivars,ilon,ilat,isig)
 
   if (merra2current) then
      call berror_old_read_(mlon,mlat,msig)
@@ -67,30 +71,29 @@
   endif
   if (msig/=ivars%nsig) then
      write(6,'(a)') ' Interpolating error covariance fields ...'
-     call init_berror_vars_(xvars,ilon,ilat,isig)
+     call init_berror_vars(xvars,ilon,ilat,isig)
      call copy_berror_vars_(ivars,xvars)
-     call final_berror_vars_(ivars)
-     call init_berror_vars_(ivars,ilon,ilat,msig)
+     call final_berror_vars(ivars)
+     call init_berror_vars(ivars,ilon,ilat,msig)
      call copy_berror_vars_(xvars,ivars)
      call vinterp_berror_vars_(xvars,ivars)
      write(6,'(a)') ' Finish interpolation.'
-     call destroy_berror_vars_(xvars)
+     call final_berror_vars(xvars)
   endif
   call berror_write_(ivars,merra2current)
   if(trim(ncfile)/='NULL') then
      call be_write_nc_(ncfile,ivars)
      if ( nc_read_test ) then
-        call init_berror_vars_(xvars,ivars%nlon,ivars%nlat,ivars%nsig)
-        call read_nc_berror(ncfile,xvars)
+        call init_berror_vars(xvars,ivars%nlon,ivars%nlat,ivars%nsig)
+        call read_nc_berror(ncfile,xvars,status)
         call be_write_nc_('again.nc',xvars)
-        call comp_berror_vars_(ivars,xvars)
-        call destroy_berror_vars_(xvars)
+        call comp_berror_vars(ivars,xvars,status)
+        call final_berror_vars(xvars)
      endif
   endif
   call berror_write_grads_(ivars)
 
-  call final_berror_vars_(ivars)
-
+  call final_berror_vars(ivars)
 
 
 contains
@@ -195,104 +198,6 @@ contains
   close(luin)
   end subroutine get_berror_dims_
   
-  subroutine init_berror_vars_(vr,nlon,nlat,nsig)
-
-  integer,intent(in) :: nlon,nlat,nsig
-  type(berror_vars) vr
-
-  vr%nlon=nlon 
-  vr%nlat=nlat
-  vr%nsig=nsig
-
-! allocate single precision arrays
-  allocate(vr%sfvar(nlat,nsig),vr%vpvar(nlat,nsig),vr%tvar(nlat,nsig),vr%qvar(nlat,nsig),  &  
-           vr%qivar(nlat,nsig),vr%qlvar(nlat,nsig),vr%qrvar(nlat,nsig),vr%qsvar(nlat,nsig),&
-           vr%cvar(nlat,nsig),vr%nrhvar(nlat,nsig),vr%ozvar(nlat,nsig))
-  allocate(vr%sfhln(nlat,nsig),vr%vphln(nlat,nsig),vr%thln(nlat,nsig),vr%qhln(nlat,nsig),  &
-           vr%qihln(nlat,nsig),vr%qlhln(nlat,nsig),vr%qrhln(nlat,nsig),vr%qshln(nlat,nsig),&
-           vr%chln(nlat,nsig), vr%ozhln(nlat,nsig))
-  allocate(vr%sfvln(nlat,nsig),vr%vpvln(nlat,nsig),vr%tvln(nlat,nsig),vr%qvln(nlat,nsig),  &
-           vr%qivln(nlat,nsig),vr%qlvln(nlat,nsig),vr%qrvln(nlat,nsig),vr%qsvln(nlat,nsig),&
-           vr%cvln(nlat,nsig), vr%ozvln(nlat,nsig))
-  allocate(vr%pscon(nlat,nsig),vr%vpcon(nlat,nsig))
-  allocate(vr%varsst(nlat,nlon),vr%corlsst(nlat,nlon))
-  allocate(vr%tcon(nlat,nsig,nsig))
-  allocate(vr%psvar(nlat),vr%pshln(nlat))
-  end subroutine init_berror_vars_
-
-  subroutine destroy_berror_vars_(vr)
-  type(berror_vars) vr
-! deallocate arrays
-  deallocate(vr%sfvar,vr%vpvar,vr%tvar,vr%qvar,  &  
-             vr%qivar,vr%qlvar,vr%qrvar,vr%qsvar,&
-             vr%cvar,vr%nrhvar,vr%ozvar)
-  deallocate(vr%sfhln,vr%vphln,vr%thln,vr%qhln,  &
-             vr%qihln,vr%qlhln,vr%qrhln,vr%qshln,&
-             vr%chln, vr%ozhln)
-  deallocate(vr%sfvln,vr%vpvln,vr%tvln,vr%qvln,  &
-             vr%qivln,vr%qlvln,vr%qrvln,vr%qsvln,&
-             vr%cvln, vr%ozvln)
-  deallocate(vr%pscon,vr%vpcon)
-  deallocate(vr%varsst,vr%corlsst)
-  deallocate(vr%tcon)
-  deallocate(vr%psvar,vr%pshln)
-  end subroutine destroy_berror_vars_
-
-  subroutine comp_berror_vars_(va,vb)
-  type(berror_vars) va
-  type(berror_vars) vb
-  integer :: ii,jj,ier(50)
-  logical failed
-  real :: tolerance = 10.e-10
-  ii=0;ier=0
-  ii=ii+1; if(abs(sum(va%sfvar - vb%sfvar)) >tolerance) ier(ii)=ii
-  ii=ii+1; if(abs(sum(va%vpvar - vb%vpvar)) >tolerance) ier(ii)=ii
-  ii=ii+1; if(abs(sum(va%tvar  - vb%tvar))  >tolerance) ier(ii)=ii
-  ii=ii+1; if(abs(sum(va%qvar  - vb%qvar )) >tolerance) ier(ii)=ii
-  ii=ii+1; if(abs(sum(va%qivar - vb%qivar)) >tolerance) ier(ii)=ii
-  ii=ii+1; if(abs(sum(va%qlvar - vb%qlvar)) >tolerance) ier(ii)=ii
-  ii=ii+1; if(abs(sum(va%qrvar - vb%qrvar)) >tolerance) ier(ii)=ii
-  ii=ii+1; if(abs(sum(va%qsvar - vb%qsvar) )>tolerance) ier(ii)=ii
-  ii=ii+1; if(abs(sum(va%cvar  - vb%cvar )) >tolerance) ier(ii)=ii
-  ii=ii+1; if(abs(sum(va%nrhvar- vb%nrhvar))>tolerance) ier(ii)=ii
-  ii=ii+1; if(abs(sum(va%ozvar - vb%ozvar)) >tolerance) ier(ii)=ii
-  ii=ii+1; if(abs(sum(va%sfhln - vb%sfhln)) >tolerance) ier(ii)=ii
-  ii=ii+1; if(abs(sum(va%vphln - vb%vphln ))>tolerance) ier(ii)=ii
-  ii=ii+1; if(abs(sum(va%thln  - vb%thln))  >tolerance) ier(ii)=ii
-  ii=ii+1; if(abs(sum(va%qhln  - vb%qhln) ) >tolerance) ier(ii)=ii
-  ii=ii+1; if(abs(sum(va%qihln - vb%qihln)) >tolerance) ier(ii)=ii
-  ii=ii+1; if(abs(sum(va%qlhln - vb%qlhln)) >tolerance) ier(ii)=ii
-  ii=ii+1; if(abs(sum(va%qrhln - vb%qrhln) )>tolerance) ier(ii)=ii
-  ii=ii+1; if(abs(sum(va%qshln - vb%qshln ))>tolerance) ier(ii)=ii
-  ii=ii+1; if(abs(sum(va%chln  - vb%chln )) >tolerance) ier(ii)=ii
-  ii=ii+1; if(abs(sum(va%ozhln - vb%ozhln)) >tolerance) ier(ii)=ii
-  ii=ii+1; if(abs(sum(va%sfvln - vb%sfvln)) >tolerance) ier(ii)=ii
-  ii=ii+1; if(abs(sum(va%vpvln - vb%vpvln)) >tolerance) ier(ii)=ii
-  ii=ii+1; if(abs(sum(va%tvln  - vb%tvln))  >tolerance) ier(ii)=ii
-  ii=ii+1; if(abs(sum(va%qvln  - vb%qvln )) >tolerance) ier(ii)=ii
-  ii=ii+1; if(abs(sum(va%qivln - vb%qivln)) >tolerance) ier(ii)=ii
-  ii=ii+1; if(abs(sum(va%qlvln - vb%qlvln)) >tolerance) ier(ii)=ii
-  ii=ii+1; if(abs(sum(va%qrvln - vb%qrvln)) >tolerance) ier(ii)=ii
-  ii=ii+1; if(abs(sum(va%qsvln - vb%qsvln) )>tolerance) ier(ii)=ii
-  ii=ii+1; if(abs(sum(va%cvln  - vb%cvln )) >tolerance) ier(ii)=ii
-  ii=ii+1; if(abs(sum(va%ozvln - vb%ozvln)) >tolerance) ier(ii)=ii
-  ii=ii+1; if(abs(sum(va%pscon - vb%pscon)) >tolerance) ier(ii)=ii
-  ii=ii+1; if(abs(sum(va%vpcon - vb%vpcon)) >tolerance) ier(ii)=ii
-  ii=ii+1; if(abs(sum(va%varsst- vb%varsst))>tolerance) ier(ii)=ii
-  ii=ii+1; if(abs(sum(va%corlsst-vb%corlsst))>tolerance)ier(ii)=ii
-  ii=ii+1; if(abs(sum(va%tcon  - vb%tcon))  >tolerance) ier(ii)=ii
-  failed=.false.
-  do jj=1,ii
-     if(ier(jj)/=0) then
-       print *, 'Found field ', jj, ' not to match'
-       failed=.true.
-     endif
-  enddo
-  if (.not.failed) then
-       print *, 'Comp finds all fields to match'
-  endif
-  end subroutine comp_berror_vars_
-
   subroutine berror_read_(vr)
 
   type(berror_vars) vr
@@ -589,15 +494,7 @@ contains
   call write_grads_ctl('sst',lugrd,nlon,nlat)
 
   end subroutine berror_write_grads_
-  subroutine final_berror_vars_(vr)
-  type(berror_vars) vr
-  deallocate(vr%tcon)
-  deallocate(vr%sfvar,vr%vpvar,vr%tvar,vr%qvar,vr%qivar,vr%qlvar,vr%qsvar,vr%qrvar,vr%cvar,vr%nrhvar,vr%sfhln,&
-             vr%vphln,vr%thln,vr%qhln,vr%qihln,vr%qlhln,vr%qrhln,vr%qshln,vr%chln,vr%sfvln,vr%vpvln,vr%tvln,&
-             vr%qvln,vr%qivln,vr%qlvln,vr%qrvln,vr%qsvln,vr%cvln,vr%vpcon,vr%pscon,vr%varsst,vr%corlsst, &
-             vr%ozvar,vr%ozhln,vr%ozvln)
-  deallocate(vr%psvar,vr%pshln)
-  end subroutine final_berror_vars_
+
   subroutine copy_berror_vars_(ivars,ovars)
   type(berror_vars) ivars
   type(berror_vars) ovars
@@ -784,7 +681,7 @@ contains
   real(4),allocatable,dimension(:) :: ak,bk
   real(4) ptop, pint, dlon, dlat
   integer :: nlat,nlon
-  integer ii,jj,k,ks
+  integer ii,jj,k,ks,status
 
   allocate(plevs(ivars%nsig))
   allocate(ak(ivars%nsig+1),bk(ivars%nsig+1))
@@ -804,7 +701,7 @@ contains
      lons(ii) = (ii-1.0)*dlon 
   enddo
   
-  call write_nc_berror(trim(fname),ivars,plevs,lats,lons)
+  call write_nc_berror(trim(fname),ivars,plevs,lats,lons,status)
 
   deallocate(ak,bk)
   deallocate(plevs)
