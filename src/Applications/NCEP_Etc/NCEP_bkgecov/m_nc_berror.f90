@@ -3,25 +3,32 @@ use netcdf
 implicit none
 private
 
-public :: init_berror_vars
-public :: final_berror_vars
-public :: comp_berror_vars
-public :: berror_vars
-public :: read_nc_berror
-public :: write_nc_berror
+public :: nc_berror_vars_init
+public :: nc_berror_vars_final
+public :: nc_berror_vars_comp
+public :: nc_berror_vars_copy
+public :: nc_berror_vars
+public :: nc_berror_dims
+public :: nc_berror_read
+public :: nc_berror_write
+public :: nc_berror_getpointer
 
-type berror_vars
+type nc_berror_vars
+   logical :: initialized=.false.
    integer :: nlon,nlat,nsig
-   real(4),allocatable,dimension(:,:,:):: tcon
-   real(4),allocatable,dimension(:,:)  :: sfvar,vpvar,tvar,qvar,cvar,nrhvar,ozvar
-   real(4),allocatable,dimension(:,:)  :: qivar,qlvar,qrvar,qsvar
-   real(4),allocatable,dimension(:,:)  :: sfhln,vphln,thln,qhln,chln,ozhln
-   real(4),allocatable,dimension(:,:)  :: qihln,qlhln,qrhln,qshln
-   real(4),allocatable,dimension(:,:)  :: sfvln,vpvln,tvln,qvln,cvln,ozvln
-   real(4),allocatable,dimension(:,:)  :: qivln,qlvln,qrvln,qsvln
-   real(4),allocatable,dimension(:,:)  :: vpcon,pscon,varsst,corlsst
-   real(4),allocatable,dimension(:)    :: psvar,pshln
-end type berror_vars
+   real(4),pointer,dimension(:,:,:):: tcon
+   real(4),pointer,dimension(:,:)  :: sfvar,vpvar,tvar,qvar,cvar,nrhvar,ozvar
+   real(4),pointer,dimension(:,:)  :: qivar,qlvar,qrvar,qsvar
+   real(4),pointer,dimension(:,:)  :: sfhln,vphln,thln,qhln,chln,ozhln
+   real(4),pointer,dimension(:,:)  :: qihln,qlhln,qrhln,qshln
+   real(4),pointer,dimension(:,:)  :: sfvln,vpvln,tvln,qvln,cvln,ozvln
+   real(4),pointer,dimension(:,:)  :: qivln,qlvln,qrvln,qsvln
+   real(4),pointer,dimension(:,:)  :: vpcon,pscon,varsst,corlsst
+   real(4),pointer,dimension(:)    :: psvar,pshln
+   real(4),pointer,dimension(:)    :: v1d
+   real(4),pointer,dimension(:,:)  :: v2d
+   real(4),pointer,dimension(:,:,:):: v3d
+end type nc_berror_vars
 
 character(len=*), parameter :: myname = 'm_nc_berror'
 
@@ -47,27 +54,78 @@ integer, parameter :: nvmll = 1  ! meriodional, level, level
 character(len=4),parameter :: cvarsMLL(nvmll) = (/ 'tcon' /)
 
 integer, parameter :: nv2dx = 2
-character(len=7),parameter :: cvars2dx(nv2dx) = (/ 'sst    ', 'sstcorl' /)
+character(len=4),parameter :: cvars2dx(nv2dx) = (/ 'sst ', 'hsst' /)
 
-interface read_nc_berror; module procedure    &
+interface nc_berror_dims; module procedure    &
+  read_dims_ ; end interface
+interface nc_berror_read; module procedure    &
   read_berror_ ; end interface
-interface write_nc_berror; module procedure    &
+interface nc_berror_write; module procedure    &
   write_berror_ ; end interface
-interface init_berror_vars; module procedure    &
+interface nc_berror_vars_init; module procedure    &
   init_berror_vars_ ; end interface
-interface final_berror_vars; module procedure    &
+interface nc_berror_vars_final; module procedure    &
   final_berror_vars_ ; end interface
-interface comp_berror_vars; module procedure    &
+interface nc_berror_vars_comp; module procedure    &
   comp_berror_vars_ ; end interface
+interface nc_berror_vars_copy; module procedure    &
+  copy_ ; end interface
+interface nc_berror_getpointer 
+  module procedure get_pointer_1d_ 
+  module procedure get_pointer_2d_
+end interface
 
 contains
+
+subroutine read_dims_ (fname,nlat,nlon,nlev,rc, myid,root)
+  implicit none
+  character(len=*), intent(in)    :: fname ! input filename
+  integer, intent(out) :: rc
+  integer, intent(out) :: nlat,nlon,nlev
+  integer, intent(in), optional :: myid, root
+
+! This will be the netCDF ID for the file and data variable.
+  integer :: ncid, varid, ier
+  integer :: mype_,root_
+
+! Local variables
+  character(len=*), parameter :: myname_ = myname//"::dims_"
+  logical :: verbose
+   
+! Return code (status)
+  rc=0; mype_=0; root_=0
+  if(present(myid) .and. present(root) ) then
+     mype_ = myid
+     root_ = root
+  endif
+ 
+! Open the file. NF90_NOWRITE tells netCDF we want read-only access to
+! the file.
+
+  call check_( nf90_open(fname, NF90_NOWRITE, ncid), rc, mype_, root_ )
+  if(rc/=0) return
+
+! Read global attributes
+  call check_( nf90_inq_dimid(ncid, "lon", varid), rc, mype_, root_)
+  call check_( nf90_inquire_dimension(ncid, varid, len=nlon), rc, mype_, root_ )
+  call check_( nf90_inq_dimid(ncid, "lat", varid), rc, mype_, root_ )
+  call check_( nf90_inquire_dimension(ncid, varid, len=nlat), rc, mype_, root_ )
+  call check_( nf90_inq_dimid(ncid, "lev", varid), rc, mype_, root_ )
+  call check_( nf90_inquire_dimension(ncid, varid, len=nlev), rc, mype_, root_ )
+
+! Close the file, freeing all resources.
+  call check_( nf90_close(ncid), rc, mype_, root_ )
+
+  return
+
+end subroutine read_dims_
 
 subroutine read_berror_ (fname,bvars,rc, myid,root)
   implicit none
   character(len=*), intent(in)    :: fname ! input filename
-  type(berror_vars),intent(inout) :: bvars ! background error variables
+  type(nc_berror_vars),intent(inout) :: bvars ! background error variables
   integer, intent(out) :: rc
-  integer, intent(in), optional :: myid,root        ! accommodate MPI calling programs
+  integer, intent(in), optional :: myid,root ! accommodate MPI calling programs
 
 ! This will be the netCDF ID for the file and data variable.
   integer :: ncid, varid
@@ -78,61 +136,79 @@ subroutine read_berror_ (fname,bvars,rc, myid,root)
   integer :: nv,nl,nlat,nlon,nlev
   integer :: ndims_, nvars_, ngatts_, unlimdimid_
   integer :: nlat_,nlon_,nlev_
+  integer :: mype_,root_
   real(4), allocatable :: data_in(:,:,:)
   logical :: verbose
+  logical :: init_
   
    
 ! Return code (status)
-  rc = 0  
+  rc=0; mype_=0; root_=0
   verbose=.true.
+  init_=.false.
   if(present(myid).and.present(root) )then
     if(myid/=root) verbose=.false.
+    mype_ = myid
+    root_ = root
   endif
  
-! Set dims
-  nlat=bvars%nlat
-  nlon=bvars%nlon
-  nlev=bvars%nsig
+! Get dimensions
+  call read_dims_ (fname,nlat_,nlon_,nlev_,rc, mype_,root_)
+
+  init_ = bvars%initialized
+  if ( init_ ) then
+!   Set dims
+    nlat=bvars%nlat
+    nlon=bvars%nlon
+    nlev=bvars%nsig
+
+!   Consistency check
+    if (nlon_ /= nlon .or. nlat_ /=nlat .or. nlev_/=nlev ) then
+       rc=1
+       if(myid==root) then
+         print *, 'nlat(file) = ', nlat_, 'nlat(required) = ', nlat
+         print *, 'nlon(file) = ', nlon_, 'nlon(required) = ', nlon
+         print *, 'nlev(file) = ', nlev_, 'nlev(required) = ', nlev
+         print *, myname_,  'Inconsistent dimensions, aborting ... '
+       endif
+       return
+    endif
+  else
+!   Set dims
+    nlat=nlat_
+    nlon=nlon_
+    nlev=nlev_
+    call init_berror_vars_(bvars,nlon,nlat,nlev)
+  endif
 
 ! Open the file. NF90_NOWRITE tells netCDF we want read-only access to
 ! the file.
 
-  call check( nf90_open(fname, NF90_NOWRITE, ncid) )
+  call check_( nf90_open(fname, NF90_NOWRITE, ncid), rc, mype_, root_ )
+  if(rc/=0) return
 
 ! Read global attributes
-  call check( nf90_inquire(ncid, ndims_, nvars_, ngatts_, unlimdimid_) )
-  call check( nf90_inq_dimid(ncid, "lon", varid) )
-  call check( nf90_inquire_dimension(ncid, varid, len=nlon_) )
-  call check( nf90_inq_dimid(ncid, "lat", varid) )
-  call check( nf90_inquire_dimension(ncid, varid, len=nlat_) )
-  call check( nf90_inq_dimid(ncid, "lev", varid) )
-  call check( nf90_inquire_dimension(ncid, varid, len=nlev_) )
-
-! Consistency check
-  if (nlon_ /= nlon .or. nlat_ /=nlat .or. nlev_/=nlev ) then
-     rc=1
-     if(myid==root) then
-       print *, 'nlat(file) = ', nlat_, 'nlat(required) = ', nlat
-       print *, 'nlon(file) = ', nlon_, 'nlon(required) = ', nlon
-       print *, 'nlev(file) = ', nlev_, 'nlev(required) = ', nlev
-       print *, myname_,  'Inconsistent dimensions, aborting ... '
-     endif
-     return
-  endif
+! call check_( nf90_inquire(ncid, ndims_, nvars_, ngatts_, unlimdimid_), rc, mype_, root_ )
+! call check_( nf90_inq_dimid(ncid, "lon", varid), rc, mype_, root_ )
+! call check_( nf90_inquire_dimension(ncid, varid, len=nlon_), rc, mype_, root_ )
+! call check_( nf90_inq_dimid(ncid, "lat", varid), rc, mype_, root_ )
+! call check_( nf90_inquire_dimension(ncid, varid, len=nlat_), rc, mype_, root_ )
+! call check_( nf90_inq_dimid(ncid, "lev", varid), rc, mype_, root_ )
+! call check_( nf90_inquire_dimension(ncid, varid, len=nlev_), rc, mype_, root_ )
 
 ! Read data to file
   allocate(data_in(1,nlat,1))
   do nv = 1, nv1d
-     call check( nf90_inq_varid(ncid, trim(cvars1d(nv)), varid) )
-     call check( nf90_get_var(ncid, varid, data_in(1,:,1)))
+     call check_( nf90_inq_varid(ncid, trim(cvars1d(nv)), varid), rc, mype_, root_ )
+     call check_( nf90_get_var(ncid, varid, data_in(1,:,1)), rc, mype_, root_ )
      if(trim(cvars1d(nv))=="ps"  ) bvars%psvar = data_in(1,:,1)
      if(trim(cvars1d(nv))=="hps" ) bvars%pshln = data_in(1,:,1)
   enddo
   deallocate(data_in)
   allocate(data_in(1,nlat,nlev))
   do nv = 1, nv2d
-     call check( nf90_inq_varid(ncid, trim(cvars2d(nv)), varid) )
-     call check( nf90_get_var(ncid, varid, data_in(1,:,:)) )
+     call check_( nf90_inq_varid(ncid, trim(cvars2d(nv)), varid), rc, mype_, root_  )
+     call check_( nf90_get_var(ncid, varid, data_in(1,:,:)), rc, mype_, root_ )
 
      if(trim(cvars2d(nv))=="sf" ) bvars%sfvar = data_in(1,:,:)
      if(trim(cvars2d(nv))=="hsf") bvars%sfhln = data_in(1,:,:)
@@ -185,8 +261,8 @@ subroutine read_berror_ (fname,bvars,rc, myid,root)
      do nl = 1, nlev
         write(cindx,'(i4.4)') nl
         if(trim(cvarsMLL(nv))=="tcon") then
-           call check( nf90_inq_varid(ncid, trim(cvarsMLL(nv))//cindx, varid) )
-           call check( nf90_get_var(ncid, varid, data_in(1,:,:)) )
+           call check_( nf90_inq_varid(ncid, trim(cvarsMLL(nv))//cindx, varid), rc, mype_, root_ )
+           call check_( nf90_get_var(ncid, varid, data_in(1,:,:)), rc, mype_, root_ )
            bvars%tcon(:,:,nl) = data_in(1,:,:)
         endif
      enddo
@@ -196,39 +272,30 @@ subroutine read_berror_ (fname,bvars,rc, myid,root)
 ! Write out lat/lon fields
   allocate(data_in(nlon,nlat,1))
   do nv = 1, nv2dx
-     call check( nf90_inq_varid(ncid, trim(cvars2dx(nv)), varid) )
-     call check( nf90_get_var(ncid, varid, data_in(:,:,1)) )
+     call check_( nf90_inq_varid(ncid, trim(cvars2dx(nv)), varid), rc, mype_, root_ )
+     call check_( nf90_get_var(ncid, varid, data_in(:,:,1)), rc, mype_, root_ )
      if(trim(cvars2dx(nv))=="sst"     ) then
         bvars%varsst = transpose(data_in(:,:,1))
      endif
-     if(trim(cvars2dx(nv))=="sstcorl" ) then 
+     if(trim(cvars2dx(nv))=="hsst" ) then 
         bvars%corlsst = transpose(data_in(:,:,1))
      endif
   enddo
   deallocate(data_in)
 
 ! Close the file, freeing all resources.
-  call check( nf90_close(ncid) )
+  call check_( nf90_close(ncid), rc, mype_, root_ )
 
   if(verbose) print *,"*** Finish reading file: ", trim(fname)
 
   return
 
-contains
-  subroutine check(status)
-    integer, intent ( in) :: status
-    
-    if(status /= nf90_noerr) then 
-      print *, trim(nf90_strerror(status))
-      stop "Stopped"
-    end if
-  end subroutine check  
 end subroutine read_berror_
 
 subroutine write_berror_ (fname,bvars,plevs,lats,lons,rc, myid,root)
   implicit none
   character(len=*), intent(in)    :: fname ! input filename
-  type(berror_vars),intent(in)    :: bvars ! background error variables
+  type(nc_berror_vars),intent(in)    :: bvars ! background error variables
   real(4), intent(in) :: lats(:)           ! latitudes  per GSI: increase index from South to North Pole
   real(4), intent(in) :: lons(:)           ! longitudea per GSI: increase index from East to West
   real(4), intent(in) :: plevs(:)
@@ -245,6 +312,7 @@ subroutine write_berror_ (fname,bvars,plevs,lats,lons,rc, myid,root)
   integer :: x_dimid, y_dimid, z_dimid
   integer :: lon_varid, lat_varid, lev_varid
   integer :: ii,jj,nl,nv,nn,nlat,nlon,nlev
+  integer :: mype_,root_
   integer, allocatable :: varid1d(:), varid2d(:), varid2dx(:), varidMLL(:)
   logical :: verbose
   
@@ -253,10 +321,12 @@ subroutine write_berror_ (fname,bvars,plevs,lats,lons,rc, myid,root)
   real(4), allocatable :: data_out(:,:,:)
 
 ! Return code (status)
-  rc = 0  
+  rc=0; mype_=0; root_=0
   verbose=.true.
   if(present(myid).and.present(root) )then
     if(myid/=root) verbose=.false.
+    mype_ = myid
+    root_ = root
   endif
 
 ! Set dims
@@ -271,20 +341,21 @@ subroutine write_berror_ (fname,bvars,plevs,lats,lons,rc, myid,root)
 
 ! Create the netCDF file. The nf90_clobber parameter tells netCDF to
 ! overwrite this file, if it already exists.
-  call check( nf90_create(fname, NF90_CLOBBER, ncid) )
+  call check_( nf90_create(fname, NF90_CLOBBER, ncid), rc, mype_, root_ )
+  if(rc/=0) return
 
 ! Define the dimensions. NetCDF will hand back an ID for each. 
-  call check( nf90_def_dim(ncid, "lon", nlon, x_dimid) )
-  call check( nf90_def_dim(ncid, "lat", nlat, y_dimid) )
-  call check( nf90_def_dim(ncid, "lev", nlev, z_dimid) )
+  call check_( nf90_def_dim(ncid, "lon", nlon, x_dimid), rc, mype_, root_ )
+  call check_( nf90_def_dim(ncid, "lat", nlat, y_dimid), rc, mype_, root_ )
+  call check_( nf90_def_dim(ncid, "lev", nlev, z_dimid), rc, mype_, root_ )
 
-  call check( nf90_def_var(ncid, "lon", NF90_REAL, x_dimid, lon_varid) )
-  call check( nf90_def_var(ncid, "lat", NF90_REAL, y_dimid, lat_varid) )
-  call check( nf90_def_var(ncid, "lev", NF90_REAL, z_dimid, lev_varid) )
+  call check_( nf90_def_var(ncid, "lon", NF90_REAL, x_dimid, lon_varid), rc, mype_, root_ )
+  call check_( nf90_def_var(ncid, "lat", NF90_REAL, y_dimid, lat_varid), rc, mype_, root_ )
+  call check_( nf90_def_var(ncid, "lev", NF90_REAL, z_dimid, lev_varid), rc, mype_, root_ )
 
-  call check( nf90_put_att(ncid, lon_varid, "units", "degress") )
-  call check( nf90_put_att(ncid, lat_varid, "units", "degress") )
-  call check( nf90_put_att(ncid, lev_varid, "units", "hPa") )
+  call check_( nf90_put_att(ncid, lon_varid, "units", "degress"), rc, mype_, root_ )
+  call check_( nf90_put_att(ncid, lat_varid, "units", "degress"), rc, mype_, root_ )
+  call check_( nf90_put_att(ncid, lev_varid, "units", "hPa"), rc, mype_, root_ )
 
 ! The dimids array is used to pass the IDs of the dimensions of
 ! the variables. Note that in fortran arrays are stored in
@@ -294,11 +365,11 @@ subroutine write_berror_ (fname,bvars,plevs,lats,lons,rc, myid,root)
 ! Define variables.
   allocate(varid1d(nv1d))
   do nv = 1, nv1d
-     call check( nf90_def_var(ncid, trim(cvars1d(nv)), NF90_REAL, (/ y_dimid /), varid1d(nv)) )
+     call check_( nf90_def_var(ncid, trim(cvars1d(nv)), NF90_REAL, (/ y_dimid /), varid1d(nv)), rc, mype_, root_ )
   enddo
   allocate(varid2d(nv2d))
   do nv = 1, nv2d
-     call check( nf90_def_var(ncid, trim(cvars2d(nv)), NF90_REAL, (/ y_dimid, z_dimid /), varid2d(nv)) )
+     call check_( nf90_def_var(ncid, trim(cvars2d(nv)), NF90_REAL, (/ y_dimid, z_dimid /), varid2d(nv)), rc, mype_, root_ )
   enddo
   allocate(varidMLL(nlev*nvmll))
   nn=0
@@ -306,28 +377,28 @@ subroutine write_berror_ (fname,bvars,plevs,lats,lons,rc, myid,root)
      do nl = 1, nlev
         nn=nn+1
         write(cindx,'(i4.4)') nl
-        call check( nf90_def_var(ncid, trim(cvarsMLL(nv))//cindx, NF90_REAL, (/ y_dimid, z_dimid /), varidMLL(nn)) )
+        call check_( nf90_def_var(ncid, trim(cvarsMLL(nv))//cindx, NF90_REAL, (/ y_dimid, z_dimid /), varidMLL(nn)), rc, mype_, root_ )
      enddo
   enddo
   allocate(varid2dx(nv2dx))
   do nv = 1, nv2dx
-     call check( nf90_def_var(ncid, trim(cvars2dx(nv)), NF90_REAL, (/ x_dimid, y_dimid /), varid2dx(nv)) )
+     call check_( nf90_def_var(ncid, trim(cvars2dx(nv)), NF90_REAL, (/ x_dimid, y_dimid /), varid2dx(nv)), rc, mype_, root_ )
   enddo
 
 ! End define mode. This tells netCDF we are done defining metadata.
-  call check( nf90_enddef(ncid) )
+  call check_( nf90_enddef(ncid), rc, mype_, root_ )
 
 ! Write coordinate variables data
-  call check( nf90_put_var(ncid, lon_varid, lons ) )
-  call check( nf90_put_var(ncid, lat_varid, lats ) )
-  call check( nf90_put_var(ncid, lev_varid, plevs) )
+  call check_( nf90_put_var(ncid, lon_varid, lons ), rc, mype_, root_ )
+  call check_( nf90_put_var(ncid, lat_varid, lats ), rc, mype_, root_ )
+  call check_( nf90_put_var(ncid, lev_varid, plevs), rc, mype_, root_ )
 
 ! Write data to file
   allocate(data_out(1,nlat,1))
   do nv = 1, nv1d
      if(trim(cvars1d(nv))=="ps"  ) data_out(1,:,1) = bvars%psvar
      if(trim(cvars1d(nv))=="hps" ) data_out(1,:,1) = bvars%pshln
-     call check( nf90_put_var(ncid, varid1d(nv), data_out(1,:,1)))
+     call check_( nf90_put_var(ncid, varid1d(nv), data_out(1,:,1)), rc, mype_, root_)
   enddo
   deallocate(data_out)
   allocate(data_out(1,nlat,nlev))
@@ -376,7 +447,7 @@ subroutine write_berror_ (fname,bvars,plevs,lats,lons,rc, myid,root)
      if(trim(cvars2d(nv))=="pscon") data_out(1,:,:) = bvars%pscon
      if(trim(cvars2d(nv))=="vpcon") data_out(1,:,:) = bvars%vpcon
 !
-     call check( nf90_put_var(ncid, varid2d(nv), data_out(1,:,:)) )
+     call check_( nf90_put_var(ncid, varid2d(nv), data_out(1,:,:)), rc, mype_, root_ )
   enddo
 
 ! Choose to write out NLATxNLEVxNLEV vars as to facilitate visualization
@@ -386,7 +457,7 @@ subroutine write_berror_ (fname,bvars,plevs,lats,lons,rc, myid,root)
         nn = nn + 1
         write(cindx,'(i4.4)') nl
         if(trim(cvarsMLL(nv))=="tcon") data_out(1,:,:) = bvars%tcon(:,:,nl)
-        call check( nf90_put_var(ncid, varidMLL(nn), data_out(1,:,:)) )
+        call check_( nf90_put_var(ncid, varidMLL(nn), data_out(1,:,:)), rc, mype_, root_ )
      enddo
   enddo
   deallocate(data_out)
@@ -397,15 +468,15 @@ subroutine write_berror_ (fname,bvars,plevs,lats,lons,rc, myid,root)
      if(trim(cvars2dx(nv))=="sst"     ) then
         data_out(:,:,1) = transpose(bvars%varsst)
      endif
-     if(trim(cvars2dx(nv))=="sstcorl" ) then 
+     if(trim(cvars2dx(nv))=="hsst" ) then 
         data_out(:,:,1) = transpose(bvars%corlsst)
      endif
-     call check( nf90_put_var(ncid, varid2dx(nv), data_out(:,:,1)) )
+     call check_( nf90_put_var(ncid, varid2dx(nv), data_out(:,:,1)), rc, mype_, root_ )
   enddo
   deallocate(data_out)
 
 ! Close file
-  call check( nf90_close(ncid) )
+  call check_( nf90_close(ncid), rc, mype_, root_ )
 
   deallocate(varidMLL)
   deallocate(varid2d)
@@ -414,21 +485,15 @@ subroutine write_berror_ (fname,bvars,plevs,lats,lons,rc, myid,root)
   print *, "*** Finish writing file ", fname
 
   return
-contains
-  subroutine check(status)
-    integer, intent ( in) :: status
-    
-    if(status /= nf90_noerr) then 
-      print *, trim(nf90_strerror(status))
-      stop "Stopped"
-    end if
-  end subroutine check  
+
 end subroutine write_berror_
 
 subroutine init_berror_vars_(vr,nlon,nlat,nsig)
 
   integer,intent(in) :: nlon,nlat,nsig
-  type(berror_vars) vr
+  type(nc_berror_vars) vr
+
+  if(vr%initialized) return
 
   vr%nlon=nlon 
   vr%nlat=nlat
@@ -448,11 +513,13 @@ subroutine init_berror_vars_(vr,nlon,nlat,nsig)
   allocate(vr%varsst(nlat,nlon),vr%corlsst(nlat,nlon))
   allocate(vr%tcon(nlat,nsig,nsig))
   allocate(vr%psvar(nlat),vr%pshln(nlat))
+  vr%initialized=.true.
   end subroutine init_berror_vars_
 
   subroutine final_berror_vars_(vr)
-  type(berror_vars) vr
+  type(nc_berror_vars) vr
 ! deallocate arrays
+  if(.not. vr%initialized) return
   deallocate(vr%sfvar,vr%vpvar,vr%tvar,vr%qvar,  &  
              vr%qivar,vr%qlvar,vr%qrvar,vr%qsvar,&
              vr%cvar,vr%nrhvar,vr%ozvar)
@@ -466,11 +533,12 @@ subroutine init_berror_vars_(vr,nlon,nlat,nsig)
   deallocate(vr%varsst,vr%corlsst)
   deallocate(vr%tcon)
   deallocate(vr%psvar,vr%pshln)
+  vr%initialized=.false.
 end subroutine final_berror_vars_
 
 subroutine comp_berror_vars_(va,vb,rc, myid,root)
-  type(berror_vars) va
-  type(berror_vars) vb
+  type(nc_berror_vars) va
+  type(nc_berror_vars) vb
   integer, intent(out) :: rc
   integer, intent(in), optional :: myid,root        ! accommodate MPI calling programs
   character(len=*), parameter :: myname_ = myname//"::comp_berror_vars_"
@@ -543,5 +611,299 @@ subroutine comp_berror_vars_(va,vb,rc, myid,root)
        if(verbose) print *, 'Comp finds all fields to match'
   endif
 end subroutine comp_berror_vars_
+
+subroutine copy_(ivars,ovars,hydro)
+  type(nc_berror_vars) ivars
+  type(nc_berror_vars) ovars
+  logical, intent(in), optional :: hydro
+
+  logical wrtall,hydro_
+
+  hydro_=.true.
+  wrtall=.true.
+  if (ovars%nlon/=ivars%nlon .or. &
+      ovars%nlat/=ivars%nlat      ) then
+      print*, 'copy_berror_vars_: Trying to copy inconsistent vectors, aborting ...'
+      call exit(1)
+  endif
+  if ( ovars%nsig/=ivars%nsig ) then
+     wrtall=.false.
+  endif
+  if(present(hydro)) then
+    hydro_ = hydro
+  endif
+
+  if (wrtall) then
+     ovars%tcon    = ivars%tcon
+     ovars%vpcon   = ivars%vpcon
+     ovars%pscon   = ivars%pscon
+     ovars%sfvar   = ivars%sfvar
+     ovars%sfhln   = ivars%sfhln
+     ovars%sfvln   = ivars%sfvln
+     ovars%vpvar   = ivars%vpvar
+     ovars%vphln   = ivars%vphln
+     ovars%vpvln   = ivars%vpvln
+     ovars%tvar    = ivars%tvar
+     ovars%thln    = ivars%thln
+     ovars%tvln    = ivars%tvln
+     ovars%qvar    = ivars%qvar
+     ovars%nrhvar  = ivars%nrhvar
+     ovars%qhln    = ivars%qhln
+     ovars%qvln    = ivars%qvln
+     if(hydro_) then
+       ovars%qivar   = ivars%qivar
+       ovars%qihln   = ivars%qihln
+       ovars%qivln   = ivars%qivln
+       ovars%qlvar   = ivars%qlvar
+       ovars%qlhln   = ivars%qlhln
+       ovars%qlvln   = ivars%qlvln
+       ovars%qrvar   = ivars%qrvar
+       ovars%qrhln   = ivars%qrhln
+       ovars%qrvln   = ivars%qrvln
+       ovars%qsvar   = ivars%qsvar
+       ovars%qshln   = ivars%qshln
+       ovars%qsvln   = ivars%qsvln
+     endif
+     ovars%ozvar   = ivars%ozvar
+     ovars%ozhln   = ivars%ozhln
+     ovars%ozvln   = ivars%ozvln
+     ovars%cvar    = ivars%cvar
+     ovars%chln    = ivars%chln
+     ovars%cvln    = ivars%cvln
+  endif
+
+  ovars%psvar   = ivars%psvar
+  ovars%pshln   = ivars%pshln
+  ovars%varsst  = ivars%varsst
+  ovars%corlsst = ivars%corlsst
+
+end subroutine copy_
+
+subroutine get_pointer_1d_ (vname, bvars, ptr, rc )
+implicit none
+character(len=*), intent(in) :: vname
+type(nc_berror_vars) bvars
+real(4),pointer,intent(inout) :: ptr(:)
+integer,intent(out) :: rc
+rc=-1
+if(trim(vname)=='ps') then
+  ptr => bvars%psvar
+  rc=0
+endif
+if(trim(vname)=='hps') then
+  ptr => bvars%pshln
+  rc=0
+endif
+end subroutine get_pointer_1d_
+
+subroutine get_pointer_2d_ (vname, bvars, ptr, rc )
+implicit none
+character(len=*), intent(in) :: vname
+type(nc_berror_vars) bvars
+real(4),pointer,intent(inout) :: ptr(:,:)
+integer,intent(out) :: rc
+character(len=5) :: var
+rc=-1
+!
+var='sst'
+if(trim(vname)==trim(var)) then
+  ptr => bvars%varsst
+  rc=0
+  return
+endif
+if(trim(vname)=='h'//trim(var)) then
+  ptr => bvars%corlsst
+  rc=0
+  return
+endif
+!
+var='sf'
+if(trim(vname)==trim(var)) then
+  ptr => bvars%sfvar
+  rc=0
+  return
+endif
+if(trim(vname)=='h'//trim(var)) then
+  ptr => bvars%sfhln
+  rc=0
+  return
+endif
+if(trim(vname)=='v'//trim(var)) then
+  ptr => bvars%sfvln
+  rc=0
+  return
+endif
+!
+var='vp'
+if(trim(vname)==trim(var)) then
+  ptr => bvars%vpvar
+  rc=0
+  return
+endif
+if(trim(vname)=='h'//trim(var)) then
+  ptr => bvars%vphln
+  rc=0
+  return
+endif
+if(trim(vname)=='v'//trim(var)) then
+  ptr => bvars%vpvln
+  rc=0
+  return
+endif
+!
+var='t'
+if(trim(vname)==trim(var)) then
+  ptr => bvars%tvar
+  rc=0
+  return
+endif
+if(trim(vname)=='h'//trim(var)) then
+  ptr => bvars%thln
+  rc=0
+  return
+endif
+if(trim(vname)=='v'//trim(var)) then
+  ptr => bvars%tvln
+  rc=0
+  return
+endif
+!
+var='q'
+if(trim(vname)==trim(var)) then
+  ptr => bvars%qvar
+  rc=0
+  return
+endif
+if(trim(vname)=='h'//trim(var)) then
+  ptr => bvars%qhln
+  rc=0
+  return
+endif
+if(trim(vname)=='v'//trim(var)) then
+  ptr => bvars%qvln
+  rc=0
+  return
+endif
+!
+var='cw'
+if(trim(vname)==trim(var)) then
+  ptr => bvars%cvar
+  rc=0
+  return
+endif
+if(trim(vname)=='h'//trim(var)) then
+  ptr => bvars%chln
+  rc=0
+  return
+endif
+if(trim(vname)=='v'//trim(var)) then
+  ptr => bvars%cvln
+  rc=0
+  return
+endif
+!
+var='qi'
+if(trim(vname)==trim(var)) then
+  ptr => bvars%qivar
+  rc=0
+  return
+endif
+if(trim(vname)=='h'//trim(var)) then
+  ptr => bvars%qihln
+  rc=0
+  return
+endif
+if(trim(vname)=='v'//trim(var)) then
+  ptr => bvars%qivln
+  rc=0
+  return
+endif
+!
+var='ql'
+if(trim(vname)==trim(var)) then
+  ptr => bvars%qlvar
+  rc=0
+  return
+endif
+if(trim(vname)=='h'//trim(var)) then
+  ptr => bvars%qlhln
+  rc=0
+  return
+endif
+if(trim(vname)=='v'//trim(var)) then
+  ptr => bvars%qlvln
+  rc=0
+  return
+endif
+!
+var='qr'
+if(trim(vname)==trim(var)) then
+  ptr => bvars%qrvar
+  rc=0
+  return
+endif
+if(trim(vname)=='h'//trim(var)) then
+  ptr => bvars%qrhln
+  rc=0
+  return
+endif
+if(trim(vname)=='v'//trim(var)) then
+  ptr => bvars%qrvln
+  rc=0
+  return
+endif
+!
+var='qs'
+if(trim(vname)==trim(var)) then
+  ptr => bvars%qsvar
+  rc=0
+  return
+endif
+if(trim(vname)=='h'//trim(var)) then
+  ptr => bvars%qshln
+  rc=0
+  return
+endif
+if(trim(vname)=='v'//trim(var)) then
+  ptr => bvars%qsvln
+  rc=0
+  return
+endif
+!
+var='oz'
+if(trim(vname)==trim(var)) then
+  ptr => bvars%ozvar
+  rc=0
+  return
+endif
+if(trim(vname)=='h'//trim(var)) then
+  ptr => bvars%ozhln
+  rc=0
+  return
+endif
+if(trim(vname)=='v'//trim(var)) then
+  ptr => bvars%ozvln
+  rc=0
+  return
+endif
+!
+var='nrh'
+if(trim(vname)==trim(var)) then
+  ptr => bvars%nrhvar
+  rc=0
+  return
+endif
+end subroutine get_pointer_2d_
+
+subroutine check_(status,rc, myid, root)
+    integer, intent ( in) :: status
+    integer, intent (out) :: rc
+    integer, intent ( in) :: myid, root
+    rc=0
+    if(status /= nf90_noerr) then 
+      if(myid==root) print *, trim(nf90_strerror(status))
+      rc=999
+    end if
+end subroutine check_  
 
 end module m_nc_berror

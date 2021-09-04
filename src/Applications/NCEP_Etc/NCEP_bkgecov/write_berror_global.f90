@@ -12,12 +12,13 @@
 
   program write_berror_global
 
-  use m_nc_berror, only: init_berror_vars
-  use m_nc_berror, only: final_berror_vars
-  use m_nc_berror, only: comp_berror_vars
-  use m_nc_berror, only: berror_vars
-  use m_nc_berror, only: read_nc_berror
-  use m_nc_berror, only: write_nc_berror
+  use m_nc_berror, only: nc_berror_vars_init
+  use m_nc_berror, only: nc_berror_vars_final
+  use m_nc_berror, only: nc_berror_vars_comp
+  use m_nc_berror, only: nc_berror_vars_copy
+  use m_nc_berror, only: nc_berror_vars
+  use m_nc_berror, only: nc_berror_read
+  use m_nc_berror, only: nc_berror_write
   implicit none
 
   real(4),allocatable,dimension(:)::  corp_avn,hwllp_avn
@@ -26,8 +27,8 @@
   real(4),allocatable,dimension(:,:,:):: corz_avn,hwll_avn,vztdq_avn,agv_avn
   real(4),allocatable,dimension(:,:):: corz,corzq,hwll,vztdq
 
-  type(berror_vars) ivars
-  type(berror_vars) xvars
+  type(nc_berror_vars) ivars
+  type(nc_berror_vars) xvars
 
   integer, parameter :: luin =22
   integer, parameter :: luout=45
@@ -53,7 +54,7 @@
 
   call get_berror_dims_(ilon,ilat,isig)
 
-  call init_berror_vars(ivars,ilon,ilat,isig)
+  call nc_berror_vars_init(ivars,ilon,ilat,isig)
 
   if (merra2current) then
      call berror_old_read_(mlon,mlat,msig)
@@ -71,29 +72,28 @@
   endif
   if (msig/=ivars%nsig) then
      write(6,'(a)') ' Interpolating error covariance fields ...'
-     call init_berror_vars(xvars,ilon,ilat,isig)
-     call copy_berror_vars_(ivars,xvars)
-     call final_berror_vars(ivars)
-     call init_berror_vars(ivars,ilon,ilat,msig)
-     call copy_berror_vars_(xvars,ivars)
+     call nc_berror_vars_init(xvars,ilon,ilat,isig)
+     call nc_berror_vars_copy(ivars,xvars)
+     call nc_berror_vars_final(ivars)
+     call nc_berror_vars_init(ivars,ilon,ilat,msig)
+     call nc_berror_vars_copy(xvars,ivars)
      call vinterp_berror_vars_(xvars,ivars)
      write(6,'(a)') ' Finish interpolation.'
-     call final_berror_vars(xvars)
+     call nc_berror_vars_final(xvars)
   endif
   call berror_write_(ivars,merra2current)
   if(trim(ncfile)/='NULL') then
      call be_write_nc_(ncfile,ivars)
      if ( nc_read_test ) then
-        call init_berror_vars(xvars,ivars%nlon,ivars%nlat,ivars%nsig)
-        call read_nc_berror(ncfile,xvars,status)
+        call nc_berror_read(ncfile,xvars,status)
         call be_write_nc_('again.nc',xvars)
-        call comp_berror_vars(ivars,xvars,status)
-        call final_berror_vars(xvars)
+        call nc_berror_vars_comp(ivars,xvars,status)
+        call nc_berror_vars_final(xvars)
      endif
   endif
   call berror_write_grads_(ivars)
 
-  call final_berror_vars(ivars)
+  call nc_berror_vars_final(ivars)
 
 
 contains
@@ -200,7 +200,7 @@ contains
   
   subroutine berror_read_(vr)
 
-  type(berror_vars) vr
+  type(nc_berror_vars) vr
   integer nlat,nlon,nsig
 
   var=' '
@@ -262,7 +262,7 @@ contains
 
   subroutine berror_write_(vr,m2c)
 
-  type(berror_vars) vr
+  type(nc_berror_vars) vr
   logical, intent(in) :: m2c
   integer  nlon,nlat,nsig
 
@@ -418,7 +418,7 @@ contains
   subroutine berror_write_grads_(vars)
 
    use sstmod, only: write_grads_ctl
-   type(berror_vars) vars
+   type(nc_berror_vars) vars
    integer j,nsig,nlat,nlon,iret
    real(4),allocatable,dimension(:,:) :: aux
 
@@ -495,66 +495,6 @@ contains
 
   end subroutine berror_write_grads_
 
-  subroutine copy_berror_vars_(ivars,ovars)
-  type(berror_vars) ivars
-  type(berror_vars) ovars
-
-  logical wrtall
-
-  wrtall=.true.
-  if (ovars%nlon/=ivars%nlon .or. &
-      ovars%nlat/=ivars%nlat      ) then
-      print*, 'copy_berror_vars_: Trying to copy inconsistent vectors, aborting ...'
-      call exit(1)
-  endif
-  if ( ovars%nsig/=ivars%nsig ) then
-     wrtall=.false.
-  endif
-
-  if (wrtall) then
-     ovars%tcon    = ivars%tcon
-     ovars%vpcon   = ivars%vpcon
-     ovars%pscon   = ivars%pscon
-     ovars%sfvar   = ivars%sfvar
-     ovars%sfhln   = ivars%sfhln
-     ovars%sfvln   = ivars%sfvln
-     ovars%vpvar   = ivars%vpvar
-     ovars%vphln   = ivars%vphln
-     ovars%vpvln   = ivars%vpvln
-     ovars%tvar    = ivars%tvar
-     ovars%thln    = ivars%thln
-     ovars%tvln    = ivars%tvln
-     ovars%qvar    = ivars%qvar
-     ovars%nrhvar  = ivars%nrhvar
-     ovars%qhln    = ivars%qhln
-     ovars%qvln    = ivars%qvln
-     ovars%qivar   = ivars%qivar
-     ovars%qihln   = ivars%qihln
-     ovars%qivln   = ivars%qivln
-     ovars%qlvar   = ivars%qlvar
-     ovars%qlhln   = ivars%qlhln
-     ovars%qlvln   = ivars%qlvln
-     ovars%qrvar   = ivars%qrvar
-     ovars%qrhln   = ivars%qrhln
-     ovars%qrvln   = ivars%qrvln
-     ovars%qsvar   = ivars%qsvar
-     ovars%qshln   = ivars%qshln
-     ovars%qsvln   = ivars%qsvln
-     ovars%ozvar   = ivars%ozvar
-     ovars%ozhln   = ivars%ozhln
-     ovars%ozvln   = ivars%ozvln
-     ovars%cvar    = ivars%cvar
-     ovars%chln    = ivars%chln
-     ovars%cvln    = ivars%cvln
-  endif
-
-  ovars%psvar   = ivars%psvar
-  ovars%pshln   = ivars%pshln
-  ovars%varsst  = ivars%varsst
-  ovars%corlsst = ivars%corlsst
-
-  end subroutine copy_berror_vars_
-
   subroutine vinterp_berror_vars_(ivars,ovars)
 
   use m_spline, only: spline
@@ -563,8 +503,8 @@ contains
   use m_const, only: pstd
   implicit none
 
-  type(berror_vars) ivars
-  type(berror_vars) ovars
+  type(nc_berror_vars) ivars
+  type(nc_berror_vars) ovars
 
   real(4),allocatable,dimension(:,:) :: aux
   real(4),allocatable,dimension(:) :: plevi,plevo
@@ -672,8 +612,8 @@ contains
   use m_set_eta, only: get_ref_plevs
   implicit none
 
-  character(len=*),  intent(in) :: fname
-  type(berror_vars), intent(in) :: ivars
+  character(len=*),     intent(in) :: fname
+  type(nc_berror_vars), intent(in) :: ivars
 
   real(4),allocatable,dimension(:,:) :: aux
   real(4),allocatable,dimension(:) :: lats,lons
@@ -701,7 +641,7 @@ contains
      lons(ii) = (ii-1.0)*dlon 
   enddo
   
-  call write_nc_berror(trim(fname),ivars,plevs,lats,lons,status)
+  call nc_berror_write(trim(fname),ivars,plevs,lats,lons,status)
 
   deallocate(ak,bk)
   deallocate(plevs)
