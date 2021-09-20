@@ -52,7 +52,7 @@ program gsidiag_bin2txt
 ! accredited to Welford, according
   real(r_quad),dimension(:),allocatable   :: nobstotal, nobsassim, tbtotal, tbassim, omf_nbc , omf_bc , sigo, jo
   real(r_quad),dimension(:,:),allocatable ::                                         vomf_nbc, vomf_bc
-! total bias and fixed bias terms.  When Yanqui's variational angle correction is brought in, this may need to be updated.
+! total bias and fixed bias terms.  When Yanqiu's variational angle correction is brought in, this may need to be updated.
   real(r_quad),dimension(:),allocatable   :: totbias , fixbias
   real(r_quad),dimension(:,:),allocatable :: vtotbias, vfixbias
 ! variational bias correction variables, which will be allocated as nchan and npred_read
@@ -78,6 +78,7 @@ program gsidiag_bin2txt
   real(r_single) :: rvomf_nbc, rvomf_bc, rvtotbias, rvfixbias
   real(r_single),dimension(:),allocatable   :: rvbiasterms
   character(len=13),dimension(:),allocatable :: chfrwn 
+  character(len=20) :: isis
 
   integer,parameter              :: max_npred = 9
 
@@ -151,6 +152,12 @@ program gsidiag_bin2txt
   iflag = 0
 
   inlun = 51
+  if (.not. netcdf) then
+    open(unit=10,file=infn,form='formatted')
+    read(10,'(a20)') isis
+    if ( index(isis,'HDF') .ne. 0) netcdf = .true.
+    close(10)
+  end if
   call set_netcdf_read(netcdf)
   call open_radiag(infn, inlun, istatus)
   if (istatus/=0) then
@@ -158,7 +165,7 @@ program gsidiag_bin2txt
      call abort
   end if
   
-  write(*,*)'File ', trim(infn), ' opened on lun=',inlun
+  write(*,'(''File '', a, '' opened on lun='',a )') trim(infn), inlun  
 !  open(inlun,file=infn,form='unformatted',convert='big_endian')
 
   call read_radiag_header( inlun, npred_read, sst_ret, headfix, headchan, headname, iflag, debug )
