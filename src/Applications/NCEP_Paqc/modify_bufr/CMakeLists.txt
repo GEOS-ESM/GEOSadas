@@ -12,3 +12,8 @@ ecbuild_add_executable (
   TARGET explode.x
   SOURCES explode.f
   LIBS NCEP_bufr_r4i4)
+
+ecbuild_add_executable (
+  TARGET listheaders.x
+  SOURCES listheaders.f90
+  LIBS NCEP_bufr_r4i4)
