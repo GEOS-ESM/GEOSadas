@@ -669,6 +669,7 @@ sub archive_monthly_keep_files {
         if ($datamove_constraint) {
            ($dummy, $constraint) = (split / /, $datamove_constraint)[0, 1];
         }
+        $constraint = "" unless $constraint;
         $vFLG = "--export=$vars";
         $outFLG = "--output=$outfile";
         $qFLGs = "--job-name=KEEParc.$yyyymm --time=$walltime_cl"
@@ -731,6 +732,7 @@ sub archive_monthly_files {
         if ($datamove_constraint) {
            ($dummy, $constraint) = (split / /, $datamove_constraint)[0, 1];
         }
+        $constraint = "" unless $constraint;
         $vFLG = "--export=$vars";
         $outFLG = "--output=$outfile";
         $qFLGs = "--job-name=MPParc.$yyyymm --nodes=1 --time=$walltime_cl"
