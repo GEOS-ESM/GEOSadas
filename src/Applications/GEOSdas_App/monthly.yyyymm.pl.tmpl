@@ -55,8 +55,8 @@ use WriteLog qw(chdir_ mkpath_ unlink_ system_);
 # global variables
 #-----------------
 my ($meansFLG, $plotsFLG, $radmonFLG, $tarFLG, $finish, $nopush, %doMeans);
-my ($EXPID, $FVHOME, $PBS_BIN, $PYRADMON, $account, $listdir, $mnthlyRC);
-my ($numnodes_mm, $numnodes_mp, $plotHISTrc, $qcmd, $rundir);
+my ($EXPID, $FVARCH, $FVHOME, $PBS_BIN, $PYRADMON, $account, $listdir);
+my ($mnthlyRC, $numnodes_mm, $numnodes_mp, $plotHISTrc, $qcmd, $rundir);
 my ($script, $siteID, $workdir, $yyyymm, %newrc, %JOBID);
 my ($walltime_cl, $walltime_mm, $walltime_mp, $walltime_pf);
 my ($partition, $qos, $runlocal);
@@ -166,13 +166,15 @@ sub init {
     perl_config(%opts);
 
     $EXPID    = $ENV{"EXPID"};
+    $FVARCH   = $ENV{"FVARCH"};
     $FVHOME   = $ENV{"FVHOME"};
     $PBS_BIN  = $ENV{"PBS_BIN"};
     $PYRADMON = $ENV{"PYRADMON"};
     $GID      = $ENV{"GID"};
+    $datamove_constraint = $ENV{"datamove_constraint"};
     $datamove_constraint = "#";
-    if ($ENV{"DATAMOVE_CONSTRAINT"}) { 
-       $datamove_constarint = $ENV{"DATAMOVE_CONSTRAINT"};
+    if ($datamove_constraint) {
+       $datamove_constraint = $datamove_constraint;
     }
 
 
@@ -428,7 +430,7 @@ sub fetch_inputs {
         $time = "SBATCH --time=$walltime_pf";
         $output = "SBATCH --output=$outfile";
         $parFLG = "SBATCH --partition=datamove";
-        $constraint = "$datamove_constraint":
+        $constraint = "$datamove_constraint";
         $vFLG = "--export=outfile=$outfile";
     }
     else {
@@ -667,6 +669,7 @@ sub archive_monthly_keep_files {
         if ($datamove_constraint) {
            ($dummy, $constraint) = (split / /, $datamove_constraint)[0, 1];
         }
+        $constraint = "" unless $constraint;
         $vFLG = "--export=$vars";
         $outFLG = "--output=$outfile";
         $qFLGs = "--job-name=KEEParc.$yyyymm --time=$walltime_cl"
@@ -729,6 +732,7 @@ sub archive_monthly_files {
         if ($datamove_constraint) {
            ($dummy, $constraint) = (split / /, $datamove_constraint)[0, 1];
         }
+        $constraint = "" unless $constraint;
         $vFLG = "--export=$vars";
         $outFLG = "--output=$outfile";
         $qFLGs = "--job-name=MPParc.$yyyymm --nodes=1 --time=$walltime_cl"
@@ -911,35 +915,36 @@ sub finish_monthly_plots {
 # purpose - run pyradmon code
 #=======================================================================
 sub radmon {
-    my ($qFLG, $flags, $pyflags, $radmonRC);
+    my ($qFLG, $flags, $pyflags, $radmonRC, $pyradmon_driver_pl);
     
     $qFLG = "";
     $qFLG = "-qjobs" unless $runlocal;
-    $flags = "-expid $EXPID -fvhome $FVHOME -np $qFLG";
+    $flags = "-expid $EXPID -fvhome $FVHOME -archive $FVARCH -np $qFLG";
 
+    $pyradmon_driver_pl = "$PYRADMON/scripts/pyradmon_driver.pl";
     $radmonRC = "$FVHOME/radmon/radmon.defaults.rc";
     $radmonRC = "" unless -e $radmonRC;
 
     if ($radmonFLG == 1) {
         $pyflags = $flags ." -startdate ${yyyymm}01";
-        system("$PYRADMON/scripts/pyradmon_driver.pl $radmonRC $pyflags");
+        system("$pyradmon_driver_pl $radmonRC $pyflags");
     }
     elsif ($radmonFLG == 2) {
         $pyflags = $flags ." -startdate ${yyyymm}01 -enddate ${yyyymm}15";
-        system("$PYRADMON/scripts/pyradmon_driver.pl $radmonRC $pyflags");
+        system("$pyradmon_driver_pl $radmonRC $pyflags");
 
         $pyflags = $flags ." -startdate ${yyyymm}16";
-        system("$PYRADMON/scripts/pyradmon_driver.pl $radmonRC $pyflags");
+        system("$pyradmon_driver_pl $radmonRC $pyflags");
     }
     elsif ($radmonFLG == 3) {
         $pyflags = $flags ." -startdate ${yyyymm}01 -enddate ${yyyymm}10";
-        system("$PYRADMON/scripts/pyradmon_driver.pl $radmonRC $pyflags");
+        system("$pyradmon_driver_pl $radmonRC $pyflags");
 
         $pyflags = $flags ." -startdate ${yyyymm}11 -enddate ${yyyymm}20";
-        system("$PYRADMON/scripts/pyradmon_driver.pl $radmonRC $pyflags");
+        system("$pyradmon_driver_pl $radmonRC $pyflags");
 
         $pyflags = $flags ." -startdate ${yyyymm}21";
-        system("$PYRADMON/scripts/pyradmon_driver.pl $radmonRC $pyflags");
+        system("$pyradmon_driver_pl $radmonRC $pyflags");
     }
 }
 
