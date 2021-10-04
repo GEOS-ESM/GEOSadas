@@ -256,7 +256,8 @@ program gsidiag_bin2txt
       endif
 
       ! check to make sure ob is realistic - SSMI seems to have the occasional bad ob sneak in
-      if (datachan(ich)%tbobs .gt. 0.0 .and. datachan(ich)%tbobs .lt. 450) then 
+      ! 4 Oct 2021 - try replacing '0.0' with '50.0' - missing Tb's are now written as 50K
+      if (datachan(ich)%tbobs .gt. 50.0 .and. datachan(ich)%tbobs .lt. 450) then 
 
         ! first, operations for all observations regardless of luse
         nobstotal(ich) = nobstotal(ich) + 1
