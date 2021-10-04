@@ -1,6 +1,6 @@
 GEOSadas:
   fixture: true
-  develop: develop
+  tag: rt5.29.0.2
 
 env:
   local: ./@env
@@ -46,7 +46,7 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  branch: feature/rtodling/reviseGPSRO_for_5_29
+  tag: v1.4.3
   develop: develop
 
 GEOSgcm_GridComp:
@@ -83,7 +83,7 @@ fvdycore:
 GEOSchem_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSphysics_GridComp/@GEOSchem_GridComp
   remote: ../GEOSchem_GridComp.git
-  tag: v1.6.0
+  tag: rt1.6.1
   develop: develop
 
 HEMCO:
@@ -121,7 +121,7 @@ mom6:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  tag: v1.5.2
+  tag: rt1.5.3
   develop: develop
 
 UMD_Etc:
