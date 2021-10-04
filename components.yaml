@@ -1,6 +1,6 @@
 GEOSadas:
   fixture: true
-  tag: rt5.29.0.2
+  develop: develop
 
 env:
   local: ./@env
