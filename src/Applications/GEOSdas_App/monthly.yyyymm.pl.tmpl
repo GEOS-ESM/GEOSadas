@@ -60,6 +60,7 @@ my ($numnodes_mm, $numnodes_mp, $plotHISTrc, $qcmd, $rundir);
 my ($script, $siteID, $workdir, $yyyymm, %newrc, %JOBID);
 my ($walltime_cl, $walltime_mm, $walltime_mp, $walltime_pf);
 my ($partition, $qos, $runlocal);
+my ($datamove_constraint);
 
 #$partition = "preops";
 #$qos = "dastest";
@@ -169,6 +170,11 @@ sub init {
     $PBS_BIN  = $ENV{"PBS_BIN"};
     $PYRADMON = $ENV{"PYRADMON"};
     $GID      = $ENV{"GID"};
+    $datamove_constraint = "#";
+    if ($ENV{"DATAMOVE_CONSTRAINT"}) { 
+       $datamove_constarint = $ENV{"DATAMOVE_CONSTRAINT"};
+    }
+
 
     $ENV{"PATH"} = "$rundir:$fvroot/bin:$ENV{PATH}";
 
@@ -422,7 +428,7 @@ sub fetch_inputs {
         $time = "SBATCH --time=$walltime_pf";
         $output = "SBATCH --output=$outfile";
         $parFLG = "SBATCH --partition=datamove";
-        $constraint = "$DATAMOVE_CONSTRAINT":
+        $constraint = "$datamove_constraint":
         $vFLG = "--export=outfile=$outfile";
     }
     else {
@@ -593,7 +599,7 @@ sub tar_and_clean_inputs {
         $time = "SBATCH --time=$walltime_cl";
         $output = "SBATCH --output=$outfile";
         $parFLG = "SBATCH --partition=datamove";
-        $constraint = "$DATAMOVE_CONSTRAINT";
+        $constraint = "$datamove_constraint";
         $vFLG = "--export=outfile=$outfile";
     }
     else {
@@ -658,8 +664,8 @@ sub archive_monthly_keep_files {
 
     if ($siteID eq "nccs") {
         $constraint = "";
-        if ($DATAMOVE_CONSTRAINT) {
-           ($dummy, $constraint) = (split / /, $DATAMOVE_CONSTRAINT)[0, 1];
+        if ($datamove_constraint) {
+           ($dummy, $constraint) = (split / /, $datamove_constraint)[0, 1];
         }
         $vFLG = "--export=$vars";
         $outFLG = "--output=$outfile";
@@ -720,8 +726,8 @@ sub archive_monthly_files {
 
     if ($siteID eq "nccs") {
         $constraint = "";
-        if ($DATAMOVE_CONSTRAINT) {
-           ($dummy, $constraint) = (split / /, $DATAMOVE_CONSTRAINT)[0, 1];
+        if ($datamove_constraint) {
+           ($dummy, $constraint) = (split / /, $datamove_constraint)[0, 1];
         }
         $vFLG = "--export=$vars";
         $outFLG = "--output=$outfile";

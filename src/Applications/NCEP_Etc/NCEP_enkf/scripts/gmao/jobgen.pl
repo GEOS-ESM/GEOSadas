@@ -224,7 +224,7 @@ EOF
 EOF
       if ( $ENV{JOBGEN_ARCH_CONSTRAINT} ) {
     print  SCRIPT <<"EOF";
-#SBATCH --constraint=$ENV{JOBGEN_ARCH_CONSTRAINT}
+#$ENV{JOBGEN_ARCH_CONSTRAINT}
 EOF
       }
     }
