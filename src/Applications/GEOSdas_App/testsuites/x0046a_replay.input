@@ -1,8 +1,8 @@
 #------------
-# x0046.input
+# x0046a_replay.input
 #------------
 
-description: x0046__GEOSadas-5_29_0__agrid_C360__ogrid_C
+description: x0046a_replay__GEOSadas-5_29_0__agrid_C360__ogrid_C
 tag: GEOSadas-5_29_0
 
 ---ENDHEADERS---
@@ -28,7 +28,7 @@ EXPID? [u000_C360]
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [x0046__GEOSadas-5_29_0__agrid_C360__ogrid_C]
+EXPDSC? [x0046a_replay__GEOSadas-5_29_0__agrid_C360__ogrid_C]
 > 
 
 Land Boundary Conditions? [Icarus_Updated]
@@ -37,10 +37,10 @@ Land Boundary Conditions? [Icarus_Updated]
 Catchment Model choice? [1]
 > 
 
-FVHOME? [/discover/nobackup/dao_it/x0046]
+FVHOME? [/discover/nobackup/dao_it/x0046a_replay]
 > /discover/nobackup/projects/gmao/dadev/dao_it/$expid
 
-The directory /discover/nobackup/projects/gmao/obsdev/dao_it/x0046 already exists. Clean it? [y]
+The directory /discover/nobackup/projects/gmao/obsdev/dao_it/x0046a_replay already exists. Clean it? [y]
 > 
 
 Which case of variational analysis? [1]
@@ -91,7 +91,7 @@ Run singular vector experiments (0=n,1=yes)? [0]
 Run analysis-sensitivity applications (0=no,1=yes)? [0]
 > 1
 
-Verifying experiment id: [x0046]
+Verifying experiment id: [x0046a_replay]
 > 
 
 Ending year-month-day? [20191121]
@@ -215,19 +215,13 @@ Select group: [s0818]
 > g0613
 
 Replayed Ensemble (from OPS)?  [yes]
-> no
-
-Use SPPT-scheme for Ensemble?  [yes]
 > 
 
-Ensemble Resolution?  [C90]
-> 
+Replay exp name? [x0045a]
+> x0045a
 
-Ensemble Vertical Levels?  [72]
-> 
-
-Experiment archive directory for ensemble restarts or 'later': [/archive/u/rtodling/x0046]
-> /discover/nobackup/projects/gmao/dadev/rtodling/archive/x0044
+Replay archive directory? [/discover/nobackup/projects/gmao/dadev/dao_it/archive/x0045a]
+> /discover/nobackup/projects/gmao/dadev/dao_it/archive/x0045a
 
 Edit COLLECTIONS list in run/HISTORY.rc.tmpl (y/n)? [n]
 > 
