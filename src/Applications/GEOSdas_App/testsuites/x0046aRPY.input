@@ -1,8 +1,8 @@
 #------------
-# x0046a_replay.input
+# x0046aRPY.input
 #------------
 
-description: x0046a_replay__GEOSadas-5_29_0__agrid_C360__ogrid_C
+description: x0046aRPY__GEOSadas-5_29_0__agrid_C360__ogrid_C
 tag: GEOSadas-5_29_0
 
 ---ENDHEADERS---
@@ -28,7 +28,7 @@ EXPID? [u000_C360]
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [x0046a_replay__GEOSadas-5_29_0__agrid_C360__ogrid_C]
+EXPDSC? [x0046aRPY__GEOSadas-5_29_0__agrid_C360__ogrid_C]
 > 
 
 Land Boundary Conditions? [Icarus_Updated]
@@ -37,10 +37,10 @@ Land Boundary Conditions? [Icarus_Updated]
 Catchment Model choice? [1]
 > 
 
-FVHOME? [/discover/nobackup/dao_it/x0046a_replay]
+FVHOME? [/discover/nobackup/dao_it/x0046aRPY]
 > /discover/nobackup/projects/gmao/dadev/dao_it/$expid
 
-The directory /discover/nobackup/projects/gmao/obsdev/dao_it/x0046a_replay already exists. Clean it? [y]
+The directory /discover/nobackup/projects/gmao/obsdev/dao_it/x0046aRPY already exists. Clean it? [y]
 > 
 
 Which case of variational analysis? [1]
@@ -77,21 +77,9 @@ FVICS? [/archive/u/jstassi/restarts/GEOSadas-5_24_0]
 > /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/x0045/rs/Y2020/M11/x0045.rst.20201129_21z.tar
 
 Run model-adjoint-related applications (0=no,1=yes)? [0]
-> 1
-
-Analysis/Forecast filename template for sensitivity?
-> 
-
-Stage the gradient vector files (y/n)? [y]
-> 
-
-Run singular vector experiments (0=n,1=yes)? [0]
 > 
 
 Run analysis-sensitivity applications (0=no,1=yes)? [0]
-> 1
-
-Verifying experiment id: [x0046a_replay]
 > 
 
 Ending year-month-day? [20191121]
@@ -110,7 +98,7 @@ Number of PEs in the meridional direction (NY)? [48]
 > 
 
 Job nickname? [g5das]
-> x46
+> x46a
 
 Run in split executable mode (1=yes;0=no)? [1]
 > 

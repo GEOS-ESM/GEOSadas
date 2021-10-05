@@ -255,8 +255,8 @@ sub gsiobs_info {
         ($dline3 = $line) =~ s/_ID_/diag_${conv}_ges/;
         ($dline4 = $line) =~ s/_ID_/imp0hr_diag_$conv/;
         printarc("$dline1.ods\n");
-        printarc("$dline2.bin\n");
-        printarc("$dline3.bin\n");
+#       printarc("$dline2.bin\n");
+#       printarc("$dline3.bin\n");
         printarc("$dline2.nc4\n");
         printarc("$dline3.nc4\n");
         printarc("$dline4.ods\n\n");

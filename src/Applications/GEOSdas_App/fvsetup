@@ -765,7 +765,7 @@ sub defaults {
                    gmao_global_anavinfo_rcov.rc
                    gmao_global_blacklist.rc
                    gmao_global_cloudy_radiance_info.rc
-                   gmao_global_coinfo.rc
+                   gmao_global_tgasinfo.rc
                    gmao_global_convinfo.rc
                    gmao_global_hybens_info.x288y181l72.rc
                    gmao_global_hybens_info.x576y361l72.rc
