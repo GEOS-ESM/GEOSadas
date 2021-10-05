@@ -375,7 +375,7 @@ my $SECS_PER_DAY = $SECS_PER_HR * $HRS_PER_DAY;
 
 my ($res, $hres);
 my ($g5hist_rc, $g5prog_rc);
-my ($gocart_tracers, $radcor, $emiss, $lsmodel_flag, $rroute_flag);
+my ($gocart_tracers, $radcor, $emiss, $lsmodel_flag, $ldas_flag, $rroute_flag);
 my ($agcm_rst_flg, $sensdeg, %setupfile, @otherheaders);
 my ($checkFLG, $dbqueue, $runjobFLG, $saveFLG, $stopFLG);
 my (@fvprompt, @fvANS1, @fvANS2, $fvsetupflags);
@@ -509,7 +509,7 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
   while3 ( \&set_rcov );
   while3 ( \&set_acftbias );
   while3 ( \&set_newradbc ); 
-  while3 ( \&set_ldasANA  );
+  while3 ( \&set_ldasANA  );  
   while3 ( \&get_forecast );
   if ($DAO == 0) { while3 ( \&get_mhost ) }
   while3 ( \&get_output );
@@ -520,7 +520,7 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
 
 # Create subdirectories in FVHOME
 # -------------------------------
-  mkdir_fvhome();
+  mkdir_fvhome(); 
 
 # Create Namelists/tables for main DAS run
 # ----------------------------------------
@@ -570,6 +570,20 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
   $rc = system("$fvbin/fix_gocart_rc.csh $vres $fvhome/run/gocart");
   die "Failed to fix GOCART levels-referencing $!" if ( $rc );
 
+# LDAS Setup is done separately, follow instructions in GEOSldas/README.md   
+# ------------------------------------------------------------------------
+    print "\n checkprintout  ldas_ana == 1 ($ldas_ana)\n";
+    if ($ldas_ana == 1 ) {
+    print "\n Please run ldas_setup following instructions in GEOSldas/README.md\n";
+    print "\n requires config input files: YOUR_exeinp.txt, YOUR_batinp.txt.\n" ;
+    print "\n example LDROOT: /discover/nobackup/$user/GEOSldas\n" ;
+    print "\n example LDHOME: /discover/nobackup/$user/ldascoup_C180\n" ;
+    print "\n example cd $LDROOT/install/bin/ \n";
+    print "\n example salloc \n";
+    print "\n example source g5_modules \n" ;
+    print "\n example ldas_setup setup $LDHOME exp_exeinp.txt exp_batinp.txt \n" ;
+      }
+    
 # Monthly Setup
 # -------------------------------------------------------------
 # [this must be after HISTORY.rc.tmpl and silo.arc are created]
@@ -3353,22 +3367,40 @@ sub set_newradbc {
 sub set_ldasANA {
 
     # initialize Land DAS processing flag
-    #------------------------------------
-    $ldasANA = 0;
-
-    # query for processing flag, if LDAS executable found
-    #----------------------------------------------------
-    if (-e "$fvbin/LDASsa_assim_seq.x") {
+    #------------------------------------ 
+    my($dflt, $ans1, $ans2, $ans3, $ans4);
+    $ldas_ana = 0;
+    $ldasfdbk = 0;
+    $ldas_flag = 0;
+    $dflt = "n";
 
         print "\n-------------\n";
         print   "LDAS Analysis\n";
         print   "-------------\n\n";
 
-        $ans = query("  Land DAS Analysis (y/n)?", "n");
-        $ldasANA = 1 if yes($ans);
-    }
+        $ans1 = query("  Land DAS Analysis (y/n)?", $dflt) ;
+        $ldas_ana = 1 if yes($ans1);
+        print " ldas_ana ($ldas_ana)\n " ;
+
+       if ($ldas_ana == 1) {
+          $ans2 = query("  Enable LDAS feedback to model y/n ? ", $dflt);
+          $ldasfdbk = 1 if yes($ans2);
+          print " ldasfdbk ($ldasfdbk)\n" ;
+
+          if ($ldasfdbk ==1 ) {
+          $ldas_flag = 1
+          }
+
+          $ans3 = query("LDAS HOME = /discover/nobackup/$user/$ldasexp, full path?  ");
+          $ldashome = $ans3 ;
+
+          $ans4 = query("LDAS HOME for atm_ens = /discover/nobackup/$user/$ldasexp4ens, full path?  ");
+          $ldashome4ens = $ans4 ;
+
+         } 
     return 0;
 }
+
 
 #=======================================================================
 sub get_setgsi {
@@ -3584,6 +3616,8 @@ EOF
   $replace{">>>EXPID<<<"} = $expid;
   $replace{">>>JOBNJ<<<"} = "$jobn.j";
   $replace{">>>FVHOME<<<"} = "$fvhome";
+  $replace{">>>LDAS_ANA<<<"} = $ldas_ana;
+  $replace{">>>LDHOME4ens<<<"} = "$ldashome4ens";
 
   $atm_ens_j = "$fvhome/run/atm_ens.j";
   $atm_ens_j_tilde = "${atm_ens_j}~";
@@ -4282,9 +4316,9 @@ sub get_history {
 
     # verify that HISTORY.rc.tmpl has collections needed by LDAS
     #-----------------------------------------------------------
-    if ( $ldasANA ) {
+    if ( $ldas_ana == 1 ) {
         $verify = 0;
-        @ldasinputs = qw / diag_sfc bkg.eta /;
+          @ldasinputs = qw / tavg1_2d_lfo inst1_2d_lfo /;
         foreach $prod ( @ldasinputs ) {
             open HIST, "< $fvroot/etc/$g5hist_rc";
             unless ( grep /$prod/, <HIST> ) {
@@ -4301,7 +4335,7 @@ sub get_history {
                 . "  2. Select again\n\n";
             $ans = query("  Choose option 1 or 2:", "2");
             return 1 unless $ans eq "1";
-        }          
+        }      
     }
     print "  Using HISTORY template: $g5hist_rc\n";
 
@@ -5206,12 +5240,11 @@ sub secs2hhmmss {
 
 #=========================================================================
 sub mkdir_fvhome {  # create directories on FVHOME
-
   print "\nSetting up FVHOME directory for $expid experiment ...\n";
   foreach $dir (qw(ana diag daotovs etc obs prog radmon)) {
       mkpath("$fvhome/$dir") or die ">>> ERROR <<< creating directory $fvhome/$dir;";
   }
-  foreach $dir (qw(rs run recycle fcst asens anasa)) {
+  foreach $dir (qw(rs run recycle fcst lana asens anasa)) {
       mkpath("$fvhome/$dir") or die ">>> ERROR <<< creating directory $fvhome/$dir;";
   }
   foreach $subdir (qw( gaas gocart )) {
@@ -7663,7 +7696,10 @@ print  SCRIPT <<"EOF";
   setenv GAAS_ANA $gaas_ana # 1 = aerosol analysis, 0 = disables it
   setenv GAASFDBK $gaasfdbk # 1 = feedback aerosol analysis into GCM, 0 = don't
   setenv SKIP_PSAS 0 #  sets do_you_want_to_skip_PSAS in ana.rc.tmpl; 0 = no, 1 = yes
-  setenv LDAS_ANA $ldasANA  # 0 = don't run Land DAS Analysis; 1 = run LDAS
+  setenv LDAS_ANA $ldas_ana # 1 = land analysis, 0 = disables it 
+  setenv LDASFDBK $ldasfdbk # 1 = read land analysis incr into GCM (feedback), 0 = don't 
+  setenv LDHOME  $ldashome  # land analysis home dir (ldas_exp/) for central 
+  setenv LDHOME4ens $ldashome4ens  # land analysis home dir for atm_ens  
   setenv IGNORE_0 1   # 1 = ignore 0 length obs files in acquire
   setenv ACFTBIAS $acftbias
   setenv USE_MODIS_STAGE 0  # 1 = use MODIS data from MODIS_STAGE_DIR; 0 = don't
@@ -9467,6 +9503,7 @@ sub init_agcm_rc {
     $flags{"iau"}            = $doiau;
     $flags{"pcp_forced"}     = $pcp_forced;
     $flags{"lsmodel_flag"}   = $lsmodel_flag;
+    $flags{"ldas_flag"}      = $ldas_flag;
     set_AGCM_flags(%flags);
 
     # $num_readers must divide evenly into $ny
@@ -9579,6 +9616,7 @@ sub init_agcm_rc {
     AGCM_label_subst("\@LSM_CHOICE" , $lsmodel_flag);
     AGCM_label_subst("\@RUN_ROUTE" , $rroute_flag);
     AGCM_label_subst("\@NUM_READERS" , "1");
+    AGCM_label_subst("\@LDAS_INCR"   , $ldas_flag);
 
     #  Choice of LSM parameters
     if ( "$landbcs" eq "Icarus-NLv3" ) { 

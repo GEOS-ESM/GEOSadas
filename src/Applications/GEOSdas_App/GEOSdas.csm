@@ -1897,6 +1897,7 @@ exit 1
        /bin/cp $FVHOME/recycle/$EXPID.ana_radstat_rst.*.tar radstat
      endif
 
+
      # GAAS restart files
      #-------------------
      if ( ! $DO4DVAR ) then
@@ -3206,56 +3207,6 @@ endif
 
 #.............................................................................
 
-# ------------------------------
-  Sub LandAnalysisRun_() 
-# ------------------------------
-  if ( $?ECHO___ ) set echo
-
-  cd $FVWORK
-  set rstdate = ( `rst_date ./d_rst` )
-  set mydate = (`tick $rstdate -21600`)  # tick back 6 hours
-
-  set DURATION = "060000"
-  set SUBDIR = "ldas.$mydate[1].$mydate[2]"
-  set LDINPUT_FORCE = "$FVWORK"
-  set EXPDOMAIN = "GLOBAL"
-  set RESOLUTION = "144x91"
-  set THREEHOURS = 10800
-
-  ldsetup -expid $EXPID \
-          -nymd $mydate[1] \
-          -nhms $mydate[2] \
-          -duration $DURATION \
-          -fvroot $FVROOT \
-          -fvhome $FVHOME \
-          -fvwork $FVWORK \
-          -fvwork_subdir $SUBDIR \
-          -expdomain $EXPDOMAIN \
-          -resolution $RESOLUTION \
-          -ldinput_force $FVWORK \
-          -mettag $EXPID \
-          -forcedtstep $THREEHOURS \
-          -rstrtdir $FVWORK \
-          -rstrtid $EXPID \
-          -gid $GID \
-          -noprompt
-
-  echo y | lenkf.pl
-
-# Move output to top FVWORK directory
-# -----------------------------------
-  cd $FVWORK
-  foreach file ( `find $SUBDIR -name $EXPID\*.txt`)
-     /bin/mv $file .
-  end
-  foreach file ( `find $SUBDIR -name $EXPID\.ens\*`)
-     /bin/mv $file .
-  end
-
-                              # Last line of LandAnalysisRun_()
-\end
-
-#.............................................................................
 
 # ------------------------------
   Sub EvolveAinc0_( Viter_, Final_ )
@@ -5731,6 +5682,13 @@ endif
               /bin/mv radstat $EXPID.ana_radstat_rst.$rtag.tar
               /bin/cp $EXPID.ana_radstat_rst.$rtag.tar $RSTHOLD/ &
             endif
+
+        # hold lfo files for the next segment of ldas coupling
+        #----------------------------------------------------------
+           if  ( $LDAS_ANA ) then
+           mkdir -p       $FVHOME/recycle/holdforc
+          /bin/cp  *2d_lfo*nc4  $FVHOME/recycle/holdforc/.
+           endif
 
         # local copy to be moved by pesto, 2nd copy to be dealt w/ by recycle
         #--------------------------------------------------------------------
