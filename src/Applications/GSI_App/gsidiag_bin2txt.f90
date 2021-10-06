@@ -165,7 +165,7 @@ program gsidiag_bin2txt
      call abort
   end if
   
-  write(*,'(''File '', a, '' opened on lun='',a )') trim(infn), inlun  
+  write(*,'(''File '', a, '' opened on lun='',i5 )') trim(infn), inlun  
 !  open(inlun,file=infn,form='unformatted',convert='big_endian')
 
   call read_radiag_header( inlun, npred_read, sst_ret, headfix, headchan, headname, iflag, debug )
@@ -369,6 +369,7 @@ program gsidiag_bin2txt
         enddo
       endif
     else
+      inobstotal   = imissing
       tbtotal(ich) = missing
       inobsassim   = imissing
       tbassim(ich) = missing
