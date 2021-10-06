@@ -56,8 +56,8 @@ set stage = $1
 set freqa = $2
 
 
-     cd $FVWORK
-     set adas_strt = ( `rst_date ./d_rst` )
+cd $FVWORK
+set adas_strt = ( `rst_date ./d_rst` )
 set nymd    = `echo $adas_strt[1] | cut -c1-8`
 set hh     = `echo $adas_strt[2] | cut -c1-2`
 set yyyymmddhh = ${nymd}${hh} 
@@ -104,8 +104,8 @@ if ( $stage == 0 ) then
        /bin/rm -f $FVHOME/lana/forc
        /bin/ln -s $FVWORK $FVHOME/lana/forc
 
-         echo " ${MYNAME}: LDAS coupling: run ldas for central DAS coupling"
-         # go to LDHOME to submit ldas run
+       echo " ${MYNAME}: LDAS coupling: run ldas for central DAS coupling"
+# go to LDHOME to submit ldas run
       cd $LDHOME/run
       echo "ldas_home_dir: ", $LDHOME
       set lcapdat = `cat cap_restart | cut -c1-8`
@@ -113,36 +113,39 @@ if ( $stage == 0 ) then
       echo "ldas_6h_window starting at: ", $lcapdat, $lcaptim
       echo "adas_anal_window starting at: ", $adas_strt[1], $adas_strt[2]
 
-      # submit job and capture job ID 
-       set jobldas = "$LDHOME/run/lenkf.j"
-       set jobIDlong = `$PBS_BIN/sbatch $jobldas`
-       set jobID = `echo $jobIDlong  |awk -F'[ ]' '{print $4}'`
-       setenv ldasJobIDs  $jobID
-       echo $ldasJobIDs ": LDAS coupling lenkf jobID for central das "
+# submit job and capture job ID 
+      set jobldas = "$LDHOME/run/lenkf.j"
+      set jobIDlong = `sbatch $jobldas`
+      set jobID = `echo $jobIDlong  |awk -F'[ ]' '{print $4}'`
+      echo $jobID > $FVWORK/ldasJobIDs.txt
+      ls -l $FVWORK/ldasJobIDs.txt
+      echo $jobID ": LDAS jobID for central das in ldasJobIDs.txt"
 
 ## back to fvwork 
-       cd $FVWORK
+      cd $FVWORK
 
 ##stage incr 
-    else 
-        cd $FVWORK
-        echo " ${MYNAME}: LDAS coupling: stage/link LdasIncr for AGCM corrector "
-               if ($?ldasJobIDs) then
-                    $FVROOT/bin/jobIDfilter -w $ldasJobIDs
-                    unsetenv ldasJobIDs
-                endif
+else 
+      cd $FVWORK
+      echo " ${MYNAME}: LDAS coupling: stage/link LdasIncr for AGCM corrector " 
+      set ldasJobIDs = `cat ldasJobIDs.txt`
+      echo " ldasJobIDs  :  ${ldasJobIDs} " 
+      $FVROOT/bin/jobIDfilter -w $ldasJobIDs
+      /bin/mv   $FVWORK/ldasJobIDs.txt  $FVWORK/ldasJobIDs.txt.${yyyymmddhh}
+      echo  " ${MYNAME}: job monitoring is done" 
 
-           set lenkf_status_file = ${FVWORK}/lenkf_job_completed.txt
-               rm -f $lenkf_status_file
 
-               cp $LDHOME/run/lenkf_job_completed.txt  $lenkf_status_file
+      set lenkf_status_file = ${FVWORK}/lenkf_job_completed.txt
+      /bin/rm -f $lenkf_status_file
 
-               set lenkf_status = `cat $lenkf_status_file`
-               echo $lenkf_status
-               echo  $lenkf_status ": lenkf_status"
-              if ($lenkf_status =~  SUCCEEDED )  then
-               echo "LDAS coupling Lenkf job SUCCEEDED, stageLdasIncr"
-              endif 
+      /bin/cp $LDHOME/run/lenkf_job_completed.txt  $lenkf_status_file
+
+      set lenkf_status = `cat $lenkf_status_file`
+      echo $lenkf_status
+      echo  $lenkf_status ": lenkf_status"
+      if ($lenkf_status =~  SUCCEEDED )  then
+          echo "LDAS coupling Lenkf job SUCCEEDED, stageLdasIncr"
+      endif 
 
 # current all member incr outputs in cat/ens_avg 
       set LINC_DIR = ${LDHOME}/output/*/cat/ens_avg/
@@ -151,17 +154,17 @@ if ( $stage == 0 ) then
       set ldas_int = 10800 
       set ldasDT  = `grep LANDASSIM_DT: ${LDHOME}/run/LDAS.rc | cut -d':' -f2` 
       if ( ${ldasDT} > 0 ) then
-      set ldas_int  = ${ldasDT} 
+         set ldas_int  = ${ldasDT} 
       endif 
 
 # LANDASSIM_T0 in hhmmss  (centered update for ladas )  
       set ldas_t0 = 013000
       set ldasT0 = `grep LANDASSIM_T0:  ${LDHOME}/run/LDAS.rc | cut -d':' -f2`
       if ( ${ldasT0} > 0 ) then
-       set ldas_t0 = ${ldasT0} 
+         set ldas_t0 = ${ldasT0} 
       endif
-     set t0hh = `echo ${ldas_t0} | cut -c1-2`
-     set t0mm = `echo ${ldas_t0} | cut -c3-4`
+      set t0hh = `echo ${ldas_t0} | cut -c1-2`
+      set t0mm = `echo ${ldas_t0} | cut -c3-4`
      @ cent_int = $t0hh * 3600 + $t0mm * 60 
       
       set  lincr_native_name = catch_progn_incr
@@ -180,27 +183,27 @@ if ( $stage == 0 ) then
          set dd_a=`echo $ldas_anlt[1]   | cut -c7-8`
          set tttt_a=`echo $ldas_anlt[2] | cut -c1-4`
 # default name for AGCM: ldas_inc.yyyymmdd_hhnn00 
-          if ( -e  ${LINC_DIR}/Y${yyyy_a}/M${mm_a}/*${lincr_native_name}.$ldas_anlt[1]_${tttt_a}z.nc4) then
+        if ( -e  ${LINC_DIR}/Y${yyyy_a}/M${mm_a}/*${lincr_native_name}.$ldas_anlt[1]_${tttt_a}z.nc4) then
 
-              /bin/cp  ${LINC_DIR}/Y${yyyy_a}/M${mm_a}/*.${lincr_native_name}.$ldas_anlt[1]_${tttt_a}z.nc4\
+          /bin/cp  ${LINC_DIR}/Y${yyyy_a}/M${mm_a}/*.${lincr_native_name}.$ldas_anlt[1]_${tttt_a}z.nc4\
         ${FVWORK}/ldas_inc.$ldas_anlt[1]_${tttt_a}00
 
-      /bin/ln -s  ${LINC_DIR}/Y${yyyy_a}/M${mm_a}/*${lincr_native_name}.$ldas_anlt[1]_${tttt_a}z.nc4\
+         /bin/ln -s  ${LINC_DIR}/Y${yyyy_a}/M${mm_a}/*${lincr_native_name}.$ldas_anlt[1]_${tttt_a}z.nc4\
         ${FVHOME}/lana/ldas_inc.$ldas_anlt[1]_${tttt_a}00 
-              else 
-       echo " ${MYNAME}: WARNING: ldas incr file not found, no ldasIncr for this cycle"
-       exit 1
-             endif
+       else 
+          echo " ${MYNAME}: WARNING: ldas incr file not found, no ldasIncr for this cycle"
+          exit 1
+       endif
       @ secs = $secs + $ldas_int
-   end 
+     end 
 
 # normal return  
-touch $FVWORK/.DONE_${MYNAME}.${yyyymmddhh}
-echo " ${MYNAME}: Complete "
-      exit 0  
+     touch $FVWORK/.DONE_${MYNAME}.${yyyymmddhh}
+     echo " ${MYNAME}: Complete "
+     exit 0  
 
-   endif #end stage=1
+endif #end stage=1
 
-    cd ${FVWORK} 
+cd ${FVWORK} 
 
 
