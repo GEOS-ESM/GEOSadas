@@ -266,7 +266,11 @@ sub ed_g5agcm_rc {
 
     # comment unused catch or catchCN restart
     #----------------------------------------
-    if ($lsmodel_flag == 1) { $comment{"CATCHCN_INTERNAL"} = 1 }
+    if ($lsmodel_flag == 1) { 
+        $comment{"CATCHCN_INTERNAL"} = 1;
+        $comment{"CATCHCNCLM40_INTERNAL"} = 1;
+        $comment{"CATCHCNCLM45_INTERNAL"} = 1;
+    }
     if ($lsmodel_flag == 2) { $comment{"CATCH_INTERNAL"} = 1 }
 
     # comment these line when GOCART tracers turned on
