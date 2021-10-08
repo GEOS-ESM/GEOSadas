@@ -1897,7 +1897,6 @@ exit 1
        /bin/cp $FVHOME/recycle/$EXPID.ana_radstat_rst.*.tar radstat
      endif
 
-
      # GAAS restart files
      #-------------------
      if ( ! $DO4DVAR ) then
@@ -5683,116 +5682,117 @@ endif
               /bin/cp $EXPID.ana_radstat_rst.$rtag.tar $RSTHOLD/ &
             endif
 
-        # hold lfo files for the next segment of ldas coupling
-        #----------------------------------------------------------
-           if  ( $LDAS_ANA ) then
-           mkdir -p       $FVHOME/recycle/holdforc
-          /bin/cp  *2d_lfo*nc4  $FVHOME/recycle/holdforc/.
-           endif
-
-        # local copy to be moved by pesto, 2nd copy to be dealt w/ by recycle
-        #--------------------------------------------------------------------
-        if ( -e biasinp.$RSTSUFFIX ) then
-            /bin/mv biasinp.$RSTSUFFIX $EXPID.biasinp.$rtag.$RSTSUFFIX
-            /bin/cp $EXPID.biasinp.$rtag.$RSTSUFFIX $EXPID.biasinp_rst.$rtag.$RSTSUFFIX
-            /bin/cp $EXPID.biasinp_rst.$rtag.$RSTSUFFIX $RSTHOLD/ &
-        endif
-
-        # local copy to be moved by pesto, 2nd copy to be dealt w/ by recycle
-        #--------------------------------------------------------------------
-        if ( -e biasinp.ctl ) then
-            /bin/mv biasinp.ctl $EXPID.biasinp.$rtag.ctl
-            /bin/cp $EXPID.biasinp.$rtag.ctl $EXPID.biasinp_rst.$rtag.ctl
-            /bin/cp $EXPID.biasinp_rst.$rtag.ctl $RSTHOLD/ &
-        endif
-
-        # local copy to be moved by pesto, 2nd copy to be dealt w/ by recycle
-        #--------------------------------------------------------------------
-        if ( $DO4DVAR ) then                                        # initial traj needed for 4dvar
-           if ( -e $EXPID.traj_lcv_rst.$rtag4.$NCSUFFIX ) then
-               /bin/cp $EXPID.traj_lcv_rst.$rtag4.$NCSUFFIX $RSTHOLD/$EXPID.traj_lcv_rst.$rtag4.$NCSUFFIX &
-           else
-              if ( -e $EXPID.traj.lcv.$rtag4.$NCSUFFIX ) then
-                  /bin/cp $EXPID.traj.lcv.$rtag4.$NCSUFFIX $EXPID.traj_lcv_rst.$rtag4.$NCSUFFIX &
-                  /bin/cp $EXPID.traj.lcv.$rtag4.$NCSUFFIX $RSTHOLD/$EXPID.traj_lcv_rst.$rtag4.$NCSUFFIX &
-              endif
-           endif
-#          if ( -e $EXPID.ptrj.prs.$rtag4.$NCSUFFIX ) then
-#              /bin/cp $EXPID.ptrj.prs.$rtag4.$NCSUFFIX $EXPID.ptrj_prs_rst.$rtag4.$NCSUFFIX &
-#              /bin/cp $EXPID.ptrj.prs.$rtag4.$NCSUFFIX $RSTHOLD/$EXPID.ptrj_prs_rst.$rtag4.$NCSUFFIX &
-#          endif
-        endif
-
-
-        set GDA_list  = `ls *GDA.all.*` 
-        if ( ! $status ) then
-             set GDA_rst = `echo $GDA_list[$#GDA_list] | sed -e 's/\.all\./.rst./'`
-             /bin/cp $GDA_list[$#GDA_list] ./${GDA_rst}
-             if ( $?trksufx ) then
-                  set tstsufx = `echo $GDA_rst | cut -d. -f5,6`
-                  if ( "$tstsufx" == "$trksufx" ) /bin/rm -f $GDA_rst
-             endif
-             if ( -e $GDA_rst ) /bin/cp $GDA_rst $RSTHOLD/${GDA_rst}
-        endif
-
-        if ( $DO4DVAR ) then
+            # hold lfo files for the next segment of ldas coupling
+            #----------------------------------------------------------
+            if ( $LDAS_ANA ) then
+               mkdir -p              $FVHOME/recycle/holdforc
+               /bin/cp  *2d_lfo*nc4  $FVHOME/recycle/holdforc/
+            endif
 
             # local copy to be moved by pesto, 2nd copy to be dealt w/ by recycle
             #--------------------------------------------------------------------
-            /bin/cp $EXPID.bkg.eta.$rtag.$NCSUFFIX $EXPID.bkg_eta_rst.$rtag.$NCSUFFIX &
-            /bin/cp $EXPID.bkg.eta.$rtag.$NCSUFFIX $RSTHOLD/$EXPID.bkg_eta_rst.$rtag.$NCSUFFIX &
+            if ( -e biasinp.$RSTSUFFIX ) then
+                /bin/mv biasinp.$RSTSUFFIX $EXPID.biasinp.$rtag.$RSTSUFFIX
+                /bin/cp $EXPID.biasinp.$rtag.$RSTSUFFIX $EXPID.biasinp_rst.$rtag.$RSTSUFFIX
+                /bin/cp $EXPID.biasinp_rst.$rtag.$RSTSUFFIX $RSTHOLD/ &
+            endif
 
-            /bin/cp $EXPID.cbkg.eta.$rtag.$NCSUFFIX $EXPID.cbkg_eta_rst.$rtag.$NCSUFFIX &
-            /bin/cp $EXPID.cbkg.eta.$rtag.$NCSUFFIX $RSTHOLD/$EXPID.cbkg_eta_rst.$rtag.$NCSUFFIX &
+            # local copy to be moved by pesto, 2nd copy to be dealt w/ by recycle
+            #--------------------------------------------------------------------
+            if ( -e biasinp.ctl ) then
+                /bin/mv biasinp.ctl $EXPID.biasinp.$rtag.ctl
+                /bin/cp $EXPID.biasinp.$rtag.ctl $EXPID.biasinp_rst.$rtag.ctl
+                /bin/cp $EXPID.biasinp_rst.$rtag.ctl $RSTHOLD/ &
+            endif
+    
+            # local copy to be moved by pesto, 2nd copy to be dealt w/ by recycle
+            #--------------------------------------------------------------------
+            if ( $DO4DVAR ) then                                        # initial traj needed for 4dvar
+               if ( -e $EXPID.traj_lcv_rst.$rtag4.$NCSUFFIX ) then
+                   /bin/cp $EXPID.traj_lcv_rst.$rtag4.$NCSUFFIX $RSTHOLD/$EXPID.traj_lcv_rst.$rtag4.$NCSUFFIX &
+               else
+                  if ( -e $EXPID.traj.lcv.$rtag4.$NCSUFFIX ) then
+                      /bin/cp $EXPID.traj.lcv.$rtag4.$NCSUFFIX $EXPID.traj_lcv_rst.$rtag4.$NCSUFFIX &
+                      /bin/cp $EXPID.traj.lcv.$rtag4.$NCSUFFIX $RSTHOLD/$EXPID.traj_lcv_rst.$rtag4.$NCSUFFIX &
+                  endif
+               endif
+#              if ( -e $EXPID.ptrj.prs.$rtag4.$NCSUFFIX ) then
+#                  /bin/cp $EXPID.ptrj.prs.$rtag4.$NCSUFFIX $EXPID.ptrj_prs_rst.$rtag4.$NCSUFFIX &
+#                  /bin/cp $EXPID.ptrj.prs.$rtag4.$NCSUFFIX $RSTHOLD/$EXPID.ptrj_prs_rst.$rtag4.$NCSUFFIX &
+#              endif
+            endif
 
-            /bin/cp $EXPID.abkg.eta.$rtag.$NCSUFFIX $EXPID.abkg_eta_rst.$rtag.$NCSUFFIX &
-            /bin/cp $EXPID.abkg.eta.$rtag.$NCSUFFIX $RSTHOLD/$EXPID.abkg_eta_rst.$rtag.$NCSUFFIX &
 
-            /bin/cp $EXPID.bkg.sfc.$rtag.$NCSUFFIX $EXPID.bkg_sfc_rst.$rtag.$NCSUFFIX &
-            /bin/cp $EXPID.bkg.sfc.$rtag.$NCSUFFIX $RSTHOLD/$EXPID.bkg_sfc_rst.$rtag.$NCSUFFIX &
+            set GDA_list  = `ls *GDA.all.*` 
+            if ( ! $status ) then
+                 set GDA_rst = `echo $GDA_list[$#GDA_list] | sed -e 's/\.all\./.rst./'`
+                 /bin/cp $GDA_list[$#GDA_list] ./${GDA_rst}
+                 if ( $?trksufx ) then
+                      set tstsufx = `echo $GDA_rst | cut -d. -f5,6`
+                      if ( "$tstsufx" == "$trksufx" ) /bin/rm -f $GDA_rst
+                 endif
+                 if ( -e $GDA_rst ) /bin/cp $GDA_rst $RSTHOLD/${GDA_rst}
+            endif
 
-        else
+            if ( $DO4DVAR ) then
+    
+                # local copy to be moved by pesto, 2nd copy to be dealt w/ by recycle
+                #--------------------------------------------------------------------
+                /bin/cp $EXPID.bkg.eta.$rtag.$NCSUFFIX $EXPID.bkg_eta_rst.$rtag.$NCSUFFIX &
+                /bin/cp $EXPID.bkg.eta.$rtag.$NCSUFFIX $RSTHOLD/$EXPID.bkg_eta_rst.$rtag.$NCSUFFIX &
+    
+                /bin/cp $EXPID.cbkg.eta.$rtag.$NCSUFFIX $EXPID.cbkg_eta_rst.$rtag.$NCSUFFIX &
+                /bin/cp $EXPID.cbkg.eta.$rtag.$NCSUFFIX $RSTHOLD/$EXPID.cbkg_eta_rst.$rtag.$NCSUFFIX &
 
-        # local copy to be moved by pesto, 2nd copy to be dealt w/ by recycle
-        #--------------------------------------------------------------------
-        @ n = 1
-        while ( $n <= $nbkg )
+                /bin/cp $EXPID.abkg.eta.$rtag.$NCSUFFIX $EXPID.abkg_eta_rst.$rtag.$NCSUFFIX &
+                /bin/cp $EXPID.abkg.eta.$rtag.$NCSUFFIX $RSTHOLD/$EXPID.abkg_eta_rst.$rtag.$NCSUFFIX &
 
-           if ( -e $bkgsfc_lst[$n] ) then
-               /bin/cp    $bkgsfc_lst[$n]              $bkgsfcrst_lst[$n]  &
-               /bin/cp    $bkgsfc_lst[$n]     $RSTHOLD/$bkgsfcrst_lst[$n]  &
-           else
-               /bin/cp    $sfcbkg_lst[$n]              $bkgsfcrst_lst[$n]  &
-               /bin/cp    $sfcbkg_lst[$n]     $RSTHOLD/$bkgsfcrst_lst[$n]  &
-           endif
+                /bin/cp $EXPID.bkg.sfc.$rtag.$NCSUFFIX $EXPID.bkg_sfc_rst.$rtag.$NCSUFFIX &
+                /bin/cp $EXPID.bkg.sfc.$rtag.$NCSUFFIX $RSTHOLD/$EXPID.bkg_sfc_rst.$rtag.$NCSUFFIX &
 
-           if ( -e $bkgupa_lst[$n] ) then
-               /bin/cp    $bkgupa_lst[$n]              $bkguparst_lst[$n]  &
-               /bin/cp    $bkgupa_lst[$n]     $RSTHOLD/$bkguparst_lst[$n]  &
-           else
-               /bin/cp    $upabkg_lst[$n]              $bkguparst_lst[$n]  &
-               /bin/cp    $upabkg_lst[$n]     $RSTHOLD/$bkguparst_lst[$n]  &
-           endif
+            else
 
-           if ( -e $cbkgetarst_lst[$n] ) then
-               /bin/cp    $cbkgetarst_lst[$n]          $cbkgetarst_lst[$n]  &
-               /bin/cp    $cbkgetarst_lst[$n] $RSTHOLD/$cbkgetarst_lst[$n]  &
-           else
-               /bin/cp    $cbkg_lst[$n]                $cbkgetarst_lst[$n]  &
-               /bin/cp    $cbkg_lst[$n]       $RSTHOLD/$cbkgetarst_lst[$n]  &
-           endif
+            # local copy to be moved by pesto, 2nd copy to be dealt w/ by recycle
+            #--------------------------------------------------------------------
+            @ n = 1
+            while ( $n <= $nbkg )
 
-           if ( -e $abkgetarst_lst[$n] ) then
-               /bin/cp    $abkgetarst_lst[$n]          $abkgetarst_lst[$n]  &
-               /bin/cp    $abkgetarst_lst[$n] $RSTHOLD/$abkgetarst_lst[$n]  &
-           else
-               /bin/cp    $abkg_lst[$n]                $abkgetarst_lst[$n]  &
-               /bin/cp    $abkg_lst[$n]       $RSTHOLD/$abkgetarst_lst[$n]  &
-           endif
-         @ n++
-        end
-        wait
-        endif # < DO4DVAR >
+               if ( -e $bkgsfc_lst[$n] ) then
+                   /bin/cp    $bkgsfc_lst[$n]              $bkgsfcrst_lst[$n]  &
+                   /bin/cp    $bkgsfc_lst[$n]     $RSTHOLD/$bkgsfcrst_lst[$n]  &
+               else
+                   /bin/cp    $sfcbkg_lst[$n]              $bkgsfcrst_lst[$n]  &
+                   /bin/cp    $sfcbkg_lst[$n]     $RSTHOLD/$bkgsfcrst_lst[$n]  &
+               endif
+
+               if ( -e $bkgupa_lst[$n] ) then
+                   /bin/cp    $bkgupa_lst[$n]              $bkguparst_lst[$n]  &
+                   /bin/cp    $bkgupa_lst[$n]     $RSTHOLD/$bkguparst_lst[$n]  &
+               else
+                   /bin/cp    $upabkg_lst[$n]              $bkguparst_lst[$n]  &
+                   /bin/cp    $upabkg_lst[$n]     $RSTHOLD/$bkguparst_lst[$n]  &
+               endif
+
+               if ( -e $cbkgetarst_lst[$n] ) then
+                   /bin/cp    $cbkgetarst_lst[$n]          $cbkgetarst_lst[$n]  &
+                   /bin/cp    $cbkgetarst_lst[$n] $RSTHOLD/$cbkgetarst_lst[$n]  &
+               else
+                   /bin/cp    $cbkg_lst[$n]                $cbkgetarst_lst[$n]  &
+                   /bin/cp    $cbkg_lst[$n]       $RSTHOLD/$cbkgetarst_lst[$n]  &
+               endif
+
+               if ( -e $abkgetarst_lst[$n] ) then
+                   /bin/cp    $abkgetarst_lst[$n]          $abkgetarst_lst[$n]  &
+                   /bin/cp    $abkgetarst_lst[$n] $RSTHOLD/$abkgetarst_lst[$n]  &
+               else
+                   /bin/cp    $abkg_lst[$n]                $abkgetarst_lst[$n]  &
+                   /bin/cp    $abkg_lst[$n]       $RSTHOLD/$abkgetarst_lst[$n]  &
+               endif
+               @ n++
+               end
+               wait
+
+            endif # < DO4DVAR >
 
         endif # < DOING_ANA >
 

@@ -418,23 +418,19 @@
 
          endif
 
-#--------------------------------------
+ 
 #        Run Land analysis
 #        -----------------
-
          if ( $LDAS_ANA ) then
-            echo "  LDAS coupling: fvpsas LDAS_ANA  run lenkf "
                                                        zeit_ci.x ldasRun
-         ldas_run.csh 0 060000 |& tee -a ldasrun.log
-         if( $status) then
-            echo "ldasRun failed"
-            exit(1)
-         endif
+            echo "  LDAS coupling: fvpsas LDAS_ANA  run lenkf "
+            ldas_run.csh 0 060000 |& tee -a ldasrun.log
+            if( $status) then
+               echo "ldasRun failed"
+               exit(1)
+            endif
                                                        zeit_co.x ldasRun
          endif
-
-##---------------------------------
-
 
 #        Run the analysis if not doing replay
 #        -----------------------------------
@@ -494,21 +490,18 @@
             endif
          endif
 
-#------------------------------------------------
-#  check ldas job status and stage ldas increments 
-#--------------------------------------------------
-       if ( ( $LDAS_ANA ) && ( $LDASFDBK ) ) then
-        echo " LDAS coupling: stage 1"
-                                                      zeit_ci.x ldasStage
-       ldas_run.csh 1 060000 |& tee -a ldasrun.log
-      if( $status) then
-            echo "ldas_run stage 1  failed"
-            exit(1)
-         endif
-                                                       zeit_co.x ldasStage
-  endif
-
-#-----------------------
+         # Check ldas job status and stage ldas increments 
+         # -----------------------------------------------
+         if ( ( $LDAS_ANA ) && ( $LDASFDBK ) ) then
+                                                       zeit_ci.x ldasStage
+            echo " LDAS coupling: stage 1"
+            ldas_run.csh 1 060000 |& tee -a ldasrun.log
+            if( $status) then
+               echo "ldas_run stage 1  failed"
+              exit(1)
+            endif
+                                                        zeit_co.x ldasStage
+        endif
 
 #        Convert analysis eta file into GCM restart
 #        ------------------------------------------

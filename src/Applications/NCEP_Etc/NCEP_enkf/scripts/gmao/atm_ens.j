@@ -145,7 +145,7 @@
 
   setenv GAAS_ANA 1
   setenv LDAS_ANA >>>LDAS_ANA<<<
-  setenv LDHOME4ens >>>LDHOME4ens<<<
+  setenv LDHOME4ENS >>>LDHOME4ENS<<<
 
 
 # Run-time mpi-related options
@@ -459,13 +459,13 @@
 # LDAS ens analysis at ens gcm resolution 
 # -----------------------------------
   if ( $LDAS_ANA ) then
-         zeit_ci.x eldas
-         atmos_eldas.csh $EXPID $anymd $anhms  060000 |& tee -a atm_ens.log
-         if( $status) then
-            echo "eldas failed"
-            exit(1)
-         endif
-         zeit_co.x eldas
+     zeit_ci.x eldas
+     atmos_eldas.csh $EXPID $anymd $anhms  060000 |& tee -a atm_ens.log
+     if( $status) then
+        echo "eldas failed"
+        exit(1)
+     endif
+     zeit_co.x eldas
   endif 
  
 # Run ensemble of atmospheric analyses
@@ -487,9 +487,9 @@
       set amm = `echo ${anymd} | cut -c5-6`
       set ahh = `echo ${anhms} | cut -c1-2`
       cd $FVWORK/updated_ens
-      if(! -e $HYBRIDGSI/${EXPID}.atmens_eana_brec.${nymdb}_${hhb}z.tar ) then
-         tar -cvf $HYBRIDGSI/${EXPID}.atmens_eana_brec.${nymdb}_${hhb}z.tar mem0*/*.ana.eta*nc4  
-      endif
+#     if(! -e $HYBRIDGSI/${EXPID}.atmens_eana_brec.${nymdb}_${hhb}z.tar ) then
+#        tar -cvf $HYBRIDGSI/${EXPID}.atmens_eana_brec.${nymdb}_${hhb}z.tar mem0*/*.ana.eta*nc4  
+#     endif
       cd -
   endif
 
@@ -520,9 +520,9 @@
       set amm = `echo ${anymd} | cut -c5-6`
       set ahh = `echo ${anhms} | cut -c1-2`
       cd $FVWORK/updated_ens
-      if(! -e $HYBRIDGSI/${EXPID}.atmens_eana_arec.${nymdb}_${hhb}z.tar ) then
-         tar -cvf $HYBRIDGSI/${EXPID}.atmens_eana_arec.${nymdb}_${hhb}z.tar mem0*/*.ana.eta*nc4 
-      endif
+#     if(! -e $HYBRIDGSI/${EXPID}.atmens_eana_arec.${nymdb}_${hhb}z.tar ) then
+#        tar -cvf $HYBRIDGSI/${EXPID}.atmens_eana_arec.${nymdb}_${hhb}z.tar mem0*/*.ana.eta*nc4 
+#     endif
       cd -
   endif
 
