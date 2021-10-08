@@ -64,6 +64,7 @@ if ( $#argv < 7 ) then
    echo " "
    echo "    ATMENS_GEPS_RECENTER 1: use to recenter ensemble analysis"
    echo "                         (default: 0)"
+   echo "    ATMENS_NCPUSTAR   - number of CPUS used for untar (default: 32) "
    echo "    NCSUFFIX          - suffix of hdf/netcdf files (default: nc4)"
    echo "    DATADIR           - location where original data resides"
    echo "                        (default: /archive/u/user)"
@@ -76,7 +77,7 @@ if ( $#argv < 7 ) then
    echo " AUTHOR"
    echo "   Ricardo Todling (Ricardo.Todling@nasa.gov), NASA/GMAO "
    echo "     Created modified: 01Apr2017   by: R. Todling"
-   echo "     Last modified: 16Apr2017      by: R. Todling"
+   echo "     Last modified: 06Oct2021      by: R. Todling"
    echo " \\end{verbatim} "
    echo " \\clearpage "
    exit(0)
@@ -92,6 +93,7 @@ if ( !($?GID)           ) setenv FAILED 1
 
 if ( !($?ATMENS_GEPS_RECENTER)     ) setenv ATMENS_GEPS_RECENTER     0  # 1= will recenter analysis
 if ( !($?ATMENS_GEPS_FROM_CENTRAL) ) setenv ATMENS_GEPS_FROM_CENTRAL 0  # 1= forecast from central rst/bkg
+if ( !($?ATMENS_NCPUSTAR) ) setenv ATMENS_NCPUSTAR 32
 
 if ( !($?SRCEXPID)      ) setenv SRCEXPID NULL
 if ( !($?DATADIR)       ) setenv DATADIR $ARCHIVE
@@ -277,7 +279,11 @@ if ( $ATMENS_GEPS_FROM_CENTRAL ) then
                  mkdir -p centralRST/Ori
                  mkdir -p centralRST/New
                  cd centralRST/Ori
-                 tar xvf ../../$SRCEXPID.rst.${nymd}_${hh}z.tar
+                 if ( $ATMENS_NCPUSTAR > 1 ) then
+                    parallel-untar.py  ../../$SRCEXPID.rst.${nymd}_${hh}z.tar $ATMENS_NCPUSTAR
+                 else 
+                    tar xvf ../../$SRCEXPID.rst.${nymd}_${hh}z.tar
+                 endif
                  cd ../
                  set inpdir = `echo $cwd`
                  set outdir = $inpdir/New
@@ -346,7 +352,11 @@ else # ATMENS_GEPS_FROM_CENTRAL=0 - forecast from ens member RSTs
                   echo "${MYNAME}: cannot find file type $ftype , aborting  ... "
                   exit (1)
                endif
-               $DRYRUN tar xvf $expid.atmens_${ftype}.${nymd}_${hh}z.tar 
+               if ( $ATMENS_NCPUSTAR > 1 ) then
+                  $DRYRUN parallel-untar.py  $expid.atmens_${ftype}.${nymd}_${hh}z.tar $ATMENS_NCPUSTAR
+               else 
+                  $DRYRUN tar xvf $expid.atmens_${ftype}.${nymd}_${hh}z.tar 
+               endif
                if ( $SRCEXPID != $expid && -d $SRCEXPID.atmens_${ftype}.${nymd}_${hh}z ) then
                   /bin/mv $SRCEXPID.atmens_${ftype}.${nymd}_${hh}z $expid.atmens_${ftype}.${nymd}_${hh}z
                endif
