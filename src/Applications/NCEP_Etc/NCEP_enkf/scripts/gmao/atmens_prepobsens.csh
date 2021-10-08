@@ -72,6 +72,7 @@ if ( $#argv < 7 ) then
    echo "    ATMENS_FSO_MFCST  - 0: use central forecast for error definition"
    echo "                        1: use ensemble mean forecast for error definition"
    echo "                        (default: 0)"
+   echo "    ATMENS_NCPUSTAR - number of CPUS used for untar (default: 32) "
    echo "    NCSUFFIX          - suffix of hdf/netcdf files (default: nc4)"
    echo "    DATADIR           - location where original data resides"
    echo "                        (default: /archive/u/user)"
@@ -84,7 +85,7 @@ if ( $#argv < 7 ) then
    echo " AUTHOR"
    echo "   Ricardo Todling (Ricardo.Todling@nasa.gov), NASA/GMAO "
    echo "     Created modified: 01Apr2017   by: R. Todling"
-   echo "     Last modified: 16Apr2017      by: R. Todling"
+   echo "     Last modified: 06Oct2021      by: R. Todling"
    echo " \\end{verbatim} "
    echo " \\clearpage "
    exit(0)
@@ -106,6 +107,7 @@ if ( !($?ATMENS_FSO_AVRFY)  ) setenv ATMENS_FSO_AVRFY 0  # 0= use central analys
                                                          # 1= use ensemble mean analysis
 if ( !($?ATMENS_FSO_MFCST)  ) setenv ATMENS_FSO_MFCST 0  # 0= use central fcsts
                                                          # 1= use mean of ens forecast
+if ( !($?ATMENS_NCPUSTAR)  ) setenv ATMENS_NCPUSTAR 32
 if ( !($?SRCEXPID)      ) setenv SRCEXPID NULL
 if ( !($?DATADIR)       ) setenv DATADIR $ARCHIVE
 if ( !($?NCSUFFIX)      ) setenv NCSUFFIX nc4 
@@ -342,7 +344,11 @@ foreach ftype ( )
          else
             if ( -e $expid.atmens_${ftype}.${nymd}_${hh}z.tar ) then
                echo "${MYNAME}: unfolding ensemble of backgrounds ($ftype)  ... "
-               $DRYRUN tar xvf $expid.atmens_${ftype}.${nymd}_${hh}z.tar 
+               if ( $ATMENS_NCPUSTAR > 1 ) then
+                  $DRYRUN parallel-untar.py $expid.atmens_${ftype}.${nymd}_${hh}z.tar $ATMENS_NCPUSTAR
+               else
+                  $DRYRUN tar xvf $expid.atmens_${ftype}.${nymd}_${hh}z.tar 
+               endif
             endif
          endif
       endif
