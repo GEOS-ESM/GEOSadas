@@ -2,8 +2,8 @@
 # x0046a.input
 #------------
 
-description: x0046a__GEOSadas-5_29_0__agrid_C360__ogrid_C
-tag: GEOSadas-5_29_0
+description: x0046a__GEOSadas-5_29_3__agrid_C360__ogrid_C
+tag: GEOSadas-5_29_3
 
 ---ENDHEADERS---
 
@@ -28,7 +28,7 @@ EXPID? [u000_C360]
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [x0046a__GEOSadas-5_29_0__agrid_C360__ogrid_C]
+EXPDSC? [x0046a__GEOSadas-5_29_3__agrid_C360__ogrid_C]
 > 
 
 Land Boundary Conditions? [Icarus_Updated]
@@ -158,6 +158,9 @@ Use aircraft bias correction (y/n)? [y]
 > 
 
 Use unified radiance bias correction (y/n)? [y]
+> 
+
+Land DAS Analysis (y/n)? [n]
 > 
 
 Frequency (in days) for writing restarts? [0]

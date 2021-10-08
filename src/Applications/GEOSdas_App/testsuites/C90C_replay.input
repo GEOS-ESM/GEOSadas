@@ -160,6 +160,9 @@ Use aircraft bias correction (y/n)? [y]
 Use unified radiance bias correction (y/n)? [y]
 > 
 
+Land DAS Analysis (y/n)? [n]
+> 
+
 Frequency (in days) for writing restarts? [0]
 > 
 
