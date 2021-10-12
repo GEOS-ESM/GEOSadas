@@ -5,13 +5,13 @@ GEOSadas:
 env:
   local: ./@env
   remote: ../ESMA_env.git
-  tag: v3.3.0
+  tag: v3.4.0
   develop: main
 
 cmake:
   local: ./@cmake
   remote: ../ESMA_cmake.git
-  tag: v3.5.2
+  tag: v3.5.8
   develop: develop
 
 ecbuild:
@@ -46,7 +46,7 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  tag: v1.4.4
+  branch: feature/rtodling/bkerror_check
   develop: develop
 
 GEOSgcm_GridComp:
