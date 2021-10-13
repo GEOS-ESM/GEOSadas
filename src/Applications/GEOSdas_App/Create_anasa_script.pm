@@ -75,8 +75,13 @@ sub anasa_script {
  $siteID = get_siteID();
  $nodeflg = "hasw";
  my $npn = `facter processorcount`; chomp($npn);
- if    ( $npn == 40 ) { $nodeflg = "sky"  }
- elsif ( $npn == 28 ) { $nodeflg = "hasw" }
+ if ( $npn == 40 ) {
+   $nodeflg = "sky";
+ } elsif ( $npn == 48 ) { 
+   $nodeflg = "cas";
+ } elsif ( $npn == 28 ) { 
+   $nodeflg = "hasw";
+ } 
 
  open(SCRIPT,">$fvhome/anasa/$jobsa.j") or
  die ">>> ERROR <<< cannot write $fvhome/anasa/$jobsa.j";

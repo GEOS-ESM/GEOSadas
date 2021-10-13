@@ -43,6 +43,9 @@ FVHOME? [/discover/nobackup/dao_it/C360L181_replay]
 The directory /discover/nobackup/projects/gmao/obsdev/dao_it/C360L181_replay already exists. Clean it? [y]
 > 
 
+Processing nodes (1:Westmere, 2:SandyBridge, 3:Ivy Bridge, 4:Haswell, 5:Skylake, 6:Cascase)? [4]
+> 
+
 Which case of variational analysis? [1]
 > 
 

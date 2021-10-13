@@ -3016,15 +3016,17 @@ EOF
 
 #=======================================================================
 sub get_nodeflg {
-  $ncpus_per_node = 24;
-  $nodeflg = "hasw";
   $proc = "";
   # reset default if applicable
-  my $npn = `facter processorcount`; chomp($npn);
-  if ( $npn == 40 ) {
-     $ncpus_per_node = 36;
-     $nodeflg = "sky";
-  }
+
+  $ans = query(" Processing nodes (1:Westmere, 2:SandyBridge, 3:Ivy Bridge, 4:Haswell, 5:Skylake, 6:Cascase)?", "4");
+
+  if    ($ans == 1) { $nodeflg = "wes";  $ncpus_per_node = 12 }
+  elsif ($ans == 2) { $nodeflg = "san";  $ncpus_per_node = 16 }
+  elsif ($ans == 3) { $nodeflg = "ivy";  $ncpus_per_node = 20 }
+  elsif ($ans == 4) { $nodeflg = "hasw"; $ncpus_per_node = 24 }
+  elsif ($ans == 5) { $nodeflg = "sky";  $ncpus_per_node = 36 }
+  elsif ($ans == 6) { $nodeflg = "cas";  $ncpus_per_node = 42 }
 
   # currently not applicable at nccs
   #---------------------------------
@@ -3033,14 +3035,6 @@ sub get_nodeflg {
   # request specific nodes on pfe?
   #-------------------------------
   if ($siteName eq "pfe") {
-      $ans = query("  Processing nodes (1:Westmere, 2:SandyBridge, 3:Ivy Bridge, 4:Haswell, 5:Sky)?", "1");
-      $ans = 1 unless $ans == 2 or $ans == 3 or $ans == 4 or $ans == 5;
-
-      if    ($ans == 1) { $nodeflg = "wes"; $ncpus_per_node = 12 }
-      elsif ($ans == 2) { $nodeflg = "san"; $ncpus_per_node = 16 }
-      elsif ($ans == 3) { $nodeflg = "ivy"; $ncpus_per_node = 20 }
-      elsif ($ans == 4) { $nodeflg = "has"; $ncpus_per_node = 24 }
-      elsif ($ans == 5) { $nodeflg = "sky"; $ncpus_per_node = 36 }
 
       $procflg = ":mpiprocs=$ncpus_per_node$proc";
   }
@@ -8874,7 +8868,7 @@ print  SCRIPT <<"EOF";
 # MPT env variables
 # -----------------
   if (\$?I_MPI_ROOT) then
-#    setenv I_MPI_USE_DYNAMIC_CONNECTIONS 0
+     setenv I_MPI_USE_DYNAMIC_CONNECTIONS 0
 #    setenv I_MPI_FABRICS shm:dapl
 #    setenv I_MPI_FABRICS_LIST "dapl,ofa"
 #    setenv I_MPI_FALLBACK "enable"

@@ -4283,6 +4283,8 @@ endif
   set npn = `facter processorcount`
   if ( $npn == 40 ) then
      set mynodes = "sky"
+  else if ( $npn == 48 ) then
+     set mynodes = "cas"
   else
      set mynodes = "hasw"
   endif
