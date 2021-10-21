@@ -137,7 +137,7 @@ setenv AENS_PERTS_DSTJOB 8
 setenv PERTS_QNAME $ATMENS_QNAME
 setenv PERTS_WALLCLOCK 1:00:00
 setenv PERTS_NCPUS 24 
-setenv PERTS_ENSTAT_MPIRUN "$ATMENS_MPIRUN -np $PERTS_NCPUS mp_stats.x"
+setenv PERTS_ENSTAT_MPIRUN "$ATMENS_MPIRUN -perhost 2 -np $PERTS_NCPUS mp_stats.x"
 
 # pert-energy calculation
 #------------------------

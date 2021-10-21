@@ -388,7 +388,7 @@ EOF
 # ---------------------------------
   set ANAX = `which GSIsa.x`
   set SACX = `which sac.x`
-  setenv MPIRUN_ANA    "esma_mpirun -np \$NCPUS \$ANAX"
+  setenv MPIRUN_ANA    "esma_mpirun -perhost 8 -np \$NCPUS \$ANAX"
 # setenv MPIRUN_SAC    "esma_mpirun -np \$NCPUS \$SACX"
   setenv MPIRUN_SAC    "esma_mpirun -np  1      \$SACX"
 
