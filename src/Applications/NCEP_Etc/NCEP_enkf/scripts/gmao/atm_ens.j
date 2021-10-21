@@ -60,7 +60,7 @@
   setenv CASE    $EXPID  # experiment ID (for LSM's sake)
   setenv FVROOT  `cat $FVHOME/.FVROOT`
   setenv FVRUN   $FVHOME/run
-  setenv BIGNAME `echo "$EXPID" | tr -s '[:lower:]' '[:upper:]'`
+  setenv BIGNAME `echo "$EXPID" | tr '[:lower:]' '[:upper:]'`
   if( (`uname -s` == "Linux") ) then
       if( `uname -m` != "ia64" ) then
          setenv FORT90L -Wl,-T
