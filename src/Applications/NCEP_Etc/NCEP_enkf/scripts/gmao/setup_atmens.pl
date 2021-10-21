@@ -221,7 +221,7 @@ sub init {
      $obsv_im =  288; $obsv_jm =  181; $obsv_lm = $nlevs; $obsv_jcap = 126;
   }
   if ( $agcm_im == 180 ){
-     $enkf_cpus = 224;
+     $enkf_cpus = 368;
      $agcm_nx =    7; $agcm_ny =   12;
      $miau_nx =    2; $miau_ny =   12;
      $obsv_nx =    4; $obsv_ny =   14;
@@ -233,7 +233,7 @@ sub init {
      $obsv_im =  576; $obsv_jm =  361; $obsv_lm = $nlevs; $obsv_jcap = 254;
   }
   if ( $agcm_im == 360 ){
-     $enkf_cpus = 224;
+     $enkf_cpus = 736;
      $agcm_nx =    3; $agcm_ny =   72;
      $miau_nx =    4; $miau_ny =   24;
      $obsv_nx =    4; $obsv_ny =   14;
