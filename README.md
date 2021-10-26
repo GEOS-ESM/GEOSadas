@@ -169,7 +169,7 @@ where `N` is the number of parallel processes. On discover head nodes, this shou
 
 ***NOTE***: Do *not* use `make -j install` with GEOSadas. The GEOSadas has a *lot* of parallelism at the beginning and the build system will gladly build as much as it can at the same time. However, the license server for the Intel compiler on discover will quickly lock up as each process accesses it, and will "break" the Intel compiler for all other users.
 
-### Run AGCM
+### Run GCM
 
 Once the model has built successfully, you will have an `install/` directory in your checkout. To run `gcm_setup` go to the `install/bin/` directory and run it there:
 ```
@@ -181,3 +181,13 @@ cd install/bin
 
 Documentation for Running the ADAS can be found in the GEOS ADAS Wiki page 
 https://github.com/GEOS-ESM/GEOSadas/wiki
+
+## Contributing
+
+Please check out our [contributing guidelines](CONTRIBUTING.md).
+
+## License
+
+All files are currently licensed under the Apache-2.0 license, see [`LICENSE`](LICENSE).
+
+Previously, the code was licensed under the [NASA Open Source Agreement, Version 1.3](LICENSE-NOSA).

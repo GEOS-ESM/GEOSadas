@@ -34,7 +34,7 @@
          real  :: pob             ! pressure
          real  :: tob             ! temperature
          real  :: omf             ! (obs - ges)
-         real  :: alrt            ! asceent/descent rate
+         real  :: alrt            ! ascent/descent rate
          character (len=8) :: sid ! aircraft ID
          integer :: ityp          ! obs type
          integer :: itqm          ! temperature quality mark
@@ -118,6 +118,10 @@
 !                             last update for bias.  Results same as before, just format change.
 !   28Jul2016 Sienkiewicz  Switch variance and count columns so they are in the same order
 !                             as in the NCEP bias files. (Probably will otherwise get confused.)
+!   12Jul2018 Sienkiewicz  Reduce the amount of printout for default case.  Move current 'verbose'
+!                          printout to 'verbose2' and add 'verbose' condition for printing tail
+!                          numbers added or merged into the bias coefficient file.
+!   23Aug2018 Sienkiewicz  Try adding option to start bias calculation with zero bias (& large error)
 !EOP
 !------------------------------------------------------------------------- 
 
@@ -172,13 +176,15 @@
       integer mindate            ! minimum date for aircraft bias to be active
       logical apply_bias         ! if .false. set bias (as read by GSI) to zero
                                  !   i.e. if prior to mindate
+      logical zerostart          ! initial value of bias is zero 
+      real    errstart           ! set initial error (use with zerostart) default 1.
+
+      logical lprint, verbose, verbose2
 
       namelist/acftbias/ plevlim, adsclm, dfact, nobsmin, bvarmin, nminb,
-     &   docount, mindate
-
+     &   docount, mindate, zerostart, errstart
+      namelist/io_opt/ verbose, verbose2
       integer ichk, jchk, kchk
-
-      logical lprint, verbose
 
       data lui /10/,lub/11/
 
@@ -187,6 +193,7 @@
       kdex = -1
       lprint = .false.
       verbose = .false.
+      verbose2 = .false.
       dfact = 0.99              ! set '1' to be compatible with original
                                 !  recommend value = 0.99
       nobsmin =  0              ! use -1 to match original, recommend > 0
@@ -195,7 +202,9 @@
       docount = .false.         ! default .false. , leave off count
                                 !    (avoid eventual integer overflow)
       mindate = 1991040100      ! default minimum date to apply Apr 01, 1991 00z
-      apply_bias= .true.       ! default is to apply the bias
+      apply_bias= .true.        ! default is to apply the bias
+      zerostart = .false.       ! default is start with first (bias,error) estimate
+      errstart = 1.0
 
       zero = 0.0
       izero = 0
@@ -212,6 +221,7 @@
       adsclm = 10.
 
       read(5,acftbias,end=1234)
+      read(5,io_opt,iostat=ios)
 
       go to 1235
 
@@ -381,7 +391,7 @@
 
          do while(ichk .le. nbflt)
             if (cdata(jdex(ichk))%sid .ge. bdata(jchk)%sid) exit
-            if (verbose) print *,cdata(jdex(ichk))%sid, ' lt ', 
+            if (verbose2) print *,cdata(jdex(ichk))%sid, ' lt ', 
      &           bdata(jchk)%sid, ' so no match in new file'
             kchk = kchk + 1
             kdex(kchk) = jdex(ichk)
@@ -393,7 +403,7 @@
             if (cdata(jdex(ichk))%sid .eq. bdata(jchk)%sid) then
 
 !     combine the entries
-               print *,'combining entries for ',bdata(jchk)%sid
+               if (verbose) print *,'combining entries for ',bdata(jchk)%sid
                i1 = jdex(ichk)
 !               enew =  bdata(jchk)%err*cdata(i1)%err/
 !     &              (bdata(jchk)%err+cdata(i1)%err)
@@ -425,19 +435,30 @@
 !     in the (after merge) pointer array 
 
                im1 = ichk - 1
-               if (im1 .gt. 0) then 
-                  print *,'insert ',bdata(jchk)%sid,' between ',
-     &               cdata(jdex(im1))%sid,' and ',cdata(jdex(ichk))%sid
-               else 
-                  print *,'insert ',bdata(jchk)%sid,' at start before ',
-     &                 cdata(jdex(ichk))%sid 
+               if (verbose) then
+                  if (im1 .gt. 0) then 
+                     print *,'insert ',bdata(jchk)%sid,' between ',
+     &                cdata(jdex(im1))%sid,' and ',cdata(jdex(ichk))%sid
+                  else 
+                     print *,'insert ',bdata(jchk)%sid,
+     &                    ' at start before ', cdata(jdex(ichk))%sid 
+                  end if
                end if
                kchk = kchk + 1
                nflt = nflt + 1
                kdex(kchk) = nflt
+               if (zerostart) then
+                  enew = 1./(1./bdata(jchk)%err + 1./errstart)
+                  bnew = (bdata(jchk)%bias/bdata(jchk)%err)*
+     &                 bdata(jchk)%err*errstart/
+     &                (errstart+bdata(jchk)%err)
+               else
+                  bnew = bdata(jchk)%bias
+                  enew = bdata(jchk)%err
+               end if
                cdata(nflt)%sid = bdata(jchk)%sid
-               cdata(nflt)%bias = bdata(jchk)%bias
-               cdata(nflt)%err = bdata(jchk)%err
+               cdata(nflt)%bias = bnew
+               cdata(nflt)%err = max(enew,bvarmin)
                cdata(nflt)%nval = bdata(jchk)%nval
                cdata(nflt)%kskip = 0
                cdata(nflt)%kount =  1
@@ -452,13 +473,23 @@
 !     add an entry at the end of the array and put the location
 !     in the (after merge) pointer array 
 
-            print *,'insert ',bdata(jchk)%sid,' at end of array'
+            if (verbose) print *,'insert ',bdata(jchk)%sid,
+     &           ' at end of array'
             kchk = kchk + 1
             nflt = nflt + 1
             kdex(kchk) = nflt
+            if (zerostart) then
+               enew = 1./(1./bdata(jchk)%err + 1./errstart)
+               bnew = (bdata(jchk)%bias/bdata(jchk)%err)*
+     &              bdata(jchk)%err*errstart/
+     &              (errstart+bdata(jchk)%err)
+            else
+               bnew = bdata(jchk)%bias
+               enew = bdata(jchk)%err
+            end if
             cdata(nflt)%sid = bdata(jchk)%sid
-            cdata(nflt)%bias = bdata(jchk)%bias
-            cdata(nflt)%err = bdata(jchk)%err
+            cdata(nflt)%bias = bnew
+            cdata(nflt)%err = max(enew,bvarmin)
             cdata(nflt)%nval = bdata(jchk)%nval
             cdata(nflt)%kskip = 0
             cdata(nflt)%kount = 1
@@ -474,7 +505,7 @@
 
       if (ichk .le. nbflt) then
          do i1 = ichk,nbflt
-            if (verbose) print *,cdata(jdex(i1))%sid, 
+            if (verbose2) print *,cdata(jdex(i1))%sid, 
      &           ' no match in new file'
             kchk = kchk + 1
             kdex(kchk) = jdex(i1)
@@ -547,7 +578,7 @@
      &              ddata(i2)%nval
             endif
 
-         else
+         else if (verbose) then
             print *,'Removing old bias correction for ',cdata(i2)%sid
          end if
       end do

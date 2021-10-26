@@ -1,19 +1,19 @@
-#------------------
+#---------------
 # C90C_replay.input
-#------------------
+#---------------
 
-description: C90C_replay__GEOSadas-5_27_1_p3__agrid_C90__ogrid_C
-tag: GEOSadas-5_27_1_p3
+description: C90C_replay__86f27c6__agrid_C90__ogrid_C
+tag: 86f27c6
 
 ---ENDHEADERS---
 
-Remote account for Intranet plots? [jstassi@train]
+Remote account for Intranet plots? [rtodling@train]
 > 
 
 Is this a MERRA2 experiment (y/n)? [n]
 > 
 
-AGCM Horizontal Resolution? [C180]
+AGCM Horizontal Resolution? [C48]
 > C90
 
 AGCM Vertical Resolution? [72]
@@ -28,14 +28,17 @@ EXPID? [u000_C90]
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [C90C_replay__GEOSadas-5_27_1_p3__agrid_C90__ogrid_C]
+EXPDSC? [C90C_replay__86f27c6__agrid_C90__ogrid_C]
 > 
 
 Land Boundary Conditions? [Icarus_Updated]
+> Icarus-NLv3
+
+Catchment Model choice? [1]
 > 
 
 FVHOME? [/discover/nobackup/jstassi/C90C_replay]
-> 
+>
 
 The directory /discover/nobackup/jstassi/C90C_replay does not exist. Create it now? [y]
 > 
@@ -70,8 +73,8 @@ MERRA2? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/MERRA2]
 AeroCom? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/AeroCom]
 > 
 
-FVICS? [/archive/u/jstassi/restarts/5C0/CF0090x6C]
-> $ARCHIVE/C90C_ens/rs/Y2018/M05/C90C_ens.rst.20180530_21z.tar
+FVICS? [/archive/u/jstassi/restarts/GEOSadas-5_24_0]
+> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/x0044_C90/rs/Y2020/M12/x0044_C90.rst.20201215_21z.tar
 
 Run model-adjoint-related applications (0=no,1=yes)? [0]
 > 1
@@ -91,8 +94,8 @@ Run analysis-sensitivity applications (0=no,1=yes)? [0]
 Verifying experiment id: [C90C_replay]
 > 
 
-Ending year-month-day? [20180601]
-> 
+Ending year-month-day? [20201217]
+> 20201220
 
 Length of FORECAST run segments (in hours)? [123]
 > 
@@ -101,13 +104,13 @@ Number of one-day DAS segments per PBS job? [1]
 > 
 
 Number of PEs in the zonal direction (NX)? [4]
-> 8
+> 6
 
 Number of PEs in the meridional direction (NY)? [24]
-> 
+> 36
 
 Job nickname? [g5das]
-> x40
+> 
 
 Run in split executable mode (1=yes;0=no)? [1]
 > 
@@ -125,25 +128,25 @@ GSI grid resolution? [NA]
 > 
 
 GEOS grid resolution instead? [c]
-> d
+> 
 
 Ensemble Hybrid (<0;3=3dHyb;4=Hyb4d)? [-1]
 > 4
 
 Number of procs in the zonal direction (NX)? [4]
-> 8
+> 6
 
 Number of procs in the meridional direction (NY)? [12]
-> 
+> 36
 
 Which main class of ObsSys (1: NRT; 2: MERRA; 3: MERRA-2)? [1]
 > 
 
 OBSERVING SYSTEM CLASSES?
-> ncep_ssmis_bufr,ncep_1bamua_bufr,ncep_prep_bufr,ncep_tcvitals,ncep_mhs_bufr,ncep_1bhrs4_bufr,ncep_goesfv_bufr,ncep_gpsro_bufr,ncep_mtiasi_bufr,ncep_atms_bufr,ncep_crisfsr_bufr,ncep_satwnd_bufr,ncep_sevcsr_bufr,ncep_avcsam_bufr,ncep_avcspm_bufr,ncep_aura_omi_bufr,disc_airs_bufr,disc_amsua_bufr,mls_nrt_nc,gmao_gmi_bufr
+> disc_airs_bufr,disc_amsua_bufr,gmao_amsr2_bufr,gmao_gmi_bufr,mls_nrt_nc,ncep_1bamua_bufr,ncep_1bhrs4_bufr,ncep_acftpfl_bufr,ncep_atms_bufr,ncep_aura_omi_bufr,ncep_avcsam_bufr,ncep_avcspm_bufr,ncep_crisfsr_bufr,ncep_goesfv_bufr,ncep_gpsro_bufr,ncep_mhs_bufr,ncep_mtiasi_bufr,ncep_prep_bufr,ncep_satwnd_bufr,ncep_sevcsr_bufr,ncep_ssmis_bufr,ncep_tcvitals,npp_ompsnm_bufr
 
 CHECKING OBSYSTEM? [2]
-> 
+> 1
 
 Which RADCOR option? [NONE]
 > 
@@ -151,7 +154,7 @@ Which RADCOR option? [NONE]
 Use sat channel-correlated observation errors (y/n)? [y]
 > 
 
-Use aircraft bias correction (y/n)? [n]
+Use aircraft bias correction (y/n)? [y]
 > 
 
 Use unified radiance bias correction (y/n)? [y]
@@ -188,7 +191,7 @@ Include GOCART tracers (CO,CO2,aerosols,etc) (y/n)? [y]
 > 
 
 Select GOCART Emission Files to use: [OPS]
-> OPS
+> 
 
 Do Aerosol Analysis (y/n)? [y]
 > 
@@ -208,14 +211,17 @@ Which template? [GCMPROG.rc.tmpl]
 Output Restart TYPE (bin or nc4) [nc4]
 > 
 
-Select group: [g0620]
+Select group: [g0613]
 > 
 
-Replayed Ensemble (from OPS) (y/n)?  [y]
+Replayed Ensemble (from OPS)?  [yes]
 > 
 
-Replay archive directory? [/home/dao_ops/f517_fp/run/.../archive]
-> /archive/u/jstassi/C90C_ens
+Replay exp name? [x0044]
+>
+
+Replay archive directory? [/discover/nobackup/projects/gmao/advda/rtodling/archive/x0044]
+> 
 
 Edit COLLECTIONS list in run/HISTORY.rc.tmpl (y/n)? [n]
 > 
