@@ -140,6 +140,7 @@
   if ( !($?LOCAL_ACQUIRE) )       setenv LOCAL_ACQUIRE 0
   if ( !($?MAP05RST) )            setenv MAP05RST      0
   if ( !($?MKRESRST ) )           setenv MKRESRST      0
+  if ( !($?MONTHLY_RADMON) )      setenv MONTHLY_RADMON 0
   if ( !($?MPIRUN_IDF) )          setenv MPIRUN_IDF    0
   if ( !($?MPIRUN_UPRST) )        setenv MPIRUN_UPRST  /dev/null
   if ( !($?NEWRADBC) )            setenv NEWRADBC      0
@@ -195,6 +196,7 @@
   set blendrs =    0 # by default do not blend ncep data with rs files
   set blendec =    0 # by default do not blend ncep data with rs files
   set ifcst   =    0 # by default do not initialize forecast, i.e., don't force first 6hr of fcst w/ IAU inc
+  set ihh0    =   -1 # by default do not initialize starting hour
 
   set dryrun = ""
 
@@ -265,6 +267,11 @@
      endif
      if ( "$token" == "-ifcst" ) then
           set ifcst = 1
+          shift
+     endif
+     if ( "$token" == "-ihh0" ) then
+          shift
+          set ihh0 = $1
           shift
      endif
      if ( "$token" == "-strict" ) then
@@ -721,7 +728,11 @@ exit 1
 # ---------------------------------------
   if ( $?ECHO___ ) set echo
 
-  set rundt = `grep "^HEARTBEAT_DT:" CAP.rc.tmpl | cut -d: -f2`
+  if ($ihh0 >= 0) then
+     set rundt = `grep "^HEARTBEAT_DT:" CAP_${ihh0}.rc.tmpl | cut -d: -f2`
+  else
+     set rundt = `grep "^HEARTBEAT_DT:" CAP.rc.tmpl | cut -d: -f2`
+  endif
   set vtxref= ( `tick $dtg  $rundt` )
   set asmdate = ( `tick $dtg 21600` )
 
@@ -1099,7 +1110,11 @@ exit 1
      if ( $ifcst ) then
         @ rundt  = $foffset_sec # offset time from synoptic hour
      else
-        set rundt = `grep "^HEARTBEAT_DT:" CAP.rc.tmpl | cut -d: -f2`
+        if ($ihh0 >= 0) then
+           set rundt = `grep "^HEARTBEAT_DT:" CAP_${ihh0}.rc.tmpl | cut -d: -f2`
+        else
+           set rundt = `grep "^HEARTBEAT_DT:" CAP.rc.tmpl | cut -d: -f2`
+        endif
      endif
      set initref = ( `tick $dtg  $rundt` )
 
@@ -1195,7 +1210,11 @@ exit 1
            set fcs_nhmsi = $nhmsb
      endif # < -e initadj.rc >
 
-     set rundt = `grep "^HEARTBEAT_DT:" CAP.rc.tmpl | cut -d: -f2`
+     if ( $ihh0 >= 0 ) then
+        set rundt = `grep "^HEARTBEAT_DT:" CAP_${ihh0}.rc.tmpl | cut -d: -f2`
+     else
+        set rundt = `grep "^HEARTBEAT_DT:" CAP.rc.tmpl | cut -d: -f2`
+     endif
      @ hh =  $rundt / 3600
      @ mn = ($rundt - (3600 * $hh)) / 60
      set hh = `echo $hh |awk '{printf "%02d", $1}'`
@@ -1650,6 +1669,12 @@ exit 1
 
      else
 
+        set agcmfn = `echorc.x -template $EXPID $initref[1] $initref[2] iau_tendency_filename`
+        if ( -e $agcmfn ) then
+           ln -sf $agcmfn agcm_import_rst
+           exit 0
+        endif
+
         set bkg06fn  = `echorc.x -template $EXPID $initref[1] $initref[2] upper-air_bkg06_filename`
         set bkgfile  = `echorc.x -template $EXPID $initref[1] $initref[2] upper-air_bkg_filename`
         if ( -e $bkg06fn ) then
@@ -1996,7 +2021,11 @@ exit 1
 
 # Get end of simulation date/time from namelist
 # ---------------------------------------------
- set mycap = CAP.rc.tmpl
+ if ($ihh0 >= 0) then
+    set mycap = CAP_${ihh0}.rc.tmpl
+ else
+    set mycap = CAP.rc.tmpl
+ endif
  set nymde     =   `grep -i end_date $mycap|awk '{printf "%d", $2}'`
  set nhmse     =   `grep -i end_date $mycap|awk '{printf "%d", $3}'`
  set nd_nh     = ( `grep -i JOB_SGMT $mycap|awk '{printf "%d %d",$2, $3}'` )
@@ -2044,7 +2073,7 @@ exit 1
         set fcst_beg = ( `rst_date d_rst` )
         set nymdt   = $fcst_beg[1]
         set nhmst   = $fcst_beg[2]
-        set nd_nh = ( `grep -i JOB_SGMT CAP.rc.tmpl | awk '{printf "%d %d",$2, $3}'` )
+        set nd_nh = ( `grep -i JOB_SGMT $mycap | awk '{printf "%d %d",$2, $3}'` )
         set nsecs = `(expr $nd_nh[1] \* 86400 \+ $nd_nh[2] \/ 10000 \* 3600)`
         set fcst_end = ( `tick $fcst_beg $nsecs` )
    endif
@@ -2059,7 +2088,11 @@ exit 1
 # ----------------------------------------------------------------
   if ( $?ECHO___ ) set echo
 
-  set $_ExpEndEpoch = (`grep -i end_date CAP.rc.tmpl|awk '{print $2 $3}'`)
+  if ($ihh0 >= 0 ) then
+     set $_ExpEndEpoch = (`grep -i end_date CAP_${ihh0}.rc.tmpl|awk '{print $2 $3}'`)
+  else
+     set $_ExpEndEpoch = (`grep -i end_date CAP.rc.tmpl|awk '{print $2 $3}'`)
+  endif
 
                                         # Last line of DetermineExpTimes_   
 
@@ -2073,7 +2106,11 @@ exit 1
   if ( $?ECHO___ ) set echo
 
   set GcmBegEpoch_ = ( `rst_date d_rst` )
-  set GcmLenEpoch_ = `grep "^JOB_SGMT:" CAP.rc.tmpl | cut -d: -f2` 
+  if ($ihh0 >= 0 ) then
+     set GcmLenEpoch_ = `grep "^JOB_SGMT:" CAP_${ihh0}.rc.tmpl | cut -d: -f2` 
+  else
+     set GcmLenEpoch_ = `grep "^JOB_SGMT:" CAP.rc.tmpl | cut -d: -f2` 
+  endif
 
 # Return results by reference
 # ---------------------------
@@ -2116,14 +2153,17 @@ exit 1
 
 
 # The following are calculated in DetermineGcmTimes but main script has 
-# this call placed too late for forecast applications to grad information!
+# this call placed too late for forecast applications to grab information!
 # -----------------------------------------------------------------------
   set FcsBegEpoch = ( $RstNow )
   if ( $ifcst || $DOIAU ) then
       set FcsBegEpoch = ( `tick $FcsBegEpoch  $foffset_sec` )  # tick clock 3hrs forward
   endif
-  set mycap = CAP.rc.tmpl
-  if ( -e CAP_${hh}.rc.tmpl ) set mycap = CAP_${hh}.rc.tmpl
+  if ( $ihh0 >= 0) then
+     set mycap = CAP_${ihh0}.rc.tmpl
+  else
+     set mycap = CAP.rc.tmpl
+  endif
   set FcsLenEpoch = ( `grep -i JOB_SGMT $mycap|awk '{printf "%d %d",$2, $3}'` )
   set FcsLenSecs  = `(expr $FcsLenEpoch[1] \* 86400 \+ $FcsLenEpoch[2] \/ 10000 \* 3600)`
   if ( $ifcst || $DOIAU ) then
@@ -3130,9 +3170,12 @@ endif
 
   if ( ! -d $FVHOME/run/jedi )  exit (0)
 
+  @ idummy = $VAROFFSET * 60
+  set ana_datetime = ( `tick $gcm_nymd0 $gcm_nhms0 $idummy` )
+
   set this_hh0 = `echo $gcm_nhms0 | cut -c1-2`
 
-  jedi_driver.csh $gcm_nymd0 $gcm_nhms0 |& tee -a $FVWORK/$EXPID.jedi_drv.log.${gcm_nymd0}_${this_hh0}z.txt
+  jedi_driver.csh $gcm_nymd0 $gcm_nhms0 $ana_datetime[1] $ana_datetime[2] |& tee -a $FVWORK/$EXPID.jedi_drv.log.${gcm_nymd0}_${this_hh0}z.txt
   if ( $status ) then
      echo "JEDI analysis failed, aborting ..."
      Call AbnormalExit_( 1 )
@@ -4429,13 +4472,19 @@ endif
 # ------------------------------
   if ( $?ECHO___ ) set echo
 
+   if ($ihh0 >= 0 ) then
+       set mycap = CAP_${ihh0}.rc.tmpl
+   else
+       set mycap = CAP.rc.tmpl
+   endif
+
 # Set parameters for GCM resume restarts
 # --------------------------------------
    if ( $MKRESRST ) then
         set fcst_beg = ( `rst_date d_rst` )
         set nymdt   = $fcst_beg[1]
         set nhmst   = $fcst_beg[2]
-        set nd_nh = ( `grep -i JOB_SGMT CAP.rc.tmpl | awk '{printf "%d %d",$2, $3}'` )
+        set nd_nh = ( `grep -i JOB_SGMT $mycap | awk '{printf "%d %d",$2, $3}'` )
         set nsecs = `(expr $nd_nh[1] \* 86400 \+ $nd_nh[2] \/ 10000 \* 3600)`
         set fcst_end = ( `tick $fcst_beg $nsecs` )
    endif
@@ -4445,8 +4494,6 @@ endif
 #       Which CAP to use?
 #       -----------------
         set hh = `echo $gcm_nhms0 | cut -c1-2`
-        set mycap = CAP.rc.tmpl
-        if ( -e CAP_${hh}.rc.tmpl ) set mycap = CAP_${hh}.rc.tmpl
 
         set fcst_beg = ( `rst_date d_rst` )
         set nymdt   = $fcst_beg[1]

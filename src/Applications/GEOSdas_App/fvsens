@@ -248,7 +248,7 @@ while ( $ic < $ntp1 )
  
 # Determine dimensions of required BCs and static ICs; do error checking
 # ----------------------------------------------------------------------
-  set tres  = `getgfiodim.x traj1/$begin_traj`
+  set tres  = `getgfiodim.x traj1/$begin_traj | grep -v GFIO_DimInquire`
 
   set resol = "none"
   if ( $tres[1] ==   72 && $tres[2] ==  46 ) set resol = "a"
@@ -257,10 +257,11 @@ while ( $ic < $ntp1 )
   if ( $tres[1] ==  576 && $tres[2] == 361 ) set resol = "d"
   if ( $tres[1] == 1152 && $tres[2] == 721 ) set resol = "e"
   if ( $resol == "none" ) then
-       if ( $tres[1] ==   48 && $tres[2] ==  288 ) set resol = "b"
-       if ( $tres[1] ==   90 && $tres[2] ==  540 ) set resol = "c"
-       if ( $tres[1] ==  180 && $tres[2] == 1080 ) set resol = "d"
-       if ( $tres[1] ==  360 && $tres[2] == 2160 ) set resol = "e"
+       if ( $tres[1] ==   48 ) set resol = "b"
+       if ( $tres[1] ==   90 ) set resol = "c"
+       if ( $tres[1] ==  180 ) set resol = "d"
+       if ( $tres[1] ==  360 ) set resol = "e"
+       if ( $tres[1] ==  720 ) set resol = "f"
        if ( $resol == "none" ) then
            echo "fvsens: unknown resolution "
            exit 1

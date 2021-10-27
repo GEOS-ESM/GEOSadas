@@ -86,7 +86,7 @@ sub init {
     # check for needed executables and rc
     #------------------------------------
     $edhist_pl = "$fvroot/bin/edhist.pl";
-    $echorc_x = "$fvroot/bin/echorc.x";
+    $echorc_x = "$fvroot/bin/echorc.pl";
     $gsidiags_rc = "$fvroot/etc/gsidiags.rc";
 
     die "Error. Cannot find $edhist_pl;"   unless -x $edhist_pl;
@@ -648,6 +648,8 @@ sub append_other_info {
 #
 \${PESTOROOT}%s/jedi/ana/Y%y4/M%m2/%s.jedi_ana.%y4%m2%d2_%h2z.tar
 \${PESTOROOT}%s/jedi/obs/Y%y4/M%m2/%s.jedi_hofx.%y4%m2%d2_%h2z.tar
+\${PESTOROOT}%s/jedi/obs/Y%y4/M%m2/%s.jedi_osen.%y4%m2%d2_%h2z.tar
+\${PESTOROOT}%s/jedi/obs/Y%y4/M%m2/%s.jedi_ioda.%y4%m2%d2_%h2z.tar
 #
 #               -------------------------
 #                    LSM FILES

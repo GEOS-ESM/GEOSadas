@@ -2,8 +2,8 @@
 # C90C.input
 #-----------
 
-description: C90C__GEOSadas-5_27_1_p3__agrid_C90__ogrid_CS
-tag: GEOSadas-5_27_1_p3
+description: C90C__GEOSadas-5_29_0__agrid_C90__ogrid_CS
+tag: GEOSadas-5_29_0
 
 ---ENDHEADERS---
 
@@ -28,11 +28,11 @@ EXPID? [u000_C90]
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [C90C__GEOSadas-5_27_1_p3__agrid_C90__ogrid_CS]
+EXPDSC? [C90C__GEOSadas-5_29_0__agrid_C90__ogrid_CS]
 > 
 
 Land Boundary Conditions? [Icarus_Updated]
-> 
+> Icarus-NLv3
 
 FVHOME? [/discover/nobackup/jstassi/C90C]
 > 
@@ -71,7 +71,7 @@ AeroCom? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/AeroCom]
 > 
 
 FVICS? [/archive/u/jstassi/restarts/GEOSadas-5_24_0]
-> /archive/u/jstassi/restarts/GEOSadas-5_24_0/C90fF2.rst.20170204_21z.tar
+> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/x0044_C90/rs/Y2020/M12/x0044_C90.rst.20201215_21z.tar
 
 Run model-adjoint-related applications (0=no,1=yes)? [0]
 > 
@@ -79,8 +79,8 @@ Run model-adjoint-related applications (0=no,1=yes)? [0]
 Run analysis-sensitivity applications (0=no,1=yes)? [0]
 > 
 
-Ending year-month-day? [20190119]
-> 20170210
+Ending year-month-day? [20201217]
+> 
 
 Length of FORECAST run segments (in hours)? [123]
 > 27
@@ -128,10 +128,10 @@ Which main class of ObsSys (1: NRT; 2: MERRA; 3: MERRA-2)? [1]
 > 1
 
 OBSERVING SYSTEM CLASSES?
-> disc_airs_bufr,disc_amsua_bufr,gmao_gmi_bufr,mls_nrt_nc,ncep_1bamua_bufr,ncep_1bhrs4_bufr,ncep_atms_bufr,ncep_aura_omi_bufr,ncep_avcsam_bufr,ncep_avcspm_bufr,ncep_crisfsr_bufr,ncep_goesfv_bufr,ncep_gpsro_bufr,ncep_mhs_bufr,ncep_mtiasi_bufr,ncep_prep_bufr,ncep_satwnd_bufr,ncep_sevcsr_bufr,ncep_ssmis_bufr,ncep_tcvitals
+> disc_airs_bufr,disc_amsua_bufr,mls_nrt_nc,ncep_1bamua_bufr,ncep_1bhrs4_bufr,ncep_acftpfl_bufr,ncep_atms_bufr,ncep_aura_omi_bufr,ncep_avcsam_bufr,ncep_avcspm_bufr,ncep_crisfsr_bufr,ncep_goesfv_bufr,ncep_gpsro_bufr,ncep_mhs_bufr,ncep_mtiasi_bufr,ncep_prep_bufr,ncep_satwnd_bufr,ncep_sevcsr_bufr,ncep_ssmis_bufr,ncep_tcvitals,npp_ompsnm_bufr
 
 CHECKING OBSYSTEM? [2]
-> 
+> 1
 
 Which RADCOR option? [NONE]
 > 
@@ -140,10 +140,10 @@ Use sat channel-correlated observation errors (y/n)? [y]
 > 
 
 Use aircraft bias correction (y/n)? [y]
-> n
+> 
 
 Use unified radiance bias correction (y/n)? [y]
-> n
+> 
 
 Frequency (in days) for writing restarts? [0]
 > 

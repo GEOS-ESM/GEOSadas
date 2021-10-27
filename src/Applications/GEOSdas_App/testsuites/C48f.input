@@ -2,8 +2,8 @@
 # C48f.input
 #-----------
 
-description: C48f__GEOSadas-5_27_1_p3__agrid_C48__ogrid_f34
-tag: GEOSadas-5_27_1_p3
+description: C48f__GEOSadas-5_29_0__agrid_C48__ogrid_f34
+tag: GEOSadas-5_29_0
 fvsetupflags: -sensdeg 1
 
 ---ENDHEADERS---
@@ -29,7 +29,7 @@ EXPID? [u000_C48]
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [C48f__GEOSadas-5_27_1_p3__agrid_C48__ogrid_f34]
+EXPDSC? [C48f__GEOSadas-5_29_0__agrid_C48__ogrid_f34]
 > 
 
 Land Boundary Conditions? [Icarus_Updated]
@@ -219,6 +219,9 @@ Output Restart TYPE (bin or nc4) [nc4]
 > 
 
 Select group: [g0613]
+> 
+
+Continue without missing resource files? [y]
 > 
 
 Edit COLLECTIONS list in run/HISTORY.rc.tmpl (y/n)? [n]
