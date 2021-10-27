@@ -325,7 +325,7 @@ NAME
           
 SYNOPSIS
 
-     gen_lnbcs.pl [...options...] aim ajm ogcm 
+     gen_lnbcs.pl [...options...] aim ajm ogcm lndbcs
           
 DESCRIPTION
 
@@ -340,9 +340,9 @@ DESCRIPTION
 
 OPTIONS
 
-     -o       speficy (full) filename for output, e.g., /.../nobackup/expid/e501/run/lnbcs
+     -o       name of script (default: lnbcs)
      -ssdir   location of sst boundary condition files
-     -fvhome  location of FVHOME
+     -fvhome  location of FVHOME (default: write script locally)
      -cubed   needed for cubed GCM
      -merra2  specify to set related BCs
      -h       prints this usage notice

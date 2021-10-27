@@ -70,7 +70,8 @@ my %list = (rs5_core     => \@rs5_core,
                  tr_internal_rst
                  tr_import_rst
                  turb_internal_rst
-                 turb_import_rst );
+                 turb_import_rst
+                 gwd_import_rst );
 
 # warn but do not abort if these restarts are not present
 @rs5_others = qw ( ana_satbang_rst
@@ -393,6 +394,15 @@ sub outputAGCM {
         print(LUN2 "# ------------------------------------------------\n");
         print(LUN2 "DEFAULT_CHECKPOINT_TYPE: ");
         print(LUN2 $subst{'@DFLT_CHECKPOINT_TYPE'} ."\n");
+
+        print(LUN2 "\n# Tracers definition \n");
+        print(LUN2 "# ---------------------\n");
+        print(LUN2 "TRI_increments:: \n");
+        print(LUN2 "PCHEM::OX \n");
+        print(LUN2 ":: \n");
+        print(LUN2 "MTRI_increments:: \n");
+        print(LUN2 "PCHEM::OX \n");
+        print(LUN2 ":: \n");
     }
     close(LUN1);
     close(LUN2);
