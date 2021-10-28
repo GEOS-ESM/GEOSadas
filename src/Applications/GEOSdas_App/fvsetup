@@ -884,11 +884,11 @@ sub defaults {
                      saverst.rc 
                      GEOS_SurfaceGridComp.rc );
 
-  @coupled_files = qw( BC_GridComp_ExtData-clim.rc
-                       CO_GridComp_ExtData-clim.rc
-                       NI_GridComp_ExtData-clim.rc
-                       OC_GridComp_ExtData-clim.rc
-                       SU_GridComp_ExtData-clim.rc );
+# @coupled_files = qw( BC_GridComp_ExtData-clim.rc
+#                      CO_GridComp_ExtData-clim.rc
+#                      NI_GridComp_ExtData-clim.rc
+#                      OC_GridComp_ExtData-clim.rc
+#                      SU_GridComp_ExtData-clim.rc );
 
   @chem_files = qw ( Aod-550nm_Registry.rc
                      Aod3d_1064nm.rc      
@@ -1105,7 +1105,7 @@ sub defaults {
   if ( $anassi  ) { @arc_files = @as_files };
   if ( $anagsi  ) { @arc_files = ( @ag_files, @lcv2prsrcs )};
   if ( $fvchem  ) { @crc_files = @chem_files };
-  if ( $coupled ) { @crc_files = ( @chem_files, @coupled_files ) };
+# if ( $coupled ) { @crc_files = ( @chem_files, @coupled_files ) };
 
   $monthly_plots = 0;
   if ( $siteID eq "nccs" ) { $monthly_means = 1; $monthly_tar = 1 }
@@ -2241,8 +2241,17 @@ sub ed_g5fvlay_rc {
 
   close(LUN);
   close(LUN2);
+
   cp($ft, $frun);
   unlink $ft;
+
+  if ( $coupled ) {
+     my @these = ("$fvroot/etc/MOM6/mom6_app/${ogcm_im}x${ogcm_jm}/input.nml","$frun");
+     my $target = "/tmp/${user}_$$.txt";
+     merge_txt(\@these,$target);
+     mv($target, $frun);
+  }
+
 
 }
 
@@ -9614,6 +9623,13 @@ sub init_agcm_rc {
        AGCM_label_subst("\@LSM_PARMS" , "#");
     }
 
+    #  Choice of Coupling
+    if ( $coupled ) { 
+       AGCM_label_subst("\@COUPLED" , " ");
+    } else {
+       AGCM_label_subst("\@COUPLED" , "#");
+    }
+
     # directory-specific values
     #--------------------------
     if (($varcase >= 4) and ($mydir eq "run")) {
@@ -10681,6 +10697,27 @@ sub save_inputs {
     write_saved_inputs($save_file);
 }
 
+
+#=======================================================================
+sub merge_txt {
+  my ($sources,$target) = @_;
+
+  open my $out, '>>', $target or die "Could not open '$target' for appending\n"; 
+  foreach my $file (@$sources) {
+    if (open my $in, '<', $file) {
+        while (my $line = <$in>) {
+            print $out $line;
+        }
+        close $in;
+    } else {
+        warn "Could not open '$file' for reading\n";
+    }
+  }
+  close $out;
+  print "created $file $out \n";
+
+  return $out;
+}
 #=======================================================================
 sub write_saved_inputs {
     my ($save_file, $dashes, $len, $prompt, $ans);
