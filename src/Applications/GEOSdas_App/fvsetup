@@ -385,6 +385,7 @@ my ($qsub);
 my ($acqloc);
 my ($fcstimes,$fcswait_hrs,$asnwait_hrs);
 my ($landbcs);
+my ($coupled, $ores);
 
 my ($sysfile, $nodeflg);
 my (@rmTilde);
@@ -2277,7 +2278,7 @@ sub ed_g5cap_rc {
      if($rcd =~ /\@DT/)       {$rcd=~ s/\@DT/$dt/g; }
      if($rcd =~ /\@OCEAN_IM/) {$rcd=~ s/\@OCEAN_IM/$ogcm_im/g; }
      if($rcd =~ /\@OCEAN_JM/) {$rcd=~ s/\@OCEAN_JM/$ogcm_jm/g; }
-     if($rcd =~ /\@OCEAN_LM/) {$rcd=~ s/\@OCEAN_LM/$ogcm_km/g; }
+     if($rcd =~ /\@OCEAN_LM/) {$rcd=~ s/\@OCEAN_LM/$ogcm_lm/g; }
      if($rcd =~ /\@BEG_DATE/) {$rcd=~ s/\@BEG_DATE/$beg_date/g; }
      if($rcd =~ /\@END_DATE/) {$rcd=~ s/\@END_DATE/$myedate/g; }
      if($rcd =~ /\@NUM_SGMT/) {$rcd=~ s/\@NUM_SGMT/9999/g; }   # this is a dummy varible for L.Takacs script only
@@ -2668,16 +2669,22 @@ sub get_fvbcs {
         $sstfile = "dataoceanfile_MERRA_sst_1971-current.$ogrid.LE";
         $icefile = "dataoceanfile_MERRA_fraci_1971-current.$ogrid.LE";
     }
-    if ($ogcm eq "e") {
+    elsif ($ogcm eq "e") {
         $fvrtbcs = "$fvbcs/g5gcm/bcs/SST/$ogrid";
         $sstfile = "dataoceanfile_MERRA2_SST.$ogrid.\$year.data";
         $icefile = "dataoceanfile_MERRA2_ICE.$ogrid.\$year.data";
-    }
-    if ($ogcm eq "f" || $ogcm eq "C") {
+    } 
+    elsif ($ogcm eq "f" || $ogcm eq "C") {
         $fvrtbcs = "$fvbcs/g5gcm/bcs/realtime/OSTIA_REYNOLDS";
         $sstfile = "dataoceanfile_OSTIA_REYNOLDS_SST.$ogrid.\$year.data";
         $icefile = "dataoceanfile_OSTIA_REYNOLDS_ICE.$ogrid.\$year.data";
     }
+    elsif ($ogcm eq "T") { # this will need revision (RT)
+        $fvrtbcs = "$fvbcs/g5gcm/bcs/realtime/OSTIA_REYNOLDS";
+        $sstfile = "dataoceanfile_OSTIA_REYNOLDS_SST.$ogrid.\$year.data";
+        $icefile = "dataoceanfile_OSTIA_REYNOLDS_ICE.$ogrid.\$year.data";
+    }
+    else { die "Abort: Not yet ready for this ocean-model resolution $ogcm_id\n"; }
 
     print <<"EOF";
 
@@ -3026,7 +3033,7 @@ sub get_nodeflg {
   elsif ($ans == 3) { $nodeflg = "ivy";  $ncpus_per_node = 20 }
   elsif ($ans == 4) { $nodeflg = "hasw"; $ncpus_per_node = 24 }
   elsif ($ans == 5) { $nodeflg = "sky";  $ncpus_per_node = 36 }
-  elsif ($ans == 6) { $nodeflg = "cas";  $ncpus_per_node = 42 }
+  elsif ($ans == 6) { $nodeflg = "cas";  $ncpus_per_node = 46 }
 
   # currently not applicable at nccs
   #---------------------------------
@@ -3598,7 +3605,7 @@ EOF
   $flags .= " -fvhome $fvhome" if $checkFLG;
   $params = " $aens_ana $expid $aens_im $aens_jm $aens_ocn $landbcs"; 
 
-  $cmd = "$fvbin/setup_atmens.pl $flags $params";
+  $cmd = "$fvbin/setup_atmens.pl -nodename $nodeflg $flags $params";
   print "$cmd\n";
   system($cmd);
 
@@ -3611,6 +3618,7 @@ EOF
   $replace{">>>FVHOME<<<"} = "$fvhome";
   $replace{">>>LDAS_ANA<<<"} = $ldas_ana;
   $replace{">>>LDHOME4ENS<<<"} = "$ldashome4ens";
+  $replace{">>>NCPUS_PER_NODE<<<"} = "$ncpus_per_node";
 
   $atm_ens_j = "$fvhome/run/atm_ens.j";
   $atm_ens_j_tilde = "${atm_ens_j}~";
@@ -4645,19 +4653,23 @@ G5GCM SETTINGS
                                          e : 1/4-deg (1440x720); e.g. MERRA-2
                                          f : 1/8-deg (2880x1440); e.g. OSTIA
                                          C : OSTIA cubed BCs consistent w/ Atmos res
+                                         T11 : Coupled (Tripolar-1-degree)
+                                         T12 : Coupled (Tripolar-1/2-degrees)
+                                         T14 : Coupled (Tripolar-1/4-degrees)
+                                         T18 : Coupled (Tripolar-1/8-degrees)
 
 EOF
 
-   $res  = query("  AGCM Horizontal Resolution?", $res);
-   $vres = query("  AGCM Vertical Resolution?", $vres);
-   $ores = query("  OGCM Resolution?", $ores);
+  $res  = query("  AGCM Horizontal Resolution?", $res);
+  $vres = query("  AGCM Vertical Resolution?", $vres);
+  $ores = query("  OGCM Resolution?", $ores);
 
-  $coupled = 0;
   $cubed  = 0;
   $nx_pert = 1;
   $ny_pert = 6 * $nx_pert;
   $use_shmem = 0;
   $ios_nds = 1;
+  $cldmicro = "1MOMENT";
   if ( "$res" eq "c" && "$vres" eq "55" ) {
        $anahgrd = substr($res,0,1);
        $nx = 4;
@@ -4672,11 +4684,7 @@ EOF
        $chemdt = $dt;
        $solardt = 3600;
        $irraddt = 3600;
-       if ( $coupled == 1 ) {
-          $ogcmrdt = $dt;
-       } else {
-          $ogcmrdt = $irraddt;
-       }
+       $ogcmrdt = $irraddt;
        $ana_im = $agcm_im;
        $ana_jm = $agcm_jm;
        $hist_im = $agcm_im;
@@ -4705,11 +4713,7 @@ EOF
        $chemdt = $dt;
        $solardt = 3600;
        $irraddt = 3600;
-       if ( $coupled == 1 ) {
-          $ogcmrdt = $dt;
-       } else {
-          $ogcmrdt = $irraddt;
-       }
+       $ogcmrdt = $irraddt;
        $ana_im = $agcm_im;
        $ana_jm = $agcm_jm;
        $hist_im = $agcm_im;
@@ -4738,11 +4742,7 @@ EOF
        $chemdt = $dt;
        $solardt = 3600;
        $irraddt = 3600;
-       if ( $coupled == 1 ) {
-          $ogcmrdt = $dt;
-       } else {
-          $ogcmrdt = $irraddt;
-       }
+       $ogcmrdt = $irraddt;
        $ana_im = $agcm_im;
        $ana_jm = $agcm_jm;
        $hist_im = $agcm_im;
@@ -4771,11 +4771,7 @@ EOF
        $chemdt = $dt;
        $solardt = 3600;
        $irraddt = 3600;
-       if ( $coupled == 1 ) {
-          $ogcmrdt = $dt;
-       } else {
-          $ogcmrdt = $irraddt;
-       }
+       $ogcmrdt = $irraddt;
        $ana_im = $agcm_im;
        $ana_jm = $agcm_jm;
        $hist_im = $agcm_im;
@@ -4802,11 +4798,7 @@ EOF
        $chemdt = $dt;
        $solardt = 3600;
        $irraddt = 3600;
-       if ( $coupled == 1 ) {
-          $ogcmrdt = $dt;
-       } else {
-          $ogcmrdt = $irraddt;
-       }
+       $ogcmrdt = $irraddt;
        $ana_im = $agcm_im;
        $ana_jm = $agcm_jm;
        $hist_im = $agcm_im;
@@ -4837,11 +4829,7 @@ EOF
        $chemdt = $dt;
        $solardt = 3600;
        $irraddt = 3600;
-       if ( $coupled == 1 ) {
-          $ogcmrdt = $dt;
-       } else {
-          $ogcmrdt = $irraddt;
-       }
+       $ogcmrdt = $irraddt;
        $ana_im = 576;
        $ana_jm = 361;
        $hist_im = $agcm_im;
@@ -4872,11 +4860,7 @@ EOF
        $chemdt = $dt;
        $solardt = 3600;
        $irraddt = 3600;
-       if ( $coupled == 1 ) {
-          $ogcmrdt = $dt;
-       } else {
-          $ogcmrdt = $irraddt;
-       }
+       $ogcmrdt = $irraddt;
        $ana_im = $agcm_im;
        $ana_jm = $agcm_jm;
        $hist_im = $agcm_im;
@@ -4906,11 +4890,7 @@ EOF
        $chemdt = $dt;
        $solardt = 3600;
        $irraddt = 3600;
-       if ( $coupled == 1 ) {
-          $ogcmrdt = $dt;
-       } else {
-          $ogcmrdt = $irraddt;
-       }
+       $ogcmrdt = $irraddt;
        $ana_im = 144; #$agcm_im * 4;
        $ana_jm = 91;  #$agcm_im * 2 + 1;
        $hist_im = $ana_im;
@@ -4942,11 +4922,7 @@ EOF
        $chemdt = $dt;
        $solardt = 3600;
        $irraddt = 3600;
-       if ( $coupled == 1 ) {
-          $ogcmrdt = $dt;
-       } else {
-          $ogcmrdt = $irraddt;
-       }
+       $ogcmrdt = $irraddt;
        $ana_im = 288; #$agcm_im * 4;
        $ana_jm = 181; #$agcm_im * 2 + 1;
        $hist_im = $ana_im;
@@ -4979,11 +4955,7 @@ EOF
        $chemdt = $dt;
        $solardt = 3600;
        $irraddt = 3600;
-       if ( $coupled == 1 ) {
-          $ogcmrdt = $dt;
-       } else {
-          $ogcmrdt = $irraddt;
-       }
+       $ogcmrdt = $irraddt;
        $ana_im = 576; #$agcm_im * 4;
        $ana_jm = 361; #$agcm_im * 2 + 1;
        $hist_im = $ana_im;
@@ -5016,11 +4988,7 @@ EOF
        $chemdt = $dt;
        $solardt = 3600;
        $irraddt = 3600;
-       if ( $coupled == 1 ) {
-          $ogcmrdt = $dt;
-       } else {
-          $ogcmrdt = $irraddt;
-       }
+       $ogcmrdt = $irraddt;
        $ana_im = 576;
        $ana_jm = 361;
        $hist_im = 1152;
@@ -5054,11 +5022,7 @@ EOF
        $chemdt = $dt;
        $solardt = 3600;
        $irraddt = 3600;
-       if ( $coupled == 1 ) {
-          $ogcmrdt = $dt;
-       } else {
-          $ogcmrdt = $irraddt;
-       }
+       $ogcmrdt = $irraddt;
        $ana_im = 1152; #$agcm_im * 4;
        $ana_jm = 721; #$agcm_im * 2 + 1;
        $hist_im = $ana_im;
@@ -5092,11 +5056,7 @@ EOF
        $chemdt = $dt;
        $solardt = 3600;
        $irraddt = 3600;
-       if ( $coupled == 1 ) {
-          $ogcmrdt = $dt;
-       } else {
-          $ogcmrdt = $irraddt;
-       }
+       $ogcmrdt = $irraddt;
        $ana_im = 1152; #$agcm_im * 4;
        $ana_jm = 721; #$agcm_im * 2 + 1;
        $hist_im = $ana_im;
@@ -5137,47 +5097,75 @@ EOF
 
   $hres = substr ( $res, 0, 1 );
 
-   # Resolution dependent settings
-   $mem = "4gb";
-   $mem = "8gb"  if ( $agcm_im == 288 && $agcm_jm == 181 );
-   $mem = "16gb" if ( $agcm_im == 576 && $agcm_jm == 361 );
+  # Resolution dependent settings
+  $mem = "4gb";
+  $mem = "8gb"  if ( $agcm_im == 288 && $agcm_jm == 181 );
+  $mem = "16gb" if ( $agcm_im == 576 && $agcm_jm == 361 );
 
-   $ogcm    = substr($ores, 0, 1);
-   $ogcm_km = substr($ores, 1, 2);
+  $ogcm    = substr($ores, 0, 1);
+  $ogcm_id = substr($ores, 1, 2);
 
-   if ($ogcm eq "c") {
-       $ogcm_grid_type = "LatLon";
-       $ogcm_im  = 360;
-       $ogcm_jm  = 180;
-       $ogcm_nf  = 1;
-       $cube_ogcm = "#";
-       $latlon_ogcm = "";
+  $coupled = 0;
+  if ($ogcm eq "c") {
+      $ogcm_grid_type = "LatLon";
+      $ogcm_im  = 360;
+      $ogcm_jm  = 180;
+      $ogcm_lm  = 34;
+      $ogcm_nf  = 1;
+      $cube_ogcm = "#";
+      $latlon_ogcm = "";
+  }
+  elsif ($ogcm eq "e") {
+      $ogcm_grid_type = "LatLon";
+      $ogcm_im  = 1440;
+      $ogcm_jm  =  720;
+      $ogcm_lm  = 34;
+      $ogcm_nf  = 1;
+      $cube_ogcm = "#";
+      $latlon_ogcm = "";
+  }
+  elsif ($ogcm eq "f") {
+      $ogcm_grid_type = "LatLon";
+      $ogcm_im  = 2880;
+      $ogcm_jm  = 1440;
+      $ogcm_lm  = 34;
+      $ogcm_nf  = 1;
+      $cube_ogcm = "#";
+      $latlon_ogcm = "";
+  }
+  elsif ($ogcm eq "C") {
+      $ogcm_grid_type = "Cubed-Sphere";
+      $ogcm_im  = $agcm_im;
+      $ogcm_jm  = $agcm_jm;
+      $ogcm_lm  = 34;
+      $ogcm_nf  = 6;
+      $cube_ogcm = "";
+      $latlon_ogcm = "#";
+  }
+  elsif ($ogcm eq "T") {
+      $coupled = 1; 
+      $ocean_name = "MOM6";
+      $ogcmrdt = $dt;
+      $ogcm_grid_type = "Tripolar";
+      if ( $ogcm_id eq "11" ) {
+        die "Abort: Not yet ready for this ocean-model resolution $ogcm_id\n";
+      }
+       elsif ( $ogcm_id eq "12" ) {
+        die "Abort: Not yet ready for this ocean-model resolution $ogcm_id\n";
+      }
+       elsif ( $ogcm_id eq "14" ) {
+        $ogcm_im  = 1440;
+        $ogcm_jm  = 1080;
+        $ogcm_lm  = 75;
+        $ogcm_nx  = 40;
+        $ogcm_ny  = 30;
+      }
+       elsif ( $ogcm_id eq "18" ) {
+        die "Abort: Not yet ready for this ocean-model resolution $ogcm_id\n";
+      }
+      else { die "Error: Unsupported ocean-model resolution $ogcm_id\n"; }
    }
-   elsif ($ogcm eq "e") {
-       $ogcm_grid_type = "LatLon";
-       $ogcm_im  = 1440;
-       $ogcm_jm  =  720;
-       $ogcm_nf  = 1;
-       $cube_ogcm = "#";
-       $latlon_ogcm = "";
-   }
-   elsif ($ogcm eq "f") {
-       $ogcm_grid_type = "LatLon";
-       $ogcm_im  = 2880;
-       $ogcm_jm  = 1440;
-       $ogcm_nf  = 1;
-       $cube_ogcm = "#";
-       $latlon_ogcm = "";
-   }
-   elsif ($ogcm eq "C") {
-       $ogcm_grid_type = "Cubed-Sphere";
-       $ogcm_im  = $agcm_im;
-       $ogcm_jm  = $agcm_jm;
-       $ogcm_nf  = 6;
-       $cube_ogcm = "";
-       $latlon_ogcm = "#";
-   }
-   else { die "Error: Cannot recognize Ocean Horizontal Resolution Code $ogcm;" }
+   else { die "Error: Cannot recognize Ocean Horizontal Resolution Code $ogcm \n;" }
    $ogrid = "${ogcm_im}x${ogcm_jm}";
 
    $agcm_im4 = sprintf "%04i", $agcm_im;
@@ -5186,10 +5174,7 @@ EOF
    $ogcm_jm4 = sprintf "%04i", $ogcm_jm;
 
 
-   if ($ogcm_km ne "34") {
-       $ogcm_km = 34;
-       print "  Hard-wiring Ocean Vertical Resolution to $ogcm_km\n"
-   }
+   print "  Ocean Vertical Resolution to $ogcm_lm\n";
 
    $is_fcst = 0;  # eventually SST will be persisted after initial read,
                   # but for now leave things as they are since results are
@@ -5213,7 +5198,11 @@ EOF
        $hist_jm       = $agcm_jm;
        $iauexec       = "makeiau.x";
        $AGCM_GRIDNAME = "PC${agcm_im}x${agcm_jm}-DC";
-       $OGCM_GRIDNAME = "PE${ogcm_im}x${ogcm_jm}-DE";
+       if ( $coupled ) {
+          $OGCM_GRIDNAME = "PE${ogcm_im}x${ogcm_jm}-TM";
+       } else {
+          $OGCM_GRIDNAME = "PE${ogcm_im}x${ogcm_jm}-DE";
+       }
    }
 
   return 0 ;
@@ -7414,9 +7403,9 @@ sub build_lnbcs {
   $mymerra2 = "";
   if ( $merra2 ) { $mymerra2 = "-merra2" };
   if ( $cubed ) {
-     $cmd = "$fvbin/gen_lnbcs.pl -fvhome $fvhome -o lnbcs $mymerra2 -cubed $agcm_im $agcm_jm $ogcm $landbcs";
+     $cmd = "$fvbin/gen_lnbcs.pl -fvhome $fvhome -o lnbcs $mymerra2 -cubed $agcm_im $agcm_jm $ores $landbcs";
   } else {
-     $cmd = "$fvbin/gen_lnbcs.pl -fvhome $fvhome -o lnbcs $mymerra2        $agcm_im $agcm_jm $ogcm $landbcs";
+     $cmd = "$fvbin/gen_lnbcs.pl -fvhome $fvhome -o lnbcs $mymerra2        $agcm_im $agcm_jm $ores $landbcs";
   }
   print "$cmd\n";
   system($cmd);
@@ -9489,6 +9478,7 @@ sub init_agcm_rc {
 
     $envvars{"fvhome"} = $fvhome;
     $envvars{"fvroot"} = $fvroot;
+    $envvars{"coupled"} = $coupled;
     set_AGCM_envvars(%envvars);
 
     $flags{"gocart_tracers"} = $gocart_tracers;
@@ -9558,19 +9548,25 @@ sub init_agcm_rc {
     AGCM_label_subst("\@NUM_READERS", $num_readers);
     AGCM_label_subst("\@NUM_WRITERS", 1); #_RT: for now, it seems not good to have it larger than 1 
 
+    AGCM_label_subst("\@OCEAN_NAME", $ocean_name);
     AGCM_label_subst("\@OGCM_IM", $ogcm_im);
     AGCM_label_subst("\@OGCM_JM", $ogcm_jm);
-    AGCM_label_subst("\@OGCM_LM", $ogcm_km);
+    AGCM_label_subst("\@OGCM_LM", $ogcm_lm);
     AGCM_label_subst("\@OGCM_NF", $ogcm_nf);
     AGCM_label_subst("\@OGCM_GRID_TYPE", $ogcm_grid_type);
     AGCM_label_subst("\@CUBE_OGCM", $cube_ogcm);
     AGCM_label_subst("\@LATLON_OGCM", $latlon_ogcm);
 
+    AGCM_label_subst("\@CLDMICRO", $cldmicro);
+
     AGCM_label_subst("\@DT", $dt);
     AGCM_label_subst("\@CHEM_DT",  $chemdt);
     AGCM_label_subst("\@SOLAR_DT", $solardt);
     AGCM_label_subst("\@IRRAD_DT", $irraddt);
+
     AGCM_label_subst("\@OCEAN_DT", $ogcmrdt);
+    AGCM_label_subst("\@OGCM_NX", $ogcm_nx);
+    AGCM_label_subst("\@OGCM_NY", $ogcm_ny);
 
     AGCM_label_subst("\@DASTUNING", $dastuning);
 

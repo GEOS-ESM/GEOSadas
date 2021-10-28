@@ -1,6 +1,8 @@
 # Env Vars for Atmospheric Analysis Ensemble Mambo-Jambo
 # ======================================================
 
+setenv ATMENS_NODENAME @NODENAME
+
 #setenv REGRID_QOS advda
 #setenv ATMENS_IGNORE_CHKPNT 1
 #setenv ENSARCH_FIELDS "eana,ebkg,stat,ecbkg,eoi0,edia,ebaer,eaaer,eprg,eniana"
@@ -104,6 +106,7 @@ setenv AENS_GCM_DSTJOB 4
 setenv AGCM_QNAME $ATMENS_QNAME
 setenv AGCM_WALLCLOCK 1:00:00
 setenv ENSGCM_NCPUS @AGCM_CPUS
+setenv ENSGCM_NCPUS_PER_NODE @AGCM_NCPUS_PER_NODE
 setenv MPIRUN_ENSGCM  "$ATMENS_MPIRUN -np $ENSGCM_NCPUS GEOSgcm.x"   # esma_mpirun does not work in this context
 setenv RSTSTAGE4AENS  $ATMENSLOC/RST                                 # TBD: location of mean-fcst restarts
 

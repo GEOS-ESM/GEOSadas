@@ -44,7 +44,7 @@ The directory /discover/nobackup/projects/gmao/dadev/rtodling/prePP does not exi
 > 
 
 Processing nodes (1:Westmere, 2:SandyBridge, 3:Ivy Bridge, 4:Haswell, 5:Skylake, 6:Cascase)? [4]
-> 
+> 5
 
 Which case of variational analysis? [1]
 > 
@@ -107,10 +107,10 @@ Number of one-day DAS segments per PBS job? [1]
 > 
 
 Number of PEs in the zonal direction (NX)? [28]
-> 12
+> 24
 
 Number of PEs in the meridional direction (NY)? [48]
-> 288
+> 144
 
 Job nickname? [g5das]
 > $expid

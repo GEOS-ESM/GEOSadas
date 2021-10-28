@@ -65,7 +65,7 @@ sub init {
    } else {              # required command line args
      $agcm_im     = $ARGV[0];
      $agcm_jm     = $ARGV[1];
-     $ogcm        = $ARGV[2];
+     $ogcmres     = $ARGV[2];
      $lndbcs      = $ARGV[3];
    }
 
@@ -92,6 +92,10 @@ if ( $opt_fvhome ) {
      $outfile = "$opt_fvhome/run/$outfile";
 }
 
+$ogcm    = substr($ogcmres, 0, 1);
+$ogcm_id = substr($ogcmres, 1, 2);
+
+$coupled = 0;
 if ($ogcm eq "c") {
     $ogcm_im  = 360;
     $ogcm_jm  = 180;
@@ -136,9 +140,26 @@ elsif ($ogcm eq "C") {  # Cubed-Ocean
     $sstfile = "dataoceanfile_OSTIA_REYNOLDS_SST.$ogrid.\$year.data";
     $icefile = "dataoceanfile_OSTIA_REYNOLDS_ICE.$ogrid.\$year.data";
 }
+elsif ($ogcm eq "T") {  # Coupled-Tripolar-Ocean
+    $coupled = 1;
+    if ($ogcm_id eq "14" ) {
+       $ogcm_im  = 1440;
+       $ogcm_jm  = 1080;
+       $ogcm_lm  = 75;
+    } else {
+      die "ERROR: Ocean resolution not supported, $ogcmres";
+    }
+    $ogrid    = "${ogcm_im}x${ogcm_jm}";
+    if ( $lndbcs eq "Icarus-NLv3" ) {
+       $BCSTAG = "$lndbcs/Icarus-NLv3_Ostia";
+    } else {
+       $BCSTAG = "$lndbcs/Icarus_Ostia";
+    }
+    $fvrtbcs = "g5gcm/bcs/realtime/OSTIA_REYNOLDS";
+    $sstfile = "dataoceanfile_OSTIA_REYNOLDS_SST.$ogrid.\$year.data";
+    $icefile = "dataoceanfile_OSTIA_REYNOLDS_ICE.$ogrid.\$year.data";
+}
 
-
-$coupled = 0;
 
 }
 #......................................................................
@@ -219,25 +240,44 @@ if ( $cubed ) {
   setenv CUBED    $cubed
   setenv G5GCMBCS \$FVHOME/fvInput/g5gcm/bcs
   setenv G5GRTBCS \$FVHOME/fvInput/$fvrtbcs
+# wired ocean bcs location for now
+  setenv OGCMBCS  /discover/nobackup/projects/gmao/ssd/aogcm/ocean_bcs
 
 # Possibly real-time boundary conditions
 # --------------------------------------
   if ( \$COUPLED ) then
 
-     if ( ! -e   \$G5GRTBCS/$ogrid/SEAWIFS_KPAR_mon_clim.$ogrid ) exit 1
-     /bin/ln -sf \$G5GRTBCS/$ogrid/SEAWIFS_KPAR_mon_clim.$ogrid   SEAWIFS_KPAR_mon_clim.data
+     if ( ! -e   \$OGCMBCS/MOM6/$ogrid/SEAWIFS_KPAR_mon_clim.$ogrid ) exit 1
+     /bin/ln -sf \$OGCMBCS/MOM6/$ogrid/SEAWIFS_KPAR_mon_clim.$ogrid   SEAWIFS_KPAR_mon_clim.data
 
-     if ( ! -e   \$G5GRTBCS/DC${agcm_im}xPC${agcm_jm}_TM${ogcm_im}xTM${ogcm_jm}-Pfafstetter.til ) exit 1
-     /bin/ln -sf \$G5GRTBCS/DC${agcm_im}xPC${agcm_jm}_TM${ogcm_im}${ogcm_jm}-Pfafstetter.til   tile.data
+     if ( ! -e   \$OGCMBCS/MOM6/${OGCM_GRIDNAME}_TM${ogcm_im}xTM${ogcm_jm}/${OGCM_GRIDNAME}_TM${ogcm_im}xTM${ogcm_jm}-Pfafstetter.til ) exit 1
+     /bin/ln -sf \$OGCMBCS/MOM6/${OGCM_GRIDNAME}_TM${ogcm_im}xTM${ogcm_jm}/${OGCM_GRIDNAME}_TM${ogcm_im}xTM${ogcm_jm}-Pfafstetter.til   tile.data
 
-     if ( ! -e   \$G5GRTBCS/DC${agcm_im}xPC${agcm_jm}_TM${ogcm_im}${ogcm_jm}-Pfafstetter.TRN ) exit 1
-     /bin/ln -sf \$G5GRTBCS/DC${agcm_im}xPC${agcm_jm}_TM${ogcm_im}${ogcm_jm}-Pfafstetter.TRN   runoff.bin
+     if ( ! -e   \$OGCMBCS/MOM6/${OGCM_GRIDNAME}_TM${ogcm_im}xTM${ogcm_jm}/${OGCM_GRIDNAME}_TM${ogcm_im}xTM${ogcm_jm}-Pfafstetter.TRN ) exit 1
+     /bin/ln -sf \$OGCMBCS/MOM6/${OGCM_GRIDNAME}_TM${ogcm_im}xTM${ogcm_jm}/${OGCM_GRIDNAME}_TM${ogcm_im}xTM${ogcm_jm}-Pfafstetter.TRN   runoff.bin
 
-     if ( ! -e   \$G5GRTBCS/$ogrid/tripolar_$ogrid.ascii ) exit 1
-     /bin/ln -sf \$G5GRTBCS/$ogrid/tripolar_$ogrid.ascii  .
+     if ( ! -e   \$OGCMBCS/MOM6/${ogcm_im}x${ogcm_jm}/MAPL_Tripolar.nc ) exit 1
+     /bin/ln -sf \$OGCMBCS/MOM6/${ogcm_im}x${ogcm_jm}/MAPL_Tripolar.nc   .
 
-     if ( ! -e   \$G5GRTBCS/$ogrid/vgrid50.ascii ) exit 1
-     /bin/ln -sf \$G5GRTBCS/$ogrid/vgrid50.ascii vgrid.ascii
+     if ( ! -e   \$OGCMBCS/MOM6/${ogcm_im}x${ogcm_jm}/vgrid${ogcm_lm}.ascii ) exit 1
+     /bin/ln -sf \$OGCMBCS/MOM6/${ogcm_im}x${ogcm_jm}/vgrid${ogcm_lm}.ascii   vgrid.ascii
+
+     if ( ! -e   \$OGCMBCS/MOM6/$ogrid/tripolar_$ogrid.ascii ) exit 1
+     /bin/ln -sf \$OGCMBCS/MOM6/$ogrid/tripolar_$ogrid.ascii  .
+
+     if ( ! -e   \$OGCMBCS/MOM6/$ogrid/vgrid50.ascii ) exit 1
+     /bin/ln -sf \$OGCMBCS/MOM6/$ogrid/vgrid50.ascii vgrid.ascii
+
+     if ( ! -e   \$OGCMBCS/MOM6/${ogcm_im}x${ogcm_jm}/cice/kmt_cice.bin ) exit 1
+     /bin/ln -sf \$OGCMBCS/MOM6/${ogcm_im}x${ogcm_jm}/cice/kmt_cice.bin .
+
+     if ( ! -e   \$OGCMBCS/MOM6/${ogcm_im}x${ogcm_jm}/cice/grid_cice.bin ) exit 1
+     /bin/ln -sf \$OGCMBCS/MOM6/${ogcm_im}x${ogcm_jm}/cice/grid_cice.bin .
+
+     # now comes the mess:
+     if ( -d INPUT ) /bin/rm -r INPUT
+     mkdir INPUT
+     /bin/cp \$OGCMBCS/MOM6/${ogcm_im}x${ogcm_jm}/INPUT/* INPUT
 
   else
 

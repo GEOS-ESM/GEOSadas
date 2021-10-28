@@ -42,6 +42,7 @@ my $scriptname = basename($0);
                "expdir=s",
                "fvhome=s",
                "nlevs=s",
+               "nodename=s",
                "lsmcm",
                "radbc",
                "vtxrlc",
@@ -129,6 +130,11 @@ sub init {
       $nlevs = $opt_nlevs;
    }
 
+   $nodename = "hasw";
+   if ( $opt_nodename ) {
+      $nodename = $opt_nodename;
+   }
+
    $dosppt = 1;
    if ( $opt_nosppt ) {
       $dosppt = 0;
@@ -206,14 +212,33 @@ sub init {
     $latlon_ogcm = "#";
   }
 
+  if ( $nodename eq "hasw" ) { $ncpus_per_node = 24; }
+  if ( $nodename eq "sky"  ) { $ncpus_per_node = 36; }
+  if ( $nodename eq "cas"  ) { $ncpus_per_node = 46; }
+  $agcm_ncpus_per_node = -1;
+
 # define layout depending on resolution
   $agcm_nx = 4; $agcm_ny = 12;
   if ( $agcm_im == 90 ){
-     $enkf_cpus = 192;
-     $agcm_nx =    4; $agcm_ny =   12;
-     $miau_nx =    2; $miau_ny =   12;
-     $obsv_nx =    4; $obsv_ny =    8;
-     $stat_nx =    2; $stat_ny =    2;
+     if ($nodename eq "hasw") {
+         $enkf_cpus = 192;
+         $agcm_nx =    4; $agcm_ny =   12;
+         $miau_nx =    2; $miau_ny =   12;
+         $obsv_nx =    4; $obsv_ny =    8;
+         $stat_nx =    2; $stat_ny =    2;
+     } elsif ($nodename eq "sky") {
+#        $agcm_ncpus_per_node = 36;
+         $enkf_cpus = 244;
+         $agcm_nx =    5; $agcm_ny =   24;
+         $miau_nx =    2; $miau_ny =   12;
+         $obsv_nx =    4; $obsv_ny =    8;
+         $stat_nx =    2; $stat_ny =    2;
+     } elsif ($nodename eq "cas") {
+         die "Sorry this node/resolution not set yet, aborting \n";
+#        $agcm_ncpus_per_node = 46;
+     } else {
+         die "Unknown node name, aborting \n";
+     }
      $chis_im =   90; $chis_jm =  540;  # cubed-resolution
      $dhis_im =  288; $dhis_jm =  181;  # diag-resolution output
      $hhis_im =  288; $hhis_jm =  181;  # high-resolution output
@@ -221,11 +246,30 @@ sub init {
      $obsv_im =  288; $obsv_jm =  181; $obsv_lm = $nlevs; $obsv_jcap = 126;
   }
   if ( $agcm_im == 180 ){
-     $enkf_cpus = 368;
-     $agcm_nx =    7; $agcm_ny =   12;
-     $miau_nx =    2; $miau_ny =   12;
-     $obsv_nx =    4; $obsv_ny =   14;
-     $stat_nx =    2; $stat_ny =   14;
+     if ($nodename eq "hasw") {
+         $enkf_cpus = 224;
+         $agcm_nx =    6; $agcm_ny =   12;
+         $miau_nx =    2; $miau_ny =   12;
+         $obsv_nx =    4; $obsv_ny =   14;
+         $stat_nx =    2; $stat_ny =   14;
+     } elsif ($nodename eq "sky") {
+#        $agcm_ncpus_per_node = 36;
+         $enkf_cpus = 368;
+         $agcm_nx =    5; $agcm_ny =   24;
+         $miau_nx =    2; $miau_ny =   12;
+         $obsv_nx =    4; $obsv_ny =   20;
+         $stat_nx =    2; $stat_ny =   20;
+     } elsif ($nodename eq "cas") {
+#        $agcm_ncpus_per_node = 46;
+         $enkf_cpus = 442;
+         $agcm_nx =    6; $agcm_ny =   24;
+         $miau_nx =    2; $miau_ny =   12;
+         $obsv_nx =    4; $obsv_ny =   24;
+         $stat_nx =    2; $stat_ny =   24;
+         die "Sorry this node/resolution not set yet, aborting \n";
+     } else {
+         die "Unknown node name, aborting \n";
+     }
      $chis_im =  180; $chis_jm = 1080;  # cubed-resolution
      $dhis_im =  288; $dhis_jm =  181;
      $hhis_im =  576; $hhis_jm =  361;
@@ -233,11 +277,21 @@ sub init {
      $obsv_im =  576; $obsv_jm =  361; $obsv_lm = $nlevs; $obsv_jcap = 254;
   }
   if ( $agcm_im == 360 ){
-     $enkf_cpus = 736;
-     $agcm_nx =    3; $agcm_ny =   72;
-     $miau_nx =    4; $miau_ny =   24;
-     $obsv_nx =    4; $obsv_ny =   14;
-     $stat_nx =    3; $stat_ny =   12;
+     if ($nodename eq "hasw") {
+         $enkf_cpus = 672;
+         $agcm_nx =    3; $agcm_ny =   72;
+         $miau_nx =    4; $miau_ny =   24;
+         $obsv_nx =    4; $obsv_ny =   14;
+         $stat_nx =    3; $stat_ny =   12;
+     } elsif ($nodename eq "sky") {
+         die "Sorry this node/resolution not set yet, aborting \n";
+#        $agcm_ncpus_per_node = 36;
+     } elsif ($nodename eq "cas") {
+         die "Sorry this node/resolution not set yet, aborting \n";
+#        $agcm_ncpus_per_node = 46;
+     } else {
+         die "Unknown node name, aborting \n";
+     }
      $chis_im =  360; $chis_jm = 2160;  # cubed-resolution
      $dhis_im =  288; $dhis_jm =  181;
      $hhis_im = 1152; $hhis_jm =  721;
@@ -542,9 +596,9 @@ sub ed_obsv_rc {
                          GSI_GridComp_ensfinal.rc.tmpl
                          obs1gsi_mean.rc
                          obs1gsi_member.rc );
-  $nsig_ext = 13;
+  $nsig_ext = 15;
   if ( $obsv_lm > 72 & $obsv_lm <= 132 ) {
-    $nsig_ext = 15;
+    $nsig_ext = 17;
   } elsif ( $obsv_lm > 132 ) {
     $nsig_ext = 25;
   }
@@ -679,13 +733,15 @@ sub ed_conf_rc {
      #---------------------------------------
      while( defined($rcd = <LUN>) ) {
         chomp($rcd);
-        if($rcd =~ /\@ACFTBIAS/)  {$rcd=~ s/\@ACFTBIAS/$setacftbc/g;  }
-        if($rcd =~ /\@AGCM_CPUS/) {$rcd=~ s/\@AGCM_CPUS/$agcm_cpus/g; }
-        if($rcd =~ /\@DORCORR/)   {$rcd=~ s/\@DORCORR/$dorcorr/g; }
-        if($rcd =~ /\@MIAU_CPUS/) {$rcd=~ s/\@MIAU_CPUS/$miau_cpus/g; }
-        if($rcd =~ /\@OBSV_CPUS/) {$rcd=~ s/\@OBSV_CPUS/$obsv_cpus/g; }
-        if($rcd =~ /\@STAT_CPUS/) {$rcd=~ s/\@STAT_CPUS/$stat_cpus/g; }
-        if($rcd =~ /\@ENKF_CPUS/) {$rcd=~ s/\@ENKF_CPUS/$enkf_cpus/g; }
+        if($rcd =~ /\@ACFTBIAS/)            {$rcd=~ s/\@ACFTBIAS/$setacftbc/g;  }
+        if($rcd =~ /\@AGCM_CPUS/)           {$rcd=~ s/\@AGCM_CPUS/$agcm_cpus/g; }
+        if($rcd =~ /\@AGCM_NCPUS_PER_NODE/) {$rcd=~ s/\@AGCM_NCPUS_PER_NODE/$agcm_ncpus_per_node/g; }
+        if($rcd =~ /\@DORCORR/)             {$rcd=~ s/\@DORCORR/$dorcorr/g; }
+        if($rcd =~ /\@MIAU_CPUS/)           {$rcd=~ s/\@MIAU_CPUS/$miau_cpus/g; }
+        if($rcd =~ /\@OBSV_CPUS/)           {$rcd=~ s/\@OBSV_CPUS/$obsv_cpus/g; }
+        if($rcd =~ /\@STAT_CPUS/)           {$rcd=~ s/\@STAT_CPUS/$stat_cpus/g; }
+        if($rcd =~ /\@ENKF_CPUS/)           {$rcd=~ s/\@ENKF_CPUS/$enkf_cpus/g; }
+        if($rcd =~ /\@NODENAME/)            {$rcd=~ s/\@NODENAME/$nodename/g; }
         print(LUN2 "$rcd\n");
      }
 

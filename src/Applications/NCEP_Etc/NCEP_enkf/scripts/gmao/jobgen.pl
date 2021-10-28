@@ -160,7 +160,7 @@ sub gen {
  print  SCRIPT <<"EOF";
 #\!/bin/csh -xvf
 #SBATCH --job-name=$jobname
-#SBATCH --output=$jobname.log
+#SBATCH --output=batch_${jobname}.log
 #SBATCH --time=$pbs_wallclk
 #PBS -N $jobname
 #PBS -o $jobname.log
@@ -199,13 +199,12 @@ EOF
    if ( $ENV{JOBGEN_CONSTRAINT} ) {
  print  SCRIPT <<"EOF";
 #SBATCH --constraint=$ENV{JOBGEN_CONSTRAINT}
-#SBATCH --ntasks=${ncpus}
-EOF
-   } else {
- print  SCRIPT <<"EOF";
-#PBS -l select=${nodes}:ncpus=${ncpus_per_node}
 EOF
    }
+   print  SCRIPT <<"EOF";
+#SBATCH --ntasks=${ncpus}
+#_SBATCH --ntasks-per-node=${ncpus_per_node}
+EOF
  }
 
  if ( $opt_q ne "datamove" ) {

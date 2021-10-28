@@ -3,7 +3,7 @@
 #SBATCH --account=>>>GID<<<
 #SBATCH --constraint=>>>NODEFLG<<<
 #SBATCH --ntasks=96
-#SBATCH --ntasks-per-node=24
+#SBATCH --ntasks-per-node=>>>NCPUS_PER_NODE<<<
 #SBATCH --time=6:00:00
 #
 #SBATCH --job-name=atm_ens
@@ -49,6 +49,7 @@
 # setenv JOBGEN_QOS dastest
 # setenv JOBGEN_ARCH_CONSTRAINT cssrw
   setenv JOBGEN_CONSTRAINT >>>NODEFLG<<<
+# setenv JOBGEN_NCPUS_PER_NODE >>>NCPUS_PER_NODE<<<
   setenv ATMENS_QNAME compute
   if ( $?JOBGEN_PARTITION ) then
      setenv ATMENS_QNAME $JOBGEN_PARTITION
