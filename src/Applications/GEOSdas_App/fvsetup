@@ -385,7 +385,7 @@ my ($qsub);
 my ($acqloc);
 my ($fcstimes,$fcswait_hrs,$asnwait_hrs);
 my ($landbcs);
-my ($coupled, $ores);
+my ($coupled, $ores, $mometc);
 
 my ($sysfile, $nodeflg);
 my (@rmTilde);
@@ -884,6 +884,10 @@ sub defaults {
                      saverst.rc 
                      GEOS_SurfaceGridComp.rc );
 
+  @coupled_files = qw( data_table
+                       g5aodas_diag_table
+                       MOM_input
+                       MOM_override );
 # @coupled_files = qw( BC_GridComp_ExtData-clim.rc
 #                      CO_GridComp_ExtData-clim.rc
 #                      NI_GridComp_ExtData-clim.rc
@@ -2246,7 +2250,7 @@ sub ed_g5fvlay_rc {
   unlink $ft;
 
   if ( $coupled ) {
-     my @these = ("$fvroot/etc/MOM6/mom6_app/${ogcm_im}x${ogcm_jm}/input.nml","$frun");
+     my @these = ("$mometc/g5aodas_input.nml","$frun");
      my $target = "/tmp/${user}_$$.txt";
      merge_txt(\@these,$target);
      mv($target, $frun);
@@ -5173,6 +5177,7 @@ EOF
         die "Abort: Not yet ready for this ocean-model resolution $ogcm_id\n";
       }
       else { die "Error: Unsupported ocean-model resolution $ogcm_id\n"; }
+      $mometc = "$fvroot/etc/MOM6/mom6_app/${ogcm_im}x${ogcm_jm}";
    }
    else { die "Error: Cannot recognize Ocean Horizontal Resolution Code $ogcm \n;" }
    $ogrid = "${ogcm_im}x${ogcm_jm}";
@@ -5196,6 +5201,8 @@ EOF
        $AGCM_GRIDNAME = "PE${agcm_im}x${agcm_jm}-CF";
        if ( $ogcm eq "C" ) {
          $OGCM_GRIDNAME = "OC${ogcm_im}x${ogcm_jm}-CF";
+       } elsif ( $ogcm eq "T" ) {
+         $OGCM_GRIDNAME = "PE${ogcm_im}x${ogcm_jm}-TM";
        } else {
          $OGCM_GRIDNAME = "PE${ogcm_im}x${ogcm_jm}-DE";
        }
@@ -9625,9 +9632,11 @@ sub init_agcm_rc {
 
     #  Choice of Coupling
     if ( $coupled ) { 
-       AGCM_label_subst("\@COUPLED" , " ");
+       AGCM_label_subst("\@COUPLED"   , " ");
+       AGCM_label_subst("\@DATAOCEAN" , "#");
     } else {
-       AGCM_label_subst("\@COUPLED" , "#");
+       AGCM_label_subst("\@COUPLED"   , "#");
+       AGCM_label_subst("\@DATAOCEAN" , " ");
     }
 
     # directory-specific values
@@ -9858,6 +9867,20 @@ sub copy_resources {
   ed_g5surfGC_rc("run","GEOS_SurfaceGridComp.rc");
   writeSaverst($fcsthrs, "$fvhome/run");
   ed_blendacq("fcst");
+
+  if ($coupled) {
+     foreach $dir ( "run","fcst" ) {
+       $rc = system("/bin/mkdir -p $fvhome/$dir/mom" );
+       foreach $fname ( @coupled_files ) {
+          $aname = $fname;
+          if ( substr($aname,0,8) eq "g5aodas_" ) {
+             ($pfx,$aname) = split(/g5aodas_/,$fname);
+          }
+          cp("$mometc/$fname","$fvhome/$dir/mom/$aname")
+                    || die "Cannot write file $fvhome/$dir/$aname: $!";
+       }
+     }
+  }
 
   # Edit GEOS-5 GCM-related resource files
   # --------------------------------------

@@ -173,6 +173,8 @@
       endif
   endif
 
+  setenv COUPLED 0 # default setting; is reset w/ present of mom dir in FVHOME/run/fcst 
+
 #_RT  if ( !($?STAGE4FCST) )    setenv STAGE4FCST  0   # need to resolve redundancies
 
   if ( $?RUN_OPT_BEGIN ) then
@@ -530,6 +532,11 @@ exit 1
       /bin/cp $FVHOME/run/fsens/*.tmpl    .	
       /bin/cp $FVHOME/run/fsens/*.rc      .	
   endif
+  if ( -d $FVHOME/run/mom ) then
+       setenv COUPLED 1
+      /bin/cp $FVHOME/run/mom/*.table     .	
+      /bin/cp $FVHOME/run/mom/MOM_*       .	
+  endif
   if ( $FORECAST ) then
        foreach file ( `ls ${fchome}/*` )
           if ( $file =~ *.log.* ) continue
@@ -538,6 +545,11 @@ exit 1
                 /bin/cp $file .   # skip restarts
           endif 
        end
+       if ( -d $FVHOME/fcst/mom ) then
+           setenv COUPLED 1
+           /bin/cp $FVHOME/fcst/mom/*.table  .	
+           /bin/cp $FVHOME/run/mom/MOM_*       .	
+       endif
   endif
   cat fvcore_layout.rc >> input.nml
 
@@ -639,6 +651,24 @@ exit 1
      endif
      ln -s $rsfile ./${rsf}_rst 
   end
+  if ( $COUPLED ) then
+     set momrst_failed = 0
+     if ( -e mom_rst  ) then
+        /bin/mv mom_rst  MOM.res.nc
+     else
+        @ momrst_failed = $momrst_failed + 1
+     endif
+     foreach momrst ( 1 2 3 )
+        if ( -e mom${momrst}_rst ) then
+           /bin/mv mom${momrst}_rst MOM.res_${momrst}.nc
+        else
+           @ momrst_failed = $momrst_failed + 1
+        endif
+     end
+     if ( $momrst_failed ) then
+          Call AbnormalExit_( 3 )
+     endif
+  endif
 
   set itime_hhmm = $itime:s/z/00z/
   if ( -e $fcstage/stage/$EXPID.traj_lcv_rst.$itime_hhmm.$NCSUFFIX ) then
@@ -682,6 +712,24 @@ exit 1
         /bin/cp $rsfile ./${rs}_rst & 
      endif
   end
+  if ( $COUPLED ) then
+     set momrst_failed = 0
+     if ( -e mom_rst  ) then
+        /bin/mv mom_rst  MOM.res.nc
+     else
+        @ momrst_failed = $momrst_failed + 1
+     endif
+     foreach momrst ( 1 2 3 )
+        if ( -e mom${momrst}_rst ) then
+           /bin/mv mom${momrst}_rst MOM.res_${momrst}.nc
+        else
+           @ momrst_failed = $momrst_failed + 1
+        endif
+     end
+     if ( $momrst_failed ) then
+          Call AbnormalExit_( 3 )
+     endif
+  endif
 
   set GcmBegDate = $mydate[1]
                               # Last line of CopyGcmRestarts4Forecast_
@@ -3855,8 +3903,6 @@ endif
              endif
            endif # <WCONSTRAINT>
            echo "s/>>>NCSUFFIX<<</${NCSUFFIX}/1"   >> sed_file
-           echo "s/>>>COUPLED<<</#/1"              >> sed_file
-           echo "s/>>>DATAOCEAN<<<//1"             >> sed_file
            echo "s/>>>FORCEGCM<<</#/1"             >> sed_file
            echo "s/>>>REGULAR_REPLAY_ECMWF<<</#/1" >> sed_file
            echo "s/>>>REGULAR_REPLAY_NCEP<<</#/1"  >> sed_file
@@ -4477,8 +4523,6 @@ endif
            echo "s/>>>ANADATE<<</${anadate[1]}/1"   >> sed_file
            echo "s/>>>ANATIME<<</${anadate[2]}/1"   >> sed_file
         endif
-        echo "s/>>>COUPLED<<</#/1"                  >> sed_file
-        echo "s/>>>DATAOCEAN<<<//1"                 >> sed_file
         echo "s/>>>FORCEGCM<<</#/1"                 >> sed_file
         if ( $blendrs || $blendec ) then
 
@@ -4555,8 +4599,6 @@ endif
            echo "s/>>>4DIAUDAS<<</#/1"        >> sed_file # no 4d-tendency for now
            echo "s/>>>FORCEDAS<<</#/1"        >> sed_file
         endif
-        echo "s/>>>COUPLED<<</#/1"            >> sed_file
-        echo "s/>>>DATAOCEAN<<<//1"           >> sed_file
         echo "s/>>>FORCEGCM<<</#/1"           >> sed_file
         echo "s/>>>REGULAR_REPLAY_ECMWF<<</#/1" >> sed_file
         echo "s/>>>REGULAR_REPLAY_NCEP<<</#/1"  >> sed_file

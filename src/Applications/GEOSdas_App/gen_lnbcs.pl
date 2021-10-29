@@ -179,6 +179,7 @@ sub create_g5bcs_script {
      $bcsresa = "CF${agcm_im4}x6C";
      if ( $ogcm eq "C" ) {
          $bcsreso = "CF${ogcm_im4}x6C";
+         $bcsresa = "CF${agcm_im4}x6C";
      } else {
          $bcsreso = "DE${ogcm_im4}xPE${ogcm_jm4}";
      }
@@ -240,21 +241,23 @@ if ( $cubed ) {
   setenv CUBED    $cubed
   setenv G5GCMBCS \$FVHOME/fvInput/g5gcm/bcs
   setenv G5GRTBCS \$FVHOME/fvInput/$fvrtbcs
-# wired ocean bcs location for now
-  setenv OGCMBCS  /discover/nobackup/projects/gmao/ssd/aogcm/ocean_bcs
 
 # Possibly real-time boundary conditions
 # --------------------------------------
   if ( \$COUPLED ) then
 
-     if ( ! -e   \$OGCMBCS/MOM6/$ogrid/SEAWIFS_KPAR_mon_clim.$ogrid ) exit 1
-     /bin/ln -sf \$OGCMBCS/MOM6/$ogrid/SEAWIFS_KPAR_mon_clim.$ogrid   SEAWIFS_KPAR_mon_clim.data
+#    wired ocean bcs location for now
+     setenv OGCMBCS   /discover/nobackup/projects/gmao/ssd/aogcm/ocean_bcs
+     setenv OAGCMBCS  /discover/nobackup/projects/gmao/ssd/aogcm/atmosphere_bcs
 
-     if ( ! -e   \$OGCMBCS/MOM6/${OGCM_GRIDNAME}_TM${ogcm_im}xTM${ogcm_jm}/${OGCM_GRIDNAME}_TM${ogcm_im}xTM${ogcm_jm}-Pfafstetter.til ) exit 1
-     /bin/ln -sf \$OGCMBCS/MOM6/${OGCM_GRIDNAME}_TM${ogcm_im}xTM${ogcm_jm}/${OGCM_GRIDNAME}_TM${ogcm_im}xTM${ogcm_jm}-Pfafstetter.til   tile.data
+     if ( ! -e   \$OGCMBCS/MOM6/${ogcm_im}x${ogcm_jm}/SEAWIFS_KPAR_mon_clim.$ogrid ) exit 1
+     /bin/ln -sf \$OGCMBCS/MOM6/${ogcm_im}x${ogcm_jm}/SEAWIFS_KPAR_mon_clim.$ogrid   SEAWIFS_KPAR_mon_clim.data
 
-     if ( ! -e   \$OGCMBCS/MOM6/${OGCM_GRIDNAME}_TM${ogcm_im}xTM${ogcm_jm}/${OGCM_GRIDNAME}_TM${ogcm_im}xTM${ogcm_jm}-Pfafstetter.TRN ) exit 1
-     /bin/ln -sf \$OGCMBCS/MOM6/${OGCM_GRIDNAME}_TM${ogcm_im}xTM${ogcm_jm}/${OGCM_GRIDNAME}_TM${ogcm_im}xTM${ogcm_jm}-Pfafstetter.TRN   runoff.bin
+     if ( ! -e   \$OAGCMBCS/Icarus-NLv3/MOM6/${bcsresa}_TM${ogcm_im}xTM${ogcm_jm}/${bcsresa}_TM${ogcm_im}xTM${ogcm_jm}-Pfafstetter.til ) exit 1
+     /bin/ln -sf \$OAGCMBCS/Icarus-NLv3/MOM6/${bcsresa}_TM${ogcm_im}xTM${ogcm_jm}/${bcsresa}_TM${ogcm_im}xTM${ogcm_jm}-Pfafstetter.til   tile.data
+
+     if ( ! -e   \$OAGCMBCS/Icarus-NLv3/MOM6/${bcsresa}_TM${ogcm_im}xTM${ogcm_jm}/${bcsresa}_TM${ogcm_im}xTM${ogcm_jm}-Pfafstetter.TRN ) exit 1
+     /bin/ln -sf \$OAGCMBCS/Icarus-NLv3/MOM6/${bcsresa}_TM${ogcm_im}xTM${ogcm_jm}/${bcsresa}_TM${ogcm_im}xTM${ogcm_jm}-Pfafstetter.TRN   runoff.bin
 
      if ( ! -e   \$OGCMBCS/MOM6/${ogcm_im}x${ogcm_jm}/MAPL_Tripolar.nc ) exit 1
      /bin/ln -sf \$OGCMBCS/MOM6/${ogcm_im}x${ogcm_jm}/MAPL_Tripolar.nc   .
@@ -262,11 +265,8 @@ if ( $cubed ) {
      if ( ! -e   \$OGCMBCS/MOM6/${ogcm_im}x${ogcm_jm}/vgrid${ogcm_lm}.ascii ) exit 1
      /bin/ln -sf \$OGCMBCS/MOM6/${ogcm_im}x${ogcm_jm}/vgrid${ogcm_lm}.ascii   vgrid.ascii
 
-     if ( ! -e   \$OGCMBCS/MOM6/$ogrid/tripolar_$ogrid.ascii ) exit 1
-     /bin/ln -sf \$OGCMBCS/MOM6/$ogrid/tripolar_$ogrid.ascii  .
-
-     if ( ! -e   \$OGCMBCS/MOM6/$ogrid/vgrid50.ascii ) exit 1
-     /bin/ln -sf \$OGCMBCS/MOM6/$ogrid/vgrid50.ascii vgrid.ascii
+     if ( ! -e   \$OGCMBCS/MOM6/$ogrid/vgrid${ogcm_lm}.ascii ) exit 1
+     /bin/ln -sf \$OGCMBCS/MOM6/$ogrid/vgrid${ogcm_lm}.ascii vgrid.ascii
 
      if ( ! -e   \$OGCMBCS/MOM6/${ogcm_im}x${ogcm_jm}/cice/kmt_cice.bin ) exit 1
      /bin/ln -sf \$OGCMBCS/MOM6/${ogcm_im}x${ogcm_jm}/cice/kmt_cice.bin .
@@ -277,10 +277,55 @@ if ( $cubed ) {
      # now comes the mess:
      if ( -d INPUT ) /bin/rm -r INPUT
      mkdir INPUT
-     /bin/cp \$OGCMBCS/MOM6/${ogcm_im}x${ogcm_jm}/INPUT/* INPUT
+     /bin/cp \$OGCMBCS/MOM6/${ogcm_im}x${ogcm_jm}/INPUT/* INPUT/
 
+#    if (  ! -e  \$OGCMBCS/../atmosphere_bcs/Icarus-NLv3/MOM6/${OGCM_GRIDNAME}_TM${ogcm_im}xTM${ogcm_jm}/visdf_${RES_DATELINE}.dat  ) exit 1
+#    /bin/ln -sf \$OGCMBCS/../atmosphere_bcs/Icarus-NLv3/MOM6/${OGCM_GRIDNAME}_TM${ogcm_im}xTM${ogcm_jm}/visdf_${RES_DATELINE}.dat    visdf.dat
+
+#    if (  ! -e  \$OGCMBCS/../atmosphere_bcs/Icarus-NLv3/MOM6/${OGCM_GRIDNAME}_TM${ogcm_im}xTM${ogcm_jm}/nirdf_${RES_DATELINE}.dat  ) exit 1
+#    /bin/ln -sf \$OGCMBCS/../atmosphere_bcs/Icarus-NLv3/MOM6/${OGCM_GRIDNAME}_TM${ogcm_im}xTM${ogcm_jm}/nirdf_${RES_DATELINE}.dat    nirdf.dat
+
+#    ALL WIRED FOR NOW
+     if ( ! -e   \$G5GCMBCS/$BCSTAG/Shared/pchem.species.Clim_Prod_Loss.z_721x72.nc4  ) exit 1
+     /bin/ln -sf \$G5GCMBCS/$BCSTAG/Shared/pchem.species.Clim_Prod_Loss.z_721x72.nc4    species.data
+
+     if ( ! -e   \$OAGCMBCS/Icarus-NLv3/MOM6/CF0180x6C_TM1440xTM1080/visdf_180x1080.dat ) exit 1
+     /bin/ln -sf \$OAGCMBCS/Icarus-NLv3/MOM6/CF0180x6C_TM1440xTM1080/visdf_180x1080.dat visdf.dat
+   
+     if ( ! -e   \$OAGCMBCS/Icarus-NLv3/MOM6/CF0180x6C_TM1440xTM1080/nirdf_180x1080.dat ) exit 1
+     /bin/ln -sf \$OAGCMBCS/Icarus-NLv3/MOM6/CF0180x6C_TM1440xTM1080/nirdf_180x1080.dat nirdf.dat
+
+     if ( ! -e   \$OAGCMBCS/Icarus-NLv3/MOM6/CF0180x6C_TM1440xTM1080/vegdyn_180x1080.dat ) exit 1
+     /bin/ln -sf \$OAGCMBCS/Icarus-NLv3/MOM6/CF0180x6C_TM1440xTM1080/vegdyn_180x1080.dat vegdyn.data
+
+     if ( ! -e   \$OAGCMBCS/Icarus-NLv3/MOM6/CF0180x6C_TM1440xTM1080/lai_clim_180x1080.data ) exit 1
+     /bin/ln -sf \$OAGCMBCS/Icarus-NLv3/MOM6/CF0180x6C_TM1440xTM1080/lai_clim_180x1080.data lai.data
+
+     if ( ! -e   \$OAGCMBCS/Icarus-NLv3/MOM6/CF0180x6C_TM1440xTM1080/green_clim_180x1080.data ) exit 1
+     /bin/ln -sf \$OAGCMBCS/Icarus-NLv3/MOM6/CF0180x6C_TM1440xTM1080/green_clim_180x1080.data green.data
+
+     if ( ! -e   \$OAGCMBCS/Icarus-NLv3/MOM6/CF0180x6C_TM1440xTM1080/ndvi_clim_180x1080.data ) exit 1
+     /bin/ln -sf \$OAGCMBCS/Icarus-NLv3/MOM6/CF0180x6C_TM1440xTM1080/ndvi_clim_180x1080.data ndvi.data
+
+     if ( ! -e   /discover/nobackup/ltakacs/bcs/Icarus-NLv3/Icarus-NLv3_Reynolds/CF0180x6C_DE0360xPE0180/topo_DYN_ave_180x1080.data  ) exit 1
+     /bin/ln -sf /discover/nobackup/ltakacs/bcs/Icarus-NLv3/Icarus-NLv3_Reynolds/CF0180x6C_DE0360xPE0180/topo_DYN_ave_180x1080.data topo_dynave.data
+
+     if ( ! -e   /discover/nobackup/ltakacs/bcs/Icarus-NLv3/Icarus-NLv3_Reynolds/CF0180x6C_DE0360xPE0180/topo_GWD_var_180x1080.data ) exit 1
+     /bin/ln -sf /discover/nobackup/ltakacs/bcs/Icarus-NLv3/Icarus-NLv3_Reynolds/CF0180x6C_DE0360xPE0180/topo_GWD_var_180x1080.data topo_gwdvar.data
+
+     if ( ! -e   /discover/nobackup/ltakacs/bcs/Icarus-NLv3/Icarus-NLv3_Reynolds/CF0180x6C_DE0360xPE0180/topo_TRB_var_180x1080.data ) exit 1
+     /bin/ln -sf /discover/nobackup/ltakacs/bcs/Icarus-NLv3/Icarus-NLv3_Reynolds/CF0180x6C_DE0360xPE0180/topo_TRB_var_180x1080.data topo_trbvar.data
+
+     if(     -e  /discover/nobackup/ltakacs/bcs/Icarus-NLv3/Icarus-NLv3_Reynolds/CF0180x6C_DE0360xPE0180/Gnomonic_CF0180x6C_DE0360xPE0180.dat ) exit 1
+     /bin/ln -sf /discover/nobackup/ltakacs/bcs/Icarus-NLv3/Icarus-NLv3_Reynolds/CF0180x6C_DE0360xPE0180/Gnomonic_CF0180x6C_DE0360xPE0180.dat .
+
+     /bin/ln -sf /discover/nobackup/ltakacs/bcs/Icarus-NLv3/Icarus-NLv3_Reynolds/Shared/*bin .
+     /bin/ln -sf /discover/nobackup/ltakacs/bcs/Icarus-NLv3/Icarus-NLv3_Reynolds/Shared/*c2l*.nc4 .
+   
   else
 
+#    Climatological boundary conditions
+#    ----------------------------------
      if ( ! -e   \$G5GRTBCS/$ogrid/$sstfile ) exit 1
      /bin/ln -sf \$G5GRTBCS/$ogrid/$sstfile   sst.data
 
@@ -293,55 +338,53 @@ if ( $cubed ) {
      if ( ! -e   \$G5GCMBCS/$BCSTAG/$bcsres/$TILEDATA ) exit 1
      /bin/ln -sf \$G5GCMBCS/$BCSTAG/$bcsres/$TILEDATA   tile.data
 
+     if ( ! -e   \$G5GCMBCS/$BCSTAG/$bcsres/vegdyn_${RES_DATELINE}_24Aug2017.dat  ) exit 1
+     /bin/ln -sf \$G5GCMBCS/$BCSTAG/$bcsres/vegdyn_${RES_DATELINE}_24Aug2017.dat    vegdyn.data
+
+     if ( ! -e   \$G5GCMBCS/$BCSTAG/Shared/pchem.species.Clim_Prod_Loss.z_721x72.nc4  ) exit 1
+     /bin/ln -sf \$G5GCMBCS/$BCSTAG/Shared/pchem.species.Clim_Prod_Loss.z_721x72.nc4    species.data
+
+     if ( ! -e   \$G5GCMBCS/$BCSTAG/$bcsres/lai_clim_${RES_DATELINE}.data  ) exit 1
+     /bin/ln -sf \$G5GCMBCS/$BCSTAG/$bcsres/lai_clim_${RES_DATELINE}.data    lai.data
+
+     if ( ! -e   \$G5GCMBCS/$BCSTAG/$bcsres/green_clim_${RES_DATELINE}.data  ) exit 1
+     /bin/ln -sf \$G5GCMBCS/$BCSTAG/$bcsres/green_clim_${RES_DATELINE}.data    green.data
+
+     if ( ! -e   \$G5GCMBCS/$BCSTAG/$bcsres/ndvi_clim_${RES_DATELINE}.data  ) exit 1
+     /bin/ln -sf \$G5GCMBCS/$BCSTAG/$bcsres/ndvi_clim_${RES_DATELINE}.data    ndvi.data
+
+     if (  ! -e  \$G5GCMBCS/$BCSTAG/$bcsres/visdf_${RES_DATELINE}.dat  ) exit 1
+     /bin/ln -sf \$G5GCMBCS/$BCSTAG/$bcsres/visdf_${RES_DATELINE}.dat    visdf.dat
+
+     if (  ! -e  \$G5GCMBCS/$BCSTAG/$bcsres/nirdf_${RES_DATELINE}.dat  ) exit 1
+     /bin/ln -sf \$G5GCMBCS/$BCSTAG/$bcsres/nirdf_${RES_DATELINE}.dat    nirdf.dat
+
+     if(   ! -e  \$G5GCMBCS/$BCSTAG/$bcsres/topo_DYN_ave_${RES_DATELINE}.data   ) exit 1
+     /bin/ln -sf \$G5GCMBCS/$BCSTAG/$bcsres/topo_DYN_ave_${RES_DATELINE}.data   topo_dynave.data
+
+     if(   ! -e  \$G5GCMBCS/$BCSTAG/$bcsres/topo_GWD_var_${RES_DATELINE}.data  ) exit 1
+     /bin/ln -sf \$G5GCMBCS/$BCSTAG/$bcsres/topo_GWD_var_${RES_DATELINE}.data  topo_gwdvar.data
+
+     if(   ! -e  \$G5GCMBCS/$BCSTAG/$bcsres/topo_TRB_var_${RES_DATELINE}.data    ) exit 1
+     /bin/ln -sf \$G5GCMBCS/$BCSTAG/$bcsres/topo_TRB_var_${RES_DATELINE}.data  topo_trbvar.data
+
+#    Convert tile file to binary
+#    ---------------------------
+     if ( \$CUBED ) then
+          if( -e        \$G5GCMBCS/$BCSTAG/$bcsres/Gnomonic_$bcsres.dat ) then
+            /bin/ln -sf \$G5GCMBCS/$BCSTAG/$bcsres/Gnomonic_$bcsres.dat .
+          endif
+          /bin/ln -sf  \$G5GCMBCS/$BCSTAG/Shared/*bin .
+          /bin/ln -sf  \$G5GCMBCS/$BCSTAG/Shared/*_c2l_*.nc4 .
+     endif
+
+     if( -e         \$G5GCMBCS/$BCSTAG/$bcsres/$TILEBIN ) then
+        /bin/ln -sf \$G5GCMBCS/$BCSTAG/$bcsres/$TILEBIN tile.bin
+     endif
+
   endif
 
-# Climatological boundary conditions
-# ----------------------------------
-  if ( ! -e   \$G5GCMBCS/$BCSTAG/$bcsres/vegdyn_${RES_DATELINE}_24Aug2017.dat  ) exit 1
-  /bin/ln -sf \$G5GCMBCS/$BCSTAG/$bcsres/vegdyn_${RES_DATELINE}_24Aug2017.dat    vegdyn.data
-
-  if ( ! -e   \$G5GCMBCS/$BCSTAG/Shared/pchem.species.Clim_Prod_Loss.z_721x72.nc4  ) exit 1
-  /bin/ln -sf \$G5GCMBCS/$BCSTAG/Shared/pchem.species.Clim_Prod_Loss.z_721x72.nc4    species.data
-
-  if ( ! -e   \$G5GCMBCS/$BCSTAG/$bcsres/lai_clim_${RES_DATELINE}.data  ) exit 1
-  /bin/ln -sf \$G5GCMBCS/$BCSTAG/$bcsres/lai_clim_${RES_DATELINE}.data    lai.data
-
-  if ( ! -e   \$G5GCMBCS/$BCSTAG/$bcsres/green_clim_${RES_DATELINE}.data  ) exit 1
-  /bin/ln -sf \$G5GCMBCS/$BCSTAG/$bcsres/green_clim_${RES_DATELINE}.data    green.data
-
-  if ( ! -e   \$G5GCMBCS/$BCSTAG/$bcsres/ndvi_clim_${RES_DATELINE}.data  ) exit 1
-  /bin/ln -sf \$G5GCMBCS/$BCSTAG/$bcsres/ndvi_clim_${RES_DATELINE}.data    ndvi.data
-
-  if (  ! -e  \$G5GCMBCS/$BCSTAG/$bcsres/visdf_${RES_DATELINE}.dat  ) exit 1
-  /bin/ln -sf \$G5GCMBCS/$BCSTAG/$bcsres/visdf_${RES_DATELINE}.dat    visdf.dat
-
-  if (  ! -e  \$G5GCMBCS/$BCSTAG/$bcsres/nirdf_${RES_DATELINE}.dat  ) exit 1
-  /bin/ln -sf \$G5GCMBCS/$BCSTAG/$bcsres/nirdf_${RES_DATELINE}.dat    nirdf.dat
-
-  if(   ! -e  \$G5GCMBCS/$BCSTAG/$bcsres/topo_DYN_ave_${RES_DATELINE}.data   ) exit 1
-  /bin/ln -sf \$G5GCMBCS/$BCSTAG/$bcsres/topo_DYN_ave_${RES_DATELINE}.data   topo_dynave.data
-
-  if(   ! -e  \$G5GCMBCS/$BCSTAG/$bcsres/topo_GWD_var_${RES_DATELINE}.data  ) exit 1
-  /bin/ln -sf \$G5GCMBCS/$BCSTAG/$bcsres/topo_GWD_var_${RES_DATELINE}.data  topo_gwdvar.data
-
-  if(   ! -e  \$G5GCMBCS/$BCSTAG/$bcsres/topo_TRB_var_${RES_DATELINE}.data    ) exit 1
-  /bin/ln -sf \$G5GCMBCS/$BCSTAG/$bcsres/topo_TRB_var_${RES_DATELINE}.data  topo_trbvar.data
-
-# Convert tile file to binary
-# ---------------------------
-  if ( \$CUBED ) then
-       if( -e        \$G5GCMBCS/$BCSTAG/$bcsres/Gnomonic_$bcsres.dat ) then
-         /bin/ln -sf \$G5GCMBCS/$BCSTAG/$bcsres/Gnomonic_$bcsres.dat .
-       endif
-       /bin/ln -sf  \$G5GCMBCS/$BCSTAG/Shared/*bin .
-       /bin/ln -sf  \$G5GCMBCS/$BCSTAG/Shared/*_c2l_*.nc4 .
-  endif
-
-  if( -e         \$G5GCMBCS/$BCSTAG/$bcsres/$TILEBIN ) then
-     /bin/ln -sf \$G5GCMBCS/$BCSTAG/$bcsres/$TILEBIN tile.bin
-  else
-      \$FVROOT/bin/binarytile.x tile.data tile.bin
-  endif
+  \$FVROOT/bin/binarytile.x tile.data tile.bin
 
 # Link to precipitation forcing data
 # ----------------------------------
