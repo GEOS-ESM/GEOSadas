@@ -286,9 +286,6 @@ if ( $cubed ) {
 #    /bin/ln -sf \$OGCMBCS/../atmosphere_bcs/Icarus-NLv3/MOM6/${OGCM_GRIDNAME}_TM${ogcm_im}xTM${ogcm_jm}/nirdf_${RES_DATELINE}.dat    nirdf.dat
 
 #    ALL WIRED FOR NOW
-     if ( ! -e   \$G5GCMBCS/$BCSTAG/Shared/pchem.species.Clim_Prod_Loss.z_721x72.nc4  ) exit 1
-     /bin/ln -sf \$G5GCMBCS/$BCSTAG/Shared/pchem.species.Clim_Prod_Loss.z_721x72.nc4    species.data
-
      if ( ! -e   \$OAGCMBCS/Icarus-NLv3/MOM6/CF0180x6C_TM1440xTM1080/visdf_180x1080.dat ) exit 1
      /bin/ln -sf \$OAGCMBCS/Icarus-NLv3/MOM6/CF0180x6C_TM1440xTM1080/visdf_180x1080.dat visdf.dat
    
@@ -341,9 +338,6 @@ if ( $cubed ) {
      if ( ! -e   \$G5GCMBCS/$BCSTAG/$bcsres/vegdyn_${RES_DATELINE}_24Aug2017.dat  ) exit 1
      /bin/ln -sf \$G5GCMBCS/$BCSTAG/$bcsres/vegdyn_${RES_DATELINE}_24Aug2017.dat    vegdyn.data
 
-     if ( ! -e   \$G5GCMBCS/$BCSTAG/Shared/pchem.species.Clim_Prod_Loss.z_721x72.nc4  ) exit 1
-     /bin/ln -sf \$G5GCMBCS/$BCSTAG/Shared/pchem.species.Clim_Prod_Loss.z_721x72.nc4    species.data
-
      if ( ! -e   \$G5GCMBCS/$BCSTAG/$bcsres/lai_clim_${RES_DATELINE}.data  ) exit 1
      /bin/ln -sf \$G5GCMBCS/$BCSTAG/$bcsres/lai_clim_${RES_DATELINE}.data    lai.data
 
@@ -383,6 +377,10 @@ if ( $cubed ) {
      endif
 
   endif
+
+  if ( ! -e   \$G5GCMBCS/$BCSTAG/Shared/pchem.species.Clim_Prod_Loss.z_721x72.nc4  ) exit 1
+  /bin/ln -sf \$G5GCMBCS/$BCSTAG/Shared/pchem.species.Clim_Prod_Loss.z_721x72.nc4    species.data
+
 
   \$FVROOT/bin/binarytile.x tile.data tile.bin
 

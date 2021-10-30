@@ -5042,7 +5042,7 @@ EOF
        $hist_jm = $ana_jm;
        $histc_im = 576;
        $histc_jm = 361;
-       $nx_pert = 6;
+       $nx_pert = 10;
        $ny_pert = 6 * $nx_pert;
        $hist_pert_im = 576;
        $hist_pert_jm = 361;
@@ -5076,7 +5076,7 @@ EOF
        $hist_jm = $ana_jm;
        $histc_im = 576;
        $histc_jm = 361;
-       $nx_pert = 6;
+       $nx_pert = 10;
        $ny_pert = 6 * $nx_pert;
        $hist_pert_im = 576;
        $hist_pert_jm = 361;

@@ -190,6 +190,7 @@
 #       GEOS-5 forecast restarts
 #       ------------------------
         Call CopyGcmRestarts4Forecast_()
+        Call CopyMOMRestarts_()
 
 #       Determine time of trajectory output in forecast mode
 #       ----------------------------------------------------
@@ -246,6 +247,7 @@
                                                        zeit_ci.x CopyGCMRS
         Call CopyGcmRestarts4DAS_()
         wait # while copies are being done in the background
+        Call CopyMOMRestarts_()
                                                        zeit_co.x CopyGCMRS
 
 #       Link to GEOS-5 GCM boundary condition files

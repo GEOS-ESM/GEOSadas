@@ -651,24 +651,6 @@ exit 1
      endif
      ln -s $rsfile ./${rsf}_rst 
   end
-  if ( $COUPLED ) then
-     set momrst_failed = 0
-     if ( -e mom_rst  ) then
-        /bin/mv mom_rst  MOM.res.nc
-     else
-        @ momrst_failed = $momrst_failed + 1
-     endif
-     foreach momrst ( 1 2 3 )
-        if ( -e mom${momrst}_rst ) then
-           /bin/mv mom${momrst}_rst MOM.res_${momrst}.nc
-        else
-           @ momrst_failed = $momrst_failed + 1
-        endif
-     end
-     if ( $momrst_failed ) then
-          Call AbnormalExit_( 3 )
-     endif
-  endif
 
   set itime_hhmm = $itime:s/z/00z/
   if ( -e $fcstage/stage/$EXPID.traj_lcv_rst.$itime_hhmm.$NCSUFFIX ) then
@@ -712,27 +694,38 @@ exit 1
         /bin/cp $rsfile ./${rs}_rst & 
      endif
   end
-  if ( $COUPLED ) then
-     set momrst_failed = 0
-     if ( -e mom_rst  ) then
-        /bin/mv mom_rst  MOM.res.nc
-     else
-        @ momrst_failed = $momrst_failed + 1
-     endif
-     foreach momrst ( 1 2 3 )
-        if ( -e mom${momrst}_rst ) then
-           /bin/mv mom${momrst}_rst MOM.res_${momrst}.nc
-        else
-           @ momrst_failed = $momrst_failed + 1
-        endif
-     end
-     if ( $momrst_failed ) then
-          Call AbnormalExit_( 3 )
-     endif
-  endif
 
   set GcmBegDate = $mydate[1]
                               # Last line of CopyGcmRestarts4Forecast_
+\end
+
+#.............................................................................
+
+# ------------------------------------
+  Sub CopyMOMRestarts_()
+# ------------------------------------
+  if ( $?ECHO___ ) set echo
+
+  if ( ! $COUPLED ) exit 0
+
+  set momrst_failed = 0
+  mkdir MOM_RESTART
+  if ( -e mom_rst  ) then
+     /bin/mv mom_rst  MOM_RESTART/MOM.res.nc
+  else
+     @ momrst_failed = $momrst_failed + 1
+  endif
+  foreach momrst ( 1 2 3 )
+     if ( -e mom${momrst}_rst ) then
+        /bin/mv mom${momrst}_rst MOM_RESTART/MOM.res_${momrst}.nc
+     else
+        @ momrst_failed = $momrst_failed + 1
+     endif
+  end
+  if ( $momrst_failed ) then
+       Call AbnormalExit_( 3 )
+  endif
+
 \end
 
 #.............................................................................
