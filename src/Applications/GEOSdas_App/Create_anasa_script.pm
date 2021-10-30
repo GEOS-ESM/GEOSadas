@@ -341,7 +341,7 @@ EOF
   source \$SHARE/dao_ops/opengrads/setup.csh 1.9-rc1-gmao
 
   if (\$?I_MPI_ROOT) then
-     setenv I_MPI_USE_DYNAMIC_CONNECTIONS 0
+#    setenv I_MPI_USE_DYNAMIC_CONNECTIONS 0
      setenv I_MPI_FABRICS shm:ofa
   endif
   setenv MPI_BUFS_PER_PROC 1024

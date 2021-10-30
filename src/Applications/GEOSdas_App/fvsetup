@@ -8873,7 +8873,7 @@ print  SCRIPT <<"EOF";
 # MPT env variables
 # -----------------
   if (\$?I_MPI_ROOT) then
-     setenv I_MPI_USE_DYNAMIC_CONNECTIONS 0
+#    setenv I_MPI_USE_DYNAMIC_CONNECTIONS 0
 #    setenv I_MPI_FABRICS shm:dapl
 #    setenv I_MPI_FABRICS_LIST "dapl,ofa"
 #    setenv I_MPI_FALLBACK "enable"
