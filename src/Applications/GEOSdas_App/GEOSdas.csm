@@ -173,8 +173,6 @@
       endif
   endif
 
-  setenv COUPLED 0 # default setting; is reset w/ present of mom dir in FVHOME/run/fcst 
-
 #_RT  if ( !($?STAGE4FCST) )    setenv STAGE4FCST  0   # need to resolve redundancies
 
   if ( $?RUN_OPT_BEGIN ) then
@@ -533,8 +531,7 @@ exit 1
       /bin/cp $FVHOME/run/fsens/*.rc      .	
   endif
   if ( -d $FVHOME/run/mom ) then
-       setenv COUPLED 1
-      /bin/cp $FVHOME/run/mom/*.table     .	
+      /bin/cp $FVHOME/run/mom/*_table     .	
       /bin/cp $FVHOME/run/mom/MOM_*       .	
   endif
   if ( $FORECAST ) then
@@ -546,9 +543,8 @@ exit 1
           endif 
        end
        if ( -d $FVHOME/fcst/mom ) then
-           setenv COUPLED 1
-           /bin/cp $FVHOME/fcst/mom/*.table  .	
-           /bin/cp $FVHOME/run/mom/MOM_*       .	
+           /bin/cp $FVHOME/fcst/mom/*_table  .	
+           /bin/cp $FVHOME/run/mom/MOM_*     .	
        endif
   endif
   cat fvcore_layout.rc >> input.nml
@@ -695,37 +691,74 @@ exit 1
      endif
   end
 
+
   set GcmBegDate = $mydate[1]
-                              # Last line of CopyGcmRestarts4Forecast_
+                              # Last line of CopyGcmRestarts4DAS_
 \end
 
 #.............................................................................
 
 # ------------------------------------
-  Sub CopyMOMRestarts_()
+  Sub CopyMOMRestarts_( FcstCase_ )
 # ------------------------------------
   if ( $?ECHO___ ) set echo
 
-  if ( ! $COUPLED ) exit 0
+  if ( ! -d $FVHOME/run/mom ) exit 0
 
+# Bring restarts from recycle into work dir
+# -----------------------------------------
   set momrst_failed = 0
-  mkdir MOM_RESTART
+  if ( $FcstCase_ ) then 
+       echo "Not ready to hand Coupled forecasts, aborting ..."
+       Call AbnormalExit_( 1 )
+  else  # DASCase
+     foreach this ( mom_rst mom1_rst mom2_rst mom3_rst )
+        set momrs = $FVHOME/recycle/$EXPID.$this.$itime.nc4
+        if ( -e $momrs ) then
+           /bin/cp $momrs $this
+        else
+           @ momrst_failed = $momrst_failed + 1
+        endif
+     end
+  endif
+  if ( $momrst_failed ) then
+       echo "Trouble setting up MOM restarts, aborting ..."
+       Call AbnormalExit_( 2 )
+  endif
+
+#  Find out where MOM expects restarts to be
+#  -----------------------------------------
+  if ( ! -e fvcore_layout.rc ) then
+       echo "Trouble finding layout RC, aborting ..."
+       Call AbnormalExit_( 1 )
+  endif
+  set mominpdir = `nmlread.py fvcore_layout.rc MOM_input_nml restart_input_dir`
+  if ( ! -d $mominpdir ) mkdir $mominpdir
+
+  set momoutdir = `nmlread.py fvcore_layout.rc MOM_input_nml restart_output_dir`
+  if ( ! -d $momoutdir ) mkdir $momoutdir
+
+#  Move MOM to location MOM expects them
+#  -------------------------------------
+  @ momrst_failed = 0
   if ( -e mom_rst  ) then
-     /bin/mv mom_rst  MOM_RESTART/MOM.res.nc
+     /bin/mv mom_rst $mominpdir/MOM.res.nc
   else
      @ momrst_failed = $momrst_failed + 1
   endif
   foreach momrst ( 1 2 3 )
      if ( -e mom${momrst}_rst ) then
-        /bin/mv mom${momrst}_rst MOM_RESTART/MOM.res_${momrst}.nc
+        /bin/mv mom${momrst}_rst $mominpdir/MOM.res_${momrst}.nc
      else
         @ momrst_failed = $momrst_failed + 1
      endif
   end
   if ( $momrst_failed ) then
-       Call AbnormalExit_( 3 )
+       echo "Trouble setting up MOM restarts, aborting ..."
+       Call AbnormalExit_( 2 )
   endif
 
+                              # Last line of CopyMOMRestarts_
 \end
 
 #.............................................................................
@@ -5111,6 +5144,10 @@ endif
       cnv2prs.pl -prog
   endif
 
+  if ( -d $FVHOME/run/mom )   then  # this needs revision
+      mom6diag.csh $EXPID $GcmBegDate $GcmBegTime $GcmEndDate $GcmEndTime
+  endif
+
   exit 0
 
                               # Last line of SplitExecPostProcessing_()
@@ -5891,6 +5928,15 @@ endif
   if ( ! $FORECAST ) then
     if ( $DO4DVAR ) then
        /bin/mv $EXPID.*rst*iter*.$RSTSUFFIX $FVHOME/recycle/hold
+    endif
+    if ( ! -d $FVHOME/run/mom ) exit 0
+       set momoutdir = `nmlread.py fvcore_layout.rc MOM_input_nml restart_output_dir`
+       set mylcvs = (`ls -1 $EXPID.rst.lcv*`)
+       set momtag = `echo $mylcvs[1] | cut -d. -f4`
+       /bin/mv $momoutdir/MOM.res.nc $FVHOME/recycle/hold/$EXPID.mom_rst.${momtag}.nc4 
+       foreach fn ( 1 2 3 )
+         /bin/mv $momoutdir/MOM.res_${fn}.nc $FVHOME/recycle/hold/$EXPID.mom${fn}_rst.${momtag}.nc4 
+       end
     endif
     cd $FVHOME/recycle/hold
     tar cvf $FVWORK/$EXPID.rst.${rtag}.tar $EXPID.* 

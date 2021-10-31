@@ -274,9 +274,8 @@ if ( $cubed ) {
      if ( ! -e   \$OGCMBCS/MOM6/${ogcm_im}x${ogcm_jm}/cice/grid_cice.bin ) exit 1
      /bin/ln -sf \$OGCMBCS/MOM6/${ogcm_im}x${ogcm_jm}/cice/grid_cice.bin .
 
-     # now comes the mess:
-     if ( -d INPUT ) /bin/rm -r INPUT
-     mkdir INPUT
+     # now comes the mess (this must loot at input.nml (or layout) instead of wired INPUT namedir:
+     if ( -d INPUT ) mkdir INPUT
      /bin/cp \$OGCMBCS/MOM6/${ogcm_im}x${ogcm_jm}/INPUT/* INPUT/
 
 #    if (  ! -e  \$OGCMBCS/../atmosphere_bcs/Icarus-NLv3/MOM6/${OGCM_GRIDNAME}_TM${ogcm_im}xTM${ogcm_jm}/visdf_${RES_DATELINE}.dat  ) exit 1

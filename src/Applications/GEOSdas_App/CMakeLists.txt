@@ -13,6 +13,7 @@ set(dasscripts
     g54dvar           
     fp_seamless 
     ldas_run.csh       
+    mom6diag.csh       
     read_HIST.csh )
 
 set(extraperlscripts

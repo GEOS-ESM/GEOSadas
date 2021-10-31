@@ -95,7 +95,7 @@
 # ------------------------
 # unsetenv LD_LIBRARY_PATH 
   source $FVROOT/bin/g5_modules
-# setenv LD_LIBRARY_PATH \${LD_LIBRARY_PATH}:\${BASEDIR}/\${ARCH}/lib:\${FVROOT}/lib
+# setenv LD_LIBRARY_PATH \${BASEDIR}/\${ARCH}/lib:\${FVROOT}/lib:\${LD_LIBRARY_PATH}
 
 # Add FVROOT/bin to front of path so fvDAS binaries are found first
 # -----------------------------------------------------------------
