@@ -5145,6 +5145,10 @@ endif
   endif
 
   if ( -d $FVHOME/run/mom )   then  # this needs revision
+      set GcmBegDate = $GcmBegEpoch[1]
+      set GcmBegTime = $GcmBegEpoch[2]
+      set GcmEndDate = $GcmEndEpoch[1]
+      set GcmEndTime = $GcmEndEpoch[2]
       mom6diag.csh $EXPID $GcmBegDate $GcmBegTime $GcmEndDate $GcmEndTime
   endif
 
