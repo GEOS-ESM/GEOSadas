@@ -11,7 +11,7 @@ env:
 cmake:
   local: ./@cmake
   remote: ../ESMA_cmake.git
-  tag: v3.5.8
+  tag: v3.5.2
   develop: develop
 
 ecbuild:
@@ -46,13 +46,13 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  branch: feature/rtodling/bkerror_check
+  branch: feature/rtodling/nc_diag_rev1
   develop: develop
 
 GEOSgcm_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp
   remote: ../GEOSgcm_GridComp.git
-  tag: v1.12.4
+  branch: feature/rtodling/gcm_1_12_4_mom6_quarter_res
   sparse: ./config/GEOSgcm_GridComp.sparse
   develop: develop
 
@@ -121,7 +121,7 @@ mom6:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  tag: v1.5.4
+  branch: feature/rtodling/v1_5_4_onlXoffl_flags
   develop: develop
 
 UMD_Etc:

@@ -13,8 +13,8 @@ set begtime = $3
 set enddate = $4
 set endtime = $5
 
-set bhh = `echo $begtime | cut -c1-2``
-set ehh = `echo $endtime | cut -c1-2``
+set bhh = `echo $begtime | cut -c1-2`
+set ehh = `echo $endtime | cut -c1-2`
 
 set begtag = ${begdate}_${bhh}z
 set endtag = ${enddate}_${bhh}z
