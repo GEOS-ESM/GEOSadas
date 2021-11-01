@@ -3405,10 +3405,10 @@ sub set_ldasANA {
           $ldas_flag = 1;
       }
 
-      $ans3 = query("LDAS HOME = $fvhome, full path?  ");
+      $ans3 = query("LDAS HOME = "$fvhome"_LDAS , full path?  ");
       $ldashome = $ans3 ;
 
-      $ans4 = query("LDAS HOME for land ensemble = $fvhome/run/atmens, full path?  ");
+      $ans4 = query("LDAS HOME for land ensemble = "$fvhome"_LDAS/run/atmens, full path?  ");
       $ldashome4ens = $ans4 ;
 
      } 
