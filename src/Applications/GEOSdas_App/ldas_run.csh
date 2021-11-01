@@ -117,8 +117,9 @@ if ( $stage == 0 ) then
    set jobldas = "$LDHOME/run/lenkf.j"
    set jobIDlong = `$PBS_BIN/sbatch $jobldas`
    set jobID = `echo $jobIDlong  |awk -F'[ ]' '{print $4}'`
-   setenv ldasJobIDs  $jobID
-   echo $ldasJobIDs ": LDAS coupling lenkf jobID for central das "
+   echo $jobID > $FVWORK/ldasJobIDs.txt
+   ls -l $FVWORK/ldasJobIDs.txt
+   echo $jobID ": LDAS jobID for central das in ldasJobIDs.txt"
 
 ## back to fvwork 
    cd $FVWORK
@@ -127,10 +128,11 @@ if ( $stage == 0 ) then
 else 
    cd $FVWORK
    echo " ${MYNAME}: LDAS coupling: stage/link LdasIncr for AGCM corrector "
-   if ($?ldasJobIDs) then
-      $FVROOT/bin/jobIDfilter -w $ldasJobIDs
-   unsetenv ldasJobIDs
-   endif
+   set ldasJobIDs = `cat ldasJobIDs.txt`
+   echo " ldasJobIDs  :  ${ldasJobIDs} " 
+   $FVROOT/bin/jobIDfilter -w $ldasJobIDs
+   /bin/mv   $FVWORK/ldasJobIDs.txt  $FVWORK/ldasJobIDs.txt.${yyyymmddhh}
+   echo  " ${MYNAME}: job monitoring is done" 
 
    set lenkf_status_file = ${FVWORK}/lenkf_job_completed.txt
    rm -f $lenkf_status_file
