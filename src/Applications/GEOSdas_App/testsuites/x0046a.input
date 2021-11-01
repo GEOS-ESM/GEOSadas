@@ -1,8 +1,8 @@
 #------------
-# C360L91_replay.input
+# x0046a.input
 #------------
 
-description: C360L91_replay__GEOSadas-5_29_3__agrid_C360__ogrid_C
+description: x0046a__GEOSadas-5_29_3__agrid_C360__ogrid_C
 tag: GEOSadas-5_29_3
 
 ---ENDHEADERS---
@@ -17,7 +17,7 @@ AGCM Horizontal Resolution? [C48]
 > C360
 
 AGCM Vertical Resolution? [72]
-> 91
+> 
 
 OGCM Resolution? [f]
 > C
@@ -28,7 +28,7 @@ EXPID? [u000_C360]
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [C360L91_replay__GEOSadas-5_29_3__agrid_C360__ogrid_C]
+EXPDSC? [x0046a__GEOSadas-5_29_3__agrid_C360__ogrid_C]
 > 
 
 Land Boundary Conditions? [Icarus_Updated]
@@ -37,14 +37,14 @@ Land Boundary Conditions? [Icarus_Updated]
 Catchment Model choice? [1]
 > 
 
-FVHOME? [/discover/nobackup/dao_it/C360L91_replay]
+FVHOME? [/discover/nobackup/dao_it/x0046a]
 > /discover/nobackup/projects/gmao/dadev/dao_it/$expid
 
-The directory /discover/nobackup/projects/gmao/obsdev/dao_it/C360L91_replay already exists. Clean it? [y]
+The directory /discover/nobackup/projects/gmao/obsdev/dao_it/x0046a already exists. Clean it? [y]
 > 
 
 Processing nodes (1:Westmere, 2:SandyBridge, 3:Ivy Bridge, 4:Haswell, 5:Skylake, 6:Cascase)? [4]
-> 
+> 5
 
 Which case of variational analysis? [1]
 > 
@@ -77,7 +77,7 @@ AeroCom? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/AeroCom]
 > 
 
 FVICS? [/archive/u/jstassi/restarts/GEOSadas-5_24_0]
-> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/x0045_l91/rs/Y2020/M11/x0045_l91.rst.20201129_21z.tar
+> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/x0045/rs/Y2020/M11/x0045.rst.20201129_21z.tar
 
 Run model-adjoint-related applications (0=no,1=yes)? [0]
 > 1
@@ -94,7 +94,7 @@ Run singular vector experiments (0=n,1=yes)? [0]
 Run analysis-sensitivity applications (0=no,1=yes)? [0]
 > 1
 
-Verifying experiment id: [C360L91_replay]
+Verifying experiment id: [x0046a]
 > 
 
 Ending year-month-day? [20191121]
@@ -107,10 +107,10 @@ Number of one-day DAS segments per PBS job? [1]
 > 
 
 Number of PEs in the zonal direction (NX)? [8]
-> 16
+> 12
 
 Number of PEs in the meridional direction (NY)? [48]
-> 
+> 72
 
 Job nickname? [g5das]
 > x46
@@ -125,7 +125,7 @@ Triangular spectral truncation? [254]
 > 
 
 Analysis vertical levels (sig))? [72]
-> 91
+> 
 
 GSI grid resolution? [NA]
 > 
@@ -146,7 +146,7 @@ Which main class of ObsSys (1: NRT; 2: MERRA; 3: MERRA-2)? [1]
 > 
 
 OBSERVING SYSTEM CLASSES?
-> disc_airs_bufr,disc_amsua_bufr,gmao_amsr2_bufr,gmao_gmi_bufr,mls_nrt_nc,ncep_1bamua_bufr,ncep_1bhrs4_bufr,ncep_acftpfl_bufr,ncep_atms_bufr,ncep_aura_omi_bufr,ncep_avcsam_bufr,ncep_avcspm_bufr,ncep_crisfsr_bufr,ncep_goesfv_bufr,ncep_gpsro_com_bufr,ncep_mhs_bufr,ncep_mtiasi_bufr,ncep_prep_bufr,ncep_satwnd_bufr,ncep_sevcsr_bufr,ncep_ssmis_bufr,ncep_tcvitals,npp_ompsnm_bufr
+> disc_airs_bufr,disc_amsua_bufr,gmao_amsr2_bufr,gmao_gmi_bufr,mls_nrt_nc,ncep_1bamua_bufr,ncep_1bhrs4_bufr,ncep_acftpfl_bufr,ncep_atms_bufr,ncep_aura_omi_bufr,ncep_avcsam_bufr,ncep_avcspm_bufr,ncep_crisfsr_bufr,ncep_goesfv_bufr,ncep_gpsro_com_bufr,ncep_mhs_bufr,ncep_mtiasi_bufr,ncep_prep_bufr,ncep_satwnd_bufr,ncep_sevcsr_bufr,ncep_ssmis_bufr,ncep_tcvitals,npp_ompsnm_bufr,gmao_mlst_bufr
 
 CHECKING OBSYSTEM? [2]
 > 1
@@ -221,12 +221,18 @@ Select group: [s0818]
 > g0613
 
 Replayed Ensemble (from OPS)?  [yes]
+> no
+
+Use SPPT-scheme for Ensemble?  [yes]
 > 
 
-Replay exp name? [x0044]
-> x0044
+Ensemble Resolution?  [C90]
+> 
 
-Replay archive directory? [/discover/nobackup/projects/gmao/dadev/rtodling/archive/x0044]
+Ensemble Vertical Levels?  [72]
+> 
+
+Experiment archive directory for ensemble restarts or 'later': [/archive/u/rtodling/x0046a]
 > /discover/nobackup/projects/gmao/dadev/rtodling/archive/x0044
 
 Edit COLLECTIONS list in run/HISTORY.rc.tmpl (y/n)? [n]

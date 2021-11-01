@@ -77,8 +77,13 @@ sub asens_script {
 
  $siteID = get_siteID();
  my $npn = `facter processorcount`; chomp($npn);
- if    ( $npn == 40 ) { $nodeflg = "sky"  }
- elsif ( $npn == 28 ) { $nodeflg = "hasw" }
+ if ( $npn == 40 ) {
+   $nodeflg = "sky";
+ } elsif ( $npn == 48 ) {
+   $nodeflg = "cas";
+ } elsif ( $npn == 28 ) {
+   $nodeflg = "hasw";
+ }
 
  open(SCRIPT,">$fvhome/asens/$joba.j") or
  die ">>> ERROR <<< cannot write $fvhome/asens/$joba.j";
@@ -151,7 +156,7 @@ sub asens_script {
 # ------------------------
   unsetenv LD_LIBRARY_PATH
   source \$FVROOT/bin/g5_modules
-  setenv LD_LIBRARY_PATH \${LD_LIBRARY_PATH}:\${BASEDIR}/\${ARCH}/lib:\${FVROOT}/lib
+  setenv LD_LIBRARY_PATH \${BASEDIR}/\${ARCH}/lib:\${FVROOT}/lib:\${LD_LIBRARY_PATH}
 
 # Internal parameters controling system behavior
 # ----------------------------------------------
@@ -334,7 +339,7 @@ EOF
   source \$SHARE/dao_ops/opengrads/setup.csh 1.9-rc1-gmao
 
   if (\$?I_MPI_ROOT) then
-    setenv I_MPI_USE_DYNAMIC_CONNECTIONS 0
+#   setenv I_MPI_USE_DYNAMIC_CONNECTIONS 0
     setenv I_MPI_FABRICS shm:ofa
   endif
   setenv MPI_BUFS_PER_PROC 1024
@@ -382,7 +387,7 @@ EOF
 # ---------------------------------
   set ANAX = `which GSIsa.x`
   set SACX = `which sac.x`
-  setenv MPIRUN_ANA    "esma_mpirun -np \$NCPUS \$ANAX"
+  setenv MPIRUN_ANA    "esma_mpirun -perhost 8 -np \$NCPUS \$ANAX"
 # setenv MPIRUN_SAC    "esma_mpirun -np \$NCPUS \$SACX"
   setenv MPIRUN_SAC    "esma_mpirun -np  1      \$SACX"
 
@@ -445,10 +450,10 @@ EOF
 #       -----------------------------------------
         if ( \$?this_nymdhh ) then
             set rslist = `/bin/ls -1 \$FVHOME/asens/\$EXPID.fsens_\${jgrdnrm}.eta.????????_??z+????????_??z-\${this_nymdhh}z.$ncsuffix \\
-                                     \$FVHOME/asens/\$EXPID.Jgradf_\${jgrdnrm}.eta.????????_??z+????????_??z-\${this_nymdhh}z.$ncsuffix`
+                                     \$FVHOME/asens/\$EXPID.Jgradf_\${jgrdnrm}.eta.????????_??z+\${this_nymdhh}z.$ncsuffix`
         else
             set rslist = `/bin/ls -1 \$FVHOME/asens/\$EXPID.fsens_\${jgrdnrm}.eta.????????_??z+????????_??z-????????_??z.$ncsuffix \\
-                                     \$FVHOME/asens/\$EXPID.Jgradf_\${jgrdnrm}.eta.????????_??z+????????_??z-????????_??z.$ncsuffix`
+                                     \$FVHOME/asens/\$EXPID.Jgradf_\${jgrdnrm}.eta.????????_??z+????????_??z.$ncsuffix`
         endif
         if ( \$status ) then
            echo \$myname": no gradient files found, nothing to do"
@@ -603,7 +608,7 @@ EOF
 
         if (! \$?this_nymdhh ) then
            set rslist = `/bin/ls -1 \$FVHOME/asens/\$EXPID.fsens_???.eta.????????_??z+????????_??z-????????_??z.$ncsuffix \\
-                                    \$FVHOME/asens/\$EXPID.Jgradf_???.eta.????????_??z+????????_??z-????????_??z.$ncsuffix`
+                                    \$FVHOME/asens/\$EXPID.Jgradf_???.eta.????????_??z+????????_??z.$ncsuffix`
            if ( \$status ) then
               echo \$myname": no more sensitivity files, forecast job completed"
            else

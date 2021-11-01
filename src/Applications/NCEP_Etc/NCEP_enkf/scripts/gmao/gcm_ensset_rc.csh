@@ -275,6 +275,8 @@ cd $ENSWORK/$member
         endif
         /bin/cp fvcore_layout.rc input.nml
 
+        /bin/cp $FVHOME/run/GEOS_SurfaceGridComp.rc .
+
         # Prepare CAP
         # -----------
         set this_cap = $ATMENSETC/CAP.rc.tmpl
