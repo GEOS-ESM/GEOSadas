@@ -5150,6 +5150,10 @@ endif
       set GcmEndDate = $GcmEndEpoch[1]
       set GcmEndTime = $GcmEndEpoch[2]
       mom6diag.csh $EXPID $GcmBegDate $GcmBegTime $GcmEndDate $GcmEndTime
+      if ( $status ) then
+         echo " Trouble in SplitExecPostProcessing_(mom6diag) aborting ..."
+         exit 1
+      endif
   endif
 
   exit 0

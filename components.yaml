@@ -65,7 +65,7 @@ g5pert:
 GEOSagcmPert_GridComp:
   local: ./src/Components/@GEOSagcmPert_GridComp
   remote: ../GEOSagcmPert_GridComp.git
-  tag: v1.2.0
+  branch: feature/rtodling/bug_fixNno_evecs
   develop: main
 
 FVdycoreCubed_GridComp:
