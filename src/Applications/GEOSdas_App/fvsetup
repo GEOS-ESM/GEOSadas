@@ -3401,17 +3401,17 @@ sub set_ldasANA {
       $ans2 = query("  Enable LDAS feedback to model y/n ? ", $dflt);
       $ldasfdbk = 1 if yes($ans2);
 
-      if ($ldasfdbk ==1 ) {
+      if ($ldasfdbk == 1 ) {
           $ldas_flag = 1;
       }
 
-      $ans3 = query("LDAS HOME = "$fvhome"_LDAS , full path?  ");
+      $ans3 = query("LDAS HOME = ${fvhome}_LDAS , full path? ", $ldashome);
       $ldashome = $ans3 ;
 
-      $ans4 = query("LDAS HOME for land ensemble = "$fvhome"_LDAS/run/atmens, full path?  ");
+      $ans4 = query("LDAS HOME for land ensemble = ${fvhome}_LDAS/run/atmens, full path? ", $ldashome4ens);
       $ldashome4ens = $ans4 ;
 
-     } 
+   } 
 return 0;
 }
 
