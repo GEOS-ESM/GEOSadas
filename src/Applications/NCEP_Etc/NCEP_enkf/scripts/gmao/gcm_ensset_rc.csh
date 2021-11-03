@@ -232,6 +232,11 @@ cd $ENSWORK/$member
         if(-e ExtData.rc) /bin/rm -f ExtData.rc
         set  extdata_files = `/bin/ls -1 *_ExtData.rc`
         cat $extdata_files > $ENSWORK/${member}/ExtData.rc
+        if ( ${nymdb}${hhb} >= 2021103021 ) then
+           foreach line (`grep -ni qfed $ENSWORK/${member}/ExtData.rc | gawk '{print $1}' FS=":"`)
+             sed -i "${line}s/.006./.061./" $ENSWORK/${member}/ExtData.rc
+           end
+        endif
 
 	if(-e $ATMENSETC/aens_stoch.rc ) /bin/ln -sf  $ATMENSETC/aens_stoch.rc $ENSWORK/${member}/stoch.rc
 

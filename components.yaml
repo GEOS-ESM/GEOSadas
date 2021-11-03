@@ -28,7 +28,7 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  branch: feature/rtodling/cascase
+  tag: rt1_4_10_cas
   develop: main
 
 MAPL:
@@ -46,13 +46,13 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  branch: feature/rtodling/nc_diag_rev1
+  tag: v1.4.5
   develop: develop
 
 GEOSgcm_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp
   remote: ../GEOSgcm_GridComp.git
-  branch: feature/rtodling/gcm_1_12_4_mom6_quarter_res
+  tag: rt1_12_4_mom6
   sparse: ./config/GEOSgcm_GridComp.sparse
   develop: develop
 
@@ -65,7 +65,7 @@ g5pert:
 GEOSagcmPert_GridComp:
   local: ./src/Components/@GEOSagcmPert_GridComp
   remote: ../GEOSagcmPert_GridComp.git
-  branch: feature/rtodling/bug_fixNno_evecs
+  tag: v5.29.1
   develop: main
 
 FVdycoreCubed_GridComp:
@@ -121,7 +121,7 @@ mom6:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  branch: feature/rtodling/v1_5_4_onlXoffl_flags
+  tag: rt1_5_4_mom6
   develop: develop
 
 UMD_Etc:
