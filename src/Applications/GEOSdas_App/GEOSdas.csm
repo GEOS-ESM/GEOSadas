@@ -824,6 +824,12 @@ exit 1
   cd $FVHOME/run/gocart
   set  extdata_files = `/bin/ls -1 *_ExtData.rc`
   cat $extdata_files > $FVWORK/ExtData.rc 
+  set hh = `echo $gcm_nhms0 | cut -c1-2`
+  if ( ${gcm_nymd0}${hh} >= 2021103021 ) then
+     foreach line (`grep -ni qfed $FVWORK/ExtData.rc | gawk '{print $1}' FS=":"`)
+       sed -i "${line}s/.006./.061./" $FVWORK/ExtData.rc
+     end
+  endif
   cd -
 # /bin/cp ExtData.rc $EXPID.ExtData.$itime.rc
 
@@ -3955,8 +3961,8 @@ endif
 
 #          Which CAP to use?
 #          -----------------
+           set hh = `echo $gcm_nhms0 | cut -c1-2`
            if ( $Final_ ) then
-              set hh = `echo $gcm_nhms0 | cut -c1-2`
               set mycap = CAP.rc.tmpl
               if ( -e CAP_${hh}.rc.tmpl ) set mycap = CAP_${hh}.rc.tmpl
            else
@@ -3988,6 +3994,11 @@ endif
            set  extdata_files = `/bin/ls -1 *_ExtData.rc`
            cat $extdata_files > $FVWORK/ExtData.rc
            cd -
+           if ( ${gcm_nymd0}${hh} >= 2021103021 ) then
+              foreach line (`grep -ni qfed ExtData.rc | gawk '{print $1}' FS=":"`)
+                 sed -i "${line}s/.006./.061./" ExtData.rc
+              end
+           endif
            /bin/cp ExtData.rc $EXPID.ExtData.$itime.rc
 
                               # Last line of CoupleAnaToGcm_()
@@ -4652,6 +4663,11 @@ endif
    cd $FVHOME/run/gocart
    set  extdata_files = `/bin/ls -1 *_ExtData.rc`
    cat $extdata_files > $FVWORK/ExtData.rc
+   if ( ${gcm_nymd0}${hh} >= 2021103021 ) then
+      foreach line (`grep -ni qfed $FVWORK/ExtData.rc | gawk '{print $1}' FS=":"`)
+        sed -i "${line}s/.006./.061./" $FVWORK/ExtData.rc
+      end
+   endif
    cd -
 #  /bin/cp ExtData.rc $EXPID.ExtData.$itime.rc
 
