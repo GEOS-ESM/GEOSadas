@@ -5953,7 +5953,7 @@ endif
     if ( $DO4DVAR ) then
        /bin/mv $EXPID.*rst*iter*.$RSTSUFFIX $FVHOME/recycle/hold
     endif
-    if ( ! -d $FVHOME/run/mom ) exit 0
+    if ( -d $FVHOME/run/mom ) then
        set momoutdir = `nmlread.py fvcore_layout.rc MOM_input_nml restart_output_dir`
        set mylcvs = (`ls -1 $EXPID.rst.lcv*`)
        set momtag = `echo $mylcvs[1] | cut -d. -f4`
