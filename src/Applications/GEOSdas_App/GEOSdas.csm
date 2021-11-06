@@ -4598,6 +4598,7 @@ endif
         
 #       Which CAP to use?
 #       -----------------
+        set nymdt = $GcmBegEpoch[1]
         set hh = `echo $GcmBegTime | cut -c1-2`
         set myhist = HISTORY.rc.tmpl
         if ( -e HISTORY_${hh}.rc.tmpl ) set myhist = HISTORY_${hh}.rc.tmpl
@@ -4663,7 +4664,7 @@ endif
    cd $FVHOME/run/gocart
    set  extdata_files = `/bin/ls -1 *_ExtData.rc`
    cat $extdata_files > $FVWORK/ExtData.rc
-   if ( ${gcm_nymd0}${hh} >= 2021103021 ) then
+   if ( ${nymdt}${hh} >= 2021103021 ) then
       foreach line (`grep -ni qfed $FVWORK/ExtData.rc | gawk '{print $1}' FS=":"`)
         sed -i "${line}s/.006./.061./" $FVWORK/ExtData.rc
       end
