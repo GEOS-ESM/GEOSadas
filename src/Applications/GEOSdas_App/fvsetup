@@ -9866,6 +9866,7 @@ sub copy_resources {
   #--ed_g5prog_rc_new("run","GCMPROG.rc.tmpl");
   ed_g5hist_rc_new("run","HISTORY.rc.tmpl");
   ed_g5surfGC_rc("run","GEOS_SurfaceGridComp.rc");
+  ed_g5surfGC_rc("fcst","GEOS_SurfaceGridComp.rc");
   writeSaverst($fcsthrs, "$fvhome/run");
   ed_blendacq("fcst");
 
