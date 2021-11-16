@@ -96,7 +96,7 @@ sub anasa_script {
 #SBATCH --ntasks=$ncpus_gsi
 #SBATCH --ntasks-per-node=24
 #SBATCH --constraint=$nodeflg
-#SBATCH --time=${fcswallclk}:00
+#SBATCH --time=1:30:00
 #PBS -N anasa
 #PBS -o anasa.log.o%j
 #PBS -l ncpus=$ncpus_gsi
