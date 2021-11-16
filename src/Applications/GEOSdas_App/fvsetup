@@ -386,11 +386,13 @@ my ($acqloc);
 my ($fcstimes,$fcswait_hrs,$asnwait_hrs);
 my ($landbcs);
 my ($coupled, $ores, $mometc);
+my ($o_servers);
 
 my ($sysfile, $nodeflg);
 my (@rmTilde);
 my ($merra2, $acftbias, $doRcorr, $nrt, $rstype);
 my ($hyb_ens, $do4diau, $newradbc, $siglevs, $vres, $aensupa);
+my ($geosit, $r21c);
 
 system clear;
 get_runtime_values();
@@ -478,7 +480,7 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
 # --------------------------------
   welcome();
   while3 ( \&get_rem_acct_info );
-  while3 ( \&get_reanalysis_info );
+  while3 ( \&get_specific_info );
   get_dimsg5gcm();
 
 # User defined options
@@ -1209,13 +1211,19 @@ sub defaults {
 }
 
 #=======================================================================
-sub get_reanalysis_info {
+sub get_specific_info {
 
+    $geosit = 0;
     $merra2 = 0;
-    $ans = query("\n  Is this a MERRA2 experiment (y/n)?", "n");
-    $merra2 = 1 if yes($ans);
+    $r21c   = 0;
 
-    return 0;
+    $ans = query(" Is this a MERRA2 (1), GEOSIT (2), R21C (3) experiment?", "0");
+    return 0 unless ( $ans );
+
+    if ($ans == 1) {$merra2 = 1};
+    if ($ans == 2) {$geosit = 1};
+    if ($ans == 3) {$r21c   = 1};
+
 }
 
 #=======================================================================
@@ -3498,6 +3506,11 @@ EOF
           $berror_file = "\$FVHOME/fvInput/gsi/etc/berror_gmao/gmao24Jun2011_fp+oz_fix/MERRA2/Final";
           $berror_env  = "setenv BERROR  $berror_file";
        }
+       if ( $geosit ) {
+       #  $berror_file = "\$FVHOME/fvInput/gsi/etc/berror_gmao/gmao24Jun2011_fp+oz_fix/MERRA2/Final";
+       #  $berror_env  = "setenv BERROR  $berror_file";
+          $berror_env  = "# Likely need to point to new BERROR for GEOSIT (adjust fvsetup)";
+       }
   }
   if ( $siglevs == 72 || $siglevs == 91 || $siglevs == 132 || $siglevs == 137 || $siglevs == 181 ) { $hybrid  = ".true." };
 
@@ -4305,10 +4318,15 @@ sub get_history {
     # query for HISTORY.rc.tmpl file
     #-------------------------------
     @HISTORY = ( <$fvetc/HISTORY*.rc.tmpl*> );
+    $g5hist_rc = "HISTORY.rc.tmpl";
     if ( $merra2 ) {
        $g5hist_rc = "HISTORY_MERRA2.rc.tmpl";
-    } else {
-       $g5hist_rc = "HISTORY.rc.tmpl";
+    }
+    if ( $geosit ) {
+       $g5hist_rc = "HISTORY_GEOSIT.rc.tmpl";
+    }
+    if ( $r21c ) {
+       $g5hist_rc = "HISTORY_R21C.rc.tmpl";
     }
     $g5hist_rc = basename $HISTORY[0] unless -e "$fvetc/$g5hist_rc";
 
@@ -4682,6 +4700,7 @@ EOF
   $nx_pert = 1;
   $ny_pert = 6 * $nx_pert;
   $use_shmem = 0;
+  $o_servers = 0;
   $ios_nds = 1;
   $cldmicro = "1MOMENT";
   if ( "$res" eq "c" && "$vres" eq "55" ) {
@@ -5022,6 +5041,7 @@ EOF
        $ana_jm_ens = 181;
   } elsif ( "$res" eq "C720" ) {  # Cubed-sphere
        $cubed = 1;
+       $o_servers = 8;
 #      $ios_nds = 3;
        $specres = "254";
        $jcap = "254";
@@ -5056,6 +5076,7 @@ EOF
        $ana_jm_ens = 361;
   } elsif ( "$res" eq "C1440" ) {  # Cubed-sphere
        $cubed = 1;
+       $o_servers = 8;
 #      $ios_nds = 4;
        $specres = "254";
        $jcap = "254";
@@ -7478,6 +7499,8 @@ if ( $fvchem && $lm > 2 ) {
  }
  $pi = $i;       # p for PSAS
 
+ my $xncpus = $ncpus + $o_servers * $ncpus_per_node;
+
 # Turn off some parallelization on discover
 #------------------------------------------
  if ( ($siteID eq "nccs") || ($siteID eq "nas") ) {
@@ -7516,7 +7539,7 @@ if ( $siteID eq "nccs" ) {
 print  SCRIPT <<"EOF";
 #SBATCH --job-name=$jobn
 #SBATCH --output=$jobn.log.o%j.txt
-#SBATCH --ntasks=$ncpus
+#SBATCH --ntasks=$xncpus
 #SBATCH --ntasks-per-node=$ncpus_per_node
 #SBATCH --constraint=$nodeflg
 #SBATCH --time=${daswallclk}:00
@@ -7591,11 +7614,13 @@ print SCRIPT <<"EOF";
   setenv ARCH `uname -s`
   setenv HOST `uname -n`
   setenv NCPUS       $ncpus       # Number of CPUs to run GCM
+  setenv NCPUSX      $xncpus      # Number of CPUs plus IO-server requirement
   setenv NCPUS_IDF   $ncpus_idf   # Number of CPUs to run IDF
   setenv NCPUS_IAU   $ncpus_iau   # Number of CPUs to run IAU
   setenv NCPUS_GSI   $ncpus_gsi   # Number of CPUs to run GSI
   setenv NCPUS_GPERT $ncpus_gpert # Number of CPUs to run gcmPERT
   setenv NCPUS_AOD   $ncpus_aod   # Number of CPUs to run PSAS-AOD
+  setenv O_SERVERS   $o_servers   # Number of IO servers
   setenv GAAS_RUN_SLURM 1 # launch AOD analysis as separate batch job
   setenv AODBLOCKJOB 1
 EOF
@@ -7821,9 +7846,10 @@ print  SCRIPT <<"EOF";
      setenv PSM2_MEMORY            large
      setenv I_MPI_ADJUST_GATHERV   3
      setenv I_MPI_ADJUST_ALLREDUCE 12
-#    setenv I_MPI_EXTRA_FILESYSTEM 1
-#    setenv I_MPI_EXTRA_FILESYSTEM_LIST gpfs
-#    setenv ROMIO_FSTYPE_FORCE         "gpfs:"
+     setenv I_MPI_EXTRA_FILESYSTEM 1
+     setenv I_MPI_EXTRA_FILESYSTEM_LIST gpfs
+     setenv ROMIO_FSTYPE_FORCE         "gpfs:"
+     setenv I_MPI_FABRICS shm:ofi
 #    setenv I_MPI_FABRICS shm:dapl
 #    setenv I_MPI_FABRICS_LIST "dapl,ofa"
 #    setenv I_MPI_FALLBACK "enable"
@@ -7985,7 +8011,11 @@ print  SCRIPT <<"EOF";
   endif
   setenv RUN_OPT_BLEND "esma_mpirun -np \$NCPUS \$HDF2RSX"
   if (\$G5GCM ) then
-     setenv    RUN_OPT_BEGIN "esma_mpirun -np \$NCPUS \$GCMX"
+     if ( \$O_SERVERS > 0 ) then
+        setenv RUN_OPT_BEGIN "mpirun -np \$NCPUSX \$GCMX --npes_model \$NCUPS --nodes_output_server \$O_SERVERS --oserver_type multigroup --npes_backend_pernode \$O_SERVERS"
+     else
+        setenv RUN_OPT_BEGIN "esma_mpirun -np \$NCPUS \$GCMX"
+     endif
      setenv ADMRUN_OPT_BEGIN "esma_mpirun -np \$NCPUS_GPERT \$GCMPTX"
   else
      setenv    RUN_OPT_BEGIN "esma_mpirun -np \$AGCM_NUM_MPI \$GCMX"
@@ -8672,6 +8702,8 @@ sub create_fscript {
  open(SCRIPT,">$fvhome/fcst/$jobf.j") or
  die ">>> ERROR <<< cannot write $fvhome/fcst/$jobf.j";
 
+ my $xncpus = $ncpus + $o_servers * $ncpus_per_node;
+
  print  SCRIPT <<"EOF";
 #!/bin/csh -fx
 # ------------------------------------------
@@ -8690,7 +8722,7 @@ if ( $siteID eq "nccs" ) {
 print  SCRIPT <<"EOF";
 #SBATCH --job-name=fcst
 #SBATCH --output=fcst.log.o%j.txt
-#SBATCH --ntasks=$ncpus
+#SBATCH --ntasks=$xncpus
 #SBATCH --ntasks-per-node=$ncpus_per_node
 #SBATCH --constraint=$nodeflg
 #SBATCH --time=${fcswallclk}:00
@@ -8760,10 +8792,12 @@ print SCRIPT <<"EOF";
   setenv ARCH `uname -s`
   setenv HOST `uname -n`
   setenv NCPUS   $ncpus   # number of CPUS
+  setenv NCPUSX  $xncpus  # NCPUS plus IO-server requirements
   setenv NCPUS_IDF   $ncpus_idf   # Numbers of CPUs to run IDF
   setenv NCPUS_IAU   $ncpus_iau   # Numbers of CPUs to run IAU
   setenv NCPUS_GSI   $ncpus_gsi   # Numbers of CPUs to run GSI
   setenv NCPUS_GPERT $ncpus_gpert # Numbers of CPUs to run GSI
+  setenv O_SERVERS   $o_servers   # Number of IO servers
   setenv N_CPU   \$NCPUS
   setenv EXPID   $expid   # experiment ID
   setenv CASE    \$EXPID  # experiment ID (for LSM's sake)
@@ -8875,6 +8909,7 @@ print  SCRIPT <<"EOF";
 # -----------------
   if (\$?I_MPI_ROOT) then
 #    setenv I_MPI_USE_DYNAMIC_CONNECTIONS 0
+     setenv I_MPI_FABRICS shm:ofi
 #    setenv I_MPI_FABRICS shm:dapl
 #    setenv I_MPI_FABRICS_LIST "dapl,ofa"
 #    setenv I_MPI_FALLBACK "enable"
@@ -9160,7 +9195,11 @@ print  SCRIPT <<"EOF";
   setenv MPIRUN        "esma_mpirun -np \$PSAS_NUM_MPI "
   setenv RUN_OPT_BLEND "esma_mpirun -np \$NCPUS \$HDF2RSX"
   if (\$G5GCM ) then
-     setenv    RUN_OPT_BEGIN "esma_mpirun -np \$NCPUS \$GCMX"
+     if ( \$O_SERVERS > 0 ) then
+        setenv RUN_OPT_BEGIN "mpirun -np \$NCPUSX \$GCMX --npes_model \$NCUPS --nodes_output_server \$O_SERVERS --oserver_type multigroup --npes_backend_pernode \$O_SERVERS"
+     else
+        setenv    RUN_OPT_BEGIN "esma_mpirun -np \$NCPUS \$GCMX"
+     endif
      setenv ADMRUN_OPT_BEGIN "esma_mpirun -np \$NCPUS_GPERT \$GCMPTX"
   else
      setenv    RUN_OPT_BEGIN "esma_mpirun -np \$AGCM_NUM_MPI \$GCMX"
@@ -10080,6 +10119,26 @@ sub copy_resources {
   if (-e "$pyradmon/scripts/radmon.defaults.rc") {
       cp("$pyradmon/scripts/radmon.defaults.rc", "$fvhome/radmon");
   }
+
+# When applicable, overwrite w/ pre-set RC files for GSI
+# ------------------------------------------------------
+  if ( $geosit ) {
+    if ( -d "$fvetc/gsi/GEOSIT" ) {
+       my @files =  glob("$fvetc/gsi/GEOSIT" . "/*");
+       foreach my $fn ( @files ) {
+          cp("$fn", "$fvhome/run");
+       }
+    }
+  }
+  if ( $r21c ) {
+    if ( -d "$fvetc/gsi/R21C" ) {
+       my @files =  glob("$fvetc/gsi/R21C" . "/*");
+       foreach my $fn ( @files ) {
+          cp("$fn", "$fvhome/run");
+       }
+    }
+  }
+
 }
  
 #=======================================================================

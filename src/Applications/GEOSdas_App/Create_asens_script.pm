@@ -97,7 +97,7 @@ sub asens_script {
 #SBATCH --ntasks=$ncpus_gsi
 #SBATCH --ntasks-per-node=24
 #SBATCH --constraint=$nodeflg
-#SBATCH --time=${fcswallclk}:00
+#SBATCH --time=2:00:00
 #PBS -N asens
 #PBS -o asens.log.o%j.txt
 #PBS -l ncpus=$ncpus_gsi

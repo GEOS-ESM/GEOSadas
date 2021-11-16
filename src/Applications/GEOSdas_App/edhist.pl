@@ -1359,10 +1359,14 @@ sub add_silo_mstorage_traits {
     my (@anaID, @chemID, @diagID, @progID, $name, $storage);
 
     @anaID  = qw( vtx .eta .sfc .prs );
-    @chemID = qw( _adg_ _aer_ _chm_ _gas_ _nav_ _tag_ );
+    @chemID = qw( _adg_ _aer_ _chm_ _gas_ _nav_ _tag_ 
+                   adg_  aer_  chm_  gas_  nav_  tag_ );
     @diagID = qw( _asm_ _chm_ _cld_ _csp_ _dyn_ _ext_ _flx_ _glc_
                   _hwl_ _int_ _lfo_ _lnd_ _lsf_ _met_ _mst_ _ocn_
-                  _odt_ _qdt_ _rad_ _slv_ _tdt_ _tmp_ _trb_ _udt_ _wnd_ );
+                  _odt_ _qdt_ _rad_ _slv_ _tdt_ _tmp_ _trb_ _udt_ _wnd_ 
+                   asm_        cld_  csp_  dyn_  ext_  flx_  glc_
+                   hwl_  int_  lfo_  lnd_  lsf_  met_  mst_  ocn_
+                   odt_  qdt_  rad_  slv_  tdt_  tmp_  trb_  udt_  wnd_ );
     @progID = qw( prog traj ptrj );
 
     # add silo trait if not present
