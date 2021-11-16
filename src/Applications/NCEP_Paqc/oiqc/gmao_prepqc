@@ -324,7 +324,7 @@ sub gmaoprevents {
 
 # Run prevents
 # -------------
-  $cmd = "gmao_prevents.x $dynf < $rcdir/prepobs_prevents.merra.parm";
+  $cmd = "gmao_prevents.x $dynf < $rcdir/prepobs_prevents.parm";
   print "$0: $cmd\n" unless ( $opt_q );
 #  $rc = System ( $cmd, "/dev/null" ) unless ( $opt_n ) ;    
  $rc = system ( $cmd ) unless ( $opt_n ) ;    
