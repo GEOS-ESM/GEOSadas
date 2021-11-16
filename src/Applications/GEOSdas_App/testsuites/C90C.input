@@ -10,7 +10,7 @@ tag: GEOSadas-5_29_3
 Remote account for Intranet plots? [jstassi@train]
 > 
 
-Is this a MERRA2 experiment (y/n)? [n]
+Is this a MERRA2 (1), GEOSIT (2), R21C (3) experiment? [0]
 > 
 
 AGCM Horizontal Resolution? [C48]
