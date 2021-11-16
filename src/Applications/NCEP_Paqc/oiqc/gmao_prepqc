@@ -300,9 +300,27 @@ sub gmaoprevents {
    Assign("prepdv.$nymd.$hh",       51);
    Assign("prevents.out.$nymd.$hh", 52);
 
+   $VTEMP = `check_virtmp.x $pref`
+
+   open(PRVPARM, '>prepobs_prevents.parm');
+
+   if ( $VTEMP eq "DRY") {     # input has sensible temperature   
+       print "$0: PREVENTS calculate VIRTMP\n";
+       print PRVPARM " &PREVDATA DOVTMP= TRUE, DOFCST= TRUE DOBERR= TRUE / \n";
+   } else  {                   # already has virtual temperature
+       print "$0: PREVENTS without VIRTMP\n";
+       print PRVPARM " &PREVDATA DOVTMP= FALSE ,DOFCST= TRUE DOBERR= TRUE  / \n";
+   }
+
+   close(PRVPARM);
+
 
    $FORT_CONVERT12 = "BIG_ENDIAN";
    $FORT_CONVERT13 = "BIG_ENDIAN";
+
+# Run check for virtual temperature
+# ---------------------------------
+   
 
 # Run prevents
 # -------------
