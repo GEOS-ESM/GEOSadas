@@ -21,6 +21,9 @@
 #                       'gmao_prepqc' without fv2ss step.
 #  20Mar2009  Todling   Remove DASPERL (per da Silva)
 #  17Nov2015  Meta      Clean up some unused (old) fort.XX assignments
+#  16Nov2021  Meta      Add routine to check for previous virtual temperature
+#                        calculation for SFCSHP in input prepbufr and skip
+#                        recalculation of VIRTMP if found
 #------------------------------------------------------------------
 
 # make env vars readily available
