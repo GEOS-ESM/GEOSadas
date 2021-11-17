@@ -74,7 +74,7 @@ AeroCom? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/AeroCom]
 > 
 
 FVICS? [/archive/u/jstassi/restarts/GEOSadas-5_24_0]
-> /archive/u/jstassi/restarts/GEOSadas-5_27_0/C90CS_x0044.rst.20201215_21z.tar
+> /archive/u/jstassi/restarts/GEOSadas-5_25_0/C90CS_x0039_p6.rst.20190729_21z.tar
 
 Run model-adjoint-related applications (0=no,1=yes)? [0]
 > 1
@@ -95,7 +95,7 @@ Verifying experiment id: [C90C_ens]
 > 
 
 Ending year-month-day? [20190731]
-> 20201220
+> 20190801
 
 Length of FORECAST run segments (in hours)? [123]
 > 
@@ -143,7 +143,7 @@ Which main class of ObsSys (1: NRT; 2: MERRA; 3: MERRA-2)? [1]
 > 
 
 OBSERVING SYSTEM CLASSES?
-> ncep_ssmis_bufr,ncep_1bamua_bufr,ncep_prep_bufr,ncep_tcvitals,ncep_mhs_bufr,ncep_1bhrs4_bufr,ncep_gpsro_bufr,ncep_mtiasi_bufr,ncep_atms_bufr,ncep_crisfsr_bufr,ncep_satwnd_bufr,ncep_sevcsr_bufr,ncep_avcsam_bufr,ncep_avcspm_bufr,ncep_aura_omi_bufr,disc_airs_bufr,disc_amsua_bufr,gmao_gmi_bufr,mls_nrt_nc,gmao_amsr2_bufr,npp_ompsnm_bufr,ncep_acftpfl_bufr
+> ncep_prep_bufr,ncep_1bamua_bufr,disc_airs_bufr,disc_amsua_bufr,ncep_mhs_bufr,ncep_1bhrs4_bufr,ncep_goesfv_bufr,ncep_mtiasi_bufr,ncep_gpsro_bufr,ncep_aura_omi_bufr,ncep_satwnd_bufr,ncep_atms_bufr,ncep_sevcsr_bufr,ncep_ssmis_bufr,mls_nrt_nc,ncep_avcsam_bufr,ncep_avcspm_bufr,ncep_tcvitals,gmao_gmi_bufr,ncep_crisfsr_bufr,npp_ompsnm_bufr,ncep_acftpfl_bufr
 
 CHECKING OBSYSTEM? [2]
 > 
@@ -227,7 +227,7 @@ Ensemble Vertical Levels?  [72]
 > 
 
 Experiment archive directory for ensemble restarts or 'later': [/archive/u/jstassi/C90C_ens]
-> /discover/nobackup/projects/gmao/dadev/rtodling/archive/x0044
+> /archive/u/dao_it/x0039_p6
 
 Edit COLLECTIONS list in run/HISTORY.rc.tmpl (y/n)? [n]
 > 

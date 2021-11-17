@@ -217,8 +217,11 @@ Select group: [g0613]
 Replayed Ensemble (from OPS)?  [yes]
 > 
 
+Replay exp name? [x0044]
+>
+
 Replay archive directory? [/discover/nobackup/projects/gmao/advda/rtodling/archive/x0044]
-> /discover/nobackup/projects/gmao/dadev/rtodling/archive/x0044
+> 
 
 Edit COLLECTIONS list in run/HISTORY.rc.tmpl (y/n)? [n]
 > 
