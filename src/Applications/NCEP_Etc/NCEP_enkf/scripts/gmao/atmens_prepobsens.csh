@@ -72,6 +72,7 @@ if ( $#argv < 7 ) then
    echo "    ATMENS_FSO_MFCST  - 0: use central forecast for error definition"
    echo "                        1: use ensemble mean forecast for error definition"
    echo "                        (default: 0)"
+   echo "    ATMENS_NCPUSTAR - number of CPUS used for untar (default: 32) "
    echo "    NCSUFFIX          - suffix of hdf/netcdf files (default: nc4)"
    echo "    DATADIR           - location where original data resides"
    echo "                        (default: /archive/u/user)"
@@ -84,7 +85,7 @@ if ( $#argv < 7 ) then
    echo " AUTHOR"
    echo "   Ricardo Todling (Ricardo.Todling@nasa.gov), NASA/GMAO "
    echo "     Created modified: 01Apr2017   by: R. Todling"
-   echo "     Last modified: 16Apr2017      by: R. Todling"
+   echo "     Last modified: 06Oct2021      by: R. Todling"
    echo " \\end{verbatim} "
    echo " \\clearpage "
    exit(0)
@@ -106,6 +107,7 @@ if ( !($?ATMENS_FSO_AVRFY)  ) setenv ATMENS_FSO_AVRFY 0  # 0= use central analys
                                                          # 1= use ensemble mean analysis
 if ( !($?ATMENS_FSO_MFCST)  ) setenv ATMENS_FSO_MFCST 0  # 0= use central fcsts
                                                          # 1= use mean of ens forecast
+if ( !($?ATMENS_NCPUSTAR)  ) setenv ATMENS_NCPUSTAR 32
 if ( !($?SRCEXPID)      ) setenv SRCEXPID NULL
 if ( !($?DATADIR)       ) setenv DATADIR $ARCHIVE
 if ( !($?NCSUFFIX)      ) setenv NCSUFFIX nc4 
@@ -180,6 +182,7 @@ set av0nhms = $av0date[2]
 set av0yyyy = `echo $av0nymd | cut -c1-4`
 set av0mm   = `echo $av0nymd | cut -c5-6`
 set av0hh   = `echo $av0nhms | cut -c1-2`
+set av0hhmn = ${av0hh}00
 set av0yyyymmddhh = ${av0nymd}${av0hh}
 
 set xv0date = ( `tick $av0date[1] $av0date[2] $sixhours` )
@@ -341,7 +344,11 @@ foreach ftype ( )
          else
             if ( -e $expid.atmens_${ftype}.${nymd}_${hh}z.tar ) then
                echo "${MYNAME}: unfolding ensemble of backgrounds ($ftype)  ... "
-               $DRYRUN tar xvf $expid.atmens_${ftype}.${nymd}_${hh}z.tar 
+               if ( $ATMENS_NCPUSTAR > 1 ) then
+                  $DRYRUN parallel-untar.py $expid.atmens_${ftype}.${nymd}_${hh}z.tar $ATMENS_NCPUSTAR
+               else
+                  $DRYRUN tar xvf $expid.atmens_${ftype}.${nymd}_${hh}z.tar 
+               endif
             endif
          endif
       endif
@@ -363,7 +370,7 @@ if ( ! -d $expid.atmens_e$aver.${nnymd}_${nhh}z ) then
          endif
       else
          echo "${MYNAME}: unfolding non-inflated ensemble of analyses  ... "
-         $DRYRUN tar xvf $expid.atmens_e$aver.${nnymd}_${nhh}z.tar --wildcards --no-anchored "*${SRCEXPID}.$aver.eta.${anymd}_${ahh}z.$NCSUFFIX"
+         $DRYRUN tar xvf $expid.atmens_e$aver.${nnymd}_${nhh}z.tar --wildcards --no-anchored "*${SRCEXPID}.$aver.eta.${anymd}_${ahh}00z.$NCSUFFIX"
          if ( $SRCEXPID != $expid && -d $SRCEXPID.atmens_e$aver.${nnymd}_${nhh}z ) then
             $DRYRUN /bin/mv $SRCEXPID.atmens_e$aver.${nnymd}_${nhh}z $expid.atmens_e$aver.${nnymd}_${nhh}z
          endif
@@ -399,7 +406,7 @@ if ( $ATMENS_FSO_MFCST <= 1 ) then
          endif
       else
          echo "${MYNAME}: unfolding ensemble of forecasts from analyses $expid.atmens_e${prog}.${xfanymd}_${xfahh}z.tar ... "
-         $DRYRUN tar xvf $expid.atmens_e${prog}.${xfanymd}_${xfahh}z.tar --wildcards --no-anchored "*${SRCEXPID}.prog.eta.${av0nymd}_${av0hh}z.$NCSUFFIX"
+         $DRYRUN tar xvf $expid.atmens_e${prog}.${xfanymd}_${xfahh}z.tar --wildcards --no-anchored "*${SRCEXPID}.prog.eta.${av0nymd}_${av0hhmn}z.$NCSUFFIX"
          if ( $ATMENS_FSO_FSENS == 1 ) then
             $DRYRUN tar xvf $expid.atmens_e${prog}.${xfanymd}_${xfahh}z.tar --wildcards --no-anchored "*${SRCEXPID}.fsens*.eta.*-${anymd}_${ahh}z.$NCSUFFIX"
          endif
@@ -442,7 +449,7 @@ if ( $ATMENS_FSO_MFCST <= 1 ) then
          endif
       else
          echo "${MYNAME}: unfolding ensemble of forecasts from backgroud state $expid.atmens_e${prog}.${xfbnymd}_${xfbhh}z.tar  ... "
-         $DRYRUN tar xvf $expid.atmens_e${prog}.${xfbnymd}_${xfbhh}z.tar --wildcards --no-anchored "*${SRCEXPID}.prog.eta.${av0nymd}_${av0hh}z.$NCSUFFIX"
+         $DRYRUN tar xvf $expid.atmens_e${prog}.${xfbnymd}_${xfbhh}z.tar --wildcards --no-anchored "*${SRCEXPID}.prog.eta.${av0nymd}_${av0hhmn}z.$NCSUFFIX"
          if ( $ATMENS_FSO_FSENS == 1 ) then
             $DRYRUN tar xvf $expid.atmens_e${prog}.${xfbnymd}_${xfbhh}z.tar --wildcards --no-anchored "*${SRCEXPID}.fsens*.eta.*-${anymd}_${ahh}z.$NCSUFFIX"
          endif
@@ -472,38 +479,40 @@ if ( $ATMENS_FSO_MFCST == 0 || $ATMENS_FSO_FSENS == 2 ) then
    if ( $ATMENS_FSO_MFCST == 0 ) then
       set ftype = "prog"
       set xtag  = ""
+      set mn    = "00"
    endif
    if ( $ATMENS_FSO_FSENS == 2 ) then
       set ftype = "fsens_twe"
       set xtag  = "-${anymd}_${ahh}z"
+      set mn    = ""
    endif
 # forecasts issued from backgrounds
-   if ( ! -e prog/fcsterr/$expid.$ftype.eta.${fbnymd}_${fbhh}z+${av0nymd}_${av0hh}z${xtag}.$NCSUFFIX ) then
+   if ( ! -e prog/fcsterr/$expid.$ftype.eta.${fbnymd}_${fbhh}z+${av0nymd}_${av0hh}${mn}z${xtag}.$NCSUFFIX ) then
      if ( $DRYRUN == "check" ) then
-       if ( ! -e $DATADIR/$SRCEXPID/prog/Y$fbyyyy/M$fbmm/D$fbdd/H$fbhh/$SRCEXPID.$ftype.eta.${fbnymd}_${fbhh}z+${av0nymd}_${av0hh}z${xtag}.$NCSUFFIX  ) then
-          echo "${MYNAME}: missing  $SRCEXPID.$ftype.eta.${fbnymd}_${fbhh}z+${av0nymd}_${av0hh}z${xtag}.$NCSUFFIX "
+       if ( ! -e $DATADIR/$SRCEXPID/prog/Y$fbyyyy/M$fbmm/D$fbdd/H$fbhh/$SRCEXPID.$ftype.eta.${fbnymd}_${fbhh}z+${av0nymd}_${av0hh}${mn}z${xtag}.$NCSUFFIX  ) then
+          echo "${MYNAME}: missing  $SRCEXPID.$ftype.eta.${fbnymd}_${fbhh}z+${av0nymd}_${av0hh}${mn}z${xtag}.$NCSUFFIX "
           @ notavail = $notavail + 1
        endif
      else
         if ( $action == "setrc" ) then
-           echo $DATADIR/$SRCEXPID/prog/Y$fbyyyy/M$fbmm/D$fbdd/H$fbhh/$SRCEXPID.$ftype.eta.${fbnymd}_${fbhh}z+${av0nymd}_${av0hh}z${xtag}.$NCSUFFIX >> $ACQRC
+           echo $DATADIR/$SRCEXPID/prog/Y$fbyyyy/M$fbmm/D$fbdd/H$fbhh/$SRCEXPID.$ftype.eta.${fbnymd}_${fbhh}z+${av0nymd}_${av0hh}${mn}z${xtag}.$NCSUFFIX >> $ACQRC
         else
-           $DRYRUN /bin/mv $SRCEXPID.$ftype.eta.${fbnymd}_${fbhh}z+${av0nymd}_${av0hh}z${xtag}.$NCSUFFIX prog/fcsterr/$expid.$ftype.eta.${fbnymd}_${fbhh}z+${av0nymd}_${av0hh}z${xtag}.$NCSUFFIX
+           $DRYRUN /bin/mv $SRCEXPID.$ftype.eta.${fbnymd}_${fbhh}z+${av0nymd}_${av0hh}${mn}z${xtag}.$NCSUFFIX prog/fcsterr/$expid.$ftype.eta.${fbnymd}_${fbhh}z+${av0nymd}_${av0hh}${mn}z${xtag}.$NCSUFFIX
         endif
       endif
    endif 
 # forecasts issued from analysis
-   if ( ! -e prog/fcsterr/$expid.$ftype.eta.${fanymd}_${fahh}z+${av0nymd}_${av0hh}z${xtag}.$NCSUFFIX ) then
+   if ( ! -e prog/fcsterr/$expid.$ftype.eta.${fanymd}_${fahh}z+${av0nymd}_${av0hh}${mn}z${xtag}.$NCSUFFIX ) then
      if ( $DRYRUN == "check" ) then
-       if ( ! -e $DATADIR/$SRCEXPID/prog/Y$fayyyy/M$famm/D$fadd/H$fahh/$SRCEXPID.$ftype.eta.${fanymd}_${fahh}z+${av0nymd}_${av0hh}z${xtag}.$NCSUFFIX ) then
-          echo "${MYNAME}: missing  $SRCEXPID.$ftype.eta.${fanymd}_${fahh}z+${av0nymd}_${av0hh}z${xtag}.$NCSUFFIX "
+       if ( ! -e $DATADIR/$SRCEXPID/prog/Y$fayyyy/M$famm/D$fadd/H$fahh/$SRCEXPID.$ftype.eta.${fanymd}_${fahh}z+${av0nymd}_${av0hh}${mn}z${xtag}.$NCSUFFIX ) then
+          echo "${MYNAME}: missing  $SRCEXPID.$ftype.eta.${fanymd}_${fahh}z+${av0nymd}_${av0hh}${mn}z${xtag}.$NCSUFFIX "
           @ notavail = $notavail + 1
        endif
      else
         if ( $action == "setrc" ) then
-           echo $DATADIR/$SRCEXPID/prog/Y$fayyyy/M$famm/D$fadd/H$fahh/$SRCEXPID.$ftype.eta.${fanymd}_${fahh}z+${av0nymd}_${av0hh}z${xtag}.$NCSUFFIX >> $ACQRC
+           echo $DATADIR/$SRCEXPID/prog/Y$fayyyy/M$famm/D$fadd/H$fahh/$SRCEXPID.$ftype.eta.${fanymd}_${fahh}z+${av0nymd}_${av0hh}${mn}z${xtag}.$NCSUFFIX >> $ACQRC
         else
-           $DRYRUN /bin/mv $SRCEXPID.$ftype.eta.${fanymd}_${fahh}z+${av0nymd}_${av0hh}z${xtag}.$NCSUFFIX prog/fcsterr/$expid.$ftype.eta.${fanymd}_${fahh}z+${av0nymd}_${av0hh}z${xtag}.$NCSUFFIX
+           $DRYRUN /bin/mv $SRCEXPID.$ftype.eta.${fanymd}_${fahh}z+${av0nymd}_${av0hh}${mn}z${xtag}.$NCSUFFIX prog/fcsterr/$expid.$ftype.eta.${fanymd}_${fahh}z+${av0nymd}_${av0hh}${mn}z${xtag}.$NCSUFFIX
         endif
      endif
    endif 
@@ -511,21 +520,21 @@ endif # central forecasts
 
 # verification from central
 if ( $ATMENS_FSO_AVRFY == 0 ) then
-   if ( ! -e prog/fcsterr/$expid.$aver.eta.${av0nymd}_${av0hh}z.$NCSUFFIX ) then
+   if ( ! -e prog/fcsterr/$expid.$aver.eta.${av0nymd}_${av0hhmn}z.$NCSUFFIX ) then
      if ( $DRYRUN == "check" ) then
-        if ( ! -e $DATADIR/$SRCEXPID/ana/Y$av0yyyy/M$av0mm/$SRCEXPID.$aver.eta.${av0nymd}_${av0hh}z.$NCSUFFIX ) then
-           echo "${MYNAME}: missing  $SRCEXPID.$aver.eta.${av0nymd}_${av0hh}z.$NCSUFFIX " 
+        if ( ! -e $DATADIR/$SRCEXPID/ana/Y$av0yyyy/M$av0mm/$SRCEXPID.$aver.eta.${av0nymd}_${av0hhmn}z.$NCSUFFIX ) then
+           echo "${MYNAME}: missing  $SRCEXPID.$aver.eta.${av0nymd}_${av0hhmn}z.$NCSUFFIX " 
            @ notavail = $notavail + 1
         endif
      else
         if ( $action == "setrc" ) then
            if ( $SRCEXPID == $expid ) then
-              echo  $DATADIR/$expid/ana/Y$av0yyyy/M$av0mm/$expid.$aver.eta.${av0nymd}_${av0hh}z.$NCSUFFIX >> $ACQRC
+              echo  $DATADIR/$expid/ana/Y$av0yyyy/M$av0mm/$expid.$aver.eta.${av0nymd}_${av0hhmn}z.$NCSUFFIX >> $ACQRC
            else
-              echo "$DATADIR/$SRCEXPID/ana/Y$av0yyyy/M$av0mm/$SRCEXPID.$aver.eta.${av0nymd}_${av0hh}z.$NCSUFFIX => $expid.$aver.eta.${av0nymd}_${av0hh}z.$NCSUFFIX" >> $ACQRC
+              echo "$DATADIR/$SRCEXPID/ana/Y$av0yyyy/M$av0mm/$SRCEXPID.$aver.eta.${av0nymd}_${av0hhmn}z.$NCSUFFIX => $expid.$aver.eta.${av0nymd}_${av0hhmn}z.$NCSUFFIX" >> $ACQRC
            endif
         else
-           $DRYRUN /bin/mv  $expid.$aver.eta.${av0nymd}_${av0hh}z.$NCSUFFIX prog/fcsterr
+           $DRYRUN /bin/mv  $expid.$aver.eta.${av0nymd}_${av0hhmn}z.$NCSUFFIX prog/fcsterr
         endif
      endif
    endif 
@@ -547,7 +556,7 @@ if ( $ATMENS_FSO_AVRFY == 1 && $ATMENS_FSO_MFCST <= 1 ) then
          endif
       else
          echo "${MYNAME}: unfolding non-inflated ensemble of analyses  ... "
-         $DRYRUN tar xvf $expid.atmens_e$aver.${vnnymd}_${vnhh}z.tar --wildcards --no-anchored "*${SRCEXPID}.$aver.eta.${av0nymd}_${av0hh}z.$NCSUFFIX"
+         $DRYRUN tar xvf $expid.atmens_e$aver.${vnnymd}_${vnhh}z.tar --wildcards --no-anchored "*${SRCEXPID}.$aver.eta.${av0nymd}_${av0hhmn}z.$NCSUFFIX"
          if ( $SRCEXPID != $expid && -d $SRCEXPID.atmens_e$aver.${vnnymd}_${vnhh}z ) then
             $DRYRUN /bin/mv $SRCEXPID.atmens_e$aver.${vnnymd}_${vnhh}z $expid.atmens_e$aver.${vnnymd}_${vnhh}z
          endif
@@ -602,18 +611,18 @@ cd $ENSWORK
 
 # Calculate mean non-inflated analysis
 # ------------------------------------
-if ( ! -e ensmean/$expid.$aver.eta.${anymd}_${ahh}z.$NCSUFFIX ) then
+if ( ! -e ensmean/$expid.$aver.eta.${anymd}_${ahh}00z.$NCSUFFIX ) then
   if ( ! -d ensmean ) mkdir ensmean
     if ( $?AENSTAT_FAST_MPIRUN ) then
-       $DRYRUN $AENSTAT_FAST_MPIRUN -o ensmean/$expid.$aver.eta.${anymd}_${ahh}z.$NCSUFFIX \
-                                          mem*/$expid.$aver.eta.${anymd}_${ahh}z.$NCSUFFIX
+       $DRYRUN $AENSTAT_FAST_MPIRUN -o ensmean/$expid.$aver.eta.${anymd}_${ahh}00z.$NCSUFFIX \
+                                          mem*/$expid.$aver.eta.${anymd}_${ahh}00z.$NCSUFFIX
     else
-       $DRYRUN $AENSTAT_MPIRUN -rc $ATMENSETC/mp_stats.rc -o ensmean/$expid.$aver.eta.${anymd}_${ahh}z.$NCSUFFIX \
-                                                           mem*/$expid.$aver.eta.${anymd}_${ahh}z.$NCSUFFIX
+       $DRYRUN $AENSTAT_MPIRUN -rc $ATMENSETC/mp_stats.rc -o ensmean/$expid.$aver.eta.${anymd}_${ahh}00z.$NCSUFFIX \
+                                                           mem*/$expid.$aver.eta.${anymd}_${ahh}00z.$NCSUFFIX
     endif
 endif
 
-set ana_ens_mean = "ensmean/$expid.$aver.eta.${anymd}_${ahh}z.$NCSUFFIX"
+set ana_ens_mean = "ensmean/$expid.$aver.eta.${anymd}_${ahh}00z.$NCSUFFIX"
 set ens_mres  = `getgfiodim.x $ana_ens_mean`
 if ($status) then
     echo "${MYNAME}: error trying to determine ens resolution, aborting ..."
@@ -647,27 +656,27 @@ if ( $ATMENS_FSO_MFCST == 1 ) then
    cd $ENSWORK/prog
 #  calculate ensemble mean of forecasts from 
 #  analysis ...
-   if ( ! -e fcsterr/$expid.prog.eta.${fanymd}_${fahh}z+${av0nymd}_${av0hh}z.$NCSUFFIX ) then
+   if ( ! -e fcsterr/$expid.prog.eta.${fanymd}_${fahh}z+${av0nymd}_${av0hhmn}z.$NCSUFFIX ) then
       if ( $?AENSTAT_FAST_MPIRUN) then
-         echo    $AENSTAT_FAST_MPIRUN -o  fcsterr/$expid.prog.eta.${fanymd}_${fahh}z+${av0nymd}_${av0hh}z.$NCSUFFIX ...
-         $DRYRUN $AENSTAT_FAST_MPIRUN -o  fcsterr/$expid.prog.eta.${fanymd}_${fahh}z+${av0nymd}_${av0hh}z.$NCSUFFIX \
-                                             ${fanymd}_${fahh}z/mem*/$expid.prog.eta.${av0nymd}_${av0hh}z.$NCSUFFIX
+         echo    $AENSTAT_FAST_MPIRUN -o  fcsterr/$expid.prog.eta.${fanymd}_${fahh}z+${av0nymd}_${av0hhmn}z.$NCSUFFIX ...
+         $DRYRUN $AENSTAT_FAST_MPIRUN -o  fcsterr/$expid.prog.eta.${fanymd}_${fahh}z+${av0nymd}_${av0hhmn}z.$NCSUFFIX \
+                                             ${fanymd}_${fahh}z/mem*/$expid.prog.eta.${av0nymd}_${av0hhmn}z.$NCSUFFIX
       else
-         echo    $AENSTAT_MPIRUN -rc $ATMENSETC/mp_stats.rc -o  fcsterr/$expid.prog.eta.${fanymd}_${fahh}z+${av0nymd}_${av0hh}z.$NCSUFFIX ...
-         $DRYRUN $AENSTAT_MPIRUN -rc $ATMENSETC/mp_stats.rc -o  fcsterr/$expid.prog.eta.${fanymd}_${fahh}z+${av0nymd}_${av0hh}z.$NCSUFFIX \
-                                                                   ${fanymd}_${fahh}z/mem*/$expid.prog.eta.${av0nymd}_${av0hh}z.$NCSUFFIX
+         echo    $AENSTAT_MPIRUN -rc $ATMENSETC/mp_stats.rc -o  fcsterr/$expid.prog.eta.${fanymd}_${fahh}z+${av0nymd}_${av0hhmn}z.$NCSUFFIX ...
+         $DRYRUN $AENSTAT_MPIRUN -rc $ATMENSETC/mp_stats.rc -o  fcsterr/$expid.prog.eta.${fanymd}_${fahh}z+${av0nymd}_${av0hhmn}z.$NCSUFFIX \
+                                                                   ${fanymd}_${fahh}z/mem*/$expid.prog.eta.${av0nymd}_${av0hhmn}z.$NCSUFFIX
       endif
    endif
 #  and background  ...
-   if ( ! -e fcsterr/$expid.prog.eta.${fbnymd}_${fbhh}z+${av0nymd}_${av0hh}z.$NCSUFFIX ) then
+   if ( ! -e fcsterr/$expid.prog.eta.${fbnymd}_${fbhh}z+${av0nymd}_${av0hhmn}z.$NCSUFFIX ) then
       if ( $?AENSTAT_FAST_MPIRUN) then
-         echo    $AENSTAT_FAST_MPIRUN -o  fcsterr/$expid.prog.eta.${fbnymd}_${fbhh}z+${av0nymd}_${av0hh}z.$NCSUFFIX ...
-         $DRYRUN $AENSTAT_FAST_MPIRUN -o  fcsterr/$expid.prog.eta.${fbnymd}_${fbhh}z+${av0nymd}_${av0hh}z.$NCSUFFIX \
-                                             ${fbnymd}_${fbhh}z/mem*/$expid.prog.eta.${av0nymd}_${av0hh}z.$NCSUFFIX
+         echo    $AENSTAT_FAST_MPIRUN -o  fcsterr/$expid.prog.eta.${fbnymd}_${fbhh}z+${av0nymd}_${av0hhmn}z.$NCSUFFIX ...
+         $DRYRUN $AENSTAT_FAST_MPIRUN -o  fcsterr/$expid.prog.eta.${fbnymd}_${fbhh}z+${av0nymd}_${av0hhmn}z.$NCSUFFIX \
+                                             ${fbnymd}_${fbhh}z/mem*/$expid.prog.eta.${av0nymd}_${av0hhmn}z.$NCSUFFIX
       else
-         echo    $AENSTAT_MPIRUN -rc $ATMENSETC/mp_stats.rc -o  fcsterr/$expid.prog.eta.${fbnymd}_${fbhh}z+${av0nymd}_${av0hh}z.$NCSUFFIX ...
-         $DRYRUN $AENSTAT_MPIRUN -rc $ATMENSETC/mp_stats.rc -o  fcsterr/$expid.prog.eta.${fbnymd}_${fbhh}z+${av0nymd}_${av0hh}z.$NCSUFFIX \
-                                                                   ${fbnymd}_${fbhh}z/mem*/$expid.prog.eta.${av0nymd}_${av0hh}z.$NCSUFFIX
+         echo    $AENSTAT_MPIRUN -rc $ATMENSETC/mp_stats.rc -o  fcsterr/$expid.prog.eta.${fbnymd}_${fbhh}z+${av0nymd}_${av0hhmn}z.$NCSUFFIX ...
+         $DRYRUN $AENSTAT_MPIRUN -rc $ATMENSETC/mp_stats.rc -o  fcsterr/$expid.prog.eta.${fbnymd}_${fbhh}z+${av0nymd}_${av0hhmn}z.$NCSUFFIX \
+                                                                   ${fbnymd}_${fbhh}z/mem*/$expid.prog.eta.${av0nymd}_${av0hhmn}z.$NCSUFFIX
       endif
    endif
 endif 
@@ -682,15 +691,15 @@ if ( $ATMENS_FSO_AVRFY == 0 ) then
 endif
 if ( $ATMENS_FSO_AVRFY == 1 && $ATMENS_FSO_MFCST <= 1 ) then
    cd $ENSWORK
-   if ( ! -e prog/fcsterr/$expid.$aver.eta.${av0nymd}_${av0hh}z.$NCSUFFIX ) then
+   if ( ! -e prog/fcsterr/$expid.$aver.eta.${av0nymd}_${av0hhmn}z.$NCSUFFIX ) then
       if ( $?AENSTAT_FAST_MPIRUN) then
-         echo    $AENSTAT_FAST_MPIRUN -o  prog/fcsterr/$expid.$aver.eta.${av0nymd}_${av0hh}z.$NCSUFFIX ...
-         $DRYRUN $AENSTAT_FAST_MPIRUN -o  prog/fcsterr/$expid.$aver.eta.${av0nymd}_${av0hh}z.$NCSUFFIX \
-          $expid.atmens_e$aver.${vnnymd}_${vnhh}z/mem*/$expid.$aver.eta.${av0nymd}_${av0hh}z.$NCSUFFIX
+         echo    $AENSTAT_FAST_MPIRUN -o  prog/fcsterr/$expid.$aver.eta.${av0nymd}_${av0hhmn}z.$NCSUFFIX ...
+         $DRYRUN $AENSTAT_FAST_MPIRUN -o  prog/fcsterr/$expid.$aver.eta.${av0nymd}_${av0hhmn}z.$NCSUFFIX \
+          $expid.atmens_e$aver.${vnnymd}_${vnhh}z/mem*/$expid.$aver.eta.${av0nymd}_${av0hhmn}z.$NCSUFFIX
       else
-         echo    $AENSTAT_MPIRUN -rc $ATMENSETC/mp_stats.rc -o  prog/fcsterr/$expid.$aver.eta.${av0nymd}_${av0hh}z.$NCSUFFIX ...
-         $DRYRUN $AENSTAT_MPIRUN -rc $ATMENSETC/mp_stats.rc -o  prog/fcsterr/$expid.$aver.eta.${av0nymd}_${av0hh}z.$NCSUFFIX \
-                                $expid.atmens_e$aver.${vnnymd}_${vnhh}z/mem*/$expid.$aver.eta.${av0nymd}_${av0hh}z.$NCSUFFIX
+         echo    $AENSTAT_MPIRUN -rc $ATMENSETC/mp_stats.rc -o  prog/fcsterr/$expid.$aver.eta.${av0nymd}_${av0hhmn}z.$NCSUFFIX ...
+         $DRYRUN $AENSTAT_MPIRUN -rc $ATMENSETC/mp_stats.rc -o  prog/fcsterr/$expid.$aver.eta.${av0nymd}_${av0hhmn}z.$NCSUFFIX \
+                                $expid.atmens_e$aver.${vnnymd}_${vnhh}z/mem*/$expid.$aver.eta.${av0nymd}_${av0hhmn}z.$NCSUFFIX
       endif
    endif
 endif

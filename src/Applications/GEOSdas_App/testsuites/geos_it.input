@@ -2,16 +2,16 @@
 # geos_it.input
 #--------------
 
-description: geos_it__b95f691__agrid_C360__ogrid_C
-tag: b95f691
+description: geos_it__GEOSadas-5_29_3__agrid_C360__ogrid_C
+tag: GEOSadas-5_29_3
 
 ---ENDHEADERS---
 
 Remote account for Intranet plots? [dao_ops@train]
 > 
 
-Is this a MERRA2 experiment (y/n)? [n]
-> 
+Is this a MERRA2 (1), GEOSIT (2), R21C (3) experiment? [0]
+> 2
 
 AGCM Horizontal Resolution? [C48]
 > C180
@@ -28,7 +28,7 @@ EXPID? [u000_C360]
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [geos_it__b95f691__agrid_C360__ogrid_C]
+EXPDSC? [geos_it__GEOSadas-5_27_1_p4__agrid_C360__ogrid_C]
 > 
 
 Land Boundary Conditions? [Icarus_Updated]
@@ -42,6 +42,9 @@ FVHOME? [/discover/nobackup/rtodling/geos_it]
 
 The directory /discover/nobackup/projects/gmao/dadev/rtodling/geos_it does not exist. Create it now? [y]
 > 
+
+Processing nodes (1:Westmere, 2:SandyBridge, 3:Ivy Bridge, 4:Haswell, 5:Skylake, 6:Cascase)? [4]
+> 5
 
 Which case of variational analysis? [1]
 > 
@@ -74,7 +77,7 @@ AeroCom? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/AeroCom]
 > 
 
 FVICS? [/archive/u/jstassi/restarts/GEOSadas-5_24_0]
-> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_29/geosit_test/rs/Y2017/M12/geosit_test.rst.20171219_21z.tar
+> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_29/geosit_test/Y2020/M01/geosit_test.rst.20200125_21z.tar
 
 Run model-adjoint-related applications (0=no,1=yes)? [0]
 > 
@@ -131,7 +134,7 @@ Which main class of ObsSys (1: NRT; 2: MERRA; 3: MERRA-2)? [1]
 > 
 
 OBSERVING SYSTEM CLASSES?
-> ncep_ssmis_bufr,ncep_1bamua_bufr,ncep_prep_bufr,ncep_tcvitals,ncep_mhs_bufr,ncep_1bhrs4_bufr,ncep_goesfv_bufr,ncep_gpsro_bufr,ncep_mtiasi_bufr,ncep_atms_bufr,ncep_cris_bufr,ncep_crisfsr_bufr,ncep_satwnd_bufr,ncep_sevcsr_bufr,ncep_avcsam_bufr,ncep_avcspm_bufr,disc_airs_bufr,disc_amsua_bufr,ncep_acftpfl_bufr,aura_omieff_nc,npp_ompsnp_nc,npp_ompsnmeff_nc,ncep_osbuv_bufr
+> ncep_ssmis_bufr,ncep_1bamua_bufr,ncep_prep_bufr,ncep_tcvitals,ncep_mhs_bufr,ncep_1bhrs4_bufr,ncep_goesfv_bufr,ncep_gpsro_bufr,ncep_mtiasi_bufr,ncep_atms_bufr,ncep_cris_bufr,ncep_crisfsr_bufr,ncep_satwnd_bufr,ncep_sevcsr_bufr,ncep_avcsam_bufr,ncep_avcspm_bufr,disc_airs_bufr,disc_amsua_bufr,ncep_acftpfl_bufr,aura_omieff_nc,npp_ompsnp_nc,npp_ompsnmeff_nc
 
 CHECKING OBSYSTEM? [2]
 > 1
@@ -146,6 +149,9 @@ Use aircraft bias correction (y/n)? [y]
 > 
 
 Use unified radiance bias correction (y/n)? [y]
+> 
+
+Land DAS Analysis (y/n)? [n]
 > 
 
 Frequency (in days) for writing restarts? [0]
