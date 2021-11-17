@@ -1,10 +1,10 @@
 #!/bin/csh  -x
 #SBATCH --account=g0613
-#SBATCH --constraint=hasw
-#SBATCH --ntasks=1
+#SBATCH --constraint=sky
+#_SBATCH --ntasks=8
 #_SBATCH --ntasks=24
 #_SBATCH --ntasks=96
-#_SBATCH --ntasks=384
+#SBATCH --ntasks=672
 #_SBATCH --ntasks-per-node=24
 #SBATCH --time=12:00:00
 #SBATCH --qos=dastest
@@ -22,7 +22,7 @@
 
  setenv DRYRUN #echo
  setenv SKIPSETTING 0
- setenv MYNCPUS 4
+ setenv MYNCPUS 8
 # Set initial time and number of samples required
  setenv EXPID x0039_p5_REPLAY_L132
  setenv EXPID x41Lrt
@@ -32,32 +32,37 @@
  setenv EXPID f525_p7_fp
  setenv EXPID f522_fp
  setenv EXPID f525_fp
+ setenv EXPID f5271_fp
 #setenv FVHOME /home/dao_ops/$EXPID
 #setenv ARCROOT /home/dao_ops/$EXPID/run/.../archive/prog
 #setenv FVHOME /discover/nobackup/projects/gmao/obsdev/rtodling/$EXPID
 #setenv FVHOME /discover/nobackup/projects/gmao/obsdev/rtodling/x0041
-setenv FVHOME /discover/nobackup/projects/gmao/dadev/rtodling/x0043rt
+setenv FVHOME /discover/nobackup/projects/gmao/dadev/rtodling/prePP
 setenv FVROOT `cat $FVHOME/.FVROOT`
 setenv PLAINDIR 0
 setenv ARCROOT /archive/u/$user/$EXPID/prog
 if ( $EXPID == "x0041" ) then
    setenv ARCROOT /archive/u/dao_it/$EXPID/prog
 endif
-if ( $EXPID == "f521_fp" || $EXPID == "f522_fp" || $EXPID == "f525_fp" || $EXPID == "f525_p5_fp" || $EXPID == "f525_p7_fp" ) then
+if ( $EXPID == "f521_fp" || $EXPID == "f522_fp" || $EXPID == "f525_fp" || $EXPID == "f525_p5_fp" || $EXPID == "f525_p7_fp" || $EXPID == "f5271_fp" ) then
    setenv ARCROOT /home/dao_ops/$EXPID/run/.../archive/prog
 endif
 if ($EXPID == "x0039_p5_REPLAY_L132") then
    setenv ARCROOT /gpfsm/dnb78s1/projects/p18/ltakacs/REPLAY_Experiments/x0039_p5_REPLAY_L132/forecasts/Regular_RPLFRQ:7200_ANA:x0039_p5
    setenv PLAINDIR 1
 endif
-setenv DMGET 0
-setenv GET_SET      1
+setenv DMGET        0
+setenv GET_SET      0
 
-setenv DO_ACQUIRE   1
-setenv GEN_NMCDIFFS 1
+setenv DO_ACQUIRE   0
+setenv GEN_NMCDIFFS 0
 
-setenv GET_BERROR 0
+setenv GET_BERROR 1
 setenv BERROR_NMODES 25
+
+set JCAP   = 512
+set NLON   = 576
+set NLAT   = 361
 
 # Basic settings (weak dependency on version of DAS)
 # --------------------------------------------------
@@ -72,9 +77,9 @@ setenv FCSTWORK /discover/nobackup/projects/gmao/obsdev/$user/fcst4berrcov.$EXPI
 setenv FCSTWORK /discover/nobackup/projects/gmao/dadev/$user/fcst4berrcov.$EXPID
 
 if ($?I_MPI_ROOT ) then
-  setenv MPIRUN_CALCSTATS "mpirun -np 32 calcstats.x"
+  setenv MPIRUN_CALCSTATS "mpirun -np 96 calcstats.x"
 else
-  setenv MPIRUN_CALCSTATS "mpirun_exec -np 32 calcstats.x"
+  setenv MPIRUN_CALCSTATS "mpirun_exec -np 96 calcstats.x"
 endif
 #
 # initial verification date and number of samples (will get samples ahead of initial date)
@@ -85,6 +90,8 @@ set vnymd0 = 20181101
 set vnymd0 = 20200203
 set vnymd0 = 20200401
 set vnymd0 = 20200301
+set vnymd0 = 20210203 # start
+set vnymd0 = 20210305
 #if ( $EXPID == "f522_fp") then
 #   set vnymd0 = 20190304
 #   @ nsamples = 350 
@@ -94,8 +101,8 @@ set vnymd0 = 20200301
 #endif
 set vnhms0 = 000000
 @ nsamples = 31
-setenv FCSTWRK $FCSTWORK.$vnymd0.$vnhms0
-mkdir -p $FCSTWRK/BERROR.WORK
+#setenv FCSTWRK $FCSTWORK.$vnymd0.$vnhms0
+setenv FCSTWRK $FCSTWORK.all
 set diren = `dirname $FCSTWRK`
 set spool = "-s $diren/spool "
 
@@ -106,8 +113,8 @@ if ( $GET_SET ) then
   set foffset_hr = 3  # offset in initial time from synoptic hour
   set nmc_hrv = 24    # begin time of NMC method / verification time
   set nmc_hrf = 48    # end   time of NMC method / fcst time
-  set vmn = 00 # either black or 00
   set vmn =    # either black or 00
+  set vmn = 00 # either black or 00
 
   # ----------------------------------
   # No user change from this part down
@@ -181,8 +188,13 @@ if ( $GET_SET ) then
        set inidate = ( `tick $inidate $gap_sc` )
     end
    
+    set lst = `cat $acqfile`
+    if (-e missing.txt ) /bin/rm missing.txt
+    touch  missing.txt
+    foreach fn ($lst)
+       if (! -e $fn ) echo $fn >> missing.txt
+    end
     if ( $DMGET ) then
-      set lst = `cat $acqfile`
       echo $lst
       dmget $lst
       exit
@@ -295,32 +307,31 @@ endif # GEN_NMCDIFFS
 if ( $GET_BERROR ) then
 
 if ( ! -d $FCSTWRK/BERROR.WORK ) mkdir -p $FCSTWRK/BERROR.WORK
-cd $FCSTWRK/BERROR.WORK
 
    # Get positioned and set namelist parameters
    # ------------------------------------------
    cd $FCSTWRK/BERROR.WORK/
 
+   mkdir samples
+   cd samples
+   ln -sf $FCSTWRK/NMC48m24/*f48m24*nc4 .
+   cd -
+
    # Get set to run berror stats code
    # --------------------------------
    if (-e infiles ) /bin/rm infiles
-   cat $FCSTWRK/shrt_fcst.txt >> infiles
-   cat $FCSTWRK/long_fcst.txt >> infiles
+#  cat $FCSTWRK/shrt_fcst.txt >> infiles
+#  cat $FCSTWRK/long_fcst.txt >> infiles
+   ls samples/*f48m24*nc4 > infiles
    ln -sf infiles fort.10
-
-   # just for the record ...
-   ls -lrt samples
 
    # Figure out dimensions of forecast files (assumes that checking one suffices)
    # ----------------------------------------------------------------------------
-   set fcst_files = (`cat samples`)
+   set fcst_files = (`cat infiles`)
    set fcst_res = (`getgfiodim.x $fcst_files[1]`)
 
    # wire for now
-   set JCAP = 512
    set NSIG   = $fcst_res[3]
-   set NLON   = 576
-   set NLAT   = 361
 
    # Prepare resource files
    set this_param = $FVROOT/etc/berror_stats.nml.tmpl
