@@ -2,8 +2,8 @@
 # geos_it.input
 #--------------
 
-description: geos_it__GEOSadas-5_27_1_p4__agrid_C360__ogrid_C
-tag: GEOSadas-5_27_1_p4
+description: geos_it__b95f691__agrid_C360__ogrid_C
+tag: b95f691
 
 ---ENDHEADERS---
 
@@ -28,7 +28,7 @@ EXPID? [u000_C360]
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [geos_it__GEOSadas-5_27_1_p4__agrid_C360__ogrid_C]
+EXPDSC? [geos_it__b95f691__agrid_C360__ogrid_C]
 > 
 
 Land Boundary Conditions? [Icarus_Updated]
@@ -74,7 +74,7 @@ AeroCom? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/AeroCom]
 > 
 
 FVICS? [/archive/u/jstassi/restarts/GEOSadas-5_24_0]
-> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_28/geosit_test/rs/Y2017/M12/geosit_test.rst.20171219_21z.tar
+> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_29/geosit_test/rs/Y2017/M12/geosit_test.rst.20171219_21z.tar
 
 Run model-adjoint-related applications (0=no,1=yes)? [0]
 > 

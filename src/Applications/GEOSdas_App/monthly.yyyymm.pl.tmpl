@@ -6,6 +6,7 @@
 #           > compute monthly means
 #           > tar and clean monthly means inputs
 #           > create monthly plots
+#           > run monthly radmon plots
 # Notes:
 # 1. To use this script,
 #    - copy to experiment run directory
@@ -53,15 +54,16 @@ use WriteLog qw(chdir_ mkpath_ unlink_ system_);
 
 # global variables
 #-----------------
-my ($meansFLG, $plotsFLG, $tarFLG, $finish, $nopush, %doMeans);
-my ($EXPID, $FVHOME, $PBS_BIN, $account, $listdir, $mnthlyRC);
-my ($numnodes_mm, $numnodes_mp, $plotHISTrc, $qcmd, $rundir);
+my ($meansFLG, $plotsFLG, $radmonFLG, $tarFLG, $finish, $nopush, %doMeans);
+my ($EXPID, $FVARCH, $FVHOME, $PBS_BIN, $PYRADMON, $account, $listdir);
+my ($mnthlyRC, $numnodes_mm, $numnodes_mp, $plotHISTrc, $qcmd, $rundir);
 my ($script, $siteID, $workdir, $yyyymm, %newrc, %JOBID);
 my ($walltime_cl, $walltime_mm, $walltime_mp, $walltime_pf);
-my ($partition, $qos);
+my ($partition, $qos, $runlocal);
+my ($datamove_constraint);
 
-#$partition = "preops";
-#$qos = "dastest";
+$partition = "preops";
+$qos = "dastest";
 
 my %valid = ( "fetch" => 1,
               "means" => 1,
@@ -88,6 +90,7 @@ my %valid = ( "fetch" => 1,
         archive_monthly_keep_files();
     }
     monthly_plots() if $plotsFLG;
+    radmon() if $radmonFLG;
 }
 
 #=======================================================================
@@ -111,9 +114,13 @@ sub init {
     #-----------------------
     GetOptions( "means"        => \$meansFLG,
                 "tar"          => \$tarFLG,
+
                 "plots"        => \$plotsFLG,
                 "finish_plots" => \$finish,
                 "nopush"       => \$nopush,
+
+                "radmon:i"    => \$radmonFLG,
+                "runlocal"    => \$runlocal,
 
                 "partition=s" => \$partition,
                 "qos=s"       => \$qos,
@@ -125,6 +132,10 @@ sub init {
                 "h|help"   => \$help );
     usage() if $help;
 
+    if (defined($radmonFLG)) {
+        $radmonFLG = 1 if $radmonFLG < 1 or $radmonFLG > 3;
+    }
+
     # flags indicating whether to create new resource files
     #------------------------------------------------------
     if ($#newrc == 0 and $newrc[0] eq "") { $newrc[0] = "1,2" }
@@ -134,7 +145,8 @@ sub init {
         next unless m/^1$/ or m/^2$/;
         $newrc{$_} = 1;
     }
-    usage() unless $meansFLG or $tarFLG or $plotsFLG or $finish or %newrc;
+    usage() unless $meansFLG or $tarFLG or $plotsFLG or $finish
+        or $radmonFLG or %newrc;
 
     # process options
     #----------------
@@ -153,10 +165,18 @@ sub init {
     $opts{"debug"} = $debug if $debug;
     perl_config(%opts);
 
-    $EXPID   = $ENV{"EXPID"};
-    $FVHOME  = $ENV{"FVHOME"};
-    $PBS_BIN = $ENV{"PBS_BIN"};
-    $GID     = $ENV{"GID"};
+    $EXPID    = $ENV{"EXPID"};
+    $FVARCH   = $ENV{"FVARCH"};
+    $FVHOME   = $ENV{"FVHOME"};
+    $PBS_BIN  = $ENV{"PBS_BIN"};
+    $PYRADMON = $ENV{"PYRADMON"};
+    $GID      = $ENV{"GID"};
+    $datamove_constraint = $ENV{"datamove_constraint"};
+    $datamove_constraint = "#";
+    if ($datamove_constraint) {
+       $datamove_constraint = $datamove_constraint;
+    }
+
 
     $ENV{"PATH"} = "$rundir:$fvroot/bin:$ENV{PATH}";
 
@@ -385,6 +405,7 @@ sub fetch_inputs {
     my (%opts, $filestring, $ftype, $htype, $do_dmput, $do_tar);
     my ($tmpl, $prefetch_j, $jobname, $outfile);
     my ($job_name, $time, $output, $parFLG, $vFLG);
+    my ($constraint);
     my (%value, @deps, $dependFLG, $cmd);
 
     # input arguments
@@ -409,6 +430,7 @@ sub fetch_inputs {
         $time = "SBATCH --time=$walltime_pf";
         $output = "SBATCH --output=$outfile";
         $parFLG = "SBATCH --partition=datamove";
+        $constraint = "$datamove_constraint";
         $vFLG = "--export=outfile=$outfile";
     }
     else {
@@ -416,6 +438,7 @@ sub fetch_inputs {
         $time = "PBS -l walltime=$walltime_pf";
         $output = "PBS -o $outfile";
         $parFLG = "";
+        $constraint = "";
         $vFLG = "-v outfile=$outfile";
     }
 
@@ -425,6 +448,7 @@ sub fetch_inputs {
     $value{"__ACCOUNT__"}    = $account;
     $value{"__OUTPUT__"}     = $output;
     $value{"__PARTITION__"}  = $parFLG;
+    $value{"__CONSTRAINT__"} = $constraint;
 
     $value{"__FILESTRING__"} = $filestring;
     $value{"__HOURTYPE__"}   = $htype;
@@ -553,6 +577,7 @@ sub tar_and_clean_inputs {
     my (%opts, $filestring, $ftype, $do_tar, $lastFLG);
     my ($tmpl, $tarandclean_j, $jobname, $outfile);
     my ($job_name, $time, $output, $parFLG, $vFLG);
+    my ($constraint);
     my (%value, $walltime, @deps, $dependFLG, $cmd);
 
     # input arguments
@@ -576,6 +601,7 @@ sub tar_and_clean_inputs {
         $time = "SBATCH --time=$walltime_cl";
         $output = "SBATCH --output=$outfile";
         $parFLG = "SBATCH --partition=datamove";
+        $constraint = "$datamove_constraint";
         $vFLG = "--export=outfile=$outfile";
     }
     else {
@@ -583,6 +609,7 @@ sub tar_and_clean_inputs {
         $time = "PBS -l walltime=$walltime_cl";
         $output = "PBS -o $outfile";
         $parFLG = "";
+        $constraint = "";
         $vFLG = "-v outfile=$outfile";
     }
 
@@ -592,6 +619,7 @@ sub tar_and_clean_inputs {
     $value{"__ACCOUNT__"}    = $account;
     $value{"__OUTPUT__"}     = $output;
     $value{"__PARTITION__"}  = $parFLG;
+    $value{"__CONSTRAINT__"} = $constraint;
 
     $value{"__FILESTRING__"} = $filestring;
     $value{"__YYYYMM__"}     = $yyyymm;
@@ -627,6 +655,7 @@ sub tar_and_clean_inputs {
 sub archive_monthly_keep_files {
     my ($outfile, $vars, $vFLG, $outFLG, $qFLGs, @deps, $dependFLG);
     my ($KEEParc_csh, $cmd, $cmd_save);
+    my ($constraint,$dummy);
 
     # command flags
     #--------------
@@ -636,10 +665,15 @@ sub archive_monthly_keep_files {
         .   "outfile=$outfile";
 
     if ($siteID eq "nccs") {
+        $constraint = "";
+        if ($datamove_constraint) {
+           ($dummy, $constraint) = (split / /, $datamove_constraint)[0, 1];
+        }
+        $constraint = "" unless $constraint;
         $vFLG = "--export=$vars";
         $outFLG = "--output=$outfile";
         $qFLGs = "--job-name=KEEParc.$yyyymm --time=$walltime_cl"
-            .    " --partition=datamove";
+            .    " --partition=datamove $constraint";
     }
     else {
         $vFLG = "-v $vars";
@@ -683,6 +717,7 @@ sub archive_monthly_keep_files {
 sub archive_monthly_files {
     my ($outfile, $vars, $vFLG, $outFLG, $qFLGs, @deps, $dependFLG);
     my ($MPParc_csh, $cmd, $cmd_save);
+    my ($dummy, $constraint);
 
     # command flags
     #--------------
@@ -693,10 +728,15 @@ sub archive_monthly_files {
         .   "mmid=$$";
 
     if ($siteID eq "nccs") {
+        $constraint = "";
+        if ($datamove_constraint) {
+           ($dummy, $constraint) = (split / /, $datamove_constraint)[0, 1];
+        }
+        $constraint = "" unless $constraint;
         $vFLG = "--export=$vars";
         $outFLG = "--output=$outfile";
         $qFLGs = "--job-name=MPParc.$yyyymm --nodes=1 --time=$walltime_cl"
-            .    " --partition=datamove";
+            .    " --partition=datamove $constraint";
     }
     else {
         $vFLG = "-v $vars";
@@ -867,6 +907,44 @@ sub finish_monthly_plots {
         $transfer_csh = "$FVHOME/run/jobscripts/plots_transfer.$yyyymm.csh";
         $cmd = "$qcmd $dependFLG $transfer_csh";
         qsubW($cmd);
+    }
+}
+
+#=======================================================================
+# name - radmon
+# purpose - run pyradmon code
+#=======================================================================
+sub radmon {
+    my ($qFLG, $flags, $pyflags, $radmonRC, $pyradmon_driver_pl);
+    
+    $qFLG = "";
+    $qFLG = "-qjobs" unless $runlocal;
+    $flags = "-expid $EXPID -fvhome $FVHOME -archive $FVARCH -np $qFLG";
+
+    $pyradmon_driver_pl = "$PYRADMON/scripts/pyradmon_driver.pl";
+    $radmonRC = "$FVHOME/radmon/radmon.defaults.rc";
+    $radmonRC = "" unless -e $radmonRC;
+
+    if ($radmonFLG == 1) {
+        $pyflags = $flags ." -startdate ${yyyymm}01";
+        system("$pyradmon_driver_pl $radmonRC $pyflags");
+    }
+    elsif ($radmonFLG == 2) {
+        $pyflags = $flags ." -startdate ${yyyymm}01 -enddate ${yyyymm}15";
+        system("$pyradmon_driver_pl $radmonRC $pyflags");
+
+        $pyflags = $flags ." -startdate ${yyyymm}16";
+        system("$pyradmon_driver_pl $radmonRC $pyflags");
+    }
+    elsif ($radmonFLG == 3) {
+        $pyflags = $flags ." -startdate ${yyyymm}01 -enddate ${yyyymm}10";
+        system("$pyradmon_driver_pl $radmonRC $pyflags");
+
+        $pyflags = $flags ." -startdate ${yyyymm}11 -enddate ${yyyymm}20";
+        system("$pyradmon_driver_pl $radmonRC $pyflags");
+
+        $pyflags = $flags ." -startdate ${yyyymm}21";
+        system("$pyradmon_driver_pl $radmonRC $pyflags");
     }
 }
 
@@ -1043,11 +1121,21 @@ usage: $script [process options] [plot option] [other options]
 process options (see Notes below)
   -means                calculate monthly means
   -tar                  tar input files
+
   -plots                produce monthly plots from monthly means
   -finish_plots         finish monthly plots job which stopped before completion
+  -nopush               do not transfer gif files to Web server after plotting;
+                        only valid when used with -plots or -finish_plots flag
 
-plot option (only valid when used with -plots or -finish_plots)
-  -nopush               do not transfer gif files to Web server after plotting
+  -radmon [val]         produce radmon plots (see -qjobs option)
+                        if val == 1 ... produce plots for entire month
+                        if val == 2 ... split month into 2 sets
+                        if val == 3 ... split month into 3 sets
+                        if no val is given, then set val to 1
+  -runlocal             run radmon jobs locally if archive is visible; otherwise,
+                        jobs will automatically be sent to slurm queue; they will
+                        be sent there regardless if archive is not visible;
+                        only valid when used with -radmon flag
 
 slurm directive options
   -partition partition  send monthly means jobs to specified partition

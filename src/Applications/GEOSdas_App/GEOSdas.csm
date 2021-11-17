@@ -140,6 +140,7 @@
   if ( !($?LOCAL_ACQUIRE) )       setenv LOCAL_ACQUIRE 0
   if ( !($?MAP05RST) )            setenv MAP05RST      0
   if ( !($?MKRESRST ) )           setenv MKRESRST      0
+  if ( !($?MONTHLY_RADMON) )      setenv MONTHLY_RADMON 0
   if ( !($?MPIRUN_IDF) )          setenv MPIRUN_IDF    0
   if ( !($?MPIRUN_UPRST) )        setenv MPIRUN_UPRST  /dev/null
   if ( !($?NEWRADBC) )            setenv NEWRADBC      0

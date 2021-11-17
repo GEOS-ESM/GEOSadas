@@ -34,8 +34,10 @@
    Program mkIAU
 
    use ESMF
-   use MAPL_Mod
-   use MAPL_CFIOMod
+   use MAPL
+   use CubeToLatLonRegridderMod
+   use CubeToCubeRegridderMod
+   use LatLonToCubeRegridderMod
    use m_set_eta, only: set_eta
    use m_ioutil, only: luavail
    use m_StrTemplate, only: StrTemplate
@@ -43,15 +45,7 @@
    use m_zeit, only: zeit_allflush
    use GEOS_mkiauGridCompMod,   only: MKIAUSetServices  => SetServices
    use IAU_GridCompMod,         only:   IAUSetServices  => SetServices
-   use MAPL_AbstractRegridderMod
-   use MAPL_RegridderManagerMod
-   use MAPL_GridManagerMod
-   use MAPL_LatLonGridFactoryMod
-   use CubedSphereGridFactoryMod, only: CubedSphereGridFactory
-   use LatLonToCubeRegridderMod
-   use CubeToLatLonRegridderMod
-   use CubeToCubeRegridderMod
-   use MAPL_TransposeRegridderMod
+   use MAPL_Profiler, only: BaseProfiler, TimeProfiler, get_global_time_profiler, get_global_memory_profiler
 
    implicit NONE
 
@@ -79,14 +73,14 @@
    type(ESMF_State)   ,pointer :: EXPORTS(:)
    type(ESMF_State)   ,pointer :: INTERNAL
    type(ESMF_Clock)    :: CLOCK
-   type(MAPL_MetaComp) :: MAPLOBJ
+   type(MAPL_MetaComp), pointer :: MAPLOBJ
 
    type (CubedSphereGridFactory) :: factory
    type (CubedSphereGridFactory) :: cs_factory
    type (LatlonGridFactory) :: ll_factory
-   type (CubeToCubeRegridder)   :: cube_to_cube_prototype
-   type (CubeToLatLonRegridder) :: cube_to_latlon_prototype
-   type (LatLonToCubeRegridder) :: latlon_to_cube_prototype
+   !type (CubeToCubeRegridder)   :: cube_to_cube_prototype
+   !type (CubeToLatLonRegridder) :: cube_to_latlon_prototype
+   !type (LatLonToCubeRegridder) :: latlon_to_cube_prototype
 
 !  Basic information about the parallel environment
 !         PET = Persistent Execution Threads
@@ -104,6 +98,7 @@
    integer :: ino_dqvdt
 
    integer :: Nx, Ny                   ! Layout
+   integer :: nx_cube,  ny_cube
    integer :: im_bkg, jm_bkg, lm_bkg   ! Bkg Grid dimensions
    integer :: im_iau, jm_iau, lm_iau   ! IAU Grid dimensions (revisit for cubed)
 
@@ -152,6 +147,9 @@
    character(len=*), parameter :: myRC= 'mkiau.rc'
 
 !                             -----
+   class (BaseProfiler), pointer :: t_p
+   type(ESMF_GridComp) :: temp_gc
+   type(ESMF_Config) :: temp_config
     
     call Main()
 
@@ -167,6 +165,13 @@ CONTAINS
     call ESMF_Initialize (logKindFlag=ESMF_LOGKIND_NONE, vm=vm, __RC__)
     call ESMF_VMGetCurrent(vm=vm, rc=status)
     call ESMF_VMGet(vm,mpiCommunicator=comm,rc=status)
+
+    !mapl_comm%mapl%comm=comm
+    !mapl_comm%esmf%comm=comm
+    call MAPL_Initialize(rc=status)
+    VERIFY_(status)
+    t_p => get_global_time_profiler()
+    call t_p%start("mkiau.x")
 
     call init_ ( CF, nymd, nhms, __RC__ )
 
@@ -196,20 +201,21 @@ CONTAINS
 !   Create a regular Lat/Lon grid over which BKG/ANA defined
 !   --------------------------------------------------------
     if(cubed) then
-      call grid_manager%add_prototype('Cubed-Sphere',factory)
+      !call grid_manager%add_prototype('Cubed-Sphere',factory)
     endif
     if (JM_BKG==6*IM_BKG) then
-       call regridder_manager%add_prototype('Cubed-Sphere', 'Cubed-Sphere', REGRID_METHOD_BILINEAR, cube_to_cube_prototype)
+       !call new_regridder_manager%add_prototype('Cubed-Sphere', 'Cubed-Sphere', REGRID_METHOD_BILINEAR, cube_to_cube_prototype)
        if ( MAPL_am_I_root() ) then
           print *
           print *, 'Background on the cubed grid '
           print *
        endif
-       cs_factory = CubedSphereGridFactory(im_world=IM_BKG,lm=LM_BKG,nx=nx,ny=ny/6,__RC__)
+       !cs_factory = CubedSphereGridFactory(im_world=IM_BKG,lm=LM_BKG,nx=nx,ny=ny/6,__RC__)
+       cs_factory = CubedSphereGridFactory(im_world=IM_BKG,lm=LM_BKG,nx=nx_cube,ny=ny_cube,__RC__)
        BKGGrid = grid_manager%make_grid(cs_factory,__RC__)
     else
-       call regridder_manager%add_prototype('Cubed-Sphere', 'LatLon', REGRID_METHOD_BILINEAR, cube_to_latlon_prototype)
-       call regridder_manager%add_prototype('LatLon', 'Cubed-Sphere', REGRID_METHOD_BILINEAR, latlon_to_cube_prototype)
+       !call new_regridder_manager%add_prototype('Cubed-Sphere', 'LatLon', REGRID_METHOD_BILINEAR, cube_to_latlon_prototype)
+       !call new_regridder_manager%add_prototype('LatLon', 'Cubed-Sphere', REGRID_METHOD_BILINEAR, latlon_to_cube_prototype)
        if ( MAPL_am_I_root() ) then
           print *
           print *, 'Background on the lat-lon grid '
@@ -233,14 +239,15 @@ CONTAINS
 !   -------------------------------------------------------------------------
     if (cubed) then
        ! check for pert-get-weights
-       if (Ny/=6*Nx) then
-          if ( MAPL_am_I_root() ) then
-             print *, 'Error: expecting Ny=6*Nx, since this uses old get-weights'
-             print *, 'Error: aborting ...'
-          end if
-          ASSERT_(.FALSE.)
-       endif
-       cs_factory = CubedSphereGridFactory(im_world=IM_IAU,lm=LM_IAU,nx=nx,ny=ny/6,__RC__)
+       !if (Ny/=6*Nx) then
+          !if ( MAPL_am_I_root() ) then
+             !print *, 'Error: expecting Ny=6*Nx, since this uses old get-weights'
+             !print *, 'Error: aborting ...'
+          !end if
+          !ASSERT_(.FALSE.)
+       !endif
+       !cs_factory = CubedSphereGridFactory(im_world=IM_IAU,lm=LM_IAU,nx=nx,ny=ny/6,__RC__)
+       cs_factory = CubedSphereGridFactory(im_world=IM_IAU,lm=LM_IAU,nx=nx_cube,ny=ny_cube,__RC__)
        GCMGrid = grid_manager%make_grid(cs_factory,__RC__)
     else
        call MAPL_DefGridName (IM_IAU,JM_IAU,ABKGGRIDNAME,MAPL_am_I_root())
@@ -273,6 +280,15 @@ CONTAINS
 
 !   Now create a component to handle the increment output
 !   -----------------------------------------------------
+    temp_config=ESMF_ConfigCreate()
+    temp_gc = ESMF_GridCompCreate(name="cap_name", config=temp_config, rc=status)
+    VERIFY_(status)
+
+    maplobj => null()
+    call MAPL_InternalStateCreate(temp_gc, maplobj, rc=status)
+    VERIFY_(status)
+   call MAPL_InternalStateRetrieve(temp_gc, maplobj, RC=status)
+   VERIFY_(status)
     BASE = MAPL_AddChild ( MAPLOBJ, Grid=BKGgrid,    &
                                        ConfigFile=myRC,   &
                                           name= 'ABKG',   &
@@ -310,9 +326,9 @@ CONTAINS
          exportState=EXPORTS(STUB), clock=CLOCK, userRC=userRC, RC=STATUS)
     ASSERT_(userRC==ESMF_SUCCESS .and. STATUS==ESMF_SUCCESS)
 
-    if ( cubed ) then ! initialize GetWeights and FMS mambo-jambo
-         call GetWeights_init (6,1,im_iau,im_iau,lm_iau,Nx,Ny,.true.,.false.,comm)
-    endif
+    !if ( cubed ) then ! initialize GetWeights and FMS mambo-jambo
+         !call GetWeights_init (6,1,im_iau,im_iau,lm_iau,Nx_cube,Ny_cube*6,.true.,.false.,comm)
+    !endif
 
 #if 0
     if ( MAPL_AM_I_ROOT() ) then
@@ -360,6 +376,8 @@ CONTAINS
           close(999)
     end if
     call final_
+    call t_p%stop('mkiau.x')
+    call MAPL_Finalize()
     call ESMF_Finalize(__RC__)
 
   end subroutine Main
@@ -412,9 +430,11 @@ CONTAINS
    rc = 0
    cubed = .false.
 
-   call ESMF_ConfigGetAttribute( CF, NX, label ='NX:', __RC__ )
-   call ESMF_ConfigGetAttribute( CF, NY, label ='NY:', __RC__ )
+   !call ESMF_ConfigGetAttribute( CF, NX, label ='NX:', __RC__ )
+   !call ESMF_ConfigGetAttribute( CF, NY, label ='NY:', __RC__ )
 
+   call MAPL_MakeDecomposition(nx,ny,__RC__)
+   call MAPL_MakeDecomposition(nx_cube,ny_cube,reduceFactor=6,__RC__)
    call ESMF_ConfigGetAttribute( CF, IM_IAU, label ='AGCM.IM_WORLD:', __RC__ )
    call ESMF_ConfigGetAttribute( CF, JM_IAU, label ='AGCM.JM_WORLD:', __RC__ )
    call ESMF_ConfigGetAttribute( CF, LM_IAU, label ='AGCM.LM:', __RC__ )
@@ -485,7 +505,6 @@ CONTAINS
    end subroutine init_
 
    subroutine info_ (agrid_bkg,dgrid_bkg,tvflag_bkg,thvflag_bkg )
-   use MAPL_Mod, only: MAPL_ROOT
    implicit none
    logical,intent(in):: agrid_bkg,dgrid_bkg,tvflag_bkg,thvflag_bkg
       if( myPET==MAPL_ROOT ) then
@@ -505,14 +524,6 @@ CONTAINS
 
    subroutine set_()
    
-   use MAPL_SimpleBundleMod, only: MAPL_SimpleBundleCreate
-   use MAPL_SimpleBundleMod, only: MAPL_SimpleBundleGetIndex
-   use MAPL_SimpleBundleMod, only: MAPL_SimpleBundle
-   use MAPL_SimpleBundleMod, only: MAPL_SimpleBundlePrint
-
-   use MAPL_Mod, only: MAPL_RVAP
-   use MAPL_Mod, only: MAPL_RGAS
-
    implicit none
 
    type(MAPL_SimpleBundle) :: bkg
@@ -657,11 +668,6 @@ CONTAINS
    use ESMFL_Mod, only: ESMFL_Regrid
    use ESMFL_Mod, only: ESMFL_FieldRegrid
 
-   use MAPL_SimpleBundleMod, only: MAPL_SimpleBundleCreate
-   use MAPL_SimpleBundleMod, only: MAPL_SimpleBundleGetIndex
-   use MAPL_SimpleBundleMod, only: MAPL_SimpleBundle
-   use MAPL_SimpleBundleMod, only: MAPL_SimpleBundlePrint
-
    use m_mpif90, only: MP_TYPE,MP_SUM
 
    implicit none
@@ -777,7 +783,7 @@ CONTAINS
 
 !           Create transform from cubed to lat-lon
 !           --------------------------------------
-            L2C => regridder_manager%make_regridder(BKGGrid, GCMGrid, REGRID_METHOD_BILINEAR,__RC__)
+            L2C => new_regridder_manager%make_regridder(BKGGrid, GCMGrid, REGRID_METHOD_BILINEAR,__RC__)
 
             if (proper_winds) then
                 iu = MAPL_SimpleBundleGetIndex ( iaubase, 'DUDT', 3, __RC__ )
@@ -883,7 +889,7 @@ CONTAINS
 
 !                Create transform from lat-lon to cubed
 !                --------------------------------------
-                 C2L => regridder_manager%make_regridder(GCMGrid, BKGGrid, REGRID_METHOD_BILINEAR,__RC__)
+                 C2L => new_regridder_manager%make_regridder(GCMGrid, BKGGrid, REGRID_METHOD_BILINEAR,__RC__)
 
                  jj = MAPL_SimpleBundleGetIndex ( iaustub, 'DUDT', 3, __RC__ )
                  call C2L%regrid(iaustub%r3(jj)%q, aux, __RC__ )
@@ -936,7 +942,7 @@ CONTAINS
 
 !                Create transform from lat-lon to cubed
 !                --------------------------------------
-                 C2L => regridder_manager%make_regridder(GCMGrid, BKGGrid, REGRID_METHOD_BILINEAR,__RC__)
+                 C2L => new_regridder_manager%make_regridder(GCMGrid, BKGGrid, REGRID_METHOD_BILINEAR,__RC__)
 
 !                Create adjoint of transform from cube to lat-lon
 !                ------------------------------------------------
@@ -1159,7 +1165,6 @@ CONTAINS
    end function mydot_product_
 
    subroutine DefVertGrid_(CF,ak,bk,nsig)
-   use MAPL_Mod, only: MAPL_ROOT
    use m_mpif90,only : MP_REAL8
    use m_mpif90,only : MP_comm_rank
 !-------------------------------------------------------------------------
@@ -1321,8 +1326,6 @@ CONTAINS
          use ESMF, only: ESMF_GridCompGet
          use ESMF, only: ESMF_GridComp
          use ESMF, only: ESMF_Grid
-         use MAPL_Mod, only: ArrayGather
-         use MAPL_Mod, only: MAPL_GridGet
          implicit none
          type ( ESMF_Grid ) Grid
          integer  im,jm,lm
