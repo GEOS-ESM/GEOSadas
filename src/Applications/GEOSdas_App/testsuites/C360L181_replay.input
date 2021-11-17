@@ -2,15 +2,15 @@
 # C360L181_replay.input
 #------------
 
-description: C360L181_replay__GEOSadas-5_29_0__agrid_C360__ogrid_C
-tag: GEOSadas-5_29_0
+description: C360L181_replay__GEOSadas-5_29_3__agrid_C360__ogrid_C
+tag: GEOSadas-5_29_3
 
 ---ENDHEADERS---
 
 Remote account for Intranet plots? [dao_it@train]
 > 
 
-Is this a MERRA2 experiment (y/n)? [n]
+Is this a MERRA2 (1), GEOSIT (2), R21C (3) experiment? [0]
 > 
 
 AGCM Horizontal Resolution? [C48]
@@ -28,7 +28,7 @@ EXPID? [u000_C360]
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [C360L181_replay__GEOSadas-5_29_0__agrid_C360__ogrid_C]
+EXPDSC? [C360L181_replay__GEOSadas-5_29_3__agrid_C360__ogrid_C]
 > 
 
 Land Boundary Conditions? [Icarus_Updated]
@@ -41,6 +41,9 @@ FVHOME? [/discover/nobackup/dao_it/C360L181_replay]
 > /discover/nobackup/projects/gmao/dadev/dao_it/$expid
 
 The directory /discover/nobackup/projects/gmao/obsdev/dao_it/C360L181_replay already exists. Clean it? [y]
+> 
+
+Processing nodes (1:Westmere, 2:SandyBridge, 3:Ivy Bridge, 4:Haswell, 5:Skylake, 6:Cascase)? [4]
 > 
 
 Which case of variational analysis? [1]
@@ -158,6 +161,9 @@ Use aircraft bias correction (y/n)? [y]
 > 
 
 Use unified radiance bias correction (y/n)? [y]
+> 
+
+Land DAS Analysis (y/n)? [n]
 > 
 
 Frequency (in days) for writing restarts? [0]

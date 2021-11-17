@@ -10,7 +10,7 @@ tag: 86f27c6
 Remote account for Intranet plots? [rtodling@train]
 > 
 
-Is this a MERRA2 experiment (y/n)? [n]
+Is this a MERRA2 (1), GEOSIT (2), R21C (3) experiment? [0]
 > 
 
 AGCM Horizontal Resolution? [C48]
@@ -41,6 +41,9 @@ FVHOME? [/discover/nobackup/jstassi/C90C_replay]
 >
 
 The directory /discover/nobackup/jstassi/C90C_replay does not exist. Create it now? [y]
+> 
+
+Processing nodes (1:Westmere, 2:SandyBridge, 3:Ivy Bridge, 4:Haswell, 5:Skylake, 6:Cascase)? [4]
 > 
 
 Which case of variational analysis? [1]
@@ -158,6 +161,9 @@ Use aircraft bias correction (y/n)? [y]
 > 
 
 Use unified radiance bias correction (y/n)? [y]
+> 
+
+Land DAS Analysis (y/n)? [n]
 > 
 
 Frequency (in days) for writing restarts? [0]

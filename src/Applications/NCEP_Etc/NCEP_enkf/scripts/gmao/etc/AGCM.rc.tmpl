@@ -15,7 +15,7 @@ AGCM_GRIDNAME: PE@AGCM_IMx@AGCM_JM-CF
       AGCM.NF: @AGCM_NF
       AGCM.LM: @AGCM_LM
       AGCM.IM_WORLD: @AGCM_IM
-      AGCM.JM_WORLD: @AGCM_JM
+      # AGCM.JM_WORLD: @AGCM_JM
 
 DYCORE: FV3
 
@@ -89,7 +89,7 @@ BERES_FILE_NAME: ExtData/g5gcm/gwd/newmfspectra40_dc25.nc
 
       >>>DATAOCEAN<<<>>>LATLON_OGCM<<<OGCM.POLE: 'PE'
       >>>DATAOCEAN<<<>>>LATLON_OGCM<<<OGCM.DATELINE: 'DE'
-      >>>DATAOCEAN<<<>>>CUBE_OGCM<<<OGCM.NF: @OGCM_NF
+      >>>DATAOCEAN<<<OGCM.NF: @OGCM_NF
 
 
 OGCM_RUN_DT: 3600
@@ -303,12 +303,12 @@ PCHEM::OX
 
 #   4DIAU (recreate analysis tendency on the fly)
 #   ---------------------------------------------
-    AINC_FILE: >>>EXPID<<<.ana.eta.%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.nc4
-    NUDGE_STATE: YES
-    AGCM_IMPORT_RESTART_FILE:  agcm_import_rst
-    AGCM_IMPORT_RESTART_TYPE:  binary
-    4DIAU_FREQUENCY: 21600
-    FILTER_TYPE: IDF
+#   AINC_FILE: >>>EXPID<<<.ana.eta.%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.nc4
+#   NUDGE_STATE: YES
+#   AGCM_IMPORT_RESTART_FILE:  agcm_import_rst
+#   AGCM_IMPORT_RESTART_TYPE:  binary
+#   4DIAU_FREQUENCY: 21600
+#   FILTER_TYPE: IDF
 
 #   Exact REPLAY Mode for 4D-IAU (Note: DateStamp on agcm_import_rst should be the SYNPOTIC time of the Analysis)
 #   -------------------------------------------------------------------------------------------------------------
@@ -502,6 +502,11 @@ LSM_CHOICE: @LSM_CHOICE
 #
 # ****************************************************************
 
+# Feedback Increments from ldas :1,  no feedback: 0  
+# ---------------------------------------------------
+LDAS_INCR: 0
+
+
 ##############################################################################################
 ##############################################################################################
 
@@ -511,7 +516,7 @@ LSM_CHOICE: @LSM_CHOICE
 # AGCM_INTERNAL = BIAS Correction Increment: BIAS(n+1) = ALPHA*IAU(n) + BETA*BIAS(n)
 # ----------------------------------------------------------------------------------
 
-#>>>FORCEDAS<<<AGCM_IMPORT_RESTART_FILE:               agcm_import_rst
+>>>FORCEDAS<<<AGCM_IMPORT_RESTART_FILE:               agcm_import_rst
 
 >>>FORCEGCM<<<AGCM_INTERNAL_RESTART_FILE:             agcm_internal_rst
 >>>FORCEGCM<<<AGCM_INTERNAL_CHECKPOINT_FILE:          agcm_internal_checkpoint
@@ -762,12 +767,12 @@ CO2:            -1
 
 # Flags for SATSIM Output
 # -----------------------
-USE_SATSIM:       @SATSIM
-USE_SATSIM_ISCCP: @ISCCP_SATSIM
-USE_SATSIM_MODIS: @MODIS_SATSIM
-USE_SATSIM_RADAR: @RADAR_SATSIM
-USE_SATSIM_LIDAR: @LIDAR_SATSIM
-USE_SATSIM_MISR:  @MISR_SATSIM
+USE_SATSIM:       0
+USE_SATSIM_ISCCP: 0
+USE_SATSIM_MODIS: 0
+USE_SATSIM_RADAR: 0
+USE_SATSIM_LIDAR: 0
+USE_SATSIM_MISR:  0
 
 >>>COUPLED<<<INTERPOLATE_ATMLM: 0
 >>>COUPLED<<<INTERPOLATE_ATMTAU: 1

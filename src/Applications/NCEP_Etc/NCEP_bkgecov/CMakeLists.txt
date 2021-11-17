@@ -8,7 +8,7 @@ set (SRCS
   m_stvp.f90 sstmod.f90 m_speclap.f90 m_calap.f90 compact_diffs.f90
   comm_mod.f90 deter_subdomain.f90 init_commvars.f90
   type_kinds.F90 variables.f90 variances.F90
-  vertlength.F90 addoz.f90
+  vertlength.F90 addoz.f90 m_nc_berror.f90
   )
 
 # This is equivalent to FOPT=$(FOPT3) in GNU Make
@@ -29,6 +29,7 @@ target_compile_definitions(${this} PRIVATE _LAPACK_ gmao_intf)
 
 ecbuild_add_executable(TARGET calcstats.x SOURCES statsmain.F90 LIBS ${this} ${MKL_LIBRARIES})
 ecbuild_add_executable(TARGET write_berror_global.x SOURCES write_berror_global.f90 LIBS ${this} ${MKL_LIBRARIES})
+ecbuild_add_executable(TARGET ut_sst_berror.x SOURCES ut_sst_berror.f90 LIBS ${this} ${MKL_LIBRARIES})
 
 file (GLOB tmpl_files *.tmpl)
 install (FILES ${tmpl_files} DESTINATION etc)

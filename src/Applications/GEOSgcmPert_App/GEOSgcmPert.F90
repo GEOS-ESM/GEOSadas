@@ -826,7 +826,8 @@ Program GEOS5_Main
    call ESMF_FieldBundleDestroy (LLPertBundle, __RC__)
    call t_p%stop('geosgcmpert.x')
    call MAPL_Finalize()
-!  call ESMF_Finalize (__RC__)
+   call pert_server%finalize()
+   call ESMF_Finalize (__RC__)
 
  end subroutine PERT_CAP
 

@@ -743,6 +743,15 @@ sub append_other_info {
 
 \${PESTOROOT}%s/obs/Y%y4/M%m2/%s.diag_conv_%y4%m2%d2_%h20000z.tar
 
+# 
+#                 -------------------------------
+#                    MOM6 OUTPUT: Wired for now
+#                 -------------------------------
+# 
+\${PESTOROOT}%s/mom/Y%y4/M%m2/%s.forcing.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.nc4
+\${PESTOROOT}%s/mom/Y%y4/M%m2/%s.prog_z.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.nc4
+\${PESTOROOT}%s/mom/Y%y4/M%m2/%s.sfc_ave.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.nc4
+
 EOF
 }
 

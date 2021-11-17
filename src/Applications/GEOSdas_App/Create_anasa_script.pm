@@ -75,8 +75,13 @@ sub anasa_script {
  $siteID = get_siteID();
  $nodeflg = "hasw";
  my $npn = `facter processorcount`; chomp($npn);
- if    ( $npn == 40 ) { $nodeflg = "sky"  }
- elsif ( $npn == 28 ) { $nodeflg = "hasw" }
+ if ( $npn == 40 ) {
+   $nodeflg = "sky";
+ } elsif ( $npn == 48 ) { 
+   $nodeflg = "cas";
+ } elsif ( $npn == 28 ) { 
+   $nodeflg = "hasw";
+ } 
 
  open(SCRIPT,">$fvhome/anasa/$jobsa.j") or
  die ">>> ERROR <<< cannot write $fvhome/anasa/$jobsa.j";
@@ -91,7 +96,7 @@ sub anasa_script {
 #SBATCH --ntasks=$ncpus_gsi
 #SBATCH --ntasks-per-node=24
 #SBATCH --constraint=$nodeflg
-#SBATCH --time=${fcswallclk}:00
+#SBATCH --time=1:30:00
 #PBS -N anasa
 #PBS -o anasa.log.o%j
 #PBS -l ncpus=$ncpus_gsi
@@ -149,7 +154,7 @@ sub anasa_script {
 # ------------------------
   unsetenv LD_LIBRARY_PATH
   source \$FVROOT/bin/g5_modules
-  setenv LD_LIBRARY_PATH \${LD_LIBRARY_PATH}:\${BASEDIR}/\${ARCH}/lib:\${FVROOT}/lib
+  setenv LD_LIBRARY_PATH \${BASEDIR}/\${ARCH}/lib:\${FVROOT}/lib:\${LD_LIBRARY_PATH}
 
   setenv BATCH_SUBCMD $qsub
 
@@ -336,7 +341,7 @@ EOF
   source \$SHARE/dao_ops/opengrads/setup.csh 1.9-rc1-gmao
 
   if (\$?I_MPI_ROOT) then
-     setenv I_MPI_USE_DYNAMIC_CONNECTIONS 0
+#    setenv I_MPI_USE_DYNAMIC_CONNECTIONS 0
      setenv I_MPI_FABRICS shm:ofa
   endif
   setenv MPI_BUFS_PER_PROC 1024
@@ -383,7 +388,7 @@ EOF
 # ---------------------------------
   set ANAX = `which GSIsa.x`
   set SACX = `which sac.x`
-  setenv MPIRUN_ANA    "esma_mpirun -np \$NCPUS \$ANAX"
+  setenv MPIRUN_ANA    "esma_mpirun -perhost 8 -np \$NCPUS \$ANAX"
 # setenv MPIRUN_SAC    "esma_mpirun -np \$NCPUS \$SACX"
   setenv MPIRUN_SAC    "esma_mpirun -np  1      \$SACX"
 
@@ -609,22 +614,21 @@ EOF
      endif
   else
      set lstcases = `/bin/ls -1 standalone.*`
+     if ( \$status ) then
+          echo \$myname": no more restart files, forecast job completed"
+          exit 0
+     endif
+     if ( \$#lstcases > 0 ) then
+        set fcst_nxt = `echo \$lstcases[1] | cut -d. -f2 | cut -d+ -f1`
+        set jname = a\${fcst_nxt}
+        set lname = \$jname.log.o%j
+        if ( \$BATCH_SUBCMD == "sbatch" ) then
+           sbatch -d afterany:\${PBS_JOBID} -J \$jname -o \$lname $jobsa.j
+        else
+           qsub -W depend=afterany:\${PBS_JOBID} -N \$jname -o \$lname $jobsa.j
+        endif
+     endif
   endif
-  if ( \$status ) then
-       echo \$myname": no more restart files, forecast job completed"
-       exit 0
-  endif
-  if ( \$#lstcases > 0 ) then
-  set fcst_nxt = `echo \$lstcases[1] | cut -d. -f2 | cut -d+ -f1`
-  set jname = a\${fcst_nxt}
-  set lname = \$jname.log.o%j
-  if ( \$BATCH_SUBCMD == "sbatch" ) then
-     sbatch -d afterany:\${PBS_JOBID} -J \$jname -o \$lname $jobsa.j
-  else
-     qsub -W depend=afterany:\${PBS_JOBID} -N \$jname -o \$lname $jobsa.j
-  endif
-  endif
-
 
 # Because on Columbia this is not a legitimate TMPDIR, remove dir to avoid pile up
 # --------------------------------------------------------------------------------
