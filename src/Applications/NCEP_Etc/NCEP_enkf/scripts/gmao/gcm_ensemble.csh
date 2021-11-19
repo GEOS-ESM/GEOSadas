@@ -161,6 +161,10 @@ if ( $ENSPARALLEL ) then
    else
      setenv JOBGEN_NCPUS $ENSGCM_NCPUS
    endif
+   if ( !($?ENSGCM_NCPUS_PER_NODE) ) then
+     if ( $ENSGCM_NCPUS_PER_NODE > 0 ) then
+        setenv JOBGEN_NCPUS_PER_NODE $ENSGCM_NCPUS_PER_NODE
+     endif
 endif
 
 if ( $FAILED ) then

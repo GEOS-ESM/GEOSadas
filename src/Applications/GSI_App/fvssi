@@ -53,6 +53,7 @@
   if ( !($?ANA4DUPD_IAU0_ONLY) ) setenv ANA4DUPD_IAU0_ONLY 0 # assume 4d increment
   if ( !($?ANGLEBC) )    setenv ANGLEBC  0
   if ( !($?BATCH_SUBCMD)  )  setenv BATCH_SUBCMD "sbatch"
+  if ( !($?DATAMOVE_CONSTRAINT)  )  setenv DATAMOVE_CONSTRAINT NULL
   if ( !($?INCSENS)   )  setenv INCSENS 0
   if ( !($?GSI_NETCDF_DIAG) )  setenv GSI_NETCDF_DIAG 0
   if ( !($?SPECRES)   )  setenv FAILED 1
@@ -322,6 +323,7 @@
         fname2 "#PBS -j eo"
         fname2 "#SBATCH -A $GID"
         fname2 "#SBATCH --partition=datamove"
+        fname2 "#$DATAMOVE_CONSTRAINT"
         fname2 "#SBATCH --time=1:00:00"
         fname2 ""
         fname2 "cd $FVWORK"
