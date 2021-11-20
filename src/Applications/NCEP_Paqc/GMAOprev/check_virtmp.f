@@ -4,10 +4,16 @@
         CHARACTER(len=180) filn
         CHARACTER(len=8)  SUBSET
         integer  iret, idate, ilev, j, tvflg, lubfi
+        integer nargs, iargc
         real vtcd
 
         data lubfi /10/
         
+        nargs = iargc()
+        if (nargs .lt. 1) then
+           print *, 'Usage: check_virtmp.x prepbufr-file'
+           stop
+        end if
         call getarg(1,filn)
         open(unit=lubfi,file=filn,form='unformatted')
 
