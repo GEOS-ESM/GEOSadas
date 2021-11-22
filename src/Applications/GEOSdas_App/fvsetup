@@ -2392,30 +2392,29 @@ EOF
 #=======================================================================
 sub ed_aens_das_replay_acq {
   my($mydir) = @_;
-  my($replay_arcdir, $replay_expid, $acq);
+  my($replay_arcdir, $aens_replay_expid, $acq);
 
   $aens_replay_expid = "x0044";
   $aens_replay_expid = query("Replay exp name?", $aens_replay_expid);
   $replay_arcdir = "/discover/nobackup/projects/gmao/advda/rtodling/archive/x0044";
   $replay_arcdir = query("Replay archive directory?", $replay_arcdir);
-  $replay_expid = basename(abs_path($replay_arcdir));
 
   $acq = "$fvhome/$mydir/atmens_replay.acq";
-  open(SCRIPT,">$acq") or die ">>> ERROR  <<< cannot write $acq";
+  open(SCRIPT,">$acq") or die ">>> ERROR <<< cannot write $acq";
   print  SCRIPT <<"EOF";
-$replay_arcdir/atmens/Y%y4/M%m2/$replay_expid.atmens_ebkg.%y4%m2%d2_%h2z.tar => $expid.atmens_ebkg.%y4%m2%d2_%h2z.tar
+$replay_arcdir/atmens/Y%y4/M%m2/$aens_replay_expid.atmens_ebkg.%y4%m2%d2_%h2z.tar => $expid.atmens_ebkg.%y4%m2%d2_%h2z.tar
 EOF
 
   if ( $mydir eq "run") { 
      $acq = "$fvhome/anasa/atmens_replay.acq";
      open(SCRIPT,">$acq") or die ">>> ERROR <<< cannot write $acq";
      print  SCRIPT <<"EOF";
-$replay_arcdir/atmens/Y%y4/M%m2/$replay_expid.atmens_ebkg.%y4%m2%d2_%h2z.tar => $expid.atmens_ebkg.%y4%m2%d2_%h2z.tar
+$replay_arcdir/atmens/Y%y4/M%m2/$aens_replay_expid.atmens_ebkg.%y4%m2%d2_%h2z.tar => $expid.atmens_ebkg.%y4%m2%d2_%h2z.tar
 EOF
      $acq = "$fvhome/asens/atmens_asens.acq";
      open(SCRIPT,">$acq") or die ">>> ERROR <<< cannot write $acq";
      print  SCRIPT <<"EOF";
-$replay_arcdir/atmens/Y%y4/M%m2/$replay_expid.atmens_ebkg.%y4%m2%d2_%h2z.tar => $expid.atmens_ebkg.%y4%m2%d2_%h2z.tar
+$replay_arcdir/atmens/Y%y4/M%m2/$aens_replay_expid.atmens_ebkg.%y4%m2%d2_%h2z.tar => $expid.atmens_ebkg.%y4%m2%d2_%h2z.tar
 EOF
   }
 
