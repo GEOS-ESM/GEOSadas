@@ -3,6 +3,8 @@
 # ------------------------------------------
            NX: @NX
            NY: @NY
+IOSERVER_NODES: 1
+
       AGCM_IM: @AGCM_IM
       AGCM_JM: @AGCM_JM
       AGCM_LM: @AGCM_LM
@@ -10,16 +12,15 @@ AGCM_GRIDNAME: PE@AGCM_IMx@AGCM_JM-CF
 
       AGCM.GRID_TYPE: @GRID_TYPE
       AGCM.GRIDNAME: PE@AGCM_IMx@AGCM_JM-CF
-      >>>CUBE_AGCM<<< AGCM.NF: @AGCM_NF
+      AGCM.NF: @AGCM_NF
       AGCM.LM: @AGCM_LM
       AGCM.IM_WORLD: @AGCM_IM
-      AGCM.JM_WORLD: @AGCM_JM
+      # AGCM.JM_WORLD: @AGCM_JM
 
 DYCORE: FV3
 
  SOLAR_DT: 3600
  IRRAD_DT: 3600
-#GOCART_DT: 3600
 SATSIM_DT: 3600
 
 SOLARAvrg: 0
@@ -66,25 +67,30 @@ CLOSURE_DEEP:0
 CLOSURE_SHALLOW:7
 CLOSURE_CONGESTUS:3
 
+# GWD Parameterization
+# --------------------
+
+# if .FALSE., use GEOS GWD code (default); .TRUE., use new NCAR GWD code
+USE_NCAR_GWD: .FALSE.
+
+# This is only used if USE_NCAR_GWD is .TRUE.
+BERES_FILE_NAME: ExtData/g5gcm/gwd/newmfspectra40_dc25.nc
+
 # Ocean Model Configuration Parameters
 # ------------------------------------
->>>COUPLED<<<      OGCM_NX: @OGCM_NX
->>>COUPLED<<<      OGCM_NY: @OGCM_NY
-      OGCM_IM: @OGCM_IM
-      OGCM_JM: @OGCM_JM
-      OGCM_LM: @OGCM_LM
-OGCM_GRIDNAME: OC@OGCM_IMx@OGCM_JM-CF
-
       OGCM.GRID_TYPE: @OGCM_GRID_TYPE
       OGCM.GRIDNAME: OC@OGCM_IMx@OGCM_JM-CF
       OGCM.IM_WORLD: @OGCM_IM
-      @LATLON_OGCM OGCM.JM_WORLD: @OGCM_JM
-      @LATLON_OGCM OGCM.POLE: 'PE'
-      @LATLON_OGCM OGCM.DATELINE: 'DE'
+      OGCM.JM_WORLD: @OGCM_JM
       OGCM.LM: @OGCM_LM
-      @CUBE_OGCM OGCM.NF: @OGCM_NF
+      >>>COUPLED<<<OGCM.NX: @OGCM_NX
+      >>>COUPLED<<<OGCM.NY: @OGCM_NY
+      >>>COUPLED<<<OGCM.GRIDSPEC: MAPL_Tripolar.nc
 
->>>COUPLED<<<OGCM_GRIDSPEC: @OGCM_GRIDSPEC
+      >>>DATAOCEAN<<<>>>LATLON_OGCM<<<OGCM.POLE: 'PE'
+      >>>DATAOCEAN<<<>>>LATLON_OGCM<<<OGCM.DATELINE: 'DE'
+      >>>DATAOCEAN<<<OGCM.NF: @OGCM_NF
+
 
 OGCM_RUN_DT: 3600
 
@@ -112,7 +118,7 @@ PRINTRC: 1
 # Set the number of parallel I/O processes to use when
 # RESTART_TYPE and or CHECKPOINT_TYPE are set to pbinary or pnc4
 #---------------------------------------------------------------
-PARALLEL_READFORCING: 1
+PARALLEL_READFORCING: 0
 NUM_READERS: 1
 NUM_WRITERS: 1
 
@@ -136,10 +142,20 @@ RECORD_REF_TIME: >>>REFTIME<<< >>>FCSTIME<<<
 # ------------------------------------------------
 DEFAULT_CHECKPOINT_TYPE: pnc4
 
+# Tracers definition 
+# ---------------------
+TRI_increments:: 
+PCHEM::OX 
+:: 
+MTRI_increments:: 
+PCHEM::OX 
+:: 
+
+
 ###################################################################################################
 ####                                   DAS/Replay Options                                      ####
 ####                                   ------------------                                      ####
-####                                                                                            ####
+####                                                                                           ####
 ####   The REPLAY mechanism operates within 2 distinct "flavors":                              ####
 ####              1) Exact    (Uses Archived Increment Files)                                  ####
 ####              2) Regular  (Uses Archived Analysis/Assimilation Files)                      ####
@@ -149,7 +165,7 @@ DEFAULT_CHECKPOINT_TYPE: pnc4
 ####         For these cases, only the CORRECTOR step is employed and is, therefore, as        ####
 ####         efficient as a stand-alone model run.                                             ####
 ####                                                                                           ####
-####         In order to guarentee reproducibility, the model and its BUILD parameters         ####
+####         In order to guarantee reproducibility, the model and its BUILD parameters         ####
 ####         (Compilers and Options) as well as all INPUT data must be identical to the        ####
 ####         original DAS experiment.  This type of REPLAY is useful when producing            ####
 ####         additional passive, diagnostic data, or when the original data is lost.           ####
@@ -184,7 +200,7 @@ DEFAULT_CHECKPOINT_TYPE: pnc4
 ####        -02z, -01z, 00z, +01z, +02z, +03z). The IAU sequence currently employed uses       ####
 ####        the 3 Analyses defined at -03z, 00z, +03z for its IAU forcing.  Both systems       ####
 ####        may be described using the following parameters:                                   ####
-####                                                                                            ####
+####                                                                                           ####
 ####        CORRECTOR_DURATION          nnnnnn   (Duration -in seconds- of Corrector step)     ####
 ####        REPLAY_MODE                 Exact                                                  ####
 ####        REPLAY_FILE                 %s.agcm_import_rst.%y4%m2%d2_%h2z.bin                  ####
@@ -222,7 +238,7 @@ DEFAULT_CHECKPOINT_TYPE: pnc4
 ####   ----------------------                                                                  ####
 ####        The current 4D-EnVar system, as previously noted, produces 7 hourly Analyses:      ####
 ####        (-03z, -02z, -01z, 00z, +01z, +02z, +03z) for each 6-hour assimilation window      ####
-####        centered around the 4 synpotic times of 00z, 06z, 12z, and 18z.  We see that the   ####
+####        centered around the 4 synoptic times of 00z, 06z, 12z, and 18z.  We see that the   ####
 ####        last Analysis (+03z) associated with each synoptic time will be over-ridden by     ####
 ####        the first Analyiss (-03z) associated with synoptic time of the next assimilation   ####
 ####        window. To prevent these over-ridden files from being lost, the GEOS-5 DAS         ####
@@ -232,7 +248,7 @@ DEFAULT_CHECKPOINT_TYPE: pnc4
 ####        used for this purpose, and is only utilized if the REPLAY configuration warrants.  ####
 ####                                                                                           ####
 ####                                                                                           ####
-####   Regualr Replay Time Interpolation:                                                      ####
+####   Regular Replay Time Interpolation:                                                      ####
 ####   ----------------------------------                                                      ####
 ####        In some instances the USER might wish to create IAU Increments at a frequency      ####
 ####        greater than the frequency of the target analysis.  For those cases additional     ####
@@ -251,36 +267,48 @@ DEFAULT_CHECKPOINT_TYPE: pnc4
 ####        or CUBIC scheme.                                                                   ####
 ####                                                                                           ####
 ###################################################################################################
- 
+
 #   ASSIMILATION_CYCLE:  nnnnnn       #  (Default: 21600)
 #   IAU_DIGITAL_FILTER:  YES or NO    #  (Default: YES  )
  
-#   Exact REPLAY Mode and Files
-#   ---------------------------
-#   REPLAY_MODE: Exact
-#   REPLAY_FILE:     agcm_import_rst.%y4%m2%d2_%h2%n2z.bin
-#   REPLAY_FILE09: agcm09_import_rst.%y4%m2%d2_%h2%n2z.bin
-#   REPLAY_FILE_FREQUENCY: 10800
+# Typical MERRA-2 Regular REPLAY Configuration
+# --------------------------------------------
+#M2 REPLAY_ANA_EXPID:   MERRA-2
+#M2 REPLAY_ANA_LOCATION: @M2_REPLAY_ANA_LOCATION
+#M2 REPLAY_MODE: Regular
+#M2 REPLAY_FILE: ana/Y%y4/M%m2/MERRA-2.ana.eta.%y4%m2%d2_%h2z.nc4
+# -----------------------------------------------------------------
 
-#   Regular REPLAY Mode and Files
-#   -----------------------------
+#   ANA EXPID and LOCATION used for REPLAY
+#   --------------------------------------
+#   REPLAY_ANA_EXPID:    @REPLAY_ANA_EXPID
+#   REPLAY_ANA_LOCATION: @REPLAY_ANA_LOCATION
+
+#   Typical Exact REPLAY Configuration
+#   ----------------------------------
+#   REPLAY_MODE: Exact
+#   REPLAY_FILE:   rs/Y%y4/M%m2/@REPLAY_ANA_EXPID.agcm_import_rst.%y4%m2%d2_%h2z.bin
+#   REPLAY_FILE09: rs/Y%y4/M%m2/@REPLAY_ANA_EXPID.agcm09_import_rst.%y4%m2%d2_%h2z.bin
+#   REPLAY_FILE_FREQUENCY: 10800
+#   REPLAY_FILE_REFERENCE_TIME: 000000
+
+#   Typical Regular REPLAY Configuration
+#   ------------------------------------
 #   REPLAY_MODE: Regular
-#   REPLAY_FILE:     ana.eta.%y4%m2%d2_%h2%n2z.nc4
-#   REPLAY_FILE09: ana09.eta.%y4%m2%d2_%h2%n2z.nc4
+#   REPLAY_FILE:   ana/Y%y4/M%m2/@REPLAY_ANA_EXPID.ana.eta.%y4%m2%d2_%h2z.nc4
+#   REPLAY_FILE09: ana/Y%y4/M%m2/@REPLAY_ANA_EXPID.ana09.eta.%y4%m2%d2_%h2z.nc4
 #   REPLAY_FILE_FREQUENCY:       10800
 #   REPLAY_FILE_REFERENCE_TIME: 000000
-#   REPLAY_WINDFIX: NO
-#   REPLAY_TS: YES
 
 
 #   4DIAU (recreate analysis tendency on the fly)
 #   ---------------------------------------------
-    AINC_FILE: >>>EXPID<<<.ana.eta.%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.nc4
-    NUDGE_STATE: YES
-    AGCM_IMPORT_RESTART_FILE:  agcm_import_rst
-    AGCM_IMPORT_RESTART_TYPE:  binary
-    4DIAU_FREQUENCY: 21600
-    FILTER_TYPE: IDF
+#   AINC_FILE: >>>EXPID<<<.ana.eta.%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.nc4
+#   NUDGE_STATE: YES
+#   AGCM_IMPORT_RESTART_FILE:  agcm_import_rst
+#   AGCM_IMPORT_RESTART_TYPE:  binary
+#   4DIAU_FREQUENCY: 21600
+#   FILTER_TYPE: IDF
 
 #   Exact REPLAY Mode for 4D-IAU (Note: DateStamp on agcm_import_rst should be the SYNPOTIC time of the Analysis)
 #   -------------------------------------------------------------------------------------------------------------
@@ -292,7 +320,7 @@ DEFAULT_CHECKPOINT_TYPE: pnc4
 
 
 ####################################################################################################
-####                    Miscellaneous Exact/Regular Replay Parameters                           ####
+####                    Miscellaneous Exact/Regular REPLAY Parameters                           ####
 ####                    ---------------------------------------------                           ####
 ####                                                                                            ####
 ####   REPLAY FILE MUST be on an A-Grid!                                                        ####
@@ -301,7 +329,7 @@ DEFAULT_CHECKPOINT_TYPE: pnc4
 ####   REPLAY Variables are set to either:  YES,  NO,  or a character_string NAME.              ####
 ####   The NAME is used as a means of creating an ALIAS for the REPLAY variable.                ####
 ####   An ALIAS is required when the REPLAY FILE contains a variable name NOT included          ####
-####   in our standard list. (E.g.,  REPLAY_T: temperature)                                     ####
+####   in our standard list. (e.g.,  REPLAY_T: temperature)                                     ####
 ####                                                                                            ####
 ####   NOTE:  When using an ALIAS for REPLAY_T, you must also supply the REPLAY_T_TYPE          ####
 ####   -----  REPLAY_T_TYPE: T        # Options: T,TV,TH,THV                                    ####
@@ -443,9 +471,8 @@ DEFAULT_CHECKPOINT_TYPE: pnc4
 # --------------------
 #USE_PP_TAPER: 1
 
-
 ##############################################################################################
-####                  CHOICE OF  Land Surface and Runoff Routing Models                   ####
+####    Land Surface Model                                                                ####
 ##############################################################################################
 
 # Option to Diagnose Precipitation Types for Land Surface
@@ -456,16 +483,29 @@ DIAGNOSE_PRECIP_TYPE: FALSE
 # ---------------------------------------------------------------------------------------
 LSM_CHOICE: @LSM_CHOICE
 
-# LSM Icarus-NL Options
-# ---------------------
-@LSM_PARMS LAND_PARAMS: NRv7.2
-@LSM_PARMS Z0_FORMULATION: 4
-@LSM_PARMS IGNORE_VEG_HEIGHTS: 1
+# Name of file containing Surface GridComp resource parameters 
+# ------------------------------------------------------------
+# SURFRC: GEOS_SurfaceGridComp.rc
 
-# Set RUN_ROUTE to 1 to run the runoff routing model
-# -------------------------------------------------------------------------------
 
-RUN_ROUTE: 0
+# ****************************************************************
+# ******* REQUIRES MAJOR CLEAN-UP ACROSS SEVERAL GRIDCOMPs *******
+# ******* (retained to facilitate this cleanup in future)  *******
+# ******* IMPORTANT: This is merely for future reference   *******
+# *******   The model reads USE_CNNEE from CO2_GridComp.rc *******
+# *******   not from this file.                            *******
+# Atmosphere-Land CO2 coupling
+# ----------------------------	
+# USE_CNNEE: 0 #  options : 0 (default); 1 (Chem uses NNEE from CatchmentCN, NOTE you must add USE_CNNEE: 1 to CO2_GridComp.rc, CMIP/CO2_GridComp.rc,	
+#                 MERRA2/CO2_GridComp.rc, MERRA2/19600101-20000331/CO2_GridComp.rc, MERRA2/20000401-present/CO2_GridComp.rc, and PIESA/CO2_GridComp.rc 	
+#                           in /GEOSchem_GridComp/GOCART_GridComp/CO2_GridComp/ before you build the model.)
+#
+# ****************************************************************
+
+# Feedback Increments from ldas :1,  no feedback: 0  
+# ---------------------------------------------------
+LDAS_INCR: 0
+
 
 ##############################################################################################
 ##############################################################################################
@@ -476,7 +516,7 @@ RUN_ROUTE: 0
 # AGCM_INTERNAL = BIAS Correction Increment: BIAS(n+1) = ALPHA*IAU(n) + BETA*BIAS(n)
 # ----------------------------------------------------------------------------------
 
-#>>>FORCEDAS<<<AGCM_IMPORT_RESTART_FILE:               agcm_import_rst
+>>>FORCEDAS<<<AGCM_IMPORT_RESTART_FILE:               agcm_import_rst
 
 >>>FORCEGCM<<<AGCM_INTERNAL_RESTART_FILE:             agcm_internal_rst
 >>>FORCEGCM<<<AGCM_INTERNAL_CHECKPOINT_FILE:          agcm_internal_checkpoint
@@ -513,6 +553,9 @@ MOIST_INTERNAL_CHECKPOINT_FILE:         moist_internal_checkpoint
 # ---------------------------------------
 #AIAU_IMPORT_RESTART_FILE:               aiau_import_rst
 #AIAU_IMPORT_CHECKPOINT_FILE:            aiau_import_checkpoint
+
+GWD_IMPORT_RESTART_FILE:                gwd_import_rst
+GWD_IMPORT_CHECKPOINT_FILE:             gwd_import_checkpoint
 
 MOIST_IMPORT_RESTART_FILE:              moist_import_rst
 MOIST_IMPORT_CHECKPOINT_FILE:           moist_import_checkpoint
@@ -564,6 +607,12 @@ GOCART_INTERNAL_CHECKPOINT_FILE:        gocart_internal_checkpoint
 #GMICHEM_IMPORT_RESTART_FILE:            gmichem_import_rst
 #GMICHEM_IMPORT_CHECKPOINT_FILE:         gmichem_import_checkpoint
 
+#GEOSCHEMCHEM_INTERNAL_RESTART_FILE:          geoschemchem_internal_rst
+#GEOSCHEMCHEM_INTERNAL_CHECKPOINT_FILE:       geoschemchem_internal_checkpoint
+
+#GEOSCHEMCHEM_IMPORT_RESTART_FILE:            geoschemchem_import_rst
+#GEOSCHEMCHEM_IMPORT_CHECKPOINT_FILE:         geoschemchem_import_checkpoint
+
 #MAM_INTERNAL_RESTART_FILE:              mam_internal_rst
 #MAM_INTERNAL_CHECKPOINT_FILE:           mam_internal_checkpoint
 
@@ -593,15 +642,17 @@ OPENWATER_INTERNAL_CHECKPOINT_FILE:     openwater_internal_checkpoint
 SEAICETHERMO_INTERNAL_RESTART_FILE:     seaicethermo_internal_rst
 SEAICETHERMO_INTERNAL_CHECKPOINT_FILE:  seaicethermo_internal_checkpoint
 
-#>>>COUPLED<<<SEAICE_IMPORT_RESTART_FILE:             seaice_import_rst
-#>>>COUPLED<<<SEAICE_IMPORT_CHECKPOINT_FILE:          seaice_import_checkpoint
+>>>COUPLED<<<SEAICE_IMPORT_RESTART_FILE:             seaice_import_rst
+>>>COUPLED<<<SEAICE_IMPORT_CHECKPOINT_FILE:          seaice_import_checkpoint
+>>>COUPLED<<<SEAICE_IMPORT_CHECKPOINT_TYPE:          @CHECKPOINT_TYPE
 
-#>>>COUPLED<<<SEAICE_INTERNAL_RESTART_FILE:           seaice_internal_rst
-#>>>COUPLED<<<SEAICE_INTERNAL_CHECKPOINT_FILE:        seaice_internal_checkpoint
+>>>COUPLED<<<SEAICE_INTERNAL_RESTART_FILE:           seaice_internal_rst
+>>>COUPLED<<<SEAICE_INTERNAL_CHECKPOINT_FILE:        seaice_internal_checkpoint
+>>>COUPLED<<<SEAICE_INTERNAL_CHECKPOINT_TYPE:        @CHECKPOINT_TYPE
 
-#>>>COUPLED<<<ORAD_IMPORT_RESTART_FILE:               orad_import_rst
-#>>>COUPLED<<<ORAD_IMPORT_CHECKPOINT_FILE:            orad_import_checkpoint
-
+>>>COUPLED<<<OCEAN_INTERNAL_RESTART_FILE:               ocean_internal_rst
+>>>COUPLED<<<OCEAN_INTERNAL_CHECKPOINT_FILE:            ocean_internal_checkpoint
+>>>COUPLED<<<OCEAN_INTERNAL_CHECKPOINT_TYPE:            @CHECKPOINT_TYPE
 
 # Boundary Datasets
 # -----------------
@@ -652,7 +703,7 @@ USE_RRTMG_IRRAD: 1.0
 USE_RRTMG_SORAD: 1.0
 ISOLVAR: 2
 USE_NRLSSI2: .TRUE.
-SOLAR_CYCLE_FILE_NAME: ExtData/g5gcm/solar/NRLSSI2.v2017.txt
+SOLAR_CYCLE_FILE_NAME: ExtData/g5gcm/solar/NRLSSI2.v2020.txt
 
 # GOCART broadband aerosol optics tables
 # -----------------------------------------------------
@@ -663,16 +714,21 @@ SOLAR_CYCLE_FILE_NAME: ExtData/g5gcm/solar/NRLSSI2.v2017.txt
  BC_OPTICS: ExtData/@EMISSIONS/x/opticsBands_BC.v1_3.RRTMG.nc
  NI_OPTICS: ExtData/@EMISSIONS/x/opticsBands_NI.v2_5.RRTMG.nc
 BRC_OPTICS: ExtData/@EMISSIONS/x/opticsBands_BRC.v1_5.RRTMG.nc
+# DU_OPTICS: /discover/nobackup/mathomp4/AerosolTables-J10/RRTMGPS-RRTMGPI/opticsBands_DU.RRTMGPS-RRTMGPI.v15_3.nc
+# SS_OPTICS: /discover/nobackup/mathomp4/AerosolTables-J10/RRTMGPS-RRTMGPI/opticsBands_SS.RRTMGPS-RRTMGPI.v3_3.nc
+# SU_OPTICS: /discover/nobackup/mathomp4/AerosolTables-J10/RRTMGPS-RRTMGPI/opticsBands_SU.RRTMGPS-RRTMGPI.v1_3.nc
+# OC_OPTICS: /discover/nobackup/mathomp4/AerosolTables-J10/RRTMGPS-RRTMGPI/opticsBands_OC.RRTMGPS-RRTMGPI.v1_3.nc
+# BC_OPTICS: /discover/nobackup/mathomp4/AerosolTables-J10/RRTMGPS-RRTMGPI/opticsBands_BC.RRTMGPS-RRTMGPI.v1_3.nc
+# NI_OPTICS: /discover/nobackup/mathomp4/AerosolTables-J10/RRTMGPS-RRTMGPI/opticsBands_NI.RRTMGPS-RRTMGPI.v2_5.nc
+#BRC_OPTICS: /discover/nobackup/mathomp4/AerosolTables-J10/RRTMGPS-RRTMGPI/opticsBands_BRC.RRTMGPS-RRTMGPI.v1_5.nc
 NUM_BANDS: 30
 
 #USE_RRTMGP_IRRAD: 1.0
 #USE_RRTMGP_SORAD: 1.0
-#RRTMGP_DATA_LW: /discover/nobackup/pnorris/RRTMGP-data.new.20190201/rrtmgp/data/rrtmgp-data-lw-g256-2018-12-04.nc
-#RRTMGP_DATA_SW: /discover/nobackup/pnorris/RRTMGP-data.new.20190201/rrtmgp/data/rrtmgp-data-sw-g224-2018-12-04.nc
-#RRTMGP_CLOUD_OPTICS_COEFFS_LW: /discover/nobackup/pnorris/RRTMGP-data.new.20190201/extensions/cloud_optics/rrtmgp-cloud-optics-coeffs-lw.nc
-#RRTMGP_CLOUD_OPTICS_COEFFS_SW: /discover/nobackup/pnorris/RRTMGP-data.new.20190201/extensions/cloud_optics/rrtmgp-cloud-optics-coeffs-sw.nc
-#RRTMGP_NUMERICAL_DFDTS_DELTS_IN_K: 0
-
+#RRTMGP_DATA_LW: /discover/nobackup/pnorris/RRTMGP-data.new.20200503/rrtmgp/data/rrtmgp-data-lw-g256-2018-12-04.nc
+#RRTMGP_DATA_SW: /discover/nobackup/pnorris/RRTMGP-data.new.20200503/rrtmgp/data/rrtmgp-data-sw-g224-2018-12-04.nc
+#RRTMGP_CLOUD_OPTICS_COEFFS_LW: /discover/nobackup/pnorris/RRTMGP-data.new.20200503/extensions/cloud_optics/rrtmgp-cloud-optics-coeffs-lw.nc
+#RRTMGP_CLOUD_OPTICS_COEFFS_SW: /discover/nobackup/pnorris/RRTMGP-data.new.20200503/extensions/cloud_optics/rrtmgp-cloud-optics-coeffs-sw.nc
 
 DIURNAL_BIOMASS_BURNING: yes
 
@@ -689,10 +745,6 @@ ANALYSIS_OX_PROVIDER: PCHEM   # options: PCHEM, GMICHEM, STRATCHEM, GOCART
 # Time step for aerosol assimilation (GAAS)
 # -----------------------------------------
   GAAS_DT: 10800 # 3-hourly
-
-# Time step for Runoff Routing Model (RRM_RUN_DT)
-# -----------------------------------------
-  RRM_RUN_DT: 3600 # 1-hourly
 
 # DATAOCEAN Parameters for AMIP-Style Run
 # ----------------------------------------
@@ -722,42 +774,49 @@ USE_SATSIM_RADAR: 0
 USE_SATSIM_LIDAR: 0
 USE_SATSIM_MISR:  0
 
+>>>COUPLED<<<INTERPOLATE_ATMLM: 0
+>>>COUPLED<<<INTERPOLATE_ATMTAU: 1
+>>>COUPLED<<<INTERPOLATE_OCEAN_ICE_CURRENTS: 0
+
 >>>COUPLED<<<CLDMICRO: 2MOMENT
->>>COUPLED<<<LTS_LOW: 18.5
 
 >>>COUPLED<<<# Section for ocean
 >>>COUPLED<<<# ----------------
 >>>COUPLED<<<USE_DATASEA:0
+>>>COUPLED<<<OCEAN_NAME: @OCEAN_NAME
 >>>COUPLED<<<USE_DATASEAICE:0
 >>>COUPLED<<<steady_state_ocean: 0
->>>COUPLED<<<MAX_WATER_DEPTH: 20.0
->>>COUPLED<<<MIN_WATER_DEPTH: 0.5
->>>COUPLED<<<OCEAN_SKINH: 2.0
->>>COUPLED<<<OCEAN_TAU_MIN: 3600.0
->>>COUPLED<<<OCEAN_TAU_MAX: 86400.0
->>>COUPLED<<<OCEAN_M3: 1.0
 >>>COUPLED<<<OCEAN_PICE_SCALING: 0.0
->>>COUPLED<<<Calc_TAU_SST: 1
+
+# For running MOM5 coupled model in dual ocean mode, uncomment three lines below, 
+# make sure that regular replay is enabled, proper PRECIP_FILE is chosen,
+# sst.data and fraci.data are pointing to read forcing files on tripolar grid,
+# the run starts at 21z/03z/09z/15z, 
+# HISTORY.rc collections have proper ref_time field
+# ---------------------------------------------------------------------------
+>>>MOM5<<<#DUAL_OCEAN: 1
+>>>MOM5<<<#DATA_SST_FILE: sst.data
+>>>MOM5<<<#DATA_FRT_FILE: fraci.data
+
 >>>COUPLED<<<
 >>>COUPLED<<<# Section for CICE 
 >>>COUPLED<<<# -----------------
 >>>COUPLED<<<USE_CICE_Thermo: 1
 >>>COUPLED<<<PRESCRIBED_ICE: 0
->>>COUPLED<<<ICEZ0: 0.00016
->>>COUPLED<<<CICE_NPROCS: @OGCM_NPROCS
 >>>COUPLED<<<CICE_DT: @OCEAN_DT
 >>>COUPLED<<<CICE_NDTE: 300
 >>>COUPLED<<<CICE_GRID: grid_cice.bin
 >>>COUPLED<<<CICE_KMT: kmt_cice.bin
+>>>COUPLED<<<CICE_N_ICE_CATEGORIES:5
+>>>COUPLED<<<CICE_N_ICE_LAYERS:4
 >>>COUPLED<<<CICE_MU_RDG: 3.0
 >>>COUPLED<<<CICE_AH_MAX: 0.3
 >>>COUPLED<<<CICE_STRENGTH: 0
->>>COUPLED<<<CICE_IO_DRAG: 0.023
->>>COUPLED<<<CICE_ADVECTION: upwind
 >>>COUPLED<<<ALBICEV: 0.78
 >>>COUPLED<<<ALBICEI: 0.36
 >>>COUPLED<<<ALBSNOWV: 0.98
 >>>COUPLED<<<ALBSNOWI: 0.7 
+>>>COUPLED<<<MIN_FREEZE_SALINITY: 5.0 
 
 
 # Flags for SPPT scheme

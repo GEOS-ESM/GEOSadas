@@ -118,6 +118,7 @@
   if ( !($?CONVPROG) )            setenv CONVPROG      0
   if ( !($?CONVSFC) )             setenv CONVSFC       0
   if ( !($?CONVUPA) )             setenv CONVUPA       0
+  if ( !($?DATAMOVE_CONSTRAINT) ) setenv DATAMOVE_CONSTRAINT NULL
   if ( !($?DIAG2ODS) )            setenv DIAG2ODS      0
   if ( !($?DIAGTAR) )             setenv DIAGTAR       0
   if ( !($?DO_0HR_IMP) )          setenv DO_0HR_IMP    0
@@ -140,6 +141,7 @@
   if ( !($?LOCAL_ACQUIRE) )       setenv LOCAL_ACQUIRE 0
   if ( !($?MAP05RST) )            setenv MAP05RST      0
   if ( !($?MKRESRST ) )           setenv MKRESRST      0
+  if ( !($?MONTHLY_RADMON) )      setenv MONTHLY_RADMON 0
   if ( !($?MPIRUN_IDF) )          setenv MPIRUN_IDF    0
   if ( !($?MPIRUN_UPRST) )        setenv MPIRUN_UPRST  /dev/null
   if ( !($?NEWRADBC) )            setenv NEWRADBC      0
@@ -172,12 +174,6 @@
   endif
 
 #_RT  if ( !($?STAGE4FCST) )    setenv STAGE4FCST  0   # need to resolve redundancies
-
-# Sanity setting
-# --------------
-  if ( $SKIPANA ) then
-       setenv ASYNBKG   360
-  endif
 
   if ( $?RUN_OPT_BEGIN ) then
         set run_opt_begin = ( $RUN_OPT_BEGIN ) 
@@ -447,7 +443,7 @@ exit 1
 # Cannot do GAASFDBK unless GAAS_ANA is on 
 # ----------------------------------------
   if ( ! $FORECAST ) then
-     if ( $GAASFDBK && ( ! $GAAS_ANA ) ) then
+     if ( $GAAS_ANA && ( ! $GAASFDBK ) ) then
        echo $myname": GAAS inconsistency, GAASFDBK=$GAASFDBK, GAAS_ANA=$GAAS_ANA"
        exit 1
      endif
@@ -497,7 +493,6 @@ exit 1
 # -----------------------------------------------------
   if ( !($?obsclass) && !($?req_obsclass) ) then
         setenv SKIPANA 1   # no ANALYSIS
-        setenv ASYNBKG 360
   endif
 
 # For readability, introduce DOING_ANA
@@ -535,6 +530,10 @@ exit 1
       /bin/cp $FVHOME/run/fsens/*.tmpl    .	
       /bin/cp $FVHOME/run/fsens/*.rc      .	
   endif
+  if ( -d $FVHOME/run/mom ) then
+      /bin/cp $FVHOME/run/mom/*_table     .	
+      /bin/cp $FVHOME/run/mom/MOM_*       .	
+  endif
   if ( $FORECAST ) then
        foreach file ( `ls ${fchome}/*` )
           if ( $file =~ *.log.* ) continue
@@ -543,6 +542,10 @@ exit 1
                 /bin/cp $file .   # skip restarts
           endif 
        end
+       if ( -d $FVHOME/fcst/mom ) then
+           /bin/cp $FVHOME/fcst/mom/*_table  .	
+           /bin/cp $FVHOME/run/mom/MOM_*     .	
+       endif
   endif
   cat fvcore_layout.rc >> input.nml
 
@@ -563,7 +566,7 @@ exit 1
 
 # Set HISTORY gaas products on or off
 # -----------------------------------
-  if ( $GAAS_ANA ) then
+  if ( $GAAS_ANA || -e replay_aod.rc ) then
        foreach hist ( `ls HIST*.rc.tmpl` )
           edhist.pl $hist -i -Ipm gaas_bkg
        end
@@ -688,8 +691,74 @@ exit 1
      endif
   end
 
+
   set GcmBegDate = $mydate[1]
-                              # Last line of CopyGcmRestarts4Forecast_
+                              # Last line of CopyGcmRestarts4DAS_
+\end
+
+#.............................................................................
+
+# ------------------------------------
+  Sub CopyMOMRestarts_( FcstCase_ )
+# ------------------------------------
+  if ( $?ECHO___ ) set echo
+
+  if ( ! -d $FVHOME/run/mom ) exit 0
+
+# Bring restarts from recycle into work dir
+# -----------------------------------------
+  set momrst_failed = 0
+  if ( $FcstCase_ ) then 
+       echo "Not ready to hand Coupled forecasts, aborting ..."
+       Call AbnormalExit_( 1 )
+  else  # DASCase
+     foreach this ( mom_rst mom1_rst mom2_rst mom3_rst )
+        set momrs = $FVHOME/recycle/$EXPID.$this.$itime.nc4
+        if ( -e $momrs ) then
+           /bin/cp $momrs $this
+        else
+           @ momrst_failed = $momrst_failed + 1
+        endif
+     end
+  endif
+  if ( $momrst_failed ) then
+       echo "Trouble setting up MOM restarts, aborting ..."
+       Call AbnormalExit_( 2 )
+  endif
+
+#  Find out where MOM expects restarts to be
+#  -----------------------------------------
+  if ( ! -e fvcore_layout.rc ) then
+       echo "Trouble finding layout RC, aborting ..."
+       Call AbnormalExit_( 1 )
+  endif
+  set mominpdir = `nmlread.py fvcore_layout.rc MOM_input_nml restart_input_dir`
+  if ( ! -d $mominpdir ) mkdir $mominpdir
+
+  set momoutdir = `nmlread.py fvcore_layout.rc MOM_input_nml restart_output_dir`
+  if ( ! -d $momoutdir ) mkdir $momoutdir
+
+#  Move MOM to location MOM expects them
+#  -------------------------------------
+  @ momrst_failed = 0
+  if ( -e mom_rst  ) then
+     /bin/mv mom_rst $mominpdir/MOM.res.nc
+  else
+     @ momrst_failed = $momrst_failed + 1
+  endif
+  foreach momrst ( 1 2 3 )
+     if ( -e mom${momrst}_rst ) then
+        /bin/mv mom${momrst}_rst $mominpdir/MOM.res_${momrst}.nc
+     else
+        @ momrst_failed = $momrst_failed + 1
+     endif
+  end
+  if ( $momrst_failed ) then
+       echo "Trouble setting up MOM restarts, aborting ..."
+       Call AbnormalExit_( 2 )
+  endif
+
+                              # Last line of CopyMOMRestarts_
 \end
 
 #.............................................................................
@@ -755,6 +824,12 @@ exit 1
   cd $FVHOME/run/gocart
   set  extdata_files = `/bin/ls -1 *_ExtData.rc`
   cat $extdata_files > $FVWORK/ExtData.rc 
+  set hh = `echo $gcm_nhms0 | cut -c1-2`
+  if ( ${gcm_nymd0}${hh} >= 2021103021 ) then
+     foreach line (`grep -ni qfed $FVWORK/ExtData.rc | gawk '{print $1}' FS=":"`)
+       sed -i "${line}s/.006./.061./" $FVWORK/ExtData.rc
+     end
+  endif
   cd -
 # /bin/cp ExtData.rc $EXPID.ExtData.$itime.rc
 
@@ -1582,6 +1657,7 @@ exit 1
         fname2 "#SBATCH --ntasks=1"
         fname2 "#SBATCH --time=2:00:00"
         fname2 "#SBATCH --partition=$data_queue"
+        fname2 "#$DATAMOVE_CONSTRAINT"
         fname2 "#SBATCH --account=$GID"
         fname2 "#PBS -N acqfcst"
         fname2 "#PBS -o acqfcst.log.$acqdate.txt"
@@ -1788,6 +1864,7 @@ exit 1
         fname2 "#SBATCH --ntasks=1"
         fname2 "#SBATCH --time=2:00:00"
         fname2 "#SBATCH --partition=$data_queue"
+        fname2 "#$DATAMOVE_CONSTRAINT"
         fname2 "#SBATCH --account=$GID"
         fname2 "#PBS -N acqaod4fcst"
         fname2 "#PBS -o acqaod4fcst.log.$acqdate.txt"
@@ -2324,11 +2401,17 @@ exit 1
   Sub AcquireReplayAnalysis_()
 # ---------------------------------
   if ( $?ECHO___ ) set echo
+
+     if ( (! $?rpl_nymdb) && (! $?rpl_nhmsb)) then
+        set rpl_nymdb = $bnymd
+        set rpl_nhmsb = $bnhms
+     endif
+
      # Acquire anlysis data for replay locally
      # ----------------------------------------
      if ( (`uname -n` !~ borg*) || ( $LOCAL_ACQUIRE ) ) then
            acquire -v -rc replay.acq -s $spool -d $FVWORK -la $nlook -ssh  \
-                      $strict $bnymd $bnhms $inhms $nstep 
+                      $strict $rpl_nymdb $rpl_nhmsb $inhms $nstep 
      else
 
         # Do something special when on NCCS linux cluster
@@ -2341,77 +2424,52 @@ exit 1
            set data_queue=""
         endif
 
-        if ( $nstep > 4 ) set nstep = 4
-
         set qsub_acquire = 1
         set fname = "acqreplay1.pbs"
         set acqdate = ${bnymd}_`echo $bnhms | cut -c1-2`z
         set acqlog = $FVHOME/run/acqreplay1.log.$acqdate.txt
-        while ( ( $bnymd <= $enymd[1] ) && ( ! -e "${FVWORK}/acquire.FAILED" ) )
-             fname1 "#\!/bin/csh -xvf"
-             fname2 "#$group_list"
-             fname2 "#SBATCH --job-name=acqreplay1"
-             fname2 "#SBATCH --output=acqreplay1.log.$acqdate.txt"
-             fname2 "#SBATCH --ntasks=1"
-             fname2 "#SBATCH --time=2:00:00"
-             fname2 "#SBATCH --partition=$data_queue"
-             fname2 "#SBATCH --account=$GID"
-             fname2 "#PBS -N acqreplay1"
-             fname2 "#PBS -o acqreplay1.log.$acqdate.txt"
-             fname2 "#PBS -l nodes=1:ppn=1"
-             fname2 "#PBS -l walltime=2:00:00"
-             fname2 "#PBS -q $data_queue"
-             fname2 "#PBS -S /bin/csh"
-             fname2 "#PBS -j eo"
-             fname2 ""
-             fname2 "setenv DO_DMGET $DO_DMGET"
-             fname2 "set path = ( $path )"
-             fname2 "cd $FVWORK"
-             fname2 "acquire -v -rc replay.acq -s $spool -d $FVWORK -ssh $strict $bnymd $bnhms 060000 4"
-             fname2 "exit"
+        @ hours = $ASYNBKG * 60
+        set init_date = (`tick $rpl_nymdb $rpl_nhmsb -$hours` )
+        fname1 "#\!/bin/csh -xvf"
+        fname2 "#$group_list"
+        fname2 "#SBATCH --job-name=acqreplay1"
+        fname2 "#SBATCH --output=acqreplay1.log.$acqdate.txt"
+        fname2 "#SBATCH --ntasks=1"
+        fname2 "#SBATCH --time=2:00:00"
+        fname2 "#SBATCH --partition=$data_queue"
+        fname2 "#$DATAMOVE_CONSTRAINT"
+        fname2 "#SBATCH --account=$GID"
+        fname2 "#PBS -N acqreplay1"
+        fname2 "#PBS -o acqreplay1.log.$acqdate.txt"
+        fname2 "#PBS -l nodes=1:ppn=1"
+        fname2 "#PBS -l walltime=2:00:00"
+        fname2 "#PBS -q $data_queue"
+        fname2 "#PBS -S /bin/csh"
+        fname2 "#PBS -j eo"
+        fname2 ""
+        fname2 "setenv DO_DMGET $DO_DMGET"
+        fname2 "set path = ( $path )"
+        fname2 "cd $FVWORK"
+        fname2 "acquire -v -rc replay.acq -s $spool -d $FVWORK -ssh $strict $rpl_nymdb $rpl_nhmsb 060000 1"
+        fname2 "if ( -e replay_aod.acq ) then"
+        fname2 "   acquire -v -rc replay_aod.acq -s $spool -d $FVWORK -ssh $strict $rpl_nymdb $rpl_nhmsb 030000 2"
+        fname2 "endif"
+        fname2 "if ( -e replay_agcm.acq ) then"
+        fname2 "   acquire -v -rc replay_agcm.acq -s $spool -d $FVWORK -ssh $strict $init_date[1] $init_date[2] 060000 1"
+        fname2 "endif"
+        fname2 ""
+        fname2 "exit"
 
-             if ( $BATCH_SUBCMD == "sbatch" ) then
-                sbatch -W -o $acqlog $fname
-             else
-                qsub -W block=true -o $acqlog $fname
-             endif
-             sleep 2
-             set bnymd=`tick $bnymd`
-        end
-
-        # Now do an acquire for tomorrows data
-        #-------------------------------------
-        if ( ( $nlook ) &&  ( ! -e "${FVWORK}/acquire.FAILED" ) ) then
-             set la_dtg=`tick $enymd 86400`
-
-             set fname = "acqreplay2.pbs"
-             set acqdate = ${la_dtg[1]}_`echo $la_dtg[2] | cut -c1-2`z
-             set acqlog = $FVHOME/run/acqreplay2.log.$acqdate.txt
-             fname1 "#\!/bin/csh -xvf"
-             fname2 "#$group_list"
-             fname2 "#SBATCH --job-name=acqreplay2"
-             fname2 "#SBATCH --output=acqreplay2.log.$acqdate.txt"
-             fname2 "#SBATCH --ntasks=1"
-             fname2 "#SBATCH --time=2:00:00"
-             fname2 "#SBATCH --partition=$data_queue"
-             fname2 "#SBATCH --account=$GID"
-             fname2 "#PBS -N acqreplay2"
-             fname2 "#PBS -o acqreplay2.log.$acqdate.txt"
-             fname2 "#PBS -l nodes=1:ppn=1"
-             fname2 "#PBS -l walltime=2:00:00"
-             fname2 "#PBS -q $data_queue"
-             fname2 "#PBS -S /bin/csh"
-             fname2 "#PBS -j eo"
-             fname2 ""
-             fname2 "setenv DO_DMGET $DO_DMGET"
-             fname2 "set path = ( $path )"
-             fname2 "cd $FVWORK"
-             fname2 "acquire -v -rc replay.acq -d $spool -s $spool -ssh $la_dtg[1] $la_dtg[2] 06000 4"
-             fname2 "exit"
-
-             $BATCH_SUBCMD -o $acqlog $fname
-             set acq_status = $status
-        endif # if nlook
+        if ( $BATCH_SUBCMD == "sbatch" ) then
+           sbatch -W -o $acqlog $fname
+        else
+           qsub -W block=true -o $acqlog $fname
+        endif
+        sleep 2
+        @ cyc_sec = $TIMEINC * 60
+        set next_cycle = (`tick $rpl_nymdb $rpl_nhmsb $cyc_sec`)
+        set rpl_nymdb = $next_cycle[1]
+        set rpl_nhmsb = $next_cycle[2]
 
      endif # test for borg*
 
@@ -3228,56 +3286,6 @@ endif
 
 #.............................................................................
 
-# ------------------------------
-  Sub LandAnalysisRun_() 
-# ------------------------------
-  if ( $?ECHO___ ) set echo
-
-  cd $FVWORK
-  set rstdate = ( `rst_date ./d_rst` )
-  set mydate = (`tick $rstdate -21600`)  # tick back 6 hours
-
-  set DURATION = "060000"
-  set SUBDIR = "ldas.$mydate[1].$mydate[2]"
-  set LDINPUT_FORCE = "$FVWORK"
-  set EXPDOMAIN = "GLOBAL"
-  set RESOLUTION = "144x91"
-  set THREEHOURS = 10800
-
-  ldsetup -expid $EXPID \
-          -nymd $mydate[1] \
-          -nhms $mydate[2] \
-          -duration $DURATION \
-          -fvroot $FVROOT \
-          -fvhome $FVHOME \
-          -fvwork $FVWORK \
-          -fvwork_subdir $SUBDIR \
-          -expdomain $EXPDOMAIN \
-          -resolution $RESOLUTION \
-          -ldinput_force $FVWORK \
-          -mettag $EXPID \
-          -forcedtstep $THREEHOURS \
-          -rstrtdir $FVWORK \
-          -rstrtid $EXPID \
-          -gid $GID \
-          -noprompt
-
-  echo y | lenkf.pl
-
-# Move output to top FVWORK directory
-# -----------------------------------
-  cd $FVWORK
-  foreach file ( `find $SUBDIR -name $EXPID\*.txt`)
-     /bin/mv $file .
-  end
-  foreach file ( `find $SUBDIR -name $EXPID\.ens\*`)
-     /bin/mv $file .
-  end
-
-                              # Last line of LandAnalysisRun_()
-\end
-
-#.............................................................................
 
 # ------------------------------
   Sub EvolveAinc0_( Viter_, Final_ )
@@ -3483,16 +3491,34 @@ endif
                     
                      if ( -e mkiau.rc.tmpl ) then
                   
-                         /bin/rm -f sed_file
-                         echo "s/>>>EXPID<<</${EXPID}/1"         > sed_file
-                         echo "s/>>>BKGFNAME<<</${bkg4iau}/1"   >> sed_file
-                         echo "s/>>>ANAFNAME<<</${anafile}/1"   >> sed_file
-                         echo "s/>>>NCSUFFIX<<</${NCSUFFIX}/1"  >> sed_file
-                         echo "s/>>>ANADATE<<</${nymdb}/1"      >> sed_file
-                         echo "s/>>>ANATIME<<</${nhmsb}/1"      >> sed_file
-                         /bin/rm -f ./mkiau.rc
-                         sed -f sed_file  ./mkiau.rc.tmpl  > ./mkiau.rc
-                         $makeiaux
+                         if ( -e replay.acq && -e replay_agcm.acq ) then
+                            touch IAU_EGRESS
+                            set myiau_full = `echorc.x -template $EXPID $gcm_nymd0 $gcm_nhms0 iau_tendency_filename`
+                            set myiau_shrt = `echorc.x -rc mkiau.rc.tmpl -template $EXPID $gcm_nymd0 $gcm_nhms0 AGCM_INTERNAL_CHECKPOINT_FILE`
+                            if ( -e $myiau_full ) then
+                               /bin/cp $myiau_full $myiau_shrt
+                            else
+                               echo "Cannot find: $myiau_full"
+                               set status = 1
+                               if ( ${status} ) then
+                                   Call AbnormalExit_( 4 )
+                                endif
+                            endif
+                         else
+
+                            /bin/rm -f sed_file
+
+                            echo "s/>>>EXPID<<</${EXPID}/1"         > sed_file
+                            echo "s/>>>BKGFNAME<<</${bkg4iau}/1"   >> sed_file
+                            echo "s/>>>ANAFNAME<<</${anafile}/1"   >> sed_file
+                            echo "s/>>>NCSUFFIX<<</${NCSUFFIX}/1"  >> sed_file
+                            echo "s/>>>ANADATE<<</${nymdb}/1"      >> sed_file
+                            echo "s/>>>ANATIME<<</${nhmsb}/1"      >> sed_file
+                            /bin/rm -f ./mkiau.rc
+                            sed -f sed_file  ./mkiau.rc.tmpl  > ./mkiau.rc
+                            $makeiaux
+
+                         endif
 
                      else
 
@@ -3909,8 +3935,6 @@ endif
              endif
            endif # <WCONSTRAINT>
            echo "s/>>>NCSUFFIX<<</${NCSUFFIX}/1"   >> sed_file
-           echo "s/>>>COUPLED<<</#/1"              >> sed_file
-           echo "s/>>>DATAOCEAN<<<//1"             >> sed_file
            echo "s/>>>FORCEGCM<<</#/1"             >> sed_file
            echo "s/>>>REGULAR_REPLAY_ECMWF<<</#/1" >> sed_file
            echo "s/>>>REGULAR_REPLAY_NCEP<<</#/1"  >> sed_file
@@ -3937,8 +3961,8 @@ endif
 
 #          Which CAP to use?
 #          -----------------
+           set hh = `echo $gcm_nhms0 | cut -c1-2`
            if ( $Final_ ) then
-              set hh = `echo $gcm_nhms0 | cut -c1-2`
               set mycap = CAP.rc.tmpl
               if ( -e CAP_${hh}.rc.tmpl ) set mycap = CAP_${hh}.rc.tmpl
            else
@@ -3970,6 +3994,11 @@ endif
            set  extdata_files = `/bin/ls -1 *_ExtData.rc`
            cat $extdata_files > $FVWORK/ExtData.rc
            cd -
+           if ( ${gcm_nymd0}${hh} >= 2021103021 ) then
+              foreach line (`grep -ni qfed ExtData.rc | gawk '{print $1}' FS=":"`)
+                 sed -i "${line}s/.006./.061./" ExtData.rc
+              end
+           endif
            /bin/cp ExtData.rc $EXPID.ExtData.$itime.rc
 
                               # Last line of CoupleAnaToGcm_()
@@ -4337,6 +4366,8 @@ endif
   set npn = `facter processorcount`
   if ( $npn == 40 ) then
      set mynodes = "sky"
+  else if ( $npn == 48 ) then
+     set mynodes = "cas"
   else
      set mynodes = "hasw"
   endif
@@ -4529,8 +4560,6 @@ endif
            echo "s/>>>ANADATE<<</${anadate[1]}/1"   >> sed_file
            echo "s/>>>ANATIME<<</${anadate[2]}/1"   >> sed_file
         endif
-        echo "s/>>>COUPLED<<</#/1"                  >> sed_file
-        echo "s/>>>DATAOCEAN<<<//1"                 >> sed_file
         echo "s/>>>FORCEGCM<<</#/1"                 >> sed_file
         if ( $blendrs || $blendec ) then
 
@@ -4569,6 +4598,7 @@ endif
         
 #       Which CAP to use?
 #       -----------------
+        set nymdt = $GcmBegEpoch[1]
         set hh = `echo $GcmBegTime | cut -c1-2`
         set myhist = HISTORY.rc.tmpl
         if ( -e HISTORY_${hh}.rc.tmpl ) set myhist = HISTORY_${hh}.rc.tmpl
@@ -4607,8 +4637,6 @@ endif
            echo "s/>>>4DIAUDAS<<</#/1"        >> sed_file # no 4d-tendency for now
            echo "s/>>>FORCEDAS<<</#/1"        >> sed_file
         endif
-        echo "s/>>>COUPLED<<</#/1"            >> sed_file
-        echo "s/>>>DATAOCEAN<<<//1"           >> sed_file
         echo "s/>>>FORCEGCM<<</#/1"           >> sed_file
         echo "s/>>>REGULAR_REPLAY_ECMWF<<</#/1" >> sed_file
         echo "s/>>>REGULAR_REPLAY_NCEP<<</#/1"  >> sed_file
@@ -4636,6 +4664,11 @@ endif
    cd $FVHOME/run/gocart
    set  extdata_files = `/bin/ls -1 *_ExtData.rc`
    cat $extdata_files > $FVWORK/ExtData.rc
+   if ( ${nymdt}${hh} >= 2021103021 ) then
+      foreach line (`grep -ni qfed $FVWORK/ExtData.rc | gawk '{print $1}' FS=":"`)
+        sed -i "${line}s/.006./.061./" $FVWORK/ExtData.rc
+      end
+   endif
    cd -
 #  /bin/cp ExtData.rc $EXPID.ExtData.$itime.rc
 
@@ -5126,6 +5159,18 @@ endif
   endif
   if ($CONVPROG)   then  # this is used when extending background integration to mid-range forecast
       cnv2prs.pl -prog
+  endif
+
+  if ( -d $FVHOME/run/mom )   then  # this needs revision
+      set GcmBegDate = $GcmBegEpoch[1]
+      set GcmBegTime = $GcmBegEpoch[2]
+      set GcmEndDate = $GcmEndEpoch[1]
+      set GcmEndTime = $GcmEndEpoch[2]
+      mom6diag.csh $EXPID $GcmBegDate $GcmBegTime $GcmEndDate $GcmEndTime
+      if ( $status ) then
+         echo " Trouble in SplitExecPostProcessing_(mom6diag) aborting ..."
+         exit 1
+      endif
   endif
 
   exit 0
@@ -5687,11 +5732,6 @@ endif
   if ( $FORECAST ) then
        /bin/rm d_rst
        mkdrstdate.x $fcst_end    # create d_rst with current date and time
-  else if ( $SKIPANA ) then
-        set GcmEndDate = $GcmEndEpoch[1]
-        set GcmEndTime = $GcmEndEpoch[2]
-       /bin/rm d_rst
-       mkdrstdate.x $GcmEndDate $GcmEndTime
   endif
 
   set buf  = `rst_date d_rst`
@@ -5741,109 +5781,117 @@ endif
               /bin/cp $EXPID.ana_radstat_rst.$rtag.tar $RSTHOLD/ &
             endif
 
-        # local copy to be moved by pesto, 2nd copy to be dealt w/ by recycle
-        #--------------------------------------------------------------------
-        if ( -e biasinp.$RSTSUFFIX ) then
-            /bin/mv biasinp.$RSTSUFFIX $EXPID.biasinp.$rtag.$RSTSUFFIX
-            /bin/cp $EXPID.biasinp.$rtag.$RSTSUFFIX $EXPID.biasinp_rst.$rtag.$RSTSUFFIX
-            /bin/cp $EXPID.biasinp_rst.$rtag.$RSTSUFFIX $RSTHOLD/ &
-        endif
-
-        # local copy to be moved by pesto, 2nd copy to be dealt w/ by recycle
-        #--------------------------------------------------------------------
-        if ( -e biasinp.ctl ) then
-            /bin/mv biasinp.ctl $EXPID.biasinp.$rtag.ctl
-            /bin/cp $EXPID.biasinp.$rtag.ctl $EXPID.biasinp_rst.$rtag.ctl
-            /bin/cp $EXPID.biasinp_rst.$rtag.ctl $RSTHOLD/ &
-        endif
-
-        # local copy to be moved by pesto, 2nd copy to be dealt w/ by recycle
-        #--------------------------------------------------------------------
-        if ( $DO4DVAR ) then                                        # initial traj needed for 4dvar
-           if ( -e $EXPID.traj_lcv_rst.$rtag4.$NCSUFFIX ) then
-               /bin/cp $EXPID.traj_lcv_rst.$rtag4.$NCSUFFIX $RSTHOLD/$EXPID.traj_lcv_rst.$rtag4.$NCSUFFIX &
-           else
-              if ( -e $EXPID.traj.lcv.$rtag4.$NCSUFFIX ) then
-                  /bin/cp $EXPID.traj.lcv.$rtag4.$NCSUFFIX $EXPID.traj_lcv_rst.$rtag4.$NCSUFFIX &
-                  /bin/cp $EXPID.traj.lcv.$rtag4.$NCSUFFIX $RSTHOLD/$EXPID.traj_lcv_rst.$rtag4.$NCSUFFIX &
-              endif
-           endif
-#          if ( -e $EXPID.ptrj.prs.$rtag4.$NCSUFFIX ) then
-#              /bin/cp $EXPID.ptrj.prs.$rtag4.$NCSUFFIX $EXPID.ptrj_prs_rst.$rtag4.$NCSUFFIX &
-#              /bin/cp $EXPID.ptrj.prs.$rtag4.$NCSUFFIX $RSTHOLD/$EXPID.ptrj_prs_rst.$rtag4.$NCSUFFIX &
-#          endif
-        endif
-
-
-        set GDA_list  = `ls *GDA.all.*` 
-        if ( ! $status ) then
-             set GDA_rst = `echo $GDA_list[$#GDA_list] | sed -e 's/\.all\./.rst./'`
-             /bin/cp $GDA_list[$#GDA_list] ./${GDA_rst}
-             if ( $?trksufx ) then
-                  set tstsufx = `echo $GDA_rst | cut -d. -f5,6`
-                  if ( "$tstsufx" == "$trksufx" ) /bin/rm -f $GDA_rst
-             endif
-             if ( -e $GDA_rst ) /bin/cp $GDA_rst $RSTHOLD/${GDA_rst}
-        endif
-
-        if ( $DO4DVAR ) then
+            # hold lfo files for the next segment of ldas coupling
+            #----------------------------------------------------------
+            if ( $LDAS_ANA ) then
+               mkdir -p              $FVHOME/recycle/holdforc
+               /bin/cp  *2d_lfo*nc4  $FVHOME/recycle/holdforc/
+            endif
 
             # local copy to be moved by pesto, 2nd copy to be dealt w/ by recycle
             #--------------------------------------------------------------------
-            /bin/cp $EXPID.bkg.eta.$rtag.$NCSUFFIX $EXPID.bkg_eta_rst.$rtag.$NCSUFFIX &
-            /bin/cp $EXPID.bkg.eta.$rtag.$NCSUFFIX $RSTHOLD/$EXPID.bkg_eta_rst.$rtag.$NCSUFFIX &
+            if ( -e biasinp.$RSTSUFFIX ) then
+                /bin/mv biasinp.$RSTSUFFIX $EXPID.biasinp.$rtag.$RSTSUFFIX
+                /bin/cp $EXPID.biasinp.$rtag.$RSTSUFFIX $EXPID.biasinp_rst.$rtag.$RSTSUFFIX
+                /bin/cp $EXPID.biasinp_rst.$rtag.$RSTSUFFIX $RSTHOLD/ &
+            endif
 
-            /bin/cp $EXPID.cbkg.eta.$rtag.$NCSUFFIX $EXPID.cbkg_eta_rst.$rtag.$NCSUFFIX &
-            /bin/cp $EXPID.cbkg.eta.$rtag.$NCSUFFIX $RSTHOLD/$EXPID.cbkg_eta_rst.$rtag.$NCSUFFIX &
+            # local copy to be moved by pesto, 2nd copy to be dealt w/ by recycle
+            #--------------------------------------------------------------------
+            if ( -e biasinp.ctl ) then
+                /bin/mv biasinp.ctl $EXPID.biasinp.$rtag.ctl
+                /bin/cp $EXPID.biasinp.$rtag.ctl $EXPID.biasinp_rst.$rtag.ctl
+                /bin/cp $EXPID.biasinp_rst.$rtag.ctl $RSTHOLD/ &
+            endif
+    
+            # local copy to be moved by pesto, 2nd copy to be dealt w/ by recycle
+            #--------------------------------------------------------------------
+            if ( $DO4DVAR ) then                                        # initial traj needed for 4dvar
+               if ( -e $EXPID.traj_lcv_rst.$rtag4.$NCSUFFIX ) then
+                   /bin/cp $EXPID.traj_lcv_rst.$rtag4.$NCSUFFIX $RSTHOLD/$EXPID.traj_lcv_rst.$rtag4.$NCSUFFIX &
+               else
+                  if ( -e $EXPID.traj.lcv.$rtag4.$NCSUFFIX ) then
+                      /bin/cp $EXPID.traj.lcv.$rtag4.$NCSUFFIX $EXPID.traj_lcv_rst.$rtag4.$NCSUFFIX &
+                      /bin/cp $EXPID.traj.lcv.$rtag4.$NCSUFFIX $RSTHOLD/$EXPID.traj_lcv_rst.$rtag4.$NCSUFFIX &
+                  endif
+               endif
+#              if ( -e $EXPID.ptrj.prs.$rtag4.$NCSUFFIX ) then
+#                  /bin/cp $EXPID.ptrj.prs.$rtag4.$NCSUFFIX $EXPID.ptrj_prs_rst.$rtag4.$NCSUFFIX &
+#                  /bin/cp $EXPID.ptrj.prs.$rtag4.$NCSUFFIX $RSTHOLD/$EXPID.ptrj_prs_rst.$rtag4.$NCSUFFIX &
+#              endif
+            endif
 
-            /bin/cp $EXPID.abkg.eta.$rtag.$NCSUFFIX $EXPID.abkg_eta_rst.$rtag.$NCSUFFIX &
-            /bin/cp $EXPID.abkg.eta.$rtag.$NCSUFFIX $RSTHOLD/$EXPID.abkg_eta_rst.$rtag.$NCSUFFIX &
 
-            /bin/cp $EXPID.bkg.sfc.$rtag.$NCSUFFIX $EXPID.bkg_sfc_rst.$rtag.$NCSUFFIX &
-            /bin/cp $EXPID.bkg.sfc.$rtag.$NCSUFFIX $RSTHOLD/$EXPID.bkg_sfc_rst.$rtag.$NCSUFFIX &
+            set GDA_list  = `ls *GDA.all.*` 
+            if ( ! $status ) then
+                 set GDA_rst = `echo $GDA_list[$#GDA_list] | sed -e 's/\.all\./.rst./'`
+                 /bin/cp $GDA_list[$#GDA_list] ./${GDA_rst}
+                 if ( $?trksufx ) then
+                      set tstsufx = `echo $GDA_rst | cut -d. -f5,6`
+                      if ( "$tstsufx" == "$trksufx" ) /bin/rm -f $GDA_rst
+                 endif
+                 if ( -e $GDA_rst ) /bin/cp $GDA_rst $RSTHOLD/${GDA_rst}
+            endif
 
-        else
+            if ( $DO4DVAR ) then
+    
+                # local copy to be moved by pesto, 2nd copy to be dealt w/ by recycle
+                #--------------------------------------------------------------------
+                /bin/cp $EXPID.bkg.eta.$rtag.$NCSUFFIX $EXPID.bkg_eta_rst.$rtag.$NCSUFFIX &
+                /bin/cp $EXPID.bkg.eta.$rtag.$NCSUFFIX $RSTHOLD/$EXPID.bkg_eta_rst.$rtag.$NCSUFFIX &
+    
+                /bin/cp $EXPID.cbkg.eta.$rtag.$NCSUFFIX $EXPID.cbkg_eta_rst.$rtag.$NCSUFFIX &
+                /bin/cp $EXPID.cbkg.eta.$rtag.$NCSUFFIX $RSTHOLD/$EXPID.cbkg_eta_rst.$rtag.$NCSUFFIX &
 
-        # local copy to be moved by pesto, 2nd copy to be dealt w/ by recycle
-        #--------------------------------------------------------------------
-        @ n = 1
-        while ( $n <= $nbkg )
+                /bin/cp $EXPID.abkg.eta.$rtag.$NCSUFFIX $EXPID.abkg_eta_rst.$rtag.$NCSUFFIX &
+                /bin/cp $EXPID.abkg.eta.$rtag.$NCSUFFIX $RSTHOLD/$EXPID.abkg_eta_rst.$rtag.$NCSUFFIX &
 
-           if ( -e $bkgsfc_lst[$n] ) then
-               /bin/cp    $bkgsfc_lst[$n]              $bkgsfcrst_lst[$n]  &
-               /bin/cp    $bkgsfc_lst[$n]     $RSTHOLD/$bkgsfcrst_lst[$n]  &
-           else
-               /bin/cp    $sfcbkg_lst[$n]              $bkgsfcrst_lst[$n]  &
-               /bin/cp    $sfcbkg_lst[$n]     $RSTHOLD/$bkgsfcrst_lst[$n]  &
-           endif
+                /bin/cp $EXPID.bkg.sfc.$rtag.$NCSUFFIX $EXPID.bkg_sfc_rst.$rtag.$NCSUFFIX &
+                /bin/cp $EXPID.bkg.sfc.$rtag.$NCSUFFIX $RSTHOLD/$EXPID.bkg_sfc_rst.$rtag.$NCSUFFIX &
 
-           if ( -e $bkgupa_lst[$n] ) then
-               /bin/cp    $bkgupa_lst[$n]              $bkguparst_lst[$n]  &
-               /bin/cp    $bkgupa_lst[$n]     $RSTHOLD/$bkguparst_lst[$n]  &
-           else
-               /bin/cp    $upabkg_lst[$n]              $bkguparst_lst[$n]  &
-               /bin/cp    $upabkg_lst[$n]     $RSTHOLD/$bkguparst_lst[$n]  &
-           endif
+            else
 
-           if ( -e $cbkgetarst_lst[$n] ) then
-               /bin/cp    $cbkgetarst_lst[$n]          $cbkgetarst_lst[$n]  &
-               /bin/cp    $cbkgetarst_lst[$n] $RSTHOLD/$cbkgetarst_lst[$n]  &
-           else
-               /bin/cp    $cbkg_lst[$n]                $cbkgetarst_lst[$n]  &
-               /bin/cp    $cbkg_lst[$n]       $RSTHOLD/$cbkgetarst_lst[$n]  &
-           endif
+            # local copy to be moved by pesto, 2nd copy to be dealt w/ by recycle
+            #--------------------------------------------------------------------
+            @ n = 1
+            while ( $n <= $nbkg )
 
-           if ( -e $abkgetarst_lst[$n] ) then
-               /bin/cp    $abkgetarst_lst[$n]          $abkgetarst_lst[$n]  &
-               /bin/cp    $abkgetarst_lst[$n] $RSTHOLD/$abkgetarst_lst[$n]  &
-           else
-               /bin/cp    $abkg_lst[$n]                $abkgetarst_lst[$n]  &
-               /bin/cp    $abkg_lst[$n]       $RSTHOLD/$abkgetarst_lst[$n]  &
-           endif
-         @ n++
-        end
-        wait
-        endif # < DO4DVAR >
+               if ( -e $bkgsfc_lst[$n] ) then
+                   /bin/cp    $bkgsfc_lst[$n]              $bkgsfcrst_lst[$n]  &
+                   /bin/cp    $bkgsfc_lst[$n]     $RSTHOLD/$bkgsfcrst_lst[$n]  &
+               else
+                   /bin/cp    $sfcbkg_lst[$n]              $bkgsfcrst_lst[$n]  &
+                   /bin/cp    $sfcbkg_lst[$n]     $RSTHOLD/$bkgsfcrst_lst[$n]  &
+               endif
+
+               if ( -e $bkgupa_lst[$n] ) then
+                   /bin/cp    $bkgupa_lst[$n]              $bkguparst_lst[$n]  &
+                   /bin/cp    $bkgupa_lst[$n]     $RSTHOLD/$bkguparst_lst[$n]  &
+               else
+                   /bin/cp    $upabkg_lst[$n]              $bkguparst_lst[$n]  &
+                   /bin/cp    $upabkg_lst[$n]     $RSTHOLD/$bkguparst_lst[$n]  &
+               endif
+
+               if ( -e $cbkgetarst_lst[$n] ) then
+                   /bin/cp    $cbkgetarst_lst[$n]          $cbkgetarst_lst[$n]  &
+                   /bin/cp    $cbkgetarst_lst[$n] $RSTHOLD/$cbkgetarst_lst[$n]  &
+               else
+                   /bin/cp    $cbkg_lst[$n]                $cbkgetarst_lst[$n]  &
+                   /bin/cp    $cbkg_lst[$n]       $RSTHOLD/$cbkgetarst_lst[$n]  &
+               endif
+
+               if ( -e $abkgetarst_lst[$n] ) then
+                   /bin/cp    $abkgetarst_lst[$n]          $abkgetarst_lst[$n]  &
+                   /bin/cp    $abkgetarst_lst[$n] $RSTHOLD/$abkgetarst_lst[$n]  &
+               else
+                   /bin/cp    $abkg_lst[$n]                $abkgetarst_lst[$n]  &
+                   /bin/cp    $abkg_lst[$n]       $RSTHOLD/$abkgetarst_lst[$n]  &
+               endif
+               @ n++
+               end
+               wait
+
+            endif # < DO4DVAR >
 
         endif # < DOING_ANA >
 
@@ -5905,6 +5953,15 @@ endif
   if ( ! $FORECAST ) then
     if ( $DO4DVAR ) then
        /bin/mv $EXPID.*rst*iter*.$RSTSUFFIX $FVHOME/recycle/hold
+    endif
+    if ( -d $FVHOME/run/mom ) then
+       set momoutdir = `nmlread.py fvcore_layout.rc MOM_input_nml restart_output_dir`
+       set mylcvs = (`ls -1 $EXPID.rst.lcv*`)
+       set momtag = `echo $mylcvs[1] | cut -d. -f4`
+       /bin/mv $momoutdir/MOM.res.nc $FVHOME/recycle/hold/$EXPID.mom_rst.${momtag}.nc4 
+       foreach fn ( 1 2 3 )
+         /bin/mv $momoutdir/MOM.res_${fn}.nc $FVHOME/recycle/hold/$EXPID.mom${fn}_rst.${momtag}.nc4 
+       end
     endif
     cd $FVHOME/recycle/hold
     tar cvf $FVWORK/$EXPID.rst.${rtag}.tar $EXPID.* 

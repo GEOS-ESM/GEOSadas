@@ -19,6 +19,7 @@ $| = 1;
 #-----------------
 my ($atmens_dir);
 my ($arcdir, $expid, $newid, $yyyymmdd, $yyyy, $mm, $hh);
+my ($fvroot);
 
 my %vopts = ( "verbose" => 1 );
 
@@ -32,7 +33,10 @@ my %vopts = ( "verbose" => 1 );
     my ($atmens_stat_dir, $atmens_ebkg_dir, $atmens_erst_dir, $atmens_ecbkg_dir);
     my ($tarfile, $tarpath, $label, $pid);
     my ($ens, $mem, $mfile, $mfile_new);
-    my (@archList, @tarList);
+    my (@tarList);
+
+    my $fvbin = $FindBin::Bin;
+    $fvroot = dirname($fvbin);
     
     init();
     chdir($atmens_dir);
@@ -62,7 +66,7 @@ my %vopts = ( "verbose" => 1 );
         system "dmget @archList";
         exit;
     }
-    foreach $tarpath (@tarList) { system_("tar xvf $tarpath") }
+    foreach $tarpath (@tarList) { system_("$fvroot/bin/parallel-untar.py $tarpath 16") }
 
     $atmens_stat_dir = "$expid.atmens_stat.${yyyymmdd}_${hh}z";
     foreach $ens (<$atmens_stat_dir/ens*>) { mv_($ens, $pwd) }

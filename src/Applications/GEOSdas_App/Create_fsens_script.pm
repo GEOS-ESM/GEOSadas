@@ -56,8 +56,13 @@ sub fsens_script {
  $siteID = get_siteID();
  $nodeflg = "hasw";
  my $npn = `facter processorcount`; chomp($npn);
- if    ( $npn == 40 ) { $nodeflg = "sky"  }
- elsif ( $npn == 28 ) { $nodeflg = "hasw" }
+ if ( $npn == 40 ) {
+   $nodeflg = "sky";
+ } elsif ( $npn == 48 ) {
+   $nodeflg = "cas";
+ } elsif ( $npn == 28 ) {
+   $nodeflg = "hasw";
+ }
 
  open(SCRIPT,">$fvhome/run/$jobfs.j") or
  die ">>> ERROR <<< cannot write $fvhome/run/$jobfs.j";
@@ -123,7 +128,9 @@ sub fsens_script {
 
 # Load BASEDIR and modules
 # ------------------------
+  unsetenv LD_LIBRARY_PATH
   source \$FVROOT/bin/g5_modules
+  setenv LD_LIBRARY_PATH \${BASEDIR}/\${ARCH}/lib:\${FVROOT}/lib:\${LD_LIBRARY_PATH}
 
 # Until a better handle of GEOS_Util is agreed upon (should not refer to things in src)
 # -------------------------------------------------------------------------------------

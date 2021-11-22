@@ -19,10 +19,12 @@ endif
 
 #------------------------------
 # Odd variables that offend MPT-built execs
-unsetenv PMI_RANK
-unsetenv PMI_FD
-unsetenv PMI_JOBID
-unsetenv PMI_SIZE
+if ($?MPT_VERSION) then
+  unsetenv PMI_RANK
+  unsetenv PMI_FD
+  unsetenv PMI_JOBID
+  unsetenv PMI_SIZE
+endif
 #------------------------------
 setenv PATMOSX        >>>PATMOSX<<<
 setenv MODIS_L2_HDF   >>>MODIS_L2_HDF<<<
@@ -41,7 +43,7 @@ cd $AODWORK
 ls
 
 setenv PYTHONPATH $FVROOT/lib/Python
-setenv PSAS_NUM_MPI $NCPUS_AOD
+setenv PSAS_NUM_MPI 1 # $NCPUS_AOD
 
 set aod_modis_pcf = $AODWORK/modis_l2a.pcf
 set aod_avhrr_pcf = $AODWORK/avhrr_l2a.pcf
@@ -126,7 +128,8 @@ foreach time_offset ( 000000 030000 )
    #--------------
    if (-e ANAAOD_EGRESS) /bin/rm ANAAOD_EGRESS
    set flags = "-a $aod_a -d $aod_d -f $aod_f -k $aod_k"
-   $MPIRUN_AOD $ANAAODX -v -x $EXPID $flags -o $ods_a $aer_f
+   #$MPIRUN_AOD $ANAAODX -v -x $EXPID $flags -o $ods_a $aer_f
+   $ANAAODX -v -x $EXPID $flags -o $ods_a $aer_f
    if (! -e ANAAOD_EGRESS) then
       @ errcnt = $errcnt + 1
    endif

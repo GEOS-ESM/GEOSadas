@@ -106,6 +106,7 @@
 #       GEOS-5 forecast restarts
 #       ------------------------
         Call CopyGcmRestarts4Forecast_()
+        Call CopyMOMRestarts_( 1 )
 
 #       Determine time of trajectory output in forecast mode
 #       ----------------------------------------------------
@@ -145,6 +146,7 @@
 #  ------------------------------------------------
                                                        zeit_ci.x CopyGCMRS
    Call CopyGcmRestarts4DAS_()
+   Call CopyMOMRestarts_( 0 )
                                                        zeit_co.x CopyGCMRS
 
 #  If we are running an analysis, we must stage the analysis restarts

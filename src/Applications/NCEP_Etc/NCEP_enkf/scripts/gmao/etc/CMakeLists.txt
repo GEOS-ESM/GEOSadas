@@ -11,9 +11,13 @@ set (ALLETC
    atmos_enkf_sens.nml.tmpl
    CAP.rc.tmpl
    dyn_recenter_l72.rc
+   dyn_recenter_l91.rc
    dyn_recenter_l132.rc
+   dyn_recenter_l181.rc
    dyn_recenter_l72_sppt.rc
+   dyn_recenter_l91_sppt.rc
    dyn_recenter_l132_sppt.rc
+   dyn_recenter_l181_sppt.rc
    GAAS_GridComp.rc
    GEOS_ChemGridComp.rc
    GSI_GridComp.rc.tmpl

@@ -180,6 +180,10 @@ sub write_plotfiles {
     $values{"\@GEOSBIN"} = "$FVROOT/bin";
     $values{"\@GEOSSRC"} = $ENV{"GEOSUTIL"};
 
+    $values{"\@BATCH_TIME"} = "SBATCH --time=";
+    $values{"\@BATCH_JOBNAME"} = "SBATCH --job-name=";
+    $values{"\@BATCH_OUTPUTNAMEOUTPUT"} = "SBATCH --output=OUTPUT";
+
     replaceLabels($infile, $outfil, \%values,\@setenvs);
         
     # write gcm_moveplot.j; copy gcm_quickplot.csh
