@@ -151,6 +151,7 @@ if ( $FROMENS ) then
       setenv NSIG   $ens_nlevs
       setenv NLAT   $ens_nlats
       setenv NLON   $ens_nlons
+      setenv HFAC   -1.0
 
       # if desired resolution differs form ensemble resolution ... 
       if ( -e $idir/atmens_berror.rc ) then
@@ -304,6 +305,7 @@ if ( -e $this_param ) then
    if ( -e stats.param ) /bin/rm  stats.parm
    if ( -e sed_file    ) /bin/rm  sed_file
    echo "s/>>>JCAP<<</${JCAP}/1"       > sed_file
+   echo "s/>>>HFAC<<</${HFAC}/1"      >> sed_file
    echo "s/>>>NSIG<<</${NSIG}/1"      >> sed_file
    echo "s/>>>NLAT<<</${NLAT}/1"      >> sed_file
    echo "s/>>>NLON<<</${NLON}/1"      >> sed_file
