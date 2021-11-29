@@ -742,11 +742,11 @@
                  echo 'Setting aircraft_t_bc_ext to true, using external bias correction'
                  breaksw
             case 2:
-                 echo "s/>>>AIRCFT_BIAS<<</aircraft_t_bc=.true.,cleanup_tails=.true./g"  >> sed_file
+                 echo "s/>>>AIRCFT_BIAS<<</aircraft_t_bc=.true.,cleanup_tails=.true.,/g"  >> sed_file
                  echo 'Setting aircraft_t_bc to true, using VV.VV^2 bias correction'
                  breaksw
             case 3:
-                 echo "s/>>>AIRCFT_BIAS<<</aircraft_t_bc_pof=.true.,cleanup_tails=.true./g"  >> sed_file
+                 echo "s/>>>AIRCFT_BIAS<<</aircraft_t_bc_pof=.true.,cleanup_tails=.true.,/g"  >> sed_file
 	         echo 'Setting aircraft_t_bc_pof to true, using POF bias correction'
                  breaksw
             default:
