@@ -4403,7 +4403,7 @@ endif
      # run at command line
      #--------------------
      chmod 744 $jobf
-     $jobf $aod_parallel_flag >&! $gaasLOG &
+     $jobf $aod_parallel_flag >&! $gaasLOG
 
   else
 
