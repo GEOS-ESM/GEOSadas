@@ -66,19 +66,29 @@
      call berror_read_(ivars)
   endif
 
-  if (mlat/=ivars%nlat.or.mlon/=ivars%nlon) then
-     print *, 'cannot interpolate yet ...'
+  if (mlat/=ivars%nlat.and.mlon/=ivars%nlon.and.msig/=ivars%nsig) then
+     print *, 'cannot interpolate all three dims at one, try horz than vert ...'
      call exit(1)
   endif
+  if (mlat/=ivars%nlat.or.mlon/=ivars%nlon) then
+     write(6,'(a)') ' Horizontally interpolating error covariance fields ...'
+     call nc_berror_vars_init(xvars,ilon,ilat,isig)
+     call nc_berror_vars_copy(ivars,xvars)
+     call nc_berror_vars_final(ivars)
+     call nc_berror_vars_init(ivars,mlon,mlat,isig)
+     call hinterp_berror_vars_(xvars,ivars)
+     write(6,'(a)') ' Finish horizontal interpolation.'
+     call nc_berror_vars_final(xvars)
+  endif
   if (msig/=ivars%nsig) then
-     write(6,'(a)') ' Interpolating error covariance fields ...'
+     write(6,'(a)') ' Vertically interpolating error covariance fields ...'
      call nc_berror_vars_init(xvars,ilon,ilat,isig)
      call nc_berror_vars_copy(ivars,xvars)
      call nc_berror_vars_final(ivars)
      call nc_berror_vars_init(ivars,ilon,ilat,msig)
-     call nc_berror_vars_copy(xvars,ivars)
+     call nc_berror_vars_copy(xvars,ivars) ! copy lat/lon fields
      call vinterp_berror_vars_(xvars,ivars)
-     write(6,'(a)') ' Finish interpolation.'
+     write(6,'(a)') ' Finish vertical interpolation.'
      call nc_berror_vars_final(xvars)
   endif
   call berror_write_(ivars,merra2current)
@@ -602,9 +612,128 @@ contains
      call spline( plevi, plevo, ivars%cvln  (j,:), ovars%cvln  (j,:) )
   enddo
   deallocate(aux)
-
+  deallocate(plevi)
+  deallocate(plevo)
 
   end subroutine vinterp_berror_vars_
+
+  subroutine hinterp_berror_vars_(ivars,ovars)
+
+  use m_spline, only: spline
+  use m_set_eta, only: set_eta
+  use m_set_eta, only: get_ref_plevs
+  use m_const, only: pstd
+  implicit none
+
+  type(nc_berror_vars) ivars
+  type(nc_berror_vars) ovars
+
+  real(4),allocatable,dimension(:,:) :: aux
+  real(4),allocatable,dimension(:) :: lati,lato
+  real(4),allocatable,dimension(:) :: loni,lono
+  integer i,j,k,k2
+  real dlon,dlat
+
+  if( ivars%nsig/=ovars%nsig ) then
+      print *, 'hinterp_berror_vars_: error, nsig must equal'
+      call exit(1)
+  endif 
+
+! Input levels
+! ------------
+  allocate(lati(ivars%nlat))
+  allocate(loni(ivars%nlon))
+  dlat = 180./(ivars%nlat-1)
+  do j=1,ivars%nlat
+     lati(j) = -90.0 + (j-1.0)*dlat 
+  enddo
+  dlon = 360./ivars%nlon
+  do i=1,ivars%nlon
+     loni(i) = i*dlon ! GSI def
+  enddo
+
+! Output levels
+! -------------
+  allocate(lato(ovars%nlat))
+  allocate(lono(ovars%nlon))
+  dlat = 180./(ovars%nlat-1)
+  do j=1,ovars%nlat
+     lato(j) = -90.0 + (j-1.0)*dlat 
+  enddo
+  dlon = 360./ovars%nlon
+  do i=1,ovars%nlon
+     lono(i) = i*dlon ! GSI def
+  enddo
+
+
+  do k=1,ivars%nsig ! very, very parallelizable
+
+     do k2=1,ivars%nsig
+        call spline( lati, lato, ivars%tcon(:,k2,k), ovars%tcon(:,k2,k) )
+     enddo
+
+     call spline( lati, lato, ivars%vpcon (:,k), ovars%vpcon (:,k) )
+     call spline( lati, lato, ivars%pscon (:,k), ovars%pscon (:,k) )
+     call spline( lati, lato, ivars%sfvar (:,k), ovars%sfvar (:,k) )
+     call spline( lati, lato, ivars%sfhln (:,k), ovars%sfhln (:,k) )
+     call spline( lati, lato, ivars%sfvln (:,k), ovars%sfvln (:,k) )
+     call spline( lati, lato, ivars%vpvar (:,k), ovars%vpvar (:,k) )
+     call spline( lati, lato, ivars%vphln (:,k), ovars%vphln (:,k) )
+     call spline( lati, lato, ivars%vpvln (:,k), ovars%vpvln (:,k) )
+     call spline( lati, lato, ivars%tvar  (:,k), ovars%tvar  (:,k) )
+     call spline( lati, lato, ivars%thln  (:,k), ovars%thln  (:,k) )
+     call spline( lati, lato, ivars%tvln  (:,k), ovars%tvln  (:,k) )
+     call spline( lati, lato, ivars%qvar  (:,k), ovars%qvar  (:,k) )
+     call spline( lati, lato, ivars%nrhvar(:,k), ovars%nrhvar(:,k) )
+     call spline( lati, lato, ivars%qhln  (:,k), ovars%qhln  (:,k) )
+     call spline( lati, lato, ivars%qvln  (:,k), ovars%qvln  (:,k) )
+     call spline( lati, lato, ivars%qivar (:,k), ovars%qivar (:,k) )
+     call spline( lati, lato, ivars%qihln (:,k), ovars%qihln (:,k) )
+     call spline( lati, lato, ivars%qivln (:,k), ovars%qivln (:,k) )
+     call spline( lati, lato, ivars%qlvar (:,k), ovars%qlvar (:,k) )
+     call spline( lati, lato, ivars%qlhln (:,k), ovars%qlhln (:,k) )
+     call spline( lati, lato, ivars%qlvln (:,k), ovars%qlvln (:,k) )
+     call spline( lati, lato, ivars%qrvar (:,k), ovars%qrvar (:,k) )
+     call spline( lati, lato, ivars%qrhln (:,k), ovars%qrhln (:,k) )
+     call spline( lati, lato, ivars%qrvln (:,k), ovars%qrvln (:,k) )
+     call spline( lati, lato, ivars%qsvar (:,k), ovars%qsvar (:,k) )
+     call spline( lati, lato, ivars%qshln (:,k), ovars%qshln (:,k) )
+     call spline( lati, lato, ivars%qsvln (:,k), ovars%qsvln (:,k) )
+     call spline( lati, lato, ivars%ozvar (:,k), ovars%ozvar (:,k) )
+     call spline( lati, lato, ivars%ozhln (:,k), ovars%ozhln (:,k) )
+     call spline( lati, lato, ivars%ozvln (:,k), ovars%ozvln (:,k) )
+     call spline( lati, lato, ivars%cvar  (:,k), ovars%cvar  (:,k) )
+     call spline( lati, lato, ivars%chln  (:,k), ovars%chln  (:,k) )
+     call spline( lati, lato, ivars%cvln  (:,k), ovars%cvln  (:,k) )
+  enddo
+  call spline( lati, lato, ivars%psvar, ovars%psvar )
+  call spline( lati, lato, ivars%pshln, ovars%pshln )
+
+! Now handle horizontal 2d fields
+  allocate(aux(ovars%nlat,ivars%nlon))
+
+  ! varsst ...
+  do i=1,ivars%nlon 
+     call spline( lati, lato, ivars%varsst(:,i), aux(:,i) )
+  enddo
+  do j=1,ovars%nlat 
+     call spline( loni, lono, aux(j,:), ovars%varsst(j,:) )
+  enddo
+  ! corlsst
+  do i=1,ivars%nlon 
+     call spline( lati, lato, ivars%corlsst(:,i), aux(:,i) )
+  enddo
+  do j=1,ovars%nlat 
+     call spline( loni, lono, aux(j,:), ovars%corlsst(j,:) )
+  enddo
+
+  deallocate(aux)
+
+  deallocate(lati,loni)
+  deallocate(lato,lono)
+
+
+  end subroutine hinterp_berror_vars_
 
   subroutine be_write_nc_(fname,ivars)
 
