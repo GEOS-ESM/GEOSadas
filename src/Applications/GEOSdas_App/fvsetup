@@ -2535,7 +2535,7 @@ sub get_expid {
   my (%already_asked);
 
   $expid = "u000_"."$res";
-  if ( $g5gcm ) { $expdsc = "${expid}__${cvstag}__agrid_${res}__ogrid_${ores}" }
+  if ( $g5gcm ) { $expdsc = "${expid}__agrid_${res}__ogrid_${ores}" }
   else          { $expdsc = "FVGCM-based_run" }
 
   print <<"EOF";
@@ -2593,7 +2593,7 @@ EOF
           }
       }
   }
-  $expdsc = "${expid}__${cvstag}__agrid_${res}__ogrid_${ores}" if $g5gcm;
+  $expdsc = "${expid}__agrid_${res}__ogrid_${ores}" if $g5gcm;
   $expdsc = query("  EXPDSC?", $expdsc);
   return 0;
 }
@@ -2736,10 +2736,10 @@ EOF
         last if -d $fvbcs;
 
         if ($loop++ < 3) {
-            warn ">> ERROR << cannot find directory $fvbcs";
+            warn ">> WARNING << Cannot find directory $fvbcs; Try again;";
             redo;
         } else {
-            die ">> ERROR << cannot find directory $fvbcs";
+            die ">> ERROR << Cannot find directory $fvbcs;";
         }
     }
 
@@ -2756,10 +2756,10 @@ EOF
         last if -d $fvrtbcs;
 
         if ($loop++ < 3) {
-            warn ">> ERROR << cannot find directory $fvrtbcs";
+            warn ">> WARNING << Cannot find directory $fvrtbcs; Try again;";
             redo;
         } else {
-            die ">> ERROR << cannot find directory $fvrtbcs";
+            die ">> ERROR << Cannot find directory $fvrtbcs;";
         }
     }
 
@@ -2790,10 +2790,10 @@ sub get_extdata {
 
         unless (-d $extdata{$set}) {
             if ($loop++ < 3) {
-                warn ">> ERROR << cannot find directory: $extdata{$set}";
+                warn ">> WARNING << Cannot find directory: $extdata{$set}; Try again;";
                 redo;
             } else {
-                die ">> ERROR << cannot find directory: $extdata{$set}";
+                die ">> ERROR << Cannot find directory: $extdata{$set};";
             }
         }
         $loop = 0;
@@ -3179,10 +3179,10 @@ EOF
      $nymde = query("  Ending year-month-day?", $nymde);
      unless ($nymde =~ /^\s*\d{8}\s*$/) {
          if ($loop++ < 3) {
-             warn ">> ERROR << Date must be in yyyymmdd format. Try again.\n\n";
+             warn ">> WARNING << Date must be in yyyymmdd format; Try again;";
              redo;
          } else {
-             die "Date must be in yyyymmdd format. Try again.\n\n";
+             die ">> ERROR << Date must be in yyyymmdd format;";
          }
      }
  }
@@ -3199,11 +3199,11 @@ EOF
   {
       $fhours21 = query("  Length of FORECAST run segments (in hours)?", $fhours21);
       if ($fhours21 % 3 != 0) {
-          if ($loop < 3) {
-              warn ">> Error << Number of hours should be a multiple of 3.  Try again.\n";
+          if ($loop++ < 3) {
+              warn ">> WARNING << Number of hours should be a multiple of 3; Try again;";
               redo;
           } else {
-              die "  Number of hours should be a multiple of 3.  Try again.\n";
+              die ">> ERROR << Number of hours should be a multiple of 3;";
           }
       }
   }
@@ -7618,7 +7618,7 @@ print SCRIPT <<"EOF";
   setenv NCPUS_GPERT $ncpus_gpert # Number of CPUs to run gcmPERT
   setenv NCPUS_AOD   $ncpus_aod   # Number of CPUs to run PSAS-AOD
   setenv O_SERVERS   $o_servers   # Number of IO servers
-  setenv GAAS_RUN_SLURM 1 # launch AOD analysis as separate batch job
+  #setenv GAAS_RUN_SLURM 1 # launch AOD analysis as separate batch job
   setenv AODBLOCKJOB 1
 EOF
 if ($ncpus_per_node) {
@@ -10801,8 +10801,9 @@ sub merge_txt {
 }
 #=======================================================================
 sub write_saved_inputs {
-    my ($save_file, $dashes, $len, $prompt, $ans);
-    my (%varDef, @fvANS, $var, %alreadyWarned);
+    my ($save_file);
+    my ($ans, $dashes, $fvID, $len, $prompt, $var);
+    my (%alreadyWarned, %varDef, @fvANS);
 
     $save_file = shift @_;
 
@@ -10815,12 +10816,15 @@ sub write_saved_inputs {
     $len = length("$expid.input")+1;
     $dashes = "-"x$len;
 
+    chomp($fvID = `git hash-object $0 | cut -c1-10`);
+
     print SAVE "#$dashes\n";
     print SAVE "# $expid.input\n";
     print SAVE "#$dashes\n\n";
 
+    print SAVE "codeID: $cvstag\n";
     print SAVE "description: $expdsc\n";
-    print SAVE "tag: $cvstag\n";
+    print SAVE "fvsetupID: $fvID\n";
     print SAVE "fvsetupflags:".$fvsetupflags."\n" if $fvsetupflags;
 
     %varDef = ();
