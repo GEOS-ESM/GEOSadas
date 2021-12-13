@@ -6,7 +6,7 @@
 # GEOS ADAS Gatekeepers own all the files
 * @GEOS-ESM/adas-gatekeepers
 
-# The GCM gatekeepers and CMake should know/approve these
+# The ADAS gatekeepers and CMake should know/approve these
 /.github/    @GEOS-ESM/cmake-team @GEOS-ESM/adas-gatekeepers
 /.circleci/  @GEOS-ESM/cmake-team @GEOS-ESM/adas-gatekeepers
 /.codebuild/ @GEOS-ESM/cmake-team @GEOS-ESM/adas-gatekeepers
