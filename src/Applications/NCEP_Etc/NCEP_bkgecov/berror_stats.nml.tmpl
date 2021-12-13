@@ -5,6 +5,7 @@
 !  jcap=382,lgaus=.false.,lsmver=.true.,nsig=72,nlat=361,nlon=576,
 !  jcap=512,lgaus=.false.,lsmver=.true.,nsig=72,nlat=721,nlon=1152,hrzsfactor=0.6,
    jcap=>>>JCAP<<<,lgaus=.false.,lsmver=.true.,nsig=>>>NSIG<<<,nlat=>>>NLAT<<<,nlon=>>>NLON<<<,
+   hrzsfactor=>>>HFAC<<<,
    maxcases=500,hybrid=.true.,smoothdeg=0.5,
 !  note: biasrm=.false. means do bias correction - go figure!
    fnm0=>>>NMODES<<<,vectype=5,biasrm=.false.,laddoz=.false.,
@@ -13,7 +14,9 @@
    readperts=.true.,
 !  Debug only:
 !  calchrzscl=.false.,
+!  input_vpsf=.true.,
  /
  &SMOOTHVARS
+! this namelist is incorrectly implemented in the code - do not use
  /
 

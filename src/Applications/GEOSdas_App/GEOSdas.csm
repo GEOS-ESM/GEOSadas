@@ -116,7 +116,7 @@
   if ( !($?BOOTSTRAP) )           setenv BOOTSTRAP     0
   if ( !($?CENTRAL_AGCM_PARALLEL) ) setenv CENTRAL_AGCM_PARALLEL 0
   if ( !($?CHECK_DMF) )           setenv CHECK_DMF     1
-  if ( !($?CLEANUP_TAIL) )        setenv CLEANUP_TAIL  0
+  if ( !($?CLEANUP_TAIL) )        setenv CLEANUP_TAIL  1
   if ( !($?CONVPROG) )            setenv CONVPROG      0
   if ( !($?CONVSFC) )             setenv CONVSFC       0
   if ( !($?CONVUPA) )             setenv CONVUPA       0
@@ -4533,12 +4533,12 @@ endif
  
 #       Which CAP to use?
 #       -----------------
-        set hh = `echo $gcm_nhms0 | cut -c1-2`
 
         set fcst_beg = ( `rst_date d_rst` )
         set nymdt   = $fcst_beg[1]
         set nhmst   = $fcst_beg[2]
         set hhmnt   = `echo $nhmst | cut -c1-4`
+        set hh      = `echo $hhmnt | cut -c1-2`
         set nd_nh = ( `grep -i JOB_SGMT $mycap|awk '{printf "%d %d",$2, $3}'` )
         set nsecs = `(expr $nd_nh[1] \* 86400 \+ $nd_nh[2] \/ 10000 \* 3600)`
         set fcst_end = ( `tick $fcst_beg $nsecs` )

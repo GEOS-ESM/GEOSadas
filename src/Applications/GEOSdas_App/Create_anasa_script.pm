@@ -41,8 +41,8 @@ sub anasa_script {
     my $hyb_ens         = $inputparams{"hyb_ens"};
     my $jobqueue1       = $inputparams{"jobqueue1"};
     my $mem             = $inputparams{"mem"};
-    my $nodes           = $inputparams{"nodes"};
     my $ncpus_gsi       = $inputparams{"ncpus_gsi"};
+    my $nodeflg         = $inputparams{"nodeflg"};
     my $fcswallclk      = $inputparams{"fcswallclk"};
     my $nametag         = $inputparams{"nametag"};
     my $gid             = $inputparams{"gid"};
@@ -73,15 +73,6 @@ sub anasa_script {
  my( $os, $siteID, $nodeflg );
 
  $siteID = get_siteID();
- $nodeflg = "hasw";
- my $npn = `facter processorcount`; chomp($npn);
- if ( $npn == 40 ) {
-   $nodeflg = "sky";
- } elsif ( $npn == 48 ) { 
-   $nodeflg = "cas";
- } elsif ( $npn == 28 ) { 
-   $nodeflg = "hasw";
- } 
 
  open(SCRIPT,">$fvhome/anasa/$jobsa.j") or
  die ">>> ERROR <<< cannot write $fvhome/anasa/$jobsa.j";
