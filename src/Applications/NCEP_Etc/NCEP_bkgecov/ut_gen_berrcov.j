@@ -60,8 +60,8 @@ setenv GEN_NMCDIFFS 0
 setenv GET_BERROR    1
 setenv BERROR_NMODES 25
 
-#set these_lats = ( 25 46 91 )
-set these_lats = ( 721 )
+set these_lats = ( 25 46 91 181 361 721 )
+#set these_lats = ( 721 )
 
 # Basic settings (weak dependency on version of DAS)
 # --------------------------------------------------
@@ -334,6 +334,11 @@ if ( $GET_BERROR ) then
      setenv NLON  1152
      setenv HFAC   0.6
   endif
+# Hack: use same JCAP  for all resolution as done in previous version of BERROR generation
+# Hack: also redefine NMODES as used in previous version
+#  see: fvInput/gsi/etc/berror_gmao/gmao24Jun2016_fp+oz_fix/README
+  setenv JCAP 268
+  setenv BERROR_NMODES 20
 
   if ( ! -d $FCSTWRK/BERROR.WORK ) mkdir -p $FCSTWRK/BERROR.WORK
 

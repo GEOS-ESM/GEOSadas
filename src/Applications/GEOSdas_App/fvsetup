@@ -643,9 +643,9 @@ sub set_inputparams {
                     "nametag"        => $nametag, 
                     "ncpus"          => $ncpus, 
                     "ncpus_gsi"      => $ncpus_gsi,
+                    "nodeflg"        => $nodeflg, 
                     "ncsuffix"       => $ncsuffix,
 		    "newradbc"       => $newradbc,
-                    "nodes"          => $nodes, 
                     "nvarouter"      => $nvarouter, 
                     "obClass"        => $obClass,
                     "oiqc"           => $oiqc, 
@@ -7421,7 +7421,7 @@ if ((\$arch_type == "ADAS") && (\$\?yyyymm) && (\$\?dd)) then
           if (\$MONTHLY_PLOTS)  set flags = "\$flags -plots"
           if (\$MONTHLY_RADMON) set flags = "\$flags -radmon \$MONTHLY_RADMON"
 
-          if (\$flags != "") \$monthlyPost \$flags
+          if ("\$flags" != "") \$monthlyPost \$flags
       endif  
    endif
 endif
