@@ -116,7 +116,7 @@
   if ( !($?BOOTSTRAP) )           setenv BOOTSTRAP     0
   if ( !($?CENTRAL_AGCM_PARALLEL) ) setenv CENTRAL_AGCM_PARALLEL 0
   if ( !($?CHECK_DMF) )           setenv CHECK_DMF     1
-  if ( !($?CLEANUP_TAIL) )        setenv CLEANUP_TAIL  0
+  if ( !($?CLEANUP_TAIL) )        setenv CLEANUP_TAIL  1
   if ( !($?CONVPROG) )            setenv CONVPROG      0
   if ( !($?CONVSFC) )             setenv CONVSFC       0
   if ( !($?CONVUPA) )             setenv CONVUPA       0
