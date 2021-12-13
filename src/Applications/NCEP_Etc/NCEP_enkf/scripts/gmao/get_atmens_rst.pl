@@ -24,14 +24,11 @@ my %vopts = ( "verbose" => 1 );
 # main program
 #-------------
 {
-    my ($pwd);
-    my ($three_hr_sec, $ymd3, $hms3, $yyyy3, $mm3, $hh3);
-    my ($atmens_date_dir, $atmens_date3_dir);
-    my ($rdnperts_dates3_txt);
-    my ($atmens_stat_dir, $atmens_ebkg_dir, $atmens_erst_dir, $atmens_ecbkg_dir);
-    my ($tarfile, $tarpath, $label, $pid);
-    my ($ens, $mem, $mfile, $mfile_new);
-    my (@tarList);
+    my ($atmens_date3_dir, $atmens_date_dir, $atmens_ebkg_dir);
+    my ($atmens_ecbkg_dir, $atmens_erst_dir, $atmens_stat_dir);
+    my ($dmlist, $ens, $hh3, $hms3, $label, $mem, $mfile, $mfile_new, $mm3);
+    my ($pid, $pwd, $rdnperts_dates3_txt, $tarfile, $tarpath);
+    my ($three_hr_sec, $ymd3, $yyyy3, @tarList, @tarListA);
 
     my $fvbin = $FindBin::Bin;
     $fvroot = dirname($fvbin);
@@ -56,13 +53,18 @@ my %vopts = ( "verbose" => 1 );
     foreach $label ("stat", "ebkg", "ecbkg", "erst") {
         $tarfile = "$expid.atmens_$label.${yyyymmdd}_${hh}z.tar";
         $tarpath = "$atmens_date_dir/$tarfile";
+
+        $dmlist = `dmls -l $tarpath`;
+        push @tarListA, $tarpath if $dmlist =~ m/(OFL)/;
         push @tarList, $tarpath;
     }
 
-    defined($pid = fork) or die "Error while attempting to fork;";
-    unless ($pid) {
-        system "dmget @tarList";
-        exit;
+    if (@tarListA) {
+        defined($pid = fork) or die "Error while attempting to fork;";
+        unless ($pid) {
+            system_("dmget @tarListA");
+            exit;
+        }
     }
     foreach $tarpath (@tarList) { system_("$fvroot/bin/parallel-untar.py $tarpath 16") }
 
