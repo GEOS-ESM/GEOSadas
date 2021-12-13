@@ -33,6 +33,8 @@ if(GIT_FOUND)
       else ()
          message(FATAL_ERROR "This should not be reached")
       endif ()
+   else ()
+      set (GIT_TAG_OR_REV GEOSadas-${CMAKE_PROJECT_VERSION})
    endif ()
 endif()
 
