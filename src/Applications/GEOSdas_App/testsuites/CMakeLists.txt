@@ -36,15 +36,30 @@ if(GIT_FOUND)
    else ()
       set (GIT_TAG_OR_REV GEOSadas-${CMAKE_PROJECT_VERSION})
    endif ()
+
+   message("Setting fvID to fvsetup SHA1 (1st 10 digits)")
+   execute_process(
+      COMMAND ${GIT_EXECUTABLE} hash-object src/Applications/GEOSdas_App/fvsetup
+      COMMAND cut -c1-10
+      WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+      OUTPUT_VARIABLE fvID
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+   )
+   message("fvID=${fvID}")
 endif()
 
 configure_file(CVSTAG.in CVSTAG @ONLY)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/CVSTAG DESTINATION etc)
+install (
+   FILES ${CMAKE_CURRENT_BINARY_DIR}/CVSTAG
+   DESTINATION etc
+)
 
 set (ESMABIN ${CMAKE_INSTALL_PREFIX}/bin)
 set (ESMATST ${CMAKE_INSTALL_PREFIX}/etc/testsuites)
 foreach (perl_script checkinput runjob)
    configure_file ( ${perl_script}.pl ${perl_script} @ONLY)
-   install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/${perl_script} DESTINATION bin)
+   install (
+      PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/${perl_script}
+      DESTINATION bin
+   )
 endforeach ()
-
