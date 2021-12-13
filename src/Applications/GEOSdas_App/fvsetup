@@ -801,17 +801,14 @@ sub defaults {
                    gsi_sens.rc.tmpl
                    noreplay.acq
                    odsmatch.rc
-                   prepobs_acarsqc.merra.parm
                    prepobs_cqc_statbge
                    prepobs_cqcbufr.merra.parm
                    prepobs_errtable.global
-                   prepobs_landc
                    prepobs_oiqc.oberrs
                    prepobs_prep.bufrtable
                    prepobs_prepacqc.merra.parm
                    prepobs_prevents.merra.parm
                    prepobs_profcqc.merra.parm
-                   prepobs_waypoints
                    sac.nl.tmpl
                    vtrack.ctl.tmpl
                    vtrack.rc

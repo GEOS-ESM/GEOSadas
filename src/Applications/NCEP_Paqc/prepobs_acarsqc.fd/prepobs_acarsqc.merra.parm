@@ -1,9 +1,0 @@
-
-  Cards for ACARSQC -- Version   7 May 2002
-  Here: GMAO/MERRA system -- Effective:  origination to present
-
- &INPUT
-   WINDOW=3.00,      JAMASS = 6*0,   JAWIND= 6*0,
-   FWRITE = .TRUE.,  IWRITE=.FALSE., EWRITE=.TRUE., EWRITE_7=.FALSE.
- /
-

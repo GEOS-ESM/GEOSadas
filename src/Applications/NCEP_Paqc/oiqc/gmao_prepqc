@@ -21,6 +21,11 @@
 #                       'gmao_prepqc' without fv2ss step.
 #  20Mar2009  Todling   Remove DASPERL (per da Silva)
 #  17Nov2015  Meta      Clean up some unused (old) fort.XX assignments
+#  27Oct2016  Meta      Some modifications for new NRL QC 
+#  02Feb2017  Meta      Plumbing fixes for NRL QC - save profile file where it
+#                       can be found by DAS, few other tweaks
+#  18Oct2019  Meta      Removed reference to 'Shell'; cleaned out 
+#                        code for old ACQC, ACARSQC
 #------------------------------------------------------------------
 
 # make env vars readily available
@@ -82,15 +87,9 @@ use File::Copy;
   # PREPACQC   (Aircraft/AMDAR QC)
   # --------
   $rc1 = system("zeit_ci.x -r $fvwork/.zeit pqc_arqc");
-    acqc()   if ($doACQC) ;
+    newacqc()   if ($doACQC) ;
   $rc1 = system("zeit_co.x -r $fvwork/.zeit pqc_arqc");
   
-  # ACARSQC     (ACARS QC)
-  # -------
-  $rc1 = system("zeit_ci.x -r $fvwork/.zeit pqc_acarsqc");
-    acarsqc()   if ($doACARSQC) ;
-  $rc1 = system("zeit_co.x -r $fvwork/.zeit pqc_acarsqc");
-
   # CQCVAD     (Radar VAD wind QC)
   # ------
   $rc1 = system("zeit_ci.x -r $fvwork/.zeit pqc_cqcvad");
@@ -106,6 +105,7 @@ use File::Copy;
     
     chdir($prepqcdir);
     copy("next.$nymd.$hh","$bfr");
+    copy("acprof.$nymd.$hh","$cft");
 
 # All done
 # --------
@@ -151,6 +151,7 @@ sub init {
     $dd    = substr($nymd,6,2);
 
     $bfr1 = "$expid.prepqc.obs.${nymd}.t${hh}z.bfr"  unless ( $bfr1 );
+    $cft1 = "$expid.acft_profl.${nymd}.t${hh}z.bfr";
     
     $spc = 254 unless ( $spc );
 
@@ -160,6 +161,7 @@ sub init {
 #   Get full pathnames
 #   ------------------
     $bfr  = fullpath($bfr1);     
+    $cft  = fullpath($cft1);
     $pref = fullpath($pref1);     
     $dynf = fullpath($dynf1);
   if (! -e $dynf ) {
@@ -452,7 +454,6 @@ sub cqcht {
    Assign("cqc_blktot.$nymd.$hh",       15 );
    Assign("cqc_stnlst.$nymd.$hh",       16 );
   
-   Assign("$expid.prog.cqcstats.$nymd", 21 );
    Assign("cqc_winderr.$nymd.$hh",      22 );
    Assign("$rcdir/prepobs_cqc_statbge", 23 );
   
@@ -598,10 +599,9 @@ sub profcqc {
   copy("prepprf.$nymd.$hh", "$prepqcdir/next.$nymd.$hh");
 
 }
-
 #......................................................................
 
-sub acqc {                        
+sub newacqc {                        
 
     $acqcdir = "$prepqcdir/acqc"; # PREPQC working directory
     $rc = system("/bin/mkdir -p $acqcdir" );
@@ -615,69 +615,26 @@ sub acqc {
 #  NOTE: these files do not follow the fv file name conventions
 #        Many of the output files are discarded
 #  ------------------------------------------------------------
-   Assign("$prepqcdir/next.$nymd.$hh",          14 );  
-   Assign("$rcdir/prepobs_landc",       15 );
-   Assign("$rcdir/prepobs_waypoints",   23 );
+   Assign("$prepqcdir/next.$nymd.$hh",          11 );  
+   Assign("$rcdir/prepobs_prep.bufrtable",      12 );
   
+   Assign("acftqc_${nymd}${hh}.vvl",    41 );
    Assign("prepaqc.$nymd.$hh",          61 );
-   Assign("aqc_sdmisol.$nymd.$hh",      52 );
-   Assign("aqc_sdmxlim.$nymd.$hh",      53 );
-
-   $FORT_CONVERT15 = "BIG_ENDIAN";
+   Assign("prepacqc_merge.$nymd.$hh",   62 );
    
 # Run prepacqc
 # -------
-  $cmd = "prepacqc.x < $rcdir/prepobs_prepacqc.merra.parm";
+  $cmd = "prepacqc_profl.x < $rcdir/prepobs_prepacqc.merra.parm";
   print "$0: $cmd\n" unless ( $opt_q );
   $rc = system ( $cmd ) unless ( $opt_n ) ;    
   die ">>>> ERROR <<< running prepacqc.x" if ( $rc );
 
 # copy output file to 'next' so next routine will use it
   copy("prepaqc.$nymd.$hh", "$prepqcdir/next.$nymd.$hh");
-
-  undef $FORT_CONVERT15;
-
+  copy("prepacqc_merge.$nymd.$hh","$prepqcdir/acprof.$nymd.$hh");
 
 }
 
-#......................................................................
-
-sub acarsqc {                        
-
-    $arqcdir = "$prepqcdir/acarqc"; # PREPQC working directory
-    $rc = system("/bin/mkdir -p $arqcdir" );
-    die ">>> ERROR <<< cannot create $arqcdir " if ( $rc );
-    chdir("$arqcdir"); 
-    system("/bin/touch .no_archiving");   # working prepqc dir not to be archived
-
-
-# Assign FORTRAN units for acarsqc
-# ------------------------------------------------------------
-
-#  NOTE: these files do not follow the fv file name conventions
-#        Many of the output files are discarded
-#  ------------------------------------------------------------
-   Assign("$prepqcdir/next.$nymd.$hh",          14 );  
-   Assign("$rcdir/prepobs_landc",       15 );
-  
-   Assign("prepacr.$nymd.$hh",          61 );
-   Assign("acr_sdmlist.$nymd.$hh",      52 );
-
-   $FORT_CONVERT15 = "BIG_ENDIAN";
-   
-# Run acarsqc
-# -------
-  $cmd = "acarsqc.x < $rcdir/prepobs_acarsqc.merra.parm";
-  print "$0: $cmd\n" unless ( $opt_q );
-  $rc = system ( $cmd ) unless ( $opt_n ) ;    
-  die ">>>> ERROR <<< running acarsqc.x" if ( $rc );
-
-# copy output file to 'next' so next routine will use it
-  copy("prepacr.$nymd.$hh", "$prepqcdir/next.$nymd.$hh");
-
-  undef $FORT_CONVERT15;
-
-}
 #......................................................................
 
 #
@@ -771,8 +728,7 @@ DESCRIPTION
         gmao_prevents.x - computes O-F
         cqcbufr.x  - radiosonde QC
         profcqc.x  - profiler CQC
-        prepacqc.x - aircraft qc (other than ACARS) 
-        acarsqc.x  - ACARS (MDCARS) aircraft qc
+        prepacqc_prof.x - aircraft qc 
         oiqcbufr.x    - performs actual OIQC
 
      The following parameters are required 
