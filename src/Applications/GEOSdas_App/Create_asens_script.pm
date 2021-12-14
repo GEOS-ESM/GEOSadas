@@ -73,7 +73,7 @@ sub asens_script {
     my $qsub            = $inputparams{"qsub"};
 
  # local variables
- my( $os, $siteID, $nodeflg );
+ my( $os, $siteID );
 
  $siteID = get_siteID();
 
