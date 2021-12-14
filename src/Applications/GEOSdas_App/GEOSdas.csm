@@ -78,6 +78,7 @@
 #                       - Revise multi-incremental approach for 4d-analysis 
 #                         (cost goes down with successive updates)
 #                       - Temporarily leaving test lines commented out 
+#   8Dec2021 Sienkiewicz - add option for 'cleanup_tail' for aircraft bias correction
 #-----------------------------------------------------------------------------
 
 #
@@ -115,6 +116,7 @@
   if ( !($?BOOTSTRAP) )           setenv BOOTSTRAP     0
   if ( !($?CENTRAL_AGCM_PARALLEL) ) setenv CENTRAL_AGCM_PARALLEL 0
   if ( !($?CHECK_DMF) )           setenv CHECK_DMF     1
+  if ( !($?CLEANUP_TAIL) )        setenv CLEANUP_TAIL  1
   if ( !($?CONVPROG) )            setenv CONVPROG      0
   if ( !($?CONVSFC) )             setenv CONVSFC       0
   if ( !($?CONVUPA) )             setenv CONVUPA       0
@@ -913,11 +915,15 @@ exit 1
 	  echo 'Setting aircraft_t_bc_ext to true, using external bias correction'
 	  breaksw
      case 2:
-          echo "s/>>>AIRCFT_BIAS<<</aircraft_t_bc=.true.,/g"  >> sed_file
+          set cftstring = "aircraft_t_bc=.true.,"
+          if ( $CLEANUP_TAIL ) set cftstring = "$cftstring cleanup_tail=.true.,"
+          echo "s/>>>AIRCFT_BIAS<<</$cftstring/g"  >> sed_file
 	  echo 'Setting aircraft_t_bc to true, using VV.VV^2 bias correction'
 	  breaksw
      case 3:
-          echo "s/>>>AIRCFT_BIAS<<</aircraft_t_bc_pof=.true.,/g"  >> sed_file
+          set cftstring = "aircraft_t_bc_pof=.true.,"
+          if ( $CLEANUP_TAIL ) set cftstring = "$cftstring cleanup_tail=.true.,"
+          echo "s/>>>AIRCFT_BIAS<<</$cftstring/g"  >> sed_file
 	  echo 'Setting aircraft_t_bc_pof to true, using POF bias correction'
 	  breaksw
      default:
@@ -1128,11 +1134,15 @@ exit 1
 	  echo 'Setting aircraft_t_bc_ext to true, using external bias correction'
 	  breaksw
      case 2:
-          echo "s/>>>AIRCFT_BIAS<<</aircraft_t_bc=.true.,/g"  >> sed_file
+          set cftstring = "aircraft_t_bc=.true.,"
+          if ( $CLEANUP_TAIL ) set cftstring = "$cftstring cleanup_tail=.true.,"
+          echo "s/>>>AIRCFT_BIAS<<</$cftstring/g"  >> sed_file
 	  echo 'Setting aircraft_t_bc to true, using VV.VV^2 bias correction'
 	  breaksw
      case 3:
-          echo "s/>>>AIRCFT_BIAS<<</aircraft_t_bc_pof=.true.,/g"  >> sed_file
+          set cftstring = "aircraft_t_bc_pof.true.,"
+          if ( $CLEANUP_TAIL ) set cftstring = "$cftstring cleanup_tail=.true.,"
+          echo "s/>>>AIRCFT_BIAS<<</$cftstring/g"  >> sed_file
 	  echo 'Setting aircraft_t_bc_pof to true, using POF bias correction'
 	  breaksw
      default:
@@ -4403,7 +4413,7 @@ endif
      # run at command line
      #--------------------
      chmod 744 $jobf
-     $jobf $aod_parallel_flag >&! $gaasLOG &
+     $jobf $aod_parallel_flag >&! $gaasLOG
 
   else
 
@@ -4523,12 +4533,12 @@ endif
  
 #       Which CAP to use?
 #       -----------------
-        set hh = `echo $gcm_nhms0 | cut -c1-2`
 
         set fcst_beg = ( `rst_date d_rst` )
         set nymdt   = $fcst_beg[1]
         set nhmst   = $fcst_beg[2]
         set hhmnt   = `echo $nhmst | cut -c1-4`
+        set hh      = `echo $hhmnt | cut -c1-2`
         set nd_nh = ( `grep -i JOB_SGMT $mycap|awk '{printf "%d %d",$2, $3}'` )
         set nsecs = `(expr $nd_nh[1] \* 86400 \+ $nd_nh[2] \/ 10000 \* 3600)`
         set fcst_end = ( `tick $fcst_beg $nsecs` )

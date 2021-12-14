@@ -2,8 +2,9 @@
 # x0046a.input
 #------------
 
+codeID: b3a880f
 description: x0046a__GEOSadas-5_29_3__agrid_C360__ogrid_C
-tag: GEOSadas-5_29_3
+fvsetupID: f7d8d041c9
 
 ---ENDHEADERS---
 
@@ -38,7 +39,7 @@ Catchment Model choice? [1]
 > 
 
 FVHOME? [/discover/nobackup/dao_it/x0046a]
-> /discover/nobackup/projects/gmao/dadev/dao_it/$expid
+> /discover/nobackup/projects/gmao/dadev/dao_it/Winter_Runs/$expid
 
 The directory /discover/nobackup/projects/gmao/obsdev/dao_it/x0046a already exists. Clean it? [y]
 > 

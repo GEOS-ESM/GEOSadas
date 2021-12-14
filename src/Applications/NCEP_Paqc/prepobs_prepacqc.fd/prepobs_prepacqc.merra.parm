@@ -6,6 +6,24 @@
    FWRITE = .TRUE.,  SWRITE=.FALSE., IWRITE=.FALSE., EWRITE=.FALSE.
  /
 
+
+ &nrlacqcinput
+  trad = 3.0, 
+  l_otw = .true., 
+  l_nhonly = .false., 
+  l_doprofiles = .true.,
+  l_allev_pf = .false.,
+  l_prof1lvl = .true.,
+  l_mandlvl = .false.,
+  l_ext_table = .true.,
+  l_qmwrite = .false.,
+  tsplines = .true.
+ /
+
+  Cards for PREPACQC
+  Here: GDAS Runs   obsproc_global.v2.1.1
+  modified for running with old GMAO files - l_ext_table and l_qmwrite
+
   Cards for PREPACQC -- Version  17 February 1998
   Here: GMAO/MERRA System -- Effective:  12Z 03/11/98 to present
   Updated: 11/05/97 -- IFLGUS=0 (was =1) -- AIREP/PIREP reports over
