@@ -51,7 +51,7 @@ sub fsens_script {
     my $qsub            = $inputparams{"qsub"};
 
  # local variables
- my( $siteID, $nodeflg );
+ my( $siteID );
  
  $siteID = get_siteID();
 
