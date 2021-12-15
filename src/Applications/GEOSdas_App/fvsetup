@@ -3774,8 +3774,8 @@ sub get_obsys {
   } else {
       $dflt = 1;
   }
-  $ans = query("Which main class of ObsSys (1: NRT; 2: MERRA; 3: MERRA-2)?", $dflt);
-  return 1 unless $ans == 1 or $ans == 2 or $ans == 3;
+  $ans = query("Which main class of ObsSys (1: NRT; 2: MERRA; 3: MERRA-2; 4: GEOS-IT; 5: R21C)?", $dflt);
+  return 1 unless $ans == 1 or $ans == 2 or $ans == 3 or $ans == 4 or $ans == 5;
 
   if ($GFLAG == 1) { $loc = "nccs" }
   else             { $loc = "nas"  }
@@ -3796,6 +3796,12 @@ sub get_obsys {
   elsif ($ans == 3) {  # MERRA-2
       $obsysrc = "$fvetc/obsys-${loc}-merra2.rc";
       $rflags .= " -stem merra2";
+  elsif ($ans == 4) {  # GEOS-IT
+      $obsysrc = "$fvetc/obsys-${loc}-geosit.rc";
+#     $rflags .= " -stem geosit";
+  elsif ($ans == 5) {  # R21C
+      $obsysrc = "$fvetc/obsys-${loc}-r21c.rc";
+#     $rflags .= " -stem r21c";
   }
 
   $reqobs = $fvbin . "/require_obsys.pl";
