@@ -2,9 +2,9 @@
 # geos_it.input
 #--------------
 
-codeID: b3a880f
-description: geos_it__GEOSadas-5_29_3__agrid_C360__ogrid_C
-fvsetupID: f7d8d041c9
+codeID: 7f742b1
+description: geos_it__agrid_C180__ogrid_C
+fvsetupID: bbf4f10063
 
 ---ENDHEADERS---
 
@@ -23,13 +23,13 @@ AGCM Vertical Resolution? [72]
 OGCM Resolution? [f]
 > C
 
-EXPID? [u000_C360]
+EXPID? [u000_C180]
 > $expid
 
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [geos_it__GEOSadas-5_27_1_p4__agrid_C360__ogrid_C]
+EXPDSC? [geos_it__agrid_C180__ogrid_C]
 > 
 
 Land Boundary Conditions? [Icarus_Updated]
@@ -63,7 +63,7 @@ agcmpert? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/agcmper
 > 
 
 chemistry? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/chemistry]
->
+> 
 
 g5chem? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/g5chem]
 > 
@@ -89,7 +89,7 @@ Run model-adjoint-related applications (0=no,1=yes)? [0]
 Run analysis-sensitivity applications (0=no,1=yes)? [0]
 > 
 
-Ending year-month-day? [20210117]
+Ending year-month-day? [20190627]
 > 
 
 Length of FORECAST run segments (in hours)? [123]
@@ -128,22 +128,22 @@ GEOS grid resolution instead? [d]
 Ensemble Hybrid (<0;3=3dHyb;4=Hyb4d)? [-1]
 > 
 
-Number of procs in the zonal direction (NX)? [12]
+Number of procs in the zonal direction (NX)? [6]
 > 16
 
-Number of procs in the meridional direction (NY)? [20]
+Number of procs in the meridional direction (NY)? [32]
 > 24
 
-Which main class of ObsSys (1: NRT; 2: MERRA; 3: MERRA-2)? [1]
-> 
+Which main class of ObsSys (1: NRT; 2: MERRA; 3: MERRA-2; 4: GEOS-IT; 5: R21C)? [4]
+> 4
 
 OBSERVING SYSTEM CLASSES?
-> ncep_ssmis_bufr,ncep_1bamua_bufr,ncep_prep_bufr,ncep_tcvitals,ncep_mhs_bufr,ncep_1bhrs4_bufr,ncep_goesfv_bufr,ncep_gpsro_bufr,ncep_mtiasi_bufr,ncep_atms_bufr,ncep_cris_bufr,ncep_crisfsr_bufr,ncep_satwnd_bufr,ncep_sevcsr_bufr,ncep_avcsam_bufr,ncep_avcspm_bufr,disc_airs_bufr,disc_amsua_bufr,ncep_acftpfl_bufr,aura_omieff_nc,npp_ompsnp_nc,npp_ompsnmeff_nc,gmao_gmi_bufr,gmao_amsr2_bufr
+> merra2_cdas0_pre-qc_bufr,merra2_cdas_pre-qc_bufr,merra2_avhrrwnd_pre-qc_bufr,merra2_ascat_pre-qc_bufr,merra2_ers1_pre-qc_bufr,merra2_repro_ers2_pre-qc_bufr,merra2_qscat_jpl_pre-qc_bufr,merra2_wspd_pre-qc_bufr,merra2_nmodis_pre-qc_bufr,merra2_prof_pre-qc_bufr,merra2_cdas0_pre-qc_bufr,merra2_cdas_pre-qc_bufr,merra2_avhrrwnd_pre-qc_bufr,merra2_ascat_pre-qc_bufr,merra2_ers1_pre-qc_bufr,merra2_repro_ers2_pre-qc_bufr,merra2_qscat_jpl_pre-qc_bufr,merra2_wspd_pre-qc_bufr,merra2_nmodis_pre-qc_bufr,merra2_prof_pre-qc_bufr,merra2_ncep_tcvitals,ncep_ssmis_bufr,ncep_1bamua_bufr,ncep_mhs_bufr,ncep_1bhrs4_bufr,ncep_goesfv_bufr,ncep_gpsro_bufr,ncep_mtiasi_bufr,ncep_atms_bufr,ncep_cris_bufr,ncep_crisfsr_bufr,ncep_satwnd_bufr,ncep_sevcsr_bufr,ncep_avcsam_bufr,ncep_avcspm_bufr,disc_airs_bufr,disc_amsua_bufr,ncep_acftpfl_bufr,aura_omieff_nc,npp_ompsnp_nc,npp_ompsnmeff_nc,gmao_gmi_bufr,gmao_amsr2_bufr
 
 CHECKING OBSYSTEM? [2]
 > 1
 
-Which RADCOR option? [NONE]
+Which RADCOR option? [HAIMB_HRAD]
 > 
 
 Use sat channel-correlated observation errors (y/n)? [y]
@@ -170,10 +170,10 @@ Frequency for surface (2D) DIAGNOSTIC fields? [010000]
 Frequency for upper air (3D) DIAGNOSTIC fields? [030000]
 > 
 
-Dimension of output in zonal direction? [1152]
+Dimension of output in zonal direction? [576]
 > 
 
-Dimension of output in meridional direction? [721]
+Dimension of output in meridional direction? [361]
 > 
 
 Would you like 2D diagnostics? [y]
@@ -188,7 +188,7 @@ Would you like to compress diagnostics output files? [n]
 Include GOCART tracers (CO,CO2,aerosols,etc) (y/n)? [y]
 > 
 
-Select GOCART Emission Files to use: [OPS]
+Select GOCART Emission Files to use: [GEOSIT]
 > 
 
 Do Aerosol Analysis (y/n)? [y]
@@ -200,7 +200,7 @@ AOD OBSERVING CLASSES [or type 'none']?
 Enable GAAS feedback to model (y/n)? [y]
 > 
 
-Which template? [HISTORY.rc.tmpl]
+Which template? [HISTORY_GEOSIT.rc.tmpl]
 > 
 
 Which template? [GCMPROG.rc.tmpl]
@@ -210,6 +210,9 @@ Output Restart TYPE (bin or nc4) [nc4]
 > 
 
 Select group: [g0613]
+> 
+
+Continue without missing resource files? [y]
 > 
 
 Edit COLLECTIONS list in run/HISTORY.rc.tmpl (y/n)? [n]
