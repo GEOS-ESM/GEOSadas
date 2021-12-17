@@ -3796,9 +3796,11 @@ sub get_obsys {
   elsif ($ans == 3) {  # MERRA-2
       $obsysrc = "$fvetc/obsys-${loc}-merra2.rc";
       $rflags .= " -stem merra2";
+  }
   elsif ($ans == 4) {  # GEOS-IT
       $obsysrc = "$fvetc/obsys-${loc}-geosit.rc";
-#     $rflags .= " -stem geosit";
+#     $rflags .= " -stem geosit"; 
+  }
   elsif ($ans == 5) {  # R21C
       $obsysrc = "$fvetc/obsys-${loc}-r21c.rc";
 #     $rflags .= " -stem r21c";
@@ -8864,6 +8866,7 @@ print  SCRIPT <<"EOF";
   setenv DAOTOVS 0     # 1 = enables DAOTOVS, 0 = disables DAOTOVS
   setenv TIMEINC $varwindow
   setenv GAASFDBK $gaasfdbk
+  setenv LDASFDBK $ldasfdbk
   setenv SSMI_UV 0     # 1 = enables SSMI WIND SPEED, 0 = disables it
   setenv SPLITEXE 0      # 1 = enables SPLIT EXECUTABLE run, 0 = disables it (N/A)
   setenv VTRACK   0      # 0 = disable vortex tracker;   1 = enable
@@ -9364,7 +9367,25 @@ print  SCRIPT <<"EOF";
         /bin/rm -r \$FVWORK
         exit 1
      endif
-  endif
+  endif 
+
+# obtain ldas incr for the first 6h integration
+#----------------------------------------------
+  if ( \$LDASFDBK == 1 ) then
+     /bin/cp \$EXPID.rst.lcv.\${nymd}_\${hh}z.bin ldasd_rst
+     set adas_strt = ( `rst_date ./ldasd_rst` )
+     @ ldastick1 = 5400
+     @ ldastick2 = 16200
+     set linctt1 = ( `tick \$adas_strt \$ldastick1` )
+     set linctt2 = ( `tick \$adas_strt \$ldastick2` )
+     set yyyymmdd1 = `echo \$linctt1[1] | cut -c1-8`
+     set yyyymmdd2 = `echo \$linctt2[1] | cut -c1-8`
+     set hhnn1 = `echo \$linctt1[2] | cut -c1-4`
+     set hhnn2 = `echo \$linctt2[2] | cut -c1-4`
+     /bin/cp \$FVHOME/lana/ldas_inc.\${yyyymmdd1}_\${hhnn1}00 \$FVWORK/.
+     /bin/cp \$FVHOME/lana/ldas_inc.\${yyyymmdd2}_\${hhnn2}00 \$FVWORK/.
+     rm ldasd_rst
+   endif
 
 # Stage the initial condition
 # ---------------------------
