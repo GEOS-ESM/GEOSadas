@@ -10097,7 +10097,7 @@ sub copy_resources {
           ed_ncep_rc("gsi_sens.rc.tmpl");
 
           # overwrite some of the RC files when setting up for MERRA2
-          if( $obsclass =~ "merra2" ) { 
+          if( $merra2 ) { 
             $cmd = "$fvbin/setup_4merra2.pl $fvhome $nymdb $hhb $ana_im $ana_jm $siglevs";
             print "$cmd\n";
             system($cmd);
