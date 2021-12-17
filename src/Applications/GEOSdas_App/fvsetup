@@ -2245,6 +2245,11 @@ sub ed_g5fvlay_rc {
      if($rcd =~ /\@FV_SATADJ/) {$rcd=~ s/\@FV_SATADJ/do_sat_adj  = .F./g; }
      if($rcd =~ /\@FV_ZTRACER/){$rcd=~ s/\@FV_ZTRACER/z_tracer = .T./g; }
      if($rcd =~ /\@FV_NWAT/)   {$rcd=~ s/\@FV_NWAT/ /g; }
+     if ( "$res" eq "C720" ) {
+       if($rcd =~ /\@FV_N_SPLIT/)   {$rcd=~ s/\@FV_N_SPLIT/n_split = 12/g; }
+     } else {
+       if($rcd =~ /\@FV_N_SPLIT/)   {$rcd=~ s/\@FV_N_SPLIT/ /g; }
+     }
      print(LUN2 "$rcd\n");
   }
 
@@ -2775,7 +2780,7 @@ EOF
 #=======================================================================
 sub get_extdata {
 
-    @extdatasets = qw ( agcmpert g5chem g5gcm PIESA MERRA2 AeroCom );
+    @extdatasets = qw ( agcmpert chemistry g5chem g5gcm PIESA MERRA2 AeroCom );
     foreach $set ( @extdatasets ) { $extdata{$set} = "$fvbcs/$set" };
 
     print "\n-------------\n"
@@ -3769,11 +3774,11 @@ sub get_obsys {
   print("OBSERVING SYSTEM CLASSES\n");
   print("------------------------\n");
 
-  if ( $merra2 ) {
-      $dflt = 3;
-  } else {
-      $dflt = 1;
-  }
+  $dflt = 1;
+  if ( $merra2 ) { $dflt = 3; }
+  if ( $geosit ) { $dflt = 4; }
+  if ( $r21c   ) { $dflt = 5; }
+
   $ans = query("Which main class of ObsSys (1: NRT; 2: MERRA; 3: MERRA-2; 4: GEOS-IT; 5: R21C)?", $dflt);
   return 1 unless $ans == 1 or $ans == 2 or $ans == 3 or $ans == 4 or $ans == 5;
 
@@ -3796,9 +3801,11 @@ sub get_obsys {
   elsif ($ans == 3) {  # MERRA-2
       $obsysrc = "$fvetc/obsys-${loc}-merra2.rc";
       $rflags .= " -stem merra2";
+  }
   elsif ($ans == 4) {  # GEOS-IT
       $obsysrc = "$fvetc/obsys-${loc}-geosit.rc";
 #     $rflags .= " -stem geosit";
+  }
   elsif ($ans == 5) {  # R21C
       $obsysrc = "$fvetc/obsys-${loc}-r21c.rc";
 #     $rflags .= " -stem r21c";
@@ -4254,10 +4261,12 @@ EOF
   $emission{"3"} = "NR";
   $emission{"4"} = "OPS";
   $emission{"5"} = "PIESA";
+  $emission{"6"} = "GEOSIT";
 
   %remission = reverse %emission;
   if ($nrt)       { $dflt = "OPS"    }
   elsif ($merra2) { $dflt = "MERRA2" }
+  elsif ($geosit) { $dflt = "GEOSIT" }
   else            { $dflt = "PIESA"  }
 
   if ($gocart_tracers) {
@@ -8674,6 +8683,9 @@ sub write_FVDAS_Run_Config {
     $ENV{"VTXLEVS"}         = $vtxlevs;
     $ENV{"VTXRELOC"}        = $vtxreloc;
 
+    if ($geosit | $r21c) {
+        $ENV{"MKSI_SIDB"}   = "\$FVHOME/run/gmao_satinfo.db";
+    }
 
     unless ( $ENV{"ARCHIVE"} ) {
         $ENV{"ARCHIVE"} = "lou:."         if $siteName eq "cfe";
@@ -10132,6 +10144,15 @@ sub copy_resources {
           cp("$fn", "$fvhome/run");
        }
     }
+    mkdir ("$fvhome/run/gmao_satinfo.db");
+    if ( -d "$fvetc/gmao_satinfo.db/GEOSIT" ) {
+       my @files =  glob("$fvetc/gmao_satinfo.db/GEOSIT" . "/*");
+       foreach my $fn ( @files ) {
+          cp("$fn", "$fvhome/run/gmao_satinfo.db");
+       }
+    } else {
+      die "Cannot find GEOSIT sat.db under $fvetc, aborting ...";
+    }
   }
   if ( $r21c ) {
     if ( -d "$fvetc/gsi/R21C" ) {
@@ -10139,6 +10160,15 @@ sub copy_resources {
        foreach my $fn ( @files ) {
           cp("$fn", "$fvhome/run");
        }
+    }
+    mkdir ("$fvhome/run/gmao_satinfo.db");
+    if ( -d "$fvetc/gmao_satinfo.db/R21C" ) {
+       my @files =  glob("$fvetc/gmao_satinfo.db/R21C" . "/*");
+       foreach my $fn ( @files ) {
+          cp("$fn", "$fvhome/run/gmao_satinfo.db");
+       }
+    } else {
+      die "Cannot find R21C sat.db under $fvetc, aborting ...";
     }
   }
 
