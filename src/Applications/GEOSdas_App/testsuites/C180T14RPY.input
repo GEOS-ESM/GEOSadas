@@ -2,8 +2,9 @@
 # C180T14RPY.input
 #------------
 
-description: C180T14RPY__GEOSadas-5_29_3__agrid_C360__ogrid_C
-tag: GEOSadas-5_29_3
+codeID: b3a880f
+description: C180T14RPY__GEOSadas-5_29_3__agrid_C180__ogrid_T14
+fvsetupID: f7d8d041c9
 
 ---ENDHEADERS---
 
@@ -28,7 +29,7 @@ EXPID? [u000_C180]
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [C180T14RPY__GEOSadas-5_29_3__agrid_C360__ogrid_C]
+EXPDSC? [C180T14RPY__GEOSadas-5_29_3__agrid_C180__ogrid_T14]
 > 
 
 Land Boundary Conditions? [Icarus_Updated]
@@ -85,7 +86,7 @@ Run model-adjoint-related applications (0=no,1=yes)? [0]
 Run analysis-sensitivity applications (0=no,1=yes)? [0]
 > 
 
-Ending year-month-day? [20191121]
+Ending year-month-day? [20201201]
 > 20210206
 
 Length of FORECAST run segments (in hours)? [123]
@@ -97,7 +98,7 @@ Number of one-day DAS segments per PBS job? [1]
 Number of PEs in the zonal direction (NX)? [8]
 > 20
 
-Number of PEs in the meridional direction (NY)? [48]
+Number of PEs in the meridional direction (NY)? [30]
 > 60
 
 Job nickname? [g5das]
@@ -124,10 +125,10 @@ GEOS grid resolution instead? [d]
 Ensemble Hybrid (<0;3=3dHyb;4=Hyb4d)? [-1]
 > 4
 
-Number of procs in the zonal direction (NX)? [12]
+Number of procs in the zonal direction (NX)? [6]
 > 16
 
-Number of procs in the meridional direction (NY)? [20]
+Number of procs in the meridional direction (NY)? [32]
 > 42
 
 Which main class of ObsSys (1: NRT; 2: MERRA; 3: MERRA-2)? [1]

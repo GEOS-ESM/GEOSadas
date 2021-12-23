@@ -41,8 +41,8 @@ sub fsens_script {
     my $export_none     = $inputparams{"export_none"};
     my $jobqueue1       = $inputparams{"jobqueue1"};
     my $mem             = $inputparams{"mem"};
-    my $nodes           = $inputparams{"nodes"};
     my $ncpus_gsi       = $inputparams{"ncpus_gsi"};
+    my $nodeflg         = $inputparams{"nodeflg"};
     my $fcswallclk      = $inputparams{"fcswallclk"};
     my $nametag         = $inputparams{"nametag"};
     my $gid             = $inputparams{"gid"};
@@ -51,18 +51,9 @@ sub fsens_script {
     my $qsub            = $inputparams{"qsub"};
 
  # local variables
- my( $siteID, $nodeflg );
+ my( $siteID );
  
  $siteID = get_siteID();
- $nodeflg = "hasw";
- my $npn = `facter processorcount`; chomp($npn);
- if ( $npn == 40 ) {
-   $nodeflg = "sky";
- } elsif ( $npn == 48 ) {
-   $nodeflg = "cas";
- } elsif ( $npn == 28 ) {
-   $nodeflg = "hasw";
- }
 
  open(SCRIPT,">$fvhome/run/$jobfs.j") or
  die ">>> ERROR <<< cannot write $fvhome/run/$jobfs.j";

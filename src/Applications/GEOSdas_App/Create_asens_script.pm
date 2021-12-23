@@ -45,8 +45,8 @@ sub asens_script {
     my $hyb_ens         = $inputparams{"hyb_ens"};
     my $jobqueue1       = $inputparams{"jobqueue1"};
     my $mem             = $inputparams{"mem"};
-    my $nodes           = $inputparams{"nodes"};
     my $ncpus_gsi       = $inputparams{"ncpus_gsi"};
+    my $nodeflg         = $inputparams{"nodeflg"};
     my $fcswallclk      = $inputparams{"fcswallclk"};
     my $nametag         = $inputparams{"nametag"};
     my $gid             = $inputparams{"gid"};
@@ -73,17 +73,9 @@ sub asens_script {
     my $qsub            = $inputparams{"qsub"};
 
  # local variables
- my( $os, $siteID, $nodeflg );
+ my( $os, $siteID );
 
  $siteID = get_siteID();
- my $npn = `facter processorcount`; chomp($npn);
- if ( $npn == 40 ) {
-   $nodeflg = "sky";
- } elsif ( $npn == 48 ) {
-   $nodeflg = "cas";
- } elsif ( $npn == 28 ) {
-   $nodeflg = "hasw";
- }
 
  open(SCRIPT,">$fvhome/asens/$joba.j") or
  die ">>> ERROR <<< cannot write $fvhome/asens/$joba.j";
