@@ -341,6 +341,7 @@ sub append_other_info {
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.ana.obs.%y4%m2%d2.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.ana.obs.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.prepbufr.%y4%m2%d2.t%h2z.blk
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.acft_profl.%y4%m2%d2.t%h2z.bfr
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.gmao_global_satinfo.%y4%m2%d2_%h2z.txt
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.gmao_global_ozinfo.%y4%m2%d2_%h2z.txt
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.sac.nl.%y4%m2%d2_%h2z.txt
