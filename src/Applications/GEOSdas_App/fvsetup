@@ -595,6 +595,7 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
     . " -expid $expid"
     . " -fvhome $fvhome"
     . " -fvroot $fvroot"
+    . " -nodeflg $nodeflg"
     . " -res $res";
   $cmd .= " -gid $gid" if $gid;
   print "$cmd\n";
