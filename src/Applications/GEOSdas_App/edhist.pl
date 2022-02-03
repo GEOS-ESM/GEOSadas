@@ -1125,7 +1125,9 @@ sub plot_edit {
     #----------------------------------------
     @new = ();
     foreach $name (@topList) {
-        next unless $name =~ m/Cp$/ or $name =~ m/Np$/ or $name =~ m/Nx$/;
+        $name =~ s/_NCKS$//;
+        next unless $name =~ m/Cp$/ or $name =~ m/Np$/ or $name =~ m/Nx$/
+            or $name =~ m/slv$/ or $name =~ m/p42$/;
         push @new, $name;
     }
     @topList = @new;
@@ -1244,6 +1246,7 @@ sub delete_trait {
     $name  = shift @_;
     $trait = shift @_;
 
+    return unless $traitHash{$name};
     @traits = split/[:|,]/, $traitHash{$name};
     foreach $trt (@traits) { push @new, $trt unless $trt =~ /$trait.N\d+/ }
     $traitHash{$name} = join ":", @new;
@@ -1259,6 +1262,7 @@ sub add_grads_ddf {
 
     # add to %traitHash
     #------------------
+    return unless $traitHash{$name};
     @traits = split/[:|,]/, $traitHash{$name};
     foreach $trt (@traits) {
         push @new, $trt;
@@ -1452,7 +1456,7 @@ sub write_collection_def {
     $name = shift @_;
     $name1 = rm_dash_plus($name);
 
-    @traits = split /[:|,]/, $traitHash{$name};
+    @traits = split /[:|,]/, $traitHash{$name} if $traitHash{$name};
     remove_array_duplicates(\@traits);
 
     $tmax = 0;
@@ -1519,7 +1523,7 @@ sub write_collection_def {
             }
         }
     }
-    print $comments{"$name.end"};
+    print $comments{"$name.end"} if $comments{"$name.end"};
     print " "x$tmax ." ::\n";
 }
 

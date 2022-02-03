@@ -7861,8 +7861,9 @@ print  SCRIPT <<"EOF";
      setenv I_MPI_ADJUST_ALLREDUCE 12
      setenv I_MPI_EXTRA_FILESYSTEM 1
      setenv I_MPI_EXTRA_FILESYSTEM_LIST gpfs
-     setenv ROMIO_FSTYPE_FORCE         "gpfs:"
-     setenv I_MPI_FABRICS shm:ofi
+     setenv I_MPI_DEBUG 6
+#    setenv ROMIO_FSTYPE_FORCE         "gpfs:"
+#    setenv I_MPI_FABRICS shm:ofi
 #    setenv I_MPI_FABRICS shm:dapl
 #    setenv I_MPI_FABRICS_LIST "dapl,ofa"
 #    setenv I_MPI_FALLBACK "enable"
@@ -8948,7 +8949,8 @@ print  SCRIPT <<"EOF";
      setenv I_MPI_ADJUST_ALLREDUCE 12
      setenv I_MPI_EXTRA_FILESYSTEM 1
      setenv I_MPI_EXTRA_FILESYSTEM_LIST gpfs
-     setenv ROMIO_FSTYPE_FORCE         "gpfs:"
+     setenv I_MPI_DEBUG 6
+#    setenv ROMIO_FSTYPE_FORCE         "gpfs:"
   endif
   if (\$?MPT_VERSION) then
      setenv MPI_COLL_REPRODUCIBLE
@@ -9582,9 +9584,9 @@ sub init_agcm_rc {
 
     # $num_readers must divide evenly into $ny
     #-----------------------------------------
-    if    ($ny % 4 == 0) { $num_readers = 4 }
-    elsif ($ny % 2 == 0) { $num_readers = 2 }
-    else                 { $num_readers = 1 }
+    if    ($agcm_im == 180) { $num_readers = 4 }
+    elsif ($agcm_im >  180) { $num_readers = 6 }
+    else                    { $num_readers = 1 }
 
     # gcm satellite simulator
     #------------------------
