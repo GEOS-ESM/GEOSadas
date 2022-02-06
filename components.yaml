@@ -34,7 +34,7 @@ GMAO_Shared:
 MAPL:
   local: ./src/Shared/@MAPL
   remote: ../MAPL.git
-  tag: v2.8.0.2
+  tag: v2.8.0.3
   develop: develop
 
 FMS:
@@ -46,7 +46,7 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  tag: v1.5.4
+  tag: v1.5.4.1
   develop: develop
 
 GEOSgcm_GridComp:
@@ -121,7 +121,7 @@ mom6:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  tag: rt1.5.6nsplit
+  tag: rt1.5.6FPhist
   develop: develop
 
 UMD_Etc:
