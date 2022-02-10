@@ -816,9 +816,10 @@ sub ed_g5fvlay_rc {
   $g5fvlayrc = "fvcore_layout.rc";
 
   $ft   = "$mydir/tmp.rc";
+  $fetc = "$FVROOT/etc/$g5fvlayrc";
   $frun = "$mydir/$g5fvlayrc";
 
-  open(LUN,"$frun") || die "Fail to open $g5fvlayrc: $!\n";
+  open(LUN,"$fetc") || die "Fail to open $g5fvlayrc: $!\n";
   open(LUN2,">$ft") || die "Fail to open tmp.rc: $!\n";
 
   # Change variables to the correct inputs
