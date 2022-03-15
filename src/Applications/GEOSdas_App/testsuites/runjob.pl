@@ -19,7 +19,7 @@
 #
 # Input file header information
 # => description: [experiment description]
-# => tag: [DAS tag ID]
+# => fvid: [fvsetup ID]
 # => def: [variable];nas = [value at NAS]
 # => def: [variable];nccs = [value at NCCS]
 # => fvsetupflags: [fvsetup option]
@@ -37,12 +37,14 @@ use warnings;
 
 # global variables
 #-----------------
-my ($auto, $autox, $nocheck, $nofilter, @inputFiles, $specified, $noloop);
-my ($inputDir, $ignoreOSdiff, $debug, $dbqueue, $stage, $verbose, $sel);
-my (%inFile, %rawInFile, %fvhome, $siteID, $CVSTAG, $ESMATST, $TRYAGAIN);
-my (%descript, %edits, %expid, %flags, %fvics, %tag, %rem_acct);
-my ($ESMABIN, $fvsetupScript, $fvroot, $jobn, @default, @nondefault);
-
+my ($ESMABIN, $ESMATST, $TRYAGAIN);
+my ($auto, $autox, $codeID, $dbqueue, $debug);
+my ($fvroot, $fvsetupID, $fvsetupScript);
+my ($ignoreOSdiff, $inputDir, $jobn, $nocheck, $nofilter, $noloop);
+my ($sel, $siteID, $specified, $stage, $verbose);
+my (%descript, %edits, %expid, %flags, %fvhome, %fvics, %fvid);
+my (%inFile, %rawInFile, %rem_acct);
+my (@default, @inputFiles, @nondefault);
 
 # main program
 #-------------
@@ -62,8 +64,8 @@ my ($ESMABIN, $fvsetupScript, $fvroot, $jobn, @default, @nondefault);
 # Notes on where to find fvsetup -
 # 1. The variable, $ESMABIN, contains the directory location for the
 #    fvsetup script. This value is hard-coded during the build.
-# 2. This script is tag-dependent; it may not work properly for different
-#    versions of fvsetup which have a different collection and order of prompts.
+# 2. This script is fvsetupID-dependent; it may not work properly for different
+#    versions of fvsetup which have differences in the prompts.
 # 3. $ESMABIN can be overwritten by using the -D flag to supply an alternate
 #    location for fvsetup. This should be done with great care.
 #=======================================================================
@@ -78,10 +80,12 @@ sub init {
 
     $TRYAGAIN = 9999;
     $siteID = get_siteID();
+    #--$fvsetupID = `git hash-object $fvsetupScript | cut -c1-10`;
 
     # these values are set with sed substitution during build
     #--------------------------------------------------------
-    $CVSTAG  = "@GIT_TAG_OR_REV@";
+    $codeID = "@GIT_TAG_OR_REV@";
+    $fvsetupID = "@fvID@";
     $ESMABIN = "@ESMABIN@";
     $ESMATST = "@ESMATST@";
     die ">> Error << $ESMABIN is not a directory;" unless -d $ESMABIN;
@@ -89,10 +93,10 @@ sub init {
     # get runtime options
     #--------------------
     Getopt::Long::Configure("no_ignore_case");
-    GetOptions( "auto"        => \$auto,
-                "autox"       => \$autox,
-                "nocheck"     => \$nocheck,
-                "nofilter"    => \$nofilter,
+    GetOptions( "a|auto"      => \$auto,
+                "ax|autox"    => \$autox,
+                "nc|nocheck"  => \$nocheck,
+                "nf|nofilter" => \$nofilter,
                 "d=s"         => \$inputDir,
                 "l|local"     => \$localdir,
                 "OSx"         => \$ignoreOSdiff,
@@ -271,9 +275,8 @@ sub queryInputDir {
 # purpose - get list of *.input files in $inputDir
 #=======================================================================
 sub getInputs {
-    my ($key, $label, $index, $input, $tag, $expid, $ext);
+    my ($key, $label, $index, $input, $fvID, $expid, $ext);
     my ($file, $file1, $size);
-    my ($tag1, $tag2);
 
     # check that user-specified input files exist
     #--------------------------------------------
@@ -303,40 +306,21 @@ sub getInputs {
     elsif ($nofilter) {
         $label .= "\n" }
     else {
-        $label .= " for tag, $CVSTAG\n" }
+        $label .= " for fvsetupID: $fvsetupID\n" }
 
     underline($label);
 
     $key = 0;
     foreach $index (0..$#inputFiles) {
         $input = $inputFiles[$index];
-        $tag = extract($input, "tag", 1);
+        $fvID = extract($input, "fvsetupID", 1);
         ($expid, $ext) = split/[\.]/, basename $input;
-
-        # ignore the following label differences:
-        # "_UNSTABLE", "_OPS", "INTERIM", "_rejected", "_retired"
-        #--------------------------------------------------------
-        ($tag1 = $CVSTAG) =~ s/_UNSTABLE$//;
-        ($tag2 = $tag) =~ s/_UNSTABLE$//;
-
-        $tag1 =~ s/_OPS$//;
-        $tag2 =~ s/_OPS$//;
-
-        $tag1 =~ s/_INTERIM$//;
-        $tag2 =~ s/_INTERIM$//;
-
-        $tag1 =~ s/_rejected$//;
-        $tag2 =~ s/_rejected$//;
-
-        $tag1 =~ s/_retired$//;
-        $tag2 =~ s/_retired$//;
-
-        next unless $nofilter or ($tag1 eq $tag2);
+        next unless $nofilter or ($fvsetupID eq $fvID);
 
         # continue with input file
         #-------------------------
         $inFile{++$key} = $input;
-        $tag{$key} = $tag;
+        $fvid{$key} = $fvID;
         $expid{$key} = $expid;
         getRawInputs($key);
         extractAdditionalInfo($key);
@@ -561,7 +545,7 @@ sub runjobs {
     my ($key, @keyArr);
 
     unless (%inFile) {
-        print "\nNo infiles were found for tag, $CVSTAG\n\n";
+        print "\nNo infiles were found for fvsetupID: $fvsetupID\n\n";
         return;
     }
 
@@ -610,7 +594,7 @@ sub choose_job {
 
     $max1 = maxlen(values %expid);
     $max2 = maxlen(values %inFile);
-    $max3 = maxlen(values %tag);
+    $max3 = maxlen(values %fvid);
     $fmt0 = "%3s. %s\n";
     $fmt1 = "     %-${max1}s  %-${max2}s  %-${max3}s   %s\n";
     $fmt2 = "%3s. %-${max1}s  %-${max2}s  %-${max3}s : %s\n";
@@ -622,12 +606,12 @@ sub choose_job {
     print "\n--------------\n"
         .   "Available Jobs\n"
         .   "--------------\n";
-    print  "CVSTAG: $CVSTAG\n" unless $nofilter;
+    print  "fvsetupID: $fvsetupID\n" unless $nofilter;
     print  "directory: $inputDir\n\n";
     if (%expid) {
         if ($nofilter) {
-            printf $fmt1, "expid", "file", "tag", "description";
-            printf $fmt1, "-----", "----", "---", "-----------";
+            printf $fmt1, "expid", "file", "fvID", "description";
+            printf $fmt1, "-----", "----", "----", "-----------";
         }
         else {
             printf $fmt3, "expid", "file", "description";
@@ -638,7 +622,7 @@ sub choose_job {
     foreach (sort numeric keys %inFile) {
         if ($nofilter) {
             printf $fmt2, $_, $expid{$_}, basename($inFile{$_}),
-            $tag{$_}, $descript{$_};
+            $fvid{$_}, $descript{$_};
         }
         else {
             printf $fmt4, $_, $expid{$_}, basename($inFile{$_}),
@@ -749,9 +733,8 @@ sub run_fvsetup {
     use File::Path;
     my $key;
     my ($rawinput, $fvsuLOG, $fvsuLOG1, $fvsuERR, $fvsuERR1, $output, $logdir);
-    my ($fvsetup, $expid_arc, $clean, $label, $verify, $ans);
+    my ($fvsetup, $expid_arc, $clean, $verify, $ans);
     my ($FVHOME, $dflt, $cmd, @bootstrap, $status, $continueflag);
-    my ($tag1, $tag2, $tag3, $tag4, $tag5, $tag6, $tag7, $tag8);
 
     # input parameter
     #----------------
@@ -774,69 +757,36 @@ sub run_fvsetup {
     print "  expid:         $expid{$key}\n";
     print "  description:   $descript{$key}\n";
     print "  input file:    $inFile{$key}\n";
-    print "  CVS tag        $tag{$key}\n"   if $tag{$key};;
+    print "  fvsetup ID:    $fvid{$key}\n"  if $fvid{$key};;
     print "  fvsetup flags: $flags{$key}\n" if $flags{$key};
     print "  other edits:   $edits{$key}\n" if $edits{$key};
     print "  FVHOME:        $fvhome{$key}\n";
     print "  fvsetup:       $fvsetupScript\n";
 
-    # check CVS tag consistency
-    #--------------------------
+    # check fvsetupid consistency
+    #----------------------------
     $verify = 0;
-    if ( $tag{$key} ) {
-        if ( $CVSTAG ne $tag{$key} ) {
+    if ( $fvid{$key} ) {
+        if ( $fvsetupID ne $fvid{$key} ) {
             $verify = 1;
-
-            # is the difference from a known associated label?
-            #-------------------------------------------------
-            ($tag1 = $CVSTAG) =~ s/_UNSTABLE$//;
-            ($tag2 = $tag{$key}) =~ s/_UNSTABLE$//;
-            if ($tag1 eq $tag2) { $verify = 0; $label = "Unstable tag found" }
-
-            ($tag1 = $CVSTAG) =~ s/_INTERIM$//;
-            ($tag2 = $tag{$key}) =~ s/_INTERIM$//;
-            if ($tag1 eq $tag2) { $verify = 0; $label = "Interim tag found" }
-
-            ($tag1 = $CVSTAG) =~ s/_rejected$//;
-            ($tag2 = $tag{$key}) =~ s/_rejected$//;
-            if ($tag1 eq $tag2) { $verify = 0; $label = "Rejected tag found" }
-
-            ($tag1 = $CVSTAG) =~ s/_retired$//;
-            ($tag2 = $tag{$key}) =~ s/_retired$//;
-            if ($tag1 eq $tag2) { $verify = 0; $label = "Retired tag found" }
-
-            ($tag1 = $CVSTAG) =~ s/_OPS$//;
-            ($tag2 = $tag{$key}) =~ s/_OPS$//;
-            if ($tag1 eq $tag2) { $verify = 0; $label = "OPS tag found" }
-
-            # or is it a more serious difference?
-            #------------------------------------
-            if ($verify) {
-                print "\n  !!!---------!!!\n"
-                    .   "  !!! WARNING !!!\n"
-                    .   "  !!!---------!!!\n"
-                    .   "  CVS tag inconsistency found.\n"
-                    .   "  input file: $inFile{$key}\n\n"
-                    .   "    CVS Tag (input file):    $tag{$key}\n"
-                    .   "    CVS Tag (runjob script): $CVSTAG\n";
-            }
-            else {
-                print "\n  $label";
-                print "\n  "."-"x length($label) ."\n"
-                    .   "  CVS Tag (runjob script):  $CVSTAG\n"
-                    .   "  CVS Tag (input file):     $tag{$key}\n";
-            }
+            print "\n  !!!---------!!!\n"
+                .   "  !!! WARNING !!!\n"
+                .   "  !!!---------!!!\n"
+                .   "  fvsetupID inconsistency found.\n"
+                .   "  input file: $inFile{$key}\n\n"
+                .   "    fvsetupID (input file):    $fvid{$key}\n"
+                .   "    fvsetupID (runjob script): $fvsetupID\n";
         }
     }
     else {
+        $verify = 1;
         print "\n  !!!!!!!!!!!!!!!\n"
             .   "  !!! WARNING !!!\n"
             .   "  !!!!!!!!!!!!!!!\n"
-            .   "  No tag information available in input file.\n"
+            .   "  fvsetupID not found in input file.\n"
             .   "  input file: $inFile{$key}\n\n"
-            .   "    CVS Tag (input file):    not found\n"
-            .   "    CVS Tag (runjob script): $CVSTAG\n";
-        $verify = 1;
+            .   "    fvsetupID (input file):    not found\n"
+            .   "    fvsetupID (runjob script): $fvsetupID\n";
     }
     if ($verify) {
         print "\nUnless you are sure the input file is okay, you should quit"
@@ -1405,15 +1355,15 @@ sub usage {
 
 usage: $script [options] [file1 [file2 [..]]]
 options
-   -auto              use dflt responses for queries; automatically submit job(s)
-   -autox             use dflt responses for queries; do not submit job(s)
-   -nocheck           do not check for previous use of expid
-   -nofilter          do not exclude *.input files if CVSTAG does not match
+   -auto/-a           use dflt responses for queries; automatically submit job(s)
+   -autox/-ax         use dflt responses for queries; do not submit job(s)
+   -nocheck/-nc       do not check for previous use of expid
+   -nofilter/-nf      do not exclude *.input files if fvsetupID does not match
    -d inputDir        directory location of saved *.input files
-   -debug (or -db)    runjob debug mode; do not remove .rawInFile and ERR files
-   -dbqueue (or -dbq) send job to debug queue for faster processing
+   -debug/-db         runjob debug mode; do not remove .rawInFile and ERR files
+   -dbqueue/-dbq      send job to debug queue for faster processing
    -f fvsetup         fvsetup script to use; defaults to \$ESMABIN version
-   -help (or -h)      print usage information
+   -help/-h           print usage information
    -l                 get *.input files from local directory
    -OSx               proceed even if OS difference found
    -stage             copy testsuites *.input files to input directory
@@ -1426,7 +1376,7 @@ Notes
 2. However, input files may be specified by name only in the command line,
    without including the ".input" extension.
 3. If no file is specified as an input parameter, then the script will look
-   in the input directory for input files which match the CVSTAG of this script
+   in the input directory for input files which match the fvsetupID of this script
    (if -nofilter flag is set, then all inputs will be available).
 4. The precedence for determining the input directory (location of *.input files)
    is as follows:

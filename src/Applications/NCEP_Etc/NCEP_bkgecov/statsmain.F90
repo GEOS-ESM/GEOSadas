@@ -76,6 +76,8 @@ program statsmain
   use specgrid,  only: init_spec
   use postmod,   only: writefiles
   use m_GsiGrided, only: vectype
+  use m_GsiGrided, only: input_vpsf
+  use m_GsiGrided, only: GsiGrided_set
   use comm_mod, only: nxpe,nype,init_mpi_vars,destroy_mpi_vars
   use m_zeit, only: zeit_ci,zeit_co,zeit_flush
 ! use MAPL_Mod
@@ -110,11 +112,12 @@ program statsmain
 !   rhbounds(2)-specify lower and uppper bounds on rh diff
 !   nxpe,nype  -allow testings w/ ESMF-like distribution
 !   hrzsfactor -parameter allowing for extra adjustment to horizontal scales
+!   input_vpsf -.true. when input has vp/sf in u/v slots
 
   namelist/namstat/jcap,lgaus,lsmver,nsig,nlat,nlon,&
                    maxcases,hybrid,smoothdeg,fnm0,vectype,biasrm,laddoz,lbal,&
                    hydromet,smooth_vert_variances,nreaders,readperts,calchrzscl,&
-                   calcvrtscl,rhbounds,nxpe,nype,hrzsfactor
+                   calcvrtscl,rhbounds,nxpe,nype,hrzsfactor,input_vpsf
   namelist/smoothvars/hcoeffs,vcoeffs
 
 ! MPI initial setup
@@ -125,6 +128,7 @@ program statsmain
 ! Initialize defaults for namelist variables
   call init_vars
   call init_spec
+  call GsiGrided_set
 
 ! Read in namelist
 #ifdef ibm_sp

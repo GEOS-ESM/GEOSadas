@@ -2,8 +2,9 @@
 # C48f.input
 #-----------
 
-description: C48f__GEOSadas-5_29_0__agrid_C48__ogrid_f34
-tag: GEOSadas-5_29_0
+codeID: b3a880f
+description: C48f__GEOSadas-5_29_3__agrid_C48__ogrid_f34
+fvsetupID: f7d8d041c9
 fvsetupflags: -sensdeg 1
 
 ---ENDHEADERS---
@@ -11,7 +12,7 @@ fvsetupflags: -sensdeg 1
 Remote account for Intranet plots? [jstassi@train]
 > 
 
-Is this a MERRA2 experiment (y/n)? [n]
+Is this a MERRA2 (1), GEOSIT (2), R21C (3) experiment? [0]
 > 
 
 AGCM Horizontal Resolution? [C48]
@@ -29,7 +30,7 @@ EXPID? [u000_C48]
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [C48f__GEOSadas-5_29_0__agrid_C48__ogrid_f34]
+EXPDSC? [C48f__GEOSadas-5_29_3__agrid_C48__ogrid_f34]
 > 
 
 Land Boundary Conditions? [Icarus_Updated]
@@ -39,6 +40,9 @@ FVHOME? [/discover/nobackup/jstassi/C48f]
 > 
 
 The directory /discover/nobackup/jstassi/C48f does not exist. Create it now? [y]
+> 
+
+Processing nodes (1:Westmere, 2:SandyBridge, 3:Ivy Bridge, 4:Haswell, 5:Skylake, 6:Cascase)? [4]
 > 
 
 Which case of variational analysis? [1]
@@ -165,6 +169,9 @@ Use aircraft bias correction (y/n)? [y]
 > n
 
 Use unified radiance bias correction (y/n)? [y]
+> 
+
+Land DAS Analysis (y/n)? [n]
 > 
 
 Frequency (in days) for writing restarts? [0]

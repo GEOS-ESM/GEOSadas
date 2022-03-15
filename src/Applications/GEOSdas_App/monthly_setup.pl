@@ -181,7 +181,7 @@ sub write_plotfiles {
     $values{"\@GEOSSRC"} = $ENV{"GEOSUTIL"};
 
     $values{"\@BATCH_TIME"} = "SBATCH --time=";
-    $values{"\@BATCH_JOBNAME"} = "SBATCH --jobname=";
+    $values{"\@BATCH_JOBNAME"} = "SBATCH --job-name=";
     $values{"\@BATCH_OUTPUTNAMEOUTPUT"} = "SBATCH --output=OUTPUT";
 
     replaceLabels($infile, $outfil, \%values,\@setenvs);

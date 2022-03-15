@@ -6,13 +6,13 @@
 # GEOS ADAS Gatekeepers own all the files
 * @GEOS-ESM/adas-gatekeepers
 
-# The GCM gatekeepers and CMake should know/approve these
+# The ADAS gatekeepers and CMake should know/approve these
 /.github/    @GEOS-ESM/cmake-team @GEOS-ESM/adas-gatekeepers
-/.circleci/    @GEOS-ESM/cmake-team @GEOS-ESM/adas-gatekeepers
-/.codebuild/    @GEOS-ESM/cmake-team @GEOS-ESM/adas-gatekeepers
+/.circleci/  @GEOS-ESM/cmake-team @GEOS-ESM/adas-gatekeepers
+/.codebuild/ @GEOS-ESM/cmake-team @GEOS-ESM/adas-gatekeepers
 
-# The GEOS CMake Team is the CODEOWNER for the CMakeLists.txt files in this repository
-CMakeLists.txt @GEOS-ESM/cmake-team
+# The GEOS CMake Team should be notified for changes to CMakeLists.txt files in this repository
+CMakeLists.txt @GEOS-ESM/cmake-team @GEOS-ESM/adas-gatekeepers
 
 # The GEOS CMake Team should be notified about and approve config changes
-/config/       @GEOS-ESM/cmake-team
+/config/ @GEOS-ESM/cmake-team @GEOS-ESM/adas-gatekeepers

@@ -7,10 +7,12 @@ module m_GsiGrided
    private ! except
 
    public :: GsiGrided
+   public :: GsiGrided_set
    public :: GsiGrided_init
    public :: GsiGrided_read
    public :: GsiGrided_clean
    public :: vectype
+   public :: input_vpsf
 
    type GsiGrided
 !     private
@@ -32,6 +34,8 @@ module m_GsiGrided
 
    interface GsiGrided_init ; module procedure    &
       init_ ; end interface
+   interface GsiGrided_set ; module procedure    &
+      set_ ; end interface
    interface GsiGrided_read ; module procedure    &
       read_ ; end interface
    interface GsiGrided_clean; module procedure    &
@@ -43,7 +47,9 @@ module m_GsiGrided
    real(fp_kind),parameter :: CPD    = 1004.64
    real(fp_kind),parameter :: RGAS   = 287.04
    real(fp_kind),parameter :: KAPPA = RGAS/CPD
+
    integer :: vectype
+   logical :: input_vpsf
 
 contains
 
@@ -87,9 +93,15 @@ contains
      ob%rh  = 0
      ob%mrh = 0
 
-     vectype = 5
-
    end subroutine init_
+
+   subroutine set_
+   implicit none
+
+   vectype = 5
+   input_vpsf = .false.
+
+   end subroutine set_
 
    subroutine read_(fid, nymd, nhms, ob, mype)
 
@@ -101,6 +113,7 @@ contains
    use m_dyn,only : dyn_vect
    use m_dyn,only : dyn_get
    use m_dyn,only : dyn_clean
+   use m_dyn,only : dyn_flip
 
    use m_llInterp, only : llInterp
    use m_llInterp, only : llInterp_init
@@ -133,6 +146,7 @@ contains
    type(llInterp) :: obll,obl
    character(len=3),pointer::xtrnames(:)
    logical dointerp
+   logical dovecwnds
    
 
    if (readperts) then
@@ -145,6 +159,9 @@ contains
      call dyn_get(filename(fid),nymd,nhms,w_fv, &
                   ier,timidx=1,vectype=vectype)
    endif
+   call dyn_flip(w_fv,dover=.false.) ! This is required since the calc 
+                                     ! of div/vor; sf/vp before assume
+                                     ! the lon [0,360]; see inisph (RT)
 
 !  Atmospheric model dimensions
      nAlon = w_fv%grid%im
@@ -227,29 +244,35 @@ contains
        w_fv%v = var3dv
        deallocate ( var3du, var3dv )
      endif
+     dovecwnds=.not.input_vpsf
 
      if(dointerp)then
        allocate( var3su(nlat,nlon,nsig) )
        allocate( var3sv(nlat,nlon,nsig) )
        allocate( var3du(nlon,nlat,nsig) ) 
-       call llInterp_atog(obll,w_fv%u, var3du, vector=.true.) 
+       call llInterp_atog(obll,w_fv%u, var3du, vector=dovecwnds)
        call swapij3d_(var3du,var3su,nlat,nlon,nsig)
-       call llInterp_atog(obll,w_fv%v, var3du, vector=.true.) 
+       call llInterp_atog(obll,w_fv%v, var3du, vector=dovecwnds)
        call swapij3d_(var3du,var3sv,nlat,nlon,nsig)
      else
        call llInterp_init(obl,nAlon,nAlat,nGlon,nGlat)
        allocate( var3su(nGlat,nGlon,nsig) )
        allocate( var3sv(nGlat,nGlon,nsig) )
        allocate( var3du(nGlon,nGlat,nsig) ) 
-       call llInterp_atog(obl,w_fv%u, var3du, vector=.true.) 
+       call llInterp_atog(obl,w_fv%u, var3du, vector=dovecwnds)
        call swapij3d_(var3du,var3su,nGlat,nGlon,nsig)
-       call llInterp_atog(obl,w_fv%v, var3du, vector=.true.) 
+       call llInterp_atog(obl,w_fv%v, var3du, vector=dovecwnds)
        call swapij3d_(var3du,var3sv,nGlat,nGlon,nsig)
        call llInterp_clean(obl)
      endif
      deallocate( var3du ) 
-     call m_vordiv(var3su,var3sv)
-     call m_stvp(ob%sf,ob%vp,var3su,var3sv) 
+     if (input_vpsf) then
+        ob%vp=var3su
+        ob%sf=var3sv
+     else
+        call m_vordiv(var3su,var3sv)
+        call m_stvp(ob%sf,ob%vp,var3su,var3sv) 
+     endif
      deallocate( var3su )
      deallocate( var3sv )
 
