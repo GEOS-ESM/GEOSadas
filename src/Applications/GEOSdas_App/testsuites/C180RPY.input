@@ -1,20 +1,21 @@
 #------------
-# x0043.input
+# C180RPY.input
 #------------
 
-description: x0043__GEOSadas-5_27_1_p2__agrid_C360__ogrid_C
-tag: GEOSadas-5_27_1_p2
+codeID: b3a880f
+description: C180RPY__GEOSadas-5_29_3__agrid_C180__ogrid_C
+fvsetupID: f7d8d041c9
 
 ---ENDHEADERS---
 
-Remote account for Intranet plots? [dao_it@train]
+Remote account for Intranet plots? [rtodling@train]
 > 
 
-Is this a MERRA2 experiment (y/n)? [n]
+Is this a MERRA2 (1), GEOSIT (2), R21C (3) experiment? [0]
 > 
 
 AGCM Horizontal Resolution? [C48]
-> C360
+> C180
 
 AGCM Vertical Resolution? [72]
 > 
@@ -22,13 +23,13 @@ AGCM Vertical Resolution? [72]
 OGCM Resolution? [f]
 > C
 
-EXPID? [u000_C360]
+EXPID? [u000_C180]
 > $expid
 
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [x0043__GEOSadas-5_27_1_p2__agrid_C360__ogrid_C]
+EXPDSC? [C180RPY__GEOSadas-5_29_3__agrid_C180__ogrid_C]
 > 
 
 Land Boundary Conditions? [Icarus_Updated]
@@ -37,11 +38,14 @@ Land Boundary Conditions? [Icarus_Updated]
 Catchment Model choice? [1]
 > 
 
-FVHOME? [/discover/nobackup/dao_it/x0043]
-> /discover/nobackup/projects/gmao/dadev/dao_it/$expid
+FVHOME? [/discover/nobackup/rtodling/C180RPY]
+> /discover/nobackup/projects/gmao/dadev/rtodling/$expid
 
-The directory /discover/nobackup/projects/gmao/obsdev/dao_it/x0043 already exists. Clean it? [y]
+The directory /discover/nobackup/projects/gmao/obsdev/rtodling/C180RPY already exists. Clean it? [y]
 > 
+
+Processing nodes (1:Westmere, 2:SandyBridge, 3:Ivy Bridge, 4:Haswell, 5:Skylake, 6:Cascase)? [4]
+> 5
 
 Which case of variational analysis? [1]
 > 
@@ -74,28 +78,16 @@ AeroCom? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/AeroCom]
 > 
 
 FVICS? [/archive/u/jstassi/restarts/GEOSadas-5_24_0]
-> /archive/u/jstassi/restarts/GEOSadas-5_27_0/x0041like.rst.20191119_21z.tar
+> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/x0045_C180/rs_coupled/Y2020/M11/x0045.rst.20201129_21z.tar
 
 Run model-adjoint-related applications (0=no,1=yes)? [0]
-> 1
-
-Analysis/Forecast filename template for sensitivity?
-> 
-
-Stage the gradient vector files (y/n)? [y]
-> 
-
-Run singular vector experiments (0=n,1=yes)? [0]
 > 
 
 Run analysis-sensitivity applications (0=no,1=yes)? [0]
-> 1
-
-Verifying experiment id: [x0043]
 > 
 
-Ending year-month-day? [20191121]
-> 20200206
+Ending year-month-day? [20201201]
+> 20210206
 
 Length of FORECAST run segments (in hours)? [123]
 > 
@@ -104,13 +96,13 @@ Number of one-day DAS segments per PBS job? [1]
 > 
 
 Number of PEs in the zonal direction (NX)? [8]
-> 16
+> 20
 
-Number of PEs in the meridional direction (NY)? [48]
-> 
+Number of PEs in the meridional direction (NY)? [30]
+> 60
 
 Job nickname? [g5das]
-> x43
+> c01
 
 Run in split executable mode (1=yes;0=no)? [1]
 > 
@@ -133,20 +125,20 @@ GEOS grid resolution instead? [d]
 Ensemble Hybrid (<0;3=3dHyb;4=Hyb4d)? [-1]
 > 4
 
-Number of procs in the zonal direction (NX)? [12]
+Number of procs in the zonal direction (NX)? [6]
 > 16
 
-Number of procs in the meridional direction (NY)? [20]
+Number of procs in the meridional direction (NY)? [32]
 > 42
 
 Which main class of ObsSys (1: NRT; 2: MERRA; 3: MERRA-2)? [1]
 > 
 
 OBSERVING SYSTEM CLASSES?
-> disc_airs_bufr,disc_amsua_bufr,gmao_amsr2_bufr,gmao_gmi_bufr,mls_nrt_nc,ncep_1bamua_bufr,ncep_1bhrs4_bufr,ncep_acftpfl_bufr,ncep_atms_bufr,ncep_aura_omi_bufr,ncep_avcsam_bufr,ncep_avcspm_bufr,ncep_cris_bufr,ncep_crisfsr_bufr,ncep_goesfv_bufr,ncep_gpsro_bufr,ncep_mhs_bufr,ncep_mtiasi_bufr,ncep_prep_bufr,ncep_satwnd_bufr,ncep_sevcsr_bufr,ncep_ssmis_bufr,ncep_tcvitals,npp_ompsnm_bufr
+> disc_airs_bufr,disc_amsua_bufr,gmao_amsr2_bufr,gmao_gmi_bufr,mls_nrt_nc,ncep_1bamua_bufr,ncep_1bhrs4_bufr,ncep_acftpfl_bufr,ncep_atms_bufr,ncep_aura_omi_bufr,ncep_avcsam_bufr,ncep_avcspm_bufr,ncep_crisfsr_bufr,ncep_goesfv_bufr,ncep_gpsro_com_bufr,ncep_mhs_bufr,ncep_mtiasi_bufr,ncep_prep_bufr,ncep_satwnd_bufr,ncep_sevcsr_bufr,ncep_ssmis_bufr,ncep_tcvitals,npp_ompsnm_bufr,gmao_mlst_bufr
 
 CHECKING OBSYSTEM? [2]
-> 
+> 1
 
 Which RADCOR option? [NONE]
 > 
@@ -158,6 +150,9 @@ Use aircraft bias correction (y/n)? [y]
 > 
 
 Use unified radiance bias correction (y/n)? [y]
+> 
+
+Land DAS Analysis (y/n)? [n]
 > 
 
 Frequency (in days) for writing restarts? [0]
@@ -172,10 +167,10 @@ Frequency for surface (2D) DIAGNOSTIC fields? [010000]
 Frequency for upper air (3D) DIAGNOSTIC fields? [030000]
 > 
 
-Dimension of output in zonal direction? [1152]
+Dimension of output in zonal direction? [576]
 > 
 
-Dimension of output in meridional direction? [721]
+Dimension of output in meridional direction? [361]
 > 
 
 Would you like 2D diagnostics? [y]
@@ -215,19 +210,13 @@ Select group: [s0818]
 > g0613
 
 Replayed Ensemble (from OPS)?  [yes]
-> no
-
-Use SPPT-scheme for Ensemble?  [yes]
 > 
 
-Ensemble Resolution?  [C90]
-> 
+Replay exp name? [x0045a]
+> x0045a
 
-Ensemble Vertical Levels?  [72]
-> 
-
-Experiment archive directory for ensemble restarts or 'later': [/archive/u/rtodling/x0043]
-> /archive/u/dao_it/x0041
+Replay archive directory? [/discover/nobackup/projects/gmao/dadev/dao_it/archive/x0045a]
+> /discover/nobackup/projects/gmao/dadev/dao_it/archive/x0045a
 
 Edit COLLECTIONS list in run/HISTORY.rc.tmpl (y/n)? [n]
 > 

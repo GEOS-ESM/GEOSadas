@@ -1,10 +1,10 @@
 #!/bin/csh  -x
 #SBATCH --account=g0613
-#SBATCH --constraint=hasw
-#SBATCH --ntasks=1
-#_SBATCH --ntasks=24
+#SBATCH --constraint=sky
+#_SBATCH --ntasks=8
+#_SBATCH --ntasks=36
 #_SBATCH --ntasks=96
-#_SBATCH --ntasks=384
+#SBATCH --ntasks=1000
 #_SBATCH --ntasks-per-node=24
 #SBATCH --time=12:00:00
 #SBATCH --qos=dastest
@@ -22,42 +22,46 @@
 
  setenv DRYRUN #echo
  setenv SKIPSETTING 0
- setenv MYNCPUS 4
+ setenv MYNCPUS 8
 # Set initial time and number of samples required
  setenv EXPID x0039_p5_REPLAY_L132
  setenv EXPID x41Lrt
  setenv EXPID x0041
  setenv EXPID f521_fp
  setenv EXPID f525_p5_fp
- setenv EXPID f525_p7_fp
  setenv EXPID f522_fp
  setenv EXPID f525_fp
+ setenv EXPID f525_p7_fp
+ setenv EXPID f5271_fp
 #setenv FVHOME /home/dao_ops/$EXPID
 #setenv ARCROOT /home/dao_ops/$EXPID/run/.../archive/prog
 #setenv FVHOME /discover/nobackup/projects/gmao/obsdev/rtodling/$EXPID
 #setenv FVHOME /discover/nobackup/projects/gmao/obsdev/rtodling/x0041
-setenv FVHOME /discover/nobackup/projects/gmao/dadev/rtodling/x0043rt
+setenv FVHOME /discover/nobackup/projects/gmao/dadev/rtodling/prePP
 setenv FVROOT `cat $FVHOME/.FVROOT`
 setenv PLAINDIR 0
 setenv ARCROOT /archive/u/$user/$EXPID/prog
 if ( $EXPID == "x0041" ) then
    setenv ARCROOT /archive/u/dao_it/$EXPID/prog
 endif
-if ( $EXPID == "f521_fp" || $EXPID == "f522_fp" || $EXPID == "f525_fp" || $EXPID == "f525_p5_fp" || $EXPID == "f525_p7_fp" ) then
+if ( $EXPID == "f521_fp" || $EXPID == "f522_fp" || $EXPID == "f525_fp" || $EXPID == "f525_p5_fp" || $EXPID == "f525_p7_fp" || $EXPID == "f5271_fp" ) then
    setenv ARCROOT /home/dao_ops/$EXPID/run/.../archive/prog
 endif
 if ($EXPID == "x0039_p5_REPLAY_L132") then
    setenv ARCROOT /gpfsm/dnb78s1/projects/p18/ltakacs/REPLAY_Experiments/x0039_p5_REPLAY_L132/forecasts/Regular_RPLFRQ:7200_ANA:x0039_p5
    setenv PLAINDIR 1
 endif
-setenv DMGET 0
-setenv GET_SET      1
+setenv DMGET        0
+setenv GET_SET      0
 
-setenv DO_ACQUIRE   1
-setenv GEN_NMCDIFFS 1
+setenv DO_ACQUIRE   0
+setenv GEN_NMCDIFFS 0
 
-setenv GET_BERROR 0
+setenv GET_BERROR    1
 setenv BERROR_NMODES 25
+
+set these_lats = ( 25 46 91 181 361 721 )
+#set these_lats = ( 721 )
 
 # Basic settings (weak dependency on version of DAS)
 # --------------------------------------------------
@@ -72,9 +76,10 @@ setenv FCSTWORK /discover/nobackup/projects/gmao/obsdev/$user/fcst4berrcov.$EXPI
 setenv FCSTWORK /discover/nobackup/projects/gmao/dadev/$user/fcst4berrcov.$EXPID
 
 if ($?I_MPI_ROOT ) then
-  setenv MPIRUN_CALCSTATS "mpirun -np 32 calcstats.x"
+  setenv MPIRUN_CALCSTATS "mpirun -np 864 calcstats.x"
+# setenv MPIRUN_CALCSTATS "mpirun -np 64 calcstats.x"
 else
-  setenv MPIRUN_CALCSTATS "mpirun_exec -np 32 calcstats.x"
+  setenv MPIRUN_CALCSTATS "mpirun_exec -np 96 calcstats.x"
 endif
 #
 # initial verification date and number of samples (will get samples ahead of initial date)
@@ -85,6 +90,8 @@ set vnymd0 = 20181101
 set vnymd0 = 20200203
 set vnymd0 = 20200401
 set vnymd0 = 20200301
+set vnymd0 = 20210203 # start
+set vnymd0 = 20200804
 #if ( $EXPID == "f522_fp") then
 #   set vnymd0 = 20190304
 #   @ nsamples = 350 
@@ -93,9 +100,10 @@ set vnymd0 = 20200301
 #
 #endif
 set vnhms0 = 000000
-@ nsamples = 31
-setenv FCSTWRK $FCSTWORK.$vnymd0.$vnhms0
-mkdir -p $FCSTWRK/BERROR.WORK
+@ nsamples = 58
+#setenv FCSTWRK $FCSTWORK.$vnymd0.$vnhms0
+setenv FCSTWRK $FCSTWORK.all
+mkdir $FCSTWRK
 set diren = `dirname $FCSTWRK`
 set spool = "-s $diren/spool "
 
@@ -181,8 +189,13 @@ if ( $GET_SET ) then
        set inidate = ( `tick $inidate $gap_sc` )
     end
    
+    set lst = `cat $acqfile`
+    if (-e missing.txt ) /bin/rm missing.txt
+    touch  missing.txt
+    foreach fn ($lst)
+       if (! -e $fn ) echo $fn >> missing.txt
+    end
     if ( $DMGET ) then
-      set lst = `cat $acqfile`
       echo $lst
       dmget $lst
       exit
@@ -293,34 +306,66 @@ if ( $GEN_NMCDIFFS ) then
 endif # GEN_NMCDIFFS
 
 if ( $GET_BERROR ) then
+ foreach NLAT ( $these_lats )
 
-if ( ! -d $FCSTWRK/BERROR.WORK ) mkdir -p $FCSTWRK/BERROR.WORK
-cd $FCSTWRK/BERROR.WORK
+  setenv HFAC -1.0  
+  if ( $NLAT == 25 ) then
+     setenv JCAP  12
+     setenv NLON  48
+  endif
+  if ( $NLAT == 46 ) then
+     setenv JCAP  42
+     setenv NLON  72
+  endif
+  if ( $NLAT == 91 ) then
+     setenv JCAP   84
+     setenv NLON  144
+  endif
+  if ( $NLAT == 181 ) then
+     setenv JCAP  142
+     setenv NLON  288
+  endif
+  if ( $NLAT == 361 ) then
+     setenv JCAP  382
+     setenv NLON  576
+  endif
+  if ( $NLAT == 721 ) then
+     setenv JCAP   512
+     setenv NLON  1152
+     setenv HFAC   0.6
+  endif
+# Hack: use same JCAP  for all resolution as done in previous version of BERROR generation
+# Hack: also redefine NMODES as used in previous version
+#  see: fvInput/gsi/etc/berror_gmao/gmao24Jun2016_fp+oz_fix/README
+  setenv JCAP 268
+  setenv BERROR_NMODES 20
+
+  if ( ! -d $FCSTWRK/BERROR.WORK ) mkdir -p $FCSTWRK/BERROR.WORK
 
    # Get positioned and set namelist parameters
    # ------------------------------------------
    cd $FCSTWRK/BERROR.WORK/
 
+   mkdir samples
+   cd samples
+   ln -sf $FCSTWRK/NMC48m24/*f48m24*nc4 .
+   cd -
+
    # Get set to run berror stats code
    # --------------------------------
    if (-e infiles ) /bin/rm infiles
-   cat $FCSTWRK/shrt_fcst.txt >> infiles
-   cat $FCSTWRK/long_fcst.txt >> infiles
+#  cat $FCSTWRK/shrt_fcst.txt >> infiles
+#  cat $FCSTWRK/long_fcst.txt >> infiles
+   ls samples/*f48m24*nc4 > infiles
    ln -sf infiles fort.10
-
-   # just for the record ...
-   ls -lrt samples
 
    # Figure out dimensions of forecast files (assumes that checking one suffices)
    # ----------------------------------------------------------------------------
-   set fcst_files = (`cat samples`)
+   set fcst_files = (`cat infiles`)
    set fcst_res = (`getgfiodim.x $fcst_files[1]`)
 
    # wire for now
-   set JCAP = 512
    set NSIG   = $fcst_res[3]
-   set NLON   = 576
-   set NLAT   = 361
 
    # Prepare resource files
    set this_param = $FVROOT/etc/berror_stats.nml.tmpl
@@ -328,6 +373,7 @@ cd $FCSTWRK/BERROR.WORK
       if ( -e stats.param ) /bin/rm  stats.parm
       if ( -e sed_file    ) /bin/rm  sed_file
       echo "s/>>>JCAP<<</${JCAP}/1"       > sed_file
+      echo "s/>>>HFAC<<</${HFAC}/1"      >> sed_file
       echo "s/>>>NSIG<<</${NSIG}/1"      >> sed_file
       echo "s/>>>NLAT<<</${NLAT}/1"      >> sed_file
       echo "s/>>>NLON<<</${NLON}/1"      >> sed_file
@@ -357,9 +403,9 @@ cd $FCSTWRK/BERROR.WORK
              /bin/mv $fn.grd $EXPID.gsi.$fn.clim.grd
           endif
       end
-      if ( -e $FCSTWRK/$EXPID.gsi.berror_stats.clim.tar ) /bin/rm $FCSTWRK/$EXPID.gsi.berror_stats.clim.tar
-      tar cvf $FCSTWRK/$EXPID.gsi.berror_stats.clim.tar  $EXPID.gsi.berror_stats.clim.bin \
-                                                                   $EXPID.gsi.*clim.grd
+      if ( -e $FCSTWRK/$EXPID.gsi.berror_stats.clim.y$NLAT.tar ) /bin/rm $FCSTWRK/$EXPID.gsi.berror_stats.clim.y$NLAT.tar
+      tar cvf $FCSTWRK/$EXPID.gsi.berror_stats.clim.y$NLAT.tar  $EXPID.gsi.berror_stats.clim.bin \
+                                                                $EXPID.gsi.*clim.grd
       
       echo " ${MYNAME}: done creating B-error file"
 
@@ -371,5 +417,8 @@ cd $FCSTWRK/BERROR.WORK
    /bin/rm -r fort.*00*
    /bin/rm -r fort.*01*
    /bin/rm -r fort.*02*
+   /bin/rm stats.parm
+   /bin/rm $EXPID.gsi.berror_stats.clim.bin $EXPID.gsi.*clim.grd
 
+ end # these_lats
 endif # GET_BERROR

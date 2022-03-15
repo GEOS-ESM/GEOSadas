@@ -256,7 +256,13 @@ C     FLAGGED WITH Q.M. 8 (EVENT PGM "PREVENT", REASON CODE 8).
 C 2014-05-08 JWhiting -- altered print statement (2 format) in GBLEVN10 
 C     subroutine; increased field width for spectral resolution to 
 C     accommodate models w/ up to 5-digit resolution (I3 to I5).
-C
+C 2016-10-25 M. Sienkiewicz - REPLACE INCORRECT HEIGHTS FOR ACARS OBS
+C     ABOVE 226.3HPA.  (INCORRECT CALCULATION IN MERRA PREPDATA PROCESSING
+C     PRIOR TO WCOSS TRANSITION.)  CONTROL BY NAMELIST SWITCH 'ACARSH'.
+C 2020-11-19 M.SIENKIEWICZ -- IN GBLEVN06, MODIFY INTERPOLATION TO 
+C     CORRECT ARRAY ACCESS FOR SP STATION.  (AFTER CHANGE TO PREPDATA
+C     AND/OR BUFR LIBRARY THE SP LATITUDE LOADED IN YOB WAS SLIGHTLY
+C     LESS THAN -90 AND THUS LED TO TRY TO ACCESS INDEX 0 INSTEAD OF 1.)
 C
 C USAGE:    CALL GBLEVENTS(IDATEP,IUNITF,IUNITE,IUNITP,IUNITS,SUBSET,
 C          $               NEWTYP)
@@ -486,6 +492,11 @@ C              PG4243 =.FALSE. ---> DO NOT CHANGE REPORTS
 C              PG4243 =.TRUE.  ---> GIVE ALL MASS VARIABLES A 
 C                                   PREPBUFR TBL. VAL. 15
 C                                                       (DEFAULT=.TRUE.)
+C    ACARSH  - RECALCULATE HEIGHTS FOR ACARS DATA WHEN P<226.3 MB 
+C               ACARSH =.FALSE. ---> DO NOT CHANGE REPORTS
+C               ACARSH =.TRUE.  ---> RECALCULATE STD. ATM. HEIGHT ABOVE 226.3 MB
+C                                                       (DEFAULT=.TRUE.)
+C    
 C
 CC
 C
@@ -521,7 +532,8 @@ C$$$
       REAL(8)      OBS_8,QMS_8,BAK_8,SID_8,HDR_8(10)
       REAL(8)      BMISS,GETBMISS
       LOGICAL      DOVTMP,DOFCST,SOME_FCST,DOBERR,FCST,VIRT,DOANLS,
-     $             SATMQC,ADPUPA_VIRT,RECALC_Q,DOPREV,dopmsl,PG4243
+     $             SATMQC,ADPUPA_VIRT,RECALC_Q,DOPREV,dopmsl,PG4243,
+     $             ACARSH
 
       DIMENSION    IUNITF(2)
 
@@ -529,7 +541,7 @@ C$$$
      $ XOB,YOB,DHR,TYP,NLEV
       COMMON /GBEVBB/ PVCD,VTCD
       COMMON /GBEVCC/ DOVTMP,DOFCST,SOME_FCST,DOBERR,FCST,VIRT,
-     $ QTOP_REJ,SATMQC,ADPUPA_VIRT,RECALC_Q,DOPREV,dopmsl,PG4243
+     $ QTOP_REJ,SATMQC,ADPUPA_VIRT,RECALC_Q,DOPREV,dopmsl,PG4243,ACARSH
       COMMON /GBEVDD/ ERRS(300,33,6)
       COMMON /GBEVFF/ BMISS
 
@@ -551,7 +563,8 @@ C$$$
      $ 'POE QOE TOE ZOE WOE PWE PW1E PW2E PW3E PW4E NUL  NUL      '/
 
       NAMELIST /PREVDATA/DOVTMP,DOFCST,SOME_FCST,DOBERR,DOANLS,
-     $ QTOP_REJ,SATMQC,ADPUPA_VIRT,RECALC_Q,DOPREV,dopmsl,PG4243
+     $ QTOP_REJ,SATMQC,ADPUPA_VIRT,RECALC_Q,DOPREV,dopmsl,PG4243,
+     $ ACARSH
 
 C----------------------------------------------------------------------
 C----------------------------------------------------------------------
@@ -588,6 +601,7 @@ C  ----------------------------------------------
          ADPUPA_VIRT = .FALSE.
          dopmsl      = .false.
          PG4243      = .TRUE.
+         ACARSH      = .TRUE.
          READ(5,PREVDATA,ERR=101,END=102)
          GO TO 103
 C-----------------------------------------------------------------------
@@ -623,6 +637,8 @@ C-----------------------------------------------------------------------
             DOBERR      = .FALSE.
             ADPUPA_VIRT = .FALSE.
             dopmsl      = .false.
+            PG4243      = .FALSE.
+            ACARSH      = .FALSE.
          ENDIF
          IF(DOVTMP)  RECALC_Q=.TRUE. ! RECALC_Q must be T if DOVTMP is T
          WRITE (6,PREVDATA)
@@ -834,6 +850,10 @@ C  ----------------------------------------------------------
          CALL GBLEVN08(IUNITP,SUBSET)
       ENDIF
 
+      if(SUBSET .EQ. 'AIRCAR  ' .AND. ACARSH ) then
+         CALL ACARSFIX(IUNITP)
+      end if
+
 C  RETURN TO CALLING PROGRAM TO WRITE GBL-EVENTED REPORT (SUBSET) INTO
 C   PREPBUFR FILE
 C  -------------------------------------------------------------------
@@ -887,14 +907,14 @@ C***********************************************************************
       LOGICAL      FCST,REJP_PS,REJPS,REJT,REJQ,REJW,REJPW,REJPW1,
      $             REJPW2,REJPW3,REJPW4,SATMQC,SATEMP,SOLN60,SOLS60,
      $             MOERR_P,MOERR_T,ADPUPA_VIRT,DOBERR,DOFCST,SOME_FCST,
-     $             DOVTMP,VIRT,RECALC_Q,DOPREV,dopmsl,PG4243
+     $             DOVTMP,VIRT,RECALC_Q,DOPREV,dopmsl,PG4243,ACARSH
       REAL(8)      BMISS
 
       COMMON /GBEVAA/ SID_8,OBS_8(13,255),QMS_8(12,255),BAK_8(12,255),
      $ XOB,YOB,DHR,TYP,NLEV
       COMMON /GBEVBB/ PVCD,VTCD
       COMMON /GBEVCC/ DOVTMP,DOFCST,SOME_FCST,DOBERR,FCST,VIRT,
-     $ QTOP_REJ,SATMQC,ADPUPA_VIRT,RECALC_Q,DOPREV,dopmsl,PG4243
+     $ QTOP_REJ,SATMQC,ADPUPA_VIRT,RECALC_Q,DOPREV,dopmsl,PG4243,ACARSH
       COMMON /GBEVEE/PSG01,ZSG01,TG01(500),UG01(500),VG01(500),
      x     QG01(500),zint(500),pint(500),pintlog(500),plev(500),
      x     plevlog(500)
@@ -1874,6 +1894,7 @@ C  --------------------------------------------
 
       WY = (YOB+90.)/DLAT + 1.0
       J0 = WY
+      if (j0 .lt. 1) j0 = 1
       J1 = MIN(J0+1,JMAX)
       WY = WY-J0
 
@@ -2185,13 +2206,13 @@ C$$$
 
       LOGICAL      EVNQ,EVNV,DOVTMP,TROP,ADPUPA_VIRT,DOBERR,DOFCST,
      $             SOME_FCST,FCST,VIRT,SATMQC,RECALC_Q,DOPREV,
-     $             evnp,dopmsl,surf,PG4243
+     $             evnp,dopmsl,surf,PG4243,ACARSH
 
       COMMON /GBEVAA/ SID_8,OBS_8(13,255),QMS_8(12,255),BAK_8(12,255),
      $ XOB,YOB,DHR,TYP,NLEV
       COMMON /GBEVBB/ PVCD,VTCD
       COMMON /GBEVCC/ DOVTMP,DOFCST,SOME_FCST,DOBERR,FCST,VIRT,
-     $ QTOP_REJ,SATMQC,ADPUPA_VIRT,RECALC_Q,DOPREV,dopmsl,PG4243
+     $ QTOP_REJ,SATMQC,ADPUPA_VIRT,RECALC_Q,DOPREV,dopmsl,PG4243,ACARSH
       COMMON /GBEVFF/ BMISS
 
       DATA EVNSTQ /'QOB QQM QPC QRC'/
@@ -2605,3 +2626,52 @@ C***********************************************************************
          q(:,j) = dum(:)
       enddo
       end subroutine hflip2
+
+!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+!      NASA/GSFC, Global Modeling and Assimilation Office, Code 610.1   !
+!-----------------------------------------------------------------------
+!BOP
+!
+! !IROUTINE: ACARSFIX - modify std atm height for ACARS obs
+!
+! !INTERFACE:
+
+      subroutine acarsfix(IUNITP)
+!
+! !INPUT PARAMETERS
+      INTEGER IUNITP       ! BUFR OUTPUT UNIT NUMBER
+
+! !DESCRIPTION: Replace incorrect ACARS standard atmosphere heights
+!     that were written to MERRA obs files prior to WCOSS transition
+!
+! !REVISION HISTORY:
+!
+! 25Oct2016    M.Sienkiewicz   Initial version
+!
+!EOP
+!-----------------------------------------------------------------------
+
+      real(8) zev_8(4)
+      integer iret
+
+      COMMON /GBEVAA/ SID_8,OBS_8(13,255),QMS_8(12,255),BAK_8(12,255),
+     $     XOB,YOB,DHR,TYP,NLEV
+      COMMON /GBEVFF/ BMISS
+      COMMON /GBEVBB/ PVCD,VTCD
+      HGTF_HI(P) = 11000 - ALOG(P/226.3)/1.576106E-4
+
+      if (nlev.eq.1) then
+         pob = obs_8(1,1)
+         if (pob .lt. 226.3) then
+            zob = hgtf_hi(pob)
+            zev_8(1) = zob
+            zev_8(2) = qms_8(4,1)
+            zev_8(3) = pvcd
+            zev_8(4) = 43
+            CALL UFBINT(IUNITP,ZEV_8,4,1,iret,' ZOB ZQM ZPC ZRC ')
+            CALL UFBINT(IUNITP,ZEV_8(1),1,1,iret,' ELV ')
+         end if
+      end if
+      return
+      end
+      

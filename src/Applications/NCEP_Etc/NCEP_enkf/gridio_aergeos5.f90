@@ -34,6 +34,8 @@
  use mpisetup
 
  use MAPL_IOMod
+ use PFIO
+ use gftl_StringVector
 
  use m_tick, only: tick
  use m_die, only: die
@@ -100,23 +102,25 @@
        integer, intent(out) :: jm
        integer, optional, intent(out) :: km
 
-       type(MAPL_NCIO) :: aer_AOD  
+       type(NetCDF4_FileFormatter) :: formatter
+       type(FileMetadata) :: metadata 
        integer :: rc
   
-       aer_AOD = MAPL_NCIOOpen(fname,rc=rc)
+       call formatter%open(trim(fname),PFIO_READ,rc=rc)
        if ( rc == 0 ) then
           print *,'[r] open file:'//trim(fname)
        else
-          call die('inq_dims_: ', '[x] error opening AOD background file in NCIO' //trim(fname)//', rc= ', rc)
+          call die('inq_dims_: ', '[x] error opening AOD background file in PFIO' //trim(fname)//', rc= ', rc)
        endif 
 
+       metadata = formatter%read()
+       im = metadata%get_dimension('lon')
+       jm = metadata%get_dimension('lat')
        if(present(km)) then
-          call MAPL_NCIOGetDimSizes(aer_AOD,lon=im,lat=jm,lev=km)
-       else
-          call MAPL_NCIOGetDimSizes(aer_AOD,lon=im,lat=jm)
+          km = metadata%get_dimension('lev')
        endif
 
-       call MAPL_NCIOClose(aer_AOD)
+       call formatter%close()
     end subroutine inq_dims_
 !-------------------------------------------------
     subroutine read_aod_(fname, aod, im, jm)
@@ -125,28 +129,31 @@
        integer, intent(out) :: im
        integer, intent(out) :: jm
 
-       type(MAPL_NCIO) :: aer_AOD  
+       type(Netcdf4_FileFormatter) :: formatter
+       type(FileMetadata) :: metadata 
        integer :: rc
   
-       aer_AOD = MAPL_NCIOOpen(fname,rc=rc)
+       call formatter%open(trim(fname),PFIO_READ,rc=rc)
        if ( rc == 0 ) then
           print *, '[r] open file:'//trim(fname)
        else
-          call die('read_aod_: ', '[x] error opening AOD background file in NCIO' //trim(fname)//', rc= ', rc)
-       endif 
+          call die('read_aod_: ', '[x] error opening AOD background file in PFIO' //trim(fname)//', rc= ', rc)
+       endif
+       metadata = formatter%read() 
 
-       call MAPL_NCIOGetDimSizes(aer_AOD,lon=im,lat=jm)
-
-       call MAPL_VarRead(aer_aod,trim(aod_fields(1)),aod(:,:,1),lev=1,rc=rc)
+       im = metadata%get_dimension('lon')
+       jm = metadata%get_dimension('lat')
+     
+       call MAPL_VarRead(formatter,trim(aod_fields(1)),aod(:,:,1),lev=1,rc=rc)
        if ( rc == 0 ) then
            print *, '[r] reading bkg AOD from file:'//trim(fname)
        else
-           call die('read_aod_: ', '[x] error reading AOD background file in NCIO' //trim(fname)//', rc= ', rc)
+           call die('read_aod_: ', '[x] error reading AOD background file in PFIO' //trim(fname)//', rc= ', rc)
        endif 
  
        call hflip_(aod, im, jm, 1)
    
-       call MAPL_NCIOClose(aer_AOD)
+       call formatter%close()
     end subroutine read_aod_
 !-------------------------------------------------
 
@@ -159,43 +166,46 @@
        integer, intent(out) :: km
        real(r_single), intent(inout) :: ps(:,:,:)
  
-       type(MAPL_NCIO) :: aerbkg_MR  
+       type(Netcdf4_FileFormatter) :: formatter
+       type(FileMetadata) :: metadata 
        integer :: rc, nq, k, nVars_
 
 
       !  Read dimensions and aerosol mixing ratio from abkg files
       !  --------------------------
     
-       aerbkg_MR = MAPL_NCIOOpen(fname, rc=rc)
+       call formatter%open(trim(fname),PFIO_READ,rc=rc)
        if ( rc == 0 ) then
           print *, '[r] open file:'//trim(fname)
        else
-          call die('read_aero_MR_: ', '[x] error opening MR background file in NCIO' //trim(fname)//', rc= ', rc)
+          call die('read_aero_MR_: ', '[x] error opening MR background file in PFIO' //trim(fname)//', rc= ', rc)
        endif 
 
-       call MAPL_NCIOGetDimSizes(aerbkg_MR,lon=im,lat=jm,lev=km,nVars=nVars_)
-
+       metadata = formatter%read()
+ 
+       im = metadata%get_dimension('lon')
+       jm = metadata%get_dimension('lat')
 
      ! Read MR for each aer_fields specified in rc file 
      ! ----------------------------
        do nq = 1, nqAERO
           do k = 1, km
-             call MAPL_VarRead(aerbkg_MR, trim(aer_fields(nq)), x(:,:,k,nq), lev=k ,rc=rc)
+             call MAPL_VarRead(formatter, trim(aer_fields(nq)), x(:,:,k,nq), lev=k ,rc=rc)
           enddo      
        enddo   
        if ( rc == 0 ) then
           print *, '[r] reading aer MR from file:'//trim(fname)
        else
-          call die('read_aero_MR_: ', '[x] error reading MR in background file in NCIO' //trim(fname)//', rc= ', rc)
+          call die('read_aero_MR_: ', '[x] error reading MR in background file in PFIO' //trim(fname)//', rc= ', rc)
        endif 
 
      ! Read PS to put at the bottom of the state vector
      ! ----------------------------
-       call MAPL_VarRead(aerbkg_MR, "PS", ps(:,:,1), lev=1, rc=rc)
+       call MAPL_VarRead(formatter, "PS", ps(:,:,1), lev=1, rc=rc)
        if ( rc == 0 ) then
             print *, '[r] reading PS from file:'//trim(fname)
        else
-            call die('read_aero_MR_: ', '[x] error reading PS in background file in NCIO' //trim(fname)//', rc= ', rc)
+            call die('read_aero_MR_: ', '[x] error reading PS in background file in PFIO' //trim(fname)//', rc= ', rc)
        endif 
  
      ! Convert GMAO units to NCEP units, flip horizontally and vertically
@@ -209,9 +219,9 @@
 
      ! Clean up
      ! ------
-       call MAPL_NCIOClose(aerbkg_MR,rc=rc)
+       call formatter%close(rc=rc)
        if ( rc /= 0 ) then
-          call die('read_aero_MR_: ', '[x] error closing file in NCIO' //trim(fname)//', rc= ', rc)
+          call die('read_aero_MR_: ', '[x] error closing file in PFIO' //trim(fname)//', rc= ', rc)
        endif   
     end subroutine read_aero_MR_ 
 ! ---------------------------------------------------------
@@ -223,30 +233,32 @@
         integer, intent(in) :: jm
         integer, intent(in) :: km
         real(r_single), intent(in) :: aod(im,jm,km) 
+        type(Netcdf4_FileFormatter) :: lui,luo
+        type(FileMetadata) :: lui_meta, luo_meta
 
         integer rc
-        type(MAPL_NCIO) lui, luo
 
-        lui = MAPL_NCIOOpen(fnamei,rc=rc)
+        call lui%open(trim(fnamei),PFIO_READ)
         if ( rc == 0 ) then
            print *, '[r] open file:'//trim(fnamei)
         else
-          call die('write_aod_: ', '[x] error opening AOD background file in NCIO' //trim(fnamei)//', rc= ', rc)
-        endif 
+          call die('write_aod_: ', '[x] error opening AOD background file in PFIO' //trim(fnamei)//', rc= ', rc)
+        endif
+        lui_meta=lui%read()
+        call MAPL_IOChangeRes(lui_meta,luo_meta,['lon','lat','lev'],[im,jm,km] ) 
 
-        call MAPL_NCIOChangeRes(lui,luo)
-        call MAPL_NCIOSet(luo,filename=fnameo)
-        call MAPL_NCIOCreateFile(luo)
+        call luo%create(trim(fnameo))
+        call luo%write(luo_meta)
 !    call hflip_(aod, im, jm, 1)
         call MAPL_VarWrite(luo,trim(aod_fields(1)),aod(:,:,1),lev=1)
 
-        call MAPL_NCIOClose (lui,rc=rc)
+        call lui%close(rc=rc)
         if ( rc /= 0 ) then
-           call die('write_aod_: ', '[x] error closing AOD background file in NCIO' //trim(fnamei)//', rc= ', rc)
+           call die('write_aod_: ', '[x] error closing AOD background file in PFIO' //trim(fnamei)//', rc= ', rc)
         endif 
-        call MAPL_NCIOClose (luo,rc=rc)
+        call luo%close(rc=rc)
         if ( rc /= 0 ) then
-           call die('write_aod_: ', '[x] error closing AOD update file in NCIO' //trim(fnameo)//', rc= ', rc)
+           call die('write_aod_: ', '[x] error closing AOD update file in PFIO' //trim(fnameo)//', rc= ', rc)
         endif 
     end subroutine write_aod_
 !-----------------------------------------------
@@ -260,32 +272,43 @@
        real(r_single), intent(in) :: x(:,:,:,:) 
        real(r_single), intent(in) ::ps(im,jm,1)
 
-       type(MAPL_NCIO) :: aer_bkg, aer_bkg_upd
+       type(NetCDF4_FileFormatter) :: aer_bkg, aer_bkg_upd
+       type(FileMetadata) :: aer_bkg_meta, aer_bkg_upd_meta
        character(len=20), allocatable :: name_(:)
        real(r_single), allocatable :: fields(:,:,:,:)
        logical, allocatable :: mask(:)
        integer, allocatable :: nrank(:)
        integer :: rc, nq, k, nVars_, n, nrk
        integer :: dimsize(4)
+       type(StringVector), pointer :: vars
+       type(StringVariableMap), pointer :: variables
+       type(Variable), pointer :: myVar
+       type(StringVectorIterator) :: siter
+       type(StringVector), pointer :: var_dims 
+       character(len=:), pointer :: var_name
 
   
-       aer_bkg = MAPL_NCIOOpen(fnamei, rc=rc)
+       call aer_bkg%open(trim(fnamei),PFIO_READ,rc=rc)
        if ( rc == 0 ) then
           print *, '[r] open file for writing:'//trim(fnamei)
        else
-          call die('write_aero_MR_: ','[x] error opening MR background file in NCIO for writing' //trim(fnamei)//', rc= ', rc)
+          call die('write_aero_MR_: ','[x] error opening MR background file in PFIO for writing' //trim(fnamei)//', rc= ', rc)
        endif 
-
-       call MAPL_NCIOGetDimSizes(aer_bkg,nVars=nVars_)
+       aer_bkg_meta = aer_bkg%read()
+       vars = MAPL_IOGetNonDimVars(aer_bkg_meta)
+       nVars= vars%size()
        allocate(name_(nVars_))
-       do n= 1, nVars_
-          call MAPL_NCIOGetVarName(aer_bkg,n,name_(n),rc)
-       enddo    
  
        allocate(fields(im,jm,km,nVars_))
        allocate(nrank(nVars_))
-       do n =1, nVars_ 
-          call MAPL_NCIOVarGetDims(aer_bkg,name_(n),nrk,dimsize)
+       siter = vars%begin()
+       variables => aer_bkg_meta%get_variables()
+       do while (siter /= vars%end())
+          var_name => siter%get()
+          myVar => variables%at(var_name)
+          var_dims => myVar%get_dimensions()
+          nrk = var_dims%size()
+
           nrank(n)=nrk
           if (nrk == 3) then
              call MAPL_VarRead(aer_bkg, name_(n), fields(:,:,1,n), lev =1, rc=rc )
@@ -296,9 +319,9 @@
           endif     
        enddo  
 
-       call MAPL_NCIOChangeRes(aer_bkg,aer_bkg_upd)
-       call MAPL_NCIOSet(aer_bkg_upd,filename=fnameo,overwriteVars=.True.)
-       call MAPL_NCIOCreateFile(aer_bkg_upd)
+       call MAPL_IOChangeRes(aer_bkg_meta, aer_bkg_upd_meta,['lon','lat','lev'],[im,jm,km])
+       call aer_bkg_upd%create(trim(fnameo))
+       call aer_bkg_upd%write(aer_bkg_upd_meta)
 
        allocate(mask(nVars_))
        mask = .True.   ! mask for all fields not in aer_fields (to cp them in file)
@@ -347,12 +370,12 @@
  
      ! clean up
      ! ------
-       call MAPL_NCIOClose(aer_bkg,rc=rc)
+       call aer_bkg%close(rc=rc)
        if ( rc /= 0 ) then
           call die('write_aero_MR_: ','[x] error closing aer_bkg file, rc= ', rc)
        endif   
 
-       call MAPL_NCIOClose(aer_bkg_upd, rc=rc)
+       call aer_bkg_upd%close(rc=rc)
        if ( rc /= 0 ) then
           call die('write_aero_MR_: ','[x] error closing aer_ana file, rc= ', rc)
        endif   
@@ -385,7 +408,6 @@
        real(r_single),allocatable :: x_f(:,:,:,:)
        real(r_single),allocatable :: ps(:,:,:)
 
-       type(MAPL_NCIO) :: aerbkg_MR, aer_AOD
        logical :: do_AOD, do_MR 
 
        character(len=12) geosdate

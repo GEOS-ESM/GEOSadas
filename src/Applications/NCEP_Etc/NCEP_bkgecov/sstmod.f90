@@ -4,10 +4,12 @@ module sstmod
 !
 ! $$$
   use type_kinds, only: fp_kind
+  use m_spline, only: spline
   implicit none
 
   real(fp_kind),allocatable,dimension(:,:):: varsst,corlsst
 
+  logical :: do_spline=.false.
 
 contains
 
@@ -32,7 +34,7 @@ contains
    use variables, only: nlat,nlon,rlats,rlons,deg2rad
    implicit none
 
-   integer i,j,k,errsst,mype,ilt,iln,idx
+   integer i,j,k,mype,ilt,iln,idx
 
    real*4,dimension(720,360):: sstintmp
    real*4,dimension(720,360,9):: sst2in
@@ -40,18 +42,26 @@ contains
    real(fp_kind),dimension(360,720):: sstvin,sstcin
    real(fp_kind) linlat(360)
    real(fp_kind) linlon(720)
-   real(fp_kind) rlatint(nlat),rlonint(nlon)
-   real(fp_kind),dimension(nlat*nlon):: rlatbig,rlonbig,sstv1,sstc1
+   real(fp_kind),allocatable,dimension(:):: rlatint,rlonint
+   real(fp_kind),allocatable,dimension(:):: rlatbig,rlonbig,sstv1,sstc1
+   real(4),allocatable,dimension(:,:):: var_out,cor_out
 
-   data errsst / 23 /
+   integer, parameter :: lui=23
+   integer, parameter :: luo=24
+
+   allocate(rlatint(nlat),rlonint(nlon))
+   allocate(rlatbig(nlat*nlon),rlonbig(nlat*nlon))
+   allocate(sstv1(nlat*nlon),sstc1(nlat*nlon))
+
+   ! these fields are transposed by oriented as in GEOS: [-180,180] and [-90,90]
    ilt=360
    iln=720
-   open(errsst,file='berror_sst',access='direct',&
+   open(lui,file='berror_sst',access='direct',&
        recl=720*360*4,form='unformatted')
 
-   read (errsst,rec=1) sstintmp
+   read (lui,rec=1) sstintmp
    do k=2,9
-     read (errsst,rec=k) ((sst2in(i,j,k-1),i=1,iln),j=1,ilt)
+     read (lui,rec=k) ((sst2in(i,j,k-1),i=1,iln),j=1,ilt)
    end do
    do j=1,iln
      do i=1,ilt
@@ -60,12 +70,16 @@ contains
      end do
    end do
 
+   call sst_grads_(luo,'origsst',real(sstvin,4),real(sstcin,4),.true.)
+
 ! the sst variances has missing values in it, which need to be filled 
 ! with more realistic values
   
-   do i=1,200
+   do i=1,200 !RT: this is real bad hack
      call fillsstv(sstvin,ilt,iln)
    end do
+
+   call sst_grads_(luo,'nofillsst',real(sstvin,4),real(sstcin,4),.true.)
 
 ! load the lats/lons of the 0.5 x 0.5 linear grid
    do j=1,ilt
@@ -84,36 +98,112 @@ contains
      rlonint(j)=rlons(j)
    end do
 
-! get linear grid coordinate numbers of gaussian points
-    call gdcrdp(rlatint,nlat,linlat,ilt)
-    call gdcrdp(rlonint,nlon,linlon,iln)
 
-! load nlat*nlon arrays for 2d interpolation
-   idx=0
-   do j=1,nlon
-     do i=1,nlat
-       idx=idx+1
-       rlatbig(idx)=rlatint(i)
-       rlonbig(idx)=rlonint(j)
-     end do
-   end do 
+   if (do_spline) then
+      allocate(var_out(nlat,iln),cor_out(nlat,iln))
+      do i=1,iln
+         call spline( linlat, rlatint, sstvin(:,i), var_out(:,i) )
+         call spline( linlat, rlatint, sstcin(:,i), cor_out(:,i) )
+      enddo
+      do j=1,nlat
+         call spline( linlon, rlonint, var_out(j,:), varsst (j,:) )
+         call spline( linlon, rlonint, cor_out(j,:), corlsst(j,:) )
+      enddo
+      deallocate(var_out,cor_out)
+   else
+!     get linear grid coordinate numbers of gaussian points
+      call gdcrdp(rlatint,nlat,linlat,ilt)
+      call gdcrdp(rlonint,nlon,linlon,iln)
 
-! perform interpolation of linear grid fields to Gaussian
-   call intrp2(sstvin,sstv1,rlatbig,rlonbig,ilt,iln,nlat*nlon)
-   call intrp2(sstcin,sstc1,rlatbig,rlonbig,ilt,iln,nlat*nlon)
+!     load nlat*nlon arrays for 2d interpolation
+      idx=0
+      do j=1,nlon
+        do i=1,nlat
+          idx=idx+1
+          rlatbig(idx)=rlatint(i)
+          rlonbig(idx)=rlonint(j)
+        end do
+      end do 
 
-   idx=0
-   do j=1,nlon
-     do i=1,nlat
-       idx=idx+1
-       varsst(i,j)=sstv1(idx)
-       corlsst(i,j)=sstc1(idx)
-     end do
-   end do 
+!     perform interpolation of linear grid fields to Gaussian
+      call intrp2(sstvin,sstv1,rlatbig,rlonbig,ilt,iln,nlat*nlon)
+      call intrp2(sstcin,sstc1,rlatbig,rlonbig,ilt,iln,nlat*nlon)
+
+      idx=0
+      do j=1,nlon
+        do i=1,nlat
+          idx=idx+1
+          varsst(i,j)=sstv1(idx)
+          corlsst(i,j)=sstc1(idx)
+        end do
+      end do 
+
+   endif
+
+   call sst_grads_(luo,'sst4gsi',real(varsst,4),real(corlsst,4),.true.)
+
+   deallocate(sstv1,sstc1)
+   deallocate(rlatbig,rlonbig)
+   deallocate(rlatint,rlonint)
 
    return
+ contains
+
+   subroutine sst_grads_(lu,prefix_fname,var,clen,trans)
+   integer, intent(in) :: lu
+   real(4), intent(in) :: var(:,:),clen(:,:)
+   character(len=*),intent(in) :: prefix_fname
+   logical,intent(in) :: trans
+   real(4),allocatable:: aux(:,:)
+   integer :: im,jm
+   im=size(var,1); jm=size(var,2) 
+   allocate(aux(im,jm))
+   open(lu,file=trim(prefix_fname)//'.grd',form='unformatted',convert='little_endian',access='sequential')
+   if(trans) then
+     aux=transpose(var)
+   else
+     aux=var
+   endif
+   write(lu) aux
+   if(trans) then
+      aux=transpose(clen)
+   else
+     aux=clen
+   endif
+   write(lu) aux
+   close(lu)
+   deallocate(aux)
+   if (trans) then
+     call write_grads_ctl(prefix_fname,lu,jm,im)
+   else
+     call write_grads_ctl(prefix_fname,lu,im,jm)
+   endif
+   end subroutine sst_grads_
+
  end subroutine sst_stats
 
+ subroutine write_grads_ctl (fname, lu,im,jm)
+   implicit none
+   character(len=*), intent(in) :: fname
+   integer, intent(in) :: lu,im,jm
+
+   open(lu,file=trim(fname)//'.ctl',form='formatted')
+   write(lu,'(2a)') 'dset  ^', trim(fname)//'.grd'
+   write(lu,'(2a)') 'title ', 'sst berror variances/corlength'
+   write(lu,'(a)')  'options little_endian'
+   write(lu,'(a,2x,f6.1)') 'undef', -999.0 ! any other preference for this?
+   write(lu,'(a,2x,i4,2x,a,2x,f5.1,2x,f9.6)') 'xdef',im, 'linear',   0.0, 360./im
+   write(lu,'(a,2x,i4,2x,a,2x,f5.1,2x,f9.6)') 'ydef',jm, 'linear', -90.0, 180./(jm-1.)
+   write(lu,'(a)')      'zdef 1 linear 1 1'
+   write(lu,'(a,2x,i4,2x,a)')   'tdef', 1, 'LINEAR 12:00Z04JUL1776 6hr' ! any date suffices
+   write(lu,'(a,2x,i4)')        'vars', 2
+   write(lu,'(a,1x,2(i4,1x),a)') 'sst',   1,0, 'sst'
+   write(lu,'(a,1x,2(i4,1x),a)') 'sstcorl',   1,0, 'sstcorl'
+   write(lu,'(a)') 'endvars'
+   close(lu)
+
+   
+ end subroutine write_grads_ctl
 
  subroutine gdcrdp(d,nd,x,nx)
    use type_kinds, only: fp_kind

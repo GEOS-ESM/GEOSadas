@@ -3,19 +3,11 @@
 
 program stochphysics
 
-  use MAPL_Mod
   use ESMF
-  use MAPL_BaseMod
-  use MAPL_CFIOMod
-  use MAPL_AbstractRegridderMod
-  use MAPL_RegridderManagerMod
-  use MAPL_GridManagerMod
-  use MAPL_LatLonGridFactoryMod
-  use CubedSphereGridFactoryMod, only: CubedSphereGridFactory
+  use MAPL
   use LatLonToCubeRegridderMod
   use CubeToLatLonRegridderMod
   use CubeToCubeRegridderMod
-  use MAPL_TransposeRegridderMod
   use stoch_module
 
   implicit none
