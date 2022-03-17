@@ -1216,11 +1216,12 @@ sub get_specific_info {
     $r21c   = 0;
 
     $ans = query(" Is this a MERRA2 (1), GEOSIT (2), R21C (3) experiment?", "0");
-    return 0 unless ( $ans );
+#    return 0 unless ( $ans );
 
     if ($ans == 1) {$merra2 = 1};
     if ($ans == 2) {$geosit = 1};
     if ($ans == 3) {$r21c   = 1};
+    return 0;
 
 }
 
@@ -2607,6 +2608,7 @@ EOF
 #=======================================================================
 sub get_lsmodel {
 
+    my $lndbcs_r21c = "Icarus-NLv3";	    
     my $lndbcs_def = "Icarus_Updated";
     my $lsdflt = 1;
     my $rrdflt = 0;
@@ -2629,8 +2631,11 @@ LAND BCS Version
 
 EOF
 ;
-
-    $landbcs = query("  Land Boundary Conditions?", $lndbcs_def);
+    if ( $r21c) {
+      $landbcs = query("  Land Boundary Conditions?", $lndbcs_r21c);
+    } else {
+      $landbcs = query("  Land Boundary Conditions?", $lndbcs_def);
+    }
 
     if ( "$landbcs" eq "Icarus-NLv3" ) {
 
@@ -2781,6 +2786,7 @@ EOF
 #=======================================================================
 sub get_extdata {
 
+#    @extdatasets = qw ( agcmpert chemistry g5chem g5gcm PIESA MERRA2 R21C AeroCom );
     @extdatasets = qw ( agcmpert chemistry g5chem g5gcm PIESA MERRA2 AeroCom );
     foreach $set ( @extdatasets ) { $extdata{$set} = "$fvbcs/$set" };
 
@@ -3138,6 +3144,7 @@ sub get_times {
           $asynbkg_min = 60;           # time frequency of background fields (min)
         } else {
           $asynbkg_min = 180;          # time frequency of background fields (min)
+	  if ( $r21c) { $asynbkg_min = 60};
         }
   } else {
         $splite = 0; $splitexe = 0;
@@ -3256,8 +3263,9 @@ EOF
       $asynbkg_hms = sprintf("%6.6d","$asynbkg_hms"); #print "asynbkg_hms = $asynbkg_hms \n";
   }
 
-  $pcp_forced = $merra2;   # for now, we attach these two choices (it can be that PCP-forcing will be applied 
-                           # for other non-MERRA2-like runs, but not for a while ...
+# $pcp_forced = ($merra2 or $r21c );   # add r21c when pcp forcing files are ready. 
+  $pcp_forced = ($merra2);   # for now, we attach these two choices (it can be that PCP-forcing will be applied 
+                             # for other non-MERRA2-like runs, but not for a while ...
 
   $beg_date = "$nymdb $nhmsb"  ; # GEOS-5 GCM starting date parameter
   $end_date = "$nymde $nhmse"  ; # GEOS-5 GCM ending   date parameter
@@ -3438,6 +3446,7 @@ sub get_setgsi {
   $anaexec = "GSIsa.x";
   $hybrid  = ".false.";
   $hyb_ens = -1;
+  if ($r21c) { $hyb_ens = 4}
   if ($merra2) { $nosfcana  = 0 } # will apply similarity to produce xana.sfc
   else         { $nosfcana  = 1 } # will not generation xana.sfc
 
@@ -3557,7 +3566,11 @@ sub set_atmens {
  
 # defaults (here for now)
 # -----------------------
-  $aens_replay = "yes";
+  if ($r21c) {
+     $aens_replay = "no";	  
+  } else {
+     $aens_replay = "yes";
+  }
   $aens_sppt = "yes";
   $aens_res =  "C90";
   $aens_lev =  "72";
@@ -3630,7 +3643,10 @@ EOF
 
 # If so, setup EnADAS 
 # -------------------
-  $flags = "-nlevs $aens_lev $setacftbc $rcorrarg $setradbc $aens_lsmodel -expdir $fvhome/.. $sppt_flag";
+  if ($r21c) { 
+     $bcopt = "-r21c";
+  } 
+  $flags = "-nlevs $aens_lev $setacftbc $rcorrarg $setradbc $aens_lsmodel -expdir $fvhome/.. $sppt_flag $bcopt";
   $flags .= " -fvhome $fvhome" if $checkFLG;
   $params = " $aens_ana $expid $aens_im $aens_jm $aens_ocn $landbcs"; 
 
@@ -3805,11 +3821,13 @@ sub get_obsys {
   }
   elsif ($ans == 4) {  # GEOS-IT
       $obsysrc = "$fvetc/obsys-${loc}-geosit.rc";
-#     $rflags .= " -stem geosit";
+      $obsysGrc = "$fvetc/obsys-${loc}-gaas-geosit.rc";
+      $rflags .= " -stem geosit";
   }
   elsif ($ans == 5) {  # R21C
       $obsysrc = "$fvetc/obsys-${loc}-r21c.rc";
-#     $rflags .= " -stem r21c";
+      $obsysGrc = "$fvetc/obsys-${loc}-gaas-r21c.rc";
+      $rflags .= " -stem r21c";
   }
 
   $reqobs = $fvbin . "/require_obsys.pl";
@@ -4263,11 +4281,13 @@ EOF
   $emission{"4"} = "OPS";
   $emission{"5"} = "PIESA";
   $emission{"6"} = "GEOSIT";
+  $emission{"7"} = "R21C";
 
   %remission = reverse %emission;
   if ($nrt)       { $dflt = "OPS"    }
   elsif ($merra2) { $dflt = "MERRA2" }
   elsif ($geosit) { $dflt = "GEOSIT" }
+  elsif ($r21c)   { $dflt = "R21C"   }
   else            { $dflt = "PIESA"  }
 
   if ($gocart_tracers) {
@@ -4670,6 +4690,9 @@ sub get_dimsg5gcm {
    $res = "C48";
    $vres = 72;
    if ( $merra2 ) { $ores = "e34" }
+   elsif ($r21c)  { $ores = "C";
+                    $res  = "C360";
+                  }
    else           { $ores = "f"   }
 
 print <<"EOF";
@@ -7451,12 +7474,16 @@ close(SCRIPT);
 
 #=======================================================================
 sub build_lnbcs {
-  $mymerra2 = "";
-  if ( $merra2 ) { $mymerra2 = "-merra2" };
+  $bcopt = "";
+  if ( $merra2 ) { 
+     $bcopt = "-merra2" ;
+  }elsif ( $r21c ) {
+     $bcopt = "-r21c";
+  }
   if ( $cubed ) {
-     $cmd = "$fvbin/gen_lnbcs.pl -fvhome $fvhome -o lnbcs $mymerra2 -cubed $agcm_im $agcm_jm $ores $landbcs";
+     $cmd = "$fvbin/gen_lnbcs.pl -fvhome $fvhome -o lnbcs $bcopt -cubed $agcm_im $agcm_jm $ogcm $landbcs";
   } else {
-     $cmd = "$fvbin/gen_lnbcs.pl -fvhome $fvhome -o lnbcs $mymerra2        $agcm_im $agcm_jm $ores $landbcs";
+     $cmd = "$fvbin/gen_lnbcs.pl -fvhome $fvhome -o lnbcs $bcopt        $agcm_im $agcm_jm $ogcm $landbcs";
   }
   print "$cmd\n";
   system($cmd);
@@ -8685,7 +8712,7 @@ sub write_FVDAS_Run_Config {
     $ENV{"VTXLEVS"}         = $vtxlevs;
     $ENV{"VTXRELOC"}        = $vtxreloc;
 
-    if ($geosit | $r21c) {
+    if ($geosit || $r21c) {
         $ENV{"MKSI_SIDB"}   = "\$FVHOME/run/gmao_satinfo.db";
     }
 
@@ -9732,8 +9759,12 @@ sub init_agcm_rc {
 
     # precip forcing: 
     #   default is based on NCA settings (but line is commented since we don't want this done)
+##
+   # Need to add option for R21C
+##
     if ( $pcp_forced ) {
         $pcp_fntmpl = "d5_merra/Y%y4/M%m2/d5_merra.tavg1_2d_lfo_Nx_corr.%y4%m2%d2_%h230z.nc";
+        #if (r21c) { $pcp_fntmpl = " "}; 
     } else {
         if ( $nymd < 19890101 ) {
            $pcp_fntmpl = "d5_merra_jan79/diag/Y%y4/d5_merra_jan79.tavg1_2d_lfo_Nx_corr.%y4%m2%d2_%h230z.nc";
@@ -10062,6 +10093,39 @@ sub copy_resources {
       # Create daotovs_fv.rc in FVHOME/run
 #     ed_daotovs_fv();
 
+      # When applicable, overwrite w/ pre-set RC files for GSI
+      # ------------------------------------------------------
+      if ( $r21c   ) { $casedir = "R21C"  };     
+      if ( $geosit ) { $casedir = "GEOSIT"};     
+      if ( $r21c || $geosit ){
+         if ( -d "$fvetc/gsi/$casedir" ) {
+            my @files =  glob("$fvetc/gsi/$casedir" . "/*");
+            foreach my $fn ( @files ) {
+               cp("$fn", "$fvhome/run");
+            }
+         }
+         mkdir ("$fvhome/run/gmao_satinfo.db");
+         if ( -d "$fvetc/gmao_satinfo.db/$casedir" ) {
+            my @files =  glob("$fvetc/gmao_satinfo.db/$casedir" . "/*");
+            foreach my $fn ( @files ) {
+               cp("$fn", "$fvhome/run/gmao_satinfo.db");
+            }
+         } else {
+           die "Cannot find $casedir sat.db under $fvetc, aborting ...";
+         }
+      }
+      if ( $r21c ){
+	 if ( -d "$fvetc/atmens/R21C" ){     
+	    my @files = glob("$fvetc/atmens/R21C" . "/*");	 
+            foreach my $fn ( @files ) {
+               cp("$fn","$fvhome/run/atmens");
+            }
+	 }
+      }
+      # Update gocart files for pre-2000 case
+      # To Be Done
+      #
+
       # Edit psas.rc
       ed_psas_rc();
 
@@ -10105,6 +10169,20 @@ sub copy_resources {
             print "$cmd\n";
             system($cmd);
           }
+          # overwrite some of the RC files when setting up for GEOS-R21C
+#          if( $r21c ) { 
+#           $cmd = "$fvbin/setup_4r21c.pl $fvhome $nymdb $hhb $ana_im $ana_jm $siglevs";
+#            print "$cmd\n";
+#            system($cmd);
+#            ed_ncep_rc("gsi.rc.tmpl");
+#          }
+          # overwrite some of the RC files when setting up for GEOS-IT
+#          if( $geosit ) { 
+#            $cmd = "$fvbin/setup_4geosit.pl $fvhome $nymdb $hhb $ana_im $ana_jm $siglevs";
+#            print "$cmd\n";
+#            system($cmd);
+#            ed_ncep_rc("gsi.rc.tmpl");
+#          }
       }
 
       # Edit IAU-related rc file
@@ -10157,42 +10235,6 @@ sub copy_resources {
       cp("$pyradmon/scripts/radmon.defaults.rc", "$fvhome/radmon");
   }
 
-# When applicable, overwrite w/ pre-set RC files for GSI
-# ------------------------------------------------------
-  if ( $geosit ) {
-    if ( -d "$fvetc/gsi/GEOSIT" ) {
-       my @files =  glob("$fvetc/gsi/GEOSIT" . "/*");
-       foreach my $fn ( @files ) {
-          cp("$fn", "$fvhome/run");
-       }
-    }
-    mkdir ("$fvhome/run/gmao_satinfo.db");
-    if ( -d "$fvetc/gmao_satinfo.db/GEOSIT" ) {
-       my @files =  glob("$fvetc/gmao_satinfo.db/GEOSIT" . "/*");
-       foreach my $fn ( @files ) {
-          cp("$fn", "$fvhome/run/gmao_satinfo.db");
-       }
-    } else {
-      die "Cannot find GEOSIT sat.db under $fvetc, aborting ...";
-    }
-  }
-  if ( $r21c ) {
-    if ( -d "$fvetc/gsi/R21C" ) {
-       my @files =  glob("$fvetc/gsi/R21C" . "/*");
-       foreach my $fn ( @files ) {
-          cp("$fn", "$fvhome/run");
-       }
-    }
-    mkdir ("$fvhome/run/gmao_satinfo.db");
-    if ( -d "$fvetc/gmao_satinfo.db/R21C" ) {
-       my @files =  glob("$fvetc/gmao_satinfo.db/R21C" . "/*");
-       foreach my $fn ( @files ) {
-          cp("$fn", "$fvhome/run/gmao_satinfo.db");
-       }
-    } else {
-      die "Cannot find R21C sat.db under $fvetc, aborting ...";
-    }
-  }
 
 }
  
