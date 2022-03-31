@@ -161,8 +161,6 @@ if ($lenkf_status =~  SUCCEEDED )  then
      # default name for AGCM: ldas_inc.yyyymmdd_hhnn00
      @ n = 0
      while ($n < $nmem)
-        #set lentag = `echo $n | awk '{printf "%04d", $1}'`
-        #echo $lentag
         @ n++
         set lentag = `echo $n | awk '{printf "%04d", $1}'`
         echo $lentag
