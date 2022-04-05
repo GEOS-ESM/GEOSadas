@@ -161,9 +161,10 @@ if ($lenkf_status =~  SUCCEEDED )  then
      # default name for AGCM: ldas_inc.yyyymmdd_hhnn00
      @ n = 0
      while ($n < $nmem)
+        @ n++
         set lentag = `echo $n | awk '{printf "%04d", $1}'`
         echo $lentag
-        @ n++
+
         set memtag = `echo $n | awk '{printf "%03d", $1}'`
         echo $memtag
         /bin/ln -s  ${LINC_DIR}/Y${yyyy_a}/M${mm_a}/*.${lincr_native_name}${lentag}.$ldas_anlt[1]_${tttt_a}z.nc4\
