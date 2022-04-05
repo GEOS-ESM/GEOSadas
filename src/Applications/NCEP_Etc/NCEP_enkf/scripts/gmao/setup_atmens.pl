@@ -229,7 +229,7 @@ sub init {
      } elsif ($nodename eq "sky") {
 #        $agcm_ncpus_per_node = 36;
          $enkf_cpus = 244;
-         $agcm_nx =    5; $agcm_ny =   24;
+         $agcm_nx =    3; $agcm_ny =   30;
          $miau_nx =    2; $miau_ny =   12;
          $obsv_nx =    4; $obsv_ny =    8;
          $stat_nx =    2; $stat_ny =    2;
@@ -255,7 +255,7 @@ sub init {
      } elsif ($nodename eq "sky") {
 #        $agcm_ncpus_per_node = 36;
          $enkf_cpus = 368;
-         $agcm_nx =    5; $agcm_ny =   24;
+         $agcm_nx =    4; $agcm_ny =   30;
          $miau_nx =    2; $miau_ny =   12;
          $obsv_nx =    4; $obsv_ny =   20;
          $stat_nx =    2; $stat_ny =   20;
