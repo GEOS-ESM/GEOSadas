@@ -26,6 +26,9 @@
 #                       can be found by DAS, few other tweaks
 #  18Oct2019  Meta      Removed reference to 'Shell'; cleaned out 
 #                        code for old ACQC, ACARSQC
+#  16Nov2021  Meta      Add routine to check for previous virtual temperature
+#                        calculation for SFCSHP in input prepbufr and skip
+#                        recalculation of VIRTMP if found
 #------------------------------------------------------------------
 
 # make env vars readily available
@@ -302,13 +305,30 @@ sub gmaoprevents {
    Assign("prepdv.$nymd.$hh",       51);
    Assign("prevents.out.$nymd.$hh", 52);
 
+   $VTEMP = `check_virtmp.x $pref`;
+   open(PRVPARM, '>prepobs_prevents.parm');
+
+   if ( $VTEMP  =~ /DRY/) {     # input has sensible temperature   
+       print "$0: PREVENTS calculate VIRTMP\n";
+       print PRVPARM " &PREVDATA DOVTMP= TRUE, DOFCST= TRUE DOBERR= TRUE / \n";
+   } else  {                   # already has virtual temperature
+       print "$0: PREVENTS without VIRTMP\n";
+       print PRVPARM " &PREVDATA DOVTMP= FALSE, RECALC_Q= FALSE, DOFCST= TRUE DOBERR= TRUE  / \n";
+   }
+
+   close(PRVPARM);
+
 
    $FORT_CONVERT12 = "BIG_ENDIAN";
    $FORT_CONVERT13 = "BIG_ENDIAN";
 
+# Run check for virtual temperature
+# ---------------------------------
+   
+
 # Run prevents
 # -------------
-  $cmd = "gmao_prevents.x $dynf < $rcdir/prepobs_prevents.merra.parm";
+  $cmd = "gmao_prevents.x $dynf < prepobs_prevents.parm";
   print "$0: $cmd\n" unless ( $opt_q );
 #  $rc = System ( $cmd, "/dev/null" ) unless ( $opt_n ) ;    
  $rc = system ( $cmd ) unless ( $opt_n ) ;    

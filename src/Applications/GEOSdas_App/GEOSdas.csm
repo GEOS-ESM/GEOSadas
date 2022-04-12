@@ -177,6 +177,12 @@
 
 #_RT  if ( !($?STAGE4FCST) )    setenv STAGE4FCST  0   # need to resolve redundancies
 
+# Sanity setting
+# --------------
+  if ( $SKIPANA ) then
+       setenv ASYNBKG   360
+  endif
+
   if ( $?RUN_OPT_BEGIN ) then
         set run_opt_begin = ( $RUN_OPT_BEGIN ) 
   else 
@@ -445,7 +451,7 @@ exit 1
 # Cannot do GAASFDBK unless GAAS_ANA is on 
 # ----------------------------------------
   if ( ! $FORECAST ) then
-     if ( $GAAS_ANA && ( ! $GAASFDBK ) ) then
+     if ( $GAASFDBK && ( ! $GAAS_ANA ) ) then
        echo $myname": GAAS inconsistency, GAASFDBK=$GAASFDBK, GAAS_ANA=$GAAS_ANA"
        exit 1
      endif
@@ -495,6 +501,7 @@ exit 1
 # -----------------------------------------------------
   if ( !($?obsclass) && !($?req_obsclass) ) then
         setenv SKIPANA 1   # no ANALYSIS
+        setenv ASYNBKG 360
   endif
 
 # For readability, introduce DOING_ANA
@@ -4187,7 +4194,12 @@ endif
      setenv NCPUS_AOD 1
   endif
 
-  @ xtra = $NCPUS - $NCPUS_GSI
+  if ( $?SLURM_CPUS_ON_NODE && $?SLURM_JOB_NUM_NODES ) then
+     @ total_cpus_slurm = $SLURM_CPUS_ON_NODE * $SLURM_JOB_NUM_NODES
+     @ xtra = $total_cpus_slurm - $NCPUS_GSI
+  else
+     @ xtra = $NCPUS - $NCPUS_GSI
+  endif
 
   if ($xtra < $NCPUS_AOD) then
      setenv aod_parallel_flag 0
@@ -5742,6 +5754,11 @@ endif
   if ( $FORECAST ) then
        /bin/rm d_rst
        mkdrstdate.x $fcst_end    # create d_rst with current date and time
+  else if ( $SKIPANA ) then
+        set GcmEndDate = $GcmEndEpoch[1]
+        set GcmEndTime = $GcmEndEpoch[2]
+       /bin/rm d_rst
+       mkdrstdate.x $GcmEndDate $GcmEndTime
   endif
 
   set buf  = `rst_date d_rst`
