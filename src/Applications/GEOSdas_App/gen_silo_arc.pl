@@ -86,7 +86,7 @@ sub init {
     # check for needed executables and rc
     #------------------------------------
     $edhist_pl = "$fvroot/bin/edhist.pl";
-    $echorc_x = "$fvroot/bin/echorc.x";
+    $echorc_x = "$fvroot/bin/echorc.pl";
     $gsidiags_rc = "$fvroot/etc/gsidiags.rc";
 
     die "Error. Cannot find $edhist_pl;"   unless -x $edhist_pl;
@@ -341,6 +341,7 @@ sub append_other_info {
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.ana.obs.%y4%m2%d2.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.ana.obs.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.prepbufr.%y4%m2%d2.t%h2z.blk
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.acft_profl.%y4%m2%d2.t%h2z.bfr
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.gmao_global_satinfo.%y4%m2%d2_%h2z.txt
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.gmao_global_ozinfo.%y4%m2%d2_%h2z.txt
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.sac.nl.%y4%m2%d2_%h2z.txt
@@ -648,6 +649,8 @@ sub append_other_info {
 #
 \${PESTOROOT}%s/jedi/ana/Y%y4/M%m2/%s.jedi_ana.%y4%m2%d2_%h2z.tar
 \${PESTOROOT}%s/jedi/obs/Y%y4/M%m2/%s.jedi_hofx.%y4%m2%d2_%h2z.tar
+\${PESTOROOT}%s/jedi/obs/Y%y4/M%m2/%s.jedi_osen.%y4%m2%d2_%h2z.tar
+\${PESTOROOT}%s/jedi/obs/Y%y4/M%m2/%s.jedi_ioda.%y4%m2%d2_%h2z.tar
 #
 #               -------------------------
 #                    LSM FILES
@@ -740,6 +743,15 @@ sub append_other_info {
 \${PESTOROOT}%s/prog/Y%y4/M%m2/D%d2/H%h2/%s.EMferrnorm.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.txt
 
 \${PESTOROOT}%s/obs/Y%y4/M%m2/%s.diag_conv_%y4%m2%d2_%h20000z.tar
+
+# 
+#                 -------------------------------
+#                    MOM6 OUTPUT: Wired for now
+#                 -------------------------------
+# 
+\${PESTOROOT}%s/mom/Y%y4/M%m2/%s.forcing.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.nc4
+\${PESTOROOT}%s/mom/Y%y4/M%m2/%s.prog_z.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.nc4
+\${PESTOROOT}%s/mom/Y%y4/M%m2/%s.sfc_ave.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.nc4
 
 EOF
 }

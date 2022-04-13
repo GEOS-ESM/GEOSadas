@@ -112,6 +112,7 @@
 #  30May2013 Todling    Add GetAODinfo4Fcst_ to retrieve AOD fields for fcsts
 #  13Jun2020 Todling    Time aerosol analysis
 #  19Oct2020 Todling    Call to JEDI analysis
+#  10Mar2021 sqzhang    Add call to LandAnalysis when coupling 
 #
 #-----------------------------------------------------------------------------
 
@@ -189,6 +190,7 @@
 #       GEOS-5 forecast restarts
 #       ------------------------
         Call CopyGcmRestarts4Forecast_()
+        Call CopyMOMRestarts_( 1 )
 
 #       Determine time of trajectory output in forecast mode
 #       ----------------------------------------------------
@@ -245,6 +247,7 @@
                                                        zeit_ci.x CopyGCMRS
         Call CopyGcmRestarts4DAS_()
         wait # while copies are being done in the background
+        Call CopyMOMRestarts_( 0 )
                                                        zeit_co.x CopyGCMRS
 
 #       Link to GEOS-5 GCM boundary condition files
@@ -302,32 +305,25 @@
         exit 100
      endif
   endif
-                                                       zeit_ci.x acquire
 
 # Acquire "replay" analysis or observations
 # -----------------------------------------
   if ( ! $FORECAST && $AnaFreqEpoch[2] > 0 ) then
 
+
 #    Determine relevant time/frequency information
 #    ---------------------------------------------
      Call DetermineAcquireTimes_()
 
-#    Acquire replay analysis...
-#    -----------------------------------------
-     if ( -e replay.acq ) then  
-
-          Call AcquireReplayAnalysis_()
-
-#    .. or observational data
-#    ------------------------
-     else if ( $DOING_ANA ) then
-
+#    If so, acquire observational data
+#    ---------------------------------
+     if ( $DOING_ANA ) then
+                                                       zeit_ci.x acquire
           Call AcquireObservations_() 
-
+                                                       zeit_co.x acquire
      endif
 
   endif
-                                                       zeit_co.x acquire
 
 # Pre-analysis Quality Control
 # ----------------------------
@@ -370,6 +366,14 @@
 #     ----------------
       @ seg = 0
       while ( $seg < $nsegs )
+
+#         Acquire replay analysis...
+#         --------------------------
+          if ( -e replay.acq ) then  
+
+              Call AcquireReplayAnalysis_()
+
+          endif
 
 #        Determines times/frequencies for this segment
 #        ---------------------------------------------
@@ -414,6 +418,20 @@
 
             endif
 
+         endif
+
+ 
+#        Run Land analysis
+#        -----------------
+         if ( $LDAS_ANA ) then
+                                                       zeit_ci.x ldasRun
+            echo "  LDAS coupling: fvpsas LDAS_ANA  run lenkf "
+            ldas_run.csh 0 060000 |& tee -a ldasrun.log
+            if( $status) then
+               echo "ldasRun failed"
+               exit(1)
+            endif
+                                                       zeit_co.x ldasRun
          endif
 
 #        Run the analysis if not doing replay
@@ -474,6 +492,19 @@
             endif
          endif
 
+         # Check ldas job status and stage ldas increments 
+         # -----------------------------------------------
+         if ( ( $LDAS_ANA ) && ( $LDASFDBK ) ) then
+                                                       zeit_ci.x ldasStage
+            echo " LDAS coupling: stage 1"
+            ldas_run.csh 1 060000 |& tee -a ldasrun.log
+            if( $status) then
+               echo "ldas_run stage 1  failed"
+              exit(1)
+            endif
+                                                        zeit_co.x ldasStage
+        endif
+
 #        Convert analysis eta file into GCM restart
 #        ------------------------------------------
                                                        zeit_ci.x AnaToGcm
@@ -510,14 +541,6 @@
                                                        zeit_ci.x RenameRstCheckPoint
          Call RenameRstCheckPoint_( 1 )
                                                        zeit_co.x RenameRstCheckPoint
-
-#        Run Land analysis
-#        -----------------
-         if ( $LDAS_ANA ) then         
-                                                       zeit_ci.x LandAnalysisRun
-              Call LandAnalysisRun_()
-                                                       zeit_co.x LandAnalysisRun
-         endif
 
 #        Run the vortex tracker
 #        ----------------------

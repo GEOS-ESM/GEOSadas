@@ -11,7 +11,9 @@ set(dasscripts
     fvsens            
     fvsvec            
     g54dvar           
-    fp_seamless       
+    fp_seamless 
+    ldas_run.csh       
+    mom6diag.csh       
     read_HIST.csh )
 
 set(extraperlscripts

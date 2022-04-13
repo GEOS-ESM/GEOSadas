@@ -10,6 +10,7 @@
 #  06Apr2016  Todling   Allow to acquire stats tar ball
 #  24Feb2020  Todling   Adjust to allow replay from older ebkg tar balls
 #  23Jun2020  Todling   Redef meaning of ATMENSLOC
+#  06Oct2021  Todling   Use parallel untar
 ########################################################################
 
 if ( !($?ATMENS_VERBOSE) ) then
@@ -66,14 +67,15 @@ if ( $#argv < 4 ) then
    echo " "
    echo " OPTIONAL EVIRONMENT VARIABLES"
    echo " "
-   echo "    ATMENSLOC     - place where to put acquired ensemble "
-   echo "                    (default: FVWORK)                    "
+   echo "    ATMENS_NCPUSTAR - number of CPUS used for untar (default: 32) "
+   echo "    ATMENSLOC       - place where to put acquired ensemble "
+   echo "                      (default: FVWORK)                    "
    echo " SEE ALSO"
    echo "    analyzer  - driver for central ADAS analysis"
    echo " "
    echo " AUTHOR"
    echo "   Ricardo Todling (Ricardo.Todling@nasa.gov), NASA/GMAO "
-   echo "     Last modified: 08Apr2013      by: R. Todling"
+   echo "     Last modified: 06Oct2021      by: R. Todling"
    echo " "
    echo " \\end{verbatim} "
    echo " \\clearpage "
@@ -97,6 +99,7 @@ if ( !($?VAROFFSET)     ) setenv FAILED 1
 
 if ( !($?ENSACQ_WALLCLOCK)) setenv ENSACQ_WALLCLOCK 2:00:00
 if ( !($?ATMENSLOC)       ) setenv ATMENSLOC $FVWORK/atmens
+if ( !($?ATMENS_NCPUSTAR) ) setenv ATMENS_NCPUSTAR 32
 
 if ( $FAILED ) then
   env
@@ -200,7 +203,11 @@ foreach ball ( $tarballtyps ) # do not reorder the first two
       gunzip $expid.atmens_${ball}.${nymdb}_${hhb}z.tar.gz
    endif
    if ( -e $expid.atmens_${ball}.${nymdb}_${hhb}z.tar ) then
-      tar -xvf $expid.atmens_${ball}.${nymdb}_${hhb}z.tar
+      if ( $ATMENS_NCPUSTAR > 1 ) then
+         parallel-untar.py $expid.atmens_${ball}.${nymdb}_${hhb}z.tar $ATMENS_NCPUSTAR
+      else
+         tar -xvf $expid.atmens_${ball}.${nymdb}_${hhb}z.tar
+      endif
       set dummy = (`/bin/ls -1d *.atmens_${ball}.${nymdb}_${hhb}z`)
       set oldexpid = `echo $dummy[1] | cut -d. -f1`
       if ( "$oldexpid" != "$expid" ) then

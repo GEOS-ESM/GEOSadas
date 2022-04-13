@@ -16,8 +16,7 @@ setenv dryrun echo # use this when debugging
 setenv dryrun 
 
 setenv FAILED 0
-if ( !($?FVHOME)        ) setenv FAILED 1
-if ( !($?FVROOT)        ) setenv FAILED 1
+if ( !($?FVROOT) ) setenv FAILED 1
 
 if ( $FAILED ) then
   env
@@ -25,7 +24,11 @@ if ( $FAILED ) then
   exit 1
 endif
 
-set path = ( . $FVHOME/run $FVROOT/bin $path )
+if ( ($?FVHOME) ) then
+  set path = ( . $FVHOME/run $FVROOT/bin $path )
+else
+  set path = ( . $FVROOT/bin $path )
+endif
 
 set usage="\
 Usage:  $0 -machfile machinefile -usrcmd usrcmd -usrntask ntask "
@@ -61,7 +64,16 @@ echo "njobs = $njobs"
 if ( $?SLURM_JOBID ) then
 
   # Number of available nodes
-  set num_nodes = `sinfo -N -n "$SLURM_NODELIST" | grep -v NODELIST | cut -c1-8 | uniq | wc -l`
+  if ( $?SLURM_JOB_NUM_NODES ) then
+     set num_nodes = $SLURM_JOB_NUM_NODES
+  else
+     set num_nodes = `sinfo -all -N -n "$SLURM_NODELIST" | grep -v NODELIST | cut -c1-8 | uniq | wc -l`
+  endif
+  if ( $?SLURM_NTASKS_PER_NODE ) then
+    set ntasks_per_node = $SLURM_NTASKS_PER_NODE
+  else
+    set ntasks_per_node = $num_nodes
+  endif
 
   # Mimic old PBS_NODEFILE
   setenv PBS_NODEFILE PBS_NODEFILE_${SLURM_JOBID} 
@@ -69,6 +81,7 @@ if ( $?SLURM_JOBID ) then
   echo " usrntask $usrntask"
   echo " njobs $njobs"
   echo " num_nodes $num_nodes"
+  echo " ntasks_per_node $ntasks_per_node"
   @ tasks_per_nodes = ($usrntask * $njobs) / $num_nodes
   set tasklist = ()
   @ nd = 0

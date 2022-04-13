@@ -103,7 +103,7 @@ sub init {
     use File::Basename qw(basename dirname);
     use File::Path qw(mkpath);
     use Getopt::Long (":config", "no_ignore_case");
-    use Manipulate_time qw(get_hours num_days_in_month token_resolve);
+    use Manipulate_time qw(get_htype get_hours num_days_in_month token_resolve);
     use Remote_utils qw(splitrfile);
     use Perl_Config qw(perl_config);
     my ($filestring, $help, $null, $SILO_DIR);
@@ -179,10 +179,7 @@ sub init {
 
     # get $htype from $ftype, unless alternate htype value given
     #-----------------------------------------------------------
-    unless ($htype) {
-        if ($ftype =~  /\./) { $htype = $ftype }
-        else                 { $htype = (split(/_/, $ftype))[0] }
-    }
+    $htype = get_htype($ftype) unless $htype;
 
     $archive = "$fvarch/$expid/$fpathToken";
     $silo_dir = "$fvhome/$fpathToken";

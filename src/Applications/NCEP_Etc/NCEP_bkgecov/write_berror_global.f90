@@ -6,23 +6,20 @@
 !    ????????? El Akkraoui - changes to make it look more like NMC-code itself
 !    10May2018 Todling     - a little more strealined in preparation for interp
 !                          - add ability to vertically interpolate berror
+!    27Aug2021 Todling     - introduce NetCDF version
 !
 !   Declare local variables
 
-  implicit none
+  program write_berror_global
 
-  type berror_vars
-     integer :: nlon,nlat,nsig
-     real(4),allocatable,dimension(:,:,:):: tcon
-     real(4),allocatable,dimension(:,:)  :: sfvar,vpvar,tvar,qvar,cvar,nrhvar,ozvar
-     real(4),allocatable,dimension(:,:)  :: qivar,qlvar,qrvar,qsvar
-     real(4),allocatable,dimension(:,:)  :: sfhln,vphln,thln,qhln,chln,ozhln
-     real(4),allocatable,dimension(:,:)  :: qihln,qlhln,qrhln,qshln
-     real(4),allocatable,dimension(:,:)  :: sfvln,vpvln,tvln,qvln,cvln,ozvln
-     real(4),allocatable,dimension(:,:)  :: qivln,qlvln,qrvln,qsvln
-     real(4),allocatable,dimension(:,:)  :: vpcon,pscon,varsst,corlsst
-     real(4),allocatable,dimension(:)    :: psvar,pshln
-  end type berror_vars
+  use m_nc_berror, only: nc_berror_vars_init
+  use m_nc_berror, only: nc_berror_vars_final
+  use m_nc_berror, only: nc_berror_vars_comp
+  use m_nc_berror, only: nc_berror_vars_copy
+  use m_nc_berror, only: nc_berror_vars
+  use m_nc_berror, only: nc_berror_read
+  use m_nc_berror, only: nc_berror_write
+  implicit none
 
   real(4),allocatable,dimension(:)::  corp_avn,hwllp_avn
   real(4),allocatable,dimension(:,:):: corsst_avn,hwllsst_avn
@@ -30,8 +27,8 @@
   real(4),allocatable,dimension(:,:,:):: corz_avn,hwll_avn,vztdq_avn,agv_avn
   real(4),allocatable,dimension(:,:):: corz,corzq,hwll,vztdq
 
-  type(berror_vars) ivars
-  type(berror_vars) xvars
+  type(nc_berror_vars) ivars
+  type(nc_berror_vars) xvars
 
   integer, parameter :: luin =22
   integer, parameter :: luout=45
@@ -39,21 +36,25 @@
   integer isig,ilat,ilon  ! dims in file
   integer msig,mlat,mlon  ! user dims
   integer i,j,k,m,ncfggg,iret,kindex
+  integer status
 
   character(len=256)  argv, ifname, ofname
   character(255) grdfile
-  character*5 var(40)
+  character(len=5) var(40)
+  character(len=256) ncfile
   logical merra2current ! convert older format to current format
   logical hydromet
+  logical :: nc_read_test = .true.
 
   hydromet = .true.
   merra2current =.false.
+  ncfile = 'NULL'
 
   call init_()
 
   call get_berror_dims_(ilon,ilat,isig)
 
-  call init_berror_vars_(ivars,ilon,ilat,isig)
+  call nc_berror_vars_init(ivars,ilon,ilat,isig)
 
   if (merra2current) then
      call berror_old_read_(mlon,mlat,msig)
@@ -65,25 +66,44 @@
      call berror_read_(ivars)
   endif
 
-  if (mlat/=ivars%nlat.or.mlon/=ivars%nlon) then
-     print *, 'cannot interpolate yet ...'
+  if (mlat/=ivars%nlat.and.mlon/=ivars%nlon.and.msig/=ivars%nsig) then
+     print *, 'cannot interpolate all three dims at one, try horz than vert ...'
      call exit(1)
   endif
+  if (mlat/=ivars%nlat.or.mlon/=ivars%nlon) then
+     write(6,'(a)') ' Horizontally interpolating error covariance fields ...'
+     call nc_berror_vars_init(xvars,ilon,ilat,isig)
+     call nc_berror_vars_copy(ivars,xvars)
+     call nc_berror_vars_final(ivars)
+     call nc_berror_vars_init(ivars,mlon,mlat,isig)
+     call hinterp_berror_vars_(xvars,ivars)
+     write(6,'(a)') ' Finish horizontal interpolation.'
+     call nc_berror_vars_final(xvars)
+  endif
   if (msig/=ivars%nsig) then
-     write(6,'(a)') ' Interpolating error covariance fields ...'
-     call init_berror_vars_(xvars,ilon,ilat,isig)
-     call copy_berror_vars_(ivars,xvars)
-     call final_berror_vars_(ivars)
-     call init_berror_vars_(ivars,ilon,ilat,msig)
-     call copy_berror_vars_(xvars,ivars)
+     write(6,'(a)') ' Vertically interpolating error covariance fields ...'
+     call nc_berror_vars_init(xvars,ilon,ilat,isig)
+     call nc_berror_vars_copy(ivars,xvars)
+     call nc_berror_vars_final(ivars)
+     call nc_berror_vars_init(ivars,ilon,ilat,msig)
+     call nc_berror_vars_copy(xvars,ivars) ! copy lat/lon fields
      call vinterp_berror_vars_(xvars,ivars)
-     write(6,'(a)') ' Finish interpolation.'
+     write(6,'(a)') ' Finish vertical interpolation.'
+     call nc_berror_vars_final(xvars)
   endif
   call berror_write_(ivars,merra2current)
+  if(trim(ncfile)/='NULL') then
+     call be_write_nc_(ncfile,ivars)
+     if ( nc_read_test ) then
+        call nc_berror_read(ncfile,xvars,status)
+        call be_write_nc_('again.nc',xvars)
+        call nc_berror_vars_comp(ivars,xvars,status)
+        call nc_berror_vars_final(xvars)
+     endif
+  endif
   call berror_write_grads_(ivars)
 
-  call final_berror_vars_(ivars)
-
+  call nc_berror_vars_final(ivars)
 
 
 contains
@@ -98,7 +118,9 @@ contains
      print *, "Usage: write_berror_global.x [options] ifname ofname nlon nlat nlev"
      print *
      print *, " OPTIONS:"
-     print *, "   -nohyro  -  handles case w/o hydrometeors"
+     print *, "   -nohyro     - handles case w/o hydrometeors"
+     print *, "   -nc  FNAME  - output errors in NetCDF format to file FNAME"
+     print *, ""
      print *
      stop
   end if
@@ -112,6 +134,9 @@ contains
      select case (trim(argv))
        case('-nohydro')
           hydromet = .false.
+       case('-nc')
+          iarg = iarg + 1
+          call GetArg ( iarg, ncfile )
        case default
           ncount = ncount + 1
           if (ncount > fixargs) exit
@@ -183,34 +208,9 @@ contains
   close(luin)
   end subroutine get_berror_dims_
   
-  subroutine init_berror_vars_(vr,nlon,nlat,nsig)
-
-  integer,intent(in) :: nlon,nlat,nsig
-  type(berror_vars) vr
-
-  vr%nlon=nlon 
-  vr%nlat=nlat
-  vr%nsig=nsig
-
-! allocate single precision arrays
-  allocate(vr%sfvar(nlat,nsig),vr%vpvar(nlat,nsig),vr%tvar(nlat,nsig),vr%qvar(nlat,nsig),  &  
-           vr%qivar(nlat,nsig),vr%qlvar(nlat,nsig),vr%qrvar(nlat,nsig),vr%qsvar(nlat,nsig),&
-           vr%cvar(nlat,nsig),vr%nrhvar(nlat,nsig),vr%ozvar(nlat,nsig))
-  allocate(vr%sfhln(nlat,nsig),vr%vphln(nlat,nsig),vr%thln(nlat,nsig),vr%qhln(nlat,nsig),  &
-           vr%qihln(nlat,nsig),vr%qlhln(nlat,nsig),vr%qrhln(nlat,nsig),vr%qshln(nlat,nsig),&
-           vr%chln(nlat,nsig), vr%ozhln(nlat,nsig))
-  allocate(vr%sfvln(nlat,nsig),vr%vpvln(nlat,nsig),vr%tvln(nlat,nsig),vr%qvln(nlat,nsig),  &
-           vr%qivln(nlat,nsig),vr%qlvln(nlat,nsig),vr%qrvln(nlat,nsig),vr%qsvln(nlat,nsig),&
-           vr%cvln(nlat,nsig), vr%ozvln(nlat,nsig))
-  allocate(vr%pscon(nlat,nsig),vr%vpcon(nlat,nsig))
-  allocate(vr%varsst(nlat,nlon),vr%corlsst(nlat,nlon))
-  allocate(vr%tcon(nlat,nsig,nsig))
-  allocate(vr%psvar(nlat),vr%pshln(nlat))
-  end subroutine init_berror_vars_
-
   subroutine berror_read_(vr)
 
-  type(berror_vars) vr
+  type(nc_berror_vars) vr
   integer nlat,nlon,nsig
 
   var=' '
@@ -272,7 +272,7 @@ contains
 
   subroutine berror_write_(vr,m2c)
 
-  type(berror_vars) vr
+  type(nc_berror_vars) vr
   logical, intent(in) :: m2c
   integer  nlon,nlat,nsig
 
@@ -427,10 +427,13 @@ contains
   end subroutine berror_write_
   subroutine berror_write_grads_(vars)
 
-   type(berror_vars) vars
-   integer j,nsig,nlat,iret
+   use sstmod, only: write_grads_ctl
+   type(nc_berror_vars) vars
+   integer j,nsig,nlat,nlon,iret
+   real(4),allocatable,dimension(:,:) :: aux
 
    nlat=vars%nlat 
+   nlon=vars%nlon 
    nsig=vars%nsig 
    
    call baopenwt(lugrd,'bgstats_sp.grd',iret)
@@ -486,75 +489,21 @@ contains
   enddo 
   close(luout)
 
+! Put out SST info to on a separate grads file
+  allocate(aux(nlon,nlat))
+  call baopenwt(lugrd,'sst.grd',iret)
+
+  aux = transpose(vars%varsst)
+  call wryte(lugrd,4*nlat*nlon,aux)
+
+  aux = transpose(vars%corlsst)
+  call wryte(lugrd,4*nlat*nlon,aux)
+
+  call baclose(lugrd,iret)
+  deallocate(aux)
+  call write_grads_ctl('sst',lugrd,nlon,nlat)
+
   end subroutine berror_write_grads_
-  subroutine final_berror_vars_(vr)
-  type(berror_vars) vr
-  deallocate(vr%tcon)
-  deallocate(vr%sfvar,vr%vpvar,vr%tvar,vr%qvar,vr%qivar,vr%qlvar,vr%qsvar,vr%qrvar,vr%cvar,vr%nrhvar,vr%sfhln,&
-             vr%vphln,vr%thln,vr%qhln,vr%qihln,vr%qlhln,vr%qrhln,vr%qshln,vr%chln,vr%sfvln,vr%vpvln,vr%tvln,&
-             vr%qvln,vr%qivln,vr%qlvln,vr%qrvln,vr%qsvln,vr%cvln,vr%vpcon,vr%pscon,vr%varsst,vr%corlsst, &
-             vr%ozvar,vr%ozhln,vr%ozvln)
-  deallocate(vr%psvar,vr%pshln)
-  end subroutine final_berror_vars_
-  subroutine copy_berror_vars_(ivars,ovars)
-  type(berror_vars) ivars
-  type(berror_vars) ovars
-
-  logical wrtall
-
-  wrtall=.true.
-  if (ovars%nlon/=ivars%nlon .or. &
-      ovars%nlat/=ivars%nlat      ) then
-      print*, 'copy_berror_vars_: Trying to copy inconsistent vectors, aborting ...'
-      call exit(1)
-  endif
-  if ( ovars%nsig/=ivars%nsig ) then
-     wrtall=.false.
-  endif
-
-  if (wrtall) then
-     ovars%tcon    = ivars%tcon
-     ovars%vpcon   = ivars%vpcon
-     ovars%pscon   = ivars%pscon
-     ovars%sfvar   = ivars%sfvar
-     ovars%sfhln   = ivars%sfhln
-     ovars%sfvln   = ivars%sfvln
-     ovars%vpvar   = ivars%vpvar
-     ovars%vphln   = ivars%vphln
-     ovars%vpvln   = ivars%vpvln
-     ovars%tvar    = ivars%tvar
-     ovars%thln    = ivars%thln
-     ovars%tvln    = ivars%tvln
-     ovars%qvar    = ivars%qvar
-     ovars%nrhvar  = ivars%nrhvar
-     ovars%qhln    = ivars%qhln
-     ovars%qvln    = ivars%qvln
-     ovars%qivar   = ivars%qivar
-     ovars%qihln   = ivars%qihln
-     ovars%qivln   = ivars%qivln
-     ovars%qlvar   = ivars%qlvar
-     ovars%qlhln   = ivars%qlhln
-     ovars%qlvln   = ivars%qlvln
-     ovars%qrvar   = ivars%qrvar
-     ovars%qrhln   = ivars%qrhln
-     ovars%qrvln   = ivars%qrvln
-     ovars%qsvar   = ivars%qsvar
-     ovars%qshln   = ivars%qshln
-     ovars%qsvln   = ivars%qsvln
-     ovars%ozvar   = ivars%ozvar
-     ovars%ozhln   = ivars%ozhln
-     ovars%ozvln   = ivars%ozvln
-     ovars%cvar    = ivars%cvar
-     ovars%chln    = ivars%chln
-     ovars%cvln    = ivars%cvln
-  endif
-
-  ovars%psvar   = ivars%psvar
-  ovars%pshln   = ivars%pshln
-  ovars%varsst  = ivars%varsst
-  ovars%corlsst = ivars%corlsst
-
-  end subroutine copy_berror_vars_
 
   subroutine vinterp_berror_vars_(ivars,ovars)
 
@@ -564,8 +513,8 @@ contains
   use m_const, only: pstd
   implicit none
 
-  type(berror_vars) ivars
-  type(berror_vars) ovars
+  type(nc_berror_vars) ivars
+  type(nc_berror_vars) ovars
 
   real(4),allocatable,dimension(:,:) :: aux
   real(4),allocatable,dimension(:) :: plevi,plevo
@@ -616,7 +565,7 @@ contains
      ! interpolation. It shuld be done as in 
      !             Bnew = T Bold T', 
      ! where T is the interpolation matrix and T' its transpose.
-     ! No all interpolants will preserve covariance properties. 
+     ! Not all interpolants will preserve covariance properties. 
      aux=0.0
      do k=1,ivars%nsig
         call spline( plevi, plevo, ivars%tcon(j,k,:), aux(k,:) )
@@ -663,8 +612,170 @@ contains
      call spline( plevi, plevo, ivars%cvln  (j,:), ovars%cvln  (j,:) )
   enddo
   deallocate(aux)
-
+  deallocate(plevi)
+  deallocate(plevo)
 
   end subroutine vinterp_berror_vars_
 
-  end
+  subroutine hinterp_berror_vars_(ivars,ovars)
+
+  use m_spline, only: spline
+  use m_set_eta, only: set_eta
+  use m_set_eta, only: get_ref_plevs
+  use m_const, only: pstd
+  implicit none
+
+  type(nc_berror_vars) ivars
+  type(nc_berror_vars) ovars
+
+  real(4),allocatable,dimension(:,:) :: aux
+  real(4),allocatable,dimension(:) :: lati,lato
+  real(4),allocatable,dimension(:) :: loni,lono
+  integer i,j,k,k2
+  real dlon,dlat
+
+  if( ivars%nsig/=ovars%nsig ) then
+      print *, 'hinterp_berror_vars_: error, nsig must equal'
+      call exit(1)
+  endif 
+
+! Input levels
+! ------------
+  allocate(lati(ivars%nlat))
+  allocate(loni(ivars%nlon))
+  dlat = 180./(ivars%nlat-1)
+  do j=1,ivars%nlat
+     lati(j) = -90.0 + (j-1.0)*dlat 
+  enddo
+  dlon = 360./ivars%nlon
+  do i=1,ivars%nlon
+     loni(i) = i*dlon ! GSI def
+  enddo
+
+! Output levels
+! -------------
+  allocate(lato(ovars%nlat))
+  allocate(lono(ovars%nlon))
+  dlat = 180./(ovars%nlat-1)
+  do j=1,ovars%nlat
+     lato(j) = -90.0 + (j-1.0)*dlat 
+  enddo
+  dlon = 360./ovars%nlon
+  do i=1,ovars%nlon
+     lono(i) = i*dlon ! GSI def
+  enddo
+
+
+  do k=1,ivars%nsig ! very, very parallelizable
+
+     do k2=1,ivars%nsig
+        call spline( lati, lato, ivars%tcon(:,k2,k), ovars%tcon(:,k2,k) )
+     enddo
+
+     call spline( lati, lato, ivars%vpcon (:,k), ovars%vpcon (:,k) )
+     call spline( lati, lato, ivars%pscon (:,k), ovars%pscon (:,k) )
+     call spline( lati, lato, ivars%sfvar (:,k), ovars%sfvar (:,k) )
+     call spline( lati, lato, ivars%sfhln (:,k), ovars%sfhln (:,k) )
+     call spline( lati, lato, ivars%sfvln (:,k), ovars%sfvln (:,k) )
+     call spline( lati, lato, ivars%vpvar (:,k), ovars%vpvar (:,k) )
+     call spline( lati, lato, ivars%vphln (:,k), ovars%vphln (:,k) )
+     call spline( lati, lato, ivars%vpvln (:,k), ovars%vpvln (:,k) )
+     call spline( lati, lato, ivars%tvar  (:,k), ovars%tvar  (:,k) )
+     call spline( lati, lato, ivars%thln  (:,k), ovars%thln  (:,k) )
+     call spline( lati, lato, ivars%tvln  (:,k), ovars%tvln  (:,k) )
+     call spline( lati, lato, ivars%qvar  (:,k), ovars%qvar  (:,k) )
+     call spline( lati, lato, ivars%nrhvar(:,k), ovars%nrhvar(:,k) )
+     call spline( lati, lato, ivars%qhln  (:,k), ovars%qhln  (:,k) )
+     call spline( lati, lato, ivars%qvln  (:,k), ovars%qvln  (:,k) )
+     call spline( lati, lato, ivars%qivar (:,k), ovars%qivar (:,k) )
+     call spline( lati, lato, ivars%qihln (:,k), ovars%qihln (:,k) )
+     call spline( lati, lato, ivars%qivln (:,k), ovars%qivln (:,k) )
+     call spline( lati, lato, ivars%qlvar (:,k), ovars%qlvar (:,k) )
+     call spline( lati, lato, ivars%qlhln (:,k), ovars%qlhln (:,k) )
+     call spline( lati, lato, ivars%qlvln (:,k), ovars%qlvln (:,k) )
+     call spline( lati, lato, ivars%qrvar (:,k), ovars%qrvar (:,k) )
+     call spline( lati, lato, ivars%qrhln (:,k), ovars%qrhln (:,k) )
+     call spline( lati, lato, ivars%qrvln (:,k), ovars%qrvln (:,k) )
+     call spline( lati, lato, ivars%qsvar (:,k), ovars%qsvar (:,k) )
+     call spline( lati, lato, ivars%qshln (:,k), ovars%qshln (:,k) )
+     call spline( lati, lato, ivars%qsvln (:,k), ovars%qsvln (:,k) )
+     call spline( lati, lato, ivars%ozvar (:,k), ovars%ozvar (:,k) )
+     call spline( lati, lato, ivars%ozhln (:,k), ovars%ozhln (:,k) )
+     call spline( lati, lato, ivars%ozvln (:,k), ovars%ozvln (:,k) )
+     call spline( lati, lato, ivars%cvar  (:,k), ovars%cvar  (:,k) )
+     call spline( lati, lato, ivars%chln  (:,k), ovars%chln  (:,k) )
+     call spline( lati, lato, ivars%cvln  (:,k), ovars%cvln  (:,k) )
+  enddo
+  call spline( lati, lato, ivars%psvar, ovars%psvar )
+  call spline( lati, lato, ivars%pshln, ovars%pshln )
+
+! Now handle horizontal 2d fields
+  allocate(aux(ovars%nlat,ivars%nlon))
+
+  ! varsst ...
+  do i=1,ivars%nlon 
+     call spline( lati, lato, ivars%varsst(:,i), aux(:,i) )
+  enddo
+  do j=1,ovars%nlat 
+     call spline( loni, lono, aux(j,:), ovars%varsst(j,:) )
+  enddo
+  ! corlsst
+  do i=1,ivars%nlon 
+     call spline( lati, lato, ivars%corlsst(:,i), aux(:,i) )
+  enddo
+  do j=1,ovars%nlat 
+     call spline( loni, lono, aux(j,:), ovars%corlsst(j,:) )
+  enddo
+
+  deallocate(aux)
+
+  deallocate(lati,loni)
+  deallocate(lato,lono)
+
+
+  end subroutine hinterp_berror_vars_
+
+  subroutine be_write_nc_(fname,ivars)
+
+  use m_set_eta, only: set_eta
+  use m_set_eta, only: get_ref_plevs
+  implicit none
+
+  character(len=*),     intent(in) :: fname
+  type(nc_berror_vars), intent(in) :: ivars
+
+  real(4),allocatable,dimension(:,:) :: aux
+  real(4),allocatable,dimension(:) :: lats,lons
+  real(4),allocatable,dimension(:) :: plevs
+  real(4),allocatable,dimension(:) :: ak,bk
+  real(4) ptop, pint, dlon, dlat
+  integer :: nlat,nlon
+  integer ii,jj,k,ks,status
+
+  allocate(plevs(ivars%nsig))
+  allocate(ak(ivars%nsig+1),bk(ivars%nsig+1))
+  call set_eta ( ivars%nsig, ks, ptop, pint, ak, bk )
+  call get_ref_plevs ( ak, bk, ptop, plevs )
+  plevs = plevs(ivars%nsig:1:-1) ! reorient GEOS-5 levs to be consistent w/ GSI(Berror)
+
+! The following defines lat/lon per GSI orientation
+  nlon=ivars%nlon; nlat=ivars%nlat
+  allocate(lons(nlon),lats(nlat))
+  dlat=180./(nlat-1.0)
+  do jj = nlat,1,-1
+     lats(jj) = -90.0 + (jj-1.0)*dlat 
+  enddo
+  dlon=360./nlon
+  do ii = 1, nlon
+     lons(ii) = (ii-1.0)*dlon 
+  enddo
+  
+  call nc_berror_write(trim(fname),ivars,plevs,lats,lons,status)
+
+  deallocate(ak,bk)
+  deallocate(plevs)
+  deallocate(lons,lats)
+
+  end subroutine be_write_nc_
+
+  end program write_berror_global

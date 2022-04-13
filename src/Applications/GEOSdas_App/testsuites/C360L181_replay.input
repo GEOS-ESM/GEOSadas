@@ -1,0 +1,246 @@
+#------------
+# C360L181_replay.input
+#------------
+
+codeID: b3a880f
+description: C360L181_replay__GEOSadas-5_29_3__agrid_C360__ogrid_C
+fvsetupID: f7d8d041c9
+
+---ENDHEADERS---
+
+Remote account for Intranet plots? [dao_it@train]
+> 
+
+Is this a MERRA2 (1), GEOSIT (2), R21C (3) experiment? [0]
+> 
+
+AGCM Horizontal Resolution? [C48]
+> C360
+
+AGCM Vertical Resolution? [72]
+> 181
+
+OGCM Resolution? [f]
+> C
+
+EXPID? [u000_C360]
+> $expid
+
+Check for previous use of expid (y/n)? [y]
+> n
+
+EXPDSC? [C360L181_replay__GEOSadas-5_29_3__agrid_C360__ogrid_C]
+> 
+
+Land Boundary Conditions? [Icarus_Updated]
+> Icarus-NLv3
+
+Catchment Model choice? [1]
+> 
+
+FVHOME? [/discover/nobackup/dao_it/C360L181_replay]
+> /discover/nobackup/projects/gmao/dadev/dao_it/$expid
+
+The directory /discover/nobackup/projects/gmao/obsdev/dao_it/C360L181_replay already exists. Clean it? [y]
+> 
+
+Processing nodes (1:Westmere, 2:SandyBridge, 3:Ivy Bridge, 4:Haswell, 5:Skylake, 6:Cascase)? [4]
+> 
+
+Which case of variational analysis? [1]
+> 
+
+Window of the variational analysis (min)? [360]
+> 
+
+FVINPUT? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar]
+> 
+
+REAL TIME BCS? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/g5gcm/bcs/realtime/OSTIA_REYNOLDS]
+> 
+
+agcmpert? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/agcmpert]
+> 
+
+chemistry? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/chemistry]
+>
+
+g5chem? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/g5chem]
+> 
+
+g5gcm? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/g5gcm]
+> 
+
+PIESA? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/PIESA]
+> 
+
+MERRA2? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/MERRA2]
+> 
+
+AeroCom? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/AeroCom]
+> 
+
+FVICS? [/archive/u/jstassi/restarts/GEOSadas-5_24_0]
+> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/x0045_l181/rs/Y2020/M11/x0045_l181.rst.20201129_21z.tar
+
+Run model-adjoint-related applications (0=no,1=yes)? [0]
+> 1
+
+Analysis/Forecast filename template for sensitivity?
+> 
+
+Stage the gradient vector files (y/n)? [y]
+> 
+
+Run singular vector experiments (0=n,1=yes)? [0]
+> 
+
+Run analysis-sensitivity applications (0=no,1=yes)? [0]
+> 1
+
+Verifying experiment id: [C360L181_replay]
+> 
+
+Ending year-month-day? [20191121]
+> 20210206
+
+Length of FORECAST run segments (in hours)? [123]
+> 
+
+Number of one-day DAS segments per PBS job? [1]
+> 
+
+Number of PEs in the zonal direction (NX)? [8]
+> 24
+
+Number of PEs in the meridional direction (NY)? [48]
+> 56
+
+Job nickname? [g5das]
+> x46
+
+Run in split executable mode (1=yes;0=no)? [1]
+> 
+
+Frequency of background fields (min)? [180]
+> 60
+
+Triangular spectral truncation? [254]
+> 
+
+Analysis vertical levels (sig))? [72]
+> 181
+
+GSI grid resolution? [NA]
+> 
+
+GEOS grid resolution instead? [d]
+> 
+
+Ensemble Hybrid (<0;3=3dHyb;4=Hyb4d)? [-1]
+> 4
+
+Number of procs in the zonal direction (NX)? [12]
+> 32
+
+Number of procs in the meridional direction (NY)? [20]
+> 42
+
+Which main class of ObsSys (1: NRT; 2: MERRA; 3: MERRA-2)? [1]
+> 
+
+OBSERVING SYSTEM CLASSES?
+> disc_airs_bufr,disc_amsua_bufr,gmao_amsr2_bufr,gmao_gmi_bufr,mls_nrt_nc,ncep_1bamua_bufr,ncep_1bhrs4_bufr,ncep_acftpfl_bufr,ncep_atms_bufr,ncep_aura_omi_bufr,ncep_avcsam_bufr,ncep_avcspm_bufr,ncep_crisfsr_bufr,ncep_goesfv_bufr,ncep_gpsro_com_bufr,ncep_mhs_bufr,ncep_mtiasi_bufr,ncep_prep_bufr,ncep_satwnd_bufr,ncep_sevcsr_bufr,ncep_ssmis_bufr,ncep_tcvitals,npp_ompsnm_bufr
+
+CHECKING OBSYSTEM? [2]
+> 1
+
+Which RADCOR option? [NONE]
+> 
+
+Use sat channel-correlated observation errors (y/n)? [y]
+> 
+
+Use aircraft bias correction (y/n)? [y]
+> 
+
+Use unified radiance bias correction (y/n)? [y]
+> 
+
+Land DAS Analysis (y/n)? [n]
+> 
+
+Frequency (in days) for writing restarts? [0]
+> 
+
+Frequency for PROGNOSTIC fields? [010000]
+> 
+
+Frequency for surface (2D) DIAGNOSTIC fields? [010000]
+> 
+
+Frequency for upper air (3D) DIAGNOSTIC fields? [030000]
+> 
+
+Dimension of output in zonal direction? [1152]
+> 
+
+Dimension of output in meridional direction? [721]
+> 
+
+Would you like 2D diagnostics? [y]
+> 
+
+Would you like 3D diagnostics? [y]
+> 
+
+Would you like to compress diagnostics output files? [n]
+> 
+
+Include GOCART tracers (CO,CO2,aerosols,etc) (y/n)? [y]
+> 
+
+Select GOCART Emission Files to use: [OPS]
+> 
+
+Do Aerosol Analysis (y/n)? [y]
+> 
+
+AOD OBSERVING CLASSES [or type 'none']?
+> 
+
+Enable GAAS feedback to model (y/n)? [y]
+> 
+
+Which template? [HISTORY.rc.tmpl]
+> 
+
+Which template? [GCMPROG.rc.tmpl]
+> 
+
+Output Restart TYPE (bin or nc4) [nc4]
+> 
+
+Select group: [s0818]
+> g0613
+
+Replayed Ensemble (from OPS)?  [yes]
+> 
+
+Replay exp name? [x0044]
+> x0044
+
+Replay archive directory? [/discover/nobackup/projects/gmao/dadev/rtodling/archive/x0044]
+> /discover/nobackup/projects/gmao/dadev/rtodling/archive/x0044
+
+Edit COLLECTIONS list in run/HISTORY.rc.tmpl (y/n)? [n]
+> 
+
+Edit COLLECTIONS list in fcst/HISTORY.rc.tmpl (y/n)? [n]
+> 
+
+Edit files in run directory for CERES configuration (y/n)? [n]
+> 
+
+Which? [Q]
+> 

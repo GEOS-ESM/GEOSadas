@@ -64,6 +64,7 @@ if ( $#argv < 7 ) then
    echo " "
    echo "    ATMENS_GEPS_RECENTER 1: use to recenter ensemble analysis"
    echo "                         (default: 0)"
+   echo "    ATMENS_NCPUSTAR   - number of CPUS used for untar (default: 32) "
    echo "    NCSUFFIX          - suffix of hdf/netcdf files (default: nc4)"
    echo "    DATADIR           - location where original data resides"
    echo "                        (default: /archive/u/user)"
@@ -76,7 +77,7 @@ if ( $#argv < 7 ) then
    echo " AUTHOR"
    echo "   Ricardo Todling (Ricardo.Todling@nasa.gov), NASA/GMAO "
    echo "     Created modified: 01Apr2017   by: R. Todling"
-   echo "     Last modified: 16Apr2017      by: R. Todling"
+   echo "     Last modified: 06Oct2021      by: R. Todling"
    echo " \\end{verbatim} "
    echo " \\clearpage "
    exit(0)
@@ -92,6 +93,7 @@ if ( !($?GID)           ) setenv FAILED 1
 
 if ( !($?ATMENS_GEPS_RECENTER)     ) setenv ATMENS_GEPS_RECENTER     0  # 1= will recenter analysis
 if ( !($?ATMENS_GEPS_FROM_CENTRAL) ) setenv ATMENS_GEPS_FROM_CENTRAL 0  # 1= forecast from central rst/bkg
+if ( !($?ATMENS_NCPUSTAR) ) setenv ATMENS_NCPUSTAR 32
 
 if ( !($?SRCEXPID)      ) setenv SRCEXPID NULL
 if ( !($?DATADIR)       ) setenv DATADIR $ARCHIVE
@@ -277,7 +279,11 @@ if ( $ATMENS_GEPS_FROM_CENTRAL ) then
                  mkdir -p centralRST/Ori
                  mkdir -p centralRST/New
                  cd centralRST/Ori
-                 tar xvf ../../$SRCEXPID.rst.${nymd}_${hh}z.tar
+                 if ( $ATMENS_NCPUSTAR > 1 ) then
+                    parallel-untar.py  ../../$SRCEXPID.rst.${nymd}_${hh}z.tar $ATMENS_NCPUSTAR
+                 else 
+                    tar xvf ../../$SRCEXPID.rst.${nymd}_${hh}z.tar
+                 endif
                  cd ../
                  set inpdir = `echo $cwd`
                  set outdir = $inpdir/New
@@ -346,7 +352,11 @@ else # ATMENS_GEPS_FROM_CENTRAL=0 - forecast from ens member RSTs
                   echo "${MYNAME}: cannot find file type $ftype , aborting  ... "
                   exit (1)
                endif
-               $DRYRUN tar xvf $expid.atmens_${ftype}.${nymd}_${hh}z.tar 
+               if ( $ATMENS_NCPUSTAR > 1 ) then
+                  $DRYRUN parallel-untar.py  $expid.atmens_${ftype}.${nymd}_${hh}z.tar $ATMENS_NCPUSTAR
+               else 
+                  $DRYRUN tar xvf $expid.atmens_${ftype}.${nymd}_${hh}z.tar 
+               endif
                if ( $SRCEXPID != $expid && -d $SRCEXPID.atmens_${ftype}.${nymd}_${hh}z ) then
                   /bin/mv $SRCEXPID.atmens_${ftype}.${nymd}_${hh}z $expid.atmens_${ftype}.${nymd}_${hh}z
                endif
@@ -420,7 +430,7 @@ foreach times ( 1 $xtratime )
          endif
       else
          echo "${MYNAME}: unfolding non-inflated ensemble of analyses  ... "
-         $DRYRUN tar xvf $expid.atmens_e${ttype}.${tnymd}_${thh}z.tar --wildcards --no-anchored "*${SRCEXPID}.${ttype}.eta.${gnymd}_${ghh}z.$NCSUFFIX"
+         $DRYRUN tar xvf $expid.atmens_e${ttype}.${tnymd}_${thh}z.tar --wildcards --no-anchored "*${SRCEXPID}.${ttype}.eta.${gnymd}_${ghh}00z.$NCSUFFIX"
          if ( $SRCEXPID != $expid && -d $SRCEXPID.atmens_e${ttype}.${tnymd}_${thh}z ) then
             $DRYRUN /bin/mv $SRCEXPID.atmens_e${ttype}.${tnymd}_${thh}z $expid.atmens_e${ttype}.${tnymd}_${thh}z
          endif
@@ -502,19 +512,19 @@ endif
 if ($ATMENS_GEPS_RECENTER) then
    cd $ENSWORK
    if ( ! -d central ) mkdir -p central
-   if ( ! -e central/$expid.ana.eta.${anymd}_${ahh}z.$NCSUFFIX ) then 
+   if ( ! -e central/$expid.ana.eta.${anymd}_${ahh}00z.$NCSUFFIX ) then 
       if ( $action == "setrc" ) then
          if ( $SRCEXPID == $expid ) then
-            echo $DATADIR/$expid/ana/Y$ayyyy/M$amm/$expid.ana.eta.${anymd}_${ahh}z.$NCSUFFIX >> $ACQRC
+            echo $DATADIR/$expid/ana/Y$ayyyy/M$amm/$expid.ana.eta.${anymd}_${ahh}00z.$NCSUFFIX >> $ACQRC
          else
-            echo "$DATADIR/$SRCEXPID/ana/Y$ayyyy/M$amm/$SRCEXPID.ana.eta.${anymd}_${ahh}z.$NCSUFFIX => $expid.ana.eta.${anymd}_${ahh}z.$NCSUFFIX" >> $ACQRC
+            echo "$DATADIR/$SRCEXPID/ana/Y$ayyyy/M$amm/$SRCEXPID.ana.eta.${anymd}_${ahh}00z.$NCSUFFIX => $expid.ana.eta.${anymd}_${ahh}00z.$NCSUFFIX" >> $ACQRC
          endif
       else
-         if ( -e $expid.ana.eta.${anymd}_${ahh}z.$NCSUFFIX ) then
-            /bin/mv $expid.ana.eta.${anymd}_${ahh}z.$NCSUFFIX central/
+         if ( -e $expid.ana.eta.${anymd}_${ahh}00z.$NCSUFFIX ) then
+            /bin/mv $expid.ana.eta.${anymd}_${ahh}00z.$NCSUFFIX central/
             if ( $atype != "ana" ) then # link needed to ease connection w/ recentering script
                cd central
-               ln -sf $expid.ana.eta.${anymd}_${ahh}z.$NCSUFFIX $expid.$atype.eta.${anymd}_${ahh}z.$NCSUFFIX 
+               ln -sf $expid.ana.eta.${anymd}_${ahh}00z.$NCSUFFIX $expid.$atype.eta.${anymd}_${ahh}00z.$NCSUFFIX 
                cd -
             endif
          endif
@@ -525,17 +535,17 @@ endif
 # verification options: central assimilation or central analysis
 if ( $aver == "casm" || $aver == "cana"  ) then
    set Aver = `echo $aver | cut -c2-`
-   if ( ! -e $expid.$Aver.eta.${av0nymd}_${av0hh}z.$NCSUFFIX ) then
+   if ( ! -e $expid.$Aver.eta.${av0nymd}_${av0hh}00z.$NCSUFFIX ) then
       if ( $action == "setrc" ) then
          if ( $SRCEXPID == $expid ) then
-            echo  $DATADIR/$expid/ana/Y$av0yyyy/M$av0mm/$expid.$Aver.eta.${av0nymd}_${av0hh}z.$NCSUFFIX >> $ACQRC
+            echo  $DATADIR/$expid/ana/Y$av0yyyy/M$av0mm/$expid.$Aver.eta.${av0nymd}_${av0hh}00z.$NCSUFFIX >> $ACQRC
          else
-            echo "$DATADIR/$SRCEXPID/ana/Y$av0yyyy/M$av0mm/$SRCEXPID.$Aver.eta.${av0nymd}_${av0hh}z.$NCSUFFIX => $expid.$Aver.eta.${av0nymd}_${av0hh}z.$NCSUFFIX" >> $ACQRC
+            echo "$DATADIR/$SRCEXPID/ana/Y$av0yyyy/M$av0mm/$SRCEXPID.$Aver.eta.${av0nymd}_${av0hh}00z.$NCSUFFIX => $expid.$Aver.eta.${av0nymd}_${av0hh}00z.$NCSUFFIX" >> $ACQRC
          endif
       else
          foreach dir (`/bin/ls -d mem*`)
            cd $dir
-             ln -s ../$expid.$Aver.eta.${av0nymd}_${av0hh}z.$NCSUFFIX .
+             ln -s ../$expid.$Aver.eta.${av0nymd}_${av0hh}00z.$NCSUFFIX .
            cd -
          end
       endif
@@ -552,7 +562,7 @@ if ( $aver == "niana" ) then
       endif
    else
       echo "${MYNAME}: unfolding non-inflated ensemble of analyses  ... "
-      $DRYRUN tar xvf $expid.atmens_eniana.${xav0nymd}_${xav0hh}z.tar --wildcards --no-anchored "*${SRCEXPID}.niana.eta.${av0nymd}_${av0hh}z.$NCSUFFIX"
+      $DRYRUN tar xvf $expid.atmens_eniana.${xav0nymd}_${xav0hh}z.tar --wildcards --no-anchored "*${SRCEXPID}.niana.eta.${av0nymd}_${av0hh}00z.$NCSUFFIX"
       if ( $SRCEXPID != $expid && -d $SRCEXPID.atmens_eniana.${xav0nymd}_${xav0hh}z ) then
          $DRYRUN /bin/mv $SRCEXPID.atmens_eniana.${xav0nymd}_${xav0hh}z $expid.atmens_eniana.${xav0nymd}_${xav0hh}z
       endif
@@ -582,15 +592,15 @@ if ( $aver == "emana" ) then
       endif
    else
       echo "${MYNAME}: unfolding non-inflated ensemble of analyses  ... "
-      $DRYRUN tar xvf $expid.atmens_stat.${xav0nymd}_${xav0hh}z.tar --wildcards --no-anchored "ensmean/*${SRCEXPID}.ana.eta.${av0nymd}_${av0hh}z.$NCSUFFIX"
+      $DRYRUN tar xvf $expid.atmens_stat.${xav0nymd}_${xav0hh}z.tar --wildcards --no-anchored "ensmean/*${SRCEXPID}.ana.eta.${av0nymd}_${av0hh}00z.$NCSUFFIX"
       if ( $SRCEXPID != $expid && -d $SRCEXPID.atmens_stat.${xav0nymd}_${xav0hh}z ) then
          $DRYRUN /bin/mv $SRCEXPID.atmens_stat.${xav0nymd}_${xav0hh}z $expid.atmens_stat.${xav0nymd}_${xav0hh}z
       endif
       if (! -d ensmean ) mkdir ensmean
-      /bin/mv $expid.atmens_stat.${xav0nymd}_${xav0hh}z/ensmean/$SRCEXPID.ana.eta.${av0nymd}_${av0hh}z.$NCSUFFIX ensmean/$expid.ana.eta.${av0nymd}_${av0hh}z.$NCSUFFIX
+      /bin/mv $expid.atmens_stat.${xav0nymd}_${xav0hh}z/ensmean/$SRCEXPID.ana.eta.${av0nymd}_${av0hh}00z.$NCSUFFIX ensmean/$expid.ana.eta.${av0nymd}_${av0hh}00z.$NCSUFFIX
       foreach dir (`/bin/ls -d mem*`)
          cd $dir
-         ln -sf ../ensmean/$expid.ana.eta.${av0nymd}_${av0hh}z.$NCSUFFIX .
+         ln -sf ../ensmean/$expid.ana.eta.${av0nymd}_${av0hh}00z.$NCSUFFIX .
          cd -
       end # <dir>
    endif
@@ -633,10 +643,10 @@ endif
 cd $ENSWORK
 
 if ( $ATMENS_GEPS_RECENTER ) then
-   if ( ! -e ensmean/$expid.${atype}.eta.${anymd}_${ahh}z.$NCSUFFIX ) then
+   if ( ! -e ensmean/$expid.${atype}.eta.${anymd}_${ahh}00z.$NCSUFFIX ) then
      if ( ! -d ensmean ) mkdir ensmean
-     $DRYRUN $AENSTAT_MPIRUN -rc $ATMENSETC/mp_stats.rc -o ensmean/$expid.${atype}.eta.${anymd}_${ahh}z.$NCSUFFIX \
-                                                              mem*/$expid.${atype}.eta.${anymd}_${ahh}z.$NCSUFFIX
+     $DRYRUN $AENSTAT_MPIRUN -rc $ATMENSETC/mp_stats.rc -o ensmean/$expid.${atype}.eta.${anymd}_${ahh}00z.$NCSUFFIX \
+                                                              mem*/$expid.${atype}.eta.${anymd}_${ahh}00z.$NCSUFFIX
    endif
    mkdir torecenter
    cd torecenter

@@ -46,6 +46,7 @@
 
    use ESMF
    use MAPL_Mod
+   use pflogger, only: pfl_initialize => initialize
    use MAPL_CFIOMod
    use m_StrTemplate, only: StrTemplate
    use m_const, only : zvir
@@ -209,6 +210,8 @@ CONTAINS
 
     call ESMF_VMGetCurrent(vm=vm, rc=status)
     call ESMF_VMGet(vm,mpiCommunicator=comm,rc=status)
+
+    call pfl_initialize()
 
     call cmdline_ ( myRC, nymdo, nhmso )
 
