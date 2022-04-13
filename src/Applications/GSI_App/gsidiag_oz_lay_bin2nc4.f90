@@ -98,7 +98,7 @@ program convert_oz_diag
   open(inlun,file=infn,form='unformatted',convert='big_endian')
   call read_oz_header( inlun, isis, obstype, dplat, jiter, nlevs, ianldate, iint, ireal, irdim, iflag, ioff0 )
   call nc_diag_header("date_time",ianldate )
-  call nc_diag_header("Number_of_state_vars", imissing ) ! You are SOL. This is not output in the binary. 
+  call nc_diag_header("Number_of_state_vars", imissing ) 
   !setup the stuff output on the number of levels this thing has. Unless this is SBUV or OMI with efficiency factors, nlevs=1
   allocate(pobs(nlevs),grs4(nlevs),err4(nlevs),iouse(nlevs))
   read(inlun,iostat=iflag) pobs,grs4,err4,iouse

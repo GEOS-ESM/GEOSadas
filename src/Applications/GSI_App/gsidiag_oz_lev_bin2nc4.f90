@@ -93,7 +93,6 @@ program convert_oz_lev_diag
   ii = 0
   open(inlun,file=infn,form='unformatted',convert='big_endian')
   call nc_diag_init(outfn)
-  ! stupid way to count the number of obs, so you stop before you hit the last ioff0
   call count_obs( inlun, ob_count )
   open(inlun,file=infn,form='unformatted',convert='big_endian')
   call read_oz_header( inlun, isis, obstype, dplat, jiter, nlevs, ianldate, iint, ireal, irdim, iflag, ioff0 )
