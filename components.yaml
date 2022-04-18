@@ -28,13 +28,13 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  tag: rt1_4_10_transf_fix
+  tag: rt1_4_10_stoch_grid_fix
   develop: main
 
 MAPL:
   local: ./src/Shared/@MAPL
   remote: ../MAPL.git
-  tag: v2.8.0
+  tag: v2.8.0.7
   develop: develop
 
 FMS:
@@ -46,13 +46,13 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  tag: v1.5.2
+  tag: v1.5.4.1
   develop: develop
 
 GEOSgcm_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp
   remote: ../GEOSgcm_GridComp.git
-  tag: rt1_12_4_mom6
+  tag: rt1_12_4_tskinice
   sparse: ./config/GEOSgcm_GridComp.sparse
   develop: develop
 
@@ -83,7 +83,7 @@ fvdycore:
 GEOSchem_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSphysics_GridComp/@GEOSchem_GridComp
   remote: ../GEOSchem_GridComp.git
-  tag: rt1.6.1
+  tag: rt1.6.2
   develop: develop
 
 HEMCO:
@@ -101,7 +101,7 @@ geos-chem:
 GOCART:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSphysics_GridComp/@GEOSchem_GridComp/@GOCART
   remote: ../GOCART.git
-  tag: v1.0.1
+  tag: rt1.0.1_CEDS
   sparse: ./config/GOCART.sparse
   develop: develop
 
@@ -121,7 +121,7 @@ mom6:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  tag: rt_v1_5_6_geosit_0
+  tag: rt1.5.6_geosit_hist1
   develop: develop
 
 UMD_Etc:

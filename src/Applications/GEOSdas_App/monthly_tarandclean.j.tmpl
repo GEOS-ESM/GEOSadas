@@ -27,12 +27,13 @@ else
     echo "-----"
 endif
 set echo
-set filestring = __FILESTRING__
-set yyyymm     = __YYYYMM__
-set rundir     = __RUNDIR__
-set workdir    = __WORKDIR__
-set do_tar     = __DO_TAR__
-set lastFLG    = __LASTFLG__
+set filestring   = __FILESTRING__
+set fileTemplate = "__FILETEMPLATE__"
+set yyyymm       = __YYYYMM__
+set rundir       = __RUNDIR__
+set workdir      = __WORKDIR__
+set do_tar       = __DO_TAR__
+set lastFLG      = __LASTFLG__
 unset echo
 echo
 
@@ -112,9 +113,8 @@ endif
 # get list of workdir inputs
 #---------------------------
 chdir $workdir
-set suffix = $filestring:e
 
-set workdir_inputs = ( `ls $EXPID.$ftype.$yyyymm*.$suffix` )
+set workdir_inputs = ( $fileTemplate )
 set workdir_status = $status
 
 if ($workdir_status) then
@@ -128,7 +128,7 @@ if ($do_tar) then
 
     # get list of archived inputs
     #----------------------------
-    set archive_inputs = ( $remote_dir/$EXPID.$ftype.$yyyymm*.$suffix )
+    set archive_inputs = ( $remote_dir/$fileTemplate )
     set no_inputs_found = $status
 
     if ($no_inputs_found) then
