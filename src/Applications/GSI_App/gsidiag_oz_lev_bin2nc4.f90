@@ -15,8 +15,6 @@ program convert_oz_lev_diag
 
 
   integer i
-!!!  real(r_quad)                         ::  ret_var
-!!!  real(r_quad)                         ::  ret_stddev
 
 ! commandline variables
   logical                              ::  debug
@@ -38,13 +36,17 @@ program convert_oz_lev_diag
   character(20) :: isis,obstype
   character(20) :: dplat
   integer :: jiter,ianldate,ireal,irdim
-  real(r_single),allocatable,dimension(:) :: pobs,grs4,err4
+  real(r_single),allocatable,dimension(:) :: grs4,err4
   integer(i_kind),allocatable,dimension(:) :: iouse
   integer :: nobs
   integer(i_kind),allocatable,dimension(:,:) :: idiagbuf
   real(r_single) ,allocatable, dimension(:,:) :: diagbuf
   real(r_single), allocatable, dimension(:,:,:) :: rdiagbuf
-  integer :: stop_output
+
+  integer(i_kind),allocatable, dimension(:,:) :: idiagbuf_
+  real(r_single) ,allocatable, dimension(:,:) :: diagbuf_
+  real(r_single), allocatable, dimension(:,:) :: rdiagbuf_
+  integer ::  nobs_unique
 
   nargs = iargc()
   if( nargs.eq.0 ) then
@@ -90,61 +92,63 @@ program convert_oz_lev_diag
   if (loutfile) write(*,'(a)')'WARNING: ' // trim(outfn) // ' exists - overwriting'
 
   iflag = 0
-  ii = 0
+  ii = 1
+
+
   open(inlun,file=infn,form='unformatted',convert='big_endian')
   call nc_diag_init(outfn)
   call count_obs( inlun, ob_count )
+
   open(inlun,file=infn,form='unformatted',convert='big_endian')
   call read_oz_header( inlun, isis, obstype, dplat, jiter, nlevs, ianldate, iint, ireal, irdim, iflag, ioff0 )
   call nc_diag_header( "date_time",             ianldate  )
   call nc_diag_header( "Satellite_Sensor",      trim(isis)      )
   call nc_diag_header( "Satellite",        trim(dplat)    )
   call nc_diag_header( "Observation_type", trim(obstype)  )
-  allocate(pobs(nlevs),grs4(nlevs),err4(nlevs),iouse(nlevs))
-  ! remove duplicates at the end in binary by stopping by weird offset. 
-  stop_output = ob_count-(5*ioff0+1)
+  !allocate big arrays to store all data from file.
+  allocate(idiagbuf_(iint,ob_count))
+  allocate(diagbuf_(ireal,ob_count))
+  allocate(rdiagbuf_(irdim,ob_count))
+  allocate(grs4(nlevs),err4(nlevs),iouse(nlevs))
   do while (iflag .ge. 0) ! iflag == 0 means the end of the file
-    read(inlun,iostat=iflag) nobs
-    allocate(idiagbuf(iint,nobs))
-    allocate(diagbuf(ireal,nobs))
-    allocate(rdiagbuf(irdim,1,nobs))
-    read(inlun,iostat=iflag) idiagbuf(:,1:nobs), diagbuf(:,1:nobs), rdiagbuf(:,1,1:nobs)
-    do iobs = 1,nobs
-        if(.not. ii >= stop_output) then
-           call nc_diag_metadata( "Latitude",                      diagbuf(1,iobs)    )
-           call nc_diag_metadata( "Longitude",                     diagbuf(2,iobs)    )
-           call nc_diag_metadata( "MPI_Task_Number",               idiagbuf(1,iobs)   )
-           call nc_diag_metadata( "Time",                          diagbuf(3,iobs)    )
-           call nc_diag_metadata( "Inverse_Observation_Error",     rdiagbuf(3,1,iobs) )
-           call nc_diag_metadata( "Observation",                   rdiagbuf(1,1,iobs) )
-           call nc_diag_metadata( "Obs_Minus_Forecast_adjusted",   rdiagbuf(2,1,iobs) )
-           call nc_diag_metadata( "Obs_Minus_Forecast_unadjusted", rdiagbuf(2,1,iobs) )
-           call nc_diag_metadata( "Reference_Pressure",            rdiagbuf(4,1,iobs) )
-           call nc_diag_metadata( "Input_Observation_Error",       rdiagbuf(6,1,iobs) ) 
-           ii = ii+1
-        endif
-    enddo !nobs
+   read(inlun,iostat=iflag) nobs
+   allocate(idiagbuf(iint,nobs))
+   allocate(diagbuf(ireal,nobs))
+   allocate(rdiagbuf(irdim,1,nobs))
+   read(inlun,iostat=iflag) idiagbuf(:,1:nobs), diagbuf(:,1:nobs), rdiagbuf(:,1,1:nobs)
+   do iobs=1,nobs
+     diagbuf_(:,ii)  = diagbuf(:,iobs)
+     rdiagbuf_(:,ii) = rdiagbuf(:,1,iobs)
+     idiagbuf_(:,ii) = idiagbuf(:,iobs)
+     ii=ii+1
+   enddo
     deallocate(idiagbuf, diagbuf, rdiagbuf)
     if (iflag .lt. 0) cycle
 
   enddo
-deallocate(pobs,grs4,err4,iouse)
+  nobs = ii-1
+  call  rmdup(nobs, iint, irdim, ireal, idiagbuf_, rdiagbuf_, diagbuf_, nobs_unique)
+  do iobs = 1,nobs_unique
+       call nc_diag_metadata( "Latitude",                      diagbuf_(1,iobs)    )
+       call nc_diag_metadata( "Longitude",                     diagbuf_(2,iobs)    )
+       call nc_diag_metadata( "MPI_Task_Number",               idiagbuf_(1,iobs)   )
+       call nc_diag_metadata( "Time",                          diagbuf_(3,iobs)    )
+       call nc_diag_metadata( "Inverse_Observation_Error",     rdiagbuf_(3,iobs) )
+       call nc_diag_metadata( "Observation",                   rdiagbuf_(1,iobs) )
+       call nc_diag_metadata( "Obs_Minus_Forecast_adjusted",   rdiagbuf_(2,iobs) )
+       call nc_diag_metadata( "Obs_Minus_Forecast_unadjusted", rdiagbuf_(2,iobs) )
+       call nc_diag_metadata( "Reference_Pressure",            rdiagbuf_(4,iobs) )
+       call nc_diag_metadata( "Input_Observation_Error",       rdiagbuf_(6,iobs) ) 
+  enddo !nobs
+  deallocate(grs4,err4,iouse)
+  deallocate(idiagbuf_, diagbuf_, rdiagbuf_)
+ 
 ! finalize NCDIAG
   call nc_diag_write
   close(inlun)
 end program convert_oz_lev_diag
 
-subroutine read_oz_header( inlun, isis,obstype, dplat,jiter, nlevs,ianldate,iint,ireal,irdim,iflag,ioff0 )
-  implicit none
-  integer,intent(in) ::  inlun
-  character(20),intent(out) :: isis
-  character(10),intent(out) :: dplat
-  character(10),intent(out) :: obstype
-  integer, intent(out) :: jiter,nlevs,ianldate,ireal,irdim,iint
-  integer,intent(inout) :: iflag
-  integer,intent(out) ::ioff0
-  read(inlun,iostat=iflag) isis,dplat,obstype,jiter,nlevs,ianldate,iint,ireal,irdim,ioff0
-end subroutine read_oz_header
+! count_obs counts all the obs in the binary file that is really a bunch of little ones catted together that were dumps of each processor.
 subroutine count_obs( inlun, ob_count )
   use kinds,only: r_quad, r_single,i_kind
   implicit none
@@ -154,7 +158,7 @@ subroutine count_obs( inlun, ob_count )
   character(20) :: isis,obstype
   character(20) :: dplat
   integer :: jiter,ianldate,ireal,irdim
-  real(r_single),allocatable,dimension(:) :: pobs,grs4,err4
+  real(r_single),allocatable,dimension(:) :: grs4,err4
   integer(i_kind),allocatable,dimension(:) :: iouse
   integer :: nobs
   integer(i_kind),allocatable,dimension(:,:) :: idiagbuf
@@ -176,6 +180,68 @@ subroutine count_obs( inlun, ob_count )
   enddo
   close(inlun)
 end subroutine count_obs
+
+
+! reads_oz_header reads the metadata in binary file
+subroutine read_oz_header( inlun, isis,obstype, dplat,jiter, nlevs,ianldate,iint,ireal,irdim,iflag,ioff0 )
+  implicit none
+  integer,intent(in) ::  inlun
+  character(20),intent(out) :: isis
+  character(10),intent(out) :: dplat
+  character(10),intent(out) :: obstype
+  integer, intent(out) :: jiter,nlevs,ianldate,ireal,irdim,iint
+  integer,intent(inout) :: iflag
+  integer,intent(out) ::ioff0
+  read(inlun,iostat=iflag) isis,dplat,obstype,jiter,nlevs,ianldate,iint,ireal,irdim,ioff0
+end subroutine read_oz_header
+
+! removes duplicates loosely based on odsselect
+subroutine rmdup(nobs, iint, irdim, ireal, idiagbuf_, rdiagbuf_, diagbuf_, nobs_unique)
+  use kinds,only: r_quad, r_single,i_kind
+  use m_SortingTools, only : indexSet,indexSort
+  implicit none
+  integer(i_kind) :: nobs, iint, irdim, ireal
+  integer(i_kind) :: idiagbuf_(iint,nobs)
+  real(r_single)  :: rdiagbuf_(irdim,nobs)
+  real(r_single)  :: diagbuf_(ireal,nobs)
+  integer(i_kind) :: nobs_unique,i,is
+  integer(i_kind), allocatable, dimension(:) :: indx
+
+  allocate ( indx(nobs))
+  call IndexSet  ( nobs, indx )
+  call IndexSort ( nobs, indx,  rdiagbuf_(1,1:nobs), descend=.false. ) !ob
+  call IndexSort ( nobs, indx,  diagbuf_(1,1:nobs), descend=.false. ) !lat
+  call IndexSort ( nobs, indx,  diagbuf_(2,1:nobs), descend=.false. ) !lon
+  call IndexSort ( nobs, indx,  rdiagbuf_(4,1:nobs), descend=.false. )  !plev
+  call IndexSort ( nobs, indx,  diagbuf_(3,1:nobs), descend=.false. ) !time in window
+
+  ! sort by indx
+  do i = 1,nobs
+    rdiagbuf_(:,i) = rdiagbuf_(:,indx(i))
+    diagbuf_(:,i)= diagbuf_(:,indx(i))
+    idiagbuf_(:,i) = idiagbuf_(:,indx(i))
+  end do
+  is = 1
+  indx(is) = 1
+  do i = 2, nobs
+     if ( diagbuf_(3,i)==diagbuf_(3,i-1) .AND. diagbuf_(1,i)==diagbuf_(1,i-1) .AND. diagbuf_ (2,i)==diagbuf_ (2,i-1) .AND. rdiagbuf_(4,i) == rdiagbuf_(4,i-1) .AND. rdiagbuf_ (1,i)==rdiagbuf_ (1,i-1) ) then
+         cycle
+     end if
+         is = is + 1
+         indx(is) = i
+  end do
+
+  nobs_unique = is
+  do is = 1, nobs_unique
+     i  = indx(is)
+     idiagbuf_(:,is) = idiagbuf_(:,i)
+     diagbuf_(:,is) = diagbuf_(:,i)
+     rdiagbuf_(:,is) = rdiagbuf_(:,i)
+  end do
+  deallocate(indx)
+end subroutine rmdup
+
+
 subroutine usage
      write(6,100)
 100  format( "Usage:  ",/,/ &
