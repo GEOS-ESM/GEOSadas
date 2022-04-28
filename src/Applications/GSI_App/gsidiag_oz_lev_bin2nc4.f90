@@ -134,10 +134,17 @@ program convert_oz_lev_diag
        call nc_diag_metadata( "MPI_Task_Number",               idiagbuf_(1,iobs)   )
        call nc_diag_metadata( "Time",                          diagbuf_(3,iobs)    )
        call nc_diag_metadata( "Inverse_Observation_Error",     rdiagbuf_(3,iobs) )
+       if ( rdiagbuf_(3,iobs) < 10.0*tiny( rdiagbuf_(3,iobs) ) ) then
+         call nc_diag_metadata("Analysis_Use_Flag",      0          )
+       else
+         call nc_diag_metadata("Analysis_Use_Flag",      1         )
+       endif
+
+
        call nc_diag_metadata( "Observation",                   rdiagbuf_(1,iobs) )
        call nc_diag_metadata( "Obs_Minus_Forecast_adjusted",   rdiagbuf_(2,iobs) )
        call nc_diag_metadata( "Obs_Minus_Forecast_unadjusted", rdiagbuf_(2,iobs) )
-       call nc_diag_metadata( "Reference_Pressure",            rdiagbuf_(4,iobs) )
+       call nc_diag_metadata( "Reference_Pressure",            100.0*rdiagbuf_(4,iobs) )
        call nc_diag_metadata( "Input_Observation_Error",       rdiagbuf_(6,iobs) ) 
   enddo !nobs
   deallocate(grs4,err4,iouse)

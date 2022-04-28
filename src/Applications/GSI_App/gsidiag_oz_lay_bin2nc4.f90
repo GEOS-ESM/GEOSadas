@@ -135,8 +135,12 @@ program convert_oz_diag
     call nc_diag_metadata("Latitude",        diagbuf_(1,iobs)       )
     call nc_diag_metadata("Longitude",       diagbuf_(2,iobs)       )
     call nc_diag_metadata("Time",            diagbuf_(3,iobs) )
-    call nc_diag_metadata("Reference_Pressure",     pobs_(ilev)      )
-    call nc_diag_metadata("Analysis_Use_Flag",      iouse_(ilev)           )
+    call nc_diag_metadata("Reference_Pressure",     100.0*pobs_(iobs)      )
+    if ( iouse_(iobs) < 1.0 .or. rdiagbuf_(3,iobs)< 10*tiny(rdiagbuf_(3,iobs))) then
+      call nc_diag_metadata("Analysis_Use_Flag",      0          )
+    else
+      call nc_diag_metadata("Analysis_Use_Flag",      1         )
+    endif
     call nc_diag_metadata("Observation",            rdiagbuf_(1,iobs) )
     call nc_diag_metadata("Inverse_Observation_Error",    rdiagbuf_(3,iobs) )
     call nc_diag_metadata("Obs_Minus_Forecast_adjusted",  rdiagbuf_(2,iobs) )
