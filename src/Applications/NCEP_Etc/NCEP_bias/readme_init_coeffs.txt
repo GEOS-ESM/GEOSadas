@@ -45,6 +45,15 @@ directory with names in the format
      %s.diag_(dtype)_(dplat)_ges.%y4%m2%d2_%h2z.bin
 where the %s is substituted with the expid specified on the command line
 
+Note: this program uses the "gsi.rc.tmpl" file to get values for 'dtype',
+'dplat', and 'dsis' for each satellite instrument being fitted.  The 'dtype'
+and 'dplat' are used in determining the names of the diag files to read. 
+The 'dsis' indicates the entries in the "satbias" file to contain the results
+of the coefficient fitting.  If you are using the 'generic' method in your
+"gsi.rc.tmpl" to configure your instrument you will need to supply another
+file with an 'OBS_INPUT::' table like in the "gsi.rc.tmpl" which specifies
+the 'dtype', 'dplat' and 'dsis' values for your satellite(s).
+
 --------------------- EXAMPLES --------------------------------------------
 
 1) Using archived diag_*_ges.*.bin files as input
