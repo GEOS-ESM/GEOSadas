@@ -613,7 +613,8 @@ program init_coeffs
      obstype = gsi_files(iii)%dtype
 
      select case (trim(obstype))
-     case ('sndr','sndrd1','sndrd2','sndrd3','sndrd4','ssmi','ssmis','seviri','tmi','gmi','avhrr')
+     case ('sndr','sndrd1','sndrd2','sndrd3','sndrd4','ssmi','ssmis',         &
+               'seviri','tmi','gmi','avhrr','geoirs')
         mean_only = .true.
         np = 1
      case default
