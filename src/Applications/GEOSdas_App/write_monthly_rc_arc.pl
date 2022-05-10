@@ -32,13 +32,17 @@
 #
 # => %list: keys = analysis products, e.g. "ana.eta", and names of model
 #                  collections found in $histfile, e.g. "inst1_2d_asm_Nx"
-#           value = a single code containing one or more of the following
+#           values = a single code containing one or more of the following
 #                   letters, {C, M, T, P}, with the following meanings:
 #                     C => comment entry in monthly.rc
 #                     M => create monthly products
 #                     T => tar this product
 #                     P => create monthly plots for this product
-#           the code, except for the 'C', is written to the monthly.rc file
+#                the code, except for the 'C', is written to the monthly.rc file
+# => %freq: keys = names of collections found in $histfile
+#           values = hour frequency (e.g. 1, 3, or 6) as specified in $histfile
+# => %mode: keys = names of collections found in $histfile
+#           values = mode ("inst" or "tavg") as specified in $histfile
 #
 # key local variables in main program:
 # => @outRcArr: lines to write to the $outRc file  (monthly.rc)
@@ -60,6 +64,7 @@ my ($histfile, $siloarc, $ncana, %list);
 my ($outRc, $outArc, $outArk);
 my ($rcFLG, $arcFLG, $arkFLG);
 my $script = basename $0;
+my (%freq, %mode);
 
 # analysis and aod output names with default hour types
 # (hard-coded until I can figure out a way to get them from somewhere else)
@@ -183,15 +188,8 @@ sub init {
 #=======================================================================
 # name - get_list_from_HIST
 # purpose - add collection names from $histfile to list
-#
-# key local variables
-# => %freq: keys = names of collections found in $histfile
-#           values = hour frequency (e.g. 1, 3, or 6) as specified in $histfile
-# => %mode: keys = names of collections found in $histfile
-#           values = mode ("inst" or "tavg") as specified in $histfile
 #=======================================================================
 sub get_list_from_HIST {
-    my (%freq, %mode);
     my ($colFLG, $extFLG);
     my ($colon, $doublecolon);
 
@@ -227,8 +225,8 @@ sub get_list_from_HIST {
 
         # get frequency and mode information
         #-----------------------------------
-        extract_freq($_, \%freq) if /\.frequency\s*$colon/;
-        extract_mode($_, \%mode) if /\.mode\s*$colon/;
+        extract_freq($_) if /\.frequency\s*$colon/;
+        extract_mode($_) if /\.mode\s*$colon/;
     }
     close HIST;
 }
@@ -302,18 +300,12 @@ sub plots_type {
 #
 # input parameter
 # => $line: line from $histfile containing frequency information for a collection
-#
-# input/output parameter
-# => $freqAddr: address of %freq hash containing collection frequency info
 #=======================================================================
 sub extract_freq {
-    my ($line, $freqAddr);
-
+     my ($line);
     $line = shift;
-    $freqAddr = shift;
-
     if ( $line =~  /^\s*(\S*)\.frequency\s*:\s*(\d{6})\s*,/ ) {
-        $$freqAddr{$1} = $2 / 10000;
+        $freq{$1} = $2 / 10000;
     }
 }
 
@@ -323,22 +315,26 @@ sub extract_freq {
 #
 # input parameter
 # => $line: line from $histfile containing mode information for a collection
-#
-# input/output parameter
-# => $modeAddr: address of %mode hash containing collection mode info
 #=======================================================================
 sub extract_mode {
-    my ($line, $modeAddr);
-    my ($name);
-
+     my ($line, $name);
     $line = shift;
-    $modeAddr = shift;
+    if ( $line =~  /^\s*(\S*)\.mode\s*:/ ) {
+        $name = $1;
+        $mode{$name} = "inst" if $line =~ /instantaneous/;
+        $mode{$name} = "tavg" if $line =~ /time-averaged/;
+    }
+}
+
+sub extract_modeX {
+    my ($line, $name);
+    $line = shift;
 
     $name = undef;
     $name = $1 if $line =~ /^\s*(\S*)\.mode\s*:/;
     if ($name) { 
-        $$modeAddr{$name} = "inst" if $line =~ /instantaneous/;
-        $$modeAddr{$name} = "tavg" if $line =~ /time-averaged/;
+        $mode{$name} = "inst" if $line =~ /instantaneous/;
+        $mode{$name} = "tavg" if $line =~ /time-averaged/;
     }
 }
 
@@ -400,6 +396,12 @@ sub get_info_from_SILO {
         }
     }
     close SILO;
+
+    # add additional hourtype requirements
+    #-------------------------------------
+    foreach (qw(traj_lcv_rst)) {
+        $hourtype{$_} = "$mode{$_}$freq{$_}";
+    }
 
     # entries for monthly.rc file
     #----------------------------
