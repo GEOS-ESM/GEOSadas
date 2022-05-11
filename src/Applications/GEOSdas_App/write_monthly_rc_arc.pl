@@ -60,11 +60,11 @@ use File::Basename;
 
 # global variables
 #-----------------
-my ($histfile, $siloarc, $ncana, %list);
+my ($histfile, $siloarc, $ncana);
 my ($outRc, $outArc, $outArk);
 my ($rcFLG, $arcFLG, $arkFLG);
 my $script = basename $0;
-my (%freq, %mode);
+my (%list, %freq, %mode);
 
 # analysis and aod output names with default hour types
 # (hard-coded until I can figure out a way to get them from somewhere else)
@@ -321,18 +321,6 @@ sub extract_mode {
     $line = shift;
     if ( $line =~  /^\s*(\S*)\.mode\s*:/ ) {
         $name = $1;
-        $mode{$name} = "inst" if $line =~ /instantaneous/;
-        $mode{$name} = "tavg" if $line =~ /time-averaged/;
-    }
-}
-
-sub extract_modeX {
-    my ($line, $name);
-    $line = shift;
-
-    $name = undef;
-    $name = $1 if $line =~ /^\s*(\S*)\.mode\s*:/;
-    if ($name) { 
         $mode{$name} = "inst" if $line =~ /instantaneous/;
         $mode{$name} = "tavg" if $line =~ /time-averaged/;
     }
