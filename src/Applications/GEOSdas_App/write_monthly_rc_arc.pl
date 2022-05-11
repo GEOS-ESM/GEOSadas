@@ -63,8 +63,9 @@ use File::Basename;
 my ($histfile, $siloarc, $ncana);
 my ($outRc, $outArc, $outArk);
 my ($rcFLG, $arcFLG, $arkFLG);
-my $script = basename $0;
 my (%list, %freq, %mode);
+
+my $script = basename $0;
 
 # analysis and aod output names with default hour types
 # (hard-coded until I can figure out a way to get them from somewhere else)
