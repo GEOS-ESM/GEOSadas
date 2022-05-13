@@ -39,3 +39,14 @@ install (
    FILES ${ALLETC}
    DESTINATION etc/atmens
    )
+
+set (R21C_files
+   R21C/atmos_enkf.nml.tmpl  
+   R21C/obs1gsi_mean.rc  
+   R21C/obs1gsi_member.rc
+   )
+
+install (
+   FILES ${R21C_files}
+   DESTINATION etc/atmens/R21C
+   )
