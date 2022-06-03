@@ -2,9 +2,9 @@
 # C48f.input
 #-----------
 
-codeID: b3a880f
+codeID: 523f29e
 description: C48f__GEOSadas-5_29_3__agrid_C48__ogrid_f34
-fvsetupID: f7d8d041c9
+fvsetupID: f7aaa973c7
 fvsetupflags: -sensdeg 1
 
 ---ENDHEADERS---
