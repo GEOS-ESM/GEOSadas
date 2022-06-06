@@ -28,13 +28,13 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  tag: rt1_4_10_geosit_2
+  tag: rt1_4_10_stoch_grid_fix
   develop: main
 
 MAPL:
   local: ./src/Shared/@MAPL
   remote: ../MAPL.git
-  tag: v2.8.0.4
+  tag: v2.8.0.7
   develop: develop
 
 FMS:
