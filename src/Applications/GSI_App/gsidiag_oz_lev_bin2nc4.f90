@@ -126,7 +126,6 @@ program convert_oz_lev_diag
     deallocate(idiagbuf, diagbuf, rdiagbuf)
 
   enddo
-  !call  rmdup(ob_count, iint, irdim, ireal, idiagbuf_, rdiagbuf_, diagbuf_, nobs_unique)
    
   do iobs = 1,ob_count
        call nc_diag_metadata( "Latitude",                      diagbuf_(1,iobs)    )
@@ -201,52 +200,6 @@ subroutine read_oz_header( inlun, isis,obstype, dplat,jiter, nlevs,ianldate,iint
   integer,intent(out) ::ioff0
   read(inlun,iostat=iflag) isis,dplat,obstype,jiter,nlevs,ianldate,iint,ireal,irdim,ioff0
 end subroutine read_oz_header
-
-! removes duplicates loosely based on odsselect
-subroutine rmdup(nobs, iint, irdim, ireal, idiagbuf_, rdiagbuf_, diagbuf_, nobs_unique)
-  use kinds,only: r_quad, r_single,i_kind
-  use m_SortingTools, only : indexSet,indexSort
-  implicit none
-  integer(i_kind) :: nobs, iint, irdim, ireal
-  integer(i_kind) :: idiagbuf_(iint,nobs)
-  real(r_single)  :: rdiagbuf_(irdim,nobs)
-  real(r_single)  :: diagbuf_(ireal,nobs)
-  integer(i_kind) :: nobs_unique,i,is
-  integer(i_kind), allocatable, dimension(:) :: indx
-
-  allocate ( indx(nobs))
-  call IndexSet  ( nobs, indx )
-  call IndexSort ( nobs, indx,  rdiagbuf_(1,1:nobs), descend=.false. ) !ob
-  call IndexSort ( nobs, indx,  diagbuf_(1,1:nobs), descend=.false. ) !lat
-  call IndexSort ( nobs, indx,  diagbuf_(2,1:nobs), descend=.false. ) !lon
-  call IndexSort ( nobs, indx,  rdiagbuf_(4,1:nobs), descend=.false. )  !plev
-  call IndexSort ( nobs, indx,  diagbuf_(3,1:nobs), descend=.false. ) !time in window
-
-  ! sort by indx
-  do i = 1,nobs
-    rdiagbuf_(:,i) = rdiagbuf_(:,indx(i))
-    diagbuf_(:,i)= diagbuf_(:,indx(i))
-    idiagbuf_(:,i) = idiagbuf_(:,indx(i))
-  end do
-  is = 1
-  indx(is) = 1
-  do i = 2, nobs
-     if ( diagbuf_(3,i)==diagbuf_(3,i-1) .AND. diagbuf_(1,i)==diagbuf_(1,i-1) .AND. diagbuf_ (2,i)==diagbuf_ (2,i-1) .AND. rdiagbuf_(4,i) == rdiagbuf_(4,i-1) .AND. rdiagbuf_ (1,i)==rdiagbuf_ (1,i-1) ) then
-         cycle
-     end if
-         is = is + 1
-         indx(is) = i
-  end do
-
-  nobs_unique = is
-  do is = 1, nobs_unique
-     i  = indx(is)
-     idiagbuf_(:,is) = idiagbuf_(:,i)
-     diagbuf_(:,is) = diagbuf_(:,i)
-     rdiagbuf_(:,is) = rdiagbuf_(:,i)
-  end do
-  deallocate(indx)
-end subroutine rmdup
 
 
 subroutine usage
