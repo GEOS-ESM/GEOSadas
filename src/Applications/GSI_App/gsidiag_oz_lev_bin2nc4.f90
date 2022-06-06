@@ -112,6 +112,7 @@ program convert_oz_lev_diag
   allocate(grs4(nlevs),err4(nlevs),iouse(nlevs))
   do while (iflag .ge. 0) ! iflag == 0 means the end of the file
    read(inlun,iostat=iflag) nobs
+   if (iflag .lt. 0) cycle
    allocate(idiagbuf(iint,nobs))
    allocate(diagbuf(ireal,nobs))
    allocate(rdiagbuf(irdim,1,nobs))
@@ -123,12 +124,11 @@ program convert_oz_lev_diag
      ii=ii+1
    enddo
     deallocate(idiagbuf, diagbuf, rdiagbuf)
-    if (iflag .lt. 0) cycle
 
   enddo
-  nobs = ii-1
-  call  rmdup(nobs, iint, irdim, ireal, idiagbuf_, rdiagbuf_, diagbuf_, nobs_unique)
-  do iobs = 1,nobs_unique
+  !call  rmdup(ob_count, iint, irdim, ireal, idiagbuf_, rdiagbuf_, diagbuf_, nobs_unique)
+   
+  do iobs = 1,ob_count
        call nc_diag_metadata( "Latitude",                      diagbuf_(1,iobs)    )
        call nc_diag_metadata( "Longitude",                     diagbuf_(2,iobs)    )
        call nc_diag_metadata( "MPI_Task_Number",               idiagbuf_(1,iobs)   )
@@ -176,13 +176,13 @@ subroutine count_obs( inlun, ob_count )
   call read_oz_header( inlun, isis, obstype, dplat, jiter, nlevs, ianldate, iint, ireal, irdim, iflag, ioff0 )
   do while (iflag .ge. 0) ! iflag == 0 means the end of the file
     read(inlun,iostat=iflag) nobs
+    if (iflag .lt. 0) cycle
     allocate(idiagbuf(iint,nobs))
     allocate(diagbuf(ireal,nobs))
     allocate(rdiagbuf(irdim,1,nobs))
     read(inlun,iostat=iflag) idiagbuf(:,1:nobs), diagbuf(:,1:nobs), rdiagbuf(:,1,1:nobs)
     ob_count = ob_count + nobs
     deallocate(idiagbuf, diagbuf, rdiagbuf)
-    if (iflag .lt. 0) cycle
 
   enddo
   close(inlun)
