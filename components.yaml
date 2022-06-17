@@ -5,13 +5,13 @@ GEOSadas:
 env:
   local: ./@env
   remote: ../ESMA_env.git
-  tag: v4.0.0
+  tag: v4.1.0
   develop: main
 
 cmake:
   local: ./@cmake
   remote: ../ESMA_cmake.git
-  tag: v3.12.0
+  tag: v3.17.0
   develop: develop
 
 ecbuild:
@@ -28,7 +28,7 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  tag: v1.5.4
+  tag: v1.5.5
   develop: main
 
 MAPL:
