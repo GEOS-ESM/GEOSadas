@@ -43,7 +43,7 @@ def patmosx_has_obs(fname):
     """
     Returns true if PATMOSX reflectance file has something in it.
     """
-    return 'latitude' in load(fname).keys()
+    return 'latitude' in load(fname,allow_pickle=True).keys()
 
 #---------------------------------------------------------------------
 

@@ -88,9 +88,14 @@ while(1) { # Start the daemon
                 open(FH1,"+>input_combfr.txt") || die "prepqc: could not open input_combfr.txt";
                 foreach $qcpat ( `cat pre-qc.acq | sort | uniq`) {
                     $pat = `echorc.x -template dummy $nymd $nhms -fill $qcpat`;
-                    print FH1 ("$pat");
+                    print FH1 ("$pat") if ( -e $pat  && ! -z $pat ) ;
                 }
                 close(FH1);
+                if ( -z "input_combfr.txt "{
+                   print"No pre-qc files present, skipping PREPQC\n";
+                   system("touch prepqc.$nymd.$nhms.done");
+                   return
+                }
                 `combfrd.x -d $pbdtg $pbname < input_combfr.txt`;
                 open(FH1,"+>data_types.log") || die "prepqc: could not open data_types.log";
                 @types = `scanbuf0.x  $pbname`;
