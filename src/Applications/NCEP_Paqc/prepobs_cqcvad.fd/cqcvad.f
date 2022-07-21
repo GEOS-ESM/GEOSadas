@@ -67,6 +67,8 @@ C       both from 160000 to 500000 to accommodate VAD wind reports from
 C       Level 2 decoder.
 C 2016-12-18  D. Stokes  Increased NSTN (maximum number of stations to
 C       process) from 200 to 300.  Made minor correction in GETDAT.
+C 2022-07-21  M. Sienkiewicz  Increased NRPT and NEVNT from 500000 to
+C       800000 to accommodate recent increase in numbers of reports 
 C
 C USAGE:
 C   INPUT FILES:
@@ -343,6 +345,8 @@ C       amongst all VAD reports that can be processed) from 160000 to
 C       500000 to accommodate VAD wind reports from Level 2 decoder.
 C 2016-12-18  D. Stokes  Increased NSTN (maximum number of stations to
 C       process) from 200 to 300.
+C 2022-07-21  M. Sienkiewicz  Increased NRPT and NEVNT from 500000 to
+C       800000 to accommodate recent increase in numbers of reports 
 C
 C USAGE:    CALL COMSTAT
 C
@@ -353,7 +357,7 @@ C
 C$$$
       SUBROUTINE COMSTAT
 
-      PARAMETER (NL=34,NTIM=5,NTIMES=6,NRPT=500000,NSTN=300)
+      PARAMETER (NL=34,NTIM=5,NTIMES=6,NRPT=800000,NSTN=300)
       PARAMETER (NLEV=35,NINC=3)
       INTEGER N12(0:NL,0:NTIM)
       REAL    U1(0:NL,0:NTIM),   V1(0:NL,0:NTIM),
@@ -1050,6 +1054,8 @@ C       both from 160000 to 500000 to accommodate VAD wind reports from
 C       Level 2 decoder.
 C 2016-12-18  D. Stokes  Increased NSTN (maximum number of stations to
 C       process) from 200 to 300.
+C 2022-07-21  M. Sienkiewicz  Increased NRPT and NEVNT from 500000 to
+C       800000 to accommodate recent increase in numbers of reports 
 C
 C USAGE:    CALL EVNOUT(NUM1,NUM2,NLV)
 C   INPUT ARGUMENT LIST:
@@ -1064,8 +1070,8 @@ C
 C$$$
       SUBROUTINE EVNOUT(NUM1,NUM2,NLV)
 
-      PARAMETER (NRPT=500000,NSTN=300,NLEV=35)
-      parameter (nevnt=500000)
+      PARAMETER (NRPT=800000,NSTN=300,NLEV=35)
+      parameter (nevnt=800000)
       REAL(8)   BMISS
 
       COMMON /SINGLE/ ZOB(NRPT), ITM(NRPT),TIM(NRPT),
@@ -1312,6 +1318,8 @@ C 2016-12-18  D. Stokes  Increased NSTN (maximum number of stations to
 C       process) from 200 to 300.  Also made a minor logic correction
 C       so that the station info for the "NSTN'th" id is stored if
 C       there are at least that many unique ids.
+C 2022-07-21  M. Sienkiewicz  Increased NRPT and NEVNT from 500000 to
+C       800000 to accommodate recent increase in numbers of reports 
 C
 C USAGE:    CALL GETDAT(ITIME)
 C   INPUT ARGUMENT LIST:
@@ -1324,7 +1332,7 @@ C
 C$$$
       SUBROUTINE GETDAT(ITIME)
 
-      PARAMETER (NRPT=500000,NSTN=300,NLEV=35,NTIMES=6,NINC=3)
+      PARAMETER (NRPT=800000,NSTN=300,NLEV=35,NTIMES=6,NINC=3)
       PARAMETER (MLV=255)         ! no. of possible levels
       INTEGER IDAT(8), JDAT(8), ITIMES(8,4)
       REAL    TDIF(5,4), RINC(5)
@@ -1768,6 +1776,8 @@ C       longer necessary but will be retained because it may prove
 C       useful for future debugging.
 C 2016-12-18  D. Stokes  Increased NSTN (maximum number of stations to
 C       process) from 200 to 300.
+C 2022-07-21  M. Sienkiewicz  Increased NRPT and NEVNT from 500000 to
+C       800000 to accommodate recent increase in numbers of reports 
 C
 C USAGE:    CALL INCDIST
 C
@@ -1781,7 +1791,7 @@ C
 C$$$
       SUBROUTINE INCDIST
 
-      PARAMETER (NRPT=500000,NSTN=300,NLEV=35,NDIV=23,NTIMES=6,NINC=3)
+      PARAMETER (NRPT=800000,NSTN=300,NLEV=35,NDIV=23,NTIMES=6,NINC=3)
 
       COMMON /STN/    SLAT(NSTN), SLON(NSTN), SIDS(NSTN), STNID(NRPT),
      &                ZSTN(NSTN)
@@ -1951,6 +1961,8 @@ C       amongst all VAD reports that can be processed) from 160000 to
 C       500000 to accommodate VAD wind reports from Level 2 decoder.
 C 2016-12-18  D. Stokes  Increased NSTN (maximum number of stations to
 C       process) from 200 to 300.
+C 2022-07-21  M. Sienkiewicz  Increased NRPT and NEVNT from 500000 to
+C       800000 to accommodate recent increase in numbers of reports 
 C
 C USAGE:    CALL INCR
 C
@@ -1961,7 +1973,7 @@ C
 C$$$
       SUBROUTINE INCR
 
-      PARAMETER (NRPT=500000,NSTN=300,NLEV=35,NTIMES=6,NINC=3)
+      PARAMETER (NRPT=800000,NSTN=300,NLEV=35,NTIMES=6,NINC=3)
 
       REAL(8)  BMISS
 
@@ -2369,6 +2381,8 @@ C       both from 160000 to 500000 to accommodate VAD wind reports from
 C       Level 2 decoder.
 C 2016-12-18  D. Stokes  Increased NSTN (maximum number of stations to
 C       process) from 200 to 300.
+C 2022-07-21  M. Sienkiewicz  Increased NRPT and NEVNT from 500000 to
+C       800000 to accommodate recent increase in numbers of reports 
 C
 C USAGE:    CALL DMA(HONOR_FLAGS)
 C   INPUT ARGUMENT LIST:
@@ -2381,8 +2395,8 @@ C
 C$$$
       SUBROUTINE DMA(HONOR_FLAGS)
 
-      PARAMETER (NRPT=500000,NSTN=300,NLEV=35,NTIMES=6,NINC=3)
-      PARAMETER (nevnt=500000)
+      PARAMETER (NRPT=800000,NSTN=300,NLEV=35,NTIMES=6,NINC=3)
+      PARAMETER (nevnt=800000)
       CHARACTER*8 SIDS, STNID, SIDEV
 
       REAL(8)   BMISS
