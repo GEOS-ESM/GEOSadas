@@ -45,7 +45,7 @@ The directory /discover/nobackup/projects/gmao/dadev/rtodling/geos_it does not e
 > 
 
 Processing nodes (1:Westmere, 2:SandyBridge, 3:Ivy Bridge, 4:Haswell, 5:Skylake, 6:Cascase)? [4]
-> 5
+> 6
 
 Which case of variational analysis? [1]
 > 
@@ -138,7 +138,7 @@ Which main class of ObsSys (1: NRT; 2: MERRA; 3: MERRA-2; 4: GEOS-IT; 5: R21C)? 
 > 4
 
 OBSERVING SYSTEM CLASSES?
-> merra2_cdas0_pre-qc_bufr,merra2_cdas_pre-qc_bufr,merra2_avhrrwnd_pre-qc_bufr,merra2_ascat_pre-qc_bufr,merra2_ers1_pre-qc_bufr,merra2_repro_ers2_pre-qc_bufr,merra2_qscat_jpl_pre-qc_bufr,merra2_wspd_pre-qc_bufr,merra2_nmodis_pre-qc_bufr,merra2_prof_pre-qc_bufr,merra2_cdas0_pre-qc_bufr,merra2_cdas_pre-qc_bufr,merra2_avhrrwnd_pre-qc_bufr,merra2_ascat_pre-qc_bufr,merra2_ers1_pre-qc_bufr,merra2_repro_ers2_pre-qc_bufr,merra2_qscat_jpl_pre-qc_bufr,merra2_wspd_pre-qc_bufr,merra2_nmodis_pre-qc_bufr,merra2_prof_pre-qc_bufr,merra2_ncep_tcvitals,ncep_ssmis_bufr,ncep_1bamua_bufr,ncep_mhs_bufr,ncep_1bhrs4_bufr,ncep_goesfv_bufr,ncep_gpsro_bufr,ncep_mtiasi_bufr,ncep_atms_bufr,ncep_cris_bufr,ncep_crisfsr_bufr,ncep_satwnd_bufr,ncep_sevcsr_bufr,ncep_avcsam_bufr,ncep_avcspm_bufr,disc_airs_bufr,disc_amsua_bufr,ncep_acftpfl_bufr,aura_omieff_nc,npp_ompsnp_nc,npp_ompsnmeff_nc,gmao_gmi_bufr,gmao_amsr2_bufr
+> geosit_cdas_raob_pre-qc_bufr,geosit_cdas_conv_pre-qc_bufr,geosit_prof_pre-qc_bufr,geosit_avhrrwnd_pre-qc_bufr,geosit_nmodis_pre-qc_bufr,geosit_goes_pre-qc_prep_bufr,geosit_metsat_pre-qc_prep_bufr,geosit_jma_pre-qc_prep_bufr,geosit_ascat_pre-qc_bufr,geosit_repro_ers2_pre-qc_bufr,geosit_qscat_jpl_pre-qc_bufr,geosit_wspd_pre-qc_bufr,geosit_satwnd_bufr,geosit_avhrr_satwnd_bufr,geosit_ncep_tcvitals,geosit_tmi_bufr,geosit_gpsro_bufr,geosit_sevcsr_bufr,geosit_1bamua_bufr,geosit_1bamub_bufr,geosit_1bhrs2_bufr,geosit_1bhrs3_bufr,geosit_1bhrs4_bufr,geosit_1bmsu_bufr,geosit_1bmhs_bufr,geosit_1bssu_bufr,geosit_eosairs_bufr,geosit_eosamsua_bufr,geosit_mtiasi_bufr,geosit_atms_bufr,geosit_ssmit11_bufr,geosit_ssmit13_bufr,geosit_ssmit14_bufr,geosit_ssmit15_bufr,geosit_amsre_bufr,geosit_osbuv8_bufr,geosit_npp_ompsnp_nc,geosit_aura_omieff_nc,geosit_npp_ompsnmeff_nc,geosit_avcsam_bufr,geosit_avcspm_bufr,geosit_acftpfl_bufr,geosit_amsr2_bufr,geosit_crisfsr_bufr,geosit_gmi_bufr
 
 CHECKING OBSYSTEM? [2]
 > 1
@@ -195,7 +195,7 @@ Do Aerosol Analysis (y/n)? [y]
 > 
 
 AOD OBSERVING CLASSES [or type 'none']?
-> 
+> mod04_061_his,myd04_061_his
 
 Enable GAAS feedback to model (y/n)? [y]
 > 

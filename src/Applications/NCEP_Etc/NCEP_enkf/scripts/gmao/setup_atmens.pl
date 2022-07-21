@@ -49,6 +49,7 @@ my $scriptname = basename($0);
                "nosppt",
                "ose",
                "rcorr",
+	       "r21c",
                "h" );
 
   usage() if $opt_h;
@@ -119,6 +120,11 @@ sub init {
       if ( $opt_lsmcm ) {
            $lsmchoice = 2;
       }
+   }
+
+   $bcopt = "";
+   if ( $opt_r21c ) {
+      $bcopt = "-r21c";
    }
 
    $setradbc = 0;
@@ -420,7 +426,8 @@ if ( $setvtx ) {
 cp("$FVROOT/bin/atm_ens.j","$FVHOME/run");
 
 # generate boundary condition script
-$cmd = "$FVROOT/bin/gen_lnbcs.pl $cubed -o $FVHOME/run/lnbcs_ens $aim $ajm $ogrid $lndbcs";
+#     $cmd = "$FVROOT/bin/gen_lnbcs.pl $cubed -o $FVHOME/run/lnbcs_ens $aim $ajm $ogrid $lndbcs";
+$cmd = "$FVROOT/bin/gen_lnbcs.pl $cubed $bcopt -o $FVHOME/run/lnbcs_ens $aim $ajm $ogrid $lndbcs";
 $rc = system($cmd);
 
 # make sure .no_archiving exists in ATMENS
