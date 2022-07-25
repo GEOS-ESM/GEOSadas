@@ -1,7 +1,7 @@
 C$$$  MAIN PROGRAM DOCUMENTATION BLOCK
 C
 C MAIN PROGRAM: PREPOBS_PREVENTS
-C   PRGMMR: KEYSER           ORG: NP22        DATE: 2013-02-13
+C   PRGMMR: DONG             ORG: NP22        DATE: 2020-01-09
 C
 C ABSTRACT: PREPARES OBSERVATIONAL PREPBUFR FILE FOR SUBSEQUENT
 C   QUALITY CONTROL AND ANALYSIS PROGRAMS.  THIS IS DONE THROUGH THE
@@ -81,6 +81,9 @@ c
 c rename all REAL(8) variables as
 C     *_8
 
+C 2020-01-06  J. Dong -- In program PREPOBS_PREVENTS, changed the
+C             windowing decade from 20 to 40 for cases when the year 
+C             is represented by 2 digits instead of 4.
 C
 C USAGE:
 C   INPUT FILES:
@@ -153,11 +156,11 @@ C$$$
 
       DATA  LAST/'XXXXXXXX'/
 
-      CALL W3TAGB('PREPOBS_PREVENTS',2013,0044,0061,'NP22')
+      CALL W3TAGB('PREPOBS_PREVENTS',2020,0009,0061,'NP22')
 
       PRINT 700
   700 FORMAT(/'  =====> WELCOME TO PREVENTS PROGRAM -- LAST UPDATED ',
-     $ '2013-02-13'/)
+     $ '2020-01-09'/)
 
 C  On WCOSS should always set BUFRLIB missing (BMISS) to 10E8 to avoid
 C   overflow when either an INTEGER*4 variable is set to BMISS or a
@@ -204,7 +207,9 @@ C            Y2K COMPLIANT (BUFRLIB DOES THE WINDOWING HERE)
          PRINT'(" ##> 2-DIGIT YEAR IN IDATEP RETURNED FROM READMG ",
      $    "(IDATEP IS: ",I0,") - USE WINDOWING TECHNIQUE TO OBTAIN ",
      $    "4-DIGIT YEAR")', IDATEP
-         IF(IDATEP/1000000.GT.20)  THEN
+C IF IDATEP=41~99 THEN IDATEP=1941~1999
+C IF IDATEP=00~40 THEN IDATEP=2000~2040
+         IF(IDATEP/1000000.GT.40)  THEN
             IDATEP = 1900000000 + IDATEP
          ELSE
             IDATEP = 2000000000 + IDATEP
