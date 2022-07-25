@@ -8331,9 +8331,9 @@ print  SCRIPT <<"EOF";
 
           cd \$FVWORK
           if (`uname -n` =~ borg*) then
-             cat \$PBS_NODEFILE | head -1 > \$FVWORK/OIQC_list
-             cat \$PBS_NODEFILE | tail +2 > \$FVWORK/GCM_list
-             cat \$PBS_NODEFILE           > \$FVWORK/ANA_list
+             cat \$PBS_NODEFILE | head -1    > \$FVWORK/OIQC_list
+             cat \$PBS_NODEFILE | tail -n +2 > \$FVWORK/GCM_list
+             cat \$PBS_NODEFILE              > \$FVWORK/ANA_list
              subset_nodefile.pl \$NCPUS_IDF -f \$PBS_NODEFILE -o \$FVWORK/IDF_list
              subset_nodefile.pl \$NCPUS_IAU -f \$PBS_NODEFILE -o \$FVWORK/IAU_list
           endif
@@ -8610,6 +8610,7 @@ EOF
            endif
            echo2 ""
            echo2 "setenv FVHOME \$FVHOME"
+           echo2 "setenv ARCHIVE \$FVARCH"
            echo2 "set Bin = \$Bin"
            echo2 "set output = \$lname2"
            echo2 ""
