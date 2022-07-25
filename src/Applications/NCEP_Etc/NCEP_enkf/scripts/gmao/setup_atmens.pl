@@ -426,7 +426,6 @@ if ( $setvtx ) {
 cp("$FVROOT/bin/atm_ens.j","$FVHOME/run");
 
 # generate boundary condition script
-#     $cmd = "$FVROOT/bin/gen_lnbcs.pl $cubed -o $FVHOME/run/lnbcs_ens $aim $ajm $ogrid $lndbcs";
 $cmd = "$FVROOT/bin/gen_lnbcs.pl $cubed $bcopt -o $FVHOME/run/lnbcs_ens $aim $ajm $ogrid $lndbcs";
 $rc = system($cmd);
 
