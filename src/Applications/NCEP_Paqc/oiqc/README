@@ -27,3 +27,49 @@ execution of 'fv2ss.x' as an interim solution until we can replace
 New script "gmao_prepqc" replaces "ssprepqc" - we can now read the
 g5-eta files directly into the 'prevents' routine and so can eliminate
 'fv2ss' step
+
+
+2 Sep 2008
+Merged in modifications from NCEP to increase array sizes - allows handling
+additional observations.  Also includes J. Woollen fix to NDDSPLIT for load
+balancing error.
+
+31 Jan 2012 
+
+Modify to use 'new' quality mark QMN instead of original mark QM, when writing
+SSM/I wind speed data record.  This will allow quality marks assigned by OIQC
+to SSM/I windspeeds to be recorded in the output file.
+
+24 Sep 2013
+
+Merge in changes for WCOSS (except subroutine PREPQM).  Code now is
+strictly MPI for simpler and better load balancing.  New WCOSS code had
+problem in PREPQM where events on last ob were not written so is not (yet)
+updated.
+
+19 May 2017
+
+Add call to 'maxout' to increase maximum BUFR record size for output.
+Some raobs were being discarded from CQC/RADCOR because of overlarge
+BUFR record sizes.
+
+2 Jan 2018
+
+Bump up array limits to accomodate increasing numbers of obs
+MAXREP 900K to 1500K, MAXLEV 1100K to 2200K
+
+5 Feb 2019
+
+Added a change to allow calculation of forecast errors for wind observations
+above 1 mb.  (Will set the pressure level used to 1 mb.)
+
+20 Jan 2021
+
+Modificatons to use 10-digit date from BUFR library instead of 8-digit default
+
+---
+26 May 2017
+
+New version of gmao_prepqc to run new NRL QC instead of old acqc and acarsqc.
+
+

@@ -1,14 +1,14 @@
-      program fix_ascat
+      program flag_NP_buoy
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !     NASA/GSFC, Global Modeling and Assimilation Office, Code 610.1   !
 !-----------------------------------------------------------------------
 !BOP
 !
-! !ROUTINE: fix_ascat:  change QM and add obs error to ASCAT winds
+! !ROUTINE: flag_NP_buoy:  Flag fixed buoys with bad latitude (90N)
 !
 ! !INTERFACE:
 !
-!     Usage:  fix_ascat.x input_prepbufr output_prepbufr
+!     Usage:  flag_NP_buoy.x input_prepbufr output_prepbufr
 !
 ! !USES:
 !
@@ -16,13 +16,13 @@
 !
 !  link to libbfr_r4i4.a library
 
-! !DESCRIPTION:  simple routine to modify QM and add obs error (3.5m/s)
-!                for ASCAT winds
+! !DESCRIPTION:  simple routine to modify QM to purge buoy obs
+!                with bad locations
 !                (derived from code to tweak OIQC QMs)
 !
 ! !REVISION HISTORY:
 !
-!     22Apr2011    Meta   Initial version
+!     18Mar2021    Meta   Initial version
 !
 !EOP
 !-----------------------------------------------------------------------
@@ -49,24 +49,23 @@
       character*30  evnstr,hdstr, oestr
       
       logical      mod          ! flag indicating whether to modify report
+      logical      flag         ! flag indicating whether to give report a purge mark
 
       integer  i,j              ! loop counters
       integer  n                ! report counter
 
       real*8     bmiss          !  missing data value
       
-      real*8 evn(5,255)         ! wind profile from bufr file
-      real*8 hdr(2)
+      real*8 evn(4,255)         ! wind profile from bufr file
+      real*8 hdr(5)
       real*8 oes(1,255)         ! obs error array
       character*8 sid
 
       equivalence(hdr,sid)
       real wmax                 ! gross check parameter for wind.
      
-      data hdstr  /'SID TYP'/
-      data evnstr /'UOB VOB WQM WPC WRC'/
-      data oestr  /'WOE'/
-!     data oestr /'WOE UFC VFC'/
+      data hdstr  /'SID TYP T29 XOB YOB'/
+      data evnstr /'POB  PQM  PPC  PRC '/
 
       data luin /8/, luout /9/
 
@@ -75,7 +74,7 @@
 
       argc = iargc()
       if (argc .lt. 2) then
-         print *,'usage: fix_ascat.x inputbufr outputbufr'
+         print *,'usage: flag_NP_buoy.x inputbufr outputbufr'
          stop
       endif
       call GetArg( 1_4, inputfile)
@@ -94,17 +93,15 @@
       do while (ireadmg(luin,subset,idate).eq. 0)
 
          if (subset .ne. psubset ) then
-            if (psubset .eq. 'ASCATW') call closmg(luout)
+            if (psubset .eq. 'SFCSHP') call closmg(luout)
             psubset = subset
-            n = 0
          endif
          
-         if (subset .ne. 'ASCATW') then
+         if (subset .ne. 'SFCSHP') then
 !     
-!     For non-ASCATW data types, copy entire message buffer to output file
+!     For non-SFCSHP data types, copy entire message buffer to output file
 !     
             call copymg(luin,luout)
-            n = n + 1
             cycle
          else
             
@@ -113,43 +110,32 @@
             do while ( ireadsb(luin) .eq. 0 )
                
 !     
-!     For ASCATW, copy individual reports from input message buffer to
+!     For SFCSHP, copy individual reports from input message buffer to
 !     output message buffer
 !     
                call ufbcpy(luin, luout)
+               flag = .false.
                
-               call ufbint(luin,hdr,2,1,klev,hdstr)
-               if (hdr(2) .ne. 290) then
-                  print *,'Error not ASCATW data'
-                  cycle
-               endif
-               call ufbint(luin,evn,5,255,klev,evnstr)
-               if (klev .ne. 1) then
-                  print *,'multilevel report klev=',klev
-               endif
-               mod = .false.
-               do j = 1,klev
-                  if ( evn(3,j) .eq. 9. ) then
-                     if ( abs(evn(1,j)) .lt. wmax .and. 
-     &                    abs(evn(2,j)) .lt. wmax ) then
-                        mod = .true.
-                        evn(3,j) = 2.
+
+!  if observation matches criteria, replace pressure QM with blacklist value
+               call ufbint(luin,hdr,5,1,klev,hdstr)
+               if ( (hdr(2) == 180 .or. hdr(2) == 280.) .and.
+     &            hdr(3) == 561 .and. hdr(5) >= 90.) then
+                  call ufbint(luin,evn,4,255,klev,evnstr)
+                  if (klev .ne. 1) then
+                     print *,'multilevel report klev=',klev
+                  endif
+                  do j = 1,klev
+                     if ( evn(2,j) .lt. 9. ) then
+                        evn(2,j) = 14.
+                        evn(3,j) = 1.
                         evn(4,j) = 1.
                      endif
-                  endif
-               enddo
-               
-!     
-!     If array was modified, write the changes to output buffer
-!     
-               if (mod) then
-                  call ufbint(luout,oes,1,klev,mlev,oestr)
-                  call ufbint(luout,evn,5,klev,llev,evnstr)
-                  if (mlev .ne. klev) print *, 'error ',klev,mlev
+                  enddo
+                  call ufbint(luout,evn,4,klev,llev,evnstr)
                   if (llev .ne. klev) print *, 'error ',klev,llev
-                  mod = .false.
+                  n = n + 1
                endif
-               n = n + 1
 !     
 !  write output buffer to output file
 !     
@@ -161,7 +147,7 @@
       enddo      
       call closbf(luout)
 
-      print *,'wrote ',n,' records'
+      print *,'modified ',n,' records'
 
       stop
-      end program fix_ascat
+      end program flag_NP_buoy

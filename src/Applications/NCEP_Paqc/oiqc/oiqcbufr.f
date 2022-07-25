@@ -4215,9 +4215,11 @@ C  ----------
  
 C  CHECK THE DATA DATE - PROCEED ANYWAY IF NO NMCDATE FILE TO BE FOUND
 C  -------------------------------------------------------------------
+
+      call datelen(10)
  
       CALL DATEBF(LUBFI,IY,IM,ID,IH,IDATE)
-      READ(LUDAT,'(8X,I8)',END=1,ERR=900) JDATE
+      READ(LUDAT,'(6X,I10)',END=1,ERR=900) JDATE
       IF(IDATE.NE.JDATE) GOTO 901     
 1     IF(IDATE.NE.JDATE) THEN         
          REWIND LUDAT

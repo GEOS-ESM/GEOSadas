@@ -1,7 +1,7 @@
 C$$$  MAIN PROGRAM DOCUMENTATION BLOCK
 C
 C MAIN PROGRAM: PREPOBS_CQCBUFR
-C   PRGMMR: KEYSER           ORG: NP22        DATE: 2016-05-18
+C   PRGMMR: MELCHIOR          ORG: NP22        DATE: 2020-01-09
 C
 C ABSTRACT: Perform complex quality control of rawinsonde heights
 C   and temperatures.  Errors are detected and many corrected.
@@ -241,6 +241,10 @@ C     network (the only network where it currently would run).
 C 2017-05-16  Sienkiewicz - adjust maximum BUFR record size (call MAXOUT)
 C     to avoid losing soundings that just barely exceed max after CQC
 C     changes are added to the record.
+C 2020-08-09  S. Melchior - In subroutine TMPCHK, explicitly defined ICK 
+C     as an integer. Moved ICK.NE.0 logic inside ITI.NE.0 logic.
+C     BENEFIT: corrects problems when compiled and run with full DEBUG
+C              options enabled.
 C
 C USAGE:
 C   INPUT FILES:
@@ -340,7 +344,7 @@ C$$$
       NAMELIST /NAMLST/ TEST, DOVTMP, USESQN, DOHOR, DOTMP, DOT40,
      &                  WRT23,RADCOR
 
-      CALL W3TAGB('PREPOBS_CQCBUFR',2016,0139,0067,'NP22')
+      CALL W3TAGB('PREPOBS_CQCBUFR',2020,0009,0067,'NP22')
 
       TEST   = .TRUE.          ! Set .T. for tests to give more print
                         !!!  #### BE CAREFUL ##### in subr. POBERR,
@@ -357,7 +361,7 @@ C$$$
       SINGLE = .FALSE.
       IF(.NOT.SINGLE) READ(5,NAMLST)
       WRITE(6,700) TEST, DOVTMP, USESQN, DOHOR, DOTMP, DOT40, WRT23
-  700 FORMAT(/' WELCOME TO PREPOBS_CQCBUFR, LAST UPDATED 2016-05-18'/
+  700 FORMAT(/' WELCOME TO PREPOBS_CQCBUFR, LAST UPDATED 2020-01-09'/
      & '     SWITCHES: TEST =',L2,'  DOVTMP =',L2,'  USESQN =',L2,
      & '  DOHOR =',L2,'  DOTMP =',L2,'  DOT40 =',L2,'  WRT23 =',L2/)
 
@@ -14188,6 +14192,10 @@ C ABSTRACT: COMPUTES TEMPORAL RESIDUALS
 C
 C PROGRAM HISTORY LOG:
 C   UNKNOWN   W. Collins  Original author.
+C   2020-08-09  S. Melchior - explicitly defined ICK as an
+C       integer. Moved ICK.NE.0 logic inside ITI.NE.0 logic.
+C       BENEFIT: corrects problems when compiled and run with
+C                full DEBUG options enabled.
 C
 C USAGE:    CALL TMPCHK
 C
@@ -14223,7 +14231,7 @@ C    &                 ITERR(4)
       COMMON /BUFRLIB_MISSING/BMISS,XMISS,IMISS
 
       LOGICAL          PRNT
-      INTEGER IND(5)
+      INTEGER IND(5), ICK
 
       DO IS=1,NOBS
       DO IV=1,2
@@ -14279,11 +14287,13 @@ C
             ITI = 20.*ABS(TMP(L,IS,IV))
      &            /(TMPSTD(L,IV)*TFACT(L,IV))
             ITI = MIN(ITI,20)
-            IF(ITI.NE.0) CALL CHKTMP(OIT(L,IS,IM,IV),
-     &        OIT(L,IS,IP,IV),TMPSTD(L,IV)*TFACT(L,IV),ICK)
-            IF(ICK.NE.0) THEN
-              ITI = 0
-              TMP(L,IS,IV) = BMISS
+            IF(ITI.NE.0) THEN
+              CALL CHKTMP(OIT(L,IS,IM,IV),OIT(L,IS,IP,IV),
+     &             TMPSTD(L,IV)*TFACT(L,IV),ICK)
+              IF(ICK.NE.0) THEN
+                ITI = 0
+                TMP(L,IS,IV) = BMISS
+              ENDIF
             ENDIF
           ENDIF
           NTMP(L,IS,IV) = ITI
