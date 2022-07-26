@@ -1776,9 +1776,9 @@ sub ed_ncep_rc {
        }
 	   
        if ( $siglevs <= 72 ) {
-          if($rcd =~ /\@NLEV_EXT/) {$rcd=~ s/\@NLEV_EXT/15/g; }
+          if($rcd =~ /\@NLEV_EXT/) {$rcd=~ s/\@NLEV_EXT/18/g; }
        } elsif ( $siglevs > 72 & $siglevs <= 132 ) {
-          if($rcd =~ /\@NLEV_EXT/) {$rcd=~ s/\@NLEV_EXT/17/g; }
+          if($rcd =~ /\@NLEV_EXT/) {$rcd=~ s/\@NLEV_EXT/21/g; }
        } elsif ( $siglevs > 132 ) {
           if($rcd =~ /\@NLEV_EXT/) {$rcd=~ s/\@NLEV_EXT/27/g; }
        }
