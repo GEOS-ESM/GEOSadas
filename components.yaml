@@ -5,7 +5,7 @@ GEOSadas:
 env:
   local: ./@env
   remote: ../ESMA_env.git
-  tag: v4.1.0
+  tag: v4.2.0
   develop: main
 
 cmake:
@@ -28,7 +28,7 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  tag: v1.5.5
+  tag: v1.5.6
   develop: main
 
 MAPL:
@@ -83,7 +83,7 @@ fvdycore:
 GEOSchem_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSphysics_GridComp/@GEOSchem_GridComp
   remote: ../GEOSchem_GridComp.git
-  tag: v1.9.2
+  tag: v1.9.5
   develop: develop
 
 HEMCO:
@@ -136,8 +136,14 @@ sis2:
   tag: geos/v0.0.1
   develop: dev/gfdl
 
+GEOSradiation_GridComp:
+  local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSphysics_GridComp/@GEOSradiation_GridComp
+  remote: ../GEOSradiation_GridComp.git
+  tag: v1.0.0
+  develop: develop
+
 RRTMGP:
-  local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSphysics_GridComp/GEOSradiation_GridComp/GEOS_RadiationShared/@RRTMGP
+  local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSphysics_GridComp/@GEOSradiation_GridComp/GEOS_RadiationShared/@RRTMGP
   remote: ../rte-rrtmgp.git
   tag: geos/v1.5+1.0.0
   develop: geos/develop
