@@ -28,7 +28,7 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  tag: rt1_4_10_geosit
+  tag: rt1_4_10_geosit2
   develop: main
 
 MAPL:
@@ -46,7 +46,7 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  tag: v1.5.4.2
+  tag: v1.5.4.3
   develop: develop
 
 GEOSgcm_GridComp:
@@ -101,7 +101,7 @@ geos-chem:
 GOCART:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSphysics_GridComp/@GEOSchem_GridComp/@GOCART
   remote: ../GOCART.git
-  tag: rt1.0.1_geosit
+  tag: rt1.0.1_geosit2
   sparse: ./config/GOCART.sparse
   develop: develop
 
@@ -121,7 +121,7 @@ mom6:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  tag: rt1.5.6_geosit_hist2
+  tag: rt1.5.6_geosit_hist3
   develop: develop
 
 UMD_Etc:
