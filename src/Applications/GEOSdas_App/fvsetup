@@ -3062,7 +3062,7 @@ sub get_nodeflg {
   elsif ($ans == 3) { $nodeflg = "ivy";  $ncpus_per_node = 20 }
   elsif ($ans == 4) { $nodeflg = "hasw"; $ncpus_per_node = 24 }
   elsif ($ans == 5) { $nodeflg = "sky";  $ncpus_per_node = 36 }
-  elsif ($ans == 6) { $nodeflg = "cas";  $ncpus_per_node = 46 }
+  elsif ($ans == 6) { $nodeflg = "cas";  $ncpus_per_node = 45 }
 
   # currently not applicable at nccs
   #---------------------------------
@@ -3110,7 +3110,7 @@ sub get_times {
 #                                                    #       ----
       if    ($res eq "C48")  { $nx =  4; $ny = 24 }  # (b)    96
       elsif ($res eq "C90")  { $nx =  4; $ny = 24 }  # (c)    96
-      elsif ($res eq "C180") { $nx =  8; $ny = 30 }  # (d)   240
+      elsif ($res eq "C180") { $nx = 15; $ny = 36 }  # (d)   360
       elsif ($res eq "C360") { $nx =  8; $ny = 48 }  # (e)   384
       else                   { $nx = 28; $ny = 48 }  # (f+) 1344
   }
@@ -5007,6 +5007,9 @@ EOF
        $ana_im_ens = $ana_im;
        $ana_jm_ens = $ana_jm;
   } elsif ( "$res" eq "C180" ) {  # Cubed-sphere
+       if ($geosit) {
+          $o_servers = 0; # 10; this does not payoff for C180 resolution
+       }
        $cubed = 1;
 #      $ios_nds = 2;
        $specres = "254";
@@ -8060,7 +8063,7 @@ print  SCRIPT <<"EOF";
   setenv RUN_OPT_BLEND "esma_mpirun -np \$NCPUS \$HDF2RSX"
   if (\$G5GCM ) then
      if ( \$O_SERVERS > 0 ) then
-        setenv RUN_OPT_BEGIN "mpirun -np \$NCPUSX \$GCMX --npes_model \$NCUPS --nodes_output_server \$O_SERVERS --oserver_type multigroup --npes_backend_pernode \$O_SERVERS"
+        setenv RUN_OPT_BEGIN "mpirun -np \$NCPUSX \$GCMX --npes_model \$NCPUS --nodes_output_server \$O_SERVERS --oserver_type multigroup --npes_backend_pernode \$O_SERVERS"
      else
         setenv RUN_OPT_BEGIN "esma_mpirun -np \$NCPUS \$GCMX"
      endif
@@ -9251,7 +9254,7 @@ print  SCRIPT <<"EOF";
   setenv RUN_OPT_BLEND "esma_mpirun -np \$NCPUS \$HDF2RSX"
   if (\$G5GCM ) then
      if ( \$O_SERVERS > 0 ) then
-        setenv RUN_OPT_BEGIN "mpirun -np \$NCPUSX \$GCMX --npes_model \$NCUPS --nodes_output_server \$O_SERVERS --oserver_type multigroup --npes_backend_pernode \$O_SERVERS"
+        setenv RUN_OPT_BEGIN "mpirun -np \$NCPUSX \$GCMX --npes_model \$NCPUS --nodes_output_server \$O_SERVERS --oserver_type multigroup --npes_backend_pernode \$O_SERVERS"
      else
         setenv    RUN_OPT_BEGIN "esma_mpirun -np \$NCPUS \$GCMX"
      endif
