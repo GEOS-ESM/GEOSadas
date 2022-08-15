@@ -28,13 +28,13 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  tag: rt1_4_10_geosit2
+  tag: rt1_4_10_geosit4
   develop: main
 
 MAPL:
   local: ./src/Shared/@MAPL
   remote: ../MAPL.git
-  tag: v2.8.0.7
+  tag: v2.8.0.9
   develop: develop
 
 FMS:
@@ -46,7 +46,7 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  tag: v1.5.4.3
+  tag: v1.5.4.4
   develop: develop
 
 GEOSgcm_GridComp:
