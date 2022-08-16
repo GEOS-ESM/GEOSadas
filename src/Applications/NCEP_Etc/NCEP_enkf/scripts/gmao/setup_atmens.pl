@@ -426,7 +426,6 @@ if ( $setvtx ) {
 cp("$FVROOT/bin/atm_ens.j","$FVHOME/run");
 
 # generate boundary condition script
-#     $cmd = "$FVROOT/bin/gen_lnbcs.pl $cubed -o $FVHOME/run/lnbcs_ens $aim $ajm $ogrid $lndbcs";
 $cmd = "$FVROOT/bin/gen_lnbcs.pl $cubed $bcopt -o $FVHOME/run/lnbcs_ens $aim $ajm $ogrid $lndbcs";
 $rc = system($cmd);
 
@@ -604,20 +603,12 @@ sub ed_obsv_rc {
                          GSI_GridComp_ensfinal.rc.tmpl
                          obs1gsi_mean.rc
                          obs1gsi_member.rc );
-  $nsig_ext = 15;
+  $nsig_ext = 18;
   if ( $obsv_lm > 72 & $obsv_lm <= 132 ) {
-    $nsig_ext = 17;
+    $nsig_ext = 21;
   } elsif ( $obsv_lm > 132 ) {
-    $nsig_ext = 25;
+    $nsig_ext = 27;
   }
-
-  if ( $siglevs <= 72 ) {
-     if($rcd =~ /\@NLEV_EXT/) {$rcd=~ s/\@NLEV_EXT/13/g; }
-       } elsif ( $siglevs > 72 & $siglevs <= 132 ) {
-          if($rcd =~ /\@NLEV_EXT/) {$rcd=~ s/\@NLEV_EXT/15/g; }
-       } elsif ( $siglevs > 132 ) {
-          if($rcd =~ /\@NLEV_EXT/) {$rcd=~ s/\@NLEV_EXT/21/g; }
-       }
 
   foreach $file (@observer_files) {
 

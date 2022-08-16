@@ -158,8 +158,7 @@ program gsidiag_bin2txt
      call abort
   end if
   
-  write(*,*)'File ', trim(infn), ' opened on lun=',inlun
-!  open(inlun,file=infn,form='unformatted',convert='big_endian')
+  write(*,'(''File '', a, '' opened on lun='',i5 )') trim(infn), inlun  
 
   call read_radiag_header( inlun, npred_read, sst_ret, headfix, headchan, headname, iflag, debug )
 
