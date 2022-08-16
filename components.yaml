@@ -25,10 +25,11 @@ NCEP_Shared:
   tag: v1.2.0
   develop: main
 
+# Currently a bug in GMAO_ncdiag fixed on this branch
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  tag: v1.5.7
+  branch: bugfix/mathomp4/ncdiag-fix-for-intel2022
   develop: main
 
 MAPL:
