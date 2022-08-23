@@ -98,11 +98,11 @@ Length of FORECAST run segments (in hours)? [123]
 Number of one-day DAS segments per PBS job? [1]
 > 
 
-Number of PEs in the zonal direction (NX)? [8]
-> 
+Number of PEs in the zonal direction (NX)? [15]
+> 15
 
-Number of PEs in the meridional direction (NY)? [30]
-> 48
+Number of PEs in the meridional direction (NY)? [36]
+> 36
 
 Job nickname? [g5das]
 > git
@@ -195,7 +195,7 @@ Do Aerosol Analysis (y/n)? [y]
 > 
 
 AOD OBSERVING CLASSES [or type 'none']?
-> mod04_061_his,myd04_061_his
+> mod04_061_his,myd04_061_his,aeronet_obs
 
 Enable GAAS feedback to model (y/n)? [y]
 > 
