@@ -392,7 +392,7 @@ my ($sysfile, $nodeflg);
 my (@rmTilde);
 my ($merra2, $acftbias, $doRcorr, $nrt, $rstype);
 my ($hyb_ens, $do4diau, $newradbc, $siglevs, $vres, $aensupa);
-my ($geosit, $r21c);
+my ($geosit, $r21c,$bcopt);
 
 system clear;
 get_runtime_values();
@@ -1776,9 +1776,9 @@ sub ed_ncep_rc {
        }
 	   
        if ( $siglevs <= 72 ) {
-          if($rcd =~ /\@NLEV_EXT/) {$rcd=~ s/\@NLEV_EXT/15/g; }
+          if($rcd =~ /\@NLEV_EXT/) {$rcd=~ s/\@NLEV_EXT/18/g; }
        } elsif ( $siglevs > 72 & $siglevs <= 132 ) {
-          if($rcd =~ /\@NLEV_EXT/) {$rcd=~ s/\@NLEV_EXT/17/g; }
+          if($rcd =~ /\@NLEV_EXT/) {$rcd=~ s/\@NLEV_EXT/21/g; }
        } elsif ( $siglevs > 132 ) {
           if($rcd =~ /\@NLEV_EXT/) {$rcd=~ s/\@NLEV_EXT/27/g; }
        }
@@ -3062,7 +3062,7 @@ sub get_nodeflg {
   elsif ($ans == 3) { $nodeflg = "ivy";  $ncpus_per_node = 20 }
   elsif ($ans == 4) { $nodeflg = "hasw"; $ncpus_per_node = 24 }
   elsif ($ans == 5) { $nodeflg = "sky";  $ncpus_per_node = 36 }
-  elsif ($ans == 6) { $nodeflg = "cas";  $ncpus_per_node = 46 }
+  elsif ($ans == 6) { $nodeflg = "cas";  $ncpus_per_node = 45 }
 
   # currently not applicable at nccs
   #---------------------------------
@@ -3110,7 +3110,7 @@ sub get_times {
 #                                                    #       ----
       if    ($res eq "C48")  { $nx =  4; $ny = 24 }  # (b)    96
       elsif ($res eq "C90")  { $nx =  4; $ny = 24 }  # (c)    96
-      elsif ($res eq "C180") { $nx =  8; $ny = 30 }  # (d)   240
+      elsif ($res eq "C180") { $nx = 15; $ny = 36 }  # (d)   360
       elsif ($res eq "C360") { $nx =  8; $ny = 48 }  # (e)   384
       else                   { $nx = 28; $ny = 48 }  # (f+) 1344
   }
@@ -5007,6 +5007,9 @@ EOF
        $ana_im_ens = $ana_im;
        $ana_jm_ens = $ana_jm;
   } elsif ( "$res" eq "C180" ) {  # Cubed-sphere
+       if ($geosit) {
+          $o_servers = 0; # 10; this does not payoff for C180 resolution
+       }
        $cubed = 1;
 #      $ios_nds = 2;
        $specres = "254";
@@ -7484,6 +7487,8 @@ sub build_lnbcs {
      $bcopt = "-merra2" ;
   }elsif ( $r21c ) {
      $bcopt = "-r21c";
+  }elsif ($geosit) {
+     $bcopt = "-geosit"; 
   }
   if ( $cubed ) {
      $cmd = "$fvbin/gen_lnbcs.pl -fvhome $fvhome -o lnbcs $bcopt -cubed $agcm_im $agcm_jm $ogcm $landbcs";
@@ -8058,7 +8063,7 @@ print  SCRIPT <<"EOF";
   setenv RUN_OPT_BLEND "esma_mpirun -np \$NCPUS \$HDF2RSX"
   if (\$G5GCM ) then
      if ( \$O_SERVERS > 0 ) then
-        setenv RUN_OPT_BEGIN "mpirun -np \$NCPUSX \$GCMX --npes_model \$NCUPS --nodes_output_server \$O_SERVERS --oserver_type multigroup --npes_backend_pernode \$O_SERVERS"
+        setenv RUN_OPT_BEGIN "mpirun -np \$NCPUSX \$GCMX --npes_model \$NCPUS --nodes_output_server \$O_SERVERS --oserver_type multigroup --npes_backend_pernode \$O_SERVERS"
      else
         setenv RUN_OPT_BEGIN "esma_mpirun -np \$NCPUS \$GCMX"
      endif
@@ -8331,9 +8336,9 @@ print  SCRIPT <<"EOF";
 
           cd \$FVWORK
           if (`uname -n` =~ borg*) then
-             cat \$PBS_NODEFILE | head -1 > \$FVWORK/OIQC_list
-             cat \$PBS_NODEFILE | tail +2 > \$FVWORK/GCM_list
-             cat \$PBS_NODEFILE           > \$FVWORK/ANA_list
+             cat \$PBS_NODEFILE | head -1    > \$FVWORK/OIQC_list
+             cat \$PBS_NODEFILE | tail -n +2 > \$FVWORK/GCM_list
+             cat \$PBS_NODEFILE              > \$FVWORK/ANA_list
              subset_nodefile.pl \$NCPUS_IDF -f \$PBS_NODEFILE -o \$FVWORK/IDF_list
              subset_nodefile.pl \$NCPUS_IAU -f \$PBS_NODEFILE -o \$FVWORK/IAU_list
           endif
@@ -8610,6 +8615,7 @@ EOF
            endif
            echo2 ""
            echo2 "setenv FVHOME \$FVHOME"
+           echo2 "setenv ARCHIVE \$FVARCH"
            echo2 "set Bin = \$Bin"
            echo2 "set output = \$lname2"
            echo2 ""
@@ -9248,7 +9254,7 @@ print  SCRIPT <<"EOF";
   setenv RUN_OPT_BLEND "esma_mpirun -np \$NCPUS \$HDF2RSX"
   if (\$G5GCM ) then
      if ( \$O_SERVERS > 0 ) then
-        setenv RUN_OPT_BEGIN "mpirun -np \$NCPUSX \$GCMX --npes_model \$NCUPS --nodes_output_server \$O_SERVERS --oserver_type multigroup --npes_backend_pernode \$O_SERVERS"
+        setenv RUN_OPT_BEGIN "mpirun -np \$NCPUSX \$GCMX --npes_model \$NCPUS --nodes_output_server \$O_SERVERS --oserver_type multigroup --npes_backend_pernode \$O_SERVERS"
      else
         setenv    RUN_OPT_BEGIN "esma_mpirun -np \$NCPUS \$GCMX"
      endif

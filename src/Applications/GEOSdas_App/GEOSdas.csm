@@ -1953,9 +1953,11 @@ exit 1
         endif
      endif
 
-     set ars_list = ( satbias satbang )
+     set ars_list = ( satbias )
      if ($NEWRADBC || $ANGLEBC) then
        set ars_list = ( $ars_list satbiaspc )
+     else if ( ! $ANGLEBC ) then
+       set ars_list = ( $ars_list satbang )
      endif
      if ($ACFTBIAS) then
        set ars_list = ( $ars_list acftbias )
@@ -2949,27 +2951,35 @@ endif
          /bin/rm -f input_combfr.txt
          touch input_combfr.txt
          foreach qcpat ( `cat pre-qc.acq | sort | uniq`)
-            echorc.x -template dummy $nymdb $nhmsb -fill $qcpat >> input_combfr.txt
+#           echorc.x -template dummy $nymdb $nhmsb -fill $qcpat >> input_combfr.txt
+            set fn = `echorc.x -template dummy $nymdb $nhmsb -fill $qcpat`
+            if ( -e $fn && ! -z $fn ) echo $fn >> input_combfr.txt
          end
-         combfrd.x -d $pbdtg $pbname < input_combfr.txt
-         scanbuf0.x  $pbname >! data_types.log
 
-         if ( `grep PROFLR data_types.log | wc -l `) then
-           setenv PROFQC 1
+         if ( -z input_combfr.txt) then
+# if no files to combine then no input for prepqc, so try setting prepqc 0
+            if ($PREPQC) setenv PREPQC        0
          else
-           setenv PROFQC 0
-         endif
+            combfrd.x -d $pbdtg $pbname < input_combfr.txt
+            scanbuf0.x  $pbname >! data_types.log
 
-         if ( `grep AIRCFT data_types.log | wc -l`) then
-           setenv ACFTQC 1
-         else
-           setenv ACFTQC 0
-         endif
+            if ( `grep PROFLR data_types.log | wc -l `) then
+              setenv PROFQC 1
+            else
+              setenv PROFQC 0
+            endif
 
-         if  ( `grep AIRCAR data_types.log | wc -l`) then
-           setenv ACARSQC 1
-         else
-           setenv ACARSQC 0
+            if ( `grep AIRCFT data_types.log | wc -l`) then
+              setenv ACFTQC 1
+            else
+              setenv ACFTQC 0
+            endif
+
+            if  ( `grep AIRCAR data_types.log | wc -l`) then
+              setenv ACARSQC 1
+            else
+              setenv ACARSQC 0
+            endif
          endif
       endif
    endif
