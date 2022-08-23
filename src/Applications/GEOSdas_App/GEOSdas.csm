@@ -4278,7 +4278,7 @@ endif
         sed -i "s/#___AVHRR___//" $ana_rc
      endif
 
-     if ($aod_obs == patmosx_asc)     sed -i "s/#___AVHRR___//"   $ana_rc
+     if ($aod_obs == patmosx_asc || $aod_obs == patmosx_ods)   sed -i "s/#___AVHRR___//"   $ana_rc
      if ($aod_obs == aeronet_obs)     sed -i "s/#___AERONET___//" $ana_rc
      if ($aod_obs == misr_F12_bright) sed -i "s/#___MISR___//"    $ana_rc
      if ($aod_obs == mod04_land_nnr)  sed -i "s/#___TERRA___//"   $ana_rc
