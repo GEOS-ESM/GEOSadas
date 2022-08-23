@@ -166,9 +166,9 @@
   if ( !($?WCONSTRAINT) )         setenv WCONSTRAINT   0
 
   if ( $BATCH_SUBCMD == "sbatch" ) then
-      setenv blockflag "-W"
+      setenv BLOCKFLAG "-W"
   else
-      setenv blockflag "-W block=true"
+      setenv BLOCKFLAG "-W block=true"
   endif
 
   if ( !($?doPLOTS) )             setenv doPLOTS       0
@@ -1553,7 +1553,7 @@ exit 1
         fname2 " acquire -v -rc blend.acq -s $spool -d . -strict $nymd $nhms 060000 1 "
         fname2 "exit"
 
-        $BATCH_SUBCMD $blockflag -o $acqlog $fname
+        $BATCH_SUBCMD $BLOCKFLAG -o $acqlog $fname
 
   endif
 
@@ -1691,7 +1691,7 @@ exit 1
         endif
         fname2 "exit"
                                                                                                           
-        $BATCH_SUBCMD $blockflag -o $acqlog $fname
+        $BATCH_SUBCMD $BLOCKFLAG -o $acqlog $fname
 
      endif
 
@@ -1885,7 +1885,7 @@ exit 1
         fname2 " acquire -v -rc aod4fcst.acq -s $spool -d . -strict $initref[1] $initref[2] 030000 2 "
         fname2 "exit"
                                                                                                           
-        $BATCH_SUBCMD $blockflag -o $acqlog $fname
+        $BATCH_SUBCMD $BLOCKFLAG -o $acqlog $fname
 
      endif
 
@@ -2463,7 +2463,7 @@ exit 1
         fname2 ""
         fname2 "exit"
 
-        $BATCH_SUBCMD $blockflag -o $acqlog $fname
+        $BATCH_SUBCMD $BLOCKFLAG -o $acqlog $fname
         sleep 2
         @ cyc_sec = $TIMEINC * 60
         set next_cycle = (`tick $rpl_nymdb $rpl_nhmsb $cyc_sec`)
@@ -2567,7 +2567,7 @@ exit 1
              fname2 "acquire -v -rc obsys.acq -s $spool -d $FVWORK -ssh $strict $bnymd $bnhms $inhms 4"
              fname2 "exit"
 
-             $BATCH_SUBCMD $blockflag -o $acqlog $fname
+             $BATCH_SUBCMD $BLOCKFLAG -o $acqlog $fname
              sleep 2
              set bnymd=`tick $bnymd`
         end
@@ -2733,7 +2733,7 @@ exit 1
         set obsflag = 1
         set acqflags  = "-d $FVWORK -s $spool -strict"
         set acqflags1 = "-d $FVWORK -s $spool $strict"
-        set qblock = $blockflag
+        set qblock = $BLOCKFLAG
   endif
 
   # Check for available AOD obs classes
@@ -4113,7 +4113,7 @@ endif
                  "Central AGCM Failed "
     
                  if ( -e agcm_central.j ) then
-                    $BATCH_SUBCMD $blockflag agcm_central.j
+                    $BATCH_SUBCMD $BLOCKFLAG agcm_central.j
                  else
                     echo " ${MYNAME}: AGCM Failed to generate PBS jobs for Central, Aborting ... "
                     exit(1)
@@ -4393,7 +4393,7 @@ endif
      # submit job and save job ID
      #---------------------------
      if ( $AODBLOCKJOB ) then
-        set jobIDline = (`$PBS_BIN/$BATCH_SUBCMD $blockflag -o $gaasLOG $jobf`)
+        set jobIDline = (`$PBS_BIN/$BATCH_SUBCMD $BLOCKFLAG -o $gaasLOG $jobf`)
      else
         set jobIDline = (`$PBS_BIN/$BATCH_SUBCMD -o $gaasLOG $jobf`)
      endif
@@ -4789,7 +4789,7 @@ endif
         fname2 " acquire_obsys -v -d $FVWORK $strict $anadate[1] $anadate[2] 060000 1 $tcvitals_class"
         fname2 "exit"
 
-        $BATCH_SUBCMD $blockflag -o $acqlog $fname
+        $BATCH_SUBCMD $BLOCKFLAG -o $acqlog $fname
 
      endif
      ls -lrt *vtx.prs* *vtx.mix*
