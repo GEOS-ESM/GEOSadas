@@ -7779,8 +7779,6 @@ print  SCRIPT <<"EOF";
   setenv LDHOME4ENS $ldashome4ens  # land analysis home dir for atm_ens  
   setenv IGNORE_0 1   # 1 = ignore 0 length obs files in acquire
   setenv ACFTBIAS $acftbias
-  setenv USE_MODIS_STAGE 0  # 1 = use MODIS data from MODIS_STAGE_DIR; 0 = don't
-  setenv MODIS_STAGE_DIR /discover/nobackup/projects/gmao/input/dao_ops/ops/flk/modis  # L2a non-archive data dir
   setenv FCSTIMES "$fcstimes"
   setenv FCSTATS  "21"
   setenv FHOURS   $fhours21
@@ -7790,9 +7788,6 @@ print  SCRIPT <<"EOF";
   setenv GSI_DIAG2TXT 1
 # setenv DO_0HR_IMP 1
 
-  if ( -e \$FVHOME/run/replay.acq ) then
-     setenv USE_MODIS_STAGE 1  # for now, replay.acq controls only meteorology (AOD is not yet replayed to)
-  endif
 EOF
 
 if ( $merra2 ) {
