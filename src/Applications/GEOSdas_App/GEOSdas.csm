@@ -2787,7 +2787,7 @@ exit 1
   if ( $AOD_OBSCLASS == "" )               setenv AOD_OBSCLASS none
   if ( $AOD_OBSCLASS == 0 )                setenv AOD_OBSCLASS none
 
-  if ($GAAS_ANA && ! $REPLAY_ACQ && ("$AOD_OBSCLASS" != "none")) then
+  if ($GAAS_ANA && ("$AOD_OBSCLASS" != "none")) then
       @ mstep = $nstep * 2
       fname2 acquire_obsys -v $acqflags -ssh -drc $AERO_OBSDBRC \\
       fname2 "      "$bnymd $bnhms 030000 $mstep \\

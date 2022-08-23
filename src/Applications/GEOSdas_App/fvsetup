@@ -7785,11 +7785,6 @@ print  SCRIPT <<"EOF";
   setenv GSI_DIAG2TXT 1
 # setenv DO_0HR_IMP 1
 
-  if ( -e \$FVHOME/run/replay.acq ) then
-     setenv REPLAY_ACQ 1  # for now, replay.acq controls only meteorology (AOD is not yet replayed to)
-  else
-     setenv REPLAY_ACQ 0
-  endif
 EOF
 
 if ( $merra2 ) {
