@@ -386,7 +386,7 @@ my ($acqloc);
 my ($fcstimes,$fcswait_hrs,$asnwait_hrs);
 my ($landbcs);
 my ($coupled, $ores, $mometc);
-my ($o_servers);
+my ($o_servers,$bckend_wrts);
 
 my ($sysfile, $nodeflg);
 my (@rmTilde);
@@ -4735,6 +4735,7 @@ EOF
   $ny_pert = 6 * $nx_pert;
   $use_shmem = 0;
   $o_servers = 0;
+  $bckend_wrts = 0;
   $ios_nds = 1;
   $cldmicro = "1MOMENT";
   if ( "$res" eq "c" && "$vres" eq "55" ) {
@@ -5008,7 +5009,8 @@ EOF
        $ana_jm_ens = $ana_jm;
   } elsif ( "$res" eq "C180" ) {  # Cubed-sphere
        if ($geosit) {
-          $o_servers = 0; # 10; this does not payoff for C180 resolution
+          $o_servers = 3;
+          $bckend_wrts = 24;
        }
        $cubed = 1;
 #      $ios_nds = 2;
@@ -5079,7 +5081,7 @@ EOF
   } elsif ( "$res" eq "C720" ) {  # Cubed-sphere
        $cubed = 1;
        $o_servers = 8;
-#      $ios_nds = 3;
+       $bckend_wrts = 8;
        $specres = "254";
        $jcap = "254";
        $agcm_grid_type = "Cubed-Sphere";
@@ -7671,6 +7673,7 @@ print SCRIPT <<"EOF";
   setenv NCPUS_GPERT $ncpus_gpert # Number of CPUs to run gcmPERT
   setenv NCPUS_AOD   $ncpus_aod   # Number of CPUs to run PSAS-AOD
   setenv O_SERVERS   $o_servers   # Number of IO servers
+  setenv O_WRITERS_PER_NODE $bckend_wrts # Number of backend writers
   #setenv GAAS_RUN_SLURM 1 # launch AOD analysis as separate batch job
   setenv AODBLOCKJOB 1
 EOF
@@ -8058,7 +8061,7 @@ print  SCRIPT <<"EOF";
   setenv RUN_OPT_BLEND "esma_mpirun -np \$NCPUS \$HDF2RSX"
   if (\$G5GCM ) then
      if ( \$O_SERVERS > 0 ) then
-        setenv RUN_OPT_BEGIN "mpirun -np \$NCPUSX \$GCMX --npes_model \$NCPUS --nodes_output_server \$O_SERVERS --oserver_type multigroup --npes_backend_pernode \$O_SERVERS"
+        setenv RUN_OPT_BEGIN "mpirun -np \$NCPUSX \$GCMX --npes_model \$NCPUS --nodes_output_server \$O_SERVERS --oserver_type multigroup --npes_backend_pernode \$O_WRITERS_PER_NODE"
      else
         setenv RUN_OPT_BEGIN "esma_mpirun -np \$NCPUS \$GCMX"
      endif
@@ -8849,6 +8852,7 @@ print SCRIPT <<"EOF";
   setenv NCPUS_GSI   $ncpus_gsi   # Numbers of CPUs to run GSI
   setenv NCPUS_GPERT $ncpus_gpert # Numbers of CPUs to run GSI
   setenv O_SERVERS   $o_servers   # Number of IO servers
+  setenv O_WRITERS_PER_NODE $bckend_wrts # Backend writers
   setenv N_CPU   \$NCPUS
   setenv EXPID   $expid   # experiment ID
   setenv CASE    \$EXPID  # experiment ID (for LSM's sake)
@@ -9249,7 +9253,7 @@ print  SCRIPT <<"EOF";
   setenv RUN_OPT_BLEND "esma_mpirun -np \$NCPUS \$HDF2RSX"
   if (\$G5GCM ) then
      if ( \$O_SERVERS > 0 ) then
-        setenv RUN_OPT_BEGIN "mpirun -np \$NCPUSX \$GCMX --npes_model \$NCPUS --nodes_output_server \$O_SERVERS --oserver_type multigroup --npes_backend_pernode \$O_SERVERS"
+        setenv RUN_OPT_BEGIN "mpirun -np \$NCPUSX \$GCMX --npes_model \$NCPUS --nodes_output_server \$O_SERVERS --oserver_type multigroup --npes_backend_pernode \$O_WRITERS_PER_NODE"
      else
         setenv    RUN_OPT_BEGIN "esma_mpirun -np \$NCPUS \$GCMX"
      endif
