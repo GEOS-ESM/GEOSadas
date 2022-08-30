@@ -3143,7 +3143,6 @@ sub get_times {
           $asynbkg_min = 60;           # time frequency of background fields (min)
         } else {
           $asynbkg_min = 180;          # time frequency of background fields (min)
-	  if ( $r21c) { $asynbkg_min = 60};
         }
   } else {
         $splite = 0; $splitexe = 0;
@@ -3444,7 +3443,6 @@ sub get_setgsi {
   $anaexec = "GSIsa.x";
   $hybrid  = ".false.";
   $hyb_ens = -1;
-  if ($r21c) { $hyb_ens = 4}
   if ($merra2) { $nosfcana  = 0 } # will apply similarity to produce xana.sfc
   else         { $nosfcana  = 1 } # will not generation xana.sfc
 
@@ -10117,8 +10115,20 @@ sub copy_resources {
             }
 	 }
       }
+
       # Update gocart files for pre-2000 case
-      # To Be Done
+      if ( $r21c   ) { $casedir = "R21C"  };     
+      if ( $geosit ) { $casedir = "GEOSIT"};     
+      if ( $r21c || $geosit ){
+         if ( $nymdb < 20000331 && $hhb < 23 ) {
+	    if ( -d "$fvetc/$casedir" ){     
+	       my @files = glob("$fvetc/$casedir/19600101-20000331/" . "/*");	 
+               foreach my $fn ( @files ) {
+                  cp("$fn","$fvhome/run/gocart");
+               }
+	    }
+         }
+      }
       #
 
       # Edit psas.rc
