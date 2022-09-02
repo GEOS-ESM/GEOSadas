@@ -386,7 +386,7 @@ my ($acqloc);
 my ($fcstimes,$fcswait_hrs,$asnwait_hrs);
 my ($landbcs);
 my ($coupled, $ores, $mometc);
-my ($o_servers);
+my ($o_servers,$bckend_wrts);
 
 my ($sysfile, $nodeflg);
 my (@rmTilde);
@@ -3062,7 +3062,7 @@ sub get_nodeflg {
   elsif ($ans == 3) { $nodeflg = "ivy";  $ncpus_per_node = 20 }
   elsif ($ans == 4) { $nodeflg = "hasw"; $ncpus_per_node = 24 }
   elsif ($ans == 5) { $nodeflg = "sky";  $ncpus_per_node = 36 }
-  elsif ($ans == 6) { $nodeflg = "cas";  $ncpus_per_node = 46 }
+  elsif ($ans == 6) { $nodeflg = "cas";  $ncpus_per_node = 45 }
 
   # currently not applicable at nccs
   #---------------------------------
@@ -3110,7 +3110,7 @@ sub get_times {
 #                                                    #       ----
       if    ($res eq "C48")  { $nx =  4; $ny = 24 }  # (b)    96
       elsif ($res eq "C90")  { $nx =  4; $ny = 24 }  # (c)    96
-      elsif ($res eq "C180") { $nx =  8; $ny = 30 }  # (d)   240
+      elsif ($res eq "C180") { $nx = 15; $ny = 36 }  # (d)   360
       elsif ($res eq "C360") { $nx =  8; $ny = 48 }  # (e)   384
       else                   { $nx = 28; $ny = 48 }  # (f+) 1344
   }
@@ -3143,7 +3143,6 @@ sub get_times {
           $asynbkg_min = 60;           # time frequency of background fields (min)
         } else {
           $asynbkg_min = 180;          # time frequency of background fields (min)
-	  if ( $r21c) { $asynbkg_min = 60};
         }
   } else {
         $splite = 0; $splitexe = 0;
@@ -3444,7 +3443,6 @@ sub get_setgsi {
   $anaexec = "GSIsa.x";
   $hybrid  = ".false.";
   $hyb_ens = -1;
-  if ($r21c) { $hyb_ens = 4}
   if ($merra2) { $nosfcana  = 0 } # will apply similarity to produce xana.sfc
   else         { $nosfcana  = 1 } # will not generation xana.sfc
 
@@ -4735,6 +4733,7 @@ EOF
   $ny_pert = 6 * $nx_pert;
   $use_shmem = 0;
   $o_servers = 0;
+  $bckend_wrts = 0;
   $ios_nds = 1;
   $cldmicro = "1MOMENT";
   if ( "$res" eq "c" && "$vres" eq "55" ) {
@@ -5007,6 +5006,10 @@ EOF
        $ana_im_ens = $ana_im;
        $ana_jm_ens = $ana_jm;
   } elsif ( "$res" eq "C180" ) {  # Cubed-sphere
+       if ($geosit) {
+          $o_servers = 3;
+          $bckend_wrts = 24;
+       }
        $cubed = 1;
 #      $ios_nds = 2;
        $specres = "254";
@@ -5076,7 +5079,7 @@ EOF
   } elsif ( "$res" eq "C720" ) {  # Cubed-sphere
        $cubed = 1;
        $o_servers = 8;
-#      $ios_nds = 3;
+       $bckend_wrts = 8;
        $specres = "254";
        $jcap = "254";
        $agcm_grid_type = "Cubed-Sphere";
@@ -7668,6 +7671,7 @@ print SCRIPT <<"EOF";
   setenv NCPUS_GPERT $ncpus_gpert # Number of CPUs to run gcmPERT
   setenv NCPUS_AOD   $ncpus_aod   # Number of CPUs to run PSAS-AOD
   setenv O_SERVERS   $o_servers   # Number of IO servers
+  setenv O_WRITERS_PER_NODE $bckend_wrts # Number of backend writers
   #setenv GAAS_RUN_SLURM 1 # launch AOD analysis as separate batch job
   setenv AODBLOCKJOB 1
 EOF
@@ -7773,8 +7777,6 @@ print  SCRIPT <<"EOF";
   setenv LDHOME4ENS $ldashome4ens  # land analysis home dir for atm_ens  
   setenv IGNORE_0 1   # 1 = ignore 0 length obs files in acquire
   setenv ACFTBIAS $acftbias
-  setenv USE_MODIS_STAGE 0  # 1 = use MODIS data from MODIS_STAGE_DIR; 0 = don't
-  setenv MODIS_STAGE_DIR /discover/nobackup/projects/gmao/input/dao_ops/ops/flk/modis  # L2a non-archive data dir
   setenv FCSTIMES "$fcstimes"
   setenv FCSTATS  "21"
   setenv FHOURS   $fhours21
@@ -7784,9 +7786,6 @@ print  SCRIPT <<"EOF";
   setenv GSI_DIAG2TXT 1
 # setenv DO_0HR_IMP 1
 
-  if ( -e \$FVHOME/run/replay.acq ) then
-     setenv USE_MODIS_STAGE 1  # for now, replay.acq controls only meteorology (AOD is not yet replayed to)
-  endif
 EOF
 
 if ( $merra2 ) {
@@ -8060,7 +8059,7 @@ print  SCRIPT <<"EOF";
   setenv RUN_OPT_BLEND "esma_mpirun -np \$NCPUS \$HDF2RSX"
   if (\$G5GCM ) then
      if ( \$O_SERVERS > 0 ) then
-        setenv RUN_OPT_BEGIN "mpirun -np \$NCPUSX \$GCMX --npes_model \$NCUPS --nodes_output_server \$O_SERVERS --oserver_type multigroup --npes_backend_pernode \$O_SERVERS"
+        setenv RUN_OPT_BEGIN "mpirun -np \$NCPUSX \$GCMX --npes_model \$NCPUS --nodes_output_server \$O_SERVERS --oserver_type multigroup --npes_backend_pernode \$O_WRITERS_PER_NODE"
      else
         setenv RUN_OPT_BEGIN "esma_mpirun -np \$NCPUS \$GCMX"
      endif
@@ -8851,6 +8850,7 @@ print SCRIPT <<"EOF";
   setenv NCPUS_GSI   $ncpus_gsi   # Numbers of CPUs to run GSI
   setenv NCPUS_GPERT $ncpus_gpert # Numbers of CPUs to run GSI
   setenv O_SERVERS   $o_servers   # Number of IO servers
+  setenv O_WRITERS_PER_NODE $bckend_wrts # Backend writers
   setenv N_CPU   \$NCPUS
   setenv EXPID   $expid   # experiment ID
   setenv CASE    \$EXPID  # experiment ID (for LSM's sake)
@@ -9251,7 +9251,7 @@ print  SCRIPT <<"EOF";
   setenv RUN_OPT_BLEND "esma_mpirun -np \$NCPUS \$HDF2RSX"
   if (\$G5GCM ) then
      if ( \$O_SERVERS > 0 ) then
-        setenv RUN_OPT_BEGIN "mpirun -np \$NCPUSX \$GCMX --npes_model \$NCUPS --nodes_output_server \$O_SERVERS --oserver_type multigroup --npes_backend_pernode \$O_SERVERS"
+        setenv RUN_OPT_BEGIN "mpirun -np \$NCPUSX \$GCMX --npes_model \$NCPUS --nodes_output_server \$O_SERVERS --oserver_type multigroup --npes_backend_pernode \$O_WRITERS_PER_NODE"
      else
         setenv    RUN_OPT_BEGIN "esma_mpirun -np \$NCPUS \$GCMX"
      endif
@@ -10115,8 +10115,20 @@ sub copy_resources {
             }
 	 }
       }
+
       # Update gocart files for pre-2000 case
-      # To Be Done
+      if ( $r21c   ) { $casedir = "R21C"  };     
+      if ( $geosit ) { $casedir = "GEOSIT"};     
+      if ( $r21c || $geosit ){
+         if ( $nymdb < 20000331 && $hhb < 23 ) {
+	    if ( -d "$fvetc/$casedir" ){     
+	       my @files = glob("$fvetc/$casedir/19600101-20000331/" . "/*");	 
+               foreach my $fn ( @files ) {
+                  cp("$fn","$fvhome/run/gocart");
+               }
+	    }
+         }
+      }
       #
 
       # Edit psas.rc
