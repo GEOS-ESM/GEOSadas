@@ -1359,6 +1359,8 @@ sub ed_g5hist_rc_new {
         .       " -s \@COMPRESS=$cmprss"
         .       " -s \@APERT_IM=$apert_im"
         .       " -s \@APERT_JM=$apert_jm"
+        .       " -s \@BJEDI_IM=$bjedi_im"
+        .       " -s \@BJEDI_JM=$bjedi_jm"
         .       " -s \@PERT_FREQ=$pert_freq"
         .       " -s \@AGCM_GRIDNAME=$AGCM_GRIDNAME";
     print "$cmd\n";
@@ -1453,6 +1455,8 @@ sub ed_g5prog_rc {
     if($rcd =~ /\@HIST_PERT_JM/)   { $rcd=~ s/\@HIST_PERT_JM/$hist_pert_jm/ }
     if($rcd =~ /\@APERT_IM/)       { $rcd=~ s/\@APERT_IM/$apert_im/ }
     if($rcd =~ /\@APERT_JM/)       { $rcd=~ s/\@APERT_JM/$apert_jm/ }
+    if($rcd =~ /\@BJEDI_IM/)       { $rcd=~ s/\@BJEDI_IM/$bjedi_im/ }
+    if($rcd =~ /\@BJEDI_JM/)       { $rcd=~ s/\@BJEDI_JM/$bjedi_jm/ }
     if($rcd =~ /\@PERT_FREQ/)      { $rcd=~ s/\@PERT_FREQ/$pert_freq/ }
     if($rcd =~ /\@FCSENS/) {
         if ($admtlm) { $rcd =~ s/\@FCSENS/ /; }
@@ -1526,6 +1530,8 @@ sub ed_g5prog_rc_new {
         .                 " -s \@HIST_PERT_JM=$hist_pert_jm"
         .                 " -s \@APERT_IM=$apert_im"
         .                 " -s \@APERT_JM=$apert_jm"
+        .                 " -s \@BJEDI_IM=$bjedi_im"
+        .                 " -s \@BJEDI_JM=$bjedi_jm"
         .                 " -s \@PERT_FREQ=$pert_freq"
         .                 " -s \@AGCM_GRIDNAME=$AGCM_GRIDNAME";
     print "$cmd\n";
@@ -1915,6 +1921,8 @@ sub ed_gsigridcomp_rc {
            if($rcd =~ /\@NYGSI/) {$rcd=~ s/\@NYGSI/$nygsi/g; }
            if($rcd =~ /\@APERT_IM/) {$rcd=~ s/\@APERT_IM/$apert_im/g; }
            if($rcd =~ /\@APERT_JM/) {$rcd=~ s/\@APERT_JM/$apert_jm/g; }
+           if($rcd =~ /\@BJEDI_IM/) {$rcd=~ s/\@BJEDI_IM/$apert_im/g; }
+           if($rcd =~ /\@BJEDI_JM/) {$rcd=~ s/\@BJEDI_JM/$apert_jm/g; }
        }
        if($rcd =~ /\@NSIG/) {$rcd=~ s/\@NSIG/$siglevs/g; }
        if($rcd =~ /\@VARWINDOW/) {$rcd=~ s/\@VARWINDOW/$varwnd_nhms/g; }
@@ -4761,6 +4769,8 @@ EOF
        $hist_pert_jm = $agcm_jm;
        $apert_im = $ana_im;
        $apert_jm = $ana_jm;
+       $bjedi_im = $ana_im;
+       $bjedi_jm = $ana_jm;
        $anahgrd = substr($res,0,1);
        $jcap_ens = $jcap;
        $ana_im_ens = $ana_im;
@@ -4790,6 +4800,8 @@ EOF
        $hist_pert_jm = $agcm_jm;
        $apert_im = $agcm_im;
        $apert_jm = $agcm_jm;
+       $bjedi_im = $agcm_im;
+       $bjedi_jm = $agcm_jm;
        $anahgrd = substr($res,0,1);
        $jcap_ens = $jcap;
        $ana_im_ens = $ana_im;
@@ -4819,6 +4831,8 @@ EOF
        $hist_pert_jm = $agcm_jm;
        $apert_im = $agcm_im;
        $apert_jm = $agcm_jm;
+       $bjedi_im = $agcm_im;
+       $bjedi_jm = $agcm_jm;
        $anahgrd = substr($res,0,1);
        $jcap_ens = $jcap;
        $ana_im_ens = $ana_im;
@@ -4846,6 +4860,8 @@ EOF
        $hist_pert_jm = $agcm_jm;
        $apert_im = $agcm_im;
        $apert_jm = $agcm_jm;
+       $bjedi_im = $agcm_im;
+       $bjedi_jm = $agcm_jm;
        $anahgrd = substr($res,0,1);
        $jcap_ens = $jcap;
        $ana_im_ens = $ana_im;
@@ -4877,6 +4893,8 @@ EOF
        $hist_pert_jm = 181;
        $apert_im = 288;
        $apert_jm = 181;
+       $bjedi_im = 288;
+       $bjedi_jm = 181;
        $anahgrd = substr($res,0,1);
        $jcap_ens = 126;
        $ana_im_ens = 288;
@@ -4908,6 +4926,8 @@ EOF
        $hist_pert_jm = 361;
        $apert_im = 576;
        $apert_jm = 361;
+       $bjedi_im = 288;
+       $bjedi_jm = 181;
        $anahgrd = substr($res,0,1);
        $jcap_ens = 126;
        $ana_im_ens = 288;
@@ -4937,6 +4957,8 @@ EOF
        $hist_pert_jm = $agcm_jm;
        $apert_im = $agcm_im;
        $apert_jm = $agcm_jm;
+       $bjedi_im = $agcm_im;
+       $bjedi_jm = $agcm_jm;
        $anahgrd = substr($res,0,1);
        $jcap_ens = $jcap;
        $ana_im_ens = $ana_im;
@@ -4969,6 +4991,8 @@ EOF
        $hist_pert_jm = $ana_jm;
        $apert_im = $agcm_im;
        $apert_jm = $agcm_jm;
+       $bjedi_im = $agcm_im;
+       $bjedi_jm = $agcm_jm;
        $anahgrd = "b";
        $jcap_ens = $jcap;
        $ana_im_ens = $ana_im;
@@ -5001,6 +5025,8 @@ EOF
        $hist_pert_jm = $ana_jm;
        $apert_im = $agcm_im;
        $apert_jm = $agcm_jm;
+       $bjedi_im = $agcm_im;
+       $bjedi_jm = $agcm_jm;
        $anahgrd = "c";
        $jcap_ens = $jcap;
        $ana_im_ens = $ana_im;
@@ -5038,6 +5064,8 @@ EOF
        $hist_pert_jm = 181;
        $apert_im = 90;
        $apert_jm = $apert_im * 6;
+       $bjedi_im = 90;
+       $bjedi_jm = $bjedi_im * 6;
        $anahgrd = "d";
        $jcap_ens = 126;
        $ana_im_ens = 288;
@@ -5071,6 +5099,8 @@ EOF
        $hist_pert_jm = 361;
        $apert_im = 180;
        $apert_jm = $apert_im * 6;
+       $bjedi_im = 90;
+       $bjedi_jm = $bjedi_im * 6;
        $anahgrd = "d";
        $use_shmem = 1;
        $jcap_ens = 126;
@@ -5106,6 +5136,8 @@ EOF
        $hist_pert_jm = 361;
        $apert_im = 180;
        $apert_jm = $apert_im * 6;
+       $jdedi_im = 180;
+       $jdedi_jm = $bjedi_im * 6;
        $anahgrd = "e";
        $use_shmem = 1;
        $jcap_ens = 254;
@@ -5141,6 +5173,8 @@ EOF
        $hist_pert_jm = 361;
        $apert_im = 180;
        $apert_jm = $apert_im * 6;
+       $bjedi_im = 180;
+       $bjedi_jm = $bjedi_im * 6;
        $anahgrd = "e";
        $use_shmem = 1;
        $jcap_ens = 254;
