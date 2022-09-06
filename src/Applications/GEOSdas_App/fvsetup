@@ -8755,7 +8755,8 @@ sub write_FVDAS_Run_Config {
 
     if ($geosit || $r21c) {
         $ENV{"MKSI_SIDB"}   = "\$FVHOME/run/gmao_satinfo.db";
-        $ENV{"MKSI_OZDB"}   = "\$FVHOME/run/gmao_ozinfo.db";
+        $ENV{"MKSIOZ_SIDB"} = "\$FVHOME/run/gmao_ozinfo.db";
+	$ENV{"MKSICN_SIDB"} = "\$FVHOME/run/gmao_convinfo.db" 
     }
 
     unless ( $ENV{"ARCHIVE"} ) {
@@ -10290,6 +10291,15 @@ sub copy_resources {
        }
     } else {
        die "Cannot find $casedir oz.db under $fvetc, aborting ...";
+    }
+    mkdir ("$fvhome/run/gmao_convinfo.db");
+    if ( -d "$fvetc/gmao_convinfo.db/$casedir" ) {
+       my @files =  glob("$fvetc/gmao_convinfo.db/$casedir" . "/*");
+       foreach my $fn ( @files ) {
+          cp("$fn", "$fvhome/run/gmao_convinfo.db");
+       }
+    } else {
+       die "Cannot find $casedir conv.db under $fvetc, aborting ...";
     }
   }
 }
