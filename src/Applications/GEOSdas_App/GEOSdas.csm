@@ -5953,10 +5953,10 @@ endif
        /bin/rm $EXPID.*rst*iter*.$RSTSUFFIX
     endif
     cd -
-    set lsttrajrst = `ls $EXPID.traj_lcv_rst.*$NCSUFFIX`
-    if ( ${%lsttrajrst}  ) then
-       tar cvf $FVWORK/$EXPID.trajrst.${rtag3}.tar $lsttrajrst
-       /bin/rm $lsttrajrst
+    set lstbkgcrst = `ls $EXPID.bkg_clcv_rst.*$NCSUFFIX`
+    if ( ${%lstbkgcrst}  ) then
+       tar cvf $FVWORK/$EXPID.bkgcrst.${rtag3}.tar $lstbkgcrst
+       /bin/rm $lstbkgcrst
     endif
     if ( $DO4DIAU ) then
        set lstagcmrst = `ls $EXPID.agcm_import_rst.*$NCSUFFIX`

@@ -778,8 +778,8 @@ sub ed_satbias_acq {
 #$ATMENS/central/$expid.ana.acftbias.%y4%m2%d2_%h2z.txt
 #$ATMENS/central/$expid.ana.satbias.%y4%m2%d2_%h2z.txt
 #$ATMENS/central/$expid.ana.satbang.%y4%m2%d2_%h2z.txt
+#$ATMENS/RST/$expid.ana_satbang_rst.%y4%m2%d2_%h2z.txt => $expid.ana.satbang.%y4%m2%d2_%h2z.txt
 $ATMENS/RST/$expid.ana_satbias_rst.%y4%m2%d2_%h2z.txt => $expid.ana.satbias.%y4%m2%d2_%h2z.txt
-$ATMENS/RST/$expid.ana_satbang_rst.%y4%m2%d2_%h2z.txt => $expid.ana.satbang.%y4%m2%d2_%h2z.txt
 $mysatbiaspc
 $mysetacftbc
 EOF

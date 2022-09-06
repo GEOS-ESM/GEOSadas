@@ -539,15 +539,14 @@ while ( $n < $nmem )
      /bin/rm anavinfo
      ln -s ../ensctrl/anavinfo .
 
+     # since setobsvr.csh brings in these files w/ satbias/bang names link them to proper names
      if( -e satbias ) then
-          # since setobsvr.csh brings in these files w/ satbias/bang names link them to proper names
           ln -sf satbias satbias_in
      else
-          echo " ${MYNAME}: Unable to find satbias/bang files to run control-analysis, Aborting ... "
+          echo " ${MYNAME}: Unable to find satbias files to run control-analysis, Aborting ... "
           exit(1)
      endif
      if( -e satbang ) then
-          # since setobsvr.csh brings in these files w/ satbias/bang names link them to proper names
           ln -sf satbang satbias_angle
      endif
      if ( $ACFTBIAS ) then
