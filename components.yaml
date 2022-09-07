@@ -25,10 +25,11 @@ NCEP_Shared:
   tag: v1.2.0
   develop: main
 
+# There is a bugfix for Intel 2022 in main, fixed in 1.5.8 or 1.6
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  tag: v1.5.7
+  branch: main
   develop: main
 
 MAPL:
