@@ -308,13 +308,17 @@ if (! -e $ENSWORK/.DONE_MEM001_ENSMEAN_${MYNAME}.$yyyymmddhh ) then
      /bin/rm anavinfo
      /bin/ln -s $ATMENSETC/gmao_global_anavinfo.rc anavinfo
    endif
-   if( -e satbias && -e satbang ) then
-        # since setobsvr.csh brings in these files w/ satbias/bang names link them to proper names
+   # since setobsvr.csh brings in these files w/ satbias/bang names link them to proper names
+   if( -e satbias ) then
         ln -sf satbias satbias_in
+   else
+        echo " ${MYNAME}: Unable to find satbias file to run mean-observer, Aborting ... "
+        exit(1)
+   endif
+   if( -e satbang ) then
         ln -sf satbang satbias_angle
    else
-        echo " ${MYNAME}: Unable to find satbias/bang files to run mean-observer, Aborting ... "
-        exit(1)
+        echo " ${MYNAME}: Unable to find satbang file to run mean-observer, proceed anyway ... "
    endif
    if ( $ACFTBIAS ) then
       if ( -e acftbias ) then 
