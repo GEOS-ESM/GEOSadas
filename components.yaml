@@ -28,7 +28,7 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  tag: sdr_r21c_v02
+  tag: sdr_r21c_v03
   develop: main
 
 MAPL:
@@ -52,7 +52,7 @@ GEOSana_GridComp:
 GEOSgcm_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp
   remote: ../GEOSgcm_GridComp.git
-  tag: sdr_r21c_v02
+  tag: sdr_r21c_v03
   sparse: ./config/GEOSgcm_GridComp.sparse
   develop: develop
 
@@ -71,7 +71,7 @@ GEOSagcmPert_GridComp:
 FVdycoreCubed_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSsuperdyn_GridComp/@FVdycoreCubed_GridComp
   remote: ../FVdycoreCubed_GridComp.git
-  tag: sdr_r21c_v02
+  tag: sdr_r21c_v03
   develop: develop
 
 fvdycore:
@@ -121,7 +121,7 @@ mom6:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  tag: sdr_r21c_v02
+  tag: sdr_r21c_v03
   develop: develop
 
 UMD_Etc:
