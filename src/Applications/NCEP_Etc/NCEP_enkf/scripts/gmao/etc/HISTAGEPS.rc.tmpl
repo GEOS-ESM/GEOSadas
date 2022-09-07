@@ -11,13 +11,15 @@ COLLECTIONS: 'prog.eta'
 #            'inst3_3d_wxme_Np'
 #            'tavg3_2d_wxme_Nx'
 # Vortex track/relocator
-#             'vtx.mix'
-              ::
+#            'vtx.mix'
+             ::
 
 # Forecasting output ...
 # ----------------------
 
   prog.eta.format:     'CFIO' ,
+  prog.eta.deflate:    2      ,
+  prog.eta.regrid_method:  'BILINEAR_MONOTONIC' ,
   prog.eta.template:   '%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.>>>NCSUFFIX<<<',
   prog.eta.frequency: 060000 ,
   prog.eta.duration:  060000 ,
@@ -50,6 +52,8 @@ COLLECTIONS: 'prog.eta'
   inst1_2d_asm_Nx.format:      'CFIO' ,
   inst1_2d_asm_Nx.descr:       '2d,1-Hourly,Instantaneous,Single-Level,Assimilation,Single-Level Diagnostics' ,
   inst1_2d_asm_Nx.nbits:       10 ,
+  inst1_2d_asm_Nx.deflate:    2      ,
+  inst1_2d_asm_Nx.regrid_method:  'BILINEAR_MONOTONIC' ,
   inst1_2d_asm_Nx.template:    '%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.>>>NCSUFFIX<<<' ,
   inst1_2d_asm_Nx.mode:        'instantaneous' ,
   inst1_2d_asm_Nx.resolution:  >>>HIST_IM<<< >>>HIST_JM<<<,
@@ -85,6 +89,8 @@ COLLECTIONS: 'prog.eta'
                                ::
 
   abkg.eta.format:      'CFIO' ,
+  abkg.eta.deflate:    2      ,
+  abkg.eta.regrid_method:  'BILINEAR_MONOTONIC' ,
   abkg.eta.descr:       '3d,3-Hourly,Instantaneous,Model-Level,Analysis,Aerosol Concentrations' ,
   abkg.eta.template:    '%y4%m2%d2_%h2z.>>>MEMBER<<<.>>>NCSUFFIX<<<' ,
   abkg.eta.ref_date:  >>>IOBBKGD<<< ,
@@ -134,6 +140,8 @@ COLLECTIONS: 'prog.eta'
   tavg1_2d_slv_Nx.format:      'CFIO' ,
   tavg1_2d_slv_Nx.descr:       '2d,3-Hourly,Time-Averaged,Single-Level,Assimilation,Single-Level Diagnostics' ,
   tavg1_2d_slv_Nx.nbits:       10 ,
+  tavg1_2d_slv_Nx.deflate:    2      ,
+  tavg1_2d_slv_Nx.regrid_method:  'BILINEAR_MONOTONIC' ,
   tavg1_2d_slv_Nx.template:    '%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.>>>NCSUFFIX<<<' ,
   tavg1_2d_slv_Nx.mode:        'time-averaged' ,
   tavg1_2d_slv_Nx.resolution:  >>>HIST_IM<<< >>>HIST_JM<<<,
@@ -184,6 +192,8 @@ COLLECTIONS: 'prog.eta'
 
   inst3_3d_wxmc_Cp.format:   'CFIO' ,
   inst3_3d_wxmc_Cp.nbits:      10,
+  inst3_3d_wxmc_Cp.deflate:    2      ,
+  inst3_3d_wxmc_Cp.regrid_method:  'BILINEAR_MONOTONIC' ,
   inst3_3d_wxmc_Cp.template: '%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.>>>NCSUFFIX<<<',
   inst3_3d_wxmc_Cp.mode:     'instantaneous',
   inst3_3d_wxmc_Cp.resolution:  288 181,
@@ -204,6 +214,8 @@ COLLECTIONS: 'prog.eta'
 
   inst3_3d_wxme_Np.format:      'CFIO' ,
   inst3_3d_wxme_Np.nbits:       10 ,
+  inst3_3d_wxme_Np.deflate:    2      ,
+  inst3_3d_wxme_Np.regrid_method:  'BILINEAR_MONOTONIC' ,
   inst3_3d_wxme_Np.template:    '%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.>>>NCSUFFIX<<<' ,
   inst3_3d_wxme_Np.mode:        'instantaneous' ,
   inst3_3d_wxme_Np.resolution:   >>>HIST_IM<<< >>>HIST_JM<<<,
@@ -238,6 +250,8 @@ COLLECTIONS: 'prog.eta'
 
   tavg3_2d_wxme_Nx.format:   'CFIO' ,
   tavg3_2d_wxme_Nx.nbits:      10,
+  tavg3_2d_wxme_Nx.deflate:    2      ,
+  tavg3_2d_wxme_Nx.regrid_method:  'BILINEAR_MONOTONIC' ,
   tavg3_2d_wxme_Nx.template: '%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.>>>NCSUFFIX<<<',
   tavg3_2d_wxme_Nx.mode:     'time-averaged',
   tavg3_2d_wxme_Nx.resolution: >>>HIST_IM<<< >>>HIST_JM<<<,
@@ -252,6 +266,8 @@ COLLECTIONS: 'prog.eta'
   inst1_2d_ocn_Nx.format:      'CFIO' ,
   inst1_2d_ocn_Nx.descr:       '2d,1-Hourly,Time-Averaged,Single-Level,Assimilation,Ocean Surface' ,
   inst1_2d_ocn_Nx.nbits:       10 ,
+  inst1_2d_ocn_Nx.deflate:    2      ,
+  inst1_2d_ocn_Nx.regrid_method:  'BILINEAR_MONOTONIC' ,
   inst1_2d_ocn_Nx.template:    '%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.>>>NCSUFFIX<<<' ,
   inst1_2d_ocn_Nx.mode:        'instantaneous',
   inst1_2d_ocn_Nx.resolution: >>>HIST_IM<<< >>>HIST_JM<<<,
@@ -311,6 +327,8 @@ COLLECTIONS: 'prog.eta'
   tavg1_2d_lfo_Nx.format:      'CFIO' ,
   tavg1_2d_lfo_Nx.descr:       '2d,1-Hourly,Time-Averaged,Single-Level,Assimilation,Forecast Land Surface Forcings' ,
   tavg1_2d_lfo_Nx.nbits:       10 ,
+  tavg1_2d_lfo_Nx.deflate:    2      ,
+  tavg1_2d_lfo_Nx.regrid_method:  'BILINEAR_MONOTONIC' ,
   tavg1_2d_lfo_Nx.template:    '%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.>>>NCSUFFIX<<<' ,
   tavg1_2d_lfo_Nx.mode:        'time-averaged' ,
   tavg1_2d_lfo_Nx.resolution:  >>>HIST_IM<<< >>>HIST_JM<<<,
@@ -331,6 +349,8 @@ COLLECTIONS: 'prog.eta'
   inst1_2d_lfo_Nx.format:      'CFIO' ,
   inst1_2d_lfo_Nx.descr:       '2d,1-Hourly,Instantaneous,Single-Level,Assimilation, Land Surface Forcings' ,
   inst1_2d_lfo_Nx.nbits:       10 ,
+  inst1_2d_lfo_Nx.deflate:    2      ,
+  inst1_2d_lfo_Nx.regrid_method:  'BILINEAR_MONOTONIC' ,
   inst1_2d_lfo_Nx.template:    '%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.>>>NCSUFFIX<<<' ,
   inst1_2d_lfo_Nx.mode:        'instantaneous' ,
   inst1_2d_lfo_Nx.resolution:  >>>HIST_IM<<< >>>HIST_JM<<<,
@@ -348,6 +368,8 @@ COLLECTIONS: 'prog.eta'
   tavg1_2d_lnd_Nx.format:      'CFIO' ,
   tavg1_2d_lnd_Nx.descr:       '2d,1-Hourly,Time-Averaged,Single-Level,Assimilation, Land Surface Diagnostics' ,
   tavg1_2d_lnd_Nx.nbits:       10 ,
+  tavg1_2d_lnd_Nx.deflate:    2      ,
+  tavg1_2d_lnd_Nx.regrid_method:  'BILINEAR_MONOTONIC' ,
   tavg1_2d_lnd_Nx.template:    '%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.>>>NCSUFFIX<<<' ,
   tavg1_2d_lnd_Nx.mode:        'time-averaged' ,
   tavg1_2d_lnd_Nx.resolution:  >>>HIST_IM<<< >>>HIST_JM<<<,
@@ -413,6 +435,8 @@ COLLECTIONS: 'prog.eta'
 #          vtrack script too wired up and attached to filename
 #          convention of central DAS. (RT)
   vtx.mix.format:      'CFIO' ,
+  vtx.mix.deflate:    2      ,
+  vtx.mix.regrid_method:  'BILINEAR_MONOTONIC' ,
   vtx.mix.template:    '%y4%m2%d2_%h2z.>>>NCSUFFIX<<<',
   vtx.mix.frequency:   060000 ,
   vtx.mix.duration:    060000 ,
