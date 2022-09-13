@@ -25,11 +25,10 @@ NCEP_Shared:
   tag: v1.2.0
   develop: main
 
-# There is a bugfix for Intel 2022 in main, fixed in 1.5.8 or 1.6
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  branch: main
+  tag: v1.6.0
   develop: main
 
 MAPL:
@@ -102,7 +101,7 @@ geos-chem:
 GOCART:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSphysics_GridComp/@GEOSchem_GridComp/@GOCART
   remote: ../GOCART.git
-  tag: v2.0.7
+  tag: v2.1.0
   develop: develop
 
 QuickChem:
