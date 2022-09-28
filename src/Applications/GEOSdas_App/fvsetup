@@ -386,13 +386,13 @@ my ($acqloc);
 my ($fcstimes,$fcswait_hrs,$asnwait_hrs);
 my ($landbcs);
 my ($coupled, $ores, $mometc);
-my ($o_servers);
+my ($o_servers,$bckend_wrts);
 
 my ($sysfile, $nodeflg);
 my (@rmTilde);
 my ($merra2, $acftbias, $doRcorr, $nrt, $rstype);
 my ($hyb_ens, $do4diau, $newradbc, $siglevs, $vres, $aensupa);
-my ($geosit, $r21c);
+my ($geosit, $r21c,$bcopt);
 
 system clear;
 get_runtime_values();
@@ -1359,6 +1359,8 @@ sub ed_g5hist_rc_new {
         .       " -s \@COMPRESS=$cmprss"
         .       " -s \@APERT_IM=$apert_im"
         .       " -s \@APERT_JM=$apert_jm"
+        .       " -s \@BJEDI_IM=$bjedi_im"
+        .       " -s \@BJEDI_JM=$bjedi_jm"
         .       " -s \@PERT_FREQ=$pert_freq"
         .       " -s \@AGCM_GRIDNAME=$AGCM_GRIDNAME";
     print "$cmd\n";
@@ -1453,6 +1455,8 @@ sub ed_g5prog_rc {
     if($rcd =~ /\@HIST_PERT_JM/)   { $rcd=~ s/\@HIST_PERT_JM/$hist_pert_jm/ }
     if($rcd =~ /\@APERT_IM/)       { $rcd=~ s/\@APERT_IM/$apert_im/ }
     if($rcd =~ /\@APERT_JM/)       { $rcd=~ s/\@APERT_JM/$apert_jm/ }
+    if($rcd =~ /\@BJEDI_IM/)       { $rcd=~ s/\@BJEDI_IM/$bjedi_im/ }
+    if($rcd =~ /\@BJEDI_JM/)       { $rcd=~ s/\@BJEDI_JM/$bjedi_jm/ }
     if($rcd =~ /\@PERT_FREQ/)      { $rcd=~ s/\@PERT_FREQ/$pert_freq/ }
     if($rcd =~ /\@FCSENS/) {
         if ($admtlm) { $rcd =~ s/\@FCSENS/ /; }
@@ -1526,6 +1530,8 @@ sub ed_g5prog_rc_new {
         .                 " -s \@HIST_PERT_JM=$hist_pert_jm"
         .                 " -s \@APERT_IM=$apert_im"
         .                 " -s \@APERT_JM=$apert_jm"
+        .                 " -s \@BJEDI_IM=$bjedi_im"
+        .                 " -s \@BJEDI_JM=$bjedi_jm"
         .                 " -s \@PERT_FREQ=$pert_freq"
         .                 " -s \@AGCM_GRIDNAME=$AGCM_GRIDNAME";
     print "$cmd\n";
@@ -1776,9 +1782,9 @@ sub ed_ncep_rc {
        }
 	   
        if ( $siglevs <= 72 ) {
-          if($rcd =~ /\@NLEV_EXT/) {$rcd=~ s/\@NLEV_EXT/15/g; }
+          if($rcd =~ /\@NLEV_EXT/) {$rcd=~ s/\@NLEV_EXT/18/g; }
        } elsif ( $siglevs > 72 & $siglevs <= 132 ) {
-          if($rcd =~ /\@NLEV_EXT/) {$rcd=~ s/\@NLEV_EXT/17/g; }
+          if($rcd =~ /\@NLEV_EXT/) {$rcd=~ s/\@NLEV_EXT/21/g; }
        } elsif ( $siglevs > 132 ) {
           if($rcd =~ /\@NLEV_EXT/) {$rcd=~ s/\@NLEV_EXT/27/g; }
        }
@@ -1915,6 +1921,8 @@ sub ed_gsigridcomp_rc {
            if($rcd =~ /\@NYGSI/) {$rcd=~ s/\@NYGSI/$nygsi/g; }
            if($rcd =~ /\@APERT_IM/) {$rcd=~ s/\@APERT_IM/$apert_im/g; }
            if($rcd =~ /\@APERT_JM/) {$rcd=~ s/\@APERT_JM/$apert_jm/g; }
+           if($rcd =~ /\@BJEDI_IM/) {$rcd=~ s/\@BJEDI_IM/$apert_im/g; }
+           if($rcd =~ /\@BJEDI_JM/) {$rcd=~ s/\@BJEDI_JM/$apert_jm/g; }
        }
        if($rcd =~ /\@NSIG/) {$rcd=~ s/\@NSIG/$siglevs/g; }
        if($rcd =~ /\@VARWINDOW/) {$rcd=~ s/\@VARWINDOW/$varwnd_nhms/g; }
@@ -3062,7 +3070,7 @@ sub get_nodeflg {
   elsif ($ans == 3) { $nodeflg = "ivy";  $ncpus_per_node = 20 }
   elsif ($ans == 4) { $nodeflg = "hasw"; $ncpus_per_node = 24 }
   elsif ($ans == 5) { $nodeflg = "sky";  $ncpus_per_node = 36 }
-  elsif ($ans == 6) { $nodeflg = "cas";  $ncpus_per_node = 46 }
+  elsif ($ans == 6) { $nodeflg = "cas";  $ncpus_per_node = 45 }
 
   # currently not applicable at nccs
   #---------------------------------
@@ -3110,7 +3118,7 @@ sub get_times {
 #                                                    #       ----
       if    ($res eq "C48")  { $nx =  4; $ny = 24 }  # (b)    96
       elsif ($res eq "C90")  { $nx =  4; $ny = 24 }  # (c)    96
-      elsif ($res eq "C180") { $nx =  8; $ny = 30 }  # (d)   240
+      elsif ($res eq "C180") { $nx = 15; $ny = 36 }  # (d)   360
       elsif ($res eq "C360") { $nx =  8; $ny = 48 }  # (e)   384
       else                   { $nx = 28; $ny = 48 }  # (f+) 1344
   }
@@ -3143,7 +3151,6 @@ sub get_times {
           $asynbkg_min = 60;           # time frequency of background fields (min)
         } else {
           $asynbkg_min = 180;          # time frequency of background fields (min)
-	  if ( $r21c) { $asynbkg_min = 60};
         }
   } else {
         $splite = 0; $splitexe = 0;
@@ -3444,7 +3451,6 @@ sub get_setgsi {
   $anaexec = "GSIsa.x";
   $hybrid  = ".false.";
   $hyb_ens = -1;
-  if ($r21c) { $hyb_ens = 4}
   if ($merra2) { $nosfcana  = 0 } # will apply similarity to produce xana.sfc
   else         { $nosfcana  = 1 } # will not generation xana.sfc
 
@@ -4735,6 +4741,7 @@ EOF
   $ny_pert = 6 * $nx_pert;
   $use_shmem = 0;
   $o_servers = 0;
+  $bckend_wrts = 0;
   $ios_nds = 1;
   $cldmicro = "1MOMENT";
   if ( "$res" eq "c" && "$vres" eq "55" ) {
@@ -4762,6 +4769,8 @@ EOF
        $hist_pert_jm = $agcm_jm;
        $apert_im = $ana_im;
        $apert_jm = $ana_jm;
+       $bjedi_im = $ana_im;
+       $bjedi_jm = $ana_jm;
        $anahgrd = substr($res,0,1);
        $jcap_ens = $jcap;
        $ana_im_ens = $ana_im;
@@ -4791,6 +4800,8 @@ EOF
        $hist_pert_jm = $agcm_jm;
        $apert_im = $agcm_im;
        $apert_jm = $agcm_jm;
+       $bjedi_im = $agcm_im;
+       $bjedi_jm = $agcm_jm;
        $anahgrd = substr($res,0,1);
        $jcap_ens = $jcap;
        $ana_im_ens = $ana_im;
@@ -4820,6 +4831,8 @@ EOF
        $hist_pert_jm = $agcm_jm;
        $apert_im = $agcm_im;
        $apert_jm = $agcm_jm;
+       $bjedi_im = $agcm_im;
+       $bjedi_jm = $agcm_jm;
        $anahgrd = substr($res,0,1);
        $jcap_ens = $jcap;
        $ana_im_ens = $ana_im;
@@ -4847,6 +4860,8 @@ EOF
        $hist_pert_jm = $agcm_jm;
        $apert_im = $agcm_im;
        $apert_jm = $agcm_jm;
+       $bjedi_im = $agcm_im;
+       $bjedi_jm = $agcm_jm;
        $anahgrd = substr($res,0,1);
        $jcap_ens = $jcap;
        $ana_im_ens = $ana_im;
@@ -4878,6 +4893,8 @@ EOF
        $hist_pert_jm = 181;
        $apert_im = 288;
        $apert_jm = 181;
+       $bjedi_im = 288;
+       $bjedi_jm = 181;
        $anahgrd = substr($res,0,1);
        $jcap_ens = 126;
        $ana_im_ens = 288;
@@ -4909,6 +4926,8 @@ EOF
        $hist_pert_jm = 361;
        $apert_im = 576;
        $apert_jm = 361;
+       $bjedi_im = 288;
+       $bjedi_jm = 181;
        $anahgrd = substr($res,0,1);
        $jcap_ens = 126;
        $ana_im_ens = 288;
@@ -4938,6 +4957,8 @@ EOF
        $hist_pert_jm = $agcm_jm;
        $apert_im = $agcm_im;
        $apert_jm = $agcm_jm;
+       $bjedi_im = $agcm_im;
+       $bjedi_jm = $agcm_jm;
        $anahgrd = substr($res,0,1);
        $jcap_ens = $jcap;
        $ana_im_ens = $ana_im;
@@ -4970,6 +4991,8 @@ EOF
        $hist_pert_jm = $ana_jm;
        $apert_im = $agcm_im;
        $apert_jm = $agcm_jm;
+       $bjedi_im = $agcm_im;
+       $bjedi_jm = $agcm_jm;
        $anahgrd = "b";
        $jcap_ens = $jcap;
        $ana_im_ens = $ana_im;
@@ -5002,11 +5025,17 @@ EOF
        $hist_pert_jm = $ana_jm;
        $apert_im = $agcm_im;
        $apert_jm = $agcm_jm;
+       $bjedi_im = $agcm_im;
+       $bjedi_jm = $agcm_jm;
        $anahgrd = "c";
        $jcap_ens = $jcap;
        $ana_im_ens = $ana_im;
        $ana_jm_ens = $ana_jm;
   } elsif ( "$res" eq "C180" ) {  # Cubed-sphere
+       if ($geosit) {
+          $o_servers = 3;
+          $bckend_wrts = 24;
+       }
        $cubed = 1;
 #      $ios_nds = 2;
        $specres = "254";
@@ -5035,6 +5064,8 @@ EOF
        $hist_pert_jm = 181;
        $apert_im = 90;
        $apert_jm = $apert_im * 6;
+       $bjedi_im = 90;
+       $bjedi_jm = $bjedi_im * 6;
        $anahgrd = "d";
        $jcap_ens = 126;
        $ana_im_ens = 288;
@@ -5068,6 +5099,8 @@ EOF
        $hist_pert_jm = 361;
        $apert_im = 180;
        $apert_jm = $apert_im * 6;
+       $bjedi_im = 90;
+       $bjedi_jm = $bjedi_im * 6;
        $anahgrd = "d";
        $use_shmem = 1;
        $jcap_ens = 126;
@@ -5076,7 +5109,7 @@ EOF
   } elsif ( "$res" eq "C720" ) {  # Cubed-sphere
        $cubed = 1;
        $o_servers = 8;
-#      $ios_nds = 3;
+       $bckend_wrts = 8;
        $specres = "254";
        $jcap = "254";
        $agcm_grid_type = "Cubed-Sphere";
@@ -5103,6 +5136,8 @@ EOF
        $hist_pert_jm = 361;
        $apert_im = 180;
        $apert_jm = $apert_im * 6;
+       $jdedi_im = 180;
+       $jdedi_jm = $bjedi_im * 6;
        $anahgrd = "e";
        $use_shmem = 1;
        $jcap_ens = 254;
@@ -5138,6 +5173,8 @@ EOF
        $hist_pert_jm = 361;
        $apert_im = 180;
        $apert_jm = $apert_im * 6;
+       $bjedi_im = 180;
+       $bjedi_jm = $bjedi_im * 6;
        $anahgrd = "e";
        $use_shmem = 1;
        $jcap_ens = 254;
@@ -5469,7 +5506,7 @@ sub archiving_rules {
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_msu_%c%c%c_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_msu_tirosn_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_omi_aura_%c%c%c.%y4%m2%d2_%h2z.bin
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslp_g_npp_%c%c%c.%y4%m2%d2_%h2z.bin
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpnc_npp_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpuv_npp_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpvis_npp_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnm_npp_%c%c%c.%y4%m2%d2_%h2z.bin
@@ -5527,7 +5564,7 @@ sub archiving_rules {
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_msu_%c%c%c.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_msu_tirosn.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_omi_aura.%y4%m2%d2_%h2z.ods
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslp_g_npp.%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpnc_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpuv_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpvis_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnm_npp.%y4%m2%d2_%h2z.ods
@@ -5584,7 +5621,7 @@ sub archiving_rules {
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_msu_%c%c%c.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_msu_tirosn.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_omi_aura.%y4%m2%d2_%h2z.ods
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_ompslp_g_npp.%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_ompslpnc_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_ompslpuv_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_ompslpvis_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_ompsnm_npp.%y4%m2%d2_%h2z.ods
@@ -5625,7 +5662,7 @@ sub archiving_rules {
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_seviri_m%c%c_%c%c%c_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_sbuv%c_%c%c%c_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_omi_aura_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
-#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslp_g_npp_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpnc_npp_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpuv_npp_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpvis_npp_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnm_npp_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
@@ -5662,7 +5699,7 @@ sub archiving_rules {
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_pcp_tmi_%c%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_sbuv%c_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_omi_aura_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
-#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslp_g_npp_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpnc_npp_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpuv_npp_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpvis_npp_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompsnm_npp_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
@@ -5700,7 +5737,7 @@ sub archiving_rules {
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_pcp_tmi_%c%c%c%c_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_sbuv%c_%c%c%c_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_omi_aura_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
-#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslp_g_npp_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpnc_npp_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpuv_npp_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpvis_npp_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompsnm_npp_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
@@ -6895,7 +6932,7 @@ sub arch_asens {
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_msu_tirosn.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_omi_aura.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_omieff_aura.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslp_g_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpnc_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpuv_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpvis_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpnm_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
@@ -7484,6 +7521,8 @@ sub build_lnbcs {
      $bcopt = "-merra2" ;
   }elsif ( $r21c ) {
      $bcopt = "-r21c";
+  }elsif ($geosit) {
+     $bcopt = "-geosit"; 
   }
   if ( $cubed ) {
      $cmd = "$fvbin/gen_lnbcs.pl -fvhome $fvhome -o lnbcs $bcopt -cubed $agcm_im $agcm_jm $ogcm $landbcs";
@@ -7666,6 +7705,7 @@ print SCRIPT <<"EOF";
   setenv NCPUS_GPERT $ncpus_gpert # Number of CPUs to run gcmPERT
   setenv NCPUS_AOD   $ncpus_aod   # Number of CPUs to run PSAS-AOD
   setenv O_SERVERS   $o_servers   # Number of IO servers
+  setenv O_WRITERS_PER_NODE $bckend_wrts # Number of backend writers
   #setenv GAAS_RUN_SLURM 1 # launch AOD analysis as separate batch job
   setenv AODBLOCKJOB 1
 EOF
@@ -7771,8 +7811,6 @@ print  SCRIPT <<"EOF";
   setenv LDHOME4ENS $ldashome4ens  # land analysis home dir for atm_ens  
   setenv IGNORE_0 1   # 1 = ignore 0 length obs files in acquire
   setenv ACFTBIAS $acftbias
-  setenv USE_MODIS_STAGE 0  # 1 = use MODIS data from MODIS_STAGE_DIR; 0 = don't
-  setenv MODIS_STAGE_DIR /discover/nobackup/projects/gmao/input/dao_ops/ops/flk/modis  # L2a non-archive data dir
   setenv FCSTIMES "$fcstimes"
   setenv FCSTATS  "21"
   setenv FHOURS   $fhours21
@@ -7782,9 +7820,6 @@ print  SCRIPT <<"EOF";
   setenv GSI_DIAG2TXT 1
 # setenv DO_0HR_IMP 1
 
-  if ( -e \$FVHOME/run/replay.acq ) then
-     setenv USE_MODIS_STAGE 1  # for now, replay.acq controls only meteorology (AOD is not yet replayed to)
-  endif
 EOF
 
 if ( $merra2 ) {
@@ -8058,7 +8093,7 @@ print  SCRIPT <<"EOF";
   setenv RUN_OPT_BLEND "esma_mpirun -np \$NCPUS \$HDF2RSX"
   if (\$G5GCM ) then
      if ( \$O_SERVERS > 0 ) then
-        setenv RUN_OPT_BEGIN "mpirun -np \$NCPUSX \$GCMX --npes_model \$NCUPS --nodes_output_server \$O_SERVERS --oserver_type multigroup --npes_backend_pernode \$O_SERVERS"
+        setenv RUN_OPT_BEGIN "mpirun -np \$NCPUSX \$GCMX --npes_model \$NCPUS --nodes_output_server \$O_SERVERS --oserver_type multigroup --npes_backend_pernode \$O_WRITERS_PER_NODE"
      else
         setenv RUN_OPT_BEGIN "esma_mpirun -np \$NCPUS \$GCMX"
      endif
@@ -8331,9 +8366,9 @@ print  SCRIPT <<"EOF";
 
           cd \$FVWORK
           if (`uname -n` =~ borg*) then
-             cat \$PBS_NODEFILE | head -1 > \$FVWORK/OIQC_list
-             cat \$PBS_NODEFILE | tail +2 > \$FVWORK/GCM_list
-             cat \$PBS_NODEFILE           > \$FVWORK/ANA_list
+             cat \$PBS_NODEFILE | head -1    > \$FVWORK/OIQC_list
+             cat \$PBS_NODEFILE | tail -n +2 > \$FVWORK/GCM_list
+             cat \$PBS_NODEFILE              > \$FVWORK/ANA_list
              subset_nodefile.pl \$NCPUS_IDF -f \$PBS_NODEFILE -o \$FVWORK/IDF_list
              subset_nodefile.pl \$NCPUS_IAU -f \$PBS_NODEFILE -o \$FVWORK/IAU_list
           endif
@@ -8610,6 +8645,7 @@ EOF
            endif
            echo2 ""
            echo2 "setenv FVHOME \$FVHOME"
+           echo2 "setenv ARCHIVE \$FVARCH"
            echo2 "set Bin = \$Bin"
            echo2 "set output = \$lname2"
            echo2 ""
@@ -8719,7 +8755,8 @@ sub write_FVDAS_Run_Config {
 
     if ($geosit || $r21c) {
         $ENV{"MKSI_SIDB"}   = "\$FVHOME/run/gmao_satinfo.db";
-        $ENV{"MKSI_OZDB"}   = "\$FVHOME/run/gmao_ozinfo.db";
+        $ENV{"MKSIOZ_SIDB"} = "\$FVHOME/run/gmao_ozinfo.db";
+	$ENV{"MKSICN_SIDB"} = "\$FVHOME/run/gmao_convinfo.db" 
     }
 
     unless ( $ENV{"ARCHIVE"} ) {
@@ -8848,6 +8885,7 @@ print SCRIPT <<"EOF";
   setenv NCPUS_GSI   $ncpus_gsi   # Numbers of CPUs to run GSI
   setenv NCPUS_GPERT $ncpus_gpert # Numbers of CPUs to run GSI
   setenv O_SERVERS   $o_servers   # Number of IO servers
+  setenv O_WRITERS_PER_NODE $bckend_wrts # Backend writers
   setenv N_CPU   \$NCPUS
   setenv EXPID   $expid   # experiment ID
   setenv CASE    \$EXPID  # experiment ID (for LSM's sake)
@@ -9248,7 +9286,7 @@ print  SCRIPT <<"EOF";
   setenv RUN_OPT_BLEND "esma_mpirun -np \$NCPUS \$HDF2RSX"
   if (\$G5GCM ) then
      if ( \$O_SERVERS > 0 ) then
-        setenv RUN_OPT_BEGIN "mpirun -np \$NCPUSX \$GCMX --npes_model \$NCUPS --nodes_output_server \$O_SERVERS --oserver_type multigroup --npes_backend_pernode \$O_SERVERS"
+        setenv RUN_OPT_BEGIN "mpirun -np \$NCPUSX \$GCMX --npes_model \$NCPUS --nodes_output_server \$O_SERVERS --oserver_type multigroup --npes_backend_pernode \$O_WRITERS_PER_NODE"
      else
         setenv    RUN_OPT_BEGIN "esma_mpirun -np \$NCPUS \$GCMX"
      endif
@@ -10112,8 +10150,20 @@ sub copy_resources {
             }
 	 }
       }
+
       # Update gocart files for pre-2000 case
-      # To Be Done
+      if ( $r21c   ) { $casedir = "R21C"  };     
+      if ( $geosit ) { $casedir = "GEOSIT"};     
+      if ( $r21c || $geosit ){
+         if ( $nymdb < 20000331 && $hhb < 23 ) {
+	    if ( -d "$fvetc/$casedir" ){     
+	       my @files = glob("$fvetc/$casedir/19600101-20000331/" . "/*");	 
+               foreach my $fn ( @files ) {
+                  cp("$fn","$fvhome/run/gocart");
+               }
+	    }
+         }
+      }
       #
 
       # Edit psas.rc
@@ -10241,6 +10291,15 @@ sub copy_resources {
        }
     } else {
        die "Cannot find $casedir oz.db under $fvetc, aborting ...";
+    }
+    mkdir ("$fvhome/run/gmao_convinfo.db");
+    if ( -d "$fvetc/gmao_convinfo.db/$casedir" ) {
+       my @files =  glob("$fvetc/gmao_convinfo.db/$casedir" . "/*");
+       foreach my $fn ( @files ) {
+          cp("$fn", "$fvhome/run/gmao_convinfo.db");
+       }
+    } else {
+       die "Cannot find $casedir conv.db under $fvetc, aborting ...";
     }
   }
 }

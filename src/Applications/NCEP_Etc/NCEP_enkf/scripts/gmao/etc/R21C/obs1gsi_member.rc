@@ -62,7 +62,7 @@
    >>>AIRCFT_BIAS<<<
  /
  &OBS_INPUT
-   dmesh(1)=145.0,dmesh(2)=150.0,dmesh(3)=180.0,time_window_max=3.0, 
+   dmesh(1)=145.0,dmesh(2)=150.0,dmesh(3)=180.0,time_window_max=3.0,
  /
 OBS_INPUT::
 !  dfile          dtype       dplat       dsis                  dval     dthin dsfcalc  obclass
@@ -72,6 +72,13 @@ OBS_INPUT::
    prepbufr       uv          null        uv                    0.0      0     0        gmao_prep_bufr
    prepbufr_profl t           prof        t                     0.0      0     0        gmao_acftpfl_bufr
    prepbufr_profl uv          prof        uv                    0.0      0     0        gmao_acftpfl_bufr
+   prepbufrt      ps          null        ps                    0.0      0     0        r21c_prep_bufr
+   prepbufrt      t           null        t                     0.0      0     0        r21c_prep_bufr
+   prepbufrt      q           null        q                     0.0      0     0        r21c_prep_bufr
+   prepbufrt      uv          null        uv                    0.0      0     0        r21c_prep_bufr
+   prepbufrt_profl t          prof        t                     0.0      0     0        r21c_acftpfl_bufr
+   prepbufrt_profl uv         prof        uv                    0.0      0     0        r21c_acftpfl_bufr
+   loonwinds      uv          null        uv                    0.0      0     0        r21c_loon_winds
    mlstbufr       t           aura        t                     0.0      0     0        r21c_gmao_mlst_bufr
    gpsrobufr      gps_bnd     null        gps                   0.0      0     0        r21c_gpsro_bufr
    tcvitl         tcp         null        tcp                   0.0      0     0        r21c_ncep_tcvitals
@@ -83,14 +90,14 @@ OBS_INPUT::
    sbuvbufr       sbuv2       n19         sbuv8_n19             0.0      0     0        r21c_osbuv8_bufr
    ompsnmeffnc    ompsnmeff   npp         ompsnmeff_npp         0.0      2     0        r21c_npp_ompsnmeff_nc
 !  ompsnpnc       ompsnpnc    npp         ompsnpnc_npp          0.0      0     0        r21c_npp_ompsnp_nc
-   ompslpgnc      ompslp_g    npp         ompslp_g_npp          1.0      0     0        r21c_ompslp_g_nc
+!  ompsnpnc       ompsnpnc    npp         ompsnpnc_npp          0.0      0     0        r21c_npp_ompsnp_nc
    ompslpvisnc    ompslpvis   npp         ompslpvis_npp         0.0      0     0        r21c_ompslpvis_nc
    mlsnc          mls55       aura        mls55_aura            0.0      0     0        r21c_mls_nc
    omieffnc       omieff      aura        omieff_aura           0.0      2     0        r21c_aura_omieff_nc
    hirs2bufr      hirs2       n11         hirs2_n11             0.0      1     0        r21c_1bhrs2_bufr
    hirs2bufr      hirs2       n12         hirs2_n12             0.0      1     0        r21c_1bhrs2_bufr
    hirs2bufr      hirs2       n14         hirs2_n14             0.0      1     0        r21c_1bhrs2_bufr
-   hirs3bufr      hirs3       n15         hirs3_n15             0.0      1     0        r21c_1bhrs3_bufr 
+   hirs3bufr      hirs3       n15         hirs3_n15             0.0      1     0        r21c_1bhrs3_bufr
    hirs3bufr      hirs3       n16         hirs3_n16             0.0      1     0        r21c_1bhrs3_bufr
    hirs3bufr      hirs3       n17         hirs3_n17             0.0      1     0        r21c_1bhrs3_bufr
    hirs4bufr      hirs4       n18         hirs4_n18             0.0      1     0        r21c_1bhrs4_bufr
@@ -157,7 +164,7 @@ OBS_INPUT::
 !  ompsnpbufr  ompsnp      npp         ompsnp_npp            0.0      0     0        npp_ompsnp_bufr
 !  ompslpuvnc  ompslpuv    npp         ompslpuv_npp          1.0      0     0        ompslpuv_nc
 !  sbuvbufr    sbuv2       nim07       sbuv8_nim07           0.0      0     0        osbuv8_bufr
-:: 
+::
  &SUPEROB_RADAR
  /
  &LAG_DATA

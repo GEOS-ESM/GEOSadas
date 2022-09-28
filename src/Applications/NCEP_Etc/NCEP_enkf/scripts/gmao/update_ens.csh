@@ -148,13 +148,13 @@ endif
         touch    ../updated_ens/ensdiag/.no_archiving
         set fntype_all = (`edhist.pl -q 3 -list inc -X Bkg.eta,bkg.eta,bkg.sfc,abkg.eta,cbkg.eta,gaas_bkg.sfc -i $rcfile`)
         foreach fntype ( $fntype_all )
-           if ( $fntype == "traj_lcv" ) then
-              if ( ! -d   ../updated_ens/enstraj/${member} ) then
-                 mkdir -p ../updated_ens/enstraj/${member}
-                 touch    ../updated_ens/enstraj/.no_archiving
+           if ( $fntype == "bkg_clcv" ) then
+              if ( ! -d   ../updated_ens/ensbkgx/${member} ) then
+                 mkdir -p ../updated_ens/ensbkgx/${member}
+                 touch    ../updated_ens/ensbkgx/.no_archiving
                  foreach fn ( `/bin/ls $expid.${fntype}.*.${member}.$ncsuffix` )
                     set newname = `echo $fn | cut -d. -f1-3 `
-                    /bin/mv $fn ../updated_ens/enstraj/${member}/$newname.$ncsuffix
+                    /bin/mv $fn ../updated_ens/ensbkgx/${member}/$newname.$ncsuffix
                  end # fn
               endif
            else 

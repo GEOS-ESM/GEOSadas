@@ -106,7 +106,7 @@ my %commentList = ( "asm.eta"      => 1,
                     "prog.sfc"     => 1,
                     "ptrj.prs"     => 1,
                     "traj.lcv"     => 1,
-                    "traj_lcv_rst" => 1,
+                    "bkg_clcv_rst" => 1,
                     "vtx.mix"      => 1,
                     "vtx.prs"      => 1 );
 # main program
@@ -389,7 +389,7 @@ sub get_info_from_SILO {
 
     # add additional hourtype requirements
     #-------------------------------------
-    foreach (qw(traj_lcv_rst)) {
+    foreach (qw(bkg_clcv_rst)) {
         $hourtype{$_} = "$mode{$_}$freq{$_}";
     }
 

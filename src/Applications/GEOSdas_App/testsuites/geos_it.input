@@ -2,9 +2,9 @@
 # geos_it.input
 #--------------
 
-codeID: 7f742b1
+codeID: 523f29e
 description: geos_it__agrid_C180__ogrid_C
-fvsetupID: bbf4f10063
+fvsetupID: f7aaa973c7
 
 ---ENDHEADERS---
 
@@ -98,11 +98,11 @@ Length of FORECAST run segments (in hours)? [123]
 Number of one-day DAS segments per PBS job? [1]
 > 
 
-Number of PEs in the zonal direction (NX)? [8]
-> 
+Number of PEs in the zonal direction (NX)? [15]
+> 15
 
-Number of PEs in the meridional direction (NY)? [30]
-> 48
+Number of PEs in the meridional direction (NY)? [36]
+> 36
 
 Job nickname? [g5das]
 > git
@@ -138,7 +138,7 @@ Which main class of ObsSys (1: NRT; 2: MERRA; 3: MERRA-2; 4: GEOS-IT; 5: R21C)? 
 > 4
 
 OBSERVING SYSTEM CLASSES?
-> geosit_cdas_raob_pre-qc_bufr,geosit_cdas_conv_pre-qc_bufr,geosit_prof_pre-qc_bufr,geosit_avhrrwnd_pre-qc_bufr,geosit_nmodis_pre-qc_bufr,geosit_goes_pre-qc_prep_bufr,geosit_metsat_pre-qc_prep_bufr,geosit_jma_pre-qc_prep_bufr,geosit_ascat_pre-qc_bufr,geosit_repro_ers2_pre-qc_bufr,geosit_qscat_jpl_pre-qc_bufr,geosit_wspd_pre-qc_bufr,geosit_satwnd_bufr,geosit_avhrr_satwnd_bufr,geosit_ncep_tcvitals,geosit_tmi_bufr,geosit_gpsro_bufr,geosit_sevcsr_bufr,geosit_1bamua_bufr,geosit_1bamub_bufr,geosit_1bhrs2_bufr,geosit_1bhrs3_bufr,geosit_1bhrs4_bufr,geosit_1bmsu_bufr,geosit_1bmhs_bufr,geosit_1bssu_bufr,geosit_eosairs_bufr,geosit_eosamsua_bufr,geosit_mtiasi_bufr,geosit_atms_bufr,geosit_ssmit11_bufr,geosit_ssmit13_bufr,geosit_ssmit14_bufr,geosit_ssmit15_bufr,geosit_amsre_bufr,geosit_osbuv8_bufr,geosit_npp_ompsnp_nc,geosit_aura_omieff_nc,geosit_npp_ompsnmeff_nc,geosit_avcsam_bufr,geosit_avcspm_bufr,geosit_acftpfl_bufr,geosit_amsr2_bufr,geosit_crisfsr_bufr,geosit_gmi_bufr
+> geosit_cdas_raob_pre-qc_bufr,geosit_cdas_conv_pre-qc_bufr,geosit_prof_pre-qc_bufr,geosit_avhrrwnd_pre-qc_bufr,geosit_nmodis_pre-qc_bufr,geosit_goes_pre-qc_prep_bufr,geosit_metsat_pre-qc_prep_bufr,geosit_jma_pre-qc_prep_bufr,geosit_ascat_pre-qc_bufr,geosit_repro_ers2_pre-qc_bufr,geosit_qscat_jpl_pre-qc_bufr,geosit_wspd_pre-qc_bufr,geosit_satwnd_bufr,geosit_avhrr_satwnd_bufr,geosit_ncep_tcvitals,geosit_tmi_bufr,geosit_gpsro_bufr,geosit_sevcsr_bufr,geosit_1bamua_bufr,geosit_1bamub_bufr,geosit_1bhrs2_bufr,geosit_1bhrs3_bufr,geosit_1bhrs4_bufr,geosit_1bmsu_bufr,geosit_1bmhs_bufr,geosit_1bssu_bufr,geosit_eosairs_bufr,geosit_eosamsua_bufr,geosit_mtiasi_bufr,geosit_atms_bufr,geosit_ssmit11_bufr,geosit_ssmit13_bufr,geosit_ssmit14_bufr,geosit_ssmit15_bufr,geosit_amsre_bufr,geosit_osbuv8_bufr,geosit_npp_ompsnp_nc,geosit_aura_omieff_nc,geosit_npp_ompsnmeff_nc,geosit_avcsam_bufr,geosit_avcspm_bufr,geosit_acftpfl_bufr,geosit_amsr2_bufr,geosit_crisfsr_bufr,geosit_gmi_bufr,geosit_prep_bufr
 
 CHECKING OBSYSTEM? [2]
 > 1
@@ -195,7 +195,7 @@ Do Aerosol Analysis (y/n)? [y]
 > 
 
 AOD OBSERVING CLASSES [or type 'none']?
-> mod04_061_his,myd04_061_his
+> mod04_061_his,myd04_061_his,aeronet_obs
 
 Enable GAAS feedback to model (y/n)? [y]
 > 

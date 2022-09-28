@@ -72,6 +72,13 @@ OBS_INPUT::
    prepbufr       uv          null        uv                    0.0      0     0        gmao_prep_bufr
    prepbufr_profl t           prof        t                     0.0      0     0        gmao_acftpfl_bufr
    prepbufr_profl uv          prof        uv                    0.0      0     0        gmao_acftpfl_bufr
+   prepbufrt      ps          null        ps                    0.0      0     0        r21c_prep_bufr
+   prepbufrt      t           null        t                     0.0      0     0        r21c_prep_bufr
+   prepbufrt      q           null        q                     0.0      0     0        r21c_prep_bufr
+   prepbufrt      uv          null        uv                    0.0      0     0        r21c_prep_bufr
+   prepbufrt_profl t          prof        t                     0.0      0     0        r21c_acftpfl_bufr
+   prepbufrt_profl uv         prof        uv                    0.0      0     0        r21c_acftpfl_bufr
+   loonwinds      uv          null        uv                    0.0      0     0        r21c_loon_winds
    mlstbufr       t           aura        t                     0.0      0     0        r21c_gmao_mlst_bufr
    gpsrobufr      gps_bnd     null        gps                   0.0      0     0        r21c_gpsro_bufr
    tcvitl         tcp         null        tcp                   0.0      0     0        r21c_ncep_tcvitals
@@ -83,7 +90,7 @@ OBS_INPUT::
    sbuvbufr       sbuv2       n19         sbuv8_n19             0.0      0     0        r21c_osbuv8_bufr
    ompsnmeffnc    ompsnmeff   npp         ompsnmeff_npp         0.0      2     0        r21c_npp_ompsnmeff_nc
 !  ompsnpnc       ompsnpnc    npp         ompsnpnc_npp          0.0      0     0        r21c_npp_ompsnp_nc
-   ompslpgnc      ompslp_g    npp         ompslp_g_npp          1.0      0     0        r21c_ompslp_g_nc
+!  ompslpgnc      ompslpnc    npp         ompslpnc_npp          1.0      0     0        r21c_ompslpnc_nc
    ompslpvisnc    ompslpvis   npp         ompslpvis_npp         0.0      0     0        r21c_ompslpvis_nc
    mlsnc          mls55       aura        mls55_aura            0.0      0     0        r21c_mls_nc
    omieffnc       omieff      aura        omieff_aura           0.0      2     0        r21c_aura_omieff_nc

@@ -33,6 +33,7 @@ my $scriptname = basename($0);
                "cubed",
                "merra2",
 	       "r21c",
+	       "geosit",
                "h" );
 
   usage() if $opt_h;
@@ -139,9 +140,15 @@ elsif ($ogcm eq "C") {  # Cubed-Ocean
     } else {
        $BCSTAG = "$lndbcs/Icarus_Ostia";
     }
-    $fvrtbcs = "g5gcm/bcs/realtime/OSTIA_REYNOLDS";
-    $sstfile = "dataoceanfile_OSTIA_REYNOLDS_SST.$ogrid.\$year.data";
-    $icefile = "dataoceanfile_OSTIA_REYNOLDS_ICE.$ogrid.\$year.data";
+    if ($opt_r21c or $opt_geosit){
+       $fvrtbcs = "g5gcm/bcs/realtime/OSTIA_REYNOLDS_ITR21C";
+       $sstfile = "dataoceanfile_OSTIA_REYNOLDS_ITR21C_SST.$ogrid.\$year.data";
+       $icefile = "dataoceanfile_OSTIA_REYNOLDS_ITR21C_ICE.$ogrid.\$year.data";
+    } else {
+       $fvrtbcs = "g5gcm/bcs/realtime/OSTIA_REYNOLDS";
+       $sstfile = "dataoceanfile_OSTIA_REYNOLDS_SST.$ogrid.\$year.data";
+       $icefile = "dataoceanfile_OSTIA_REYNOLDS_ICE.$ogrid.\$year.data";
+    }
 }
 elsif ($ogcm eq "T") {  # Coupled-Tripolar-Ocean
     $coupled = 1;
@@ -429,6 +436,7 @@ OPTIONS
      -cubed   needed for cubed GCM
      -merra2  specify to set related BCs
      -r21c    specify to set related BCs
+     -geosit  specify to set related BCs
      -h       prints this usage notice
 
 EXAMPLE COMMAND LINE
