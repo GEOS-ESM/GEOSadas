@@ -67,9 +67,10 @@
 !     ---------------
       integer :: im, jm, km, nch
       integer :: im_so, jm_so    ! dimension of superob space
-      integer :: rc, nobs, nobs_good, nODS, i
+      integer :: rc, nobs, nobs_good, nODS, i, naod, nlaod
       integer :: nymd=0, nhms=0, nymd_b, nhms_b
       integer :: myKTobs
+      integer :: kt_list(2)
 
       real*8  :: alpha         ! bias update coefficient
       real*8  :: chAOD(2)      ! Range of AOD waenumbers (nm) to analyze
@@ -255,34 +256,38 @@
       if ( rc /= 0 ) then
          call die ( myname, 'could not read ODS files')
       end if
-      myKTobs=ktAOD
+      ! can read AOD and log AOD obs
+      kt_list = (/ktAOD,ktLogAOD/)
       call ods_select( ods_, ods_%data%nobs, nobs, rc, 
-     &                 qcexcl=0, kt=myKTobs, odss = ods ) ! keep what we need
+     &                 qcexcl=0, kt_list=kt_list, odss = ods ) ! keep what we need
       if ( rc .eq. 0 ) then
          nobs =  ods%data%nobs
-         if ( nobs==0 ) then
-            call ods_clean(ods,rc)
-            ! try reading log(AOD)
-            print *, myname//': could not find obs with kt = ', myKTobs
-            myKTobs=ktLogAOD
-            print *, myname//': trying kt = ', myKTobs, ' ... '
-            call ods_select( ods_, ods_%data%nobs, nobs, rc, 
-     &                       qcexcl=0, kt=myKTobs, odss = ods ) ! keep what we need
+         naod = count(ods%data%kt==ktAOD)
+         nlaod = count(ods%data%kt==ktLogAOD)
+         ! if Log AOD available then convert the obs into AOD
+         if (nlaod >0.) then 
+             where (ods%data%kt == ktLogAOD) 
+                    ods%data%obs = max(eps,exp(ods%data%obs)-0.01)
+                    ods%data%kt  = ktAOD            
+             endwhere
          endif
-         call ods_clean(ods_,rc) ! get rid of what we don't need
+         myKTobs = ktAOD  ! all obs are now supposed to be AOD 
+         call ods_clean(ods_,rc) ! get rid of what we do not need
          print *, myname//': read ODS files'
          print *, myname//': nobs = ', nobs
+         print *, myname//': naod = ', naod, ' and nlaod = ', nlaod
          print *
       else
          call die ( myname, 'could not perform ODS select')
       end if
+
 
 !     Prints out input ODS summary
 !     ----------------------------
       call fix_odsmeta(ods)
       call ODS_Tally ( 6, ods, nobs, rc )
 
-!     Call observer for this date/time
+!     Call observer for this date/time (the convert option becomes obsolete now)
 !     --------------------------------
                                                                                call zeit_ci ( 'Observer' )
       call Observer ( nymd, nhms, y_f, nobs, ods, nobs_good, convertOb2AOD=(myKTobs==ktLogAOD) )
