@@ -265,11 +265,15 @@
          naod = count(ods%data%kt==ktAOD)
          nlaod = count(ods%data%kt==ktLogAOD)
          ! if Log AOD available then convert the obs into AOD
-         if (nlaod >0.) then 
-             where (ods%data%kt == ktLogAOD) 
-                    ods%data%obs = max(eps,exp(ods%data%obs)-0.01)
-                    ods%data%kt  = ktAOD            
-             endwhere
+         if (eps<=0.0) then 
+             call die ( myname, 'eps not defined for conversion of log(AOD) obs into AOD')
+         else
+           if (nlaod >0 .and. eps>0.0) then 
+               where (ods%data%kt == ktLogAOD) 
+                      ods%data%obs = max(eps,exp(ods%data%obs)-eps)
+                      ods%data%kt  = ktAOD            
+               endwhere
+           endif
          endif
          myKTobs = ktAOD  ! all obs are now supposed to be AOD 
          call ods_clean(ods_,rc) ! get rid of what we do not need
@@ -786,6 +790,17 @@
              end if
           end if
       end if
+
+!     Try reading eps, ok if not present but code will only handle
+!     AOD in the input file; code will fail is log AOD found and eps
+!     is not defined.
+      call i90_label ( 'eps_for_log_transform_aod_on_input:', ier )
+      if (ier==0) then
+         eps = i90_gfloat ( ier )
+      else
+         print *, trim(myname), ': WARNING, eps not defined early enough'
+         print *, trim(myname), ': WARNING, code can only handle AOD in input(ODS)'
+      endif
 
 !     Bias coefficient
 !     ----------------
