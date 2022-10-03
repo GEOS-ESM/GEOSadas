@@ -261,14 +261,14 @@
       call ods_select( ods_, ods_%data%nobs, nobs, rc, 
      &                 qcexcl=0, kt_list=kt_list, odss = ods ) ! keep what we need
       if ( rc .eq. 0 ) then
-         nobs =  ods%data%nobs
-         naod = count(ods%data%kt==ktAOD)
+         nobs  = ods%data%nobs
+         naod  = count(ods%data%kt==ktAOD)
          nlaod = count(ods%data%kt==ktLogAOD)
-         ! if Log AOD available then convert the obs into AOD
+         ! if Log AOD comes in as input, convert obs into AOD
          if (eps<=0.0) then 
              call die ( myname, 'eps not defined for conversion of log(AOD) obs into AOD')
          else
-           if (nlaod >0 .and. eps>0.0) then 
+           if (nlaod >0) then 
                where (ods%data%kt == ktLogAOD) 
                       ods%data%obs = max(eps,exp(ods%data%obs)-eps)
                       ods%data%kt  = ktAOD            
