@@ -28,7 +28,7 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  tag: v1.4.10.1
+  tag: v1.4.10.2
   develop: main
 
 MAPL:
@@ -121,7 +121,7 @@ mom6:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  tag: v1.5.6.1
+  tag: v1.5.6.2
   develop: develop
 
 UMD_Etc:
