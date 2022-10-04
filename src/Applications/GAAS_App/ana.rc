@@ -51,6 +51,8 @@ do_you_want_to_skip_PSAS: no # yes or no
 
 alpha_for_bias_estimation: 0.010
 
+eps_for_log_transform_aod_on_input:  0.01
+
 range_of_wavenumbers_to_analyze_in_nm: 470 870
 
 # superob_IMxJM: 576 361 # superob dimension (if <0, same as input grid)
