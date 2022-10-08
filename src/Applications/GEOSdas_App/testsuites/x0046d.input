@@ -1,21 +1,21 @@
 #------------
-# fpp.input
+# x0046d.input
 #------------
 
 codeID: 523f29e
-description: fpp__GEOSadas-5_29_5__agrid_C720__ogrid_C
+description: x0046d__GEOSadas-5_29_5__agrid_C360__ogrid_C
 fvsetupID: f7aaa973c7
 
 ---ENDHEADERS---
 
-Remote account for Intranet plots? [dao_ops@train]
+Remote account for Intranet plots? [dao_it@train]
 > 
 
 Is this a MERRA2 (1), GEOSIT (2), R21C (3) experiment? [0]
 > 
 
 AGCM Horizontal Resolution? [C48]
-> C720
+> C360
 
 AGCM Vertical Resolution? [72]
 > 
@@ -23,13 +23,13 @@ AGCM Vertical Resolution? [72]
 OGCM Resolution? [f]
 > C
 
-EXPID? [u000_C720]
+EXPID? [u000_C360]
 > $expid
 
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [fpp__GEOSadas-5_29_5__agrid_C720__ogrid_C]
+EXPDSC? [x0046d__GEOSadas-5_29_5__agrid_C360__ogrid_C]
 > 
 
 Land Boundary Conditions? [Icarus_Updated]
@@ -38,10 +38,10 @@ Land Boundary Conditions? [Icarus_Updated]
 Catchment Model choice? [1]
 > 
 
-FVHOME? [/discover/nobackup/dao_ops/fpp]
-> /gpfsm/dnb04/projects/p14/intermediate/$expid
+FVHOME? [/discover/nobackup/dao_it/x0046d]
+> /discover/nobackup/projects/gmao/dadev/dao_it/Winter_Runs/$expid
 
-The directory /gpfsm/dnb04/projects/p14/intermediate/fpp does not exist. Create it now? [y]
+The directory /discover/nobackup/projects/gmao/obsdev/dao_it/x0046d already exists. Clean it? [y]
 > 
 
 Processing nodes (1:Westmere, 2:SandyBridge, 3:Ivy Bridge, 4:Haswell, 5:Skylake, 6:Cascase)? [4]
@@ -81,7 +81,7 @@ AeroCom? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/AeroCom]
 > 
 
 FVICS? [/archive/u/jstassi/restarts/GEOSadas-5_24_0]
-> /discover/nobackup/projects/gmao/dadev/rtodling/archive/f5293_fpp/Y2021/M09/f5293_fpp.rst.20210919_21z.tar
+> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_29/c360/c360.rst.20220423_21z.tar
 
 Run model-adjoint-related applications (0=no,1=yes)? [0]
 > 1
@@ -98,11 +98,11 @@ Run singular vector experiments (0=n,1=yes)? [0]
 Run analysis-sensitivity applications (0=no,1=yes)? [0]
 > 1
 
-Verifying experiment id: [fpp]
+Verifying experiment id: [x0046d]
 > 
 
-Ending year-month-day? [20210921]
-> 20211004
+Ending year-month-day? [20191121]
+> 20220706
 
 Length of FORECAST run segments (in hours)? [123]
 > 
@@ -110,14 +110,14 @@ Length of FORECAST run segments (in hours)? [123]
 Number of one-day DAS segments per PBS job? [1]
 > 
 
-Number of PEs in the zonal direction (NX)? [28]
-> 15
+Number of PEs in the zonal direction (NX)? [8]
+> 12
 
 Number of PEs in the meridional direction (NY)? [48]
-> 360
+> 72
 
 Job nickname? [g5das]
-> $expid
+> x46d
 
 Run in split executable mode (1=yes;0=no)? [1]
 > 
@@ -134,23 +134,23 @@ Analysis vertical levels (sig))? [72]
 GSI grid resolution? [NA]
 > 
 
-GEOS grid resolution instead? [e]
+GEOS grid resolution instead? [d]
 > 
 
 Ensemble Hybrid (<0;3=3dHyb;4=Hyb4d)? [-1]
 > 4
 
-Number of procs in the zonal direction (NX)? [16]
-> 27
+Number of procs in the zonal direction (NX)? [12]
+> 16
 
-Number of procs in the meridional direction (NY)? [42]
-> 
+Number of procs in the meridional direction (NY)? [20]
+> 42
 
 Which main class of ObsSys (1: NRT; 2: MERRA; 3: MERRA-2)? [1]
-> 1
+> 
 
 OBSERVING SYSTEM CLASSES?
-> disc_airs_bufr,disc_amsua_bufr,gmao_amsr2_bufr,gmao_gmi_bufr,mls_nrt_nc,ncep_1bamua_bufr,ncep_1bhrs4_bufr,ncep_acftpfl_bufr,ncep_atms_bufr,ncep_aura_omi_bufr,ncep_avcsam_bufr,ncep_avcspm_bufr,ncep_crisfsr_bufr,ncep_goesfv_bufr,ncep_gpsro_bufr,ncep_mhs_bufr,ncep_mtiasi_bufr,ncep_prep_bufr,ncep_satwnd_bufr,ncep_sevcsr_bufr,ncep_ssmis_bufr,ncep_tcvitals,npp_ompsnm_bufr
+> disc_airs_bufr,disc_amsua_bufr,gmao_amsr2_bufr,gmao_gmi_bufr,mls_nrt_nc,ncep_1bamua_bufr,ncep_1bhrs4_bufr,ncep_acftpfl_bufr,ncep_atms_bufr,ncep_aura_omi_bufr,ncep_avcsam_bufr,ncep_avcspm_bufr,ncep_crisfsr_bufr,ncep_goesfv_bufr,ncep_gpsro_bufr,ncep_mhs_bufr,ncep_mtiasi_bufr,ncep_prep_bufr,ncep_satwnd_bufr,ncep_sevcsr_bufr,ncep_ssmis_bufr,ncep_tcvitals,npp_ompsnm_bufr,gmao_mlst_bufr
 
 CHECKING OBSYSTEM? [2]
 > 1
@@ -207,7 +207,7 @@ Do Aerosol Analysis (y/n)? [y]
 > 
 
 AOD OBSERVING CLASSES [or type 'none']?
-> mod04_061_flk,myd04_061_flk,aeronet_obs_flk
+> mod04_061_llk,myd04_061_llk,aeronet_obs_llk,mod04_061_flk,myd04_061_flk,aeronet_obs_flk
 
 Enable GAAS feedback to model (y/n)? [y]
 > 
@@ -221,23 +221,23 @@ Which template? [GCMPROG.rc.tmpl]
 Output Restart TYPE (bin or nc4) [nc4]
 > 
 
-Select group: [g0613]
-> g2538
+Select group: [s0818]
+> g0613
 
-Replayed Ensemble?  [yes]
+Replayed Ensemble (from OPS)?  [yes]
 > no
 
 Use SPPT-scheme for Ensemble?  [yes]
 > 
 
 Ensemble Resolution?  [C90]
-> C180
+> 
 
 Ensemble Vertical Levels?  [72]
 > 
 
-Experiment archive directory for ensemble restarts or 'later': [/archive/u/dao_ops/fpp]
-> /nfs3m/archive/sfa_cache01/projects/dao_ops/GEOS-5.27/GEOSadas-5_27/f5271_fp
+Experiment archive directory for ensemble restarts or 'later': [/archive/u/rtodling/x0046d]
+> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_29/c360
 
 Edit COLLECTIONS list in run/HISTORY.rc.tmpl (y/n)? [n]
 > 
