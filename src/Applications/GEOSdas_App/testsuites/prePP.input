@@ -3,7 +3,7 @@
 #------------
 
 codeID: 523f29e
-description: prePP__GEOSadas-5_29_3__agrid_C720__ogrid_C
+description: prePP__GEOSadas-5_29_5__agrid_C720__ogrid_C
 fvsetupID: f7aaa973c7
 
 ---ENDHEADERS---
@@ -29,7 +29,7 @@ EXPID? [u000_C720]
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [prePP__GEOSadas-5_29_3__agrid_C720__ogrid_C]
+EXPDSC? [prePP__GEOSadas-5_29_5__agrid_C720__ogrid_C]
 > 
 
 Land Boundary Conditions? [Icarus_Updated]
@@ -207,7 +207,7 @@ Do Aerosol Analysis (y/n)? [y]
 > 
 
 AOD OBSERVING CLASSES [or type 'none']?
-> 
+> mod04_061_llk,myd04_061_llk,aeronet_obs_llk,mod04_061_flk,myd04_061_flk,aeronet_obs_flk
 
 Enable GAAS feedback to model (y/n)? [y]
 > 
