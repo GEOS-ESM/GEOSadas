@@ -81,7 +81,7 @@ AeroCom? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/AeroCom]
 > 
 
 FVICS? [/archive/u/jstassi/restarts/GEOSadas-5_24_0]
-> /home/dao_ops/d5271_it_sample/run/.../archive/rs/Y2019/M06/d5271_it_sample.rst.20190625_21z.tar
+> /discover/nobackup/projects/gmao/dadev/rtodling/GEOSIT/RSTs/d5294_geosit_jan98.rst.19961231_21z.tar
 
 Run model-adjoint-related applications (0=no,1=yes)? [0]
 > 
@@ -90,7 +90,7 @@ Run analysis-sensitivity applications (0=no,1=yes)? [0]
 > 
 
 Ending year-month-day? [20190627]
-> 
+> 19970202
 
 Length of FORECAST run segments (in hours)? [123]
 > 

@@ -5136,8 +5136,8 @@ EOF
        $hist_pert_jm = 361;
        $apert_im = 180;
        $apert_jm = $apert_im * 6;
-       $jdedi_im = 180;
-       $jdedi_jm = $bjedi_im * 6;
+       $bjedi_im = 360;
+       $bjedi_jm = $bjedi_im * 6;
        $anahgrd = "e";
        $use_shmem = 1;
        $jcap_ens = 254;
@@ -5173,7 +5173,7 @@ EOF
        $hist_pert_jm = 361;
        $apert_im = 180;
        $apert_jm = $apert_im * 6;
-       $bjedi_im = 180;
+       $bjedi_im = 360;
        $bjedi_jm = $bjedi_im * 6;
        $anahgrd = "e";
        $use_shmem = 1;
@@ -7810,12 +7810,9 @@ print  SCRIPT <<"EOF";
   setenv LDHOME  $ldashome  # land analysis home dir (ldas_exp/) for central 
   setenv LDHOME4ENS $ldashome4ens  # land analysis home dir for atm_ens  
   setenv IGNORE_0 1   # 1 = ignore 0 length obs files in acquire
-  setenv ACFTBIAS $acftbias
   setenv FCSTIMES "$fcstimes"
   setenv FCSTATS  "21"
   setenv FHOURS   $fhours21
-  setenv NEWRADBC $newradbc
-  setenv ANGLEBC  $newradbc
   setenv GSI_NETCDF_DIAG 1
   setenv GSI_DIAG2TXT 1
 # setenv DO_0HR_IMP 1
@@ -8742,10 +8739,12 @@ sub write_FVDAS_Run_Config {
     $ENV{"EXPID"}  = $expid;
 
     $ENV{"AOD_OBSCLASS"}    = "$aod_obsclass";
+    $ENV{"ACFTBIAS"}        = "$acftbias";
     $ENV{"BERROR"}          = $berror_file if $berror_file;
     $ENV{"FVBCS"}           = "\$FVHOME/fvInput";
     $ENV{"GID"}             = $gid;
     $ENV{"MONTHLY_MEANS"}   = $monthly_means;
+    $ENV{"NEWRADBC"}        = $newradbc;
     $ENV{"NCEPINPUT"}       = $fvbcs;
     $ENV{"OBSCLASS"}        = $obClass;
     $ENV{"OMP_NUM_THREADS"} = $omp_num_threads;
