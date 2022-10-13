@@ -5,13 +5,13 @@ GEOSadas:
 env:
   local: ./@env
   remote: ../ESMA_env.git
-  tag: v3.2.1
+  tag: v3.4.0
   develop: main
 
 cmake:
   local: ./@cmake
   remote: ../ESMA_cmake.git
-  tag: v3.4.2
+  tag: v3.5.2
   develop: develop
 
 ecbuild:
@@ -28,13 +28,13 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  tag: v1.4.5
+  tag: v1.4.10.2
   develop: main
 
 MAPL:
   local: ./src/Shared/@MAPL
   remote: ../MAPL.git
-  tag: v2.6.7
+  tag: v2.8.0.9
   develop: develop
 
 FMS:
@@ -46,13 +46,13 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  tag: v1.4.1
+  tag: v1.5.4.7
   develop: develop
 
 GEOSgcm_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp
   remote: ../GEOSgcm_GridComp.git
-  tag: v1.12.3
+  tag: v1.12.4.1
   sparse: ./config/GEOSgcm_GridComp.sparse
   develop: develop
 
@@ -65,25 +65,25 @@ g5pert:
 GEOSagcmPert_GridComp:
   local: ./src/Components/@GEOSagcmPert_GridComp
   remote: ../GEOSagcmPert_GridComp.git
-  tag: v1.2.0
+  tag: v5.29.1
   develop: main
 
 FVdycoreCubed_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSsuperdyn_GridComp/@FVdycoreCubed_GridComp
   remote: ../FVdycoreCubed_GridComp.git
-  tag: v1.2.13
+  tag: v1.2.15.1
   develop: develop
 
 fvdycore:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSsuperdyn_GridComp/@FVdycoreCubed_GridComp/@fvdycore
   remote: ../GFDL_atmos_cubed_sphere.git
-  tag: geos/v1.1.6
+  tag: geos/v1.1.7
   develop: geos/develop
 
 GEOSchem_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSphysics_GridComp/@GEOSchem_GridComp
   remote: ../GEOSchem_GridComp.git
-  tag: v1.6.0
+  tag: v1.6.1
   develop: develop
 
 HEMCO:
@@ -101,8 +101,8 @@ geos-chem:
 GOCART:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSphysics_GridComp/@GEOSchem_GridComp/@GOCART
   remote: ../GOCART.git
+  tag: v1.0.2
   sparse: ./config/GOCART.sparse
-  tag: v1.0.1
   develop: develop
 
 mom:
@@ -116,12 +116,12 @@ mom6:
   remote: ../MOM6.git
   tag: geos/v2.0.1
   develop: dev/gfdl
-  recurse_submodules: True
+  recurse_submodules: true
 
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  tag: v1.4.1
+  tag: v1.5.6.2
   develop: develop
 
 UMD_Etc:

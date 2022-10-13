@@ -3,7 +3,7 @@
 #SBATCH --account=>>>GID<<<
 #SBATCH --constraint=>>>NODEFLG<<<
 #SBATCH --ntasks=96
-#SBATCH --ntasks-per-node=24
+#SBATCH --ntasks-per-node=>>>NCPUS_PER_NODE<<<
 #SBATCH --time=6:00:00
 #
 #SBATCH --job-name=atm_ens
@@ -47,7 +47,9 @@
 # ----------------------
 # setenv JOBGEN_PARTITION preops
 # setenv JOBGEN_QOS dastest
+# setenv JOBGEN_ARCH_CONSTRAINT cssrw
   setenv JOBGEN_CONSTRAINT >>>NODEFLG<<<
+# setenv JOBGEN_NCPUS_PER_NODE >>>NCPUS_PER_NODE<<<
   setenv ATMENS_QNAME compute
   if ( $?JOBGEN_PARTITION ) then
      setenv ATMENS_QNAME $JOBGEN_PARTITION
@@ -59,7 +61,7 @@
   setenv CASE    $EXPID  # experiment ID (for LSM's sake)
   setenv FVROOT  `cat $FVHOME/.FVROOT`
   setenv FVRUN   $FVHOME/run
-  setenv BIGNAME `echo "$EXPID" | tr -s '[:lower:]' '[:upper:]'`
+  setenv BIGNAME `echo "$EXPID" | tr '[:lower:]' '[:upper:]'`
   if( (`uname -s` == "Linux") ) then
       if( `uname -m` != "ia64" ) then
          setenv FORT90L -Wl,-T
@@ -93,7 +95,7 @@
 # ------------------------
 # unsetenv LD_LIBRARY_PATH 
   source $FVROOT/bin/g5_modules
-# setenv LD_LIBRARY_PATH \${LD_LIBRARY_PATH}:\${BASEDIR}/\${ARCH}/lib:\${FVROOT}/lib
+# setenv LD_LIBRARY_PATH \${BASEDIR}/\${ARCH}/lib:\${FVROOT}/lib:\${LD_LIBRARY_PATH}
 
 # Add FVROOT/bin to front of path so fvDAS binaries are found first
 # -----------------------------------------------------------------
@@ -143,6 +145,9 @@
   setenv SPECRES    62    # should be able to revisit analyzer to avoid needing this
 
   setenv GAAS_ANA 1
+  setenv LDAS_ANA >>>LDAS_ANA<<<
+  setenv LDHOME4ENS >>>LDHOME4ENS<<<
+
 
 # Run-time mpi-related options
 # ----------------------------
@@ -451,6 +456,18 @@
          zeit_co.x eaod
       endif
   endif
+
+# LDAS ens analysis at ens gcm resolution 
+# -----------------------------------
+  if ( $LDAS_ANA ) then
+     zeit_ci.x eldas
+     atmos_eldas.csh $EXPID $anymd $anhms  060000 |& tee -a atm_ens.log
+     if( $status) then
+        echo "eldas failed"
+        exit(1)
+     endif
+     zeit_co.x eldas
+  endif 
  
 # Run ensemble of atmospheric analyses
 # ------------------------------------
@@ -471,9 +488,9 @@
       set amm = `echo ${anymd} | cut -c5-6`
       set ahh = `echo ${anhms} | cut -c1-2`
       cd $FVWORK/updated_ens
-      if(! -e $HYBRIDGSI/${EXPID}.atmens_eana_brec.${nymdb}_${hhb}z.tar ) then
-         tar -cvf $HYBRIDGSI/${EXPID}.atmens_eana_brec.${nymdb}_${hhb}z.tar mem0*/*.ana.eta*nc4  
-      endif
+#     if(! -e $HYBRIDGSI/${EXPID}.atmens_eana_brec.${nymdb}_${hhb}z.tar ) then
+#        tar -cvf $HYBRIDGSI/${EXPID}.atmens_eana_brec.${nymdb}_${hhb}z.tar mem0*/*.ana.eta*nc4  
+#     endif
       cd -
   endif
 
@@ -504,9 +521,9 @@
       set amm = `echo ${anymd} | cut -c5-6`
       set ahh = `echo ${anhms} | cut -c1-2`
       cd $FVWORK/updated_ens
-      if(! -e $HYBRIDGSI/${EXPID}.atmens_eana_arec.${nymdb}_${hhb}z.tar ) then
-         tar -cvf $HYBRIDGSI/${EXPID}.atmens_eana_arec.${nymdb}_${hhb}z.tar mem0*/*.ana.eta*nc4 
-      endif
+#     if(! -e $HYBRIDGSI/${EXPID}.atmens_eana_arec.${nymdb}_${hhb}z.tar ) then
+#        tar -cvf $HYBRIDGSI/${EXPID}.atmens_eana_arec.${nymdb}_${hhb}z.tar mem0*/*.ana.eta*nc4 
+#     endif
       cd -
   endif
 

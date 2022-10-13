@@ -54,6 +54,7 @@ use Perl_Config qw(perl_config);
 #-----------------
 my ($EXPID, $FVETC, $GID, $numnodes, $scriptname, $siteID, $walltime);
 my ($rundir, $run_mp_dir, $FVHOME, $FVROOT);
+my ($thisnode);
 
 # main program
 #-------------
@@ -69,17 +70,18 @@ my ($rundir, $run_mp_dir, $FVHOME, $FVROOT);
 # purpose - get runtime options; check environment variables
 #=======================================================================
 sub init {
-    my ($res, $hres, $help, %opts);
+    my ($res, $hres, $help, $nodeflg, %opts);
 
     $scriptname = basename($0);
     $siteID = get_siteID();
 
-    GetOptions( "expid=s"  => \$EXPID,
-                "fvhome=s" => \$FVHOME,
-                "fvroot=s" => \$FVROOT,
-                "gid=s"    => \$GID,
-                "res=s"    => \$res,
-                "h"        => \$help );
+    GetOptions( "expid=s"   => \$EXPID,
+                "fvhome=s"  => \$FVHOME,
+                "fvroot=s"  => \$FVROOT,
+                "gid=s"     => \$GID,
+                "nodeflg=s" => \$nodeflg,
+                "res=s"     => \$res,
+                "h"         => \$help );
     usage() if $help;
 
     $EXPID  = $ENV{"EXPID"} unless $EXPID;
@@ -115,6 +117,10 @@ sub init {
     if    ($siteID eq "nccs") { $walltime =  "8:00:00" }
     elsif ($siteID eq "nas")  { $walltime = "12:00:00" }
         
+    $thisnode = "hasw";
+    if ($nodeflg) {
+      $thisnode = $nodeflg;
+    }
     if ($res) {
         $hres = substr($res, 0, 1) if $res;
 
@@ -174,11 +180,15 @@ sub write_plotfiles {
     %values = ();
     $values{"\@PLOT_T"} = "12:00:00";
     $values{"\@PLOT_P"} = "SBATCH --nodes=4";
-    $values{"\@PLOT_Q"} = "SBATCH --constraint=hasw";
+    $values{"\@PLOT_Q"} = "SBATCH --constraint=$thisnode";
     $values{"\@BATCH_GROUP"} = "SBATCH --account=$GID";
     $values{"\@SITE"} = uc($siteID);
     $values{"\@GEOSBIN"} = "$FVROOT/bin";
     $values{"\@GEOSSRC"} = $ENV{"GEOSUTIL"};
+
+    $values{"\@BATCH_TIME"} = "SBATCH --time=";
+    $values{"\@BATCH_JOBNAME"} = "SBATCH --job-name=";
+    $values{"\@BATCH_OUTPUTNAMEOUTPUT"} = "SBATCH --output=OUTPUT";
 
     replaceLabels($infile, $outfil, \%values,\@setenvs);
         
@@ -282,6 +292,7 @@ options
   -fvhome fvhomedir   FVHOME directory location; defaults to \$ENV{"FVHOME"}
   -fvroot fvrootdir   FVROOT directory location; defaults to \$ENV{"FVROOT"}
   -gid groupid        Group ID; defaults to getsponsor.pl default
+  -nodeflg            Node flag: hasw, sky, cas (default: hasw)
   -res                Horizontal resolution of atmosphere grid
 EOF
 exit;

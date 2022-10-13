@@ -33,14 +33,16 @@ our @EXPORT_OK = qw ( set_AGCM_envvars
 #-----------------
 my ($gocart_tracers, $carma_tracers, $iau, $pcp_forced, $lsmodel_flag);
 my ($fvhome, $fvroot);
+my ($coupled);
 my ($envvars_set, $flags_set, %subst);
 
 #----------------------------------
 # GCM Restart files
 #----------------------------------
-my (@rs5_core, @rs5_boot, @rs5_others, @rs5_notused, @rs5_files);
+my (@rs5_core, @rs5_boot, @rs5_coupled, @rs5_others, @rs5_notused, @rs5_files);
 my %list = (rs5_core     => \@rs5_core,
             rs5_boot     => \@rs5_boot,
+            rs5_coupled  => \@rs5_coupled,
             rs5_others   => \@rs5_others,
             rs5_obsolete => \@rs5_notused,  # maintain obsolete interface
             rs5_notused  => \@rs5_notused,
@@ -87,6 +89,11 @@ my %list = (rs5_core     => \@rs5_core,
                    traj_lcv_rst
                    ptrj_prs_rst );
 
+# needed for coupled model
+@rs5_coupled = qw ( ocean_internal_rst
+                    seaice_import_rst
+                    seaice_internal_rst );
+
 # these restarts are currently not in use
 @rs5_notused = qw ( aiau_import_rst
                     aiau_import_checkout
@@ -98,15 +105,10 @@ my %list = (rs5_core     => \@rs5_core,
                     hemco_internal_rst
                     hemco_import_rst
                     mam_internal_rst
-                    ocean_internal_rst
                     orad_import_rst
-                    seaice_import_rst
-                    seaice_internal_rst
                     stratchem_internal_rst 
                     stratchem_import_rst );
 
-# this array includes all but the notused restarts
-@rs5_files = (@rs5_core, @rs5_boot, @rs5_others);
 
 #=======================================================================
 # name - set_AGCM_envvars
@@ -118,7 +120,17 @@ sub set_AGCM_envvars {
     $envvars_set = 0;
     $fvhome = hashextract("fvhome",%envvars);
     $fvroot = hashextract("fvroot",%envvars);
+    $coupled = hashextract("coupled",%envvars);
     $envvars_set = 1;
+
+    # this array includes all but the notused restarts
+    if ( $coupled ) {
+      @rs5_files = (@rs5_core, @rs5_boot, @rs5_coupled, @rs5_others);
+    } else {
+      @rs5_notused = (@rs5_notused, @rs5_coupled);
+      @rs5_files = (@rs5_core, @rs5_boot, @rs5_others);
+    }
+
 }
 
 #=======================================================================
@@ -266,7 +278,11 @@ sub ed_g5agcm_rc {
 
     # comment unused catch or catchCN restart
     #----------------------------------------
-    if ($lsmodel_flag == 1) { $comment{"CATCHCN_INTERNAL"} = 1 }
+    if ($lsmodel_flag == 1) { 
+        $comment{"CATCHCN_INTERNAL"} = 1;
+        $comment{"CATCHCNCLM40_INTERNAL"} = 1;
+        $comment{"CATCHCNCLM45_INTERNAL"} = 1;
+    }
     if ($lsmodel_flag == 2) { $comment{"CATCH_INTERNAL"} = 1 }
 
     # comment these line when GOCART tracers turned on

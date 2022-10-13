@@ -130,8 +130,8 @@
                mod = .false.
                do j = 1,klev
                   if ( evn(3,j) .eq. 9. ) then
-                     if ( abs(evn(3,j)) .lt. wmax .and. 
-     &                    abs(evn(4,j)) .lt. wmax ) then
+                     if ( abs(evn(1,j)) .lt. wmax .and. 
+     &                    abs(evn(2,j)) .lt. wmax ) then
                         mod = .true.
                         evn(3,j) = 2.
                         evn(4,j) = 1.

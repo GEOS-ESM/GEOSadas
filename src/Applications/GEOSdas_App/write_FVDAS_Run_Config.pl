@@ -14,9 +14,9 @@ my ($filename);
 my ($ARCH, $HOST);
 my ($FVHOME, $FVROOT, $RUNDIR);
 my ($AOD_OBSCLASS, $BERROR, $DO_ECS_OUT, $DO_REM_SYNC, $EXPID, $FVARCH,
-    $FVBCS, $GID, $MONTHLY_MEANS, $MP_SET_NUMTHREADS, $NCEPINPUT, $NOBACKUP,
-    $OBSCLASS, $OBSCLASS_NOAIRS, $OMP_NUM_THREADS, $RUN_QUADS, $VTRACK,
-    $VTXLEVS, $VTXRELOC);
+    $FVBCS, $GID, $MONTHLY_MEANS, $MKSI_SIDB, $MKSIOZ_SIDB, $MKSICN_SIDB, $MP_SET_NUMTHREADS, $NCEPINPUT, $NOBACKUP,
+    $OBSCLASS, $OBSCLASS_NOAIRS, $OMP_NUM_THREADS, $RUN_QUADS, $PYRADMON,
+    $VTRACK, $VTXLEVS, $VTXRELOC);
 my ($BASEDIR, $FCSTID, $FVDMGET, $G5MODULES, $PLOTS_LOC, $GEOSUTIL, $GTAG);
 my ($qalter, $PBS_BIN, $DISCOVERSHARE);
 my ($FVSHARE, $SHARE, $REM_GRADS_CONFIG, $G5MGRAM, $LATS4DLOC, $FVBIN,
@@ -92,11 +92,15 @@ sub init {
     $FVBCS             = $ENV{"FVBCS"};
     $GID               = $ENV{"GID"};
     $MONTHLY_MEANS     = $ENV{"MONTHLY_MEANS"};
+    $MKSI_SIDB         = $ENV{"MKSI_SIDB"};
+    $MKSIOZ_SIDB       = $ENV{"MKSIOZ_SIDB"};
+    $MKSICN_SIDB       = $ENV{"MKSICN_SIDB"};
     $MP_SET_NUMTHREADS = $ENV{"MP_SET_NUMTHREADS"};
     $NCEPINPUT         = $ENV{"NCEPINPUT"};
     $OBSCLASS          = $ENV{"OBSCLASS"};
     $OBSCLASS_NOAIRS   = $ENV{"OBSCLASS_NOAIRS"};
     $OMP_NUM_THREADS   = $ENV{"OMP_NUM_THREADS"};
+    $PYRADMON          = $ENV{"PYRADMON"};
     $RUN_QUADS         = $ENV{"RUN_QUADS"};
     $VTRACK            = $ENV{"VTRACK"};
     $VTXLEVS           = $ENV{"VTXLEVS"};
@@ -278,6 +282,7 @@ sub writefile {
     print RUNCONF "setenv FVARCH $FVARCH\n" if $FVARCH;
     print RUNCONF "setenv FVSPOOL $FVSPOOL\n" if $FVSPOOL;
     print RUNCONF "setenv BASEDIR $BASEDIR\n" if $BASEDIR;
+    print RUNCONF "setenv PYRADMON $PYRADMON\n" if $PYRADMON;
     print RUNCONF "#------------------------------\n";
     print RUNCONF "setenv G5MODULES \"$G5MODULES\"\n" if $G5MODULES;
     print RUNCONF "source \$FVROOT/bin/g5_modules\n";
@@ -319,6 +324,9 @@ sub writefile {
     print RUNCONF "setenv MONTHLY_X \"$MONTHLY_X\"\n" if $MONTHLY_X;
     print RUNCONF "setenv FVDOLMS $FVDOLMS\n" if $FVDOLMS;
     print RUNCONF "setenv CASE $CASE\n" if $CASE;
+    print RUNCONF "setenv MKSI_SIDB $MKSI_SIDB\n" if $MKSI_SIDB;
+    print RUNCONF "setenv MKSIOZ_SIDB $MKSIOZ_SIDB\n" if $MKSIOZ_SIDB;
+    print RUNCONF "setenv MKSICN_SIDB $MKSICN_SIDB\n" if $MKSICN_SIDB;
     print RUNCONF "setenv MP_SET_NUMTHREADS $MP_SET_NUMTHREADS\n" if $MP_SET_NUMTHREADS;
     print RUNCONF "setenv OMP_NUM_THREADS $OMP_NUM_THREADS\n" if $OMP_NUM_THREADS;
     print RUNCONF "setenv ARCH_QUEUE \"$ARCH_QUEUE\"\n" if $ARCH_QUEUE;
