@@ -194,7 +194,8 @@ contains
    chln=100*1.e3
    cvln=0.5
 
-! write out files;
+! write out files; RT: The file below is useless: it's not a grads file as the
+!                      extention implies!
    outf=45
    open(outf,file='berror_stats.grd',form='unformatted')
    rewind outf

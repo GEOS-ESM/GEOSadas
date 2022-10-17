@@ -1125,7 +1125,9 @@ sub plot_edit {
     #----------------------------------------
     @new = ();
     foreach $name (@topList) {
-        next unless $name =~ m/Cp$/ or $name =~ m/Np$/ or $name =~ m/Nx$/;
+        $name =~ s/_NCKS$//;
+        next unless $name =~ m/Cp$/ or $name =~ m/Np$/ or $name =~ m/Nx$/
+            or $name =~ m/slv$/ or $name =~ m/p42$/;
         push @new, $name;
     }
     @topList = @new;
@@ -1244,6 +1246,7 @@ sub delete_trait {
     $name  = shift @_;
     $trait = shift @_;
 
+    return unless $traitHash{$name};
     @traits = split/[:|,]/, $traitHash{$name};
     foreach $trt (@traits) { push @new, $trt unless $trt =~ /$trait.N\d+/ }
     $traitHash{$name} = join ":", @new;
@@ -1259,6 +1262,7 @@ sub add_grads_ddf {
 
     # add to %traitHash
     #------------------
+    return unless $traitHash{$name};
     @traits = split/[:|,]/, $traitHash{$name};
     foreach $trt (@traits) {
         push @new, $trt;
@@ -1359,17 +1363,21 @@ sub add_silo_mstorage_traits {
     my (@anaID, @chemID, @diagID, @progID, $name, $storage);
 
     @anaID  = qw( vtx .eta .sfc .prs );
-    @chemID = qw( _adg_ _aer_ _chm_ _gas_ _nav_ _tag_ );
+    @chemID = qw( _adg_ _aer_ _ctm_ _chm_ _gas_ _nav_ _tag_ 
+                   adg_  aer_  ctm_  chm_  gas_  nav_  tag_ );
     @diagID = qw( _asm_ _chm_ _cld_ _csp_ _dyn_ _ext_ _flx_ _glc_
                   _hwl_ _int_ _lfo_ _lnd_ _lsf_ _met_ _mst_ _ocn_
-                  _odt_ _qdt_ _rad_ _slv_ _tdt_ _tmp_ _trb_ _udt_ _wnd_ );
+                  _odt_ _qdt_ _rad_ _slv_ _tdt_ _tmp_ _trb_ _udt_ _wnd_ 
+                   asm_        cld_  csp_  dyn_  ext_  flx_  glc_
+                   hwl_  int_  lfo_  lnd_  lsf_  met_  mst_  ocn_
+                   odt_  qdt_  rad_  slv_  tdt_  tmp_  trb_  udt_  wnd_ );
     @progID = qw( prog traj ptrj );
 
     # add silo trait if not present
     #------------------------------
   outer: foreach $name (@bottomList) {
 
-      next outer if $name =~ m/_rst/;
+      next outer if $name =~ m/_rst/ and $name ne "bkg_clcv_rst";
       unless ($traitHash{$name} =~ m/\bsilo\b/) {
           $traitHash{$name} =~ s/:template:/:template:silo.N1:/;
 
@@ -1448,7 +1456,7 @@ sub write_collection_def {
     $name = shift @_;
     $name1 = rm_dash_plus($name);
 
-    @traits = split /[:|,]/, $traitHash{$name};
+    @traits = split /[:|,]/, $traitHash{$name} if $traitHash{$name};
     remove_array_duplicates(\@traits);
 
     $tmax = 0;
@@ -1515,7 +1523,7 @@ sub write_collection_def {
             }
         }
     }
-    print $comments{"$name.end"};
+    print $comments{"$name.end"} if $comments{"$name.end"};
     print " "x$tmax ." ::\n";
 }
 

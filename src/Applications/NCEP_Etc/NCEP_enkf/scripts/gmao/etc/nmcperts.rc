@@ -1,12 +1,19 @@
 
-nmc_perts_date_beg: 2011040300
-nmc_perts_date_end: 2012051800
-
 nmc_perts_date_window: 45
 
 nmc_perts_spool: null
 
-#nmc_perts_location: dirac:/archive/u/aelakkra/dx573/Fcst48m24
+nmc_perts_date_beg: 2011040300
+nmc_perts_date_end: 2012051800
 nmc_perts_location: ExtData/enAdas/perts/dyn/572
 nmc_perts_fnametmpl: e572_fp.f48m24.eta.%y4%m2%d2_%h2z.nc4
 
+#nmc_perts_date_beg: 2018110100
+#nmc_perts_date_end: 2019081700
+#nmc_perts_location: ExtData/enAdas/perts/dyn/f522
+#nmc_perts_fnametmpl: f522_fp.f48m24.eta.%y4%m2%d2_%h2z.nc4
+
+#nmc_perts_date_beg: 2020100100
+#nmc_perts_date_end: 2021111600
+#nmc_perts_location: ExtData/enAdas/perts/dyn/f5271
+#nmc_perts_fnametmpl: f5271_fp.f48m24.eta.%y4%m2%d2_%h200z.nc4

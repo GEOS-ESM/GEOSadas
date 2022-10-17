@@ -2,15 +2,16 @@
 # C90C.input
 #-----------
 
-description: C90C__GEOSadas-5_29_0__agrid_C90__ogrid_CS
-tag: GEOSadas-5_29_0
+codeID: 523f29e
+description: C90C__GEOSadas-5_29_3__agrid_C90__ogrid_CS
+fvsetupID: f7aaa973c7
 
 ---ENDHEADERS---
 
 Remote account for Intranet plots? [jstassi@train]
 > 
 
-Is this a MERRA2 experiment (y/n)? [n]
+Is this a MERRA2 (1), GEOSIT (2), R21C (3) experiment? [0]
 > 
 
 AGCM Horizontal Resolution? [C48]
@@ -28,7 +29,7 @@ EXPID? [u000_C90]
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [C90C__GEOSadas-5_29_0__agrid_C90__ogrid_CS]
+EXPDSC? [C90C__GEOSadas-5_29_3__agrid_C90__ogrid_CS]
 > 
 
 Land Boundary Conditions? [Icarus_Updated]
@@ -40,6 +41,8 @@ FVHOME? [/discover/nobackup/jstassi/C90C]
 The directory /discover/nobackup/jstassi/C90C does not exist. Create it now? [y]
 > 
 
+Processing nodes (1:Westmere, 2:SandyBridge, 3:Ivy Bridge, 4:Haswell, 5:Skylake, 6:Cascase)? [4]
+> 
 Which case of variational analysis? [1]
 > 
 
@@ -54,6 +57,9 @@ REAL TIME BCS? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/g5
 
 agcmpert? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/agcmpert]
 > 
+
+chemistry? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/chemistry]
+>
 
 g5chem? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/g5chem]
 > 
@@ -143,6 +149,9 @@ Use aircraft bias correction (y/n)? [y]
 > 
 
 Use unified radiance bias correction (y/n)? [y]
+> 
+
+Land DAS Analysis (y/n)? [n]
 > 
 
 Frequency (in days) for writing restarts? [0]

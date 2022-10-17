@@ -52,11 +52,13 @@ COLLECTIONS: 'bkg.eta'
 # Land output
 #            'tavg1_2d_lfo_Nx'
 #            'inst1_2d_lfo_Nx'
-#            'tavg1_2d_lnd_Nx'  
+#            'tavg1_2d_lnd_Nx' 
+#            'tavg1_2d_lfo_Nx+-'
+#            'inst1_2d_lfo_Nx+-' 
 # Vortex track/relocator
 #             'vtx.mix'
 # Cubed trajectory (background for JEDI)
-#             'traj_lcv'
+#             'bkg_clcv'
               ::
 
 #                      --------------------------
@@ -64,6 +66,8 @@ COLLECTIONS: 'bkg.eta'
 #                      --------------------------
 
   Bkg.eta.format:     'CFIO' ,
+  Bkg.eta.deflate:    2      ,
+  Bkg.eta.regrid_method:  'BILINEAR_MONOTONIC' ,
   Bkg.eta.template:   '%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.>>>NCSUFFIX<<<',
   Bkg.eta.ref_date:  >>>IOBBKGD<<< ,
   Bkg.eta.ref_time:  >>>IOBBKGT<<< ,
@@ -100,6 +104,8 @@ COLLECTIONS: 'bkg.eta'
 #                      --------------------------
 
   bkg.eta.format:     'CFIO' ,
+  bkg.eta.deflate:    2      ,
+  bkg.eta.regrid_method:  'BILINEAR_MONOTONIC' ,
   bkg.eta.template:   '%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.>>>NCSUFFIX<<<',
   bkg.eta.ref_date:  >>>IOBBKGD<<< ,
   bkg.eta.ref_time:  >>>IOBBKGT<<< ,
@@ -132,6 +138,8 @@ COLLECTIONS: 'bkg.eta'
                       ::
 
   bkg.sfc.format:     'CFIO' ,
+  bkg.sfc.deflate:    2      ,
+  bkg.sfc.regrid_method:  'BILINEAR_MONOTONIC' ,
   bkg.sfc.template:   '%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.>>>NCSUFFIX<<<',
   bkg.sfc.ref_date:  >>>IOBBKGD<<< ,
   bkg.sfc.ref_time:  >>>IOBBKGT<<< ,
@@ -192,6 +200,8 @@ COLLECTIONS: 'bkg.eta'
                       ::
 
   cbkg.eta.format:      'CFIO' ,
+  cbkg.eta.deflate:    2      ,
+  cbkg.eta.regrid_method:  'BILINEAR_MONOTONIC' ,
   cbkg.eta.template:    '%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.>>>NCSUFFIX<<<' ,
   cbkg.eta.ref_date:    >>>IOBBKGD<<< ,
   cbkg.eta.ref_time:    >>>IOBBKGT<<< ,
@@ -210,6 +220,8 @@ COLLECTIONS: 'bkg.eta'
                         ::
 
   gaas_bkg.sfc.format:      'CFIO' ,
+  gaas_bkg.sfc.deflate:    2      ,
+  gaas_bkg.sfc.regrid_method:  'BILINEAR_MONOTONIC' ,
   gaas_bkg.sfc.template:    '%y4%m2%d2_%h2z.>>>MEMBER<<<.>>>NCSUFFIX<<<' ,
   gaas_bkg.sfc.ref_date:    >>>IOBBKGD<<< ,
   gaas_bkg.sfc.ref_time:    >>>IOBBKGT<<< ,
@@ -233,6 +245,8 @@ COLLECTIONS: 'bkg.eta'
 # ----------------------
 
   prog.eta.format:     'CFIO' ,
+  prog.eta.deflate:    2      ,
+  prog.eta.regrid_method:  'BILINEAR_MONOTONIC' ,
   prog.eta.template:   '%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.>>>NCSUFFIX<<<',
   prog.eta.ref_date:  >>>IOFDATE<<< ,
   prog.eta.ref_time:  >>>IOFTIME<<< ,
@@ -263,6 +277,9 @@ COLLECTIONS: 'bkg.eta'
                       ::
 
   abkg.eta.format:      'CFIO' ,
+  abkg.eta.nbits:      10     ,
+  abkg.eta.deflate:    2      ,
+  abkg.eta.regrid_method:  'BILINEAR_MONOTONIC' ,
   abkg.eta.descr:       '3d,3-Hourly,Instantaneous,Model-Level,Analysis,Aerosol Concentrations' ,
   abkg.eta.template:    '%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.>>>NCSUFFIX<<<' ,
   abkg.eta.ref_date:  >>>IOBBKGD<<< ,
@@ -315,6 +332,8 @@ COLLECTIONS: 'bkg.eta'
   inst1_2d_asm_Nx.format:      'CFIO' ,
   inst1_2d_asm_Nx.descr:       '2d,1-Hourly,Instantaneous,Single-Level,Assimilation,Single-Level Diagnostics' ,
   inst1_2d_asm_Nx.nbits:       10 ,
+  inst1_2d_asm_Nx.deflate:    2      ,
+  inst1_2d_asm_Nx.regrid_method:  'BILINEAR_MONOTONIC' ,
   inst1_2d_asm_Nx.template:    '%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.>>>NCSUFFIX<<<' ,
   inst1_2d_asm_Nx.mode:        'instantaneous' ,
   inst1_2d_asm_Nx.resolution:  @DHIS_IM @DHIS_JM ,
@@ -353,6 +372,8 @@ COLLECTIONS: 'bkg.eta'
   tavg1_2d_slv_Nx.format:      'CFIO' ,
   tavg1_2d_slv_Nx.descr:       '2d,3-Hourly,Time-Averaged,Single-Level,Assimilation,Single-Level Diagnostics' ,
   tavg1_2d_slv_Nx.nbits:       10 ,
+  tavg1_2d_slv_Nx.deflate:    2      ,
+  tavg1_2d_slv_Nx.regrid_method:  'BILINEAR_MONOTONIC' ,
   tavg1_2d_slv_Nx.template:    '%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.>>>NCSUFFIX<<<' ,
   tavg1_2d_slv_Nx.mode:        'time-averaged' ,
   tavg1_2d_slv_Nx.resolution:  @DHIS_IM @DHIS_JM ,
@@ -403,6 +424,8 @@ COLLECTIONS: 'bkg.eta'
 
   inst3_3d_wxmc_Cp.format:   'CFIO' ,
   inst3_3d_wxmc_Cp.nbits:      10,
+  inst3_3d_wxmc_Cp.deflate:    2      ,
+  inst3_3d_wxmc_Cp.regrid_method:  'BILINEAR_MONOTONIC' ,
   inst3_3d_wxmc_Cp.template: '%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.>>>NCSUFFIX<<<',
   inst3_3d_wxmc_Cp.mode:     'instantaneous',
   inst3_3d_wxmc_Cp.resolution:  @DHIS_IM @DHIS_JM ,
@@ -423,6 +446,8 @@ COLLECTIONS: 'bkg.eta'
 
   inst3_3d_wxme_Np.format:      'CFIO' ,
   inst3_3d_wxme_Np.nbits:       10 ,
+  inst3_3d_wxme_Np.deflate:    2      ,
+  inst3_3d_wxme_Np.regrid_method:  'BILINEAR_MONOTONIC' ,
   inst3_3d_wxme_Np.template:    '%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.>>>NCSUFFIX<<<' ,
   inst3_3d_wxme_Np.mode:        'instantaneous' ,
   inst3_3d_wxme_Np.resolution:   @DHIS_IM @DHIS_JM ,
@@ -457,6 +482,8 @@ COLLECTIONS: 'bkg.eta'
 
   tavg3_2d_wxme_Nx.format:   'CFIO' ,
   tavg3_2d_wxme_Nx.nbits:      10,
+  tavg3_2d_wxme_Nx.deflate:    2      ,
+  tavg3_2d_wxme_Nx.regrid_method:  'BILINEAR_MONOTONIC' ,
   tavg3_2d_wxme_Nx.template: '%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.>>>NCSUFFIX<<<',
   tavg3_2d_wxme_Nx.mode:     'time-averaged',
   tavg3_2d_wxme_Nx.resolution: @DHIS_IM @DHIS_JM ,
@@ -471,6 +498,8 @@ COLLECTIONS: 'bkg.eta'
   inst1_2d_ocn_Nx.format:      'CFIO' ,
   inst1_2d_ocn_Nx.descr:       '2d,1-Hourly,Time-Averaged,Single-Level,Assimilation,Ocean Surface' ,
   inst1_2d_ocn_Nx.nbits:       10 ,
+  inst1_2d_ocn_Nx.deflate:    2      ,
+  inst1_2d_ocn_Nx.regrid_method:  'BILINEAR_MONOTONIC' ,
   inst1_2d_ocn_Nx.template:    '%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.>>>NCSUFFIX<<<' ,
   inst1_2d_ocn_Nx.mode:        'instantaneous',
   inst1_2d_ocn_Nx.resolution:  @DHIS_IM @DHIS_JM ,
@@ -530,6 +559,8 @@ COLLECTIONS: 'bkg.eta'
   tavg1_2d_lfo_Nx.format:      'CFIO' ,
   tavg1_2d_lfo_Nx.descr:       '2d,1-Hourly,Time-Averaged,Single-Level,Assimilation,Forecast Land Surface Forcings' ,
   tavg1_2d_lfo_Nx.nbits:       10 ,
+  tavg1_2d_lfo_Nx.deflate:    2      ,
+  tavg1_2d_lfo_Nx.regrid_method:  'BILINEAR_MONOTONIC' ,
   tavg1_2d_lfo_Nx.template:    '%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.>>>NCSUFFIX<<<' ,
   tavg1_2d_lfo_Nx.mode:        'time-averaged' ,
   tavg1_2d_lfo_Nx.resolution:  @DHIS_IM @DHIS_JM ,
@@ -550,6 +581,8 @@ COLLECTIONS: 'bkg.eta'
   inst1_2d_lfo_Nx.format:      'CFIO' ,
   inst1_2d_lfo_Nx.descr:       '2d,1-Hourly,Instantaneous,Single-Level,Assimilation, Land Surface Forcings' ,
   inst1_2d_lfo_Nx.nbits:       10 ,
+  inst1_2d_lfo_Nx.deflate:    2      ,
+  inst1_2d_lfo_Nx.regrid_method:  'BILINEAR_MONOTONIC' ,
   inst1_2d_lfo_Nx.template:    '%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.>>>NCSUFFIX<<<' ,
   inst1_2d_lfo_Nx.mode:        'instantaneous' ,
   inst1_2d_lfo_Nx.resolution:  @DHIS_IM @DHIS_JM ,
@@ -567,6 +600,8 @@ COLLECTIONS: 'bkg.eta'
   tavg1_2d_lnd_Nx.format:      'CFIO' ,
   tavg1_2d_lnd_Nx.descr:       '2d,1-Hourly,Time-Averaged,Single-Level,Assimilation, Land Surface Diagnostics' ,
   tavg1_2d_lnd_Nx.nbits:       10 ,
+  tavg1_2d_lnd_Nx.deflate:    2      ,
+  tavg1_2d_lnd_Nx.regrid_method:  'BILINEAR_MONOTONIC' ,
   tavg1_2d_lnd_Nx.template:    '%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.>>>NCSUFFIX<<<' ,
   tavg1_2d_lnd_Nx.mode:        'time-averaged' ,
   tavg1_2d_lnd_Nx.resolution:  @DHIS_IM @DHIS_JM ,
@@ -625,6 +660,43 @@ COLLECTIONS: 'bkg.eta'
                                'SPWATR'    , 'SURFACE'  ,
                                'SPSNOW'    , 'SURFACE'  ,
                                ::
+
+  tavg1_2d_lfo_Nx+-.format:    'CFIO',
+  tavg1_2d_lfo_Nx+-.descr:     '2d,1-Hourly,Time-Averaged,Single-Level,Forecast,Land forcing' ,
+  tavg1_2d_lfo_Nx+-.template:  '%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.>>>NCSUFFIX<<<',
+  tavg1_2d_lfo_Nx+-.mode:      'time-averaged',
+  tavg1_2d_lfo_Nx+-.ref_date:   >>>IOBBKGD<<< ,
+  tavg1_2d_lfo_Nx+-.ref_time:   >>>IOBBKGT<<< ,
+  tavg1_2d_lfo_Nx+-.end_date:   >>>IOEBKGD<<< ,
+  tavg1_2d_lfo_Nx+-.end_time:   >>>IOEBKGT<<< ,
+  tavg1_2d_lfo_Nx+-.frequency:  010000,
+  tavg1_2d_lfo_Nx+-.duration:   010000 ,
+  tavg1_2d_lfo_Nx+-.fields:      'SLRSF'   , 'SOLAR'    , 'SWGDN'    ,
+                               'SWLAND'  , 'SURFACE'  ,
+                               'LWS'     , 'IRRAD'    , 'LWGAB'    ,
+                               'PCU'     , 'SURFACE'  , 'PRECCU'   ,
+                               'PLS'     , 'SURFACE'  , 'PRECLS'   ,
+                               'SNO'     , 'SURFACE'  , 'PRECSNO'  ,
+                               'DFPAR'   , 'SOLAR'    , 'PARDF'    ,
+                               'DRPAR'   , 'SOLAR'    , 'PARDR'    ,
+                               ::
+
+  inst1_2d_lfo_Nx+-.format:    'CFIO',
+  inst1_2d_lfo_Nx+-.descr:     '2d,1-Hourly,Instantaneous,Single-Level,Forecast,land forcing'
+  inst1_2d_lfo_Nx+-.template:  '%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.>>>NCSUFFIX<<<',
+  inst1_2d_lfo_Nx+-.mode:      'instantaneous' ,
+  inst1_2d_lfo_Nx+-.ref_date:   >>>IOBBKGD<<< ,
+  inst1_2d_lfo_Nx+-.ref_time:   >>>IOBBKGT<<< ,
+  inst1_2d_lfo_Nx+-.end_date:   >>>IOEBKGD<<< ,
+  inst1_2d_lfo_Nx+-.end_time:   >>>IOEBKGT<<< ,
+  inst1_2d_lfo_Nx+-.frequency:  010000,
+  inst1_2d_lfo_Nx+-.duration:   010000 ,
+  inst1_2d_lfo_Nx+-.fields:      'DZ'     , 'DYN'  , 'HLML'      ,
+                               'TA'     , 'DYN'  , 'TLML'      ,
+                               'QA'     , 'DYN'  , 'QLML'      ,
+                               'SPEED'  , 'DYN'  , 'SPEEDLML'  ,
+                               'PS'     , 'DYN'  ,
+                                ::
 
 
 # Caution: this stream does not follow convention of output from
@@ -726,26 +798,31 @@ COLLECTIONS: 'bkg.eta'
                             'DQVDT_ANA'          , 'AGCM' , 'DQVDTANA' ,
                           ::  
 
-  traj_lcv.format:     'CFIO' ,
-  traj_lcv.template:   '%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.nc4',
-  traj_lcv.ref_date:    >>>IOBBKGD<<< ,
-  traj_lcv.ref_time:    >>>IOBBKGT<<< ,
-  traj_lcv.end_date:    >>>IOEDATE<<< ,
-  traj_lcv.end_time:    >>>IOETIME<<< ,
-  traj_lcv.frequency:   010000      ,
-  traj_lcv.duration:    010000      ,
-  traj_lcv.mode:       'instantaneous',
-  traj_lcv.grid_label:  PE@CHIS_IMx@CHIS_JM-CF ,
-  traj_lcv.fields:      'U_DGRID;V_DGRID'  , 'DYN'         , 'u;v'        ,
+  bkg_clcv.format:     'CFIO' ,
+  bkg_clcv.template:   '%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.nc4',
+  bkg_clcv.nbits:      10     ,
+  bkg_clcv.deflate:    2      ,
+  bkg_clcv.regrid_method:  'BILINEAR_MONOTONIC' ,
+  bkg_clcv.ref_date:    >>>IOBBKGD<<< ,
+  bkg_clcv.ref_time:    >>>IOBBKGT<<< ,
+  bkg_clcv.end_date:    >>>IOEDATE<<< ,
+  bkg_clcv.end_time:    >>>IOETIME<<< ,
+  bkg_clcv.frequency:   010000      ,
+  bkg_clcv.duration:    010000      ,
+  bkg_clcv.mode:       'instantaneous',
+  bkg_clcv.grid_label:  PE@CHIS_IMx@CHIS_JM-CF ,
+  bkg_clcv.fields:      'U_DGRID;V_DGRID'  , 'DYN'         , 'u;v'        ,
                         'U;V'              , 'DYN'         , 'ua;va'      ,
                         'T'                , 'DYN'         , 't'          ,
+                        'TV'               , 'DYN'         , 'tv'         ,
                         'Q'                , 'MOIST'       , 'q'          ,
                         'DELP'             , 'DYN'         , 'delp'       ,
                         'QITOT'            , 'AGCM'        , 'qi'         ,
                         'QLTOT'            , 'AGCM'        , 'ql'         ,
                         'QSTOT'            , 'MOIST'       , 'qs'         ,
                         'QRTOT'            , 'MOIST'       , 'qr'         ,
-                        'O3PPMV'           , 'CHEMISTRY'   , 'o3mr'       ,
+                        'O3PPMV'           , 'CHEMISTRY'   , 'o3ppmv'     ,
+                        'GOCART::CO2'      , 'GOCART'      , 'co2'        ,
                         'QCLSX0'           , 'MOIST'       , 'qls'        ,
                         'QCCNX0'           , 'MOIST'       , 'qcn'        ,
                         'CLCNX0'           , 'MOIST'       , 'cfcn'       ,
@@ -768,8 +845,15 @@ COLLECTIONS: 'bkg.eta'
                         'CT'               , 'SURFACE'     , 'ct'         ,
                         'CQ'               , 'SURFACE'     , 'cq'         ,
                         'U10N;V10N'        , 'SURFACE'     , 'u10m;v10m'  ,
-                        'TA'               , 'DYN'         , 'ts'         ,
+                        'TA'               , 'DYN'         , 'ta'         ,
+                        'TS'               , 'SURFACE'     , 'ts'         ,
                         'SNOMAS'           , 'SURFACE'     , 'sheleg'     ,
                         'TSOIL1'           , 'SURFACE'     , 'soilt'      ,
                         'WET1'             , 'SURFACE'     , 'soilm'      ,
+                        'DCOOL'            , 'SURFACE'     , 'dcool'      ,
+                        'DWARM'            , 'SURFACE'     , 'dwarm'      ,
+                        'TDROP'            , 'SURFACE'     , 'tdrop'      ,
+                        'TS_FOUND'         , 'SURFACE'     , 'ts_found'   ,
+                        'TDEL'             , 'SURFACE'     , 'tdel'       ,
+                        'Z0'               , 'SURFACE'     , 'z0m'        ,
                         ::

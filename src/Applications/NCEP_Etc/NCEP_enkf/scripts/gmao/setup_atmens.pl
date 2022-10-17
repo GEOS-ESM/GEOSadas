@@ -42,12 +42,14 @@ my $scriptname = basename($0);
                "expdir=s",
                "fvhome=s",
                "nlevs=s",
+               "nodename=s",
                "lsmcm",
                "radbc",
                "vtxrlc",
                "nosppt",
                "ose",
                "rcorr",
+	       "r21c",
                "h" );
 
   usage() if $opt_h;
@@ -120,6 +122,11 @@ sub init {
       }
    }
 
+   $bcopt = "";
+   if ( $opt_r21c ) {
+      $bcopt = "-r21c";
+   }
+
    $setradbc = 0;
    if ( $opt_radbc ) {
       $setradbc = 1;
@@ -127,6 +134,11 @@ sub init {
    $nlevs = 72;
    if ( $opt_nlevs ) {
       $nlevs = $opt_nlevs;
+   }
+
+   $nodename = "hasw";
+   if ( $opt_nodename ) {
+      $nodename = $opt_nodename;
    }
 
    $dosppt = 1;
@@ -206,14 +218,33 @@ sub init {
     $latlon_ogcm = "#";
   }
 
+  if ( $nodename eq "hasw" ) { $ncpus_per_node = 24; }
+  if ( $nodename eq "sky"  ) { $ncpus_per_node = 36; }
+  if ( $nodename eq "cas"  ) { $ncpus_per_node = 46; }
+  $agcm_ncpus_per_node = -1;
+
 # define layout depending on resolution
   $agcm_nx = 4; $agcm_ny = 12;
   if ( $agcm_im == 90 ){
-     $enkf_cpus = 192;
-     $agcm_nx =    4; $agcm_ny =   12;
-     $miau_nx =    2; $miau_ny =   12;
-     $obsv_nx =    4; $obsv_ny =    8;
-     $stat_nx =    2; $stat_ny =    2;
+     if ($nodename eq "hasw") {
+         $enkf_cpus = 192;
+         $agcm_nx =    4; $agcm_ny =   12;
+         $miau_nx =    2; $miau_ny =   12;
+         $obsv_nx =    4; $obsv_ny =    8;
+         $stat_nx =    2; $stat_ny =    2;
+     } elsif ($nodename eq "sky") {
+#        $agcm_ncpus_per_node = 36;
+         $enkf_cpus = 244;
+         $agcm_nx =    3; $agcm_ny =   30;
+         $miau_nx =    2; $miau_ny =   12;
+         $obsv_nx =    4; $obsv_ny =    8;
+         $stat_nx =    2; $stat_ny =    2;
+     } elsif ($nodename eq "cas") {
+         die "Sorry this node/resolution not set yet, aborting \n";
+#        $agcm_ncpus_per_node = 46;
+     } else {
+         die "Unknown node name, aborting \n";
+     }
      $chis_im =   90; $chis_jm =  540;  # cubed-resolution
      $dhis_im =  288; $dhis_jm =  181;  # diag-resolution output
      $hhis_im =  288; $hhis_jm =  181;  # high-resolution output
@@ -221,11 +252,30 @@ sub init {
      $obsv_im =  288; $obsv_jm =  181; $obsv_lm = $nlevs; $obsv_jcap = 126;
   }
   if ( $agcm_im == 180 ){
-     $enkf_cpus = 224;
-     $agcm_nx =    7; $agcm_ny =   12;
-     $miau_nx =    2; $miau_ny =   12;
-     $obsv_nx =    4; $obsv_ny =   14;
-     $stat_nx =    2; $stat_ny =   14;
+     if ($nodename eq "hasw") {
+         $enkf_cpus = 224;
+         $agcm_nx =    6; $agcm_ny =   12;
+         $miau_nx =    2; $miau_ny =   12;
+         $obsv_nx =    4; $obsv_ny =   14;
+         $stat_nx =    2; $stat_ny =   14;
+     } elsif ($nodename eq "sky") {
+#        $agcm_ncpus_per_node = 36;
+         $enkf_cpus = 368;
+         $agcm_nx =    4; $agcm_ny =   30;
+         $miau_nx =    2; $miau_ny =   12;
+         $obsv_nx =    4; $obsv_ny =   20;
+         $stat_nx =    2; $stat_ny =   20;
+     } elsif ($nodename eq "cas") {
+#        $agcm_ncpus_per_node = 46;
+         $enkf_cpus = 442;
+         $agcm_nx =    6; $agcm_ny =   24;
+         $miau_nx =    2; $miau_ny =   12;
+         $obsv_nx =    4; $obsv_ny =   24;
+         $stat_nx =    2; $stat_ny =   24;
+         die "Sorry this node/resolution not set yet, aborting \n";
+     } else {
+         die "Unknown node name, aborting \n";
+     }
      $chis_im =  180; $chis_jm = 1080;  # cubed-resolution
      $dhis_im =  288; $dhis_jm =  181;
      $hhis_im =  576; $hhis_jm =  361;
@@ -233,11 +283,21 @@ sub init {
      $obsv_im =  576; $obsv_jm =  361; $obsv_lm = $nlevs; $obsv_jcap = 254;
   }
   if ( $agcm_im == 360 ){
-     $enkf_cpus = 224;
-     $agcm_nx =    3; $agcm_ny =   72;
-     $miau_nx =    4; $miau_ny =   24;
-     $obsv_nx =    4; $obsv_ny =   14;
-     $stat_nx =    3; $stat_ny =   12;
+     if ($nodename eq "hasw") {
+         $enkf_cpus = 672;
+         $agcm_nx =    3; $agcm_ny =   72;
+         $miau_nx =    4; $miau_ny =   24;
+         $obsv_nx =    4; $obsv_ny =   14;
+         $stat_nx =    3; $stat_ny =   12;
+     } elsif ($nodename eq "sky") {
+         die "Sorry this node/resolution not set yet, aborting \n";
+#        $agcm_ncpus_per_node = 36;
+     } elsif ($nodename eq "cas") {
+         die "Sorry this node/resolution not set yet, aborting \n";
+#        $agcm_ncpus_per_node = 46;
+     } else {
+         die "Unknown node name, aborting \n";
+     }
      $chis_im =  360; $chis_jm = 2160;  # cubed-resolution
      $dhis_im =  288; $dhis_jm =  181;
      $hhis_im = 1152; $hhis_jm =  721;
@@ -366,7 +426,7 @@ if ( $setvtx ) {
 cp("$FVROOT/bin/atm_ens.j","$FVHOME/run");
 
 # generate boundary condition script
-$cmd = "$FVROOT/bin/gen_lnbcs.pl $cubed -o $FVHOME/run/lnbcs_ens $aim $ajm $ogrid $lndbcs";
+$cmd = "$FVROOT/bin/gen_lnbcs.pl $cubed $bcopt -o $FVHOME/run/lnbcs_ens $aim $ajm $ogrid $lndbcs";
 $rc = system($cmd);
 
 # make sure .no_archiving exists in ATMENS
@@ -387,6 +447,7 @@ ed_conf_rc ("$AENSHOME","AtmEnsConfig.csh");
 if ( $doose ) {
    ed_conf_rc("$AOSEHOME","AtmOSEConfig.csh");
 }
+ed_g5fvlay_rc ("$AENSHOME");
 
 # take care of satbias acq
 ed_satbias_acq ("$AENSHOME");
@@ -542,20 +603,12 @@ sub ed_obsv_rc {
                          GSI_GridComp_ensfinal.rc.tmpl
                          obs1gsi_mean.rc
                          obs1gsi_member.rc );
-  $nsig_ext = 13;
+  $nsig_ext = 18;
   if ( $obsv_lm > 72 & $obsv_lm <= 132 ) {
-    $nsig_ext = 15;
+    $nsig_ext = 21;
   } elsif ( $obsv_lm > 132 ) {
-    $nsig_ext = 25;
+    $nsig_ext = 27;
   }
-
-  if ( $siglevs <= 72 ) {
-     if($rcd =~ /\@NLEV_EXT/) {$rcd=~ s/\@NLEV_EXT/13/g; }
-       } elsif ( $siglevs > 72 & $siglevs <= 132 ) {
-          if($rcd =~ /\@NLEV_EXT/) {$rcd=~ s/\@NLEV_EXT/15/g; }
-       } elsif ( $siglevs > 132 ) {
-          if($rcd =~ /\@NLEV_EXT/) {$rcd=~ s/\@NLEV_EXT/21/g; }
-       }
 
   foreach $file (@observer_files) {
 
@@ -679,13 +732,15 @@ sub ed_conf_rc {
      #---------------------------------------
      while( defined($rcd = <LUN>) ) {
         chomp($rcd);
-        if($rcd =~ /\@ACFTBIAS/)  {$rcd=~ s/\@ACFTBIAS/$setacftbc/g;  }
-        if($rcd =~ /\@AGCM_CPUS/) {$rcd=~ s/\@AGCM_CPUS/$agcm_cpus/g; }
-        if($rcd =~ /\@DORCORR/)   {$rcd=~ s/\@DORCORR/$dorcorr/g; }
-        if($rcd =~ /\@MIAU_CPUS/) {$rcd=~ s/\@MIAU_CPUS/$miau_cpus/g; }
-        if($rcd =~ /\@OBSV_CPUS/) {$rcd=~ s/\@OBSV_CPUS/$obsv_cpus/g; }
-        if($rcd =~ /\@STAT_CPUS/) {$rcd=~ s/\@STAT_CPUS/$stat_cpus/g; }
-        if($rcd =~ /\@ENKF_CPUS/) {$rcd=~ s/\@ENKF_CPUS/$enkf_cpus/g; }
+        if($rcd =~ /\@ACFTBIAS/)            {$rcd=~ s/\@ACFTBIAS/$setacftbc/g;  }
+        if($rcd =~ /\@AGCM_CPUS/)           {$rcd=~ s/\@AGCM_CPUS/$agcm_cpus/g; }
+        if($rcd =~ /\@AGCM_NCPUS_PER_NODE/) {$rcd=~ s/\@AGCM_NCPUS_PER_NODE/$agcm_ncpus_per_node/g; }
+        if($rcd =~ /\@DORCORR/)             {$rcd=~ s/\@DORCORR/$dorcorr/g; }
+        if($rcd =~ /\@MIAU_CPUS/)           {$rcd=~ s/\@MIAU_CPUS/$miau_cpus/g; }
+        if($rcd =~ /\@OBSV_CPUS/)           {$rcd=~ s/\@OBSV_CPUS/$obsv_cpus/g; }
+        if($rcd =~ /\@STAT_CPUS/)           {$rcd=~ s/\@STAT_CPUS/$stat_cpus/g; }
+        if($rcd =~ /\@ENKF_CPUS/)           {$rcd=~ s/\@ENKF_CPUS/$enkf_cpus/g; }
+        if($rcd =~ /\@NODENAME/)            {$rcd=~ s/\@NODENAME/$nodename/g; }
         print(LUN2 "$rcd\n");
      }
 
@@ -723,8 +778,8 @@ sub ed_satbias_acq {
 #$ATMENS/central/$expid.ana.acftbias.%y4%m2%d2_%h2z.txt
 #$ATMENS/central/$expid.ana.satbias.%y4%m2%d2_%h2z.txt
 #$ATMENS/central/$expid.ana.satbang.%y4%m2%d2_%h2z.txt
+#$ATMENS/RST/$expid.ana_satbang_rst.%y4%m2%d2_%h2z.txt => $expid.ana.satbang.%y4%m2%d2_%h2z.txt
 $ATMENS/RST/$expid.ana_satbias_rst.%y4%m2%d2_%h2z.txt => $expid.ana.satbias.%y4%m2%d2_%h2z.txt
-$ATMENS/RST/$expid.ana_satbang_rst.%y4%m2%d2_%h2z.txt => $expid.ana.satbang.%y4%m2%d2_%h2z.txt
 $mysatbiaspc
 $mysetacftbc
 EOF
@@ -745,6 +800,57 @@ $ATMENS/central/$expid.aod_a.sfc.%y4%m2%d2_%h200z.nc4
 $ATMENS/central/$expid.aod_f.sfc.%y4%m2%d2_%h200z.nc4
 $ATMENS/central/$expid.aod_k.sfc.%y4%m2%d2_%h200z.nc4
 EOF
+}
+#......................................................................
+sub ed_g5fvlay_rc {
+
+  return 0 unless ( $cubed );
+
+  my($mydir) = @_;
+
+  my($frun, $ft, $rcd);
+  my($g5fvlayrc);
+
+  $g5fvlayrc = "fvcore_layout.rc";
+
+  $ft   = "$mydir/tmp.rc";
+  $fetc = "$FVROOT/etc/$g5fvlayrc";
+  $frun = "$mydir/$g5fvlayrc";
+
+  open(LUN,"$fetc") || die "Fail to open $g5fvlayrc: $!\n";
+  open(LUN2,">$ft") || die "Fail to open tmp.rc: $!\n";
+
+  # Change variables to the correct inputs
+  # RT: Only hydrostatic option supported for now - will revise for non-hydro case later
+  #---------------------------------------
+  while( defined($rcd = <LUN>) ) {
+     chomp($rcd);
+     if($rcd =~ /\@FV_HYDRO/)  {$rcd=~ s/\@FV_HYDRO/hydrostatic = .T./g; }
+     if($rcd =~ /\@FV_MAKENH/) {$rcd=~ s/\@FV_MAKENH/Make_NH = .F./g; }
+     if($rcd =~ /\@FV_SATADJ/) {$rcd=~ s/\@FV_SATADJ/do_sat_adj  = .F./g; }
+     if($rcd =~ /\@FV_ZTRACER/){$rcd=~ s/\@FV_ZTRACER/z_tracer = .T./g; }
+     if($rcd =~ /\@FV_NWAT/)   {$rcd=~ s/\@FV_NWAT/ /g; }
+     if ( $agcm_im == 720 ) {
+       if($rcd =~ /\@FV_N_SPLIT/)   {$rcd=~ s/\@FV_N_SPLIT/n_split = 12/g; }
+     } else {
+       if($rcd =~ /\@FV_N_SPLIT/)   {$rcd=~ s/\@FV_N_SPLIT/ /g; }
+     }
+     print(LUN2 "$rcd\n");
+  }
+
+  close(LUN);
+  close(LUN2);
+
+  cp($ft, $frun);
+  unlink $ft;
+
+# if ( $coupled ) {
+#    my @these = ("$mometc/g5aodas_input.nml","$frun");
+#    my $target = "/tmp/${user}_$$.txt";
+#    merge_txt(\@these,$target);
+#    mv($target, $frun);
+# }
+
 }
 #......................................................................
 

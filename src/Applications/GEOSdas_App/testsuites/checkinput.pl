@@ -12,13 +12,12 @@ use warnings;
 
 # global variables
 #-----------------
-my ($auto, $inputDir, $full, $ignoreOSdiff, $debug, $stage, $rmlabel);
-my ($verbose, $VERBOSE, $replaceALL);
-my ($inFile, $inFileChk, @goodFiles, @badFiles, @errFiles);
-my (@inputFiles, %head, $expid, %def0, %def1, @rawVALUE);
-my ($fvsetupScript, $fvroot, $newinput);
-my ($noloop, $sel, $sel_dflt);
-my ($CVSTAG, $ESMATST, $siteID);
+my ($auto, $codeID, $debug, $ESMATST, $expid, $full, $fvroot);
+my ($fvsetupID, $fvsetupScript, $ignoreOSdiff);
+my ($inFile, $inFileChk, $inputDir, $newinput, $noloop, $replaceALL);
+my ($sel, $sel_dflt, $siteID, $stage, $VERBOSE, $verbose);
+my (@badFiles, @errFiles, @goodFiles, @inputFiles, @rawVALUE);
+my (%def0, %def1, %head);
 
 # main program
 #-------------
@@ -62,7 +61,8 @@ sub init {
 
     # these values are set during build
     #----------------------------------
-    $CVSTAG  = "@GIT_TAG_OR_REV@";
+    $codeID = "@GIT_TAG_OR_REV@";
+    $fvsetupID = "@fvID@";
     $ESMABIN = "@ESMABIN@";
     $ESMATST = "@ESMATST@";
     die ">> Error << $ESMABIN is not a directory;" unless -d $ESMABIN;
@@ -70,14 +70,13 @@ sub init {
     # get runtime options
     #--------------------
     Getopt::Long::Configure("no_ignore_case");
-    GetOptions( "auto"     => \$auto,
+    GetOptions( "a|auto"   => \$auto,
                 "d=s"      => \$inputDir,
                 "full"     => \$full,
                 "l|local"  => \$localdir,
                 "OSx"      => \$ignoreOSdiff,
                 "db|debug" => \$debug,
                 "h|help"   => \$help,
-                "RL!"      => \$rmlabel,
                 "stage"    => \$stage,
                 "v"        => \$verbose,
                 "V"        => \$VERBOSE );
@@ -85,7 +84,6 @@ sub init {
     $verbose = 0 unless $verbose;
     $VERBOSE = 0 unless $VERBOSE;
     $verbose = 1 if $VERBOSE;
-    $rmlabel = 1 unless defined($rmlabel);
 
     @inputFiles = @ARGV;
     if ($localdir) { $inputDir = cwd() unless $inputDir }
@@ -95,7 +93,6 @@ sub init {
     $fvroot = dirname($ESMABIN);
     $fvsetupScript = "$ESMABIN/fvsetup";
     die ">> Error << cannot find $fvsetupScript;\n" unless -e $fvsetupScript;
-
 }
 
 #=======================================================================
@@ -109,8 +106,8 @@ sub intro {
     print "\n====================\n"
         . "\nCheck Fvsetup Inputs\n"
         . "\n====================\n";
-    print "\nCVSTAG: $CVSTAG\n";
-    print   "fvsetup: " . dirname($fvsetupScript) ."\n";
+    print "fvsetupID: $fvsetupID\n";
+    print "fvsetup: " . dirname($fvsetupScript) ."\n";
 }
 
 #=======================================================================
@@ -191,10 +188,6 @@ sub getInputDir {
         }
     }
 
-    # chdir to $inputDir, just to be safe
-    #------------------------------------
-    chdir $inputDir;
-
     # stage inputs from testsuites directory, if requested
     #-----------------------------------------------------
     stageInputs() if $stage;
@@ -268,7 +261,7 @@ sub getInputFiles {
 
     # get list of setup input files, if not specified by user
     #--------------------------------------------------------
-    @inputFiles = (<$inputDir/*input>) unless @inputFiles;
+    @inputFiles = (<*.input>) unless @inputFiles;
 }
 
 #=======================================================================
@@ -643,40 +636,6 @@ sub runSetup {
 
     foreach $line (<NEW>) {
         chomp $line;
-
-        # remove UNSTABLE, OPS, rejected, and retired labels from CVSTAG
-        #---------------------------------------------------------------
-        if ($rmlabel) {
-            if ($line =~ /$CVSTAG/ and $line =~ /_UNSTABLE/) {
-                ($modline = $line) =~ s/_UNSTABLE//g;
-                print "  mod: [$line] => [$modline]\n";
-                $line = $modline;
-            }
-
-            if ($line =~ /$CVSTAG/ and $line =~ /_INTERIM/) {
-                ($modline = $line) =~ s/_INTERIM//g;
-                print "  mod: [$line] => [$modline]\n";
-                $line = $modline;
-            }
-
-            if ($line =~ /$CVSTAG/ and $line =~ /_OPS/) {
-                ($modline = $line) =~ s/_OPS//g;
-                print "  mod: [$line] => [$modline]\n";
-                $line = $modline;
-            }
-
-            if ($line =~ /$CVSTAG/ and $line =~ /_rejected/) {
-                ($modline = $line) =~ s/_rejected//g;
-                print "  mod: [$line] => [$modline]\n";
-                $line = $modline;
-            }
-
-            if ($line =~ /$CVSTAG/ and $line =~ /_retired/) {
-                ($modline = $line) =~ s/_retired//g;
-                print "  mod: [$line] => [$modline]\n";
-                $line = $modline;
-            }
-        }
 
         # transfer previous description if one existed
         #---------------------------------------------
@@ -1276,13 +1235,13 @@ filename format: [name].input,
 
 usage: $script [options]
 options
-   -auto              use defaults rather than prompting for responses
+   -auto/-a           use defaults rather than prompting for responses
    -d inputDir        directory location of saved *.input files
    -full              write full responses in *.input files
-   -l                 use local directory to look for saved *.input files
+   -local/-l          use local directory to look for saved *.input files
    -OSx               proceed even if OS difference found
-   -debug (or -db)    do not remove .rawInFile and error logfile
-   -help (or -h)      print usage information
+   -debug/-db         do not remove .rawInFile and error logfile
+   -help/-h           print usage information
    -noRL              do not remove the following labels from tag name:
                       "_UNSTABLE" "_INTERIM", "_OPS", "_rejected", "_retired"
                       by default these labels are removed
@@ -1295,7 +1254,7 @@ Notes
 2. However, input files may be specified by name only in the command line,
    without including the ".input" extension.
 3. If no file is specified as an input parameter, then the script will look
-   in the input directory for input files which match the CVSTAG of this script
+   at all input files in the local directory.
 4. The precedence for determining the input directory (location of *.input files)
    is as follows:
      i) location specified with the -d flag

@@ -1,0 +1,75 @@
+#
+# twindow.rc - time windowing resource file
+#
+# !HISTORY:
+#
+# 2015-05-21 Meta - Initial version with configuration from prior
+#                     version of twindow.f
+# 2015-08-10 Meta - Add NC005090 (VIIRS IR) to configuration, omitted
+#                     to keep files as they were
+# 2017-12-13 Meta - New defintions for GOES-16 data, to be rewritten in
+#                     old GOES format
+# 2017-12-21 Meta - Copy configuration for METEOSAT winds from OPS config
+#
+# 2019-06-04 Meta - Add column in GOES-16 specification to indicate the
+#                   satIDs to copy to output (other satIDs will be dropped)
+#
+# 2020-01-02 Meta - Remove restriction on satID for GOES-16+, to allow both
+#                   GOES-16 and GOES-17 winds to be processed.  Add entry
+#                   for new VIIRS IR subset
+#
+# 2021-01-04 Meta - Add specification for converting new format EUMETSAT
+#                   winds (NC005067,NC005068) to old format for 5_12
+
+
+action_table::
+
+# input                                        destination  GOES-R
+# subset      use_flg     dtime_min   dtime_max  subset     satIDs  #   description
+
+NC005010        1           -60           0                         #   GOES IR(245)
+NC005011        1           -60           0                         #   GOES WV(246,247)
+NC005012        1           -60           0                         #   GOES VIS(251)
+NC005019       -1             0           0                         #   GOES SWIR(240)
+NC005024       -1             0           0                         #   India INSAT IR
+NC005025       -1             0           0                         #   India INSAT VIS
+NC005026       -1             0           0                         #   India INSAT WV
+NC005030        2           -60           0     NC005010            #   GOES-16+ IR LW(245)
+NC005031        2           -60           0     NC005011            #   GOES-16+ WV clear sky/deep layer(247)
+NC005032        2           -60           0     NC005012            #   GOES-16+ VIS(251)
+NC005034        2           -60           0     NC005011            #   GOES-16+ WV cloud-top(246)
+#C005039       -1             0           0     NC005019            #   GOES-16+ SWIR(240)
+NC005039       -1             0           0                         #   GOES-16+ SWIR(240)
+NC005044        0             0           0                         #   JMA IR
+NC005045        0             0           0                         #   JMA VIS
+NC005046        0             0           0                         #   JMA WV
+NC005064        0             0           0                         #   METEOSAT IR
+NC005065        0             0           0                         #   METEOSAT VIS
+NC005066       -1             0           0                         #   METEOSAT WV
+NC005067        3             0           0     NC005064            #   METEOSAT IR
+NC005068        3             0           0     NC005065            #   METEOSAT VIS
+#C005069        3             0           0     NC005066            #   METEOSAT WV
+NC005069       -1             0           0                         #   METEOSAT WV
+NC005070        0             0           0                         #   MODIS IR
+NC005071        0             0           0                         #   MODIS WV
+NC005080       -1             0           0                         #   AVHRR IR
+NC005090       -1             0           0                         #   VIIRS IR
+NC005091       -1             0           0                         #   new VIIRS IR
+
+::
+
+# use flag:  -1 omit
+#             0 keep as is
+#             1 apply time windowing
+#             2 time windowing and rewrite GOES-R in old GOES wind format
+#             3 time windowing and rewrite EUMETSAT in old format
+
+
+# GOES winds: time window from -1 hr to center time, to
+#             mimic what was used prior to hourly wind switchover
+#
+# other winds passed as is or are excluded (to avoid array overflow
+# and duplication of data)
+# 
+# for RPIT some Meteosat winds are excluded to allow extra buffer
+# size for AVHRR winds

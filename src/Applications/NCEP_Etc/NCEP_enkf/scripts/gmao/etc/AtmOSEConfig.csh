@@ -1,6 +1,8 @@
 # Env Vars for Atmospheric Analysis Ensemble Mambo-Jambo
 # ======================================================
 
+setenv ATMENS_NODENAME @NODENAME
+
 #setenv REGRID_QOS advda
 #setenv ATMENS_IGNORE_CHKPNT 1
 setenv RSTEXT nc4
