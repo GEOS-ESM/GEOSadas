@@ -1,9 +1,9 @@
 #------------
-# x0046d.input
+# x0047.input
 #------------
 
 codeID: 523f29e
-description: x0046d__GEOSadas-5_29_5__agrid_C360__ogrid_C
+description: x0047__GEOSadas-5_30_0__agrid_C360__ogrid_C
 fvsetupID: f7aaa973c7
 
 ---ENDHEADERS---
@@ -29,7 +29,7 @@ EXPID? [u000_C360]
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [x0046d__GEOSadas-5_29_5__agrid_C360__ogrid_C]
+EXPDSC? [x0047__GEOSadas-5_30_0__agrid_C360__ogrid_C]
 > 
 
 Land Boundary Conditions? [Icarus_Updated]
@@ -38,10 +38,10 @@ Land Boundary Conditions? [Icarus_Updated]
 Catchment Model choice? [1]
 > 
 
-FVHOME? [/discover/nobackup/dao_it/x0046d]
+FVHOME? [/discover/nobackup/dao_it/x0047]
 > /discover/nobackup/projects/gmao/dadev/dao_it/Winter_Runs/$expid
 
-The directory /discover/nobackup/projects/gmao/obsdev/dao_it/x0046d already exists. Clean it? [y]
+The directory /discover/nobackup/projects/gmao/obsdev/dao_it/x0047 already exists. Clean it? [y]
 > 
 
 Processing nodes (1:Westmere, 2:SandyBridge, 3:Ivy Bridge, 4:Haswell, 5:Skylake, 6:Cascase)? [4]
@@ -98,7 +98,7 @@ Run singular vector experiments (0=n,1=yes)? [0]
 Run analysis-sensitivity applications (0=no,1=yes)? [0]
 > 1
 
-Verifying experiment id: [x0046d]
+Verifying experiment id: [x0047]
 > 
 
 Ending year-month-day? [20191121]
@@ -117,7 +117,7 @@ Number of PEs in the meridional direction (NY)? [48]
 > 72
 
 Job nickname? [g5das]
-> x46d
+> x47
 
 Run in split executable mode (1=yes;0=no)? [1]
 > 
@@ -146,7 +146,7 @@ Number of procs in the zonal direction (NX)? [12]
 Number of procs in the meridional direction (NY)? [20]
 > 42
 
-Which main class of ObsSys (1: NRT; 2: MERRA; 3: MERRA-2)? [1]
+Which main class of ObsSys (1: NRT; 2: MERRA; 3: MERRA-2; 4: GEOS-IT; 5: R21C)? [1]
 > 
 
 OBSERVING SYSTEM CLASSES?
@@ -236,7 +236,7 @@ Ensemble Resolution?  [C90]
 Ensemble Vertical Levels?  [72]
 > 
 
-Experiment archive directory for ensemble restarts or 'later': [/archive/u/rtodling/x0046d]
+Experiment archive directory for ensemble restarts or 'later': [/archive/u/rtodling/x0047]
 > /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_29/c360
 
 Edit COLLECTIONS list in run/HISTORY.rc.tmpl (y/n)? [n]

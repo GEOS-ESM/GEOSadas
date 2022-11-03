@@ -882,7 +882,8 @@ sub defaults {
                      HISTORY.rc.tmpl
                      OBS_GridComp.rc.tmpl
                      saverst.rc 
-                     GEOS_SurfaceGridComp.rc );
+                     GEOS_SurfaceGridComp.rc
+                     logging.yaml );
 
   @coupled_files = qw( data_table
                        g5aodas_diag_table
@@ -959,7 +960,6 @@ sub defaults {
                      DNA_ExtData.rc
                      DNA_GridComp.rc
                      DNA_Registry.rc
-                     DU_GridComp.rc
                      DU_GridComp---full.rc
                      DU_GridComp_ExtData.rc
                      DU_History___.rc
@@ -1068,6 +1068,42 @@ sub defaults {
                      TR_GridComp---st80_25.rc
                      WSUB_ExtData.rc ); 
 
+  @gocart2g_yaml = qw ( CO2_GridComp_ExtData.yaml
+                        CFC_GridComp_ExtData.yaml
+                        Rn_GridComp_ExtData.yaml
+                        GEOSachem_ExtData.yaml
+                        CH4_GridComp_ExtData.yaml
+                        StratChem_ExtData.yaml
+                        NI2G_GridComp_ExtData.yaml
+                        SS2G_GridComp_ExtData.yaml
+                        TR_ExtData.yaml
+                        ChemEnv_ExtData.yaml
+                        DNA_ExtData.yaml
+                        DU2G_GridComp_ExtData.yaml
+                        CARMAchem_GridComp_ExtData.yaml
+                        HEMCOgocart2g_ExtData.yaml
+                        O3_GridComp_ExtData.yaml
+                        CO_GridComp_ExtData.yaml
+                        HEMCOgmi_ExtData.yaml
+                        SU2G_GridComp_ExtData.yaml
+                        WSUB_ExtData.yaml
+                        MAM7_ExtData.yaml
+                        CA2G_GridComp_ExtData.yaml
+                        GMI_ExtData.yaml
+                        GAAS_GridComp_ExtData.yaml );
+#                       AMIP/CO2_GridComp_ExtData.yaml
+#                       AMIP/CFC_GridComp_ExtData.yaml
+#                       AMIP/Rn_GridComp_ExtData.yaml
+#                       AMIP/GEOSachem_ExtData.yaml
+#                       AMIP/CH4_GridComp_ExtData.yaml
+#                       AMIP/NI2G_GridComp_ExtData.yaml
+#                       AMIP/SS2G_GridComp_ExtData.yaml
+#                       AMIP/DU2G_GridComp_ExtData.yaml
+#                       AMIP/O3_GridComp_ExtData.yaml
+#                       AMIP/CO_GridComp_ExtData.yaml
+#                       AMIP/SU2G_GridComp_ExtData.yaml
+#                       AMIP/CA2G_GridComp_ExtData.yaml
+
 #  -e ( $lats4d = "/ford1/local/bin/lats4d" )
 #       || die ">>> ERROR <<< missing $lats4d: $!";
 
@@ -1082,7 +1118,7 @@ sub defaults {
   $anassi  = 1  if ( -e "$fvbin/ssi.x" );
   $anagsi  = 1  if ( -e "$fvbin/GSIsa.x" );
   $fulldas = 1  if ( $anapsas || $anassi || $anagsi );
-  $fvchem  = 1  if ( -e "$fvetc/DU_GridComp.rc" );
+  $fvchem  = 1; # if ( -e "$fvetc/DU_GridComp.rc" );
   $doiau   = 0;
 
   if ( $g5gcm ) { 
@@ -1108,7 +1144,7 @@ sub defaults {
   if ( $anapsas ) { @arc_files = @ap_files };
   if ( $anassi  ) { @arc_files = @as_files };
   if ( $anagsi  ) { @arc_files = ( @ag_files, @lcv2prsrcs )};
-  if ( $fvchem  ) { @crc_files = @chem_files };
+  if ( $fvchem  ) { @crc_files = @chem_files; @go2yaml_files = @gocart2g_yaml };
 # if ( $coupled ) { @crc_files = ( @chem_files, @coupled_files ) };
 
   $monthly_plots = 0;
@@ -3523,8 +3559,6 @@ EOF
           $berror_env  = "setenv BERROR  $berror_file";
        }
        if ( $geosit ) {
-       #  $berror_file = "\$FVHOME/fvInput/gsi/etc/berror_gmao/gmao24Jun2011_fp+oz_fix/MERRA2/Final";
-       #  $berror_env  = "setenv BERROR  $berror_file";
           $berror_env  = "# Likely need to point to new BERROR for GEOSIT (adjust fvsetup)";
        }
   }
@@ -4289,7 +4323,7 @@ EOF
 
   %remission = reverse %emission;
   if ($nrt)       { $dflt = "OPS"    }
-  elsif ($merra2) { $dflt = "MERRA2" }
+  elsif ($merra2) { $dflt = "AMIP"   }
   elsif ($geosit) { $dflt = "GEOSIT" }
   elsif ($r21c)   { $dflt = "R21C"   }
   else            { $dflt = "PIESA"  }
@@ -8312,7 +8346,6 @@ EOF
     } else {
     print  SCRIPT <<"EOF";
     setenv NCEPINPUT \$FVBCS
-    $berror_env
 EOF
     }
 
@@ -9677,7 +9710,7 @@ sub init_agcm_rc {
     #------------------
     $rats = "PCHEM";
     $oanp = "PCHEM";
-    if ( $gocart_tracers ) { $aero = "GOCART";}
+    if ( $gocart_tracers ) { $aero = "GOCART2G";}
     else                   { $aero = "GOCART.data"; }
     if ( $cubed ) { 
          $dycore = "FV3";
@@ -9867,8 +9900,8 @@ sub copy_resources {
           || die "Cannot write file $fvhome/run/CVSTAG: $!";
   cp("$fvroot/etc/Chem_Registry.rc","$fvhome/run/gocart/Chem_Registry.rc")
           || warn "Cannot write file $fvhome/run/gocart/Chem_Registry.rc: $!";
-  cp("$fvroot/etc/DU_GridComp.rc","$fvhome/run/DU_GridComp.rc")
-          || warn "Cannot write file $fvhome/run/DU_GridComp.rc: $!";
+#_OUT cp("$fvroot/etc/DU_GridComp.rc","$fvhome/run/DU_GridComp.rc")
+#_OUT         || warn "Cannot write file $fvhome/run/DU_GridComp.rc: $!";
 
   # GEOS-5 GCM
   # ----------
@@ -10039,6 +10072,21 @@ sub copy_resources {
       $src = "$fvroot/etc/$fname" unless -e $src;
       $dest = "$fvhome/run/gocart/$fname";
 
+      unless ( -e $src ) {
+          print "$0: Cannot find resource file $src\n";
+          $missing{$fname}++;
+          next;
+      }
+      cp($src,$dest) || die "Cannot write file $dest: $!";
+  }
+
+  foreach $fname ( @go2yaml_files ) {
+
+      $src = "$fvroot/etc/$emiss/$fname";
+      $src = "$fvroot/etc/$fname" unless -e $src;
+      $dest = "$fvhome/run/gocart/$fname";
+
+      print "$0: DEBUG handling file $src\n";
       unless ( -e $src ) {
           print "$0: Cannot find resource file $src\n";
           $missing{$fname}++;

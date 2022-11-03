@@ -278,6 +278,7 @@ cd $ENSWORK/$member
         else
            /bin/cp $FVHOME/run/fvcore_layout.rc .
         endif
+        /bin/cp $FVHOME/run/*.yaml .
         /bin/cp fvcore_layout.rc input.nml
 
         /bin/cp $FVHOME/run/GEOS_SurfaceGridComp.rc .
@@ -333,6 +334,10 @@ cd $ENSWORK/$member
          echo "s/>>>MEMIDX<<</${memidx}/1"   >> sed_file
          /bin/rm -f ./AGCM.rc
          sed -f sed_file  $myagcmrc > ./AGCM.rc
+
+         # Run bundleParser.py
+         #---------------------
+         python bundleParser.py
 
         # Prepare HISTORY
         # ---------------

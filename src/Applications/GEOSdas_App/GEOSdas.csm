@@ -539,6 +539,7 @@ exit 1
   /bin/cp $FVHOME/run/*.tbl           .         # fvCCM diagnostic table         
   /bin/cp $FVHOME/run/*.tmpl          .         # any templates
   /bin/cp $FVHOME/run/prepobs*        .         # all parameter files
+  /bin/cp $FVHOME/run/*.yaml          .         # yaml resources
   /bin/cp $FVHOME/run/gmao_acft_bias.parm .
   if ( -d $FVHOME/run/fsens ) then
       /bin/cp $FVHOME/run/fsens/*.tmpl    .	
@@ -3964,6 +3965,10 @@ endif
            if ( $BOOTSTRAP ) sed -f sed_file  ./AGCM.rc.tmpl.HOLD        > ./AGCM.rc.HOLD
            cat AGCM.rc
 
+           # Run bundleParser.py
+           #---------------------
+           python bundleParser.py
+
 \end
 #.............................................................................
 
@@ -4646,6 +4651,10 @@ endif
    sed -f sed_file ./AGCM.rc.tmpl > ./AGCM.rc
    if ( $BOOTSTRAP ) sed -f sed_file ./AGCM.rc.tmpl.HOLD > ./AGCM.rc.HOLD
    cat AGCM.rc
+
+# Run bundleParser.py
+#---------------------
+   python bundleParser.py
 
    /bin/cp $mycap CAP.rc   # need to do better for MAP05/06 opt
    if(-e ExtData.rc )    /bin/rm -f   ExtData.rc
