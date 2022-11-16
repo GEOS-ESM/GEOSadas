@@ -52,7 +52,7 @@ GEOSana_GridComp:
 GEOSgcm_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp
   remote: ../GEOSgcm_GridComp.git
-  branch: feature/sdrabenh/r21c_updates
+  branch: feature/lcandre2/r21c_landice_updates
   sparse: ./config/GEOSgcm_GridComp.sparse
   develop: develop
 
@@ -121,7 +121,7 @@ mom6:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  branch: feature/sdrabenh/r21c_updates
+  branch: feature/lcandre2/r21c_landice_updates
   develop: develop
 
 UMD_Etc:
