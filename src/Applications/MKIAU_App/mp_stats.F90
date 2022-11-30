@@ -239,13 +239,10 @@ CONTAINS
 !   Create a regular Lat/Lon grid
 !   -----------------------------
     call mapl_defgridname (IM_OUT,JM_OUT,ABKGGRIDNAME,MAPL_am_I_root())
-    block 
-      type(LatLonGridFactory) :: ll_factory
-      ll_factory = LatLonGridFactory(grid_name=trim(ABKGGRIDNAME), nx=nx, ny=ny, &
-                                     im_world=im_out, jm_world=jm_out, lm=lm_out, &
-                                     pole='PC',dateline='DC', __RC__)
-      inGrid= ll_factory%make_grid(__RC__)
-    end block
+    inGrid = grid_manager%make_grid(LatLonGridFactory(grid_name=trim(ABKGGRIDNAME), nx=nx, ny=ny, &
+             im_world=im_out, jm_world=jm_out, lm=lm_out, &
+             pole='PC',dateline='DC', rc=status))
+    _VERIFY(status)
 !   Validate grid
 !   -------------
     call ESMF_GridValidate(INgrid,__RC__)
@@ -2190,7 +2187,7 @@ CONTAINS
        integer :: i1,in,j1,jn,kk
        call ESMF_grid_interior(Grid,i1,in,j1,jn)
        do kk=1,size(global,2)
-          local(:,kk) = global(j1:jm,kk)
+          local(:,kk) = global(j1:jn,kk)
        enddo
        end subroutine gbl2lcl_
  
