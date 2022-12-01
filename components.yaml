@@ -28,13 +28,13 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  tag: v1.6.0
+  tag: rt_g530_1.6.0_merge
   develop: main
 
 MAPL:
   local: ./src/Shared/@MAPL
   remote: ../MAPL.git
-  tag: v2.25.0
+  tag: rt_g530_2.25_fix
   develop: develop
 
 FMS:
@@ -83,7 +83,7 @@ fvdycore:
 GEOSchem_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSphysics_GridComp/@GEOSchem_GridComp
   remote: ../GEOSchem_GridComp.git
-  tag: v1.10.1
+  tag: rt_g530_1.10.1_fix
   develop: develop
 
 HEMCO:
@@ -158,7 +158,7 @@ RRTMGP:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  tag: v1.8.0
+  tag: rt_g530_1.8.0_merge
   develop: develop
 
 UMD_Etc:

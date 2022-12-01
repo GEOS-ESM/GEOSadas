@@ -895,7 +895,8 @@ sub defaults {
 #                      OC_GridComp_ExtData-clim.rc
 #                      SU_GridComp_ExtData-clim.rc );
 
-  @chem_files = qw ( Aod-550nm_Registry.rc
+  @chem_files = qw ( aop_calculator.rc
+                     Aod-550nm_Registry.rc
                      Aod3d_1064nm.rc      
                      Aod3d_355nm.rc
                      Aod3d_532nm.rc
@@ -913,6 +914,11 @@ sub defaults {
                      BRC_GridComp.rc
                      BRC_GridComp_ExtData.rc
                      BRC_Registry.rc
+                     CA2G_GridComp_ExtData.rc
+                     CA2G_instance_CA.bc.rc
+                     CA2G_instance_CA.br.rc
+                     CA2G_instance_CA.oc.rc
+                     CA2G_StateSpecs.rc
                      CARMA_History___.rc
                      CARMAchem_GridComp_ExtData.rc
                      CARMAchem_MieRegistry.rc
@@ -957,6 +963,9 @@ sub defaults {
                      Chem_Mie.rc
                      Chem_MieRegistry.rc
                      Chem_Registry.rc
+                     ChemEnv_ExtData.rc
+                     ChemEnv.rc
+                     Chem_Ext3d.rc
                      DNA_ExtData.rc
                      DNA_GridComp.rc
                      DNA_Registry.rc
@@ -964,18 +973,27 @@ sub defaults {
                      DU_GridComp_ExtData.rc
                      DU_History___.rc
                      DU_Registry.rc
+                     DU2G_GridComp_ExtData.rc
+                     DU2G_instance_DU.rc
+                     DU2G_StateSpecs.rc
                      Deposition_Registry___.rc 
+                     GAAS_GridComp_ExtData.rc
                      GEOSCHEMchem_ExtData.rc
                      GEOSCHEMchem_GridComp.rc
                      GEOSCHEMchem_Registry.rc
                      GEOSachem_ExtData.rc
                      GEOSachem_Registry.rc
+                     GEOS_AChemGridComp.rc
+                     GEOS_AChem_History___.rc
+                     GEOSCHEMCHEM_History___.rc
                      GMICHEM_History___.rc
                      GMI_ExtData.rc
                      GMI_GridComp.rc
                      GMI_Registry.rc
+                     GMI_Tendency_Registry___.rc
                      GOCARTdata_AerRegistry.rc 
                      GOCARTdata_ExtData.rc
+                     GOCART2G_GridComp.rc
                      HEMCO_Config.rc
                      HEMCO_DiagnFile.rc
                      HEMCO_GridComp.rc
@@ -984,15 +1002,30 @@ sub defaults {
                      HEMCOgocart_Diagn.rc
                      HEMCOgocart_ExtData.rc
                      HEMCOgocart_Spec.rc
+                     HEMCOgmi_Config.rc
+                     HEMCOgmi_Diagn.rc
+                     HEMCOgmi_ExtData.rc
+                     HEMCOgmi_Spec.rc
+                     HEMCOgocart2g_Config.rc
+                     HEMCOgocart2g_Diagn.rc
+                     HEMCOgocart2g_ExtData.rc
+                     HEMCOgocart2g_Spec.rc
+                     mam_optics_calculator.rc
                      MAM7_ExtData.rc
                      MAMchem_GridComp.rc
                      MAMchem_History___.rc
                      MAMchem_Registry.rc
+                     MATRIXchem_GridComp.rc
+                     MATRIXchem_History___.rc
+                     MATRIXchem_Registry.rc
                      NI_GridComp---full.rc
                      NI_GridComp.rc
                      NI_GridComp_ExtData.rc
                      NI_History___.rc
                      NI_Registry.rc
+                     NI2G_GridComp_ExtData.rc
+                     NI2G_instance_NI.rc
+                     NI2G_StateSpecs.rc
                      O3_GridComp.rc
                      O3_GridComp_ExtData.rc
                      O3_History___.rc
@@ -1016,6 +1049,7 @@ sub defaults {
                      Rn_GridComp_ExtData.rc
                      Rn_History___.rc
                      Rn_Registry.rc
+                     setkin_chem_mech.txt___.rc
                      SC_GridComp.rc
                      SC_Registry.rc
                      SS_GridComp.rc
@@ -1024,13 +1058,18 @@ sub defaults {
                      SS_Registry.rc
                      StratChem_ExtData.rc
                      StratChem_History___.rc
+                     SS2G_GridComp_ExtData.rc
+                     SS2G_instance_SS.rc
+                     SS2G_StateSpecs.rc
                      SU_GridComp---full.rc
                      SU_GridComp---volc.rc
                      SU_GridComp.rc
                      SU_GridComp_ExtData.rc
                      SU_History___.rc
                      SU_Registry.rc 
-                     TR_ExtData.rc
+                     SU2G_GridComp_ExtData.rc
+                     SU2G_instance_SU.rc
+                     SU2G_StateSpecs.rc
                      TR_ExtData.rc
                      TR_GridComp---Be10.rc
                      TR_GridComp---Be10s.rc
@@ -1064,7 +1103,15 @@ sub defaults {
                      TR_GridComp---Rn222.rc
                      TR_GridComp---SF6.rc
                      TR_GridComp---aoa.rc
+                     TR_GridComp---aoa_bl.rc
+                     TR_GridComp---aoa_nh.rc
                      TR_GridComp---e90.rc
+                     TR_GridComp---e90_n.rc
+                     TR_GridComp---e90_s.rc
+                     TR_GridComp---nh_50.rc
+                     TR_GridComp---nh_5.rc
+                     TR_GridComp---stOX.rc
+                     TR_Registry.rc
                      TR_GridComp---st80_25.rc
                      WSUB_ExtData.rc ); 
 
@@ -1731,6 +1778,9 @@ sub create_fvpsasrc {
   print(MYRC "chem_ana_filename: %s.cana.eta.$tmpl2.$ncsuffix\n");
   print(MYRC "reference_filename: %s.ref.eta.$tmpl2.$ncsuffix\n");
   print(MYRC "verification_filename: %s.ver.eta.$tmpl2.$ncsuffix\n");
+  print(MYRC "aod_a: das.aod_a.sfc.$tmpl2.$ncsuffix\n");
+  print(MYRC "aod_k: das.aod_k.sfc.$tmpl2.$ncsuffix\n");
+  print(MYRC "aod_f: das.aod_f.sfc.$tmpl2.$ncsuffix\n");
 
 # Done
 # ----
