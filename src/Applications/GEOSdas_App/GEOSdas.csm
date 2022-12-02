@@ -821,11 +821,6 @@ exit 1
   sed -f sed_file  ./HISTORY.rc.tmpl  > ./HISTORY.rc
   cat ./HISTORY.rc
 
-  # Run bundleParser.py
-  #---------------------
-  python bundleParser.py
-  construct_extdata_yaml_list.py $FVWORK/GEOS_ChemGridComp.rc
-
   if ( -e $fcstage/stage/$EXPID.vtx_prs_rst.$itime.$NCSUFFIX ) then
        set vtxfile = `echo $EXPID.vtx_prs_rst.$itime.$NCSUFFIX | sed -e 's/vtx_prs_rst/vtx.prs/'`
        ln -s  $fcstage/stage/$EXPID.vtx_prs_rst.$itime.bin   ./$vtxfile
@@ -4742,6 +4737,11 @@ endif
    /bin/rm WSUB_ExtData.tmp
 
    cd -
+
+  # Run bundleParser.py
+  #---------------------
+  python bundleParser.py
+  construct_extdata_yaml_list.py $FVWORK/GEOS_ChemGridComp.rc
 
 #  /bin/cp ExtData.rc $EXPID.ExtData.$itime.rc
 

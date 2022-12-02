@@ -68,6 +68,8 @@ my %list = (rs5_core     => \@rs5_core,
                  gocart_internal_rst
                  gocart_import_rst
                  gocartdata_internal_rst
+                 hemco_internal_rst
+                 hemco_import_rst
                  irrad_internal_rst
                  moist_import_rst
                  ni_internal_rst
@@ -110,8 +112,6 @@ my %list = (rs5_core     => \@rs5_core,
                     gmichem_internal_rst
                     gmichem_import_rst
                     h2o_internal_rst
-                    hemco_internal_rst
-                    hemco_import_rst
                     mam_internal_rst
                     orad_import_rst
                     stratchem_internal_rst 

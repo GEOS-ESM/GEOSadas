@@ -81,7 +81,7 @@ AeroCom? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/AeroCom]
 > 
 
 FVICS? [/archive/u/jstassi/restarts/GEOSadas-5_24_0]
-> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_29/c360/c360.rst.20220423_21z.tar
+> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_30/c360/c360.rst.20220423_21z.tar
 
 Run model-adjoint-related applications (0=no,1=yes)? [0]
 > 
@@ -195,7 +195,7 @@ Do Aerosol Analysis (y/n)? [y]
 > 
 
 AOD OBSERVING CLASSES [or type 'none']?
-> mod04_061_llk,myd04_061_llk
+> mod04_061_llk,myd04_061_llk,aeronet_obs_llk,mod04_061_flk,myd04_061_flk,aeronet_obs_flk
 
 Enable GAAS feedback to model (y/n)? [y]
 > 
@@ -218,8 +218,8 @@ Replayed Ensemble (from OPS)?  [yes]
 Replay exp name? [x0046d]
 > x0046d
 
-Replay archive directory? [/discover/nobackup/projects/gmao/dadev/dao_it/archive/x0046d]
-> /discover/nobackup/projects/gmao/dadev/dao_it/archive/x0046d
+Replay archive directory? [/discover/nobackup/projects/gmao/dadev/rtodling/archive/x0046d]
+> /discover/nobackup/projects/gmao/dadev/rtodling/archive/x0046d
 
 Edit COLLECTIONS list in run/HISTORY.rc.tmpl (y/n)? [n]
 > 
