@@ -2543,7 +2543,10 @@ exit 1
         while ( ( $bnymd <= $enymd[1] ) && ( ! -e "${FVWORK}/acquire.FAILED" ) )
              set fname = "acqobs1.pbs"
              set acqdate = ${bnymd}_`echo $bnhms | cut -c1-2`z
-             set acqlog = $FVHOME/run/acqobs1.log.$acqdate.txt
+             set aqcyyyy = `echo ${la_dtg[1]} | cut -c1-4`
+             set aqcmm = `echo ${la_dtg[1]} | cut -c5-6`
+             mkdir -p $FVHOME/etc/Y${aqcyyyy}/M${aqcmm}/
+             set acqlog = $FVHOME/etc/Y${aqcyyyy}/M${aqcmm}/acqobs1.log.$acqdate.txt
 
              fname1 "#\!/bin/csh -xvf"
              fname2 "#$group_list"
@@ -2579,7 +2582,10 @@ exit 1
 
              set fname = "acqobs2.pbs"
              set acqdate = ${la_dtg[1]}_`echo $la_dtg[2] | cut -c1-2`z
-             set acqlog = $FVHOME/run/acqobs2.log.$acqdate.txt
+             set aqcyyyy = `echo ${la_dtg[1]} | cut -c1-4`
+             set aqcmm = `echo ${la_dtg[1]} | cut -c5-6`
+             mkdir -p $FVHOME/etc/Y${aqcyyyy}/M${aqcmm}/
+             set acqlog = $FVHOME/etc/Y${aqcyyyy}/M${aqcmm}/acqobs2.log.$acqdate.txt
 
              fname1 "#\!/bin/csh -xvf"
              fname2 "#$group_list"
@@ -2744,7 +2750,10 @@ exit 1
   set acqname = acqobs$obsflag
   set fname = $acqname.pbs
   set acqdate = ${bnymd}_`echo $bnhms | cut -c1-2`z
-  set acqlog = $FVHOME/run/$acqname.log.$acqdate.txt
+  set aqcyyyy = `echo ${bnymd} | cut -c1-4`
+  set aqcmm = `echo ${bnymd} | cut -c5-6`
+  mkdir -p $FVHOME/etc/Y${aqcyyyy}/M${aqcmm}/
+  set acqlog = $FVHOME/etc/Y${aqcyyyy}/M${aqcmm}/$acqname.log.$acqdate.txt
 
   if ($obsflag == 1) then
       touch ${FVWORK}/acquire.FAILED
@@ -4279,7 +4288,8 @@ endif
      endif
 
      if ($aod_obs == patmosx_asc || $aod_obs == patmosx_ods)   sed -i "s/#___AVHRR___//"   $ana_rc
-     if ($aod_obs == aeronet_obs)     sed -i "s/#___AERONET___//" $ana_rc
+     if ($aod_obs == aeronet_obs || $aod_obs == aeronet_obs_flk || \
+         $aod_obs == aeronet_obs_llk) sed -i "s/#___AERONET___//" $ana_rc
      if ($aod_obs == misr_F12_bright) sed -i "s/#___MISR___//"    $ana_rc
      if ($aod_obs == mod04_land_nnr)  sed -i "s/#___TERRA___//"   $ana_rc
      if ($aod_obs == myd04_land_nnr)  sed -i "s/#___AQUA___//"    $ana_rc

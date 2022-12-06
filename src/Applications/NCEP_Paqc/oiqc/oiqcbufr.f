@@ -2127,7 +2127,7 @@ C  ---------------------------------------
          WRITE(6 ,30)ITRY,NFG,NFB,NFL,NBB,NCK
       endif
 
-30    FORMAT('ITERATION ',I2,' : NFLIP=',3I6,' NBAD=',I6,' NTOT=',I6)
+30    FORMAT('ITERATION ',I2,' : NFLIP=',3I6,' NBAD=',I6,' NTOT=',I7)
 
 C  FINISHED YET?
 C  -------------
