@@ -46,6 +46,9 @@ EOT: .TRUE.
 # ----------------------------------------
 CONVPAR_OPTION: GF
 
+# Override default aerosol convective scavenging and use dz method
+USE_TRACER_SCAVEN: 1
+
 # Flag to activated scale-awareness approach (0 false, 1 true)
 USE_SCALE_DEP: 1
 
@@ -482,9 +485,18 @@ PCHEM::OX
 # -------------------------------------------------------
 DIAGNOSE_PRECIP_TYPE: FALSE
 
-# Choice for Land Surface Model: LSM_CHOICE=1 for Catchment, LSM_CHOICE=2 for CatchmentCN
-# ---------------------------------------------------------------------------------------
+# Choice for Land Surface Model
+#      1 : Catchment 
+#      2 : CatchmentCNCLM40 
+#      3 : CatchmentCNCLM45 
+# ------------------------------------------------------------
 LSM_CHOICE: @LSM_CHOICE
+
+# Apply increments from LDAS?
+#      0 : no  (default)
+#      1 : yes 
+# ------------------------------------------------------------
+#LDAS_INCR: 0
 
 # Name of file containing Surface GridComp resource parameters 
 # ------------------------------------------------------------
@@ -499,9 +511,8 @@ LSM_CHOICE: @LSM_CHOICE
 # *******   not from this file.                            *******
 # Atmosphere-Land CO2 coupling
 # ----------------------------	
-# USE_CNNEE: 0 #  options : 0 (default); 1 (Chem uses NNEE from CatchmentCN, NOTE you must add USE_CNNEE: 1 to CO2_GridComp.rc, CMIP/CO2_GridComp.rc,	
-#                 MERRA2/CO2_GridComp.rc, MERRA2/19600101-20000331/CO2_GridComp.rc, MERRA2/20000401-present/CO2_GridComp.rc, and PIESA/CO2_GridComp.rc 	
-#                           in /GEOSchem_GridComp/GOCART_GridComp/CO2_GridComp/ before you build the model.)
+# USE_CNNEE: 0 #  options : 0 (default); 1 (Chem uses NNEE from CatchmentCN, NOTE you must add USE_CNNEE: 1 to CO2_GridComp.rc and AMIP/CO2_GridComp.rc,	
+#                           in GOCART/ESMF/GOCART_GridComp/CO2_GridComp/ before you build the model.)
 #
 # ****************************************************************
 
@@ -595,6 +606,27 @@ GOCART_INTERNAL_CHECKPOINT_FILE:        gocart_internal_checkpoint
 #GOCART.data_INTERNAL_RESTART_FILE:      gocartdata_internal_rst
 #GOCART.data_INTERNAL_CHECKPOINT_FILE:   gocartdata_internal_checkpoint
 
+DU_INTERNAL_RESTART_FILE:               du_internal_rst
+DU_INTERNAL_CHECKPOINT_FILE:            du_internal_checkpoint
+
+SS_INTERNAL_RESTART_FILE:               ss_internal_rst
+SS_INTERNAL_CHECKPOINT_FILE:            ss_internal_checkpoint
+
+CA.oc_INTERNAL_RESTART_FILE:            caoc_internal_rst
+CA.oc_INTERNAL_CHECKPOINT_FILE:         caoc_internal_checkpoint
+
+CA.bc_INTERNAL_RESTART_FILE:            cabc_internal_rst
+CA.bc_INTERNAL_CHECKPOINT_FILE:         cabc_internal_checkpoint
+
+CA.br_INTERNAL_RESTART_FILE:            cabr_internal_rst
+CA.br_INTERNAL_CHECKPOINT_FILE:         cabr_internal_checkpoint
+
+NI_INTERNAL_RESTART_FILE:               ni_internal_rst
+NI_INTERNAL_CHECKPOINT_FILE:            ni_internal_checkpoint
+
+SU_INTERNAL_RESTART_FILE:               su_internal_rst
+SU_INTERNAL_CHECKPOINT_FILE:            su_internal_checkpoint
+
 #CARMA_INTERNAL_RESTART_FILE:            carma_internal_rst
 #CARMA_INTERNAL_CHECKPOINT_FILE:         carma_internal_checkpoint
 
@@ -619,8 +651,8 @@ GOCART_INTERNAL_CHECKPOINT_FILE:        gocart_internal_checkpoint
 #MAM_INTERNAL_RESTART_FILE:              mam_internal_rst
 #MAM_INTERNAL_CHECKPOINT_FILE:           mam_internal_checkpoint
 
-#GEOSACHEM_INTERNAL_RESTART_FILE:        geosachem_internal_rst
-#GEOSACHEM_INTERNAL_CHECKPOINT_FILE:     geosachem_internal_checkpoint
+ACHEM_INTERNAL_RESTART_FILE:             achem_internal_rst
+ACHEM_INTERNAL_CHECKPOINT_FILE:          achem_internal_checkpoint
 
 #TR_INTERNAL_RESTART_FILE:               tr_internal_rst
 #TR_INTERNAL_CHECKPOINT_FILE:            tr_internal_checkpoint
@@ -628,11 +660,17 @@ GOCART_INTERNAL_CHECKPOINT_FILE:        gocart_internal_checkpoint
 #TR_IMPORT_RESTART_FILE:                 tr_import_rst
 #TR_IMPORT_CHECKPOINT_FILE:              tr_import_checkpoint
 
-#HEMCO_INTERNAL_RESTART_FILE:            hemco_internal_rst
-#HEMCO_INTERNAL_CHECKPOINT_FILE:         hemco_internal_checkpoint
+HEMCO_INTERNAL_RESTART_FILE:             hemco_internal_rst
+HEMCO_INTERNAL_CHECKPOINT_FILE:          hemco_internal_checkpoint
 
-#HEMCO_IMPORT_RESTART_FILE:              hemco_import_rst
-#HEMCO_IMPORT_CHECKPOINT_FILE:           hemco_import_checkpoint
+HEMCO_IMPORT_RESTART_FILE:               hemco_import_rst
+HEMCO_IMPORT_CHECKPOINT_FILE:            hemco_import_checkpoint
+
+#OH_INTERNAL_RESTART_FILE:             oh_internal_rst
+#OH_INTERNAL_CHECKPOINT_FILE:          oh_internal_checkpoint
+
+#OH_IMPORT_RESTART_FILE:               oh_import_rst
+#OH_IMPORT_CHECKPOINT_FILE:            oh_import_checkpoint
 
 # OCEAN Model Restart Files
 # -------------------------
@@ -708,35 +746,19 @@ ISOLVAR: 2
 USE_NRLSSI2: .TRUE.
 SOLAR_CYCLE_FILE_NAME: ExtData/g5gcm/solar/NRLSSI2.v2021.txt
 
-# GOCART broadband aerosol optics tables
-# -----------------------------------------------------
- DU_OPTICS: ExtData/@EMISSIONS/x/opticsBands_DU.v15_3.RRTMG.nc
- SS_OPTICS: ExtData/@EMISSIONS/x/opticsBands_SS.v3_3.RRTMG.nc
- SU_OPTICS: ExtData/@EMISSIONS/x/opticsBands_SU.v1_3.RRTMG.nc
- OC_OPTICS: ExtData/@EMISSIONS/x/opticsBands_OC.v1_3.RRTMG.nc
- BC_OPTICS: ExtData/@EMISSIONS/x/opticsBands_BC.v1_3.RRTMG.nc
- NI_OPTICS: ExtData/@EMISSIONS/x/opticsBands_NI.v2_5.RRTMG.nc
-BRC_OPTICS: ExtData/@EMISSIONS/x/opticsBands_BRC.v1_5.RRTMG.nc
-# DU_OPTICS: /discover/nobackup/mathomp4/AerosolTables-J10/RRTMGPS-RRTMGPI/opticsBands_DU.RRTMGPS-RRTMGPI.v15_3.nc
-# SS_OPTICS: /discover/nobackup/mathomp4/AerosolTables-J10/RRTMGPS-RRTMGPI/opticsBands_SS.RRTMGPS-RRTMGPI.v3_3.nc
-# SU_OPTICS: /discover/nobackup/mathomp4/AerosolTables-J10/RRTMGPS-RRTMGPI/opticsBands_SU.RRTMGPS-RRTMGPI.v1_3.nc
-# OC_OPTICS: /discover/nobackup/mathomp4/AerosolTables-J10/RRTMGPS-RRTMGPI/opticsBands_OC.RRTMGPS-RRTMGPI.v1_3.nc
-# BC_OPTICS: /discover/nobackup/mathomp4/AerosolTables-J10/RRTMGPS-RRTMGPI/opticsBands_BC.RRTMGPS-RRTMGPI.v1_3.nc
-# NI_OPTICS: /discover/nobackup/mathomp4/AerosolTables-J10/RRTMGPS-RRTMGPI/opticsBands_NI.RRTMGPS-RRTMGPI.v2_5.nc
-#BRC_OPTICS: /discover/nobackup/mathomp4/AerosolTables-J10/RRTMGPS-RRTMGPI/opticsBands_BRC.RRTMGPS-RRTMGPI.v1_5.nc
 NUM_BANDS: 30
 
 #USE_RRTMGP_IRRAD: 1.0
 #USE_RRTMGP_SORAD: 1.0
-#RRTMGP_DATA_LW: /discover/nobackup/pnorris/RRTMGP-data.new.20200503/rrtmgp/data/rrtmgp-data-lw-g256-2018-12-04.nc
-#RRTMGP_DATA_SW: /discover/nobackup/pnorris/RRTMGP-data.new.20200503/rrtmgp/data/rrtmgp-data-sw-g224-2018-12-04.nc
-#RRTMGP_CLOUD_OPTICS_COEFFS_LW: /discover/nobackup/pnorris/RRTMGP-data.new.20200503/extensions/cloud_optics/rrtmgp-cloud-optics-coeffs-lw.nc
-#RRTMGP_CLOUD_OPTICS_COEFFS_SW: /discover/nobackup/pnorris/RRTMGP-data.new.20200503/extensions/cloud_optics/rrtmgp-cloud-optics-coeffs-sw.nc
+#RRTMGP_DATA_LW: /discover/nobackup/pnorris/RRTMGP-data.v1.5/rrtmgp/data/rrtmgp-data-lw-g128-210809.nc
+#RRTMGP_DATA_SW: /discover/nobackup/pnorris/RRTMGP-data.v1.5/rrtmgp/data/rrtmgp-data-sw-g112-210809.nc
+#RRTMGP_CLOUD_OPTICS_COEFFS_LW: /discover/nobackup/pnorris/RRTMGP-data.v1.5/extensions/cloud_optics/rrtmgp-cloud-optics-coeffs-lw.nc
+#RRTMGP_CLOUD_OPTICS_COEFFS_SW: /discover/nobackup/pnorris/RRTMGP-data.v1.5/extensions/cloud_optics/rrtmgp-cloud-optics-coeffs-sw.nc
 
 DIURNAL_BIOMASS_BURNING: yes
 
        RATS_PROVIDER: PCHEM   # options: PCHEM, GMICHEM, STRATCHEM (Radiatively active tracers)
-       AERO_PROVIDER: GOCART   # options: GOCART.data, GOCART, MAM, None  (Radiatively active aerosols)
+       AERO_PROVIDER: GOCART2G   # options: GOCART2G, MAM, none  (Radiatively active aerosols)
 ANALYSIS_OX_PROVIDER: PCHEM   # options: PCHEM, GMICHEM, STRATCHEM, GOCART
 
 

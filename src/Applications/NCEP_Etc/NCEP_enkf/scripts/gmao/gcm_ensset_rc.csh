@@ -238,6 +238,11 @@ cd $ENSWORK/$member
            end
         endif
 
+        /bin/mv WSUB_ExtData.rc WSUB_ExtData.tmp
+        cat WSUB_ExtData.tmp | sed -e '/^WSUB_NATURE/ s#ExtData.*#/dev/null#' > WSUB_ExtData.rc
+        /bin/rm WSUB_ExtData.tmp
+
+
 	if(-e $ATMENSETC/aens_stoch.rc ) /bin/ln -sf  $ATMENSETC/aens_stoch.rc $ENSWORK/${member}/stoch.rc
 
         # Edit and copy GAAS resource files
@@ -370,6 +375,11 @@ cd $ENSWORK/$member
             endif
          endif
          sed -f sed_file  $this_hist  > ./HISTORY.rc
+
+        #  Run bundleParser.py
+        #  -------------------
+        python bundleParser.py
+        construct_extdata_yaml_list.py ./GEOS_ChemGridComp.rc
 
         # Link in BCS
         # -----------
