@@ -229,6 +229,7 @@ cd $ENSWORK/$member
         /bin/ln -sf $ENSWORK/ExtData $ENSWORK/${member}/
         /bin/cp $ATMENSETC/GEOS_ChemGridComp.rc .
         /bin/cp $FVHOME/run/gocart/*.rc         .
+        /bin/cp $FVHOME/run/gocart/*.yaml       .
         if(-e ExtData.rc) /bin/rm -f ExtData.rc
         set  extdata_files = `/bin/ls -1 *_ExtData.rc`
         cat $extdata_files > $ENSWORK/${member}/ExtData.rc
@@ -275,6 +276,13 @@ cd $ENSWORK/$member
                # what are we supposed to do here?
             endif
         endif
+
+        # A bit of a hack to cope with latest handing of GAAS settings
+        # ------------------------------------------------------------
+        foreach fn (`ls $EXPID.aod*.$NCSUFFIX`)
+          set sfx = `echo $fn | cut -d. -f2-`
+          ln -sf $fn das.$sfx 
+        end
  
         # FV-core layout file
         # -------------------
@@ -339,10 +347,6 @@ cd $ENSWORK/$member
          echo "s/>>>MEMIDX<<</${memidx}/1"   >> sed_file
          /bin/rm -f ./AGCM.rc
          sed -f sed_file  $myagcmrc > ./AGCM.rc
-
-         # Run bundleParser.py
-         #---------------------
-         python bundleParser.py
 
         # Prepare HISTORY
         # ---------------
