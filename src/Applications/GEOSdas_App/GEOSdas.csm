@@ -1815,6 +1815,9 @@ exit 1
             echo "s/>>>ANATIME<<</${initref[2]}/1" >> sed_file
             /bin/rm -f ./mkiau.rc
             sed -f sed_file  ./mkiau.rc.tmpl  > ./mkiau.rc
+            echorc.x -rc ./mkiau.rc AGCM_INTERNAL_CHECKPOINT_FILE 
+            set iaufn = `echorc.x -rc mkiau.rc -template $EXPID $initref[1] $initref[2] AGCM_INTERNAL_CHECKPOINT_FILE`
+            if ( -e $iaufn ) /bin/rm $iaufn
             $makeiaux
 
         else
@@ -3550,6 +3553,8 @@ endif
                             echo "s/>>>ANATIME<<</${nhmsb}/1"      >> sed_file
                             /bin/rm -f ./mkiau.rc
                             sed -f sed_file  ./mkiau.rc.tmpl  > ./mkiau.rc
+                            set iaufn = `echorc.x -rc mkiau.rc -template $EXPID $nymdb $nhmsb AGCM_INTERNAL_CHECKPOINT_FILE`
+                            if ( -e $iaufn ) /bin/rm $iaufn
                             $makeiaux
 
                          endif
@@ -3774,7 +3779,11 @@ endif
 #        ------------------------------------------------------------
          foreach fn (`ls $EXPID.aod*.$NCSUFFIX`)
              set sfx = `echo $fn | cut -d. -f2-`
-             ln -sf $fn das.$sfx 
+             if ( -e das.$sfx ) then
+                /bin/rm das.$sfx
+             else
+                ln -sf $fn das.$sfx 
+             endif
          end
 
 #        Signal successful completion
