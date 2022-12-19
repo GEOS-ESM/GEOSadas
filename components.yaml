@@ -34,7 +34,7 @@ GMAO_Shared:
 MAPL:
   local: ./src/Shared/@MAPL
   remote: ../MAPL.git
-  tag: rt_g530_2.25_fix
+  tag: rt_g530_2.25_fix2
   develop: develop
 
 FMS:
