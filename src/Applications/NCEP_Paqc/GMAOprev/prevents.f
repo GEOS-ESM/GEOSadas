@@ -19,7 +19,7 @@ C   THIS PROGRAM CALLS GBLEVENTS OR GBLEVENTS_CDAS, WHICH RUNS HERE IN
 C   THE "PREVENTS" MODE.  W3NCO ROUTINE GBLEVENTS (OR IN-LINE ROUTINE
 C   GBLEVENTS_CDAS) DOES THE BULK OF THE WORK HERE.  AFTER EACH REPORT
 C   IS UPDATED BY GBLEVENTS/GBLEVENTS_CDAS, IT IS WRITTEN OUT TO A
-C   "PREPROCESSED" VERSION OF THE PREPBUFR FILE.  
+C   "PREPROCESSED" VERSION OF THE PREPBUFR FILE.
 C
 C PROGRAM HISTORY LOG:
 C 1994-01-06  J. WOOLLEN  ORIGINAL VERSION FOR REANALYSIS
@@ -68,7 +68,7 @@ C             2006-07-14 VERSION OF GBLEVENTS NEEDED TO READ THE CDAS-
 C             STYLE SIGMA FIRST GUESS (THE NEW SIGIO VERSION OF W3LIB
 C             ROUTINE GBLEVENTS CANNOT READ THE OLD CDAS-STYLE SIGMA
 C             FIRST GUESS)
-C 2012-11-20  J. WOOLLEN   -- INITIAL PORT TO WCOSS 
+C 2012-11-20  J. WOOLLEN   -- INITIAL PORT TO WCOSS
 C 2013-02-13  D. A. KEYSER -- FINAL CHANGES TO RUN ON WCOSS: SET
 C             BUFRLIB MISSING (BMISS) TO 10E8 RATHER THAN 10E10 TO
 C             AVOID INTEGER OVERFLOW;  REPLACED GETENV WITH MORE
@@ -80,10 +80,12 @@ C             TO AVOID LOSING SOUNDING RECORDS THAT SLIGHTLY EXCEED MAX
 c
 c rename all REAL(8) variables as
 C     *_8
-
 C 2020-01-06  J. Dong -- In program PREPOBS_PREVENTS, changed the
-C             windowing decade from 20 to 40 for cases when the year 
+C             windowing decade from 20 to 40 for cases when the year
 C             is represented by 2 digits instead of 4.
+C 2022-12-27  M. SIENKIEWICZ - ADD ENVIRONMENT VARIABLE TO ENABLE
+C             SPECIFYING A LARGER MAXIMUM BUFR RECORD VALUE TO USE IN
+C             CALL TO MAXOUT
 C
 C USAGE:
 C   INPUT FILES:
@@ -151,6 +153,8 @@ C$$$
 
       CHARACTER*4  NET
       CHARACTER*8  SUBSET,LAST
+      CHARACTER*5  CMAXOUT
+      INTEGER      IMAXOUT, LENGTH
 
       DIMENSION IUNITG(2)
 
@@ -239,7 +243,18 @@ C  --------------------------------------------------------
 
       CALL OPENBF(IUNITI,'IN ',IUNITI)
       CALL OPENBF(IUNITP,'OUT',IUNITI)
-      call maxout(15000)
+
+      CALL GET_ENVIRONMENT_VARIABLE('BUFR_MAXOUT',cmaxout,length)
+      if (length > 0) then
+        read(cmaxout,*) imaxout
+        if (imaxout > 15000) then
+          call maxout(imaxout)
+        else
+          call maxout(15000)
+        end if
+      else
+        call maxout(15000)
+      end if
 
 C  DETERMINE WHICH NETWORK WE ARE RUNNING UNDER
 C  --------------------------------------------
