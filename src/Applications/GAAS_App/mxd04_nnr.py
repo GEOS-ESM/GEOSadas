@@ -304,6 +304,14 @@ class MxD04_NNR(MxD04_L2):
         except:
             pass   # ignore it for systems without nitrates
 
+        # Special handle for brown carbon (treat it as it were organic carbon)
+        # ----------------------------------------------------
+        try:
+            self.sampleFile(aer_x,onlyVars=('BREXTTAU',),Verbose=Verbose)
+            self.foc += self.sample.BREXTTAU / s.TOTEXTTAU
+            self.fcc = self.fbc + self.foc
+        except:
+            pass   # ignore it for systems without brown carbon as a separate tracer
         del self.sample
 
 #---
