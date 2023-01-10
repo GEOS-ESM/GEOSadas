@@ -387,6 +387,8 @@
    integer:: status, ntgases, naero, nbuns, ib, ic
    character(len=ESMF_MAXSTR):: tgaslist
    character(len=ESMF_MAXSTR):: exp_vars
+   logical:: addtgasmet
+
    type(ESMF_VM) :: vm
 
 
@@ -441,6 +443,11 @@
           tgaslist=''
           if(ib==1) then  ! trace gases only
              call gsi_chemguess_get('olist::tracers',tgaslist,status)
+             ! cakelle2: need TROPLEV and PBLTOPL in bundle if using no2 and/or so2
+             addtgasmet=.false.
+             if ( index(tgaslist,'no2')>0  .or. index(tgaslist,'NO2')>0  ) addtgasmet = .true.
+             if ( index(tgaslist,'so2g')>0 .or. index(tgaslist,'SO2g')>0 ) addtgasmet = .true.
+             if ( addtgasmet ) tgaslist = trim(tgaslist)//',TROPLEV,PBLTOPL'
           endif
           if(ib==2) then  ! aerosols only
              call gsi_chemguess_get('olist::aerosols',tgaslist,status)
