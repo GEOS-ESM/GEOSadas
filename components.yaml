@@ -28,7 +28,7 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  tag: rt_g530_1.6.0_merge
+  tag: rt-GMAO_Shared-g530-x0047PRY
   develop: main
 
 MAPL:
@@ -65,7 +65,7 @@ g5pert:
 GEOSagcmPert_GridComp:
   local: ./src/Components/@GEOSagcmPert_GridComp
   remote: ../GEOSagcmPert_GridComp.git
-  tag: v5.29.1
+  tag: rt-GEOSagcmPert-g530-fix
   develop: main
 
 FVdycoreCubed_GridComp:
@@ -158,7 +158,7 @@ RRTMGP:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  tag: rt_g530_1.8.0_merge
+  tag: rt-GEOSgcm_App-g530_1.8.0_binfix
   develop: develop
 
 UMD_Etc:
