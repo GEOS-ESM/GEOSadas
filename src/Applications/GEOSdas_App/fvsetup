@@ -9781,7 +9781,8 @@ sub init_agcm_rc {
     AGCM_label_subst("\@GRID_TYPE", $agcm_grid_type);
     AGCM_label_subst("\@CUBE_AGCM", $cube_agcm);
     AGCM_label_subst("\@LATLON_AGCM", $latlon_agcm);
-    AGCM_label_subst("\@IOS_NDS", $ios_nds);
+    AGCM_label_subst("\@NUM_OSERVER_NODES", $ios_nds);
+    AGCM_label_subst("\@NUM_BACKEND_PES", $bckend_wrts);
 
     AGCM_label_subst("\@AANA_IM", $ana_im);
     AGCM_label_subst("\@AANA_JM", $ana_jm);
