@@ -28,7 +28,13 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  tag: rt-GMAO_Shared-g530-x0047PRY
+  branch: feature/rtodling/g530_branch
+  develop: main
+
+GEOS_Util:
+  local: ./src/Shared/@GMAO_Shared/@GEOS_Util
+  remote: ../GEOS_Util.git
+  tag: v1.0.1
   develop: main
 
 MAPL:
