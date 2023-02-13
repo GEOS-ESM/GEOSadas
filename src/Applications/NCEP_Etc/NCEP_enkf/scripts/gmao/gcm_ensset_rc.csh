@@ -229,6 +229,7 @@ cd $ENSWORK/$member
         /bin/ln -sf $ENSWORK/ExtData $ENSWORK/${member}/
         /bin/cp $ATMENSETC/GEOS_ChemGridComp.rc .
         /bin/cp $FVHOME/run/gocart/*.rc         .
+        /bin/cp $FVHOME/run/gocart/*.yaml       .
         if(-e ExtData.rc) /bin/rm -f ExtData.rc
         set  extdata_files = `/bin/ls -1 *_ExtData.rc`
         cat $extdata_files > $ENSWORK/${member}/ExtData.rc
@@ -237,6 +238,11 @@ cd $ENSWORK/$member
              sed -i "${line}s/.006./.061./" $ENSWORK/${member}/ExtData.rc
            end
         endif
+
+        /bin/mv WSUB_ExtData.rc WSUB_ExtData.tmp
+        cat WSUB_ExtData.tmp | sed -e '/^WSUB_NATURE/ s#ExtData.*#/dev/null#' > WSUB_ExtData.rc
+        /bin/rm WSUB_ExtData.tmp
+
 
 	if(-e $ATMENSETC/aens_stoch.rc ) /bin/ln -sf  $ATMENSETC/aens_stoch.rc $ENSWORK/${member}/stoch.rc
 
@@ -270,6 +276,13 @@ cd $ENSWORK/$member
                # what are we supposed to do here?
             endif
         endif
+
+        # A bit of a hack to cope with latest handing of GAAS settings
+        # ------------------------------------------------------------
+        foreach fn (`ls $EXPID.aod*.$NCSUFFIX`)
+          set sfx = `echo $fn | cut -d. -f2-`
+          ln -sf $fn das.$sfx 
+        end
  
         # FV-core layout file
         # -------------------
@@ -278,6 +291,7 @@ cd $ENSWORK/$member
         else
            /bin/cp $FVHOME/run/fvcore_layout.rc .
         endif
+        /bin/cp $FVHOME/run/*.yaml .
         /bin/cp fvcore_layout.rc input.nml
 
         /bin/cp $FVHOME/run/GEOS_SurfaceGridComp.rc .
@@ -365,6 +379,11 @@ cd $ENSWORK/$member
             endif
          endif
          sed -f sed_file  $this_hist  > ./HISTORY.rc
+
+        #  Run bundleParser.py
+        #  -------------------
+        python bundleParser.py
+        construct_extdata_yaml_list.py ./GEOS_ChemGridComp.rc
 
         # Link in BCS
         # -----------

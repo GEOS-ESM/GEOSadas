@@ -195,13 +195,10 @@
 
    !call MAPL_InternalStateRetrieve(gcAANA, CHILD_MAPLOBJ, RC=status)
    !VERIFY_(status)
-   CHILD_MAPLOBJ%t_profiler = TimeProfiler('AANAaana', comm_world = MPI_COMM_WORLD)
+!  CHILD_MAPLOBJ%t_profiler = TimeProfiler('AANAaana', comm_world = MPI_COMM_WORLD)
 !
 !  Register component
 !  ------------------
-  call CHILD_MAPLOBJ%t_profiler%start(rc=status)
-   VERIFY_(status)
-  call CHILD_MAPLOBJ%t_profiler%start('SetService',rc=status)
    !VERIFY_(status)
    !call ESMF_GridCompSetServices ( gcAANA, SetServices, rc=STATUS ); VERIFY_(STATUS)
 
@@ -215,11 +212,6 @@
    impAANA=child_imports(aana_root)
    expAANA=child_exports(aana_root)
    gcAANA=child_gcs(aana_root)
-
-  call CHILD_MAPLOBJ%t_profiler%stop('SetService',rc=status)
-   VERIFY_(status)
-  call CHILD_MAPLOBJ%t_profiler%stop(rc=status)
-   VERIFY_(status)
 
 !  Init component
 !  --------------

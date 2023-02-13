@@ -3,7 +3,7 @@
 #-----------
 
 codeID: 523f29e
-description: C48f__GEOSadas-5_29_5__agrid_C48__ogrid_f34
+description: C48f__GEOSadas-5_30_0__agrid_C48__ogrid_f34
 fvsetupID: f7aaa973c7
 fvsetupflags: -sensdeg 1
 
@@ -30,7 +30,7 @@ EXPID? [u000_C48]
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [C48f__GEOSadas-5_29_5__agrid_C48__ogrid_f34]
+EXPDSC? [C48f__GEOSadas-5_30_0__agrid_C48__ogrid_f34]
 > 
 
 Land Boundary Conditions? [Icarus_Updated]
