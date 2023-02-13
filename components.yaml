@@ -22,13 +22,13 @@ ecbuild:
 NCEP_Shared:
   local: ./src/Shared/@NCEP_Shared
   remote: ../NCEP_Shared.git
-  tag: v1.2.0
+  tag: v1.2.2
   develop: main
 
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  branch: feature/rtodling/g530_branch
+  tag: v1.7. 
   develop: main
 
 GEOS_Util:
@@ -52,7 +52,7 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  tag: v1.5.4.8
+  tag: v1.5.4.9
   develop: develop
 
 GEOSgcm_GridComp:
@@ -182,7 +182,7 @@ RRTMGP:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  branch: feature/rtodling/g530x_hist_upd2
+  tag: v1.9.3
   develop: develop
 
 UMD_Etc:
