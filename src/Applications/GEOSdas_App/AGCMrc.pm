@@ -60,14 +60,24 @@ my %list = (rs5_core     => \@rs5_core,
                  seaicethermo_internal_rst );
 
 # these restarts can be bootstrapped
-@rs5_boot = qw ( gocart_internal_rst
+@rs5_boot = qw ( achem_internal_rst
+                 cabc_internal_rst
+                 cabr_internal_rst
+                 caoc_internal_rst
+                 du_internal_rst
+                 gocart_internal_rst
                  gocart_import_rst
                  gocartdata_internal_rst
+                 hemco_internal_rst
+                 hemco_import_rst
                  irrad_internal_rst
                  moist_import_rst
+                 ni_internal_rst
                  pchem_internal_rst
                  saltwater_import_rst
                  solar_internal_rst
+                 ss_internal_rst
+                 su_internal_rst
                  surf_import_rst
                  tr_internal_rst
                  tr_import_rst
@@ -102,8 +112,6 @@ my %list = (rs5_core     => \@rs5_core,
                     gmichem_internal_rst
                     gmichem_import_rst
                     h2o_internal_rst
-                    hemco_internal_rst
-                    hemco_import_rst
                     mam_internal_rst
                     orad_import_rst
                     stratchem_internal_rst 
