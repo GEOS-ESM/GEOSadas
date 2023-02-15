@@ -22,3 +22,4 @@ workflows:
           persist_workspace: false # Needs to be true to run fv3/gcm experiment, costs extra
           mepodevelop: false
           rebuild_procs: 1
+          build_type: Release
