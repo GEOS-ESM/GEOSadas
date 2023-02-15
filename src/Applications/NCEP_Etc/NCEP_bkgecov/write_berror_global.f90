@@ -43,9 +43,12 @@
   character(len=5) var(40)
   character(len=256) ncfile
   logical merra2current ! convert older format to current format
-  logical hydromet
+  logical hydromet,dimsonly
   logical :: nc_read_test = .true.
+  logical :: verbose
+  logical :: convert_endian
 
+  dimsonly = .false.
   hydromet = .true.
   merra2current =.false.
   ncfile = 'NULL'
@@ -53,6 +56,10 @@
   call init_()
 
   call get_berror_dims_(ilon,ilat,isig)
+  if(dimsonly) then
+    print * , "input resolution: ", ilon, ' x ', ilat, ' x ', isig
+    stop
+  endif
 
   call nc_berror_vars_init(ivars,ilon,ilat,isig)
 
@@ -118,13 +125,17 @@ contains
      print *, "Usage: write_berror_global.x [options] ifname ofname nlon nlat nlev"
      print *
      print *, " OPTIONS:"
-     print *, "   -nohyro     - handles case w/o hydrometeors"
+     print *, "   -nohydro    - handles case w/o hydrometeors"
      print *, "   -nc  FNAME  - output errors in NetCDF format to file FNAME"
+     print *, "   -verb       - echo additional information as it proceeds"
+     print *, "   -endian     - convert endian"
      print *, ""
      print *
      stop
   end if
 
+  verbose = .false.
+  convert_endian = .false.
   fixargs = 5
   iarg = 0; ncount=0
   do i = 1, 32767
@@ -132,8 +143,12 @@ contains
      if ( iarg .gt. argc ) exit
      call GetArg ( iarg, argv )
      select case (trim(argv))
+       case('-endian')
+          convert_endian = .true.
        case('-nohydro')
           hydromet = .false.
+       case('-verb')
+          verbose = .true.
        case('-nc')
           iarg = iarg + 1
           call GetArg ( iarg, ncfile )
@@ -154,9 +169,13 @@ contains
      end select
   enddo
 
-  print * , "input  filename: ", trim(ifname)
-  print * , "output filename: ", trim(ofname)
-  print * , "desired output resolution: ", mlon, ' x ', mlat, ' x ', msig
+  if (ncount==1) then
+    dimsonly=.true.
+  else
+    print * , "input  filename: ", trim(ifname)
+    print * , "output filename: ", trim(ofname)
+    print * , "desired output resolution: ", mlon, ' x ', mlat, ' x ', msig
+  endif
 
   end subroutine init_
 
@@ -165,7 +184,11 @@ contains
   integer, intent(in) :: ilon,ilat,isig
   integer :: nlon,nlat,nsig
 
-  open(luin,file=trim(ifname),form='unformatted')
+  if (convert_endian) then
+     open(luin,file=trim(ifname),form='unformatted',convert='big_endian')
+  else
+     open(luin,file=trim(ifname),form='unformatted')
+  endif
 
   nlon=ilon
   rewind luin
@@ -203,7 +226,11 @@ contains
 
   subroutine get_berror_dims_(nlon,nlat,nsig)
   integer, intent(out) :: nlon,nlat,nsig
-  open(luin,file=trim(ifname),form='unformatted')
+  if (convert_endian) then
+     open(luin,file=trim(ifname),form='unformatted',convert='big_endian')
+  else
+     open(luin,file=trim(ifname),form='unformatted')
+  endif
   read(luin) nsig,nlat,nlon
   close(luin)
   end subroutine get_berror_dims_
@@ -215,7 +242,11 @@ contains
 
   var=' '
 
-  open(luin,file=trim(ifname),form='unformatted')
+  if (convert_endian) then
+     open(luin,file=trim(ifname),form='unformatted',convert='big_endian')
+  else
+     open(luin,file=trim(ifname),form='unformatted')
+  endif
      rewind luin
      read(luin) nsig,nlat,nlon
      read(luin) vr%tcon,vr%vpcon,vr%pscon
@@ -272,9 +303,11 @@ contains
 
   subroutine berror_write_(vr,m2c)
 
+  implicit none
+
   type(nc_berror_vars) vr
   logical, intent(in) :: m2c
-  integer  nlon,nlat,nsig
+  integer  i,j,k,m,nlon,nlat,nsig
 
   var=' '
   var(1)='sf'
@@ -562,15 +595,17 @@ contains
   do j=1,ivars%nlat ! very, very parallelizable
 
      ! tcon is a covariance matrix, so we must be carefull with its
-     ! interpolation. It shuld be done as in 
+     ! interpolation. It should be done as in 
      !             Bnew = T Bold T', 
+     !                  = T ( T Bold )'
      ! where T is the interpolation matrix and T' its transpose.
      ! Not all interpolants will preserve covariance properties. 
+     ! Interpolate columns first ...
      aux=0.0
      do k=1,ivars%nsig
         call spline( plevi, plevo, ivars%tcon(j,k,:), aux(k,:) )
      enddo
-!    the following should really be the adjoint of vinterp ...
+!    now interpolate rows of previous resulting matrix
      do k=1,ovars%nsig
         call spline( plevi, plevo, aux(:,k), ovars%tcon(j,k,:) )
      enddo

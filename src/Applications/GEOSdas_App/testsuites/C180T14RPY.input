@@ -3,7 +3,7 @@
 #------------
 
 codeID: 523f29e
-description: C180T14RPY__GEOSadas-5_29_5__agrid_C180__ogrid_T14
+description: C180T14RPY__GEOSadas-5_30_0__agrid_C180__ogrid_T14
 fvsetupID: f7aaa973c7
 
 ---ENDHEADERS---
@@ -29,7 +29,7 @@ EXPID? [u000_C180]
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [C180T14RPY__GEOSadas-5_29_5__agrid_C180__ogrid_T14]
+EXPDSC? [C180T14RPY__GEOSadas-5_30_0__agrid_C180__ogrid_T14]
 > 
 
 Land Boundary Conditions? [Icarus_Updated]
