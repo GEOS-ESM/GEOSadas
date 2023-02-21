@@ -52,7 +52,7 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  tag: v1.5.4.10
+  branch: feature/rtodling/tgas_n_o3_only_ana
   develop: develop
 
 GEOSgcm_GridComp:

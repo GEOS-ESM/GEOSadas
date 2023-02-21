@@ -539,11 +539,13 @@
         TIME_IS_CYCLIC=.false., verbose=.true.,&
         rc=status )
    VERIFY_(status)
-   call MAPL_CFIORead  ( bsfcfname, currT, GEOSsfcBUN1, &
-        only_vars=trim(sfc_vars),&
-        TIME_IS_CYCLIC=.false., verbose=.true.,&
-        rc=status )
-   VERIFY_(status)
+   if ( trim(bsfcfname) /= 'NONE' ) then
+      call MAPL_CFIORead  ( bsfcfname, currT, GEOSsfcBUN1, &
+           only_vars=trim(sfc_vars),&
+           TIME_IS_CYCLIC=.false., verbose=.true.,&
+           rc=status )
+      VERIFY_(status)
+   endif
    
    !   Extract fields from bundles and use them to populate states
    !   -----------------------------------------------------------
