@@ -11,7 +11,7 @@ env:
 cmake:
   local: ./@cmake
   remote: ../ESMA_cmake.git
-  tag: v3.24.0
+  tag: v3.25.0
   develop: develop
 
 ecbuild:
@@ -185,10 +185,10 @@ GEOSgcm_App:
   tag: v1.9.3
   develop: develop
 
-UMD_Etc:
-  local: ./src/Applications/@UMD_Etc
-  remote: ../UMD_Etc.git
-  tag: v1.1.0
+Ocean-LETKF:
+  local: ./src/Components/@Ocean-LETKF
+  remote: ../Ocean-LETKF.git
+  branch: main
   develop: main
 
 CPLFCST_Etc:
