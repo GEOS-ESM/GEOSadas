@@ -65,7 +65,7 @@ nbins_CFC:  2   # CFCs
 nbins_BC:   2   # black carbon
 nbins_OC:   2   # organic carbon
 nbins_Rn:   1   # radon
-nbins_CH4: 15   # methane
+nbins_CH4:  7   # methane
 nbins_SC:  35   # stratospheric chemistry
 nbins_XX:  51   # generic tracer
 nbins_PC:   1   # parameterized chemistry (GEOS-5)
@@ -171,23 +171,15 @@ Rn             'mol mol-1'  Global radon
 
 variable_table_CH4::
 
-# Name         Units        Long Name
-# -----        ------       --------------------------------
-CH4animls      'mol mol-1'  Methane from animals
-CH4coal        'mol mol-1'  Methane from coal
-CH4leak        'mol mol-1'  Methane from leakage
-CH4gasvnt      'mol mol-1'  Methane from gas venting
-CH4hydz        'mol mol-1'  Methane from ocean HYDZ
-CH4msw         'mol mol-1'  Methane from municipal sewers
-CH4soilab      'mol mol-1'  Methane absorbed by soil
-CH4trmite      'mol mol-1'  Methane from termites
-CH4bogs        'mol mol-1'  Methane from bogs
-CH4burn        'mol mol-1'  Methane from biomass burning
-CH4ricec       'mol mol-1'  Methane from rice cultivation
-CH4swamps      'mol mol-1'  Methane from swamps
-CH4tundra      'mol mol-1'  Methane from tundra
-CH4bf	       'mol mol-1'  Methane from biofuel
-CH4tot         'mol mol-1'  Methane
+# Name     Units        Long Name
+# -----    ------       --------------------------------
+CH4        'mol mol-1'  Methane (all sources)
+CH4ind     'mol mol-1'  Methane (industrial)
+CH4agw     'mol mol-1'  Methane (agriculture/waste)
+CH4bf      'mol mol-1'  Methane (biofuel)
+CH4bb      'mol mol-1'  Methane (biomass burning)
+CH4wetl    'mol mol-1'  Methane (wetlands)
+CH4minn    'mol mol-1'  Methane (minor natural)
 ::
 
 variable_table_SC::
