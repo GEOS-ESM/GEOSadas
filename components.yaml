@@ -1,3 +1,4 @@
+# Starting from GEOSadas-5.29.5-p3 (will likely be renamed GEOSadas-5.30.x in future)
 GEOSadas:
   fixture: true
   develop: develop
@@ -28,13 +29,13 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  tag: v1.7.1
+  branch: feature/sdrabenh/r21c_G2G  # starting from v1.7.1
   develop: main
 
 GEOS_Util:
   local: ./src/Shared/@GMAO_Shared/@GEOS_Util
   remote: ../GEOS_Util.git
-  tag: v1.0.1
+  branch: feature/sdrabenh/r21c_G2G  # starting from v1.0.1
   develop: main
 
 MAPL:
@@ -58,7 +59,7 @@ GEOSana_GridComp:
 GEOSgcm_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp
   remote: ../GEOSgcm_GridComp.git
-  tag: v1.17.3
+  branch: feature/sdrabenh/r21c_G2G  # starting from v1.17.3
   sparse: ./config/GEOSgcm_GridComp.sparse
   develop: develop
 
@@ -77,7 +78,7 @@ GEOSagcmPert_GridComp:
 FVdycoreCubed_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSsuperdyn_GridComp/@FVdycoreCubed_GridComp
   remote: ../FVdycoreCubed_GridComp.git
-  tag: v1.12.1
+  branch: feature/sdrabenh/r21c_G2G  # starting from v1.12.1
   develop: develop
 
 fvdycore:
@@ -119,7 +120,7 @@ QuickChem:
 TR:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSphysics_GridComp/@GEOSchem_GridComp/@TR
   remote: ../TR.git
-  tag: v1.0.0
+  branch: feature/sdrabenh/r21c_G2G  # starting from v1.0.0
   develop: develop
 
 GMI:
@@ -182,7 +183,7 @@ RRTMGP:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  tag: v1.9.3
+  branch: feature/sdrabenh/r21c_G2G  # starting from v1.9.3
   develop: develop
 
 UMD_Etc:
