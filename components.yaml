@@ -5,13 +5,13 @@ GEOSadas:
 env:
   local: ./@env
   remote: ../ESMA_env.git
-  tag: v4.8.0
+  tag: v4.9.1
   develop: main
 
 cmake:
   local: ./@cmake
   remote: ../ESMA_cmake.git
-  tag: v3.25.0
+  tag: v3.26.0
   develop: develop
 
 ecbuild:
@@ -28,19 +28,19 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  tag: rt1.7.1-plus-1
+  tag: v1.7.2
   develop: main
 
 GEOS_Util:
   local: ./src/Shared/@GMAO_Shared/@GEOS_Util
   remote: ../GEOS_Util.git
-  tag: v1.0.1
+  tag: v1.0.2
   develop: main
 
 MAPL:
   local: ./src/Shared/@MAPL
   remote: ../MAPL.git
-  tag: v2.34.1
+  tag: v2.35.2
   develop: develop
 
 FMS:
@@ -52,13 +52,13 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  branch: feature/wgu/crtm2.4.0+IRbugfix
+  tag: v1.5.5
   develop: develop
 
 GEOSgcm_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp
   remote: ../GEOSgcm_GridComp.git
-  tag: v1.17.3
+  tag: v1.17.4
   sparse: ./config/GEOSgcm_GridComp.sparse
   develop: develop
 
@@ -182,13 +182,13 @@ RRTMGP:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  tag: v1.9.3
+  tag: v1.9.4
   develop: develop
 
 Ocean-LETKF:
   local: ./src/Components/@Ocean-LETKF
   remote: ../Ocean-LETKF.git
-  branch: main
+  tag: geos/2023Mar27
   develop: main
 
 CPLFCST_Etc:
