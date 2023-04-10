@@ -1,0 +1,544 @@
+#!/bin/csh -fx
+
+# FVSSI
+#
+# Driver for O3-only, GSI-based analysis
+#
+# !REVISION HISTORY:
+#
+#  17Feb2023  Todling   Stripped off version based on fvssi
+#------------------------------------------------------------------
+
+# This scripts acquires data from storage and runs the analyzer
+
+  set myname = `basename $0`
+
+  set strict =    "" # by default do not be strict about input files
+  set log    =     0 # by default do not log warnings or errors
+
+  setenv FAILED 0
+  if ( !($?ACFTBIAS)  )  setenv ACFTBIAS 0
+  if ( !($?ANA4DUPD_IAU0_ONLY) ) setenv ANA4DUPD_IAU0_ONLY 0 # assume 4d increment
+  if ( !($?ANGLEBC) )    setenv ANGLEBC  0
+  if ( !($?BATCH_SUBCMD)  )  setenv BATCH_SUBCMD "sbatch"
+  if ( !($?CLEANUP_TAIL) )        setenv CLEANUP_TAIL  0
+  if ( !($?DATAMOVE_CONSTRAINT)  )  setenv DATAMOVE_CONSTRAINT NULL
+  if ( !($?INCSENS)   )  setenv INCSENS 0
+  if ( !($?GSI_NETCDF_DIAG) )  setenv GSI_NETCDF_DIAG 0
+  if ( !($?SPECRES)   )  setenv FAILED 1
+  if ( !($?VAROFFSET) )  setenv FAILED 1
+  if ( !($?TIMEINC)   )  setenv FAILED 1
+  if ( !($?STRICT)    )  setenv STRICT 0
+  if ( !($?NVAROUTER) )  setenv NVAROUTER 1
+  if ( !($?DO4DVAR)   )  setenv DO4DVAR 0
+  if ( !($?DIAG2ODS)  )  setenv DIAG2ODS 1
+  if ( !($?ANASENS)   )  setenv ANASENS 0
+  if ( !($?NEWRADBC)  )  setenv NEWRADBC 0
+  if ( !($?NCSUFFIX)  )  setenv NCSUFFIX nc4
+  if ( !($?LOCAL_ACQUIRE)  )  setenv LOCAL_ACQUIRE 0
+  if ( !($?GETOBSENS_ONLY)  )  setenv GETOBSENS_ONLY 0
+
+  if ( $FAILED ) exit 1
+
+# Determine frequency of background availability
+# ----------------------------------------------
+  if ( !($?ASYNBKG)   )  setenv ASYNBKG 360
+  @ bkgfq = $ASYNBKG / 60
+  @ bkgfq = $bkgfq * 10000 + ( $ASYNBKG - $bkgfq * 60 ) * 100
+  set asyn =
+  if ( $ASYNBKG != 360 ) set asyn = "-no_asyn"
+
+  # initialize flags
+  # skip transforms
+  set STF = ""
+  # skip solver
+  set SKA = ""
+  # skip satbias
+  set SSB = ""
+
+# Parse command line
+# ------------------
+  if ( $#argv > 0 ) then
+  foreach token ( $argv )
+     if ( "$token" == "-h" ) then
+          goto usage
+     endif
+     if ( "$token" == "-strict" ) then
+          set strict = "-strict"  # bomb if not all input files are there
+          setenv STRICT 1
+          shift
+     endif
+     if ( "$token" == "-obsclass" ) then
+          shift
+          set obsclass = $1
+          shift
+     endif
+     if ( "$token" == "-log" ) then
+          set log = 1  # write warning and error messages to log
+          shift
+     endif
+  end
+  endif
+  if ( $#argv < 6 ) then
+       echo $myname": insufficient command line arguments"
+       goto usage
+  else
+       setenv FVHOME  $1
+       setenv FVWORK  $2
+       setenv FVICS   $3
+       setenv YMD     $4
+       setenv HMS     $5
+       setenv IDENT   $6
+       setenv EXPID   `basename $FVHOME`
+
+       set specres   = $SPECRES
+       set expid     = $EXPID
+  endif
+
+# Check relevant env variables
+# ----------------------------
+  if ( $?FVSPOOL ) then
+     set spool = "-s $FVSPOOL "
+  else
+     set diren = `dirname $FVHOME`
+     set spool = "-s $diren/spool "
+  endif
+
+
+# Check whether relevant directories actually exist
+# -------------------------------------------------
+  if ( ! (-d $FVHOME) ) then
+    echo $myname": cannot find FVHOME directory $FVHOME"
+    exit 1
+  endif
+  if ( ! (-d $FVWORK) ) then
+    echo $myname": cannot find FVWORK directory $FVWORK"
+    exit 1
+  endif
+
+# Relevant background comes from ...
+# ----------------------------------
+  set getbkg   = "o3bkg.acq"
+
+#                 -------------------------------------
+#                  PART I - Prepare Working Directory
+#                 -------------------------------------
+
+# Set up working directory and copy all the restart files along
+# with analysis resource files, model namelists and diagnostic table
+# file to this directory. The simulation is carried out here in
+# the working directory.
+# ------------------------------------------------------------------
+  cd $FVWORK
+
+# Copy resource and restart files to here
+# ---------------------------------------
+  /bin/cp $FVHOME/run/*.arc  .      # archiving rules
+  /bin/cp $FVHOME/run/*.acq  .      # acquiring rules
+  /bin/cp $FVHOME/run/*.rc   .      # acquire resource files
+  /bin/cp $FVHOME/run/gocart/*.rc . # acquire chemistry resource files
+  /bin/cp $FVHOME/run/*.tmpl .      # acquire namelist template files
+  /bin/cp $FVHOME/run/*table .      # buffer tables (only needed for testing)
+  /bin/cp $FVHOME/run/*.tbl  .      # another suffix for tables!!
+  /bin/cp $FVHOME/run/prepob* .     # oiqc-related files
+  /bin/cp $FVHOME/run/*.namelist .  # old fvgcm stuff
+  /bin/cp $FVHOME/fcst/initadj.rc . # at least one rc file from fcst (need by adm only)
+  /bin/cp $FVHOME/recycle/$expid.*gesfile gesfile
+
+  foreach ext ( acq arc rc tmpl ) 
+     foreach fn ( `ls $FVHOME/o3anasa/*.$ext` )
+        echo "Overwriting $fn with that inside o3anasa"
+        /bin/cp $fn  .
+     end
+  end
+
+  if ( ! -e $getbkg ) then
+    echo $myname": cannot find $getbkg file needed to retrieve background files"
+    exit 1
+  endif
+
+  # acquire initial conditions
+  
+  @ aoffset_hrs   = $VAROFFSET  / 60;   @ aoffset_sec    = $VAROFFSET  * 60
+  @ varwindow_hrs = $TIMEINC    / 60;   @ varwindow_sec  = $TIMEINC    * 60
+  @ nbtimes       = $TIMEINC / ( $ASYNBKG ) + 1
+  if ( $ASYNBKG == 360 ) set nbtimes = 1
+
+  set buf   = `tick $YMD $HMS -$aoffset_sec`       # tick clock to the start of time window
+  set nymdm = $buf[1]
+  set nhmsm = $buf[2]
+  @ thishrs = ${nhmsm} / 10000
+  set hhm   = `echo $thishrs |awk '{printf "%02d", $1}'` # two-digit hour this seg ends
+
+  set buf  = ( `tick $YMD $HMS -$varwindow_sec` )   # previous analysis time
+  set nymd0 = $buf[1]
+  set nhms0 = $buf[2]
+  set hh0   = `echo $buf[2] | cut -c1-2`
+  set qsub_acquire = 0  
+
+  if ( (`uname -n` !~ borg*) || ( $LOCAL_ACQUIRE ) ) then
+
+#      acquire -v -rc $getbkg     -d $FVICS $spool -strict -ssh $nymdm $nhmsm $bkgfq $nbtimes
+       acquire -v -rc $getbkg     -d $FVICS $spool         -ssh $nymdm $nhmsm $bkgfq $nbtimes
+
+  else # if on discover, acquire via batch job
+       # -------------------------------------
+        set fname = "acquire_bkg.pbs" 
+        alias fname1 "echo \!* >! $fname"
+        alias fname2 "echo \!* >> $fname" 
+
+        set qsub_acquire = 1
+
+        if ($?gid) then
+           set gsflg = "-grpID $gid"
+        else
+           set gsflg = "-dflt"
+        endif
+        set GID = `getsponsor.pl $gsflg`
+
+        fname1 "#\!/bin/csh -xvf"
+        fname2 "#$group_list"
+        fname2 "#PBS -N acquire"
+        fname2 "#PBS -l nodes=1:ppn=1"
+        fname2 "#PBS -l walltime=1:00:00"
+        fname2 "#PBS -q datamove"
+        fname2 "#PBS -S /bin/csh"
+        fname2 "#PBS -V"
+        fname2 "#PBS -o acq.log.o%j"
+        fname2 "#PBS -j eo"
+        fname2 "#SBATCH -A $GID"
+        fname2 "#SBATCH --partition=datamove"
+        fname2 "#$DATAMOVE_CONSTRAINT"
+        fname2 "#SBATCH --time=1:00:00"
+        fname2 ""
+        fname2 "cd $FVWORK"
+        fname2 "acquire -v -rc $getbkg     -d $FVICS $spool         -ssh $nymdm $nhmsm $bkgfq $nbtimes"
+        fname2 "exit"
+
+        if ( $BATCH_SUBCMD == "sbatch" ) then
+           $BATCH_SUBCMD -W $fname
+        else
+           $BATCH_SUBCMD -W block=true $fname
+        endif
+        sleep 2
+
+  endif # <acquire block>
+
+   if ( ($?NCPUS) ) then
+     @ d2o_nproc = $NCPUS / 4
+     if ($d2o_nproc < 1 ) set d2o_nproc = 1
+   else
+     set d2o_nproc = 1
+   endif
+
+#   Now prepare resource files
+#   --------------------------
+     set anadt = `grep "^RUN_DT:" GSI_GridComp.rc.tmpl | cut -d: -f2`
+     @ adtbck = $aoffset_sec
+     @ adtfwd = $varwindow_sec
+     set beg_ana = ( `tick $YMD $HMS -$adtbck` )
+     set end_ana = ( `tick $beg_ana[1] $beg_ana[2] $adtfwd` )
+     set beg_hh  = `echo $beg_ana[2] | cut -c1-2`
+     set wrt_ana = ( `echo $beg_ana` )
+
+     /bin/rm -f sed_file
+     echo "s/>>>EXPID<<</${EXPID}/1"         > sed_file
+     echo "s/>>>IOBBKGD<<</${beg_ana[1]}/1" >> sed_file
+     echo "s/>>>IOBBKGT<<</${beg_ana[2]}/1" >> sed_file
+     echo "s/>>>IOEBKGD<<</${end_ana[1]}/1" >> sed_file
+     echo "s/>>>IOEBKGT<<</${end_ana[2]}/1" >> sed_file
+     echo "s/>>>NCSUFFIX<<</${NCSUFFIX}/1"  >> sed_file
+     echo "s/>>>RECANA<<</YES/1"         >> sed_file
+     if ( $DO4DVAR ) then
+        echo "s/>>>ANADATE<<</${wrt_ana[1]}/1" >> sed_file
+        echo "s/>>>ANATIME<<</${wrt_ana[2]}/1" >> sed_file
+     else
+        echo "s/>>>ANADATE<<</${YMD}/1"        >> sed_file
+        echo "s/>>>ANATIME<<</${HMS}/1"        >> sed_file
+     endif
+     /bin/rm -f ./GSI_GridComp.rc
+     sed -f sed_file  ./GSI_GridComp.rc.tmpl  > ./GSI_GridComp.rc
+     append_gsigcrc.pl obsys.rc GSI_GridComp.rc
+     if ( $status ) then
+          echo "fvssi: trouble appending obs table to GSI_GridComp.rc "
+          exit 1
+     endif
+     cat GSI_GridComp.rc
+
+#    Determine resolution of analysis
+#    --------------------------------
+     set gsinlat = `echorc.x -rc GSI_GridComp.rc "GSI JM"`
+     set gsinlon = `echorc.x -rc GSI_GridComp.rc "GSI IM"`
+     set gsinlev = `echorc.x -rc GSI_GridComp.rc "GSI LM"`
+ 
+     set resol = "none"
+     if ( $gsinlon ==   72 && $gsinlat ==   46 ) set resol = "a"
+     if ( $gsinlon ==  144 && $gsinlat ==   91 ) set resol = "b"
+     if ( $gsinlon ==  288 && $gsinlat ==  181 ) set resol = "c"
+#    if ( $gsinlon ==  544 && $gsinlat ==  361 ) set resol = "d"
+     if ( $gsinlon ==  576 && $gsinlat ==  361 ) set resol = "d"
+     if ( $gsinlon == 1152 && $gsinlat ==  721 ) set resol = "e"
+     if ( $gsinlon == 2304 && $gsinlat == 1441 ) set resol = "f"
+     if ( $resol == "none" ) then
+          echo "fvssi: unknown resolution "
+          exit 1
+     endif
+
+  # Run acquire_obsys (note only 1 synoptic time)
+  
+       @ notimes = $TIMEINC / 360                 # number of 6-hr times to retrieve obs
+       set buf = `tick $YMD $HMS -$varwindow_sec` # tick clock 6-hr back
+       set nymd1 = $buf[1]
+       set nhms1 = $buf[2]
+
+
+       if ( (`uname -n` !~ borg*) || ( $LOCAL_ACQUIRE ) ) then
+
+            acquire_obsys -v -d $FVWORK $spool $strict -ssh $YMD $HMS 060000 $notimes $obsclass
+
+       else # if on discover, acquire via batch job
+            # -------------------------------------
+             set fname = "acquire_obs.pbs" 
+             alias fname1 "echo \!* >! $fname"
+             alias fname2 "echo \!* >> $fname" 
+
+             set qsub_acquire = 1
+
+             if ($?gid) then
+                set gsflg = "-grpID $gid"
+             else
+                set gsflg = "-dflt"
+             endif
+             set GID = `getsponsor.pl $gsflg`
+
+             fname1 "#\!/bin/csh -xvf"
+             fname2 "#$group_list"
+             fname2 "#PBS -N acquire"
+             fname2 "#PBS -l nodes=1:ppn=1"
+             fname2 "#PBS -l walltime=1:00:00"
+             fname2 "#PBS -q datamove"
+             fname2 "#PBS -S /bin/csh"
+             fname2 "#PBS -V"
+             fname2 "#PBS -o acq.log.o%j"
+             fname2 "#PBS -j eo"
+             fname2 "#SBATCH -A $GID"
+             fname2 "#SBATCH --partition=datamove"
+             fname2 "#SBATCH --time=1:00:00"
+             fname2 ""
+             fname2 "cd $FVWORK"
+             fname2 "acquire_obsys -v -d $FVWORK $spool $strict -ssh $YMD $HMS 060000 $notimes $obsclass"
+             fname2 "exit"
+
+             if ( $BATCH_SUBCMD == "sbatch" ) then
+                $BATCH_SUBCMD -W $fname
+             else
+                $BATCH_SUBCMD -W block=true $fname
+             endif
+             sleep 2
+
+       endif # <acquire block>
+
+# Fix unblocked files
+# -------------------
+  zeit_ci.x FixUnblocked
+  foreach ublk ( `ls *.ublk` )
+      FixUnblocked.csh $ublk &
+  end
+  wait
+  ls *FAILED_BLOCK
+  if ( ( ! $status ) && ( $STRICT ) ) exit 96
+  zeit_co.x FixUnblocked
+
+
+# Fix beg_endian/little_endian in the upa-buffer files on OSF1 systems
+# --------------------------------------------------------------------
+  zeit_ci.x FixEndian
+  if ( ( `uname -s` == "OSF1" ) || (`uname -s` == "Linux" && (`uname -m` == "ia64" || `uname -m` == "x86_64")) ) then
+     foreach upa ( `ls *upabufr*bfr` )
+         Reblock.csh $upa &
+     end
+     foreach blk ( `ls *.blk` )
+         Reblock.csh $blk &
+     end
+  endif
+  wait
+  ls *FAILED_BLOCK
+  if ( ( ! $status ) && ( $STRICT ) ) exit 96
+  zeit_co.x FixEndian
+
+
+# Files available at working diretory before simulation
+# -----------------------------------------------------
+
+  echo ""
+  /bin/ls -la
+  echo ""
+
+#                  ---------------
+#                   PART  II - Run
+#                  ---------------
+
+# call ANALYZER here
+
+    @ h2 = $HMS / 10000
+    set h2 = `echo $h2 |awk '{printf "%02d", $1}'`
+
+    set anafile  = `echorc.x -rc fvpsas.rc -template $EXPID $YMD $HMS upper-air_ana_filename`
+    set infn = ""
+
+    if ( ! $DO4DVAR ) then
+       set filebkg  = `echorc.x -rc fvpsas.rc -template $EXPID $end_ana[1] $end_ana[2] upper-air_bkg_filename`
+    endif
+
+    ################################
+    # REGULAR STAND-ALONE ANALYSIS #
+    ################################
+
+    set alog = o3anasa.log
+    set olog = o3odssa.log
+    if ( -e gsisa.rc.tmpl ) then
+      set myrc = gsisa.rc.tmpl
+    else
+      set myrc = gsi.rc.tmpl
+    endif
+    /bin/rm -f sed_file
+#     control aircraft bias correction
+    switch( $ACFTBIAS )
+    case 0:
+         echo "s/>>>AIRCFT_BIAS<<<//g"   >> sed_file
+         echo 'Not using aircraft bias correction in GSI'
+         breaksw
+    case 1:
+         echo "s/>>>AIRCFT_BIAS<<</aircraft_t_bc_ext=.true.,/g"  >> sed_file
+         echo 'Setting aircraft_t_bc_ext to true, using external bias correction'
+         breaksw
+    case 2:
+         set cftstring = "aircraft_t_bc=.true.,"
+         if ( $CLEANUP_TAIL ) set cftstring = "$cftstring cleanup_tail=.true.,"
+         echo "s/>>>AIRCFT_BIAS<<</$cftstring/g"  >> sed_file
+         echo 'Setting aircraft_t_bc to true, using VV.VV^2 bias correction'
+         breaksw
+    case 3:
+         set cftstring = "aircraft_t_bc_pof=.true.,"
+         if ( $CLEANUP_TAIL ) set cftstring = "$cftstring cleanup_tail=.true.,"
+         echo "s/>>>AIRCFT_BIAS<<</$cftstring/g"  >> sed_file
+         echo 'Setting aircraft_t_bc_pof to true, using POF bias correction'
+         breaksw
+    default:
+         echo "s/>>>AIRCFT_BIAS<<<//g"   >> sed_file
+         echo 'Using default setting, not using aircraft bias correction in GSI'
+         breaksw
+    endsw
+#     control satwnd source based on date ...
+    if ( $nymd0 < 20100701 ) then
+         echo "s/>>>USE_PREPB_SATWND<<</.true./g"  >> sed_file
+    else
+         echo "s/>>>USE_PREPB_SATWND<<</.false./g" >> sed_file
+    endif
+    /bin/rm -f ./gsi.rc
+    sed -f sed_file  ./$myrc  > ./gsi.rc
+    cat gsi.rc
+
+    set jiter = 1
+
+#   Run analysis
+#   ------------
+    o3analyzer $YMD $HMS $infn \
+               -t $specres -levs $gsinlev -x $gsinlon -y $gsinlat -jiter $jiter -lnobs -log $alog $asyn
+        if ( $status ) then
+           echo $myname": abnormal exit from analysis ..."
+           exit 2
+        endif
+
+#  Generate ods files
+#  ------------------
+   if ($DIAG2ODS) then
+      set omf = ""
+      if ( $DO4DVAR ) then
+           set miter = $NVAROUTER  # total number of iterations
+      else
+           set miter = `grep miter gsi.rc | cut -d= -f2 | cut -d, -f1 `
+      endif
+      if ( $miter == 1 ) set omf = "-omf"
+      diag2ods -rc $FVWORK/odsmatch.rc -ncpus $d2o_nproc -o $EXPID.o3diagsa $omf $YMD $HMS $EXPID
+   endif
+   if ( $GSI_NETCDF_DIAG ) then
+      foreach fname ( `ls $EXPID.diag_*.nc4` ) 
+        set instrm = `echo $fname | cut -d. -f2 | cut -c5-`
+        set suffix = `echo $fname | cut -d. -f3-`
+        /bin/mv $fname $EXPID.o3diagsa${instrm}.$suffix 
+      end
+   endif
+
+  if( -e $EXPID.ana_stats.log.${YMD}_${h2}z.txt ) /bin/mv -f $EXPID.ana_stats.log.${YMD}_${h2}z.txt $EXPID.o3anasa_stats.log.${YMD}_${h2}z.txt
+
+  if( -e $alog ) /bin/mv -f $alog   $EXPID.$alog.${YMD}_${h2}z.txt
+  if( -e $olog ) /bin/mv -f $olog   $EXPID.$olog.${YMD}_${h2}z.txt
+  if( -e .zeit ) /bin/cp   .zeit    $EXPID.o3zeitsa.reg.${YMD}_${h2}z.txt
+
+exit(0)
+
+#...........................................................................
+
+usage:
+
+cat <<EOF
+
+NAME
+     fvssi - runs FVSSI system
+
+SYNOPSIS
+
+     fvssi [-h] [-log] [-cprs]  fvhome  fvwork
+
+DESCRIPTION
+
+     This script runs the FVSSI system.
+     On input:
+
+     fvhome     experiment home directory, e.g., /scratch1/$user/v000_b55
+     fvwork     working directory, e.g., \$TMPDIR
+
+     Restarts, namelists and resource files are  expected to be available
+     in \$FVHOME/recycle and \$FVHOME/run.  The run is performed in \$FVWORK,
+     and the output files are left there for archival by the calling script.
+
+OPTIONS
+
+     -h           prints this page
+     -strict      returns with non-zero error if acquire fails to
+                  resolve all input files
+     -obsclass cls1,cls2...
+                  observation data classes, such as conv_tovs,ssmi_wentz_tpw
+     -log         log warning and errors to file
+
+ENVIRONMENT VARIABLES
+
+  SPECRES     resolution of spectral backgrounds (254 for T254, 62 for T62, etc)
+  VAROFFSET   time offset (abs value) between analysis time and initial time of ana window
+  TIMEINC     analysis time window (6-hr for 3dvar; 6,12,18,24,etc for 4dvar)
+
+
+ENVIRONMENT VARIABLES (optional)
+
+  ACFTBIAS    sets aircraft bias correction
+  CLEANUP_TAIL  triggers cleanup of aircraft coefficient file
+  ANASENS     trigger for analysis sensitivity (obs impact)
+  INCSENS     allows running adjoint GSI with analysis increment for input
+  DO4DVAR     trigger for 4DVAR-related features
+  DIAG2ODS    produces ODS files from diag files (default: 1 (yes))
+  GETOBSENS_ONLY places ob-sensitivity in ODS files instead of ob-impact (default: 0)
+  LOCAL_ACQUIRE  expects files to be acquired to be on disc visible by PBS/SLURM (default: 0)
+  NCSUFFIX    suffix for SDF output (default: nc4)
+  NVAROUTER   number of 4DVAR outer loops (only applies to 4DVAR)
+  STRICT      when set, will crash if obs files missing
+
+SEE ALSO
+
+    fvssisetup    Experiment setup utility
+    fvssi/gsi.j   Main experiment script created by fvssisetup.
+
+EOF
+
+exit 1
+

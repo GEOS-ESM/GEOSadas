@@ -78,6 +78,8 @@
   setenv EXTDATA $FVWORK/ExtData  # External data directory
   /bin/mkdir -p $EXTDATA
   /bin/touch $EXTDATA/.no_archiving
+  /bin/rm -f $EXTDATA/chemistry
+  /bin/ln -s /discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/chemistry $EXTDATA/
   /bin/rm -f $EXTDATA/g5chem
   /bin/ln -s /discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/g5chem $EXTDATA/
   /bin/rm -f $EXTDATA/g5gcm

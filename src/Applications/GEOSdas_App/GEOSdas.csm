@@ -539,6 +539,7 @@ exit 1
   /bin/cp $FVHOME/run/*.tbl           .         # fvCCM diagnostic table         
   /bin/cp $FVHOME/run/*.tmpl          .         # any templates
   /bin/cp $FVHOME/run/prepobs*        .         # all parameter files
+  /bin/cp $FVHOME/run/*.yaml          .         # yaml resources
   /bin/cp $FVHOME/run/gmao_acft_bias.parm .
   if ( -d $FVHOME/run/fsens ) then
       /bin/cp $FVHOME/run/fsens/*.tmpl    .	
@@ -835,6 +836,26 @@ exit 1
        sed -i "${line}s/.006./.061./" $FVWORK/ExtData.rc
      end
   endif
+
+  set            SC_TRUE = `grep -i '^\s*ENABLE_STRATCHEM:\s*\.TRUE\.'     GEOS_ChemGridComp.rc | wc -l`
+  if (          $SC_TRUE == 0 && -e StratChem_ExtData.rc          ) /bin/mv          StratChem_ExtData.rc          StratChem_ExtData.rc.NOT_USED
+  set           GMI_TRUE = `grep -i '^\s*ENABLE_GMICHEM:\s*\.TRUE\.'       GEOS_ChemGridComp.rc | wc -l`
+  if (         $GMI_TRUE == 0 && -e GMI_ExtData.rc                ) /bin/mv                GMI_ExtData.rc                GMI_ExtData.rc.NOT_USED
+  set           GCC_TRUE = `grep -i '^\s*ENABLE_GEOSCHEM:\s*\.TRUE\.'      GEOS_ChemGridComp.rc | wc -l`
+  if (         $GCC_TRUE == 0 && -e GEOSCHEMchem_ExtData.rc       ) /bin/mv       GEOSCHEMchem_ExtData.rc       GEOSCHEMchem_ExtData.rc.NOT_USED
+  set         CARMA_TRUE = `grep -i '^\s*ENABLE_CARMA:\s*\.TRUE\.'         GEOS_ChemGridComp.rc | wc -l`
+  if (       $CARMA_TRUE == 0 && -e CARMAchem_GridComp_ExtData.rc ) /bin/mv CARMAchem_GridComp_ExtData.rc CARMAchem_GridComp_ExtData.rc.NOT_USED
+  set           DNA_TRUE = `grep -i '^\s*ENABLE_DNA:\s*\.TRUE\.'           GEOS_ChemGridComp.rc | wc -l`
+  if (         $DNA_TRUE == 0 && -e DNA_ExtData.rc                ) /bin/mv                DNA_ExtData.rc                DNA_ExtData.rc.NOT_USED
+  set         ACHEM_TRUE = `grep -i '^\s*ENABLE_ACHEM:\s*\.TRUE\.'         GEOS_ChemGridComp.rc | wc -l`
+  if (       $ACHEM_TRUE == 0 && -e GEOSachem_ExtData.rc          ) /bin/mv          GEOSachem_ExtData.rc          GEOSachem_ExtData.rc.NOT_USED
+  set   GOCART_DATA_TRUE = `grep -i '^\s*ENABLE_GOCART_DATA:\s*\.TRUE\.'   GEOS_ChemGridComp.rc | wc -l`
+  if ( $GOCART_DATA_TRUE == 0 && -e GOCARTdata_ExtData.rc         ) /bin/mv         GOCARTdata_ExtData.rc         GOCARTdata_ExtData.rc.NOT_USED
+
+  /bin/mv WSUB_ExtData.rc WSUB_ExtData.tmp
+  cat WSUB_ExtData.tmp | sed -e '/^WSUB_NATURE/ s#ExtData.*#/dev/null#' > WSUB_ExtData.rc
+  /bin/rm WSUB_ExtData.tmp
+
   cd -
 # /bin/cp ExtData.rc $EXPID.ExtData.$itime.rc
 
@@ -1794,6 +1815,9 @@ exit 1
             echo "s/>>>ANATIME<<</${initref[2]}/1" >> sed_file
             /bin/rm -f ./mkiau.rc
             sed -f sed_file  ./mkiau.rc.tmpl  > ./mkiau.rc
+            echorc.x -rc ./mkiau.rc AGCM_INTERNAL_CHECKPOINT_FILE 
+            set iaufn = `echorc.x -rc mkiau.rc -template $EXPID $initref[1] $initref[2] AGCM_INTERNAL_CHECKPOINT_FILE`
+            if ( -e $iaufn ) /bin/rm $iaufn
             $makeiaux
 
         else
@@ -3529,6 +3553,8 @@ endif
                             echo "s/>>>ANATIME<<</${nhmsb}/1"      >> sed_file
                             /bin/rm -f ./mkiau.rc
                             sed -f sed_file  ./mkiau.rc.tmpl  > ./mkiau.rc
+                            set iaufn = `echorc.x -rc mkiau.rc -template $EXPID $nymdb $nhmsb AGCM_INTERNAL_CHECKPOINT_FILE`
+                            if ( -e $iaufn ) /bin/rm $iaufn
                             $makeiaux
 
                          endif
@@ -3562,6 +3588,13 @@ endif
                     dyn_recenter.x -g5 $anafile $bkg4iau NONE -o $ifile
 
                   endif  # 3D/4D IAU
+
+                  # Model no longer overwrites files, so remove background files at end of predictor
+                  # --------------------------------------------------------------------------------
+                  set bkg_upa   = `echorc.x -template $EXPID $end_ana[1] $end_ana[2] upper-air_bkg_filename`
+                  set bkg_sfc   = `echorc.x -template $EXPID $end_ana[1] $end_ana[2] surface_bkg_filename`
+                  set chm_eta   = `echorc.x -template $EXPID $end_ana[1] $end_ana[2] chem_bkg_filename`
+                  /bin/rm $bkg_upa $bkg_sfc $chm_eta 
 
               else  # 4DVAR or FGAT
 
@@ -3741,6 +3774,17 @@ endif
               endif # < IAU/4DVAR >
 
          endif  # < DOETA2BIN >
+
+#        A bit of a hack to cope with latest handing of GAAS settings
+#        ------------------------------------------------------------
+         foreach fn (`ls $EXPID.aod*.$NCSUFFIX`)
+             set sfx = `echo $fn | cut -d. -f2-`
+             if ( -e das.$sfx ) then
+                /bin/rm das.$sfx
+             else
+                ln -sf $fn das.$sfx 
+             endif
+         end
 
 #        Signal successful completion
 #        ----------------------------
@@ -4013,6 +4057,30 @@ endif
               end
            endif
            /bin/cp ExtData.rc $EXPID.ExtData.$itime.rc
+
+           set            SC_TRUE = `grep -i '^\s*ENABLE_STRATCHEM:\s*\.TRUE\.'     GEOS_ChemGridComp.rc | wc -l`
+           if (          $SC_TRUE == 0 && -e StratChem_ExtData.rc          ) /bin/mv          StratChem_ExtData.rc          StratChem_ExtData.rc.NOT_USED
+           set           GMI_TRUE = `grep -i '^\s*ENABLE_GMICHEM:\s*\.TRUE\.'       GEOS_ChemGridComp.rc | wc -l`
+           if (         $GMI_TRUE == 0 && -e GMI_ExtData.rc                ) /bin/mv                GMI_ExtData.rc                GMI_ExtData.rc.NOT_USED
+           set           GCC_TRUE = `grep -i '^\s*ENABLE_GEOSCHEM:\s*\.TRUE\.'      GEOS_ChemGridComp.rc | wc -l`
+           if (         $GCC_TRUE == 0 && -e GEOSCHEMchem_ExtData.rc       ) /bin/mv       GEOSCHEMchem_ExtData.rc       GEOSCHEMchem_ExtData.rc.NOT_USED
+           set         CARMA_TRUE = `grep -i '^\s*ENABLE_CARMA:\s*\.TRUE\.'         GEOS_ChemGridComp.rc | wc -l`
+           if (       $CARMA_TRUE == 0 && -e CARMAchem_GridComp_ExtData.rc ) /bin/mv CARMAchem_GridComp_ExtData.rc CARMAchem_GridComp_ExtData.rc.NOT_USED
+           set           DNA_TRUE = `grep -i '^\s*ENABLE_DNA:\s*\.TRUE\.'           GEOS_ChemGridComp.rc | wc -l`
+           if (         $DNA_TRUE == 0 && -e DNA_ExtData.rc                ) /bin/mv                DNA_ExtData.rc                DNA_ExtData.rc.NOT_USED
+           set         ACHEM_TRUE = `grep -i '^\s*ENABLE_ACHEM:\s*\.TRUE\.'         GEOS_ChemGridComp.rc | wc -l`
+           if (       $ACHEM_TRUE == 0 && -e GEOSachem_ExtData.rc          ) /bin/mv          GEOSachem_ExtData.rc          GEOSachem_ExtData.rc.NOT_USED
+           set   GOCART_DATA_TRUE = `grep -i '^\s*ENABLE_GOCART_DATA:\s*\.TRUE\.'   GEOS_ChemGridComp.rc | wc -l`
+           if ( $GOCART_DATA_TRUE == 0 && -e GOCARTdata_ExtData.rc         ) /bin/mv         GOCARTdata_ExtData.rc         GOCARTdata_ExtData.rc.NOT_USED
+
+           /bin/mv WSUB_ExtData.rc WSUB_ExtData.tmp
+           cat WSUB_ExtData.tmp | sed -e '/^WSUB_NATURE/ s#ExtData.*#/dev/null#' > WSUB_ExtData.rc
+           /bin/rm WSUB_ExtData.tmp
+
+         #  Run bundleParser.py
+         #  -------------------
+         python bundleParser.py
+         construct_extdata_yaml_list.py $FVWORK/GEOS_ChemGridComp.rc
 
                               # Last line of CoupleAnaToGcm_()
 \end
@@ -4657,7 +4725,33 @@ endif
         sed -i "${line}s/.006./.061./" $FVWORK/ExtData.rc
       end
    endif
+
+   set            SC_TRUE = `grep -i '^\s*ENABLE_STRATCHEM:\s*\.TRUE\.'     GEOS_ChemGridComp.rc | wc -l`
+   if (          $SC_TRUE == 0 && -e StratChem_ExtData.rc          ) /bin/mv          StratChem_ExtData.rc          StratChem_ExtData.rc.NOT_USED
+   set           GMI_TRUE = `grep -i '^\s*ENABLE_GMICHEM:\s*\.TRUE\.'       GEOS_ChemGridComp.rc | wc -l`
+   if (         $GMI_TRUE == 0 && -e GMI_ExtData.rc                ) /bin/mv                GMI_ExtData.rc                GMI_ExtData.rc.NOT_USED
+   set           GCC_TRUE = `grep -i '^\s*ENABLE_GEOSCHEM:\s*\.TRUE\.'      GEOS_ChemGridComp.rc | wc -l`
+   if (         $GCC_TRUE == 0 && -e GEOSCHEMchem_ExtData.rc       ) /bin/mv       GEOSCHEMchem_ExtData.rc       GEOSCHEMchem_ExtData.rc.NOT_USED
+   set         CARMA_TRUE = `grep -i '^\s*ENABLE_CARMA:\s*\.TRUE\.'         GEOS_ChemGridComp.rc | wc -l`
+   if (       $CARMA_TRUE == 0 && -e CARMAchem_GridComp_ExtData.rc ) /bin/mv CARMAchem_GridComp_ExtData.rc CARMAchem_GridComp_ExtData.rc.NOT_USED
+   set           DNA_TRUE = `grep -i '^\s*ENABLE_DNA:\s*\.TRUE\.'           GEOS_ChemGridComp.rc | wc -l`
+   if (         $DNA_TRUE == 0 && -e DNA_ExtData.rc                ) /bin/mv                DNA_ExtData.rc                DNA_ExtData.rc.NOT_USED
+   set         ACHEM_TRUE = `grep -i '^\s*ENABLE_ACHEM:\s*\.TRUE\.'         GEOS_ChemGridComp.rc | wc -l`
+   if (       $ACHEM_TRUE == 0 && -e GEOSachem_ExtData.rc          ) /bin/mv          GEOSachem_ExtData.rc          GEOSachem_ExtData.rc.NOT_USED
+   set   GOCART_DATA_TRUE = `grep -i '^\s*ENABLE_GOCART_DATA:\s*\.TRUE\.'   GEOS_ChemGridComp.rc | wc -l`
+   if ( $GOCART_DATA_TRUE == 0 && -e GOCARTdata_ExtData.rc         ) /bin/mv         GOCARTdata_ExtData.rc         GOCARTdata_ExtData.rc.NOT_USED
+
+   /bin/mv WSUB_ExtData.rc WSUB_ExtData.tmp
+   cat WSUB_ExtData.tmp | sed -e '/^WSUB_NATURE/ s#ExtData.*#/dev/null#' > WSUB_ExtData.rc
+   /bin/rm WSUB_ExtData.tmp
+
    cd -
+
+  # Run bundleParser.py
+  #---------------------
+  python bundleParser.py
+  construct_extdata_yaml_list.py $FVWORK/GEOS_ChemGridComp.rc
+
 #  /bin/cp ExtData.rc $EXPID.ExtData.$itime.rc
 
    /bin/rm -f ./EGRESS
