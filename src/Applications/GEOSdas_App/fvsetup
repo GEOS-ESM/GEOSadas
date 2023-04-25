@@ -1362,7 +1362,9 @@ sub ed_g5hist_rc_new {
         .       " -s \@BJEDI_IM=$bjedi_im"
         .       " -s \@BJEDI_JM=$bjedi_jm"
         .       " -s \@PERT_FREQ=$pert_freq"
-        .       " -s \@AGCM_GRIDNAME=$AGCM_GRIDNAME";
+        .       " -s \@AGCM_GRIDNAME=$AGCM_GRIDNAME"
+        .       " -s \@AGCM_IM=$agcm_im"
+	.       " -s \@AGCM_JM=$agcm_jm";
     print "$cmd\n";
     system $cmd;
 
