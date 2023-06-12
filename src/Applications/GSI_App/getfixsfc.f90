@@ -9,6 +9,17 @@ program getfixsfc
 ! can produce two of these fields; the third one (surface type)
 ! is wired to CRMT types so it is hard for GEOS to come up with.
 ! This info should really come from the other sources.
+! 
+! To complete the connect with JEDI-CRTM the following must be 
+! done at script level:
+!
+! - mpirun -np 6 Regrid_Util.x -i ncepsfc.nc4 -o crtmsfc_c90.nc4 \
+!                              -ogrid PE90x540-CF -method "VOTE"
+! - reset_time.x crtmsfc_c90.nc4 nymd nhms -9
+! 
+! The date parameters above should correspond to the time in the 
+! backgrounds of JEDI; the final file, crtmsfc_c90.nc4, should be
+! ready for use in JEDI.
 !
 ! Todling, 13Apr2023
 use sfcio_module
@@ -21,6 +32,9 @@ implicit none
   type(gsifixsfc_vars) vr
   integer nlat,nlon,nlev,nymd,nhms,rc
   real(8) dlat,dlon
+  logical, parameter :: fake3dfile=.false.
+
+! Read in from original NCEP file
   call sfcio_srohdc(34,'ncepsfc',head,data,rc)
   print *,myname,': Using NCEP surface file, version: ', head%ivs
   nymd = head%idate(4)*10000+head%idate(2)*100+head%idate(3)
@@ -28,7 +42,11 @@ implicit none
 
   nlon=head%lonb
   nlat=head%latb!+2
-  nlev=1
+  if(fake3dfile) then
+    nlev=72
+  else
+    nlev=1
+  endif
   call gsifixsfc_vars_init(vr,nlon,nlat,nlev)
 
 ! add poles
@@ -42,9 +60,13 @@ implicit none
 
 ! call wrtgrads_
 
-  allocate(lats(nlat),lons(nlon),levs(1))
+  allocate(lats(nlat),lons(nlon),levs(nlev))
   call get_coords_
-  call gsifixsfc_write ('ncepsfc.nc4',vr,levs,lats,lons,rc,nymd=nymd,nhms=nhms)
+  if(nlev>1) then
+    call gsifixsfc_write ('ncepsfc.nc4',vr,lats,lons,rc,levs=levs,nymd=nymd,nhms=nhms)
+  else
+    call gsifixsfc_write ('ncepsfc.nc4',vr,lats,lons,rc,nymd=nymd,nhms=nhms)
+  endif
   deallocate(lats,lons,levs)
 contains
 
@@ -136,6 +158,9 @@ contains
   dlon = 360./nlon
   do i=1,nlon
      lons(i) = -180.0 + (i-1)*dlon 
+  enddo
+  do i = 1,nlev
+     levs(i) = float(i)
   enddo
 
  end subroutine get_coords_
