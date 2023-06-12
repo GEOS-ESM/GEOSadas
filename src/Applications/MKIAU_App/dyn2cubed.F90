@@ -24,11 +24,14 @@
    use m_set_eta, only: set_eta
    use m_ioutil, only: luavail
    use m_StrTemplate, only: StrTemplate
+   use m_die, only: mp_die
    use m_zeit, only: zeit_ci,zeit_co,zeit_flush
    use m_zeit, only: zeit_allflush
    
 
    implicit NONE
+
+   character(len=*), parameter :: myname = 'Dyn2Cubed'
 
 !  Basic ESMF objects being used in this example
 !  ---------------------------------------------
@@ -88,6 +91,7 @@
 !
    real*8, pointer :: ak(:), bk(:)
    real,   pointer :: levels(:)=>NULL()
+   real(8),allocatable :: beta_weight(:)
    character(len=ESMF_MAXSTR) :: levunits
 !
    character(len=ESMF_MAXSTR) :: own_internal_fname
@@ -110,6 +114,7 @@
    character(len=ESMF_MAXSTR) :: outfname
 
    integer :: proper_winds = 1
+   logical :: overwrite_with_gsibetas=.false.
 
 !  Coordinate variables
 !  --------------------
@@ -259,6 +264,7 @@ CONTAINS
           open (999,file='DYN2CUBED',form='formatted')
           close(999)
     end if
+    if(allocated(beta_weight)) deallocate(beta_weight)
     call final_
     call MAPL_Finalize()
     call ESMF_Finalize(__RC__)
@@ -279,7 +285,6 @@ CONTAINS
     use ESMF, only: ESMF_FALSE
     use m_StrTemplate, only: StrTemplate
     use m_mpif90, only: mp_integer,mp_character
-    use m_die, only: mp_die
 
     implicit NONE
 
@@ -300,11 +305,13 @@ CONTAINS
 !
 !EOP
 
-    character*4, parameter :: myname = 'init_'
+    character(len=*), parameter :: myname_ = myname//'*init_'
 
-    integer thistime(6), idum, iarg, itest, argc, status
+    integer thistime(6), idum, iarg, itest, argc, k, status
     character(len=ESMF_MAXSTR) :: tmpl
     character(len=ESMF_MAXSTR) :: dyntyp
+    character(len=ESMF_MAXSTR) :: covweights
+    character(len=ESMF_MAXSTR) :: covoption
     character(len=255) :: argv
 
 !   Parsed from command line
@@ -370,6 +377,9 @@ CONTAINS
 
    call ESMF_ConfigGetAttribute( CF, proper_winds, label ='PROPER_WINDS:', default=proper_winds, __RC__ )
 
+   call ESMF_ConfigGetAttribute( CF, covweights, label ='GSI_COVWEIGHTS:', default='NULL', __RC__ )
+   call ESMF_ConfigGetAttribute( CF, covoption, label ='GSI_COVOPTION:', default='NULL', __RC__ )
+
    call ESMF_ConfigGetAttribute( CF, DYNTYP, label ='DYCORE:', __RC__ )
    if(trim(dyntyp)=='FV3' .or. JM_BKG==6*IM_BKG) cubed=.true.
 
@@ -404,6 +414,14 @@ CONTAINS
    call DefVertGrid_(CF,ak,bk,lm_iau)
    allocate(levels(LM_IAU))
    call hermes_levels_(levels)
+   if (trim(covweights)/='NULL') then
+      if(LM_IAU/=LM_BKG) then
+        call mp_die(myname_,' diff vertical grids not supported ', 99)
+      endif
+      allocate(beta_weight(LM_IAU))
+      call read_covweights_ (covweights, covoption, beta_weight)
+      overwrite_with_gsibetas=.true.
+   endif
 
 !  Set ESMF date/time
 !  ------------------
@@ -453,7 +471,7 @@ CONTAINS
 
 ! start
 
-   if(MAPL_AM_I_ROOT()) print *,trim(Iam),': Get GSI g.c. parameters '
+   if(MAPL_AM_I_ROOT()) print *,trim(Iam),': Vert-grid parameters '
 
 ! Create the label to be searched for in the RC file based on nsig
 
@@ -659,7 +677,7 @@ CONTAINS
    class(AbstractRegridder), pointer :: L2C => null()
    class(AbstractRegridder), pointer :: C2L => null()
    
-   integer ii,jj,ju,jv,ifld,rank
+   integer ii,jj,ju,jv,ifld,rank,kk
    integer nfld,n2d,n3d
    real, allocatable, dimension(:,:,:) :: aux,aux2
    real, allocatable, dimension(:,:,:) :: ubkg,vbkg
@@ -698,6 +716,10 @@ CONTAINS
          else
             call C2L%regrid(aux, aux2, __RC__ )
          endif
+         if (overwrite_with_gsibetas) then
+            kk=size(beta_weight)
+            aux2(:,:,1) = beta_weight(kk)
+         endif
          gcmstub%r2(jj)%q = sclinc * aux2(:,:,1)
          deallocate(aux2)
          deallocate(aux )
@@ -720,6 +742,11 @@ CONTAINS
          else
             if (ll2cc) then
                call L2C%regrid(bkgbase%r3(ii)%q, gcmstub%r3(jj)%q, __RC__ )
+               if (overwrite_with_gsibetas) then
+                  do kk=1,size(gcmstub%r3(jj)%q,3)
+                     gcmstub%r3(jj)%q(:,:,kk) = beta_weight(kk)
+                  enddo
+               endif
             else
                call C2L%regrid(bkgbase%r3(ii)%q, gcmstub%r3(jj)%q, __RC__ )
             endif
@@ -733,6 +760,12 @@ CONTAINS
           jv = MAPL_SimpleBundleGetIndex ( gcmstub, 'v', 3, __RC__ )
           if (ll2cc) then
              call L2C%regrid(ubkg,vbkg,gcmstub%r3(ju)%q,gcmstub%r3(jv)%q,__RC__)
+             if (overwrite_with_gsibetas) then
+                do kk=1,size(gcmstub%r3(ju)%q,3)
+                   gcmstub%r3(ju)%q(:,:,kk) = beta_weight(kk)
+                   gcmstub%r3(jv)%q(:,:,kk) = beta_weight(kk)
+                enddo
+             endif
           else
              call C2L%regrid(ubkg,vbkg,gcmstub%r3(ju)%q,gcmstub%r3(jv)%q,__RC__)
           endif
@@ -757,5 +790,58 @@ CONTAINS
        write(6,*)
   endif
   end subroutine usage_
+
+  subroutine read_covweights_ (fname, which, weight)
+    character(len=*), intent(in) :: fname
+    character(len=*), intent(in) :: which
+    real(8), intent(inout):: weight(:)
+    character(len=*), parameter :: myname_=myname//'*read_covweights_'
+    integer :: lu,lm,istat,k
+    integer :: nlevs
+    real :: dummy
+    real(8), allocatable:: beta_s(:), beta_e(:)
+    lm = size(beta_weight)
+    allocate(beta_s(lm),beta_e(lm))
+    lu = luavail()
+    open(lu,file=trim(fname),form='formatted')
+    rewind(lu)
+    read(lu,'(i4)',iostat=istat) nlevs
+    if ( istat /= 0 ) then
+       call mp_die(myname_,': Error reading covariance/weights',97)
+    endif
+    if ( nlevs /= lm ) then
+       close(lu)
+       call mp_die(myname_,': Error reading covariance/weights, dims unmatched',98)
+    endif
+    do k = 1,nlevs
+       read(lu,'(F8.1,3x,F8.3,F8.4,3x,F8.4)') dummy, dummy, beta_s(k), beta_e(k)
+    enddo
+    close(lu)
+!   assume readin levels are in GSI orientation: flip to GEOS orientation
+    beta_s = beta_s(lm:1:-1)
+    beta_e = beta_e(lm:1:-1)
+    if (trim(which)=='berror_clim') then
+       weight = beta_s
+    else if (trim(which)=='berror_ens') then
+       weight = beta_e
+    else if (trim(which)=='berror_tropo') then ! for testing only
+       weight = 0.0d0
+       weight(lm/2:lm) = 1.0d0
+    else
+       call mp_die(myname_,': Unknown covariance formulation option',99)
+    endif
+    if ( MAPL_am_I_root() ) then
+       print *
+       write(6,'(a)') '*******************************************'
+       write(6,'(a)') '  Fields will be overwritten with weights  '
+       write(6,'(a)') '*******************************************'
+       print *
+       write(6,'(a)') '  beta_s  beta_e  ref-pres'
+       do k=1,LM_IAU
+          write(6,'(F8.4,3x,F8.4,F10.4)') beta_s(k), beta_e(k), levels(k)
+       enddo
+    endif
+    deallocate(beta_s,beta_e)
+  end subroutine read_covweights_
 
 end Program dyn2cubed
