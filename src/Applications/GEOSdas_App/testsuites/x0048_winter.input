@@ -39,7 +39,7 @@ Catchment Model choice? [1]
 > 
 
 FVHOME? [/discover/nobackup/dao_it/x0048]
-> /discover/nobackup/projects/gmao/dadev/dao_it/Summer_Runs/$expid
+> /discover/nobackup/projects/gmao/dadev/dao_it/Winter_Runs/$expid
 
 The directory /discover/nobackup/projects/gmao/obsdev/dao_it/x0048 already exists. Clean it? [y]
 > 
@@ -81,7 +81,7 @@ AeroCom? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/AeroCom]
 > 
 
 FVICS? [/archive/u/jstassi/restarts/GEOSadas-5_24_0]
-> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_30/c360/c360.rst.20220423_21z.tar
+> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_30/c360/c360.rst.20211130_21z.tar
 
 Run model-adjoint-related applications (0=no,1=yes)? [0]
 > 1
@@ -102,7 +102,7 @@ Verifying experiment id: [x0048]
 > 
 
 Ending year-month-day? [20191121]
-> 20220706
+> 20220206
 
 Length of FORECAST run segments (in hours)? [123]
 > 
@@ -236,8 +236,8 @@ Ensemble Resolution?  [C90]
 Ensemble Vertical Levels?  [72]
 > 
 
-Experiment archive directory for ensemble restarts or 'later': [/archive/u/rtodling/x0048]
-> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_30/c360
+Experiment archive directory for ensemble restarts or 'later': [/archive/u/dao_it/x48rt]
+> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_30/c90
 
 Edit COLLECTIONS list in run/HISTORY.rc.tmpl (y/n)? [n]
 > 
