@@ -28,11 +28,11 @@ C 1997-07-02  W. Collins  Allow larger temperature residuals at
 C     tropopause.  Correct error so that category 4 heights will be
 C     recalculated when necessary.
 C 1997-07-23  W. Collins  Correct error in 97-07-02 changes.
-C 1997-08-18  D. Keyser   LAPSE more carefully checks for equal 
+C 1997-08-18  D. Keyser   LAPSE more carefully checks for equal
 C     spanning pressure (to avoid divide by zero possibility)
 C 1997-08-27  W. Collins  VTPEVN error in virtual temperature
 C     calculation of dropsondes corrected.
-C 1997-09-25  W. Collins  Add switch to choose between using SQN to 
+C 1997-09-25  W. Collins  Add switch to choose between using SQN to
 C     match parts of report or not. USESQN needs to be .FALSE. for
 C     Reanalysis
 C 1997-10-16  W. Collins  Turn off type 106 baseline corrections.
@@ -65,7 +65,7 @@ C     41 and 42 are used.
 C 1998-12-03  W. Collins  Correct error which prevented RADEVN from
 C     being applied to all mandatory levels.  Also correct constant
 C     which solves for height adjustment due to "radiation" correction.
-C 1998-12-09  W. Collins  Change to make diagnosis of type 41-43 
+C 1998-12-09  W. Collins  Change to make diagnosis of type 41-43
 C     errors only for WMO blocks 42,43. Add WRT23 to Namelist. Default
 C     is .FALSE.  If .TRUE., then statistics file is updated for type
 C     41-43 tests. Skip POBERR if error in reading from statistics
@@ -167,7 +167,7 @@ C     this sonde because, according to Yuetang Yhang of the Chinese
 C     NMC, this is when the on-site corrections started); added new
 C     radiosonde types in subr. RADT5 docblock since the last time it
 C     was updated
-C 2007-01-19  M. Sienkiewicz  Added integer missing value MMISS  to 
+C 2007-01-19  M. Sienkiewicz  Added integer missing value MMISS  to
 C     use in place of the standard BUFR missing value BMISS.  The
 C     BMISS value 10e10 is too large to represent in integer*4 and
 C     yields different values on different architectures.  If we use
@@ -228,7 +228,7 @@ C     correction subr. (RADT5) to recognize radiosonde types conforming
 C     with latest (Nov. 2008) WMO BUFR code table 0-02-011 and to
 C     produce more specific diagnostic print related to radiosonde
 C     types encountered (i.e., invalid, obsolete, vacant, etc.)
-C 2012-11-20  J. WOOLLEN  INITIAL PORT TO WCOSS 
+C 2012-11-20  J. WOOLLEN  INITIAL PORT TO WCOSS
 C 2013-02-05  D. Keyser   Final changes to run on WCOSS: Set BUFRLIB
 C     missing (BMISS) to 10E8 rather than 10E10 to avoid integer
 C     overflow (also done for IMISS); rename all REAL(8) variables as
@@ -241,7 +241,7 @@ C     network (the only network where it currently would run).
 C 2017-05-16  Sienkiewicz - adjust maximum BUFR record size (call MAXOUT)
 C     to avoid losing soundings that just barely exceed max after CQC
 C     changes are added to the record.
-C 2020-08-09  S. Melchior - In subroutine TMPCHK, explicitly defined ICK 
+C 2020-08-09  S. Melchior - In subroutine TMPCHK, explicitly defined ICK
 C     as an integer. Moved ICK.NE.0 logic inside ITI.NE.0 logic.
 C     BENEFIT: corrects problems when compiled and run with full DEBUG
 C              options enabled.
@@ -305,7 +305,7 @@ C     CODE >   0 - UNSUCCESSFUL RUN
 C
 C
 C REMARKS: NONE
-C     Note! The temporal check is not run operationally, but is 
+C     Note! The temporal check is not run operationally, but is
 C     used for the Reanalysis and in the CDAS.
 C     For operational use, units 12, 15, and 16 will be empty on
 C     input, with information written to them for summary purposes.
@@ -592,7 +592,7 @@ C  -------------------------------------------------------------
      &  150.,100.,70.,50.,30.,20.,10.,7.,5.,3.,2.,1./
 
       END
-      
+
 C**********************************************************************
 C$$$  SUBPROGRAM DOCUMENTATION BLOCK
 C                .      .    .                                       .
@@ -1517,7 +1517,7 @@ C$$$
         ENDDO
       ENDDO
 
-C  EVALUATE CORRECTIONS FOR INCREMENT, VERTICAL, HORIZONTAL 
+C  EVALUATE CORRECTIONS FOR INCREMENT, VERTICAL, HORIZONTAL
 C  TEMPORAL RESIDUALS
 C  --------------------------------------------------------
 
@@ -1766,7 +1766,7 @@ C    &  POB(L),POB(L),1.,107,0.,0.,0.)
 
       RETURN
       END
-      
+
 C**********************************************************************
 C$$$  SUBPROGRAM DOCUMENTATION BLOCK
 C                .      .    .                                       .
@@ -2228,7 +2228,7 @@ C$$$
 
       FUNCTION CUMPROB(X)
 C
-C  FOR A GIVEN X, RETURN THE CUMULATIVE PROBABILITY FOR 
+C  FOR A GIVEN X, RETURN THE CUMULATIVE PROBABILITY FOR
 C  ABS(VALUE <= X). X IS ASSUMED TO BE NORMAL VARIATE.
 C  USE LINEAR INTERPOLATION IN A TABLE.
 C
@@ -2367,7 +2367,7 @@ C$$$
 
       RETURN
       END
-      
+
 C**********************************************************************
 C$$$  SUBPROGRAM DOCUMENTATION BLOCK
 C                .      .    .                                       .
@@ -2414,7 +2414,7 @@ C   LANGUAGE: FORTRAN 90
 C   MACHINE:  NCEP WCOSS
 C
 C$$$
-      
+
       SUBROUTINE DISTR(X,MSK,XLIM,XMSG,NX,N,NDIV,DDIV,
      &  NZERO,DZERO,NS,X1,SD,SK,XK)
       PARAMETER (NST=1500)
@@ -2495,7 +2495,7 @@ C
    20 CONTINUE
       RETURN
       END
-      
+
 C**********************************************************************
 C$$$  SUBPROGRAM DOCUMENTATION BLOCK
 C                .      .    .                                       .
@@ -3556,7 +3556,7 @@ C    &    3,TC,TOB(LM)+TC,PTCOR,QM,IHSC(3,LM),XMISS,XMISS,XMISS)
 C******************************************************************
 C$$$  SUBPROGRAM DOCUMENTATION BLOCK
 C                .      .    .                                       .
-C SUBPROGRAM:    ERR710      PERFORM ERROR ANALYSIS FOR TYPES 7-10. 
+C SUBPROGRAM:    ERR710      PERFORM ERROR ANALYSIS FOR TYPES 7-10.
 C   PRGMMR: KEYSER         ORG: NP22       DATE: 2013-02-05
 C
 C ABSTRACT: Perform error analysis for errors at adjacent levels:
@@ -3839,8 +3839,8 @@ C  TEST TO SEE WHICH CORRECTIONS TO USE, IF ANY
 C  CONSIDER EACH POTENTIAL CORRECTION SEPARATELY
 C  ---------------------------------------------
 C  IN THE (NEAR) FUTURE, THE LOGIC SHOULD BE EXPANDED SO THAT WHEN
-C  A PART OF THE POTENTIAL CORRECTION IS REJECTED, THEN THE 
-C  SUGGESTED CORRECTION WILL BE RECALCULATED USING ONLY THE 
+C  A PART OF THE POTENTIAL CORRECTION IS REJECTED, THEN THE
+C  SUGGESTED CORRECTION WILL BE RECALCULATED USING ONLY THE
 C  RELEVANT HYDROSTATIC RESIDUALS.
 C  QUESTION: SHOULD BEST BE RECALCULATED USING VERTICAL RESIDS?
 C  ------------------------------------------------------------
@@ -4912,7 +4912,7 @@ C       IF(.NOT. SAME) WRITE(6,500) SID
         ENDDO
       ENDIF
 
-C  INTERPOLATE INCREMENTS FROM LEVELS WHERE LVTYP = 1 
+C  INTERPOLATE INCREMENTS FROM LEVELS WHERE LVTYP = 1
 C  TO LEVELS WHERE LVTYP = 0, BUT ONLY IF THERE WAS
 C  AN ORIGINAL VALUE PRESENT
 C  DO FOR THE VARIABLES IN THE RANGE IV1 TO IV2
@@ -5143,7 +5143,7 @@ C   able to get input data as of a particular point in the processing,
 C   e.g. after PREVENT, or after CQCHT.  In order to do this, some
 C   events must be filled either forward or backward in the processing
 C   stream.  For instance, the guess appears only at the last stage,
-C   but should be available at all stages.  This subroutine does the 
+C   but should be available at all stages.  This subroutine does the
 C   necessary filling.  The selection of which stage date to use is
 C   made in INPUT (variable MP).
 C
@@ -5549,7 +5549,7 @@ C     B    - MAXIMUM RANGE OF ROUGH ERRORS
 C     PER  - ASSUMED PROPORTION OF ROUGH ERRORS
 C
 C   OUTPUT ARGUMENT LIST:
-C     P    - MEAN "ANALYSIS WEIGHT" FOR XI, XV, XH 
+C     P    - MEAN "ANALYSIS WEIGHT" FOR XI, XV, XH
 C
 C
 C REMARKS: NONE.
@@ -5589,12 +5589,12 @@ C         SUM = SUM + CUMPROB(ABS(X(I)))
       ENDIF
 
       RETURN
-      END 
-    
+      END
+
 C*********************************************************************
 C$$$  SUBPROGRAM DOCUMENTATION BLOCK
 C                .      .    .                                       .
-C SUBPROGRAM:    GETINC      COMPUTE INCREMENTS 
+C SUBPROGRAM:    GETINC      COMPUTE INCREMENTS
 C   PRGMMR: W. COLLINS       ORG: NP22       DATE: 1995-12-18
 C
 C ABSTRACT: COMPUTE THE INCREMENT (OBSERVED VALUE MINUS FORECAST) AT
@@ -6186,7 +6186,7 @@ C     although this is also an overflow value for I*4, it results in a
 C     correct evaluation
 C 2013-02-05  D. Keyser -- Final changes to run on WCOSS: Set BUFRLIB
 C     missing (BMISS) to 10E8 rather than 10E10 to avoid integer
-C     overflow (also done for IMISS). 
+C     overflow (also done for IMISS).
 C
 C USAGE:    CALL HOLES
 C   OUTPUT FILES:
@@ -6641,7 +6641,7 @@ C  -----------------------------------------------------------------
 C  GET HEIGHT DIFFERENCE BETWEEN SURFACE PRESS AND 1ST MAND LEVEL,
 C  ACCORDING TO TEMPERATURES: BASRES
 C  NOTE!  BASRES COULD BE CALCULATED VIA THREE METHODS AS IS THE
-C  HYDROSTATIC RESIDUAL, AND CHOOSE THE BEST. 
+C  HYDROSTATIC RESIDUAL, AND CHOOSE THE BEST.
 C  --------------------------------------------------------------
       SUM = 0.
       L1 = LSFC
@@ -6815,7 +6815,7 @@ C USAGE:    CALL INCR(ITIME)
 C   INPUT ARGUMENT LIST:
 C     ITIME    - 1 - FIRST CALL TO INPUT FOR STATION
 C                2 - SECOND CALL TO INPUT FOR STATION
-C  
+C
 C REMARKS: NONE.
 C
 C ATTRIBUTES:
@@ -7197,7 +7197,7 @@ C                MASS PART
 C     WIND     - TRUE FOR WIND PART OF REPORT
 C     ITIME    - 1 - FIRST CALL TO INPUT FOR STATION
 C                2 - SECOND CALL TO INPUT FOR STATION
-C     USESQN   - TRUE WHEN SQN IS USED TO FIT PARTS OF REPORT 
+C     USESQN   - TRUE WHEN SQN IS USED TO FIT PARTS OF REPORT
 C                TOGETHER
 C
 C   OUTPUT ARGUMENT LIST:
@@ -7287,10 +7287,12 @@ C  ---------------------------------------------------------------------
       CHARACTER*40     HSTR, OSTR, FCSTR, RCSTR, C1STR, CAT0,
      &                 C1FSTR, OSTRW, OSTRW2
       CHARACTER*50     OBSTR(2,5)
+      CHARACTER*5      CMAXOUT
       LOGICAL          START, ENDIN, WIND, SKIP, SAME
       LOGICAL          ZG, TG, TDG, QG, ERROR
       EQUIVALENCE      (HDR_8,CDR)
       INTEGER          IORDER(0:13)
+      INTEGER          IMAXOUT, LENGTH
 
       COMMON /BUFRLIB_MISSING/BMISS,XMISS,IMISS
 
@@ -7341,7 +7343,18 @@ C  -------------------
         REWIND NFIN
         CALL OPENBF(NFIN,'IN',NFIN)
         IF(ITIME.EQ.2) CALL OPENBF(NFOUT,'OUT',NFIN)
-        call maxout(15000)
+        CALL GET_ENVIRONMENT_VARIABLE('BUFR_MAXOUT',cmaxout,length)
+        if (length > 0) then
+          read(cmaxout,*) imaxout
+          if (imaxout > 15000) then
+            call maxout(imaxout)
+          else
+            call maxout(15000)
+          end if
+        else
+          call maxout(15000)
+        end if
+
         IS = 0
         DO I=1,NST
           SQN(I) = 0.
@@ -7989,7 +8002,7 @@ C     although this is also an overflow value for I*4, it results in a
 C     correct evaluation
 C 2013-02-05  D. Keyser -- Final changes to run on WCOSS: Set BUFRLIB
 C     missing (BMISS) to 10E8 rather than 10E10 to avoid integer
-C     overflow (also done for IMISS). 
+C     overflow (also done for IMISS).
 C
 C USAGE:    CALL ISGOOD
 C   OUTPUT FILES:
@@ -8194,7 +8207,7 @@ cdak      IF(I.NE.BMISS) THEN
         IF(.NOT. ZG(L,IS) .OR. .NOT.TG(L,IS)) ERROR(IS) = .TRUE.
 
         LOW = L
-  100   CONTINUE	
+  100   CONTINUE
       ENDDO
 
 C  TEST FOR BASELINE ERROR
@@ -8459,7 +8472,7 @@ C     although this is also an overflow value for I*4, it results in a
 C     correct evaluation
 C 2013-02-05  D. Keyser -- Final changes to run on WCOSS: Set BUFRLIB
 C     missing (BMISS) to 10E8 rather than 10E10 to avoid integer
-C     overflow (also done for IMISS). 
+C     overflow (also done for IMISS).
 C
 C USAGE:    CALL LEVTYPS
 C
@@ -9297,7 +9310,7 @@ C  ------
             IHSC(2,L) = 49.
           ENDIF
           IF(PZ.NE.BMISS .AND. PZ.LT.P13) QM = 13.
-          IF(QM.NE.0.) CALL SEVENT(SID(IS),SQN(IS),L,LST(L),POB(L), 
+          IF(QM.NE.0.) CALL SEVENT(SID(IS),SQN(IS),L,LST(L),POB(L),
      &         LEVTYP(L),2,ZC,ZOB(L)+ZC,ZC,QM,IHSC(2,L),XMISS,
      &         XMISS,XMISS)
         ENDIF
@@ -9398,7 +9411,7 @@ C     although this is also an overflow value for I*4, it results in a
 C     correct evaluation
 C 2013-02-05  D. Keyser -- Final changes to run on WCOSS: Set BUFRLIB
 C     missing (BMISS) to 10E8 rather than 10E10 to avoid integer
-C     overflow (also done for IMISS). 
+C     overflow (also done for IMISS).
 C
 C USAGE:    CALL OBERR
 C   OUTPUT FILES:
@@ -10271,7 +10284,7 @@ C   LANGUAGE: FORTRAN 90
 C   MACHINE:  NCEP WCOSS
 C
 C$$$
-      
+
       SUBROUTINE PRNTOUT(SEQLP,ICALL)
       PARAMETER (NST=1500)
 
@@ -10543,7 +10556,7 @@ C  ---------------------------
 
       RETURN
       END
- 
+
 C*********************************************************************
 C$$$  SUBPROGRAM DOCUMENTATION BLOCK
 C                .      .    .                                       .
@@ -10573,7 +10586,7 @@ C   LANGUAGE: FORTRAN 90
 C   MACHINE:  NCEP WCOSS
 C
 C$$$
- 
+
       SUBROUTINE PRSTNS(WIND)
       PARAMETER (NST=1500)
       COMMON /HEADER/  SID(NST), DHR(NST), XOB(NST), YOB(NST),
@@ -10723,12 +10736,12 @@ C                     WTS)
 C   INPUT ARGUMENTS:
 C     LDIM     - L-DIMENSION OF MATRIX
 C     IDIM     - I-DIMENSION OF MATRIX
-C     L0       - 
-C     IV0      - 
-C     NOB1     - 
-C     NOB2     - 
-C     IDH      - 
-C     OINC     - 
+C     L0       -
+C     IV0      -
+C     NOB1     -
+C     NOB2     -
+C     IDH      -
+C     OINC     -
 C   OUTPUT ARGUMENTS:
 C     HRES     - ANALYSIS INCREMENTS
 C     HSTD     - ANALYSIS STANDARD DEVIATION
@@ -10960,7 +10973,7 @@ C  ----------------------------------------------------
       RETURN
       END
 
-C**********************************************************************     
+C**********************************************************************
 C$$$  SUBPROGRAM DOCUMENTATION BLOCK
 C                .      .    .                                       .
 C SUBPROGRAM:    RBLOCKS     READ INPUT BLOCKS FOR SINGLE STATION VER
@@ -11178,7 +11191,7 @@ C                .      .    .                                       .
 C SUBPROGRAM:    RESIDS      CALCULATE RESIDUALS
 C   PRGMMR: W. COLLINS       ORG: NP22       DATE: 1997-03-18
 C
-C ABSTRACT: Calculate residuals: increment, hydrostatic, vertical 
+C ABSTRACT: Calculate residuals: increment, hydrostatic, vertical
 C   statistical, and lapse rate.  Also, determine level types and
 C   calculate z-differences from vertical neighbors.
 C
@@ -11241,7 +11254,7 @@ C   LANGUAGE: FORTRAN 90
 C   MACHINE:  NCEP WCOSS
 C
 C$$$
- 
+
       SUBROUTINE ROUND(VAL,P,IV)
 
 C  ROUND VAL:
@@ -11289,13 +11302,13 @@ C USAGE:    CALL SEARCH(LDIM,IDIM,L0,IV0,NOB1,NOB2,IDH,OINC,OG)
 C   INPUT ARGUMENTS:
 C     LDIM     - L-DIMENSION OF MATRIX
 C     IDIM     - I-DIMENSION OF MATRIX
-C     L0       - 
-C     IV0      - 
-C     NOB1     - 
-C     NOB2     - 
-C     IDH      - 
-C     OINC     - 
-C     OG       - 
+C     L0       -
+C     IV0      -
+C     NOB1     -
+C     NOB2     -
+C     IDH      -
+C     OINC     -
+C     OG       -
 C
 C OUTPUT FILES:
 C     UNIT 60  - PRINT FILE, DETAILS OF DECISIONS
@@ -11454,7 +11467,7 @@ C  -------------------------------------
             DO J=1,4
               DMIN = BMISS
               DO N=1,NOBS
-C               IF(NDIR(N).EQ.J .AND. OBOK(N) .AND. 
+C               IF(NDIR(N).EQ.J .AND. OBOK(N) .AND.
                 IF(NDIR(N).EQ.J .AND. OG(L,IV,NIND(N)) .AND.
      &            DIST(N).GT.10. AND. DIST(N).LT.DMIN) THEN
                   DMIN = DIST(N)
@@ -11750,7 +11763,7 @@ C     although this is also an overflow value for I*4, it results in a
 C     correct evaluation
 C 2013-02-05  D. Keyser -- Final changes to run on WCOSS: Set BUFRLIB
 C     missing (BMISS) to 10E8 rather than 10E10 to avoid integer
-C     overflow (also done for IMISS). 
+C     overflow (also done for IMISS).
 C
 C USAGE:    CALL SIGERR(LM)
 C   INPUT ARGUMENT LIST:
@@ -13072,7 +13085,7 @@ C     although this is also an overflow value for I*4, it results in a
 C     correct evaluation
 C 2013-02-05  D. Keyser -- Final changes to run on WCOSS: Set BUFRLIB
 C     missing (BMISS) to 10E8 rather than 10E10 to avoid integer
-C     overflow (also done for IMISS). 
+C     overflow (also done for IMISS).
 C
 C USAGE:    CALL STYPE
 C
@@ -13226,7 +13239,7 @@ C   LANGUAGE: FORTRAN 90
 C   MACHINE:  NCEP WCOSS
 C
 C$$$
- 
+
       SUBROUTINE T120(L,LM)
       PARAMETER (NST=1500)
 
@@ -13609,7 +13622,7 @@ C     although this is also an overflow value for I*4, it results in a
 C     correct evaluation
 C 2013-02-05  D. Keyser -- Final changes to run on WCOSS: Set BUFRLIB
 C     missing (BMISS) to 10E8 rather than 10E10 to avoid integer
-C     overflow (also done for IMISS). 
+C     overflow (also done for IMISS).
 C
 C USAGE:    CALL T220(L,LM)
 C   INPUT ARGUMENT LIST:
@@ -13765,7 +13778,7 @@ C     missing (IMISS, also = 10E10), although this is also an overflow
 C     value for I*4, it results in a correct evaluation
 C 2013-02-05  D. Keyser -- Final changes to run on WCOSS: Set BUFRLIB
 C     missing (BMISS) to 10E8 rather than 10E10 to avoid integer
-C     overflow (also done for IMISS). 
+C     overflow (also done for IMISS).
 C
 C USAGE:    CALL T240(L,LM)
 C   INPUT ARGUMENT LIST:
@@ -14214,7 +14227,7 @@ C$$$
 
       REAL(8) BMISS
 
-C     COMMON /TMPSND/  ZOBT(21,NST,4), TOBT(21,NST,4), 
+C     COMMON /TMPSND/  ZOBT(21,NST,4), TOBT(21,NST,4),
 C    &                 ZIT(21,NST,4),  TIT(21,NST,4),
 C    &                 ZTMP(21,NST),   TTMP(21,NST),
 C    &                 NZTMP(21,NST),  NTTMP(21,NST),
@@ -14794,23 +14807,23 @@ C     temps only if the moisture Q.M. is truly bad (i.e. > 3 but not 9
 C     or 15) (and, as before, orig. TQM is 1 or 2 and POB is below 700
 C     mb) - before, TQM set to 3 when QQM was 9 or 15 and all other
 C     conditions met
-C                                                                     
+C
 C USAGE:    CALL VTPEVN(DOVTMP)
 C
 C INPUT ARGUMENTS:
 C           DOVTMP - LOGICAL ARGUMENT, TRUE IF VIRTUAL TEMPERATURE IS
 C                    CALCULATED
-C                                                                     
+C
 C   OUTPUT FILES:
 C     UNIT 60  - PRINT FILE, DETAILS OF DECISIONS
 C
 C REMARKS: NONE.
 C
-C ATTRIBUTES:                                                         
+C ATTRIBUTES:
 C   LANGUAGE: FORTRAN 90
 C   MACHINE:  NCEP WCOSS
-C         
-C$$$     
+C
+C$$$
       SUBROUTINE VTPEVN(DOVTMP)
       PARAMETER (NST=1500)
 
@@ -15495,7 +15508,7 @@ C  ------------------------------------------
           ENDIF
         ENDDO
       ENDDO
-  
+
       RETURN
       END
 
