@@ -3,7 +3,7 @@
 #------------
 
 codeID: 523f29e
-description: fpp__GEOSadas-5_29_3__agrid_C720__ogrid_C
+description: fpp__GEOSadas-5_30_0__agrid_C720__ogrid_C
 fvsetupID: f7aaa973c7
 
 ---ENDHEADERS---
@@ -29,7 +29,7 @@ EXPID? [u000_C720]
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [fpp__GEOSadas-5_29_3__agrid_C720__ogrid_C]
+EXPDSC? [fpp__GEOSadas-5_30_0__agrid_C720__ogrid_C]
 > 
 
 Land Boundary Conditions? [Icarus_Updated]
@@ -150,7 +150,7 @@ Which main class of ObsSys (1: NRT; 2: MERRA; 3: MERRA-2)? [1]
 > 1
 
 OBSERVING SYSTEM CLASSES?
-> disc_airs_bufr,disc_amsua_bufr,gmao_amsr2_bufr,gmao_gmi_bufr,mls_nrt_nc,ncep_1bamua_bufr,ncep_1bhrs4_bufr,ncep_acftpfl_bufr,ncep_atms_bufr,ncep_aura_omi_bufr,ncep_avcsam_bufr,ncep_avcspm_bufr,ncep_crisfsr_bufr,ncep_goesfv_bufr,ncep_gpsro_bufr,ncep_mhs_bufr,ncep_mtiasi_bufr,ncep_prep_bufr,ncep_satwnd_bufr,ncep_sevcsr_bufr,ncep_ssmis_bufr,ncep_tcvitals,npp_ompsnm_bufr,gmao_mlst_bufr
+> disc_airs_bufr,disc_amsua_bufr,gmao_amsr2_bufr,gmao_gmi_bufr,mls_nrt_nc,ncep_1bamua_bufr,ncep_1bhrs4_bufr,ncep_acftpfl_bufr,ncep_atms_bufr,ncep_aura_omi_bufr,ncep_avcsam_bufr,ncep_avcspm_bufr,ncep_crisfsr_bufr,ncep_goesfv_bufr,ncep_gpsro_bufr,ncep_mhs_bufr,ncep_mtiasi_bufr,ncep_prep_bufr,ncep_satwnd_bufr,ncep_sevcsr_bufr,ncep_ssmis_bufr,ncep_tcvitals,npp_ompsnm_bufr
 
 CHECKING OBSYSTEM? [2]
 > 1
@@ -207,7 +207,7 @@ Do Aerosol Analysis (y/n)? [y]
 > 
 
 AOD OBSERVING CLASSES [or type 'none']?
-> 
+> mod04_061_flk,myd04_061_flk,aeronet_obs_flk
 
 Enable GAAS feedback to model (y/n)? [y]
 > 

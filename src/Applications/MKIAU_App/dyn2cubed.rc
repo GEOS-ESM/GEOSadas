@@ -24,3 +24,6 @@ INPUT_VARS: ps,ts,u,v,tv,sphu,ozone,delp,qitot,qltot,qrtot,qstot,rh,mrh
 INPUT_FILE:  f522_fp.f48m24_rh.eta.%y4%m2%d2_%h2z.nc4
 OUTPUT_FILE: cbf522_fp.f48m24_rh.eta.%y4%m2%d2_%h2z.nc4
 
+#GSI_COVWEIGHTS: hybens_info.txt
+#GSI_COVOPTION: berror_clim  # or berror_ens
+

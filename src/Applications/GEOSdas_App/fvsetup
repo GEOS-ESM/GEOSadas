@@ -362,6 +362,7 @@ use AGCM_PERTrc qw(set_AGCM_PERT_envvars set_AGCM_PERT_flags);
 use Create_anasa_script qw(anasa_script);
 use Create_asens_script qw(asens_script);
 use Create_fsens_script qw(fsens_script);
+use Create_o3anasa_script qw(o3anasa_script);
 use GMAO_utils qw(get_siteID);
 use Manipulate_time qw(tick);
 use Saverst qw(writeSaverst);
@@ -533,6 +534,7 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
   arch_fsens();
   arch_asens();
   arch_anasa();
+  arch_o3anasa();
   run_config();
 
 # If so, setup EnADAS
@@ -562,6 +564,7 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
    asens_script ( %inputparams ) if $doasens;
    fsens_script ( %inputparams ) if $doasens;
    anasa_script ( %inputparams );
+   o3anasa_script ( %inputparams );
 
 # Allow user to edit resources/scripts
 # ------------------------------------
@@ -882,7 +885,8 @@ sub defaults {
                      HISTORY.rc.tmpl
                      OBS_GridComp.rc.tmpl
                      saverst.rc 
-                     GEOS_SurfaceGridComp.rc );
+                     GEOS_SurfaceGridComp.rc
+                     logging.yaml );
 
   @coupled_files = qw( data_table
                        g5aodas_diag_table
@@ -894,7 +898,8 @@ sub defaults {
 #                      OC_GridComp_ExtData-clim.rc
 #                      SU_GridComp_ExtData-clim.rc );
 
-  @chem_files = qw ( Aod-550nm_Registry.rc
+  @chem_files = qw ( aop_calculator.rc
+                     Aod-550nm_Registry.rc
                      Aod3d_1064nm.rc      
                      Aod3d_355nm.rc
                      Aod3d_532nm.rc
@@ -912,6 +917,11 @@ sub defaults {
                      BRC_GridComp.rc
                      BRC_GridComp_ExtData.rc
                      BRC_Registry.rc
+                     CA2G_GridComp_ExtData.rc
+                     CA2G_instance_CA.bc.rc
+                     CA2G_instance_CA.br.rc
+                     CA2G_instance_CA.oc.rc
+                     CA2G_StateSpecs.rc
                      CARMA_History___.rc
                      CARMAchem_GridComp_ExtData.rc
                      CARMAchem_MieRegistry.rc
@@ -956,26 +966,37 @@ sub defaults {
                      Chem_Mie.rc
                      Chem_MieRegistry.rc
                      Chem_Registry.rc
+                     ChemEnv_ExtData.rc
+                     ChemEnv.rc
+                     Chem_Ext3d.rc
                      DNA_ExtData.rc
                      DNA_GridComp.rc
                      DNA_Registry.rc
-                     DU_GridComp.rc
                      DU_GridComp---full.rc
                      DU_GridComp_ExtData.rc
                      DU_History___.rc
                      DU_Registry.rc
+                     DU2G_GridComp_ExtData.rc
+                     DU2G_instance_DU.rc
+                     DU2G_StateSpecs.rc
                      Deposition_Registry___.rc 
+                     GAAS_GridComp_ExtData.rc
                      GEOSCHEMchem_ExtData.rc
                      GEOSCHEMchem_GridComp.rc
                      GEOSCHEMchem_Registry.rc
                      GEOSachem_ExtData.rc
                      GEOSachem_Registry.rc
+                     GEOS_AChemGridComp.rc
+                     GEOS_AChem_History___.rc
+                     GEOSCHEMCHEM_History___.rc
                      GMICHEM_History___.rc
                      GMI_ExtData.rc
                      GMI_GridComp.rc
                      GMI_Registry.rc
+                     GMI_Tendency_Registry___.rc
                      GOCARTdata_AerRegistry.rc 
                      GOCARTdata_ExtData.rc
+                     GOCART2G_GridComp.rc
                      HEMCO_Config.rc
                      HEMCO_DiagnFile.rc
                      HEMCO_GridComp.rc
@@ -984,15 +1005,30 @@ sub defaults {
                      HEMCOgocart_Diagn.rc
                      HEMCOgocart_ExtData.rc
                      HEMCOgocart_Spec.rc
+                     HEMCOgmi_Config.rc
+                     HEMCOgmi_Diagn.rc
+                     HEMCOgmi_ExtData.rc
+                     HEMCOgmi_Spec.rc
+                     HEMCOgocart2g_Config.rc
+                     HEMCOgocart2g_Diagn.rc
+                     HEMCOgocart2g_ExtData.rc
+                     HEMCOgocart2g_Spec.rc
+                     mam_optics_calculator.rc
                      MAM7_ExtData.rc
                      MAMchem_GridComp.rc
                      MAMchem_History___.rc
                      MAMchem_Registry.rc
+                     MATRIXchem_GridComp.rc
+                     MATRIXchem_History___.rc
+                     MATRIXchem_Registry.rc
                      NI_GridComp---full.rc
                      NI_GridComp.rc
                      NI_GridComp_ExtData.rc
                      NI_History___.rc
                      NI_Registry.rc
+                     NI2G_GridComp_ExtData.rc
+                     NI2G_instance_NI.rc
+                     NI2G_StateSpecs.rc
                      O3_GridComp.rc
                      O3_GridComp_ExtData.rc
                      O3_History___.rc
@@ -1016,6 +1052,7 @@ sub defaults {
                      Rn_GridComp_ExtData.rc
                      Rn_History___.rc
                      Rn_Registry.rc
+                     setkin_chem_mech.txt___.rc
                      SC_GridComp.rc
                      SC_Registry.rc
                      SS_GridComp.rc
@@ -1024,13 +1061,18 @@ sub defaults {
                      SS_Registry.rc
                      StratChem_ExtData.rc
                      StratChem_History___.rc
+                     SS2G_GridComp_ExtData.rc
+                     SS2G_instance_SS.rc
+                     SS2G_StateSpecs.rc
                      SU_GridComp---full.rc
                      SU_GridComp---volc.rc
                      SU_GridComp.rc
                      SU_GridComp_ExtData.rc
                      SU_History___.rc
                      SU_Registry.rc 
-                     TR_ExtData.rc
+                     SU2G_GridComp_ExtData.rc
+                     SU2G_instance_SU.rc
+                     SU2G_StateSpecs.rc
                      TR_ExtData.rc
                      TR_GridComp---Be10.rc
                      TR_GridComp---Be10s.rc
@@ -1064,9 +1106,53 @@ sub defaults {
                      TR_GridComp---Rn222.rc
                      TR_GridComp---SF6.rc
                      TR_GridComp---aoa.rc
+                     TR_GridComp---aoa_bl.rc
+                     TR_GridComp---aoa_nh.rc
                      TR_GridComp---e90.rc
+                     TR_GridComp---e90_n.rc
+                     TR_GridComp---e90_s.rc
+                     TR_GridComp---nh_50.rc
+                     TR_GridComp---nh_5.rc
+                     TR_GridComp---stOX.rc
+                     TR_Registry.rc
                      TR_GridComp---st80_25.rc
                      WSUB_ExtData.rc ); 
+
+  @gocart2g_yaml = qw ( CO2_GridComp_ExtData.yaml
+                        CFC_GridComp_ExtData.yaml
+                        Rn_GridComp_ExtData.yaml
+                        GEOSachem_ExtData.yaml
+                        CH4_GridComp_ExtData.yaml
+                        StratChem_ExtData.yaml
+                        NI2G_GridComp_ExtData.yaml
+                        SS2G_GridComp_ExtData.yaml
+                        TR_ExtData.yaml
+                        ChemEnv_ExtData.yaml
+                        DNA_ExtData.yaml
+                        DU2G_GridComp_ExtData.yaml
+                        CARMAchem_GridComp_ExtData.yaml
+                        HEMCOgocart2g_ExtData.yaml
+                        O3_GridComp_ExtData.yaml
+                        CO_GridComp_ExtData.yaml
+                        HEMCOgmi_ExtData.yaml
+                        SU2G_GridComp_ExtData.yaml
+                        WSUB_ExtData.yaml
+                        MAM7_ExtData.yaml
+                        CA2G_GridComp_ExtData.yaml
+                        GMI_ExtData.yaml
+                        GAAS_GridComp_ExtData.yaml );
+#                       AMIP/CO2_GridComp_ExtData.yaml
+#                       AMIP/CFC_GridComp_ExtData.yaml
+#                       AMIP/Rn_GridComp_ExtData.yaml
+#                       AMIP/GEOSachem_ExtData.yaml
+#                       AMIP/CH4_GridComp_ExtData.yaml
+#                       AMIP/NI2G_GridComp_ExtData.yaml
+#                       AMIP/SS2G_GridComp_ExtData.yaml
+#                       AMIP/DU2G_GridComp_ExtData.yaml
+#                       AMIP/O3_GridComp_ExtData.yaml
+#                       AMIP/CO_GridComp_ExtData.yaml
+#                       AMIP/SU2G_GridComp_ExtData.yaml
+#                       AMIP/CA2G_GridComp_ExtData.yaml
 
 #  -e ( $lats4d = "/ford1/local/bin/lats4d" )
 #       || die ">>> ERROR <<< missing $lats4d: $!";
@@ -1082,7 +1168,7 @@ sub defaults {
   $anassi  = 1  if ( -e "$fvbin/ssi.x" );
   $anagsi  = 1  if ( -e "$fvbin/GSIsa.x" );
   $fulldas = 1  if ( $anapsas || $anassi || $anagsi );
-  $fvchem  = 1  if ( -e "$fvetc/DU_GridComp.rc" );
+  $fvchem  = 1; # if ( -e "$fvetc/DU_GridComp.rc" );
   $doiau   = 0;
 
   if ( $g5gcm ) { 
@@ -1108,7 +1194,7 @@ sub defaults {
   if ( $anapsas ) { @arc_files = @ap_files };
   if ( $anassi  ) { @arc_files = @as_files };
   if ( $anagsi  ) { @arc_files = ( @ag_files, @lcv2prsrcs )};
-  if ( $fvchem  ) { @crc_files = @chem_files };
+  if ( $fvchem  ) { @crc_files = @chem_files; @go2yaml_files = @gocart2g_yaml };
 # if ( $coupled ) { @crc_files = ( @chem_files, @coupled_files ) };
 
   $monthly_plots = 0;
@@ -1695,6 +1781,9 @@ sub create_fvpsasrc {
   print(MYRC "chem_ana_filename: %s.cana.eta.$tmpl2.$ncsuffix\n");
   print(MYRC "reference_filename: %s.ref.eta.$tmpl2.$ncsuffix\n");
   print(MYRC "verification_filename: %s.ver.eta.$tmpl2.$ncsuffix\n");
+  print(MYRC "aod_a: das.aod_a.sfc.$tmpl2.$ncsuffix\n");
+  print(MYRC "aod_k: das.aod_k.sfc.$tmpl2.$ncsuffix\n");
+  print(MYRC "aod_f: das.aod_f.sfc.$tmpl2.$ncsuffix\n");
 
 # Done
 # ----
@@ -1732,13 +1821,13 @@ sub ed_ncep_rc {
 
   return 0 unless ( $anassi || $anagsi );
 
-  my($nceprc) = @_;
+  my($nceprc,$myloc) = @_;
 
   my($frun, $ft, $rcd, $nlon);
   my($gsinlon, $ssinlath, $ssinlon);
 
-  $ft   = "$fvhome/run/tmp.rc";
-  $frun = "$fvhome/run/$nceprc";
+  $ft   = "$fvhome/$myloc/tmp.rc";
+  $frun = "$fvhome/$myloc/$nceprc";
 
   open(LUN,"$frun") || die "Fail to open $nceprc: $!\n";
   open(LUN2,">$ft") || die "Fail to open tmp.rc: $!\n";
@@ -1865,13 +1954,13 @@ sub ed_gsigridcomp_rc {
 
   return 0 unless ( $anagsi );
 
-  my($myrc,$mycase) = @_;
+  my($myrc,$myloc,$mycase) = @_;
 
   my($frun, $ft, $rcd, $nlon);
   my($gsinlon, $ssinlath, $ssinlon, $varwnd_nhms);
 
-  $ft   = "$fvhome/run/tmp.rc";
-  $frun = "$fvhome/run/$myrc";
+  $ft   = "$fvhome/$myloc/tmp.rc";
+  $frun = "$fvhome/$myloc/$myrc";
 
   if ( $mycase eq "observer" ) {
 #      $hr = int( $dt / 3600 );           $hr = sprintf "%02d", $hr;
@@ -2149,6 +2238,23 @@ $defexploc/$vexpid/ana/Y%y4/M%m2/$vexpid.cbkg.eta.%y4%m2%d2_%h2%n2z.$ncsuffix
 $defexploc/$vexpid/ana/Y%y4/M%m2/$vexpid.bkg09.eta.%y4%m2%d2_%h2%n2z.$ncsuffix
 $defexploc/$vexpid/ana/Y%y4/M%m2/$vexpid.bkg09.sfc.%y4%m2%d2_%h2%n2z.$ncsuffix
 $defexploc/$vexpid/ana/Y%y4/M%m2/$vexpid.cbkg09.eta.%y4%m2%d2_%h2%n2z.$ncsuffix
+EOF
+}
+#=======================================================================
+sub ed_o3bkg_acq {
+
+  return 0 unless ( $fulldas );
+
+  my($mydir) = @_;
+
+  my($frun, $ft, $acq);
+
+  $acq = "$fvhome/$mydir/o3bkg.acq";
+
+ open(SCRIPT,">$acq") or
+ die ">>> ERROR <<< cannot write $acq";
+ print  SCRIPT <<"EOF";
+$defexploc/$vexpid/ana/Y%y4/M%m2/$vexpid.bkg.eta.%y4%m2%d2_%h2%n2z.$ncsuffix
 EOF
 }
 
@@ -3523,8 +3629,6 @@ EOF
           $berror_env  = "setenv BERROR  $berror_file";
        }
        if ( $geosit ) {
-       #  $berror_file = "\$FVHOME/fvInput/gsi/etc/berror_gmao/gmao24Jun2011_fp+oz_fix/MERRA2/Final";
-       #  $berror_env  = "setenv BERROR  $berror_file";
           $berror_env  = "# Likely need to point to new BERROR for GEOSIT (adjust fvsetup)";
        }
   }
@@ -4289,7 +4393,7 @@ EOF
 
   %remission = reverse %emission;
   if ($nrt)       { $dflt = "OPS"    }
-  elsif ($merra2) { $dflt = "MERRA2" }
+  elsif ($merra2) { $dflt = "AMIP"   }
   elsif ($geosit) { $dflt = "GEOSIT" }
   elsif ($r21c)   { $dflt = "R21C"   }
   else            { $dflt = "PIESA"  }
@@ -5136,8 +5240,8 @@ EOF
        $hist_pert_jm = 361;
        $apert_im = 180;
        $apert_jm = $apert_im * 6;
-       $jdedi_im = 180;
-       $jdedi_jm = $bjedi_im * 6;
+       $bjedi_im = 360;
+       $bjedi_jm = $bjedi_im * 6;
        $anahgrd = "e";
        $use_shmem = 1;
        $jcap_ens = 254;
@@ -5173,7 +5277,7 @@ EOF
        $hist_pert_jm = 361;
        $apert_im = 180;
        $apert_jm = $apert_im * 6;
-       $bjedi_im = 180;
+       $bjedi_im = 360;
        $bjedi_jm = $bjedi_im * 6;
        $anahgrd = "e";
        $use_shmem = 1;
@@ -5335,7 +5439,7 @@ sub mkdir_fvhome {  # create directories on FVHOME
   foreach $dir (qw(ana diag daotovs etc obs prog radmon)) {
       mkpath("$fvhome/$dir") or die ">>> ERROR <<< creating directory $fvhome/$dir;";
   }
-  foreach $dir (qw(rs run recycle fcst lana asens anasa)) {
+  foreach $dir (qw(rs run recycle fcst lana asens anasa o3anasa coanasa)) {
       mkpath("$fvhome/$dir") or die ">>> ERROR <<< creating directory $fvhome/$dir;";
   }
   foreach $subdir (qw( gaas gocart )) {
@@ -5347,7 +5451,7 @@ sub mkdir_fvhome {  # create directories on FVHOME
 
 # Some directories are not meant to be archived
 # ---------------------------------------------
-  foreach $dir (qw( run recycle fcst asens )) {
+  foreach $dir (qw( run recycle fcst anasa o3anasa coanasa asens )) {
           die ">>> ERROR <<< $! "
           if system("/bin/touch $fvhome/$dir/.no_archiving");
   }
@@ -7308,6 +7412,66 @@ EOF
 
 }
 #=======================================================================
+sub arch_o3anasa {
+
+   open(ARC,">$fvhome/o3anasa/o3anasastorage.arc")
+   || die "Cannot create $fvhome/o3anasa/anasastorage.arc: $!";
+
+   print ARC <<"EOF";
+#
+# Archiving rules for fvDAS output.
+#
+# This is a PESTO (Put Experiment in Mass STOrage) resource file.
+#
+# The environment variable PESTOROOT refers to the destination archive
+# location, e.g.,
+#
+# a) for moving files to SILO:
+#    setenv PESTOROOT '/scratch1/dasilva'
+#
+# b) for moving files to MASS STORAGE:
+#    setenv PESTOROOT 'dasilva\@helios1.nas.nasa.gov:'
+#
+# This file has been automatically generated by fvsetup.
+# $nametag
+#...........................................................................
+#
+#  The following refer to stand-alone analysis in re-run mode
+#
+\${PESTOROOT}%s/etc/Y%y4/M%m2/%s.o3anasa.log.%y4%m2%d2_%h2z.txt
+\${PESTOROOT}%s/etc/Y%y4/M%m2/%s.o3anasa_stats.log.%y4%m2%d2_%h2z.txt
+\${PESTOROOT}%s/etc/Y%y4/M%m2/%s.o3odssa.log.%y4%m2%d2_%h2z.txt
+\${PESTOROOT}%s/etc/Y%y4/M%m2/%s.o3zeitsa.reg.%y4%m2%d2_%h2z.txt
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.o3anasa.eta.%y4%m2%d2_%h2%n2z.$ncsuffix
+#
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.o3diagsa_gome_metop-%c.%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.o3diagsa_mls55_aura.%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.o3diagsa_omi_aura.%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.o3diagsa_omieff_aura.obs.%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.o3diagsa_o3lev_aura.obs.%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.o3diagsa_sbuv%c_%c%c%c.%y4%m2%d2_%h2z.ods
+#
+#  The following refer to stand-alone analysis in prognostic mode
+#
+\${PESTOROOT}%s/etc/Y%y4/M%m2/%s.o3anasa.log.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.txt
+\${PESTOROOT}%s/etc/Y%y4/M%m2/%s.o3anasa_stats.log.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.txt
+\${PESTOROOT}%s/etc/Y%y4/M%m2/%s.o3odssa.log.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.txt
+\${PESTOROOT}%s/etc/Y%y4/M%m2/%s.o3zeitsa.reg.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.txt
+#
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.o3diagsa_gome_metop-%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.o3diagsa_mls55_aura.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.o3diagsa_omi_aura.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.o3diagsa_omieff_aura.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.o3diagsa_o3lev_aura.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.o3diagsa_sbuv%c_%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.o3diagsa_tmi_trmm.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
+#
+EOF
+
+   close(ARC);
+
+}
+#=======================================================================
 sub arch_stageana {
 
    return 0 if ( $do4dvar );
@@ -7395,6 +7559,7 @@ set atype = "mstorage.arc"
 #----------------------
 if ( \$arch_type == "ADAS"  ) set atype = "mstorage.arc"
 if ( \$arch_type == "ANASA" ) set atype = "anasastorage.arc"
+if ( \$arch_type == "O3ANASA" ) set atype = "o3anasastorage.arc"
 if ( \$arch_type == "ASENS" ) set atype = "asenstorage.arc"
 if ( \$arch_type == "FCST"  ) set atype = "fcststorage.arc"
 if ( \$arch_type == "FSENS" ) set atype = "fsenstorage.arc"
@@ -7810,12 +7975,9 @@ print  SCRIPT <<"EOF";
   setenv LDHOME  $ldashome  # land analysis home dir (ldas_exp/) for central 
   setenv LDHOME4ENS $ldashome4ens  # land analysis home dir for atm_ens  
   setenv IGNORE_0 1   # 1 = ignore 0 length obs files in acquire
-  setenv ACFTBIAS $acftbias
   setenv FCSTIMES "$fcstimes"
   setenv FCSTATS  "21"
   setenv FHOURS   $fhours21
-  setenv NEWRADBC $newradbc
-  setenv ANGLEBC  $newradbc
   setenv GSI_NETCDF_DIAG 1
   setenv GSI_DIAG2TXT 1
 # setenv DO_0HR_IMP 1
@@ -8315,7 +8477,6 @@ EOF
     } else {
     print  SCRIPT <<"EOF";
     setenv NCEPINPUT \$FVBCS
-    $berror_env
 EOF
     }
 
@@ -8742,10 +8903,12 @@ sub write_FVDAS_Run_Config {
     $ENV{"EXPID"}  = $expid;
 
     $ENV{"AOD_OBSCLASS"}    = "$aod_obsclass";
+    $ENV{"ACFTBIAS"}        = "$acftbias";
     $ENV{"BERROR"}          = $berror_file if $berror_file;
     $ENV{"FVBCS"}           = "\$FVHOME/fvInput";
     $ENV{"GID"}             = $gid;
     $ENV{"MONTHLY_MEANS"}   = $monthly_means;
+    $ENV{"NEWRADBC"}        = $newradbc;
     $ENV{"NCEPINPUT"}       = $fvbcs;
     $ENV{"OBSCLASS"}        = $obClass;
     $ENV{"OMP_NUM_THREADS"} = $omp_num_threads;
@@ -9678,7 +9841,7 @@ sub init_agcm_rc {
     #------------------
     $rats = "PCHEM";
     $oanp = "PCHEM";
-    if ( $gocart_tracers ) { $aero = "GOCART";}
+    if ( $gocart_tracers ) { $aero = "GOCART2G";}
     else                   { $aero = "GOCART.data"; }
     if ( $cubed ) { 
          $dycore = "FV3";
@@ -9699,7 +9862,8 @@ sub init_agcm_rc {
     AGCM_label_subst("\@GRID_TYPE", $agcm_grid_type);
     AGCM_label_subst("\@CUBE_AGCM", $cube_agcm);
     AGCM_label_subst("\@LATLON_AGCM", $latlon_agcm);
-    AGCM_label_subst("\@IOS_NDS", $ios_nds);
+    AGCM_label_subst("\@NUM_OSERVER_NODES", $ios_nds);
+    AGCM_label_subst("\@NUM_BACKEND_PES", $bckend_wrts);
 
     AGCM_label_subst("\@AANA_IM", $ana_im);
     AGCM_label_subst("\@AANA_JM", $ana_jm);
@@ -9868,8 +10032,8 @@ sub copy_resources {
           || die "Cannot write file $fvhome/run/CVSTAG: $!";
   cp("$fvroot/etc/Chem_Registry.rc","$fvhome/run/gocart/Chem_Registry.rc")
           || warn "Cannot write file $fvhome/run/gocart/Chem_Registry.rc: $!";
-  cp("$fvroot/etc/DU_GridComp.rc","$fvhome/run/DU_GridComp.rc")
-          || warn "Cannot write file $fvhome/run/DU_GridComp.rc: $!";
+#_OUT cp("$fvroot/etc/DU_GridComp.rc","$fvhome/run/DU_GridComp.rc")
+#_OUT         || warn "Cannot write file $fvhome/run/DU_GridComp.rc: $!";
 
   # GEOS-5 GCM
   # ----------
@@ -9981,6 +10145,7 @@ sub copy_resources {
   ed_satbias_acq("run");
   ed_asens_acq("run");
   ed_fcst_acq("run");
+  ed_o3bkg_acq("o3anasa");
 
   # Edit GEOS-5 GCM-related resource files
   # --------------------------------------
@@ -10040,6 +10205,21 @@ sub copy_resources {
       $src = "$fvroot/etc/$fname" unless -e $src;
       $dest = "$fvhome/run/gocart/$fname";
 
+      unless ( -e $src ) {
+          print "$0: Cannot find resource file $src\n";
+          $missing{$fname}++;
+          next;
+      }
+      cp($src,$dest) || die "Cannot write file $dest: $!";
+  }
+
+  foreach $fname ( @go2yaml_files ) {
+
+      $src = "$fvroot/etc/$emiss/$fname";
+      $src = "$fvroot/etc/$fname" unless -e $src;
+      $dest = "$fvhome/run/gocart/$fname";
+
+      print "$0: DEBUG handling file $src\n";
       unless ( -e $src ) {
           print "$0: Cannot find resource file $src\n";
           $missing{$fname}++;
@@ -10134,6 +10314,21 @@ sub copy_resources {
       # Create daotovs_fv.rc in FVHOME/run
 #     ed_daotovs_fv();
 
+      # Setup additional stand-alone analysis options
+      # ---------------------------------------------
+      foreach my $anaopt ( "o3anasa","coanasa" ) {
+         if ( -d "$fvhome/$anaopt" ){
+            if ( -d "$fvetc/gsi/$anaopt" ) {
+               my @files =  glob("$fvetc/gsi/$anaopt" . "/*");
+               foreach my $fn ( @files ) {
+                  cp("$fn", "$fvhome/$anaopt");
+               }
+            }
+            ed_gsigridcomp_rc("GSI_GridComp.rc.tmpl","$anaopt","analysis");
+            ed_ncep_rc("gsi.rc.tmpl","$anaopt");
+         }
+      }
+
       # When applicable, overwrite w/ templated RC files for GSI
       # ------------------------------------------------------
       if ( $r21c ){
@@ -10171,11 +10366,11 @@ sub copy_resources {
 
       # Edit ssi.rc or gsi.rc
       if ( $anassi ) {
-          ed_ncep_rc("ssi.rc");
+          ed_ncep_rc("ssi.rc","run");
       } else {
           if ( $varcase < 4 ) {
-               ed_ncep_rc("gsi.rc.tmpl");
-               ed_gsigridcomp_rc("GSI_GridComp.rc.tmpl","analysis");
+               ed_ncep_rc("gsi.rc.tmpl","run");
+               ed_gsigridcomp_rc("GSI_GridComp.rc.tmpl","run","analysis");
 
                # Uncomment lsqrtb line for analysis-sensitivity application
                #if ($doasens) {
@@ -10186,22 +10381,22 @@ sub copy_resources {
                #}
 
           } else {
-               ed_gsigridcomp_rc("OBS_GridComp.rc.tmpl","observer");
-               ed_gsigridcomp_rc("GSI_GridComp_1.rc.tmpl","analysis");
-               ed_gsigridcomp_rc("GSI_GridComp_2.rc.tmpl","analysis");
-               ed_ncep_rc("obs.rc.tmpl");
+               ed_gsigridcomp_rc("OBS_GridComp.rc.tmpl","run","observer");
+               ed_gsigridcomp_rc("GSI_GridComp_1.rc.tmpl","run","analysis");
+               ed_gsigridcomp_rc("GSI_GridComp_2.rc.tmpl","run","analysis");
+               ed_ncep_rc("obs.rc.tmpl","run");
                ed_g5hist_rc("run","HISTFDDA.rc.tmpl");
                ed_g5hist_rc("run","HISTFDDAL.rc.tmpl");
                if ( $varcase == 4 ) {
-                    ed_ncep_rc("gsi_fdda_1.rc.tmpl");
-                    ed_ncep_rc("gsi_fdda_2.rc.tmpl");
+                    ed_ncep_rc("gsi_fdda_1.rc.tmpl","run");
+                    ed_ncep_rc("gsi_fdda_2.rc.tmpl","run");
                }
                if ( $varcase == 5 ) {
-                    ed_ncep_rc("gsi_fgat_1.rc.tmpl");
-                    ed_ncep_rc("gsi_fgat_2.rc.tmpl");
+                    ed_ncep_rc("gsi_fgat_1.rc.tmpl","run");
+                    ed_ncep_rc("gsi_fgat_2.rc.tmpl","run");
                }
           }
-          ed_ncep_rc("gsi_sens.rc.tmpl");
+          ed_ncep_rc("gsi_sens.rc.tmpl","run");
 
           # overwrite some of the RC files when setting up for MERRA2
           if( $merra2 ) { 

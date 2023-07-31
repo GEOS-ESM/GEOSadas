@@ -25,6 +25,7 @@ my ($FVSHARE, $SHARE, $REM_GRADS_CONFIG, $G5MGRAM, $LATS4DLOC, $FVBIN,
 my ($FVROOT_PORTAL, $RC_LOC, $RTAG, $ANAID, $CASE, $ERR, $ERROR_EXP,
     $FCHOME, $FCSTAGE, $FERR, $FVDOLMS, $FVGROUP, $FVPLOTS, $FVSCRA,
     $FVSILO, $FVSPOOL, $FVSTAGE, $FVWORK, $GRADS_CONFIG, $LIBSZ, $MONTHLY_X);
+my ($ACFTBIAS, $NEWRADBC);
 my (%vv);
 
 # main program
@@ -84,6 +85,7 @@ sub init {
 
     # look for other environment variables
     #-------------------------------------
+    $ACFTBIAS          = $ENV{"ACFTBIAS"};
     $AOD_OBSCLASS      = $ENV{"AOD_OBSCLASS"};
     $BERROR            = $ENV{"BERROR"};
     $DO_ECS_OUT        = $ENV{"DO_ECS_OUT"};
@@ -95,6 +97,7 @@ sub init {
     $MKSI_SIDB         = $ENV{"MKSI_SIDB"};
     $MKSIOZ_SIDB       = $ENV{"MKSIOZ_SIDB"};
     $MKSICN_SIDB       = $ENV{"MKSICN_SIDB"};
+    $NEWRADBC          = $ENV{"NEWRADBC"};
     $MP_SET_NUMTHREADS = $ENV{"MP_SET_NUMTHREADS"};
     $NCEPINPUT         = $ENV{"NCEPINPUT"};
     $OBSCLASS          = $ENV{"OBSCLASS"};
@@ -338,6 +341,9 @@ sub writefile {
     print RUNCONF "setenv OBSCLASS \"$OBSCLASS\"\n" if $OBSCLASS;
     print RUNCONF "setenv OBSCLASS_NOAIRS \"$OBSCLASS_NOAIRS\"\n" if $OBSCLASS_NOAIRS;
     print RUNCONF "setenv AOD_OBSCLASS \"$AOD_OBSCLASS\"\n";
+    print RUNCONF "setenv ACFTBIAS \"$ACFTBIAS\"\n";
+    print RUNCONF "setenv NEWRADBC \"$NEWRADBC\"\n";
+    print RUNCONF "setenv ANGLEBC \"$NEWRADBC\"\n";
 
     print RUNCONF "\numask 022\n";
     print RUNCONF "limit stacksize unlimited\n";

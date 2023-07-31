@@ -3,7 +3,7 @@
 #------------
 
 codeID: 523f29e
-description: C360L91_replay__GEOSadas-5_29_3__agrid_C360__ogrid_C
+description: C360L91_replay__GEOSadas-5_30_0__agrid_C360__ogrid_C
 fvsetupID: f7aaa973c7
 
 ---ENDHEADERS---
@@ -29,7 +29,7 @@ EXPID? [u000_C360]
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [C360L91_replay__GEOSadas-5_29_3__agrid_C360__ogrid_C]
+EXPDSC? [C360L91_replay__GEOSadas-5_30_0__agrid_C360__ogrid_C]
 > 
 
 Land Boundary Conditions? [Icarus_Updated]

@@ -167,13 +167,11 @@ CONTAINS
        end if
     else
        call MAPL_DefGridName (IM_DYN,JM_DYN,ABKGGRIDNAME,MAPL_am_I_root())
-       block
-         type(LatLonGridFactory) :: ll_factory
-         ll_factory = LatLonGridFactory(grid_name=trim(ABKGGRIDNAME), nx=ny, ny=ny, &
-                                        im_world=im_dyn, jm_world=jm_dyn, lm=lm_dyn, &
-                                        pole='PC',dateline='DC', __RC__)
-         GCMgrid= ll_factory%make_grid(__RC__)
-       end block
+       GCMgrid = grid_manager%make_grid(LatLonGridFactory(grid_name=trim(ABKGGRIDNAME), nx=nx, ny=ny, &
+                 im_world=im_dyn, jm_world=jm_dyn, lm=lm_dyn, &
+                 pole='PC',dateline='DC', rc=status))
+       _VERIFY(status)
+
 !   Validate grid
 !   -------------
        call ESMF_GridValidate(GCMgrid,__RC__)
