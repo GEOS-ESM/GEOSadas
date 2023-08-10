@@ -1,6 +1,6 @@
 C$$$  SUBPROGRAM DOCUMENTATION BLOCK
 C
-C SUBPROGRAM:    GBLEVENTS   PRE/POST PROCESSING OF PREPBUFR EVENTS 
+C SUBPROGRAM:    GBLEVENTS   PRE/POST PROCESSING OF PREPBUFR EVENTS
 C   PRGMMR: J.Whiting        ORG: EMC        DATE: 2014-05-08
 C
 C ABSTRACT: RUNS IN TWO MODES: "PREVENTS" AND "POSTEVENTS".  IN THE
@@ -70,7 +70,7 @@ C 1999-09-09 D. A. KEYSER -- ADDED "VADWND" TO THE LIST OF MESSAGE
 C     TYPES FOR WHICH FORECAST VALUES MUST BE ENCODED, EVEN WHEN
 C     DOFCST=FALSE (NECESSARY BECAUSE THE NEW PROGRAM CQCVAD NEEDS THE
 C     BACKGROUND DATA)
-C 1999-09-09 D. A. KEYSER -- CHANGES TO MAKE CODE MORE PORTABLE; 
+C 1999-09-09 D. A. KEYSER -- CHANGES TO MAKE CODE MORE PORTABLE;
 C     'TFC' NOW GENERATED FOR VADWND MESSAGE TYPES EVEN THOUGH TOB IS
 C     MISSING (NEEDED BY CQCVAD PROGRAM)
 C 1999-12-01 D. A. KEYSER -- SPEC. HUMIDITY AND VIRT. TEMPERATURE ARE
@@ -129,8 +129,8 @@ C     STILL HAS A 207-WORD HEADER (T62) {2004-09-10 CHANGE ASSUMED ALL
 C     SGES FILES HAD A 226-WORD HEADER (T254), BUT THIS IS VALID ONLY
 C     FOR GFS SGES)
 C 2006-05-05 R. E. TREADON -- CHANGE VERTICAL INTERPOLATION TO DIRECTLY
-C     USE PRESSURE PROFILE, NOT PRESSURE PROFILE CONVERTED TO SIGMA.  
-C     THIS CHANGE IS IN SUBROUTINE GBLEVN03.  AS A RESULT OF THIS 
+C     USE PRESSURE PROFILE, NOT PRESSURE PROFILE CONVERTED TO SIGMA.
+C     THIS CHANGE IS IN SUBROUTINE GBLEVN03.  AS A RESULT OF THIS
 C     CHANGE, SUBROUTINE GBLEVN07 WAS REMOVED.
 C 2006-07-14 D. A. KEYSER -- ADDED NEW NAMELIST SWITCH "SOME_FCST"
 C     WHICH APPLIES ONLY WHEN EXISTING SWITCH "DOFCST" IS FALSE: IF
@@ -229,7 +229,7 @@ C     ROUTINE GETBMISS TO ADAPT BMISS TO LINUX ENVIRONMENT IF NEED BE
 C     {I.E., OBTAINS BUFRLIB MISSING (BMISS) VIA CALL TO GETBMISS
 C     RATHER THAN HARDWIRING IT TO 10E10 (10E10 CAN CAUSE INTEGER
 C     OVERFLOW ON WCOSS - SEE CALLING PROGRAM FOR MORE INFO)}
-C 2013-01-25   M.SIENKIEWICZ (GMAO) FIX PROBLEM WITH "QTOP_REJ" 
+C 2013-01-25   M.SIENKIEWICZ (GMAO) FIX PROBLEM WITH "QTOP_REJ"
 C     FILTERING - NEEDED TO DECLARE SOME VARIABLES IN COMMON /GBEVCC/
 C     AS LOGICAL TYPE (PREVIOUSLY NOT DECLARED IN SOME ROUTINES).
 C 2013-02-13  D. A. KEYSER -- FINAL CHANGES TO RUN ON WCOSS: USE
@@ -253,13 +253,13 @@ C     IS FORCED TO BE FALSE IN "POSTEVENTS" MODE (DOANLS=TRUE). IN
 C     SUBROUTINE GBLEVN02, SFCSHP REPORTS WITH CALM WINDS AND NON-
 C     MISSING BACKGROUND U- OR V-COMPONENT WIND .GE. 5 M/SEC ARE
 C     FLAGGED WITH Q.M. 8 (EVENT PGM "PREVENT", REASON CODE 8).
-C 2014-05-08 JWhiting -- altered print statement (2 format) in GBLEVN10 
-C     subroutine; increased field width for spectral resolution to 
+C 2014-05-08 JWhiting -- altered print statement (2 format) in GBLEVN10
+C     subroutine; increased field width for spectral resolution to
 C     accommodate models w/ up to 5-digit resolution (I3 to I5).
 C 2016-10-25 M. Sienkiewicz - REPLACE INCORRECT HEIGHTS FOR ACARS OBS
 C     ABOVE 226.3HPA.  (INCORRECT CALCULATION IN MERRA PREPDATA PROCESSING
 C     PRIOR TO WCOSS TRANSITION.)  CONTROL BY NAMELIST SWITCH 'ACARSH'.
-C 2020-11-19 M.SIENKIEWICZ -- IN GBLEVN06, MODIFY INTERPOLATION TO 
+C 2020-11-19 M.SIENKIEWICZ -- IN GBLEVN06, MODIFY INTERPOLATION TO
 C     CORRECT ARRAY ACCESS FOR SP STATION.  (AFTER CHANGE TO PREPDATA
 C     AND/OR BUFR LIBRARY THE SP LATITUDE LOADED IN YOB WAS SLIGHTLY
 C     LESS THAN -90 AND THUS LED TO TRY TO ACCESS INDEX 0 INSTEAD OF 1.)
@@ -293,7 +293,7 @@ C              - REPORT BEING PROCESSED
 C     NEWTYP   - INDICATOR IF THE BUFR MESSAGE TABLE A ENTRY HAS
 C              - CHANGED FROM THAT OF THE PREVIOUS REPORT (=0 - NO,
 C              - =1 - YES)
-C                
+C
 C
 C   INPUT FILES:
 C     UNIT 05  - STANDARD INPUT (DATA CARDS - SEE NAMELIST
@@ -327,7 +327,7 @@ C              - (USED ONLY IN PREVENTS MODE)
 C
 C   SUBPROGRAMS CALLED:
 C     UNIQUE:      GBLEVN02 GBLEVN03   GBLEVN04
-C                  GBLEVN06 OEFG01      
+C                  GBLEVN06 OEFG01
 C                  GBLEVN08 GBLEVN10   GBLEVN11
 C                  MODULE: GBLEVN_MODULE
 C     LIBRARY:
@@ -489,14 +489,14 @@ C             OF THE PMSL INDICATOR ("PMIN") IS SET TO 1 TO DENOTE PMSL
 C             WAS DERIVED RATHER THAN OBSERVED.}
 C    PG4243 - ALLOW INDIAN RAOB MASS REPORTS (BLOCK 42,43)?
 C              PG4243 =.FALSE. ---> DO NOT CHANGE REPORTS
-C              PG4243 =.TRUE.  ---> GIVE ALL MASS VARIABLES A 
+C              PG4243 =.TRUE.  ---> GIVE ALL MASS VARIABLES A
 C                                   PREPBUFR TBL. VAL. 15
 C                                                       (DEFAULT=.TRUE.)
-C    ACARSH  - RECALCULATE HEIGHTS FOR ACARS DATA WHEN P<226.3 MB 
+C    ACARSH  - RECALCULATE HEIGHTS FOR ACARS DATA WHEN 0.0<P<226.3 MB
 C               ACARSH =.FALSE. ---> DO NOT CHANGE REPORTS
 C               ACARSH =.TRUE.  ---> RECALCULATE STD. ATM. HEIGHT ABOVE 226.3 MB
 C                                                       (DEFAULT=.TRUE.)
-C    
+C
 C
 CC
 C
@@ -1096,7 +1096,7 @@ C   REJECTED IF:
 C    - OBSERVATION ERROR IS MISSING (AND SWITCH DOBERR=TRUE) --
 C       "PREVENT" PGM REASON CODE 3
 C    - PRESSURE IS MORE THAN 100 MB ABOVE OR BELOW MODEL (GUESS)
-C       SURFACE PRESSURE (AND SWITCH FCST=TRUE) -- 
+C       SURFACE PRESSURE (AND SWITCH FCST=TRUE) --
 C       "PREVENT" PGM REASON CODE 4
 C    - PRESSURE IS REPORTED ABOVE 450 MB OR BELOW 1100 MB -- "PREVENT"
 C       PGM REASON CODE 2 (NOTE: DOES NOT APPLY TO SURFACE REPORTS,
@@ -1675,7 +1675,7 @@ C  GET GUESS PROFILE AT OB LOCATION
 C  --------------------------------
       CALL GBLEVN06(XOB,YOB)
 
-      
+
 C  INTERPOLATE GUESS PROFILES TO OB PRESSURES
 C  ------------------------------------------
 
@@ -1698,7 +1698,7 @@ C  ------------------------------------------
          IF(POB.LE.0. .OR. POB.GE.BMISS) GOTO 10
 
          poblog = log(pob)
-         
+
          la = -999
          lb = -999
          do k=1,kmax-1
@@ -1715,7 +1715,7 @@ C  ------------------------------------------
             lb = la+1
             wt = 0.0
          endif
-         
+
          li=0
          do k=1,kmax-1
             if (poblog<=pintlog(k) .and. poblog>pintlog(k+1)) then
@@ -2187,7 +2187,7 @@ C   VIRT. TEMP CALC. ON A GIVEN LEVEL IF ANY OF THE FOLLOWING
 C   CONDITIONS EXIST: REPORTED PRESSURE OBS IS MISSING, REPORTED
 C   (SENSIBLE) TEMPERATURE OBS IS MISSING, OR REPORTED DEWPOINT OBS IS
 C   MISSING.
-C 
+C
 C ATTRIBUTES:
 C   LANGUAGE: FORTRAN 90
 C   MACHINE:  NCEP WCOSS
@@ -2346,7 +2346,7 @@ C  Message type ADPUPA comes here
      $             .OR. POB.LE.700.) THEN
                      BAKV_8(2,L) = TQM_8(L) ! Tv qm same as for T when
                                             !  q ok or q flagged by
-                                            !  PREPRO (but not bad) 
+                                            !  PREPRO (but not bad)
                      BAKV_8(4,L) = 0    ! Tv gets unique reason code 0
                   ELSE
                      BAKV_8(2,L) = 3    !Tv qm susp for bad moist below
@@ -2647,6 +2647,7 @@ C***********************************************************************
 ! !REVISION HISTORY:
 !
 ! 25Oct2016    M.Sienkiewicz   Initial version
+! 10Aug2023    M.Sienkiewicz   Modify code to avoid divide by zero
 !
 !EOP
 !-----------------------------------------------------------------------
@@ -2662,7 +2663,7 @@ C***********************************************************************
 
       if (nlev.eq.1) then
          pob = obs_8(1,1)
-         if (pob .lt. 226.3) then
+         if (pob .lt. 226.3 .and. pob .gt. 0.0) then
             zob = hgtf_hi(pob)
             zev_8(1) = zob
             zev_8(2) = qms_8(4,1)
@@ -2674,4 +2675,4 @@ C***********************************************************************
       end if
       return
       end
-      
+
