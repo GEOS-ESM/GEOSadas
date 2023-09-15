@@ -1,0 +1,267 @@
+#!/bin/csh -fx
+#
+# fvGAAS driver script for GAAS-only.
+#
+# This script runs fvGAAS for one job segment. Restarts and such are
+# expected to be available from $FVHOME/recycle. The run is performed
+# in $FVWORK, and the output files are left there for archival
+# by the calling script.
+#
+# !REVISION HISTORY
+#
+#  02Feb2006 Todling    Initial implementation based on fvpsas.
+#
+#-----------------------------------------------------------------------------
+
+# Functions.csh must be somewhere in your path
+# --------------------------------------------
+  set Functions = ( `which Functions.csh` )
+  if ( $status ) then
+     echo $0": cannot find required Functions.csh"
+     exit 1
+  else
+     source $Functions[1]
+  endif
+
+# When "Verify" is set, non-zero return code from any user defined
+# csh Function causes this script to exit with the same return code; 
+# see Functions.csh
+# -------------------------------------------------------------------
+  set Verify
+  set Trace
+  Echo
+
+# Function definitions
+# --------------------
+  Use GEOSdas
+
+#                       M A I N    S C R I P T
+#                       ----------------------
+
+#  Getting started...
+#  ------------------
+   Call  Initialize_()
+   Call_ ParseCmdLine_  $argv 
+   Call  SanityCheck_()
+
+   setenv DO4DVAR 0
+
+#
+#
+#                 -------------------------------------
+#                  PART I - Prepare Working Directory 
+#                 -------------------------------------
+
+# Set up working directory and copy all the restart files along
+# with analysis resource files, model namelists and diagnostic table
+# file to this directory. The simulation is carried out here in
+# the working directory.
+# ------------------------------------------------------------------
+  cd $FVWORK
+
+# Copy resource files to working directory
+# ----------------------------------------
+  Call CopyResourceFiles_()
+
+# Set RSTSUFFIX for output GCM restart files (default: nc4)
+# ---------------------------------------------------------
+  setenv RSTSUFFIX nc4
+
+  set checktype_found = `grep -c DEFAULT_CHECKPOINT_TYPE: AGCM.rc.tmpl`
+  if ($checktype_found) then
+        set checktype = `echorc.x -rc AGCM.rc.tmpl DEFAULT_CHECKPOINT_TYPE`
+        if ($checktype == pbinary || $checktype == binary) then
+              setenv RSTSUFFIX bin
+        endif
+  endif
+
+# Define GCM's restart names
+# --------------------------
+  set grs_list = `grs_list.pl -rc AGCM.rc.tmpl -flg 1`
+  set grs_boot = `grs_list.pl -rc AGCM.rc.tmpl -flg 2`
+
+# Determine time of trajectory output in forecast mode
+# ----------------------------------------------------
+  Call DetermineTrjTimes_ ( TrjBegEpoch, TrjEndEpoch )
+
+# Make sure bkg files are brought into FVWORK - TO-BE-DONE
+# -------------------------------------------
+#                                                      zeit_ci.x AeroBKGs
+# Call VerifyAeroBKGs_()
+#                                                      zeit_co.x AeroBKGs
+
+# Determine beginning/ending times for this run
+# ---------------------------------------------
+  Call DetermineSimulationTimes_()
+
+# -------------------------------------------------------
+# AMS Note: Need to standardize date/time variable names 
+#           The following is a suggestion:
+#  xxxTime  integer of the form hhmmss. e.g., 120000
+#  xxxDate  integer of the form yyyymmdd, e.g., 20010720
+#  xxxEpoch list of (date,time), e.g., (20010720 120000)
+# -------------------------------------------------------
+  Call DetermineExpTimes_ ( ExpEndEpoch )
+  Call DetermineGcmTimes_ ( GcmBegEpoch, GcmEndEpoch, GcmLenEpoch )  
+  Call DetermineAnaTimes_ ( $VAROFFSET, $GcmBegEpoch, $TIMEINC, \
+                            AnaBegEpoch, AnaFreqEpoch ) 
+
+# Are we done with the simulation?
+# --------------------------------
+  if (${nymd1} >= ${nymde} && ${nhms1} >= ${nhmse}) then
+      echo $myname": simulation already completed, stop."
+      exit 100
+  endif
+
+# In IAU mode, quit if GCM run will exceed the CAP.rc END_DATE
+# ------------------------------------------------------------
+  set GcmEndDate = $GcmEndEpoch[1]
+  set GcmEndTime = $GcmEndEpoch[2]
+
+  if ($DOIAU) then
+     if ($GcmEndDate > $nymde || \
+        ($GcmEndDate == $nymde && $GcmEndTime > $nhmse)) then
+        echo $myname": simulation already completed, stop."
+        exit 100
+     endif
+  endif
+
+# Acquire "replay" analysis or observations
+# -----------------------------------------
+  if ( ! $FORECAST && $AnaFreqEpoch[2] > 0 ) then
+
+
+#    Determine relevant time/frequency information
+#    ---------------------------------------------
+     Call DetermineAcquireTimes_()
+
+                                                  zeit_ci.x acquire
+     Call AcquireObservations_() 
+                                                  zeit_co.x acquire
+
+  endif
+
+  echo ""
+  /bin/ls -la
+  echo ""
+
+#
+#
+#                  -------------------------------
+#                   PART  IIa - Run the Poor Model
+#                  -------------------------------
+
+# Set variables for Aerosol Analysis
+# ----------------------------------
+  if ( $GAAS_ANA ) then
+
+     Call InitAerosolAnalysis_()
+
+  endif
+
+  Call SplitExecInit_()
+
+# For each segment
+# ----------------
+  @ seg = 0
+  while ( $seg < $nsegs )
+
+      set aod_date = $gaasDateBeg
+      set aod_time = $gaasTimeBeg
+                                                zeit_ci.x AeroAna
+      Call AerosolAnalysis_()
+                                                zeit_co.x AeroAna
+
+#     Restore pre-BOOTSTRAP HISTORY collections and
+#     reset ENABLE_GAAS in GEOS_ChemGridComp.rc, if necessary
+#     -------------------------------------------------------
+      if ($?RESET_AFTER_GAAS_BOOTSTRAP) then
+          $FVROOT/bin/edhist.pl -i -q $FVWORK/HISTORY.rc.tmpl -Xall -I $HISTinc
+          if ($GAASFDBK) then
+             vED -i $FVWORK/GEOS_ChemGridComp.rc -vv ENABLE_GAAS=.TRUE.
+             echo "cat $FVWORK/GEOS_ChemGridComp.rc"
+             cat $FVWORK/GEOS_ChemGridComp.rc
+          endif
+          unsetenv RESET_AFTER_GAAS_BOOTSTRAP
+      endif
+
+#     Advance clock
+#     -------------
+      @ freqsc = $TIMEINC * 60
+      set nowdate = (`rst_date d_rst`)
+      set fwddate = (`tick $nowdate[1] $nowdate[2] $freqsc`)
+      /bin/rm drst
+      echo "previous      date $nowdate"
+      echo "advancing clock to $fwddate ... $freqsc"
+      mkdrstdate.x $fwddate[1] $fwddate[2]
+
+#     Increment the Loop Counter
+#     --------------------------
+      @ seg++
+      set grs_boot = ""
+
+  end # loop over analysis times
+
+#
+#                  ---------------------------------
+#                   PART III - Final Post-processing
+#                  ---------------------------------
+
+# Be sure that all non-feedback aerosol analysis jobs have completed
+# ------------------------------------------------------------------
+  if ( ( $GAAS_ANA ) && ( ! $GAASFDBK ) ) then
+
+       if ($aod_parallel_flag) then
+           wait
+       else
+           if ($?aodJobIDs) then
+               $FVROOT/bin/jobIDfilter -w $aodJobIDs
+               unsetenv aodJobIDs
+           endif
+       endif
+
+  endif
+
+# Tag various restarts and log files, making extra copies
+#  of restarts for recycling
+# -------------------------------------------------------
+#                                                      zeit_ci.x TagAndRecycle
+# Call FinalTaggingAndRecycling_()
+#                                                      zeit_co.x TagAndRecycle
+
+# Display profiler results
+# ------------------------
+  zeit_pr.x
+
+#
+#                  ------------------------------
+#                       PART IV - All Done
+#                  ------------------------------
+
+
+# Determine whether experiment is completed
+# -----------------------------------------
+  set nymd2 = $fwddate[1]
+  set nhms2 = $fwddate[2]
+  if (${nymd2} >= ${nymde} && ${nhms2} >= ${nhmse}) then
+    echo $myname": simulation just completed, no further job segments."
+    exit 101 
+  endif
+
+  if ($DOIAU) then
+     set GcmEndEpoch = ( `tick $nymd2 $nhms2 $GcmLenEpoch` )
+     set GcmEndDate = $GcmEndEpoch[1]
+     set GcmEndTime = $GcmEndEpoch[2]
+
+     if ($GcmEndDate > $nymde || \
+        ($GcmEndDate == $nymde && $GcmEndTime > $nhmse)) then
+        echo $myname": simulation just completed, no further job segments."
+        exit 101
+     endif
+  endif
+
+# All done
+# --------
+  Clean
+  exit 0
+
