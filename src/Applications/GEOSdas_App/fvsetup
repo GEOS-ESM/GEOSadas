@@ -1205,7 +1205,7 @@ sub defaults {
 # -----------------------------
   $arcwallclk = "3:00";
   $daswallclk = "2:00";
-  $fcswallclk = "5:00";
+  $fcswallclk = "2:30";
   $pbs_arcncpu    = 1;
 
   if ($siteName eq "pfe") {
@@ -7761,9 +7761,9 @@ if ( $fvchem && $lm > 2 ) {
 # Batch wall-clock time setting
 #------------------------------
  if    ($dbqueue)                       { $daswallclk = "1:00" }
- elsif ($hres eq "d" or $res eq "C180") { $daswallclk = "8:00" }
- elsif ($hres eq "e" or $res eq "C360") { $daswallclk = "9:00" }
- else                                   { $daswallclk = "5:00" }
+ elsif ($hres eq "d" or $res eq "C180") { $daswallclk = "3:00" }
+ elsif ($hres eq "e" or $res eq "C360") { $daswallclk = "3:00" }
+ else                                   { $daswallclk = "3:00" }
 
 # Set NCPUS for idf and iau
 #--------------------------

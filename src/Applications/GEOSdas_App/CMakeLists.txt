@@ -5,6 +5,7 @@ set(dasscripts
     fix_gocart_rc.csh 
     GEOSdas.csm       
     Reblock.csh       
+    fvgaas            
     fvoseledec        
     fvpert            
     fvpsas           
