@@ -20,7 +20,8 @@
    biascor=-0.10,bcoption=0,diurnalbc=1.0,
    crtm_coeffs_path="CRTM_Coeffs/",
    print_diag_pcg=.false.,
-   use_compress=.true.,nsig_ext=@NSIG_EXT,gpstop=60.,lgpsbnd_revint=.true.,
+   use_compress=.true.,nsig_ext=@NSIG_EXT,gpstop=55.,lgpsbnd_revint=.true.,
+   commgpstop=45.,spiregpserrinf=2.,
    use_sp_eqspace=.true.,
    reduce_diag=.true.,
    luse_obsdiag=.true.,
@@ -57,7 +58,8 @@
  /
  &OBSQC
    dfact=0.75,dfact1=3.0,noiqc=.false.,oberrflg=.true.,c_varqc=0.02,blacklst=.true.,
-   use_poq7=.true.,qc_noirjaco3=.true.,qc_satwnds=.false.,cld_det_dec2bin=.true.,
+   use_poq7=.true.,qc_noirjaco3=.false.,qc_satwnds=.false.,cld_det_dec2bin=.true.,
+   half_goesr_err=.false.,
 !  tcp_ermin=0.75,tcp_ermax=0.75,
    >>>AIRCFT_BIAS<<<
  /
@@ -90,8 +92,8 @@ OBS_INPUT::
    sbuvbufr       sbuv2       n19         sbuv8_n19             0.0      0     0        r21c_osbuv8_bufr
    ompsnmeffnc    ompsnmeff   npp         ompsnmeff_npp         0.0      2     0        r21c_npp_ompsnmeff_nc
 !  ompsnpnc       ompsnpnc    npp         ompsnpnc_npp          0.0      0     0        r21c_npp_ompsnp_nc
-!  ompslpgnc      ompslpnc    npp         ompslpnc_npp          1.0      0     0        r21c_ompslpnc_nc
-   ompslpvisnc    ompslpvis   npp         ompslpvis_npp         0.0      0     0        r21c_ompslpvis_nc
+   ompslpnc       ompslpnc    npp         ompslpnc_npp          0.0      0     0        r21c_ompslp_nc
+!  ompslpvisnc    ompslpvis   npp         ompslpvis_npp         0.0      0     0        r21c_ompslpvis_nc
    mlsnc          mls55       aura        mls55_aura            0.0      0     0        r21c_mls_nc
    omieffnc       omieff      aura        omieff_aura           0.0      2     0        r21c_aura_omieff_nc
    hirs2bufr      hirs2       n11         hirs2_n11             0.0      1     0        r21c_1bhrs2_bufr

@@ -47,6 +47,7 @@ my $scriptname = basename($0);
                "radbc",
                "vtxrlc",
                "nosppt",
+	       "pcpcor",
                "ose",
                "rcorr",
 	       "r21c",
@@ -144,6 +145,11 @@ sub init {
    $dosppt = 1;
    if ( $opt_nosppt ) {
       $dosppt = 0;
+   }
+
+   $dopcpcor = 0;
+   if ( $opt_pcpcor ) {
+      $dopcpcor = 1;
    }
 
    $setacftbc = 0;
@@ -360,6 +366,11 @@ sub init {
                     vtrack.rc
                     vtx.ctl.tmpl );
 
+  @r21crcs   = qw (atmos_enkf.nml.tmpl
+		   obs1gsi_mean.rc
+		   obs1gsi_member.rc
+		   HISTAENS.rc.tmpl );
+
 # location where ensemble RC files reside
   $AENSHOME = "$FVHOME/run/atmens";
 # location where OSE RC files reside
@@ -392,7 +403,6 @@ foreach $fn ( @resources ) {
     cp("$FVROOT/etc/atmens/$fn","$AENSHOME/$fn");
   }
 }
-
 if ( "$scheme" eq "enkf" ) {
   foreach $fn ( @rcenkf ) {
     cp("$FVROOT/etc/atmens/$fn","$AENSHOME/$fn");
@@ -420,6 +430,13 @@ if ( $setvtx ) {
         cp("$FVHOME/run/$fn","$AENSHOME/$fn");
      }
    }
+}
+
+# Overwrite R21C files 
+if ( $opt_r21c ) {
+	foreach $fn ( @r21crcs ) {
+		cp("$FVROOT/etc/atmens/R21C/$fn","$AENSHOME/$fn");
+	}	
 }
 
 # main driver script controlling ensemble
@@ -494,6 +511,12 @@ sub ed_agcm_rc {
         } else {
            if($rcd =~ /\@AENS_DOSPPT/) {$rcd=~ s/\@AENS_DOSPPT/0/g; }
         }
+
+        if ( $dopcpcor ) {
+	   if($rcd =~ /\#PRECIP_FILE/) {$rcd=~ s/\#PRECIP_FILE/PRECIP_FILE/g; }   	
+	   if($rcd =~ /\@PRECIP_FILE/) {$rcd=~ s/\@PRECIP_FILE/precip_corr_R21C\/diag\/Y%y4\/M%m2\/R21C.tavg_1hr_prcpcorr_c360_sfc.%y4%m2%d2_%h230.nc4/g; }
+	   if($rcd =~ /\#USE_PP_TAPER/) {$rcd=~ s/\#USE_PP_TAPER/USE_PP_TAPER/g; } 
+	}
 
         if($rcd =~ /\@LSM_CHOICE/) {$rcd=~ s/\@LSM_CHOICE/$lsmchoice/g; }
         if ( "$lndbcs" eq "Icarus-NLv3" ) {
@@ -892,6 +915,7 @@ OPTIONS
      -lsmcm        catchment option (only applicable when pointing to Icarus-NLv3)
      -nlevs  LEVS  number of atmospheric levels (default: 72)
      -nosppt       use to deactive SPPT scheme; use non-perturbed members
+     -dopcpcor     use precip correction option
      -ose          set up ensemble as an OSE-type experiment (NOT ALL READY YET)
      -radbc        set up to run with Y. Zhu satellite bias correction
      -rcorr        when specified will apply channel correlations

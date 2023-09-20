@@ -44,6 +44,10 @@ set (R21C_files
    R21C/atmos_enkf.nml.tmpl  
    R21C/obs1gsi_mean.rc  
    R21C/obs1gsi_member.rc
+   R21C/HISTAENS.rc.tmpl
+   R21C/post_egcm.rc
+   R21C/mp_stats_NZ.rc
+   R21C/mp_stats_NP.rc
    )
 
 install (

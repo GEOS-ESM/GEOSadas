@@ -522,6 +522,7 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
   while3 ( \&get_rstype );
   while3 ( \&get_GID );
 
+  set_satwnd();
 # Create subdirectories in FVHOME
 # -------------------------------
   mkdir_fvhome();
@@ -1448,7 +1449,9 @@ sub ed_g5hist_rc_new {
         .       " -s \@BJEDI_IM=$bjedi_im"
         .       " -s \@BJEDI_JM=$bjedi_jm"
         .       " -s \@PERT_FREQ=$pert_freq"
-        .       " -s \@AGCM_GRIDNAME=$AGCM_GRIDNAME";
+        .       " -s \@AGCM_GRIDNAME=$AGCM_GRIDNAME"
+        .       " -s \@AGCM_IM=$agcm_im"
+        .       " -s \@AGCM_JM=$agcm_jm";
     print "$cmd\n";
     system $cmd;
 
@@ -3257,6 +3260,7 @@ sub get_times {
           $asynbkg_min = 60;           # time frequency of background fields (min)
         } else {
           $asynbkg_min = 180;          # time frequency of background fields (min)
+	  if ( $r21c) { $asynbkg_min = 60};
         }
   } else {
         $splite = 0; $splitexe = 0;
@@ -3508,6 +3512,13 @@ sub set_newradbc {
     return 0;
 }
 #=======================================================================
+sub set_satwnd {
+    if ($merra2) { $satwnd_date = "20100701" };
+    if ($r21c)   { $satwnd_date = "20130101" };
+
+    return 0;
+}
+#=======================================================================
 sub set_ldasANA {
 
     # initialize Land DAS processing flag
@@ -3557,6 +3568,7 @@ sub get_setgsi {
   $anaexec = "GSIsa.x";
   $hybrid  = ".false.";
   $hyb_ens = -1;
+  if ($r21c) { $hyb_ens = 4}
   if ($merra2) { $nosfcana  = 0 } # will apply similarity to produce xana.sfc
   else         { $nosfcana  = 1 } # will not generation xana.sfc
 
@@ -3676,8 +3688,10 @@ sub set_atmens {
 # -----------------------
   if ($r21c) {
      $aens_replay = "no";	  
+     $aens_pcpcor = "yes";
   } else {
      $aens_replay = "yes";
+     $aens_pcpcor = "no";
   }
   $aens_sppt = "yes";
   $aens_res =  "C90";
@@ -3694,6 +3708,7 @@ sub set_atmens {
 
             Replay Ensemble:  $aens_replay
             SPPT for Ensemble:  $aens_sppt
+	    Precip Correction : $aens_pcpcor
             Resolution:  $aens_res
             Levels:  $aens_lev
 
@@ -3709,6 +3724,12 @@ EOF
      $sppt_flag = "-nosppt";
   } else {
      $sppt_flag = "";
+  }
+  if ($r21c) {
+     $aens_pcpcor = query("  Use Precip Correction for Ensemble? ", $aens_pcpcor);
+     if ( $aens_pcpcor eq "yes" ) { $pcpcor_flag = "-pcpcor" }; 
+  } else { 
+     $pcpcor_flag = "";
   }
   $aens_res = query("  Ensemble Resolution? ", $aens_res);
 
@@ -3754,7 +3775,7 @@ EOF
   if ($r21c) { 
      $bcopt = "-r21c";
   } 
-  $flags = "-nlevs $aens_lev $setacftbc $rcorrarg $setradbc $aens_lsmodel -expdir $fvhome/.. $sppt_flag $bcopt";
+  $flags = "-nlevs $aens_lev $setacftbc $rcorrarg $setradbc $aens_lsmodel -expdir $fvhome/.. $sppt_flag $pcpcor_flag $bcopt";
   $flags .= " -fvhome $fvhome" if $checkFLG;
   $params = " $aens_ana $expid $aens_im $aens_jm $aens_ocn $landbcs"; 
 
@@ -4389,13 +4410,13 @@ EOF
   $emission{"4"} = "OPS";
   $emission{"5"} = "PIESA";
   $emission{"6"} = "GEOSIT";
-  $emission{"7"} = "R21C";
+  $emission{"7"} = "AMIP";
 
   %remission = reverse %emission;
   if ($nrt)       { $dflt = "OPS"    }
   elsif ($merra2) { $dflt = "AMIP"   }
   elsif ($geosit) { $dflt = "GEOSIT" }
-  elsif ($r21c)   { $dflt = "R21C"   }
+  elsif ($r21c)   { $dflt = "AMIP"   }
   else            { $dflt = "PIESA"  }
 
   if ($gocart_tracers) {
@@ -7951,6 +7972,7 @@ print  SCRIPT <<"EOF";
   setenv DO4DTLM  $do4dtlm    # 1=enables tlm integration after each 4dvar iteration
   setenv DO4DIAU  $do4diau       # 1=enables gcm to take time changing IAU forcing
   setenv DORCORR  $doRcorr    # 1=enables correlated obs errors
+  setenv SATWND_DATE $satwnd_date # date to transition from prepbufr satwnd 
   setenv WCONSTRAINT $wcnstrt # set/unset weak constraint option
   setenv NVAROUTER $nvarouter # number of iteration for var loop
   setenv SSMI_UV 0        # 1 = enables SSMI WIND SPEED, 0 = disables it
@@ -9824,17 +9846,18 @@ sub init_agcm_rc {
 
     # gcm satellite simulator
     #------------------------
-    if ( $merra2 ) {
+    $satsim_radar = 0;
+    $satsim_lidar = 0;
+    $satsim_misr  = 0;
+    $satsim       = 0;
+    if ( $r21c ) { $satsim = 1 }
+    if ( $merra2 || $r21c ) {
         $satsim_isccp = 1;
         $satsim_modis = 1;
     } else {
         $satsim_isccp = 0;
         $satsim_modis = 0;
     }
-    $satsim_radar = 0;
-    $satsim_lidar = 0;
-    $satsim_misr  = 0;
-    $satsim       = 0;
     $dastuning    = "";
 
     # set aero provider
@@ -9969,7 +9992,7 @@ sub init_agcm_rc {
     #   default is based on NCA settings (but line is commented since we don't want this done)
     if ( $pcp_forced ) {
         $pcp_fntmpl = "d5_merra/Y%y4/M%m2/d5_merra.tavg1_2d_lfo_Nx_corr.%y4%m2%d2_%h230z.nc";
-        #if (r21c) { $pcp_fntmpl = " "}; # ADD when pcp files are ready 
+        if (r21c) { $pcp_fntmpl = "precip_corr_R21C/diag/Y%y4/M%m2/R21C.tavg_1hr_prcpcorr_c360_sfc.%y4%m2%d2_%h230.nc4"};  
     } else {
         if ( $nymd < 19890101 ) {
            $pcp_fntmpl = "d5_merra_jan79/diag/Y%y4/d5_merra_jan79.tavg1_2d_lfo_Nx_corr.%y4%m2%d2_%h230z.nc";
@@ -10338,12 +10361,12 @@ sub copy_resources {
                cp("$fn", "$fvhome/run");
             }
          }
-	 if ( -d "$fvetc/atmens/R21C" ){     
-	    my @files = glob("$fvetc/atmens/R21C" . "/*");	 
-            foreach my $fn ( @files ) {
-               cp("$fn","$fvhome/run/atmens");
-            }
-	 }
+# if ( -d "$fvetc/atmens/R21C" ){     
+#	    my @files = glob("$fvetc/atmens/R21C" . "/*");	 
+#            foreach my $fn ( @files ) {
+#               cp("$fn","$fvhome/run/atmens");
+#            }
+#	 }
       }
 
       # Update gocart files for pre-2000 case
