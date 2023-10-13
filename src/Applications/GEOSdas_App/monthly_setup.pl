@@ -292,7 +292,7 @@ options
   -fvhome fvhomedir   FVHOME directory location; defaults to \$ENV{"FVHOME"}
   -fvroot fvrootdir   FVROOT directory location; defaults to \$ENV{"FVROOT"}
   -gid groupid        Group ID; defaults to getsponsor.pl default
-  -nodeflg            Node flag: hasw, sky, cas (default: hasw)
+  -nodeflg            Node flag: hasw, sky, cas, mil (default: hasw)
   -res                Horizontal resolution of atmosphere grid
 EOF
 exit;

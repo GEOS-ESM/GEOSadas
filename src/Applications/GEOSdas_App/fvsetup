@@ -3169,7 +3169,7 @@ sub get_nodeflg {
   $proc = "";
   # reset default if applicable
 
-  $ans = query(" Processing nodes (1:Westmere, 2:SandyBridge, 3:Ivy Bridge, 4:Haswell, 5:Skylake, 6:Cascase)?", "4");
+  $ans = query(" Processing nodes (1:Westmere, 2:SandyBridge, 3:Ivy Bridge, 4:Haswell, 5:Skylake, 6:Cascase, 7:Milan)?", "4");
 
   if    ($ans == 1) { $nodeflg = "wes";  $ncpus_per_node = 12 }
   elsif ($ans == 2) { $nodeflg = "san";  $ncpus_per_node = 16 }
@@ -3177,6 +3177,7 @@ sub get_nodeflg {
   elsif ($ans == 4) { $nodeflg = "hasw"; $ncpus_per_node = 24 }
   elsif ($ans == 5) { $nodeflg = "sky";  $ncpus_per_node = 36 }
   elsif ($ans == 6) { $nodeflg = "cas";  $ncpus_per_node = 45 }
+  elsif ($ans == 7) { $nodeflg = "mil";  $ncpus_per_node = 126 }
 
   # currently not applicable at nccs
   #---------------------------------
