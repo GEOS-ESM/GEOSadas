@@ -5,13 +5,13 @@ GEOSadas:
 env:
   local: ./@env
   remote: ../ESMA_env.git
-  tag: v4.9.1
+  branch: feature/mathomp4/updates-for-milan-GEOSadas-5.30.3
   develop: main
 
 cmake:
   local: ./@cmake
   remote: ../ESMA_cmake.git
-  tag: v3.26.0
+  branch: feature/mathomp4/updates-for-milan-GEOSadas-5.30.3
   develop: develop
 
 ecbuild:
@@ -182,7 +182,7 @@ RRTMGP:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  tag: v1.9.4
+  branch: feature/mathomp4/updates-for-milan-GEOSadas-5.30.3
   develop: develop
 
 Ocean-LETKF:
