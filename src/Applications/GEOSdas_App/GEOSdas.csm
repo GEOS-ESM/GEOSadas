@@ -5865,13 +5865,6 @@ endif
               /bin/cp $EXPID.ana_radstat_rst.$rtag.tar $RSTHOLD/ &
             endif
 
-            # hold lfo files for the next segment of ldas coupling
-            #----------------------------------------------------------
-            #if ( $LDAS_ANA ) then
-               mkdir -p              $FVHOME/lana//holdforc
-               /bin/cp  $FVHOME/recycle/holdpredout/*2d_lfo*nc4  $FVHOME/lana/holdforc/
-            #endif
-
             # local copy to be moved by pesto, 2nd copy to be dealt w/ by recycle
             #--------------------------------------------------------------------
             if ( -e biasinp.$RSTSUFFIX ) then
