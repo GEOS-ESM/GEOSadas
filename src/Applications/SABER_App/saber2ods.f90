@@ -25,6 +25,7 @@
 !                         - Pulled code into own directory (out of ODS)
 !                           (need to link to bufr lib)
 !                         - Output ODS now 6-hrly instead of daily files
+!                         - Fixed timing getting into ODS time slot
 ! 
 ! To do: 
 !    1. generate corresponding prepbufr file
