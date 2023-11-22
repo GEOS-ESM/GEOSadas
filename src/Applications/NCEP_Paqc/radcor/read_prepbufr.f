@@ -19,6 +19,9 @@ C 2002-01-28  KEYSER      NOW THAT "PCAT" (PRECISION OF TEMPERATURE
 C                         OBS.) HAS BEEN ADDED TO PREPBUFR FILE FOR
 C                         "AIRCFT" AND "AIRCAR" MESSAGE TYPES, ADDED
 C                         THIS TO LISTING
+C 2015-12-02  SIENKIEWICZ PATCHED TO RESOLVE PROBLEM WITH READING 
+C                         AIRCRAFT HEADER SINCE SOME MNEMONICS NOW 
+C                         STORED ON DIFFERENT BUFR NODES
 C
 C USAGE:
 C   INPUT FILES:
@@ -653,7 +656,9 @@ C       -------------------------------------------------------
          CALL UFBINT(lunit,aircar_hdr,6,1,jret,
      +    'PCAT POAF TRBX10 TRBX21 TRBX32 TRBX43 ')
       ELSE IF( msgtyp .eq. 'AIRCFT')  THEN
-         CALL UFBINT(lunit,aircft_hdr,4,1,jret,'RCT PCAT POAF DGOT ')
+         CALL UFBINT(lunit,aircft_hdr,1,1,jret,'RCT ')
+         CALL UFBINT(lunit,aircft_hdr(2:3),2,1,jret,'PCAT POAF ')
+         CALL UFBINT(lunit,aircft_hdr(4),1,1,jret,'DGOT ')
       ELSE IF( msgtyp .eq. 'ADPUPA')  THEN
          CALL UFBINT(lunit,adpupa_hdr,1,1,jret,'SIRC ')
       ELSE IF( msgtyp .eq. 'GOESND' .or.  msgtyp .eq. 'SATEMP' )  THEN
@@ -853,7 +858,9 @@ C       -------------------------------------------------------
          CALL UFBINT(lunit,aircar_hdr2,6,1,jret,
      +    'PCAT POAF TRBX10 TRBX21 TRBX32 TRBX43 ')
       ELSE IF( msgtp2 .eq. 'AIRCFT')  THEN
-         CALL UFBINT(lunit,aircft_hdr2,4,1,jret,'RCT PCAT POAF DGOT ')
+         CALL UFBINT(lunit,aircft_hdr2,1,1,jret,'RCT ')
+         CALL UFBINT(lunit,aircft_hdr2(2:3),2,1,jret,'PCAT POAF ')
+         CALL UFBINT(lunit,aircft_hdr2(4),1,1,jret,'DGOT ')
       ELSE IF( msgtp2 .eq. 'ADPUPA')  THEN
          CALL UFBINT(lunit,adpupa_hdr2,1,1,jret,'SIRC ')
       ELSE IF( msgtp2 .eq. 'GOESND' .or.  msgtp2 .eq. 'SATEMP' )  THEN

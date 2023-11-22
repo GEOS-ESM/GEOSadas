@@ -17,8 +17,9 @@ ODS_files::
 
 # Active data (Note: deep blue in MYD04 is passive)
 
-#___AVHRR___${FVWORK}/${EXPID}.patmosx_v05r02_L2a.asc.%y4%m2%d2_%h200z.ods
-#___AVHRR___${FVWORK}/${EXPID}.patmosx_v05r02_L2a.des.%y4%m2%d2_%h200z.ods
+##___AVHRR___${FVWORK}/${EXPID}.patmosx_v05r02_L2a.asc.%y4%m2%d2_%h200z.ods
+##___AVHRR___${FVWORK}/${EXPID}.patmosx_v05r02_L2a.des.%y4%m2%d2_%h200z.ods
+#___AVHRR___${FVWORK}/patmosx.%y4%m2%d2_%h2z.ods
 
 #___TERRA_NRT___${FVWORK}/${EXPID}.MOD04_L2a.land.%y4%m2%d2_%h200z.ods
 #___TERRA_NRT___${FVWORK}/${EXPID}.MOD04_L2a.ocean.%y4%m2%d2_%h200z.ods
@@ -38,7 +39,7 @@ ODS_files::
 
 #___MISR___${FVWORK}/misr_F12_0022.bright_tc8.obs.%y4%m2%d2.ods
 
-#___AERONET___${FVWORK}/aeronet.obs.%y4%m2%d2.ods
+#___AERONET___${FVWORK}/aeronet.obs.%y4%m2%d2_%h2z.ods
 
 # Passive data
 #/nobackup/3/PARASOL/Level2/ODS/Y%y4/M%m2/PARASOL_L2.aero_tc8.obs.%y4%m2%d2.ods
@@ -57,6 +58,8 @@ do_averaging_kernel: yes
 do_you_want_to_skip_PSAS: no # yes or no
 
 alpha_for_bias_estimation: 0.010
+
+eps_for_log_transform_aod_on_input:  0.01
 
 range_of_wavenumbers_to_analyze_in_nm: 540 560
 

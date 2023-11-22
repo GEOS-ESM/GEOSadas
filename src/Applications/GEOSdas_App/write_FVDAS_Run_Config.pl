@@ -14,7 +14,7 @@ my ($filename);
 my ($ARCH, $HOST);
 my ($FVHOME, $FVROOT, $RUNDIR);
 my ($AOD_OBSCLASS, $BERROR, $DO_ECS_OUT, $DO_REM_SYNC, $EXPID, $FVARCH,
-    $FVBCS, $GID, $MONTHLY_MEANS, $MP_SET_NUMTHREADS, $NCEPINPUT, $NOBACKUP,
+    $FVBCS, $GID, $MONTHLY_MEANS, $MKSI_SIDB, $MKSIOZ_SIDB, $MKSICN_SIDB, $MP_SET_NUMTHREADS, $NCEPINPUT, $NOBACKUP,
     $OBSCLASS, $OBSCLASS_NOAIRS, $OMP_NUM_THREADS, $RUN_QUADS, $PYRADMON,
     $VTRACK, $VTXLEVS, $VTXRELOC);
 my ($BASEDIR, $FCSTID, $FVDMGET, $G5MODULES, $PLOTS_LOC, $GEOSUTIL, $GTAG);
@@ -25,6 +25,7 @@ my ($FVSHARE, $SHARE, $REM_GRADS_CONFIG, $G5MGRAM, $LATS4DLOC, $FVBIN,
 my ($FVROOT_PORTAL, $RC_LOC, $RTAG, $ANAID, $CASE, $ERR, $ERROR_EXP,
     $FCHOME, $FCSTAGE, $FERR, $FVDOLMS, $FVGROUP, $FVPLOTS, $FVSCRA,
     $FVSILO, $FVSPOOL, $FVSTAGE, $FVWORK, $GRADS_CONFIG, $LIBSZ, $MONTHLY_X);
+my ($ACFTBIAS, $NEWRADBC);
 my (%vv);
 
 # main program
@@ -84,6 +85,7 @@ sub init {
 
     # look for other environment variables
     #-------------------------------------
+    $ACFTBIAS          = $ENV{"ACFTBIAS"};
     $AOD_OBSCLASS      = $ENV{"AOD_OBSCLASS"};
     $BERROR            = $ENV{"BERROR"};
     $DO_ECS_OUT        = $ENV{"DO_ECS_OUT"};
@@ -92,6 +94,10 @@ sub init {
     $FVBCS             = $ENV{"FVBCS"};
     $GID               = $ENV{"GID"};
     $MONTHLY_MEANS     = $ENV{"MONTHLY_MEANS"};
+    $MKSI_SIDB         = $ENV{"MKSI_SIDB"};
+    $MKSIOZ_SIDB       = $ENV{"MKSIOZ_SIDB"};
+    $MKSICN_SIDB       = $ENV{"MKSICN_SIDB"};
+    $NEWRADBC          = $ENV{"NEWRADBC"};
     $MP_SET_NUMTHREADS = $ENV{"MP_SET_NUMTHREADS"};
     $NCEPINPUT         = $ENV{"NCEPINPUT"};
     $OBSCLASS          = $ENV{"OBSCLASS"};
@@ -321,6 +327,9 @@ sub writefile {
     print RUNCONF "setenv MONTHLY_X \"$MONTHLY_X\"\n" if $MONTHLY_X;
     print RUNCONF "setenv FVDOLMS $FVDOLMS\n" if $FVDOLMS;
     print RUNCONF "setenv CASE $CASE\n" if $CASE;
+    print RUNCONF "setenv MKSI_SIDB $MKSI_SIDB\n" if $MKSI_SIDB;
+    print RUNCONF "setenv MKSIOZ_SIDB $MKSIOZ_SIDB\n" if $MKSIOZ_SIDB;
+    print RUNCONF "setenv MKSICN_SIDB $MKSICN_SIDB\n" if $MKSICN_SIDB;
     print RUNCONF "setenv MP_SET_NUMTHREADS $MP_SET_NUMTHREADS\n" if $MP_SET_NUMTHREADS;
     print RUNCONF "setenv OMP_NUM_THREADS $OMP_NUM_THREADS\n" if $OMP_NUM_THREADS;
     print RUNCONF "setenv ARCH_QUEUE \"$ARCH_QUEUE\"\n" if $ARCH_QUEUE;
@@ -332,6 +341,9 @@ sub writefile {
     print RUNCONF "setenv OBSCLASS \"$OBSCLASS\"\n" if $OBSCLASS;
     print RUNCONF "setenv OBSCLASS_NOAIRS \"$OBSCLASS_NOAIRS\"\n" if $OBSCLASS_NOAIRS;
     print RUNCONF "setenv AOD_OBSCLASS \"$AOD_OBSCLASS\"\n";
+    print RUNCONF "setenv ACFTBIAS \"$ACFTBIAS\"\n";
+    print RUNCONF "setenv NEWRADBC \"$NEWRADBC\"\n";
+    print RUNCONF "setenv ANGLEBC \"$NEWRADBC\"\n";
 
     print RUNCONF "\numask 022\n";
     print RUNCONF "limit stacksize unlimited\n";

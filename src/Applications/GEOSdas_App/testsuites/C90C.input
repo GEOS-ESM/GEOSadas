@@ -2,9 +2,9 @@
 # C90C.input
 #-----------
 
-codeID: b3a880f
-description: C90C__GEOSadas-5_29_3__agrid_C90__ogrid_CS
-fvsetupID: f7d8d041c9
+codeID: 523f29e
+description: C90C__GEOSadas-5_30_0__agrid_C90__ogrid_CS
+fvsetupID: f7aaa973c7
 
 ---ENDHEADERS---
 
@@ -29,7 +29,7 @@ EXPID? [u000_C90]
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [C90C__GEOSadas-5_29_3__agrid_C90__ogrid_CS]
+EXPDSC? [C90C__GEOSadas-5_30_0__agrid_C90__ogrid_CS]
 > 
 
 Land Boundary Conditions? [Icarus_Updated]
@@ -57,6 +57,9 @@ REAL TIME BCS? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/g5
 
 agcmpert? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/agcmpert]
 > 
+
+chemistry? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/chemistry]
+>
 
 g5chem? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/g5chem]
 > 

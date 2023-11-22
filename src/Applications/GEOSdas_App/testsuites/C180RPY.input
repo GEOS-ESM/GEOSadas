@@ -2,9 +2,9 @@
 # C180RPY.input
 #------------
 
-codeID: b3a880f
-description: C180RPY__GEOSadas-5_29_3__agrid_C180__ogrid_C
-fvsetupID: f7d8d041c9
+codeID: 523f29e
+description: C180RPY__GEOSadas-5_30_0__agrid_C180__ogrid_C
+fvsetupID: f7aaa973c7
 
 ---ENDHEADERS---
 
@@ -29,7 +29,7 @@ EXPID? [u000_C180]
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [C180RPY__GEOSadas-5_29_3__agrid_C180__ogrid_C]
+EXPDSC? [C180RPY__GEOSadas-5_30_0__agrid_C180__ogrid_C]
 > 
 
 Land Boundary Conditions? [Icarus_Updated]
@@ -60,6 +60,9 @@ REAL TIME BCS? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/g5
 > 
 
 agcmpert? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/agcmpert]
+> 
+
+chemistry? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/chemistry]
 > 
 
 g5chem? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/g5chem]

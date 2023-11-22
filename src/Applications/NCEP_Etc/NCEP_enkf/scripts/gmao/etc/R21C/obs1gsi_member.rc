@@ -1,0 +1,192 @@
+ &SETUP
+   miter=0,niter(1)=1,niter(2)=1,
+   niter_no_qc(1)=999,niter_no_qc(2)=999,
+   write_diag(1)=.true.,write_diag(2)=.false.,write_diag(3)=.false.,
+   jiterstart=1,
+   gencode=82,qoption=2,
+   factqmin=0.005,factqmax=0.005,deltim=300,
+!--gencode=82,qoption=1,
+!--factqmin=0.8,factqmax=1.2,deltim=300,
+   ifact10=0,
+   pseudo_q2=.true.,
+   use_prepb_satwnd=>>>USE_PREPB_SATWND<<<,
+   ec_amv_qc=.false.,
+   iguess=-1,
+   diag_version=30303,
+   id_drifter=.true.,
+   id_ship=.false.,
+   tzr_qc=1,
+   oneobtest=.false.,retrieval=.false.,
+   biascor=-0.10,bcoption=0,diurnalbc=1.0,
+   crtm_coeffs_path="CRTM_Coeffs/",
+   print_diag_pcg=.false.,
+   use_compress=.true.,nsig_ext=@NSIG_EXT,gpstop=60.,lgpsbnd_revint=.true.,
+   use_sp_eqspace=.true.,
+   reduce_diag=.true.,
+   luse_obsdiag=.true.,
+   lread_obs_save=.false.,lread_obs_skip=.true.,lwrite_predterms=.true.,lwrite_peakwt=.true.,
+   ens_nstarthr=3,
+@RADBC   newpc4pred=.true.,adp_anglebc=.true.,angord=4,
+@RADBC   passive_bc=.true.,use_edges=.false.,
+@RADBC   diag_precon=.true.,step_start=1.e-3,emiss_bc=.true.,
+   lrun_subdirs=.false.,
+ /
+ &GRIDOPTS
+   JCAP=@GSI_JCAP,NLAT=@GSI_JM,NLON=@GSI_IM,nsig=@GSI_LM,
+   regional=.false.,
+   nvege_type=13,
+ /
+ &BKGERR
+   vs=0.6,
+   hzscl=0.588,1.25,2.0,
+   hswgt=0.45,0.3,0.25,
+   bw=0.0,norsp=4,
+   bkgv_flowdep=.true.,bkgv_rewgtfct=1.5,
+   fpsproj=.false.,
+   adjustozvar=.true.,
+ /
+ &ANBKGERR
+   anisotropic=.false.,
+ /
+ &JCOPTS
+   ljcpdry=.true.,bamp_jcpdry=2.5e7,
+ /
+ &STRONGOPTS
+!  tlnmc_option=1,nstrong=1,nvmodes_keep=24,period_max=6.,period_width=1.5,
+!  baldiag_full=.true.,baldiag_inc=.true.,
+ /
+ &OBSQC
+   dfact=0.75,dfact1=3.0,noiqc=.false.,oberrflg=.true.,c_varqc=0.02,blacklst=.true.,
+   use_poq7=.true.,qc_noirjaco3=.true.,qc_satwnds=.false.,cld_det_dec2bin=.true.,
+!  tcp_ermin=0.75,tcp_ermax=0.75,
+   >>>AIRCFT_BIAS<<<
+ /
+ &OBS_INPUT
+   dmesh(1)=145.0,dmesh(2)=150.0,dmesh(3)=180.0,time_window_max=3.0,
+ /
+OBS_INPUT::
+!  dfile          dtype       dplat       dsis                  dval     dthin dsfcalc  obclass
+   prepbufr       ps          null        ps                    0.0      0     0        gmao_prep_bufr
+   prepbufr       t           null        t                     0.0      0     0        gmao_prep_bufr
+   prepbufr       q           null        q                     0.0      0     0        gmao_prep_bufr
+   prepbufr       uv          null        uv                    0.0      0     0        gmao_prep_bufr
+   prepbufr_profl t           prof        t                     0.0      0     0        gmao_acftpfl_bufr
+   prepbufr_profl uv          prof        uv                    0.0      0     0        gmao_acftpfl_bufr
+   prepbufrt      ps          null        ps                    0.0      0     0        r21c_prep_bufr
+   prepbufrt      t           null        t                     0.0      0     0        r21c_prep_bufr
+   prepbufrt      q           null        q                     0.0      0     0        r21c_prep_bufr
+   prepbufrt      uv          null        uv                    0.0      0     0        r21c_prep_bufr
+   prepbufrt_profl t          prof        t                     0.0      0     0        r21c_acftpfl_bufr
+   prepbufrt_profl uv         prof        uv                    0.0      0     0        r21c_acftpfl_bufr
+   loonwinds      uv          null        uv                    0.0      0     0        r21c_loon_winds
+   mlstbufr       t           aura        t                     0.0      0     0        r21c_gmao_mlst_bufr
+   gpsrobufr      gps_bnd     null        gps                   0.0      0     0        r21c_gpsro_bufr
+   tcvitl         tcp         null        tcp                   0.0      0     0        r21c_ncep_tcvitals
+   sbuvbufr       sbuv2       n11         sbuv8_n11             0.0      0     0        r21c_osbuv8_bufr
+   sbuvbufr       sbuv2       n14         sbuv8_n14             0.0      0     0        r21c_osbuv8_bufr
+   sbuvbufr       sbuv2       n16         sbuv8_n16             0.0      0     0        r21c_osbuv8_bufr
+   sbuvbufr       sbuv2       n17         sbuv8_n17             0.0      0     0        r21c_osbuv8_bufr
+   sbuvbufr       sbuv2       n18         sbuv8_n18             0.0      0     0        r21c_osbuv8_bufr
+   sbuvbufr       sbuv2       n19         sbuv8_n19             0.0      0     0        r21c_osbuv8_bufr
+   ompsnmeffnc    ompsnmeff   npp         ompsnmeff_npp         0.0      2     0        r21c_npp_ompsnmeff_nc
+!  ompsnpnc       ompsnpnc    npp         ompsnpnc_npp          0.0      0     0        r21c_npp_ompsnp_nc
+!  ompsnpnc       ompsnpnc    npp         ompsnpnc_npp          0.0      0     0        r21c_npp_ompsnp_nc
+   ompslpvisnc    ompslpvis   npp         ompslpvis_npp         0.0      0     0        r21c_ompslpvis_nc
+   mlsnc          mls55       aura        mls55_aura            0.0      0     0        r21c_mls_nc
+   omieffnc       omieff      aura        omieff_aura           0.0      2     0        r21c_aura_omieff_nc
+   hirs2bufr      hirs2       n11         hirs2_n11             0.0      1     0        r21c_1bhrs2_bufr
+   hirs2bufr      hirs2       n12         hirs2_n12             0.0      1     0        r21c_1bhrs2_bufr
+   hirs2bufr      hirs2       n14         hirs2_n14             0.0      1     0        r21c_1bhrs2_bufr
+   hirs3bufr      hirs3       n15         hirs3_n15             0.0      1     0        r21c_1bhrs3_bufr
+   hirs3bufr      hirs3       n16         hirs3_n16             0.0      1     0        r21c_1bhrs3_bufr
+   hirs3bufr      hirs3       n17         hirs3_n17             0.0      1     0        r21c_1bhrs3_bufr
+   hirs4bufr      hirs4       n18         hirs4_n18             0.0      1     0        r21c_1bhrs4_bufr
+   hirs4bufr      hirs4       n19         hirs4_n19             0.0      1     0        r21c_1bhrs4_bufr
+   hirs4bufr      hirs4       metop-a     hirs4_metop-a         0.0      1     0        r21c_1bhrs4_bufr
+   hirs4bufr      hirs4       metop-b     hirs4_metop-b         0.0      1     0        r21c_1bhrs4_bufr
+   airsbufr       airs        aqua        airs_aqua             0.0      3     0        r21c_eosairs_bufr
+   eosamsua       amsua       aqua        amsua_aqua            0.0      1     0        r21c_eosamsua_bufr
+   msubufr        msu         n11         msu_n11               0.0      1     0        r21c_1bmsu_bufr
+   msubufr        msu         n12         msu_n12               0.0      1     0        r21c_1bmsu_bufr
+   msubufr        msu         n14         msu_n14               0.0      1     0        r21c_1bmsu_bufr
+   ssubufr        ssu         n14         ssu_n14               0.0      1     0        r21c_1bssu_bufr
+   amsuabufr      amsua       n15         amsua_n15             0.0      1     0        r21c_1bamua_bufr
+   amsuabufr      amsua       n16         amsua_n16             0.0      1     0        r21c_1bamua_bufr
+   amsuabufr      amsua       n17         amsua_n17             0.0      1     0        r21c_1bamua_bufr
+   amsuabufr      amsua       n18         amsua_n18             0.0      1     0        r21c_1bamua_bufr
+   amsuabufr      amsua       n19         amsua_n19             0.0      1     0        r21c_1bamua_bufr
+   amsuabufr      amsua       metop-a     amsua_metop-a         0.0      1     0        r21c_1bamua_bufr
+   amsuabufr      amsua       metop-b     amsua_metop-b         0.0      1     0        r21c_1bamua_bufr
+   amsuabufr      amsua       metop-c     amsua_metop-c         0.0      1     0        r21c_1bamua_bufr
+   amsubbufr      amsub       n15         amsub_n15             0.0      1     0        r21c_1bamub_bufr
+   amsubbufr      amsub       n16         amsub_n16             0.0      1     0        r21c_1bamub_bufr
+   amsubbufr      amsub       n17         amsub_n17             0.0      1     0        r21c_1bamub_bufr
+   mhsbufr        mhs         n18         mhs_n18               0.0      1     0        r21c_1bmhs_bufr
+   mhsbufr        mhs         n19         mhs_n19               0.0      1     0        r21c_1bmhs_bufr
+   mhsbufr        mhs         metop-a     mhs_metop-a           0.0      1     0        r21c_1bmhs_bufr
+   mhsbufr        mhs         metop-b     mhs_metop-b           0.0      1     0        r21c_1bmhs_bufr
+   mhsbufr        mhs         metop-c     mhs_metop-c           0.0      1     0        r21c_mhs_bufr
+   seviribufr     seviri      m08         seviri_m08            0.0      1     0        r21c_sevcsr_bufr
+   seviribufr     seviri      m09         seviri_m09            0.0      1     0        r21c_sevcsr_bufr
+   seviribufr     seviri      m10         seviri_m10            0.0      1     0        r21c_sevcsr_bufr
+   smit11bufr     ssmi        f11         ssmi_f11              0.0      1     0        r21c_ssmit11_bufr
+   smit13bufr     ssmi        f13         ssmi_f13              0.0      1     0        r21c_ssmit13_bufr
+   smit14bufr     ssmi        f14         ssmi_f14              0.0      1     0        r21c_ssmit14_bufr
+   smit15bufr     ssmi        f15         ssmi_f15              0.0      1     0        r21c_ssmit15_bufr
+   iasibufr       iasi        metop-a     iasi_metop-a          0.0      3     0        r21c_mtiasi_bufr
+   iasibufr       iasi        metop-b     iasi_metop-b          0.0      3     0        r21c_mtiasi_bufr
+   iasibufr       iasi        metop-c     iasi_metop-c          0.0      3     0        r21c_mtiasi_bufr
+   atmsbufr       atms        npp         atms_npp              0.0      1     0        r21c_atms_bufr
+   atmsbufr       atms        n20         atms_n20              0.0      1     0        r21c_atms_bufr
+   crisfsrbufr    cris-fsr    npp         cris-fsr_npp          0.0      3     0        r21c_crisfsr_bufr
+   crisfsrbufr    cris-fsr    n20         cris-fsr_n20          0.0      3     0        r21c_crisfsr_bufr
+   tmibufr        tmi         trmm        tmi_trmm              0.0      1     0        r21c_tmi_bufr
+   gmibufr        gmi         gpm         gmi_gpm               0.0      1     0        r21c_gmi_bufr
+   amsr2bufr      amsr2       gcom-w1     amsr2_gcom-w1         0.0      1     0        r21c_amsr2_bufr
+   amsregmao      amsre       aqua        amsre_aqua            0.0      1     0        r21c_amsre_bufr
+   satwndbufr     uv          null        uv                    0.0      0     0        r21c_satwnd_bufr
+   satwndavhr     uv          null        uv                    0.0      0     0        r21c_avhrr_satwnd_bufr
+   avcsambufr     avhrr       n15         avhrr3_n15            0.0      1     0        r21c_avcsam_bufr
+   avcsambufr     avhrr       n17         avhrr3_n17            0.0      1     0        r21c_avcsam_bufr
+   avcsambufr     avhrr       metop-a     avhrr3_metop-a        0.0      1     0        r21c_avcsam_bufr
+   avcsambufr     avhrr       metop-b     avhrr3_metop-b        0.0      1     0        r21c_avcsam_bufr
+   avcspmbufr     avhrr       n16         avhrr3_n16            0.0      1     0        r21c_avcspm_bufr
+   avcspmbufr     avhrr       n18         avhrr3_n18            0.0      1     0        r21c_avcspm_bufr
+   avcspmbufr     avhrr       n19         avhrr3_n19            0.0      1     0        r21c_avcspm_bufr
+!!!!!
+!  prepbufr    spd         null        spd                   0.0      0     0        gmao_prep_bufr
+!  prepbufr    pw          null        pw                    0.0      0     0        gmao_prep_bufr
+!  ascatbufr   uv          null        uv                    0.0      0     0        merra2_ascat_bufr
+!  ssmisbufr   ssmis       f17         ssmis_f17             0.0      1     0        hist_ssmis_bufr
+!  ssmisbufr   ssmis       f18         ssmis_f18             0.0      1     0        hist_ssmis_bufr
+!  crisbufr    cris        npp         cris_npp              0.0      3     0        hist_cris_bufr
+!  ompsnmbufr  ompsnm      npp         ompsnm_npp            0.0      2     0        npp_ompsnm_bufr
+!  ompsnpbufr  ompsnp      npp         ompsnp_npp            0.0      0     0        npp_ompsnp_bufr
+!  ompslpuvnc  ompslpuv    npp         ompslpuv_npp          1.0      0     0        ompslpuv_nc
+!  sbuvbufr    sbuv2       nim07       sbuv8_nim07           0.0      0     0        osbuv8_bufr
+::
+ &SUPEROB_RADAR
+ /
+ &LAG_DATA
+! lag_accur=1e-6,
+! infile_lag='inistate_lag.dat',
+! lag_stepduration=900.,
+! lag_nmax_bal=100,
+! lag_vorcore_stderr_a=2e3,
+! lag_vorcore_stderr_b=0,
+ /
+ &HYBRID_ENSEMBLE
+ /
+ &RAPIDREFRESH_CLDSURF
+!  dfi_radar_latent_heat_time_period=30.0,
+ /
+ &SINGLEOB_TEST
+!  maginnov=0.1,magoberr=0.1,oneob_type='t',
+!  oblat=45.,oblon=180.,obpres=1000.,obdattim=2004041512,
+!  obhourset=0.,
+ /
+ &CHEM
+ /
+ &NST
+ nst_gsi=3,
+ /

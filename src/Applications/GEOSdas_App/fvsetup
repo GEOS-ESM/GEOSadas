@@ -362,6 +362,7 @@ use AGCM_PERTrc qw(set_AGCM_PERT_envvars set_AGCM_PERT_flags);
 use Create_anasa_script qw(anasa_script);
 use Create_asens_script qw(asens_script);
 use Create_fsens_script qw(fsens_script);
+use Create_o3anasa_script qw(o3anasa_script);
 use GMAO_utils qw(get_siteID);
 use Manipulate_time qw(tick);
 use Saverst qw(writeSaverst);
@@ -386,13 +387,13 @@ my ($acqloc);
 my ($fcstimes,$fcswait_hrs,$asnwait_hrs);
 my ($landbcs);
 my ($coupled, $ores, $mometc);
-my ($o_servers);
+my ($o_servers,$bckend_wrts);
 
 my ($sysfile, $nodeflg);
 my (@rmTilde);
 my ($merra2, $acftbias, $doRcorr, $nrt, $rstype);
 my ($hyb_ens, $do4diau, $newradbc, $siglevs, $vres, $aensupa);
-my ($geosit, $r21c);
+my ($geosit, $r21c,$bcopt);
 
 system clear;
 get_runtime_values();
@@ -533,6 +534,7 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
   arch_fsens();
   arch_asens();
   arch_anasa();
+  arch_o3anasa();
   run_config();
 
 # If so, setup EnADAS
@@ -562,6 +564,7 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
    asens_script ( %inputparams ) if $doasens;
    fsens_script ( %inputparams ) if $doasens;
    anasa_script ( %inputparams );
+   o3anasa_script ( %inputparams );
 
 # Allow user to edit resources/scripts
 # ------------------------------------
@@ -595,6 +598,7 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
     . " -expid $expid"
     . " -fvhome $fvhome"
     . " -fvroot $fvroot"
+    . " -nodeflg $nodeflg"
     . " -res $res";
   $cmd .= " -gid $gid" if $gid;
   print "$cmd\n";
@@ -881,7 +885,8 @@ sub defaults {
                      HISTORY.rc.tmpl
                      OBS_GridComp.rc.tmpl
                      saverst.rc 
-                     GEOS_SurfaceGridComp.rc );
+                     GEOS_SurfaceGridComp.rc
+                     logging.yaml );
 
   @coupled_files = qw( data_table
                        g5aodas_diag_table
@@ -893,7 +898,8 @@ sub defaults {
 #                      OC_GridComp_ExtData-clim.rc
 #                      SU_GridComp_ExtData-clim.rc );
 
-  @chem_files = qw ( Aod-550nm_Registry.rc
+  @chem_files = qw ( aop_calculator.rc
+                     Aod-550nm_Registry.rc
                      Aod3d_1064nm.rc      
                      Aod3d_355nm.rc
                      Aod3d_532nm.rc
@@ -911,6 +917,11 @@ sub defaults {
                      BRC_GridComp.rc
                      BRC_GridComp_ExtData.rc
                      BRC_Registry.rc
+                     CA2G_GridComp_ExtData.rc
+                     CA2G_instance_CA.bc.rc
+                     CA2G_instance_CA.br.rc
+                     CA2G_instance_CA.oc.rc
+                     CA2G_StateSpecs.rc
                      CARMA_History___.rc
                      CARMAchem_GridComp_ExtData.rc
                      CARMAchem_MieRegistry.rc
@@ -955,26 +966,37 @@ sub defaults {
                      Chem_Mie.rc
                      Chem_MieRegistry.rc
                      Chem_Registry.rc
+                     ChemEnv_ExtData.rc
+                     ChemEnv.rc
+                     Chem_Ext3d.rc
                      DNA_ExtData.rc
                      DNA_GridComp.rc
                      DNA_Registry.rc
-                     DU_GridComp.rc
                      DU_GridComp---full.rc
                      DU_GridComp_ExtData.rc
                      DU_History___.rc
                      DU_Registry.rc
+                     DU2G_GridComp_ExtData.rc
+                     DU2G_instance_DU.rc
+                     DU2G_StateSpecs.rc
                      Deposition_Registry___.rc 
+                     GAAS_GridComp_ExtData.rc
                      GEOSCHEMchem_ExtData.rc
                      GEOSCHEMchem_GridComp.rc
                      GEOSCHEMchem_Registry.rc
                      GEOSachem_ExtData.rc
                      GEOSachem_Registry.rc
+                     GEOS_AChemGridComp.rc
+                     GEOS_AChem_History___.rc
+                     GEOSCHEMCHEM_History___.rc
                      GMICHEM_History___.rc
                      GMI_ExtData.rc
                      GMI_GridComp.rc
                      GMI_Registry.rc
+                     GMI_Tendency_Registry___.rc
                      GOCARTdata_AerRegistry.rc 
                      GOCARTdata_ExtData.rc
+                     GOCART2G_GridComp.rc
                      HEMCO_Config.rc
                      HEMCO_DiagnFile.rc
                      HEMCO_GridComp.rc
@@ -983,15 +1005,30 @@ sub defaults {
                      HEMCOgocart_Diagn.rc
                      HEMCOgocart_ExtData.rc
                      HEMCOgocart_Spec.rc
+                     HEMCOgmi_Config.rc
+                     HEMCOgmi_Diagn.rc
+                     HEMCOgmi_ExtData.rc
+                     HEMCOgmi_Spec.rc
+                     HEMCOgocart2g_Config.rc
+                     HEMCOgocart2g_Diagn.rc
+                     HEMCOgocart2g_ExtData.rc
+                     HEMCOgocart2g_Spec.rc
+                     mam_optics_calculator.rc
                      MAM7_ExtData.rc
                      MAMchem_GridComp.rc
                      MAMchem_History___.rc
                      MAMchem_Registry.rc
+                     MATRIXchem_GridComp.rc
+                     MATRIXchem_History___.rc
+                     MATRIXchem_Registry.rc
                      NI_GridComp---full.rc
                      NI_GridComp.rc
                      NI_GridComp_ExtData.rc
                      NI_History___.rc
                      NI_Registry.rc
+                     NI2G_GridComp_ExtData.rc
+                     NI2G_instance_NI.rc
+                     NI2G_StateSpecs.rc
                      O3_GridComp.rc
                      O3_GridComp_ExtData.rc
                      O3_History___.rc
@@ -1015,6 +1052,7 @@ sub defaults {
                      Rn_GridComp_ExtData.rc
                      Rn_History___.rc
                      Rn_Registry.rc
+                     setkin_chem_mech.txt___.rc
                      SC_GridComp.rc
                      SC_Registry.rc
                      SS_GridComp.rc
@@ -1023,13 +1061,18 @@ sub defaults {
                      SS_Registry.rc
                      StratChem_ExtData.rc
                      StratChem_History___.rc
+                     SS2G_GridComp_ExtData.rc
+                     SS2G_instance_SS.rc
+                     SS2G_StateSpecs.rc
                      SU_GridComp---full.rc
                      SU_GridComp---volc.rc
                      SU_GridComp.rc
                      SU_GridComp_ExtData.rc
                      SU_History___.rc
                      SU_Registry.rc 
-                     TR_ExtData.rc
+                     SU2G_GridComp_ExtData.rc
+                     SU2G_instance_SU.rc
+                     SU2G_StateSpecs.rc
                      TR_ExtData.rc
                      TR_GridComp---Be10.rc
                      TR_GridComp---Be10s.rc
@@ -1063,9 +1106,53 @@ sub defaults {
                      TR_GridComp---Rn222.rc
                      TR_GridComp---SF6.rc
                      TR_GridComp---aoa.rc
+                     TR_GridComp---aoa_bl.rc
+                     TR_GridComp---aoa_nh.rc
                      TR_GridComp---e90.rc
+                     TR_GridComp---e90_n.rc
+                     TR_GridComp---e90_s.rc
+                     TR_GridComp---nh_50.rc
+                     TR_GridComp---nh_5.rc
+                     TR_GridComp---stOX.rc
+                     TR_Registry.rc
                      TR_GridComp---st80_25.rc
                      WSUB_ExtData.rc ); 
+
+  @gocart2g_yaml = qw ( CO2_GridComp_ExtData.yaml
+                        CFC_GridComp_ExtData.yaml
+                        Rn_GridComp_ExtData.yaml
+                        GEOSachem_ExtData.yaml
+                        CH4_GridComp_ExtData.yaml
+                        StratChem_ExtData.yaml
+                        NI2G_GridComp_ExtData.yaml
+                        SS2G_GridComp_ExtData.yaml
+                        TR_ExtData.yaml
+                        ChemEnv_ExtData.yaml
+                        DNA_ExtData.yaml
+                        DU2G_GridComp_ExtData.yaml
+                        CARMAchem_GridComp_ExtData.yaml
+                        HEMCOgocart2g_ExtData.yaml
+                        O3_GridComp_ExtData.yaml
+                        CO_GridComp_ExtData.yaml
+                        HEMCOgmi_ExtData.yaml
+                        SU2G_GridComp_ExtData.yaml
+                        WSUB_ExtData.yaml
+                        MAM7_ExtData.yaml
+                        CA2G_GridComp_ExtData.yaml
+                        GMI_ExtData.yaml
+                        GAAS_GridComp_ExtData.yaml );
+#                       AMIP/CO2_GridComp_ExtData.yaml
+#                       AMIP/CFC_GridComp_ExtData.yaml
+#                       AMIP/Rn_GridComp_ExtData.yaml
+#                       AMIP/GEOSachem_ExtData.yaml
+#                       AMIP/CH4_GridComp_ExtData.yaml
+#                       AMIP/NI2G_GridComp_ExtData.yaml
+#                       AMIP/SS2G_GridComp_ExtData.yaml
+#                       AMIP/DU2G_GridComp_ExtData.yaml
+#                       AMIP/O3_GridComp_ExtData.yaml
+#                       AMIP/CO_GridComp_ExtData.yaml
+#                       AMIP/SU2G_GridComp_ExtData.yaml
+#                       AMIP/CA2G_GridComp_ExtData.yaml
 
 #  -e ( $lats4d = "/ford1/local/bin/lats4d" )
 #       || die ">>> ERROR <<< missing $lats4d: $!";
@@ -1081,7 +1168,7 @@ sub defaults {
   $anassi  = 1  if ( -e "$fvbin/ssi.x" );
   $anagsi  = 1  if ( -e "$fvbin/GSIsa.x" );
   $fulldas = 1  if ( $anapsas || $anassi || $anagsi );
-  $fvchem  = 1  if ( -e "$fvetc/DU_GridComp.rc" );
+  $fvchem  = 1; # if ( -e "$fvetc/DU_GridComp.rc" );
   $doiau   = 0;
 
   if ( $g5gcm ) { 
@@ -1107,7 +1194,7 @@ sub defaults {
   if ( $anapsas ) { @arc_files = @ap_files };
   if ( $anassi  ) { @arc_files = @as_files };
   if ( $anagsi  ) { @arc_files = ( @ag_files, @lcv2prsrcs )};
-  if ( $fvchem  ) { @crc_files = @chem_files };
+  if ( $fvchem  ) { @crc_files = @chem_files; @go2yaml_files = @gocart2g_yaml };
 # if ( $coupled ) { @crc_files = ( @chem_files, @coupled_files ) };
 
   $monthly_plots = 0;
@@ -1215,11 +1302,12 @@ sub get_specific_info {
     $r21c   = 0;
 
     $ans = query(" Is this a MERRA2 (1), GEOSIT (2), R21C (3) experiment?", "0");
-    return 0 unless ( $ans );
+#    return 0 unless ( $ans );
 
     if ($ans == 1) {$merra2 = 1};
     if ($ans == 2) {$geosit = 1};
     if ($ans == 3) {$r21c   = 1};
+    return 0;
 
 }
 
@@ -1357,6 +1445,8 @@ sub ed_g5hist_rc_new {
         .       " -s \@COMPRESS=$cmprss"
         .       " -s \@APERT_IM=$apert_im"
         .       " -s \@APERT_JM=$apert_jm"
+        .       " -s \@BJEDI_IM=$bjedi_im"
+        .       " -s \@BJEDI_JM=$bjedi_jm"
         .       " -s \@PERT_FREQ=$pert_freq"
         .       " -s \@AGCM_GRIDNAME=$AGCM_GRIDNAME";
     print "$cmd\n";
@@ -1451,6 +1541,8 @@ sub ed_g5prog_rc {
     if($rcd =~ /\@HIST_PERT_JM/)   { $rcd=~ s/\@HIST_PERT_JM/$hist_pert_jm/ }
     if($rcd =~ /\@APERT_IM/)       { $rcd=~ s/\@APERT_IM/$apert_im/ }
     if($rcd =~ /\@APERT_JM/)       { $rcd=~ s/\@APERT_JM/$apert_jm/ }
+    if($rcd =~ /\@BJEDI_IM/)       { $rcd=~ s/\@BJEDI_IM/$bjedi_im/ }
+    if($rcd =~ /\@BJEDI_JM/)       { $rcd=~ s/\@BJEDI_JM/$bjedi_jm/ }
     if($rcd =~ /\@PERT_FREQ/)      { $rcd=~ s/\@PERT_FREQ/$pert_freq/ }
     if($rcd =~ /\@FCSENS/) {
         if ($admtlm) { $rcd =~ s/\@FCSENS/ /; }
@@ -1524,6 +1616,8 @@ sub ed_g5prog_rc_new {
         .                 " -s \@HIST_PERT_JM=$hist_pert_jm"
         .                 " -s \@APERT_IM=$apert_im"
         .                 " -s \@APERT_JM=$apert_jm"
+        .                 " -s \@BJEDI_IM=$bjedi_im"
+        .                 " -s \@BJEDI_JM=$bjedi_jm"
         .                 " -s \@PERT_FREQ=$pert_freq"
         .                 " -s \@AGCM_GRIDNAME=$AGCM_GRIDNAME";
     print "$cmd\n";
@@ -1687,6 +1781,9 @@ sub create_fvpsasrc {
   print(MYRC "chem_ana_filename: %s.cana.eta.$tmpl2.$ncsuffix\n");
   print(MYRC "reference_filename: %s.ref.eta.$tmpl2.$ncsuffix\n");
   print(MYRC "verification_filename: %s.ver.eta.$tmpl2.$ncsuffix\n");
+  print(MYRC "aod_a: das.aod_a.sfc.$tmpl2.$ncsuffix\n");
+  print(MYRC "aod_k: das.aod_k.sfc.$tmpl2.$ncsuffix\n");
+  print(MYRC "aod_f: das.aod_f.sfc.$tmpl2.$ncsuffix\n");
 
 # Done
 # ----
@@ -1724,13 +1821,13 @@ sub ed_ncep_rc {
 
   return 0 unless ( $anassi || $anagsi );
 
-  my($nceprc) = @_;
+  my($nceprc,$myloc) = @_;
 
   my($frun, $ft, $rcd, $nlon);
   my($gsinlon, $ssinlath, $ssinlon);
 
-  $ft   = "$fvhome/run/tmp.rc";
-  $frun = "$fvhome/run/$nceprc";
+  $ft   = "$fvhome/$myloc/tmp.rc";
+  $frun = "$fvhome/$myloc/$nceprc";
 
   open(LUN,"$frun") || die "Fail to open $nceprc: $!\n";
   open(LUN2,">$ft") || die "Fail to open tmp.rc: $!\n";
@@ -1774,9 +1871,9 @@ sub ed_ncep_rc {
        }
 	   
        if ( $siglevs <= 72 ) {
-          if($rcd =~ /\@NLEV_EXT/) {$rcd=~ s/\@NLEV_EXT/15/g; }
+          if($rcd =~ /\@NLEV_EXT/) {$rcd=~ s/\@NLEV_EXT/18/g; }
        } elsif ( $siglevs > 72 & $siglevs <= 132 ) {
-          if($rcd =~ /\@NLEV_EXT/) {$rcd=~ s/\@NLEV_EXT/17/g; }
+          if($rcd =~ /\@NLEV_EXT/) {$rcd=~ s/\@NLEV_EXT/21/g; }
        } elsif ( $siglevs > 132 ) {
           if($rcd =~ /\@NLEV_EXT/) {$rcd=~ s/\@NLEV_EXT/27/g; }
        }
@@ -1857,13 +1954,13 @@ sub ed_gsigridcomp_rc {
 
   return 0 unless ( $anagsi );
 
-  my($myrc,$mycase) = @_;
+  my($myrc,$myloc,$mycase) = @_;
 
   my($frun, $ft, $rcd, $nlon);
   my($gsinlon, $ssinlath, $ssinlon, $varwnd_nhms);
 
-  $ft   = "$fvhome/run/tmp.rc";
-  $frun = "$fvhome/run/$myrc";
+  $ft   = "$fvhome/$myloc/tmp.rc";
+  $frun = "$fvhome/$myloc/$myrc";
 
   if ( $mycase eq "observer" ) {
 #      $hr = int( $dt / 3600 );           $hr = sprintf "%02d", $hr;
@@ -1913,6 +2010,8 @@ sub ed_gsigridcomp_rc {
            if($rcd =~ /\@NYGSI/) {$rcd=~ s/\@NYGSI/$nygsi/g; }
            if($rcd =~ /\@APERT_IM/) {$rcd=~ s/\@APERT_IM/$apert_im/g; }
            if($rcd =~ /\@APERT_JM/) {$rcd=~ s/\@APERT_JM/$apert_jm/g; }
+           if($rcd =~ /\@BJEDI_IM/) {$rcd=~ s/\@BJEDI_IM/$apert_im/g; }
+           if($rcd =~ /\@BJEDI_JM/) {$rcd=~ s/\@BJEDI_JM/$apert_jm/g; }
        }
        if($rcd =~ /\@NSIG/) {$rcd=~ s/\@NSIG/$siglevs/g; }
        if($rcd =~ /\@VARWINDOW/) {$rcd=~ s/\@VARWINDOW/$varwnd_nhms/g; }
@@ -2141,6 +2240,23 @@ $defexploc/$vexpid/ana/Y%y4/M%m2/$vexpid.bkg09.sfc.%y4%m2%d2_%h2%n2z.$ncsuffix
 $defexploc/$vexpid/ana/Y%y4/M%m2/$vexpid.cbkg09.eta.%y4%m2%d2_%h2%n2z.$ncsuffix
 EOF
 }
+#=======================================================================
+sub ed_o3bkg_acq {
+
+  return 0 unless ( $fulldas );
+
+  my($mydir) = @_;
+
+  my($frun, $ft, $acq);
+
+  $acq = "$fvhome/$mydir/o3bkg.acq";
+
+ open(SCRIPT,">$acq") or
+ die ">>> ERROR <<< cannot write $acq";
+ print  SCRIPT <<"EOF";
+$defexploc/$vexpid/ana/Y%y4/M%m2/$vexpid.bkg.eta.%y4%m2%d2_%h2%n2z.$ncsuffix
+EOF
+}
 
 #=======================================================================
 sub ed_aod4fcst_acq {
@@ -2245,6 +2361,11 @@ sub ed_g5fvlay_rc {
      if($rcd =~ /\@FV_SATADJ/) {$rcd=~ s/\@FV_SATADJ/do_sat_adj  = .F./g; }
      if($rcd =~ /\@FV_ZTRACER/){$rcd=~ s/\@FV_ZTRACER/z_tracer = .T./g; }
      if($rcd =~ /\@FV_NWAT/)   {$rcd=~ s/\@FV_NWAT/ /g; }
+     if ( "$res" eq "C720" ) {
+       if($rcd =~ /\@FV_N_SPLIT/)   {$rcd=~ s/\@FV_N_SPLIT/n_split = 12/g; }
+     } else {
+       if($rcd =~ /\@FV_N_SPLIT/)   {$rcd=~ s/\@FV_N_SPLIT/ /g; }
+     }
      print(LUN2 "$rcd\n");
   }
 
@@ -2601,6 +2722,7 @@ EOF
 #=======================================================================
 sub get_lsmodel {
 
+    my $lndbcs_r21c = "Icarus-NLv3";	    
     my $lndbcs_def = "Icarus_Updated";
     my $lsdflt = 1;
     my $rrdflt = 0;
@@ -2623,8 +2745,11 @@ LAND BCS Version
 
 EOF
 ;
-
-    $landbcs = query("  Land Boundary Conditions?", $lndbcs_def);
+    if ( $r21c) {
+      $landbcs = query("  Land Boundary Conditions?", $lndbcs_r21c);
+    } else {
+      $landbcs = query("  Land Boundary Conditions?", $lndbcs_def);
+    }
 
     if ( "$landbcs" eq "Icarus-NLv3" ) {
 
@@ -2775,7 +2900,7 @@ EOF
 #=======================================================================
 sub get_extdata {
 
-    @extdatasets = qw ( agcmpert g5chem g5gcm PIESA MERRA2 AeroCom );
+    @extdatasets = qw ( agcmpert chemistry g5chem g5gcm PIESA MERRA2 AeroCom );
     foreach $set ( @extdatasets ) { $extdata{$set} = "$fvbcs/$set" };
 
     print "\n-------------\n"
@@ -3051,7 +3176,7 @@ sub get_nodeflg {
   elsif ($ans == 3) { $nodeflg = "ivy";  $ncpus_per_node = 20 }
   elsif ($ans == 4) { $nodeflg = "hasw"; $ncpus_per_node = 24 }
   elsif ($ans == 5) { $nodeflg = "sky";  $ncpus_per_node = 36 }
-  elsif ($ans == 6) { $nodeflg = "cas";  $ncpus_per_node = 46 }
+  elsif ($ans == 6) { $nodeflg = "cas";  $ncpus_per_node = 45 }
 
   # currently not applicable at nccs
   #---------------------------------
@@ -3099,7 +3224,7 @@ sub get_times {
 #                                                    #       ----
       if    ($res eq "C48")  { $nx =  4; $ny = 24 }  # (b)    96
       elsif ($res eq "C90")  { $nx =  4; $ny = 24 }  # (c)    96
-      elsif ($res eq "C180") { $nx =  8; $ny = 30 }  # (d)   240
+      elsif ($res eq "C180") { $nx = 15; $ny = 36 }  # (d)   360
       elsif ($res eq "C360") { $nx =  8; $ny = 48 }  # (e)   384
       else                   { $nx = 28; $ny = 48 }  # (f+) 1344
   }
@@ -3250,8 +3375,7 @@ EOF
       $asynbkg_hms = sprintf("%6.6d","$asynbkg_hms"); #print "asynbkg_hms = $asynbkg_hms \n";
   }
 
-  $pcp_forced = $merra2;   # for now, we attach these two choices (it can be that PCP-forcing will be applied 
-                           # for other non-MERRA2-like runs, but not for a while ...
+  $pcp_forced = ($merra2 or $r21c );  
 
   $beg_date = "$nymdb $nhmsb"  ; # GEOS-5 GCM starting date parameter
   $end_date = "$nymde $nhmse"  ; # GEOS-5 GCM ending   date parameter
@@ -3315,6 +3439,7 @@ sub set_radcor {
     if ($obClass =~ "merra_upa_pre-qc_bufr"  || $obClass =~ "merra_cdas_pre-qc_bufr"  ||
         $obClass =~ "merra2_cdas0_pre-qc_bufr" ||
         $obClass =~ "merra2_upa_pre-qc_bufr" || $obClass =~ "merra2_cdas_pre-qc_bufr" ) { $radcor = "HAIMB_HRAD" };
+    if($geosit || $r21c) {$radcor = "HAIMB_HRAD"};
 
     # query user for radcor choice
     #-----------------------------
@@ -3504,8 +3629,6 @@ EOF
           $berror_env  = "setenv BERROR  $berror_file";
        }
        if ( $geosit ) {
-       #  $berror_file = "\$FVHOME/fvInput/gsi/etc/berror_gmao/gmao24Jun2011_fp+oz_fix/MERRA2/Final";
-       #  $berror_env  = "setenv BERROR  $berror_file";
           $berror_env  = "# Likely need to point to new BERROR for GEOSIT (adjust fvsetup)";
        }
   }
@@ -3551,7 +3674,11 @@ sub set_atmens {
  
 # defaults (here for now)
 # -----------------------
-  $aens_replay = "yes";
+  if ($r21c) {
+     $aens_replay = "no";	  
+  } else {
+     $aens_replay = "yes";
+  }
   $aens_sppt = "yes";
   $aens_res =  "C90";
   $aens_lev =  "72";
@@ -3624,7 +3751,10 @@ EOF
 
 # If so, setup EnADAS 
 # -------------------
-  $flags = "-nlevs $aens_lev $setacftbc $rcorrarg $setradbc $aens_lsmodel -expdir $fvhome/.. $sppt_flag";
+  if ($r21c) { 
+     $bcopt = "-r21c";
+  } 
+  $flags = "-nlevs $aens_lev $setacftbc $rcorrarg $setradbc $aens_lsmodel -expdir $fvhome/.. $sppt_flag $bcopt";
   $flags .= " -fvhome $fvhome" if $checkFLG;
   $params = " $aens_ana $expid $aens_im $aens_jm $aens_ocn $landbcs"; 
 
@@ -3769,13 +3899,13 @@ sub get_obsys {
   print("OBSERVING SYSTEM CLASSES\n");
   print("------------------------\n");
 
-  if ( $merra2 ) {
-      $dflt = 3;
-  } else {
-      $dflt = 1;
-  }
-  $ans = query("Which main class of ObsSys (1: NRT; 2: MERRA; 3: MERRA-2)?", $dflt);
-  return 1 unless $ans == 1 or $ans == 2 or $ans == 3;
+  $dflt = 1;
+  if ( $merra2 ) { $dflt = 3; }
+  if ( $geosit ) { $dflt = 4; }
+  if ( $r21c   ) { $dflt = 5; }
+
+  $ans = query("Which main class of ObsSys (1: NRT; 2: MERRA; 3: MERRA-2; 4: GEOS-IT; 5: R21C)?", $dflt);
+  return 1 unless $ans == 1 or $ans == 2 or $ans == 3 or $ans == 4 or $ans == 5;
 
   if ($GFLAG == 1) { $loc = "nccs" }
   else             { $loc = "nas"  }
@@ -3796,6 +3926,16 @@ sub get_obsys {
   elsif ($ans == 3) {  # MERRA-2
       $obsysrc = "$fvetc/obsys-${loc}-merra2.rc";
       $rflags .= " -stem merra2";
+  }
+  elsif ($ans == 4) {  # GEOS-IT
+      $obsysrc = "$fvetc/obsys-${loc}-geosit.rc";
+      $obsysGrc = "$fvetc/obsys-${loc}-gaas-geosit.rc";
+      $rflags .= " -stem geosit";
+  }
+  elsif ($ans == 5) {  # R21C
+      $obsysrc = "$fvetc/obsys-${loc}-r21c.rc";
+      $obsysGrc = "$fvetc/obsys-${loc}-gaas-r21c.rc";
+      $rflags .= " -stem r21c";
   }
 
   $reqobs = $fvbin . "/require_obsys.pl";
@@ -4248,10 +4388,14 @@ EOF
   $emission{"3"} = "NR";
   $emission{"4"} = "OPS";
   $emission{"5"} = "PIESA";
+  $emission{"6"} = "GEOSIT";
+  $emission{"7"} = "R21C";
 
   %remission = reverse %emission;
   if ($nrt)       { $dflt = "OPS"    }
-  elsif ($merra2) { $dflt = "MERRA2" }
+  elsif ($merra2) { $dflt = "AMIP"   }
+  elsif ($geosit) { $dflt = "GEOSIT" }
+  elsif ($r21c)   { $dflt = "R21C"   }
   else            { $dflt = "PIESA"  }
 
   if ($gocart_tracers) {
@@ -4654,6 +4798,9 @@ sub get_dimsg5gcm {
    $res = "C48";
    $vres = 72;
    if ( $merra2 ) { $ores = "e34" }
+   elsif ($r21c)  { $ores = "C";
+                    $res  = "C360";
+                  }
    else           { $ores = "f"   }
 
 print <<"EOF";
@@ -4698,6 +4845,7 @@ EOF
   $ny_pert = 6 * $nx_pert;
   $use_shmem = 0;
   $o_servers = 0;
+  $bckend_wrts = 0;
   $ios_nds = 1;
   $cldmicro = "1MOMENT";
   if ( "$res" eq "c" && "$vres" eq "55" ) {
@@ -4725,6 +4873,8 @@ EOF
        $hist_pert_jm = $agcm_jm;
        $apert_im = $ana_im;
        $apert_jm = $ana_jm;
+       $bjedi_im = $ana_im;
+       $bjedi_jm = $ana_jm;
        $anahgrd = substr($res,0,1);
        $jcap_ens = $jcap;
        $ana_im_ens = $ana_im;
@@ -4754,6 +4904,8 @@ EOF
        $hist_pert_jm = $agcm_jm;
        $apert_im = $agcm_im;
        $apert_jm = $agcm_jm;
+       $bjedi_im = $agcm_im;
+       $bjedi_jm = $agcm_jm;
        $anahgrd = substr($res,0,1);
        $jcap_ens = $jcap;
        $ana_im_ens = $ana_im;
@@ -4783,6 +4935,8 @@ EOF
        $hist_pert_jm = $agcm_jm;
        $apert_im = $agcm_im;
        $apert_jm = $agcm_jm;
+       $bjedi_im = $agcm_im;
+       $bjedi_jm = $agcm_jm;
        $anahgrd = substr($res,0,1);
        $jcap_ens = $jcap;
        $ana_im_ens = $ana_im;
@@ -4810,6 +4964,8 @@ EOF
        $hist_pert_jm = $agcm_jm;
        $apert_im = $agcm_im;
        $apert_jm = $agcm_jm;
+       $bjedi_im = $agcm_im;
+       $bjedi_jm = $agcm_jm;
        $anahgrd = substr($res,0,1);
        $jcap_ens = $jcap;
        $ana_im_ens = $ana_im;
@@ -4841,6 +4997,8 @@ EOF
        $hist_pert_jm = 181;
        $apert_im = 288;
        $apert_jm = 181;
+       $bjedi_im = 288;
+       $bjedi_jm = 181;
        $anahgrd = substr($res,0,1);
        $jcap_ens = 126;
        $ana_im_ens = 288;
@@ -4872,6 +5030,8 @@ EOF
        $hist_pert_jm = 361;
        $apert_im = 576;
        $apert_jm = 361;
+       $bjedi_im = 288;
+       $bjedi_jm = 181;
        $anahgrd = substr($res,0,1);
        $jcap_ens = 126;
        $ana_im_ens = 288;
@@ -4901,6 +5061,8 @@ EOF
        $hist_pert_jm = $agcm_jm;
        $apert_im = $agcm_im;
        $apert_jm = $agcm_jm;
+       $bjedi_im = $agcm_im;
+       $bjedi_jm = $agcm_jm;
        $anahgrd = substr($res,0,1);
        $jcap_ens = $jcap;
        $ana_im_ens = $ana_im;
@@ -4933,6 +5095,8 @@ EOF
        $hist_pert_jm = $ana_jm;
        $apert_im = $agcm_im;
        $apert_jm = $agcm_jm;
+       $bjedi_im = $agcm_im;
+       $bjedi_jm = $agcm_jm;
        $anahgrd = "b";
        $jcap_ens = $jcap;
        $ana_im_ens = $ana_im;
@@ -4965,11 +5129,17 @@ EOF
        $hist_pert_jm = $ana_jm;
        $apert_im = $agcm_im;
        $apert_jm = $agcm_jm;
+       $bjedi_im = $agcm_im;
+       $bjedi_jm = $agcm_jm;
        $anahgrd = "c";
        $jcap_ens = $jcap;
        $ana_im_ens = $ana_im;
        $ana_jm_ens = $ana_jm;
   } elsif ( "$res" eq "C180" ) {  # Cubed-sphere
+       if ($geosit) {
+          $o_servers = 3;
+          $bckend_wrts = 24;
+       }
        $cubed = 1;
 #      $ios_nds = 2;
        $specres = "254";
@@ -4998,6 +5168,8 @@ EOF
        $hist_pert_jm = 181;
        $apert_im = 90;
        $apert_jm = $apert_im * 6;
+       $bjedi_im = 90;
+       $bjedi_jm = $bjedi_im * 6;
        $anahgrd = "d";
        $jcap_ens = 126;
        $ana_im_ens = 288;
@@ -5031,6 +5203,8 @@ EOF
        $hist_pert_jm = 361;
        $apert_im = 180;
        $apert_jm = $apert_im * 6;
+       $bjedi_im = 90;
+       $bjedi_jm = $bjedi_im * 6;
        $anahgrd = "d";
        $use_shmem = 1;
        $jcap_ens = 126;
@@ -5039,7 +5213,7 @@ EOF
   } elsif ( "$res" eq "C720" ) {  # Cubed-sphere
        $cubed = 1;
        $o_servers = 8;
-#      $ios_nds = 3;
+       $bckend_wrts = 8;
        $specres = "254";
        $jcap = "254";
        $agcm_grid_type = "Cubed-Sphere";
@@ -5066,6 +5240,8 @@ EOF
        $hist_pert_jm = 361;
        $apert_im = 180;
        $apert_jm = $apert_im * 6;
+       $bjedi_im = 360;
+       $bjedi_jm = $bjedi_im * 6;
        $anahgrd = "e";
        $use_shmem = 1;
        $jcap_ens = 254;
@@ -5101,6 +5277,8 @@ EOF
        $hist_pert_jm = 361;
        $apert_im = 180;
        $apert_jm = $apert_im * 6;
+       $bjedi_im = 360;
+       $bjedi_jm = $bjedi_im * 6;
        $anahgrd = "e";
        $use_shmem = 1;
        $jcap_ens = 254;
@@ -5261,7 +5439,7 @@ sub mkdir_fvhome {  # create directories on FVHOME
   foreach $dir (qw(ana diag daotovs etc obs prog radmon)) {
       mkpath("$fvhome/$dir") or die ">>> ERROR <<< creating directory $fvhome/$dir;";
   }
-  foreach $dir (qw(rs run recycle fcst lana asens anasa)) {
+  foreach $dir (qw(rs run recycle fcst lana asens anasa o3anasa coanasa)) {
       mkpath("$fvhome/$dir") or die ">>> ERROR <<< creating directory $fvhome/$dir;";
   }
   foreach $subdir (qw( gaas gocart )) {
@@ -5273,7 +5451,7 @@ sub mkdir_fvhome {  # create directories on FVHOME
 
 # Some directories are not meant to be archived
 # ---------------------------------------------
-  foreach $dir (qw( run recycle fcst asens )) {
+  foreach $dir (qw( run recycle fcst anasa o3anasa coanasa asens )) {
           die ">>> ERROR <<< $! "
           if system("/bin/touch $fvhome/$dir/.no_archiving");
   }
@@ -5432,6 +5610,7 @@ sub archiving_rules {
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_msu_%c%c%c_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_msu_tirosn_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_omi_aura_%c%c%c.%y4%m2%d2_%h2z.bin
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpnc_npp_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpuv_npp_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpvis_npp_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnm_npp_%c%c%c.%y4%m2%d2_%h2z.bin
@@ -5489,6 +5668,7 @@ sub archiving_rules {
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_msu_%c%c%c.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_msu_tirosn.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_omi_aura.%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpnc_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpuv_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpvis_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnm_npp.%y4%m2%d2_%h2z.ods
@@ -5545,6 +5725,7 @@ sub archiving_rules {
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_msu_%c%c%c.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_msu_tirosn.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_omi_aura.%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_ompslpnc_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_ompslpuv_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_ompslpvis_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_ompsnm_npp.%y4%m2%d2_%h2z.ods
@@ -5585,10 +5766,11 @@ sub archiving_rules {
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_seviri_m%c%c_%c%c%c_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_sbuv%c_%c%c%c_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_omi_aura_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpnc_npp_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpuv_npp_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpvis_npp_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
-#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpnm_npp_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
-#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpnp_npp_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnm_npp_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnp_npp_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_hirs%c_%c%c%c_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_hirs%c_metop-%c_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_hirs%c_tirosn_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
@@ -5621,10 +5803,11 @@ sub archiving_rules {
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_pcp_tmi_%c%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_sbuv%c_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_omi_aura_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpnc_npp_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpuv_npp_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpvis_npp_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
-#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpnm_npp_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
-#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpnp_npp_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompsnm_npp_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompsnp_npp_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_hirs%c_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_hirs%c_metop-%c_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_hirs%c_tirosn_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
@@ -5658,10 +5841,11 @@ sub archiving_rules {
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_pcp_tmi_%c%c%c%c_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_sbuv%c_%c%c%c_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_omi_aura_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpnc_npp_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpuv_npp_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpvis_npp_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
-#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpnm_npp_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
-#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpnp_npp_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompsnm_npp_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompsnp_npp_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_hirs%c_%c%c%c_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_hirs%c_metop-%c_%c%c%c_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_hirs%c_tirosn_%c%c%c_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
@@ -6852,10 +7036,11 @@ sub arch_asens {
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_msu_tirosn.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_omi_aura.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_omieff_aura.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpnc_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpuv_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpvis_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpnm_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpnp_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpnm_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpnp_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompsnm_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompsnmeff_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompsnp_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
@@ -7227,6 +7412,66 @@ EOF
 
 }
 #=======================================================================
+sub arch_o3anasa {
+
+   open(ARC,">$fvhome/o3anasa/o3anasastorage.arc")
+   || die "Cannot create $fvhome/o3anasa/anasastorage.arc: $!";
+
+   print ARC <<"EOF";
+#
+# Archiving rules for fvDAS output.
+#
+# This is a PESTO (Put Experiment in Mass STOrage) resource file.
+#
+# The environment variable PESTOROOT refers to the destination archive
+# location, e.g.,
+#
+# a) for moving files to SILO:
+#    setenv PESTOROOT '/scratch1/dasilva'
+#
+# b) for moving files to MASS STORAGE:
+#    setenv PESTOROOT 'dasilva\@helios1.nas.nasa.gov:'
+#
+# This file has been automatically generated by fvsetup.
+# $nametag
+#...........................................................................
+#
+#  The following refer to stand-alone analysis in re-run mode
+#
+\${PESTOROOT}%s/etc/Y%y4/M%m2/%s.o3anasa.log.%y4%m2%d2_%h2z.txt
+\${PESTOROOT}%s/etc/Y%y4/M%m2/%s.o3anasa_stats.log.%y4%m2%d2_%h2z.txt
+\${PESTOROOT}%s/etc/Y%y4/M%m2/%s.o3odssa.log.%y4%m2%d2_%h2z.txt
+\${PESTOROOT}%s/etc/Y%y4/M%m2/%s.o3zeitsa.reg.%y4%m2%d2_%h2z.txt
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.o3anasa.eta.%y4%m2%d2_%h2%n2z.$ncsuffix
+#
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.o3diagsa_gome_metop-%c.%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.o3diagsa_mls55_aura.%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.o3diagsa_omi_aura.%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.o3diagsa_omieff_aura.obs.%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.o3diagsa_o3lev_aura.obs.%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.o3diagsa_sbuv%c_%c%c%c.%y4%m2%d2_%h2z.ods
+#
+#  The following refer to stand-alone analysis in prognostic mode
+#
+\${PESTOROOT}%s/etc/Y%y4/M%m2/%s.o3anasa.log.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.txt
+\${PESTOROOT}%s/etc/Y%y4/M%m2/%s.o3anasa_stats.log.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.txt
+\${PESTOROOT}%s/etc/Y%y4/M%m2/%s.o3odssa.log.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.txt
+\${PESTOROOT}%s/etc/Y%y4/M%m2/%s.o3zeitsa.reg.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.txt
+#
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.o3diagsa_gome_metop-%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.o3diagsa_mls55_aura.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.o3diagsa_omi_aura.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.o3diagsa_omieff_aura.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.o3diagsa_o3lev_aura.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.o3diagsa_sbuv%c_%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.o3diagsa_tmi_trmm.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
+#
+EOF
+
+   close(ARC);
+
+}
+#=======================================================================
 sub arch_stageana {
 
    return 0 if ( $do4dvar );
@@ -7314,6 +7559,7 @@ set atype = "mstorage.arc"
 #----------------------
 if ( \$arch_type == "ADAS"  ) set atype = "mstorage.arc"
 if ( \$arch_type == "ANASA" ) set atype = "anasastorage.arc"
+if ( \$arch_type == "O3ANASA" ) set atype = "o3anasastorage.arc"
 if ( \$arch_type == "ASENS" ) set atype = "asenstorage.arc"
 if ( \$arch_type == "FCST"  ) set atype = "fcststorage.arc"
 if ( \$arch_type == "FSENS" ) set atype = "fsenstorage.arc"
@@ -7435,12 +7681,18 @@ close(SCRIPT);
 
 #=======================================================================
 sub build_lnbcs {
-  $mymerra2 = "";
-  if ( $merra2 ) { $mymerra2 = "-merra2" };
+  $bcopt = "";
+  if ( $merra2 ) { 
+     $bcopt = "-merra2" ;
+  }elsif ( $r21c ) {
+     $bcopt = "-r21c";
+  }elsif ($geosit) {
+     $bcopt = "-geosit"; 
+  }
   if ( $cubed ) {
-     $cmd = "$fvbin/gen_lnbcs.pl -fvhome $fvhome -o lnbcs $mymerra2 -cubed $agcm_im $agcm_jm $ores $landbcs";
+     $cmd = "$fvbin/gen_lnbcs.pl -fvhome $fvhome -o lnbcs $bcopt -cubed $agcm_im $agcm_jm $ogcm $landbcs";
   } else {
-     $cmd = "$fvbin/gen_lnbcs.pl -fvhome $fvhome -o lnbcs $mymerra2        $agcm_im $agcm_jm $ores $landbcs";
+     $cmd = "$fvbin/gen_lnbcs.pl -fvhome $fvhome -o lnbcs $bcopt        $agcm_im $agcm_jm $ogcm $landbcs";
   }
   print "$cmd\n";
   system($cmd);
@@ -7618,6 +7870,7 @@ print SCRIPT <<"EOF";
   setenv NCPUS_GPERT $ncpus_gpert # Number of CPUs to run gcmPERT
   setenv NCPUS_AOD   $ncpus_aod   # Number of CPUs to run PSAS-AOD
   setenv O_SERVERS   $o_servers   # Number of IO servers
+  setenv O_WRITERS_PER_NODE $bckend_wrts # Number of backend writers
   #setenv GAAS_RUN_SLURM 1 # launch AOD analysis as separate batch job
   setenv AODBLOCKJOB 1
 EOF
@@ -7722,21 +7975,13 @@ print  SCRIPT <<"EOF";
   setenv LDHOME  $ldashome  # land analysis home dir (ldas_exp/) for central 
   setenv LDHOME4ENS $ldashome4ens  # land analysis home dir for atm_ens  
   setenv IGNORE_0 1   # 1 = ignore 0 length obs files in acquire
-  setenv ACFTBIAS $acftbias
-  setenv USE_MODIS_STAGE 0  # 1 = use MODIS data from MODIS_STAGE_DIR; 0 = don't
-  setenv MODIS_STAGE_DIR /discover/nobackup/projects/gmao/input/dao_ops/ops/flk/modis  # L2a non-archive data dir
   setenv FCSTIMES "$fcstimes"
   setenv FCSTATS  "21"
   setenv FHOURS   $fhours21
-  setenv NEWRADBC $newradbc
-  setenv ANGLEBC  $newradbc
   setenv GSI_NETCDF_DIAG 1
   setenv GSI_DIAG2TXT 1
 # setenv DO_0HR_IMP 1
 
-  if ( -e \$FVHOME/run/replay.acq ) then
-     setenv USE_MODIS_STAGE 1  # for now, replay.acq controls only meteorology (AOD is not yet replayed to)
-  endif
 EOF
 
 if ( $merra2 ) {
@@ -7845,8 +8090,9 @@ print  SCRIPT <<"EOF";
      setenv I_MPI_ADJUST_ALLREDUCE 12
      setenv I_MPI_EXTRA_FILESYSTEM 1
      setenv I_MPI_EXTRA_FILESYSTEM_LIST gpfs
-     setenv ROMIO_FSTYPE_FORCE         "gpfs:"
-     setenv I_MPI_FABRICS shm:ofi
+     setenv I_MPI_DEBUG 6
+#    setenv ROMIO_FSTYPE_FORCE         "gpfs:"
+#    setenv I_MPI_FABRICS shm:ofi
 #    setenv I_MPI_FABRICS shm:dapl
 #    setenv I_MPI_FABRICS_LIST "dapl,ofa"
 #    setenv I_MPI_FALLBACK "enable"
@@ -8009,7 +8255,7 @@ print  SCRIPT <<"EOF";
   setenv RUN_OPT_BLEND "esma_mpirun -np \$NCPUS \$HDF2RSX"
   if (\$G5GCM ) then
      if ( \$O_SERVERS > 0 ) then
-        setenv RUN_OPT_BEGIN "mpirun -np \$NCPUSX \$GCMX --npes_model \$NCUPS --nodes_output_server \$O_SERVERS --oserver_type multigroup --npes_backend_pernode \$O_SERVERS"
+        setenv RUN_OPT_BEGIN "mpirun -np \$NCPUSX \$GCMX --npes_model \$NCPUS --nodes_output_server \$O_SERVERS --oserver_type multigroup --npes_backend_pernode \$O_WRITERS_PER_NODE"
      else
         setenv RUN_OPT_BEGIN "esma_mpirun -np \$NCPUS \$GCMX"
      endif
@@ -8231,7 +8477,6 @@ EOF
     } else {
     print  SCRIPT <<"EOF";
     setenv NCEPINPUT \$FVBCS
-    $berror_env
 EOF
     }
 
@@ -8282,9 +8527,9 @@ print  SCRIPT <<"EOF";
 
           cd \$FVWORK
           if (`uname -n` =~ borg*) then
-             cat \$PBS_NODEFILE | head -1 > \$FVWORK/OIQC_list
-             cat \$PBS_NODEFILE | tail +2 > \$FVWORK/GCM_list
-             cat \$PBS_NODEFILE           > \$FVWORK/ANA_list
+             cat \$PBS_NODEFILE | head -1    > \$FVWORK/OIQC_list
+             cat \$PBS_NODEFILE | tail -n +2 > \$FVWORK/GCM_list
+             cat \$PBS_NODEFILE              > \$FVWORK/ANA_list
              subset_nodefile.pl \$NCPUS_IDF -f \$PBS_NODEFILE -o \$FVWORK/IDF_list
              subset_nodefile.pl \$NCPUS_IAU -f \$PBS_NODEFILE -o \$FVWORK/IAU_list
           endif
@@ -8561,6 +8806,7 @@ EOF
            endif
            echo2 ""
            echo2 "setenv FVHOME \$FVHOME"
+           echo2 "setenv ARCHIVE \$FVARCH"
            echo2 "set Bin = \$Bin"
            echo2 "set output = \$lname2"
            echo2 ""
@@ -8657,10 +8903,12 @@ sub write_FVDAS_Run_Config {
     $ENV{"EXPID"}  = $expid;
 
     $ENV{"AOD_OBSCLASS"}    = "$aod_obsclass";
+    $ENV{"ACFTBIAS"}        = "$acftbias";
     $ENV{"BERROR"}          = $berror_file if $berror_file;
     $ENV{"FVBCS"}           = "\$FVHOME/fvInput";
     $ENV{"GID"}             = $gid;
     $ENV{"MONTHLY_MEANS"}   = $monthly_means;
+    $ENV{"NEWRADBC"}        = $newradbc;
     $ENV{"NCEPINPUT"}       = $fvbcs;
     $ENV{"OBSCLASS"}        = $obClass;
     $ENV{"OMP_NUM_THREADS"} = $omp_num_threads;
@@ -8668,6 +8916,11 @@ sub write_FVDAS_Run_Config {
     $ENV{"VTXLEVS"}         = $vtxlevs;
     $ENV{"VTXRELOC"}        = $vtxreloc;
 
+    if ($geosit || $r21c) {
+        $ENV{"MKSI_SIDB"}   = "\$FVHOME/run/gmao_satinfo.db";
+        $ENV{"MKSIOZ_SIDB"} = "\$FVHOME/run/gmao_ozinfo.db";
+	$ENV{"MKSICN_SIDB"} = "\$FVHOME/run/gmao_convinfo.db" 
+    }
 
     unless ( $ENV{"ARCHIVE"} ) {
         $ENV{"ARCHIVE"} = "lou:."         if $siteName eq "cfe";
@@ -8795,6 +9048,7 @@ print SCRIPT <<"EOF";
   setenv NCPUS_GSI   $ncpus_gsi   # Numbers of CPUs to run GSI
   setenv NCPUS_GPERT $ncpus_gpert # Numbers of CPUs to run GSI
   setenv O_SERVERS   $o_servers   # Number of IO servers
+  setenv O_WRITERS_PER_NODE $bckend_wrts # Backend writers
   setenv N_CPU   \$NCPUS
   setenv EXPID   $expid   # experiment ID
   setenv CASE    \$EXPID  # experiment ID (for LSM's sake)
@@ -8858,6 +9112,7 @@ print  SCRIPT <<"EOF";
   setenv DAOTOVS 0     # 1 = enables DAOTOVS, 0 = disables DAOTOVS
   setenv TIMEINC $varwindow
   setenv GAASFDBK $gaasfdbk
+  setenv LDASFDBK $ldasfdbk
   setenv SSMI_UV 0     # 1 = enables SSMI WIND SPEED, 0 = disables it
   setenv SPLITEXE 0      # 1 = enables SPLIT EXECUTABLE run, 0 = disables it (N/A)
   setenv VTRACK   0      # 0 = disable vortex tracker;   1 = enable
@@ -8928,7 +9183,8 @@ print  SCRIPT <<"EOF";
      setenv I_MPI_ADJUST_ALLREDUCE 12
      setenv I_MPI_EXTRA_FILESYSTEM 1
      setenv I_MPI_EXTRA_FILESYSTEM_LIST gpfs
-     setenv ROMIO_FSTYPE_FORCE         "gpfs:"
+     setenv I_MPI_DEBUG 6
+#    setenv ROMIO_FSTYPE_FORCE         "gpfs:"
   endif
   if (\$?MPT_VERSION) then
      setenv MPI_COLL_REPRODUCIBLE
@@ -9193,7 +9449,7 @@ print  SCRIPT <<"EOF";
   setenv RUN_OPT_BLEND "esma_mpirun -np \$NCPUS \$HDF2RSX"
   if (\$G5GCM ) then
      if ( \$O_SERVERS > 0 ) then
-        setenv RUN_OPT_BEGIN "mpirun -np \$NCPUSX \$GCMX --npes_model \$NCUPS --nodes_output_server \$O_SERVERS --oserver_type multigroup --npes_backend_pernode \$O_SERVERS"
+        setenv RUN_OPT_BEGIN "mpirun -np \$NCPUSX \$GCMX --npes_model \$NCPUS --nodes_output_server \$O_SERVERS --oserver_type multigroup --npes_backend_pernode \$O_WRITERS_PER_NODE"
      else
         setenv    RUN_OPT_BEGIN "esma_mpirun -np \$NCPUS \$GCMX"
      endif
@@ -9358,7 +9614,25 @@ print  SCRIPT <<"EOF";
         /bin/rm -r \$FVWORK
         exit 1
      endif
-  endif
+  endif 
+
+# obtain ldas incr for the first 6h integration
+#----------------------------------------------
+  if ( \$LDASFDBK == 1 ) then
+     /bin/cp \$EXPID.rst.lcv.\${nymd}_\${hh}z.bin ldasd_rst
+     set adas_strt = ( `rst_date ./ldasd_rst` )
+     @ ldastick1 = 5400
+     @ ldastick2 = 16200
+     set linctt1 = ( `tick \$adas_strt \$ldastick1` )
+     set linctt2 = ( `tick \$adas_strt \$ldastick2` )
+     set yyyymmdd1 = `echo \$linctt1[1] | cut -c1-8`
+     set yyyymmdd2 = `echo \$linctt2[1] | cut -c1-8`
+     set hhnn1 = `echo \$linctt1[2] | cut -c1-4`
+     set hhnn2 = `echo \$linctt2[2] | cut -c1-4`
+     /bin/cp \$FVHOME/lana/ldas_inc.\${yyyymmdd1}_\${hhnn1}00 \$FVWORK/.
+     /bin/cp \$FVHOME/lana/ldas_inc.\${yyyymmdd2}_\${hhnn2}00 \$FVWORK/.
+     rm ldasd_rst
+   endif
 
 # Stage the initial condition
 # ---------------------------
@@ -9544,9 +9818,9 @@ sub init_agcm_rc {
 
     # $num_readers must divide evenly into $ny
     #-----------------------------------------
-    if    ($ny % 4 == 0) { $num_readers = 4 }
-    elsif ($ny % 2 == 0) { $num_readers = 2 }
-    else                 { $num_readers = 1 }
+    if    ($agcm_im == 180) { $num_readers = 4 }
+    elsif ($agcm_im >  180) { $num_readers = 6 }
+    else                    { $num_readers = 1 }
 
     # gcm satellite simulator
     #------------------------
@@ -9567,7 +9841,7 @@ sub init_agcm_rc {
     #------------------
     $rats = "PCHEM";
     $oanp = "PCHEM";
-    if ( $gocart_tracers ) { $aero = "GOCART";}
+    if ( $gocart_tracers ) { $aero = "GOCART2G";}
     else                   { $aero = "GOCART.data"; }
     if ( $cubed ) { 
          $dycore = "FV3";
@@ -9588,7 +9862,8 @@ sub init_agcm_rc {
     AGCM_label_subst("\@GRID_TYPE", $agcm_grid_type);
     AGCM_label_subst("\@CUBE_AGCM", $cube_agcm);
     AGCM_label_subst("\@LATLON_AGCM", $latlon_agcm);
-    AGCM_label_subst("\@IOS_NDS", $ios_nds);
+    AGCM_label_subst("\@NUM_OSERVER_NODES", $ios_nds);
+    AGCM_label_subst("\@NUM_BACKEND_PES", $bckend_wrts);
 
     AGCM_label_subst("\@AANA_IM", $ana_im);
     AGCM_label_subst("\@AANA_JM", $ana_jm);
@@ -9694,6 +9969,7 @@ sub init_agcm_rc {
     #   default is based on NCA settings (but line is commented since we don't want this done)
     if ( $pcp_forced ) {
         $pcp_fntmpl = "d5_merra/Y%y4/M%m2/d5_merra.tavg1_2d_lfo_Nx_corr.%y4%m2%d2_%h230z.nc";
+        #if (r21c) { $pcp_fntmpl = " "}; # ADD when pcp files are ready 
     } else {
         if ( $nymd < 19890101 ) {
            $pcp_fntmpl = "d5_merra_jan79/diag/Y%y4/d5_merra_jan79.tavg1_2d_lfo_Nx_corr.%y4%m2%d2_%h230z.nc";
@@ -9756,8 +10032,8 @@ sub copy_resources {
           || die "Cannot write file $fvhome/run/CVSTAG: $!";
   cp("$fvroot/etc/Chem_Registry.rc","$fvhome/run/gocart/Chem_Registry.rc")
           || warn "Cannot write file $fvhome/run/gocart/Chem_Registry.rc: $!";
-  cp("$fvroot/etc/DU_GridComp.rc","$fvhome/run/DU_GridComp.rc")
-          || warn "Cannot write file $fvhome/run/DU_GridComp.rc: $!";
+#_OUT cp("$fvroot/etc/DU_GridComp.rc","$fvhome/run/DU_GridComp.rc")
+#_OUT         || warn "Cannot write file $fvhome/run/DU_GridComp.rc: $!";
 
   # GEOS-5 GCM
   # ----------
@@ -9869,6 +10145,7 @@ sub copy_resources {
   ed_satbias_acq("run");
   ed_asens_acq("run");
   ed_fcst_acq("run");
+  ed_o3bkg_acq("o3anasa");
 
   # Edit GEOS-5 GCM-related resource files
   # --------------------------------------
@@ -9928,6 +10205,21 @@ sub copy_resources {
       $src = "$fvroot/etc/$fname" unless -e $src;
       $dest = "$fvhome/run/gocart/$fname";
 
+      unless ( -e $src ) {
+          print "$0: Cannot find resource file $src\n";
+          $missing{$fname}++;
+          next;
+      }
+      cp($src,$dest) || die "Cannot write file $dest: $!";
+  }
+
+  foreach $fname ( @go2yaml_files ) {
+
+      $src = "$fvroot/etc/$emiss/$fname";
+      $src = "$fvroot/etc/$fname" unless -e $src;
+      $dest = "$fvhome/run/gocart/$fname";
+
+      print "$0: DEBUG handling file $src\n";
       unless ( -e $src ) {
           print "$0: Cannot find resource file $src\n";
           $missing{$fname}++;
@@ -10022,16 +10314,63 @@ sub copy_resources {
       # Create daotovs_fv.rc in FVHOME/run
 #     ed_daotovs_fv();
 
+      # Setup additional stand-alone analysis options
+      # ---------------------------------------------
+      foreach my $anaopt ( "o3anasa","coanasa" ) {
+         if ( -d "$fvhome/$anaopt" ){
+            if ( -d "$fvetc/gsi/$anaopt" ) {
+               my @files =  glob("$fvetc/gsi/$anaopt" . "/*");
+               foreach my $fn ( @files ) {
+                  cp("$fn", "$fvhome/$anaopt");
+               }
+            }
+            ed_gsigridcomp_rc("GSI_GridComp.rc.tmpl","$anaopt","analysis");
+            ed_ncep_rc("gsi.rc.tmpl","$anaopt");
+         }
+      }
+
+      # When applicable, overwrite w/ templated RC files for GSI
+      # ------------------------------------------------------
+      if ( $r21c ){
+         if ( -d "$fvetc/gsi/R21C" ) {
+            my @files =  glob("$fvetc/gsi/R21C" . "/*");
+            foreach my $fn ( @files ) {
+               cp("$fn", "$fvhome/run");
+            }
+         }
+	 if ( -d "$fvetc/atmens/R21C" ){     
+	    my @files = glob("$fvetc/atmens/R21C" . "/*");	 
+            foreach my $fn ( @files ) {
+               cp("$fn","$fvhome/run/atmens");
+            }
+	 }
+      }
+
+      # Update gocart files for pre-2000 case
+      if ( $r21c   ) { $casedir = "R21C"  };     
+      if ( $geosit ) { $casedir = "GEOSIT"};     
+      if ( $r21c || $geosit ){
+         if ( $nymdb < 20000331 && $hhb < 23 ) {
+	    if ( -d "$fvetc/$casedir" ){     
+	       my @files = glob("$fvetc/$casedir/19600101-20000331/" . "/*");	 
+               foreach my $fn ( @files ) {
+                  cp("$fn","$fvhome/run/gocart");
+               }
+	    }
+         }
+      }
+      #
+
       # Edit psas.rc
       ed_psas_rc();
 
       # Edit ssi.rc or gsi.rc
       if ( $anassi ) {
-          ed_ncep_rc("ssi.rc");
+          ed_ncep_rc("ssi.rc","run");
       } else {
           if ( $varcase < 4 ) {
-               ed_ncep_rc("gsi.rc.tmpl");
-               ed_gsigridcomp_rc("GSI_GridComp.rc.tmpl","analysis");
+               ed_ncep_rc("gsi.rc.tmpl","run");
+               ed_gsigridcomp_rc("GSI_GridComp.rc.tmpl","run","analysis");
 
                # Uncomment lsqrtb line for analysis-sensitivity application
                #if ($doasens) {
@@ -10042,25 +10381,25 @@ sub copy_resources {
                #}
 
           } else {
-               ed_gsigridcomp_rc("OBS_GridComp.rc.tmpl","observer");
-               ed_gsigridcomp_rc("GSI_GridComp_1.rc.tmpl","analysis");
-               ed_gsigridcomp_rc("GSI_GridComp_2.rc.tmpl","analysis");
-               ed_ncep_rc("obs.rc.tmpl");
+               ed_gsigridcomp_rc("OBS_GridComp.rc.tmpl","run","observer");
+               ed_gsigridcomp_rc("GSI_GridComp_1.rc.tmpl","run","analysis");
+               ed_gsigridcomp_rc("GSI_GridComp_2.rc.tmpl","run","analysis");
+               ed_ncep_rc("obs.rc.tmpl","run");
                ed_g5hist_rc("run","HISTFDDA.rc.tmpl");
                ed_g5hist_rc("run","HISTFDDAL.rc.tmpl");
                if ( $varcase == 4 ) {
-                    ed_ncep_rc("gsi_fdda_1.rc.tmpl");
-                    ed_ncep_rc("gsi_fdda_2.rc.tmpl");
+                    ed_ncep_rc("gsi_fdda_1.rc.tmpl","run");
+                    ed_ncep_rc("gsi_fdda_2.rc.tmpl","run");
                }
                if ( $varcase == 5 ) {
-                    ed_ncep_rc("gsi_fgat_1.rc.tmpl");
-                    ed_ncep_rc("gsi_fgat_2.rc.tmpl");
+                    ed_ncep_rc("gsi_fgat_1.rc.tmpl","run");
+                    ed_ncep_rc("gsi_fgat_2.rc.tmpl","run");
                }
           }
-          ed_ncep_rc("gsi_sens.rc.tmpl");
+          ed_ncep_rc("gsi_sens.rc.tmpl","run");
 
           # overwrite some of the RC files when setting up for MERRA2
-          if( $obsclass =~ "merra2" ) { 
+          if( $merra2 ) { 
             $cmd = "$fvbin/setup_4merra2.pl $fvhome $nymdb $hhb $ana_im $ana_jm $siglevs";
             print "$cmd\n";
             system($cmd);
@@ -10127,15 +10466,37 @@ sub copy_resources {
        }
     }
   }
-  if ( $r21c ) {
-    if ( -d "$fvetc/gsi/R21C" ) {
-       my @files =  glob("$fvetc/gsi/R21C" . "/*");
+  if ( $r21c   ) { $casedir = "R21C"  };     
+  if ( $geosit ) { $casedir = "GEOSIT"};     
+  if ( $r21c || $geosit ){
+    mkdir ("$fvhome/run/gmao_satinfo.db");
+    if ( -d "$fvetc/gmao_satinfo.db/$casedir" ) {
+      my @files =  glob("$fvetc/gmao_satinfo.db/$casedir" . "/*");
+      foreach my $fn ( @files ) {
+         cp("$fn", "$fvhome/run/gmao_satinfo.db");
+      }
+    } else {
+       die "Cannot find $casedir sat.db under $fvetc, aborting ...";
+    }
+    mkdir ("$fvhome/run/gmao_ozinfo.db");
+    if ( -d "$fvetc/gmao_ozinfo.db/$casedir" ) {
+       my @files =  glob("$fvetc/gmao_ozinfo.db/$casedir" . "/*");
        foreach my $fn ( @files ) {
-          cp("$fn", "$fvhome/run");
+          cp("$fn", "$fvhome/run/gmao_ozinfo.db");
        }
+    } else {
+       die "Cannot find $casedir oz.db under $fvetc, aborting ...";
+    }
+    mkdir ("$fvhome/run/gmao_convinfo.db");
+    if ( -d "$fvetc/gmao_convinfo.db/$casedir" ) {
+       my @files =  glob("$fvetc/gmao_convinfo.db/$casedir" . "/*");
+       foreach my $fn ( @files ) {
+          cp("$fn", "$fvhome/run/gmao_convinfo.db");
+       }
+    } else {
+       die "Cannot find $casedir conv.db under $fvetc, aborting ...";
     }
   }
-
 }
  
 #=======================================================================

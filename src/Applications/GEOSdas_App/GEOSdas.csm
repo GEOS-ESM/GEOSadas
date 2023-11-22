@@ -158,13 +158,18 @@
   if ( !($?STRICT) )              setenv STRICT        0
   if ( !($?TIMEINC) )             setenv TIMEINC       360
   if ( !($?USE_ASCAT) )           setenv USE_ASCAT     0
-  if ( !($?USE_MODIS_STAGE) )     setenv USE_MODIS_STAGE 0
   if ( !($?VAROFFSET) )           setenv VAROFFSET     180
   if ( !($?VTRACK) )              setenv VTRACK        1
   if ( !($?VTRKFRQA ) )           setenv VTRKFRQA      0
   if ( !($?VTRKFRQF ) )           setenv VTRKFRQF      0
   if ( !($?VTXRELOC ) )           setenv VTXRELOC      1
   if ( !($?WCONSTRAINT) )         setenv WCONSTRAINT   0
+
+  if ( $BATCH_SUBCMD == "sbatch" ) then
+      setenv BLOCKFLAG "-W"
+  else
+      setenv BLOCKFLAG "-W block=true"
+  endif
 
   if ( !($?doPLOTS) )             setenv doPLOTS       0
   if ( !($?doFSENS) ) then
@@ -176,6 +181,12 @@
   endif
 
 #_RT  if ( !($?STAGE4FCST) )    setenv STAGE4FCST  0   # need to resolve redundancies
+
+# Sanity setting
+# --------------
+  if ( $SKIPANA ) then
+       setenv ASYNBKG   360
+  endif
 
   if ( $?RUN_OPT_BEGIN ) then
         set run_opt_begin = ( $RUN_OPT_BEGIN ) 
@@ -445,7 +456,7 @@ exit 1
 # Cannot do GAASFDBK unless GAAS_ANA is on 
 # ----------------------------------------
   if ( ! $FORECAST ) then
-     if ( $GAAS_ANA && ( ! $GAASFDBK ) ) then
+     if ( $GAASFDBK && ( ! $GAAS_ANA ) ) then
        echo $myname": GAAS inconsistency, GAASFDBK=$GAASFDBK, GAAS_ANA=$GAAS_ANA"
        exit 1
      endif
@@ -495,6 +506,7 @@ exit 1
 # -----------------------------------------------------
   if ( !($?obsclass) && !($?req_obsclass) ) then
         setenv SKIPANA 1   # no ANALYSIS
+        setenv ASYNBKG 360
   endif
 
 # For readability, introduce DOING_ANA
@@ -527,6 +539,7 @@ exit 1
   /bin/cp $FVHOME/run/*.tbl           .         # fvCCM diagnostic table         
   /bin/cp $FVHOME/run/*.tmpl          .         # any templates
   /bin/cp $FVHOME/run/prepobs*        .         # all parameter files
+  /bin/cp $FVHOME/run/*.yaml          .         # yaml resources
   /bin/cp $FVHOME/run/gmao_acft_bias.parm .
   if ( -d $FVHOME/run/fsens ) then
       /bin/cp $FVHOME/run/fsens/*.tmpl    .	
@@ -605,15 +618,6 @@ exit 1
       cp -f AGCM.rc.tmpl AGCM.rc.tmpl.HOLD
       cp -f AGCM.BOOTSTRAP.rc.tmpl AGCM.rc.tmpl
   endif 
-
-# Turn off aerosol data sets for local acquire and replay
-# -------------------------------------------------------
-  if ( $LOCAL_ACQUIRE ) then
-      set aerosol_acquire = 0
-      setenv USE_MODIS_STAGE 1
-  else
-      set aerosol_acquire = 1
-  endif
 
 # If 4DVAR then link to adjoint nml file
 # --------------------------------------
@@ -832,6 +836,26 @@ exit 1
        sed -i "${line}s/.006./.061./" $FVWORK/ExtData.rc
      end
   endif
+
+  set            SC_TRUE = `grep -i '^\s*ENABLE_STRATCHEM:\s*\.TRUE\.'     GEOS_ChemGridComp.rc | wc -l`
+  if (          $SC_TRUE == 0 && -e StratChem_ExtData.rc          ) /bin/mv          StratChem_ExtData.rc          StratChem_ExtData.rc.NOT_USED
+  set           GMI_TRUE = `grep -i '^\s*ENABLE_GMICHEM:\s*\.TRUE\.'       GEOS_ChemGridComp.rc | wc -l`
+  if (         $GMI_TRUE == 0 && -e GMI_ExtData.rc                ) /bin/mv                GMI_ExtData.rc                GMI_ExtData.rc.NOT_USED
+  set           GCC_TRUE = `grep -i '^\s*ENABLE_GEOSCHEM:\s*\.TRUE\.'      GEOS_ChemGridComp.rc | wc -l`
+  if (         $GCC_TRUE == 0 && -e GEOSCHEMchem_ExtData.rc       ) /bin/mv       GEOSCHEMchem_ExtData.rc       GEOSCHEMchem_ExtData.rc.NOT_USED
+  set         CARMA_TRUE = `grep -i '^\s*ENABLE_CARMA:\s*\.TRUE\.'         GEOS_ChemGridComp.rc | wc -l`
+  if (       $CARMA_TRUE == 0 && -e CARMAchem_GridComp_ExtData.rc ) /bin/mv CARMAchem_GridComp_ExtData.rc CARMAchem_GridComp_ExtData.rc.NOT_USED
+  set           DNA_TRUE = `grep -i '^\s*ENABLE_DNA:\s*\.TRUE\.'           GEOS_ChemGridComp.rc | wc -l`
+  if (         $DNA_TRUE == 0 && -e DNA_ExtData.rc                ) /bin/mv                DNA_ExtData.rc                DNA_ExtData.rc.NOT_USED
+  set         ACHEM_TRUE = `grep -i '^\s*ENABLE_ACHEM:\s*\.TRUE\.'         GEOS_ChemGridComp.rc | wc -l`
+  if (       $ACHEM_TRUE == 0 && -e GEOSachem_ExtData.rc          ) /bin/mv          GEOSachem_ExtData.rc          GEOSachem_ExtData.rc.NOT_USED
+  set   GOCART_DATA_TRUE = `grep -i '^\s*ENABLE_GOCART_DATA:\s*\.TRUE\.'   GEOS_ChemGridComp.rc | wc -l`
+  if ( $GOCART_DATA_TRUE == 0 && -e GOCARTdata_ExtData.rc         ) /bin/mv         GOCARTdata_ExtData.rc         GOCARTdata_ExtData.rc.NOT_USED
+
+  /bin/mv WSUB_ExtData.rc WSUB_ExtData.tmp
+  cat WSUB_ExtData.tmp | sed -e '/^WSUB_NATURE/ s#ExtData.*#/dev/null#' > WSUB_ExtData.rc
+  /bin/rm WSUB_ExtData.tmp
+
   cd -
 # /bin/cp ExtData.rc $EXPID.ExtData.$itime.rc
 
@@ -1550,11 +1574,7 @@ exit 1
         fname2 " acquire -v -rc blend.acq -s $spool -d . -strict $nymd $nhms 060000 1 "
         fname2 "exit"
 
-        if ( $BATCH_SUBCMD == "sbatch" ) then
-           sbatch -W -o $acqlog $fname
-        else
-           qsub -W block=true -o $acqlog $fname
-        endif
+        $BATCH_SUBCMD $BLOCKFLAG -o $acqlog $fname
 
   endif
 
@@ -1692,11 +1712,7 @@ exit 1
         endif
         fname2 "exit"
                                                                                                           
-        if ( $BATCH_SUBCMD == "sbatch" ) then
-           sbatch -W -o $acqlog $fname
-        else
-           qsub -W block=true -o $acqlog $fname
-        endif
+        $BATCH_SUBCMD $BLOCKFLAG -o $acqlog $fname
 
      endif
 
@@ -1799,6 +1815,9 @@ exit 1
             echo "s/>>>ANATIME<<</${initref[2]}/1" >> sed_file
             /bin/rm -f ./mkiau.rc
             sed -f sed_file  ./mkiau.rc.tmpl  > ./mkiau.rc
+            echorc.x -rc ./mkiau.rc AGCM_INTERNAL_CHECKPOINT_FILE 
+            set iaufn = `echorc.x -rc mkiau.rc -template $EXPID $initref[1] $initref[2] AGCM_INTERNAL_CHECKPOINT_FILE`
+            if ( -e $iaufn ) /bin/rm $iaufn
             $makeiaux
 
         else
@@ -1890,11 +1909,7 @@ exit 1
         fname2 " acquire -v -rc aod4fcst.acq -s $spool -d . -strict $initref[1] $initref[2] 030000 2 "
         fname2 "exit"
                                                                                                           
-        if ( $BATCH_SUBCMD == "sbatch" ) then
-           sbatch -W -o $acqlog $fname
-        else
-           qsub -W block=true -o $acqlog $fname
-        endif
+        $BATCH_SUBCMD $BLOCKFLAG -o $acqlog $fname
 
      endif
 
@@ -1962,9 +1977,11 @@ exit 1
         endif
      endif
 
-     set ars_list = ( satbias satbang )
+     set ars_list = ( satbias )
      if ($NEWRADBC || $ANGLEBC) then
        set ars_list = ( $ars_list satbiaspc )
+     else if ( ! $ANGLEBC ) then
+       set ars_list = ( $ars_list satbang )
      endif
      if ($ACFTBIAS) then
        set ars_list = ( $ars_list acftbias )
@@ -2470,11 +2487,7 @@ exit 1
         fname2 ""
         fname2 "exit"
 
-        if ( $BATCH_SUBCMD == "sbatch" ) then
-           sbatch -W -o $acqlog $fname
-        else
-           qsub -W block=true -o $acqlog $fname
-        endif
+        $BATCH_SUBCMD $BLOCKFLAG -o $acqlog $fname
         sleep 2
         @ cyc_sec = $TIMEINC * 60
         set next_cycle = (`tick $rpl_nymdb $rpl_nhmsb $cyc_sec`)
@@ -2554,7 +2567,10 @@ exit 1
         while ( ( $bnymd <= $enymd[1] ) && ( ! -e "${FVWORK}/acquire.FAILED" ) )
              set fname = "acqobs1.pbs"
              set acqdate = ${bnymd}_`echo $bnhms | cut -c1-2`z
-             set acqlog = $FVHOME/run/acqobs1.log.$acqdate.txt
+             set aqcyyyy = `echo ${la_dtg[1]} | cut -c1-4`
+             set aqcmm = `echo ${la_dtg[1]} | cut -c5-6`
+             mkdir -p $FVHOME/etc/Y${aqcyyyy}/M${aqcmm}/
+             set acqlog = $FVHOME/etc/Y${aqcyyyy}/M${aqcmm}/acqobs1.log.$acqdate.txt
 
              fname1 "#\!/bin/csh -xvf"
              fname2 "#$group_list"
@@ -2578,11 +2594,7 @@ exit 1
              fname2 "acquire -v -rc obsys.acq -s $spool -d $FVWORK -ssh $strict $bnymd $bnhms $inhms 4"
              fname2 "exit"
 
-             if ( $BATCH_SUBCMD == "sbatch" ) then
-                sbatch -W -o $acqlog $fname
-             else
-                qsub -W block=true -o $acqlog $fname
-             endif
+             $BATCH_SUBCMD $BLOCKFLAG -o $acqlog $fname
              sleep 2
              set bnymd=`tick $bnymd`
         end
@@ -2594,7 +2606,10 @@ exit 1
 
              set fname = "acqobs2.pbs"
              set acqdate = ${la_dtg[1]}_`echo $la_dtg[2] | cut -c1-2`z
-             set acqlog = $FVHOME/run/acqobs2.log.$acqdate.txt
+             set aqcyyyy = `echo ${la_dtg[1]} | cut -c1-4`
+             set aqcmm = `echo ${la_dtg[1]} | cut -c5-6`
+             mkdir -p $FVHOME/etc/Y${aqcyyyy}/M${aqcmm}/
+             set acqlog = $FVHOME/etc/Y${aqcyyyy}/M${aqcmm}/acqobs2.log.$acqdate.txt
 
              fname1 "#\!/bin/csh -xvf"
              fname2 "#$group_list"
@@ -2628,7 +2643,7 @@ exit 1
 
      # Acquire data for obsys on cmd line
      # ----------------------------------
-     if ( (`uname -n` !~ borg*) || ( $LOCAL_ACQUIRE ) ) then
+     if ( `uname -n` !~ borg* ) then
 
         # acquire tcvitals; ignore status return
         #---------------------------------------
@@ -2742,17 +2757,13 @@ exit 1
         set obsflag = 2
         set acqflags  = "-d $spool -s $spool -e 999"
         set acqflags1 = "$acqflags"
-        set blockflag = ""
+        set qblock = ""
   else
         if ( !($?strict) )  set strict = ""  
         set obsflag = 1
         set acqflags  = "-d $FVWORK -s $spool -strict"
         set acqflags1 = "-d $FVWORK -s $spool $strict"
-        if ( $BATCH_SUBCMD == "sbatch" ) then
-           set blockflag = "-W"
-        else
-           set blockflag = "-W block=true"
-        endif
+        set qblock = $BLOCKFLAG
   endif
 
   # Check for available AOD obs classes
@@ -2763,7 +2774,10 @@ exit 1
   set acqname = acqobs$obsflag
   set fname = $acqname.pbs
   set acqdate = ${bnymd}_`echo $bnhms | cut -c1-2`z
-  set acqlog = $FVHOME/run/$acqname.log.$acqdate.txt
+  set aqcyyyy = `echo ${bnymd} | cut -c1-4`
+  set aqcmm = `echo ${bnymd} | cut -c5-6`
+  mkdir -p $FVHOME/etc/Y${aqcyyyy}/M${aqcmm}/
+  set acqlog = $FVHOME/etc/Y${aqcyyyy}/M${aqcmm}/$acqname.log.$acqdate.txt
 
   if ($obsflag == 1) then
       touch ${FVWORK}/acquire.FAILED
@@ -2806,7 +2820,7 @@ exit 1
   if ( $AOD_OBSCLASS == "" )               setenv AOD_OBSCLASS none
   if ( $AOD_OBSCLASS == 0 )                setenv AOD_OBSCLASS none
 
-  if ($GAAS_ANA && $aerosol_acquire && ("$AOD_OBSCLASS" != "none")) then
+  if ($GAAS_ANA && ("$AOD_OBSCLASS" != "none")) then
       @ mstep = $nstep * 2
       fname2 acquire_obsys -v $acqflags -ssh -drc $AERO_OBSDBRC \\
       fname2 "      "$bnymd $bnhms 030000 $mstep \\
@@ -2838,7 +2852,12 @@ exit 1
 
   # submit job script
   #------------------
-  $BATCH_SUBCMD $blockflag -o $acqlog $fname  # acquire observations; ignore status return
+  if ( $LOCAL_ACQUIRE ) then
+     chmod 744 $fname
+     $fname |& tee $acqlog
+  else
+     $BATCH_SUBCMD $qblock -o $acqlog $fname  # acquire observations; ignore status return
+  endif
   sleep 2
   if ($obsflag == 1 && ( -e obsys.acq )) then
      cat obsys.acq >>! obsys.acq.all
@@ -2965,27 +2984,35 @@ endif
          /bin/rm -f input_combfr.txt
          touch input_combfr.txt
          foreach qcpat ( `cat pre-qc.acq | sort | uniq`)
-            echorc.x -template dummy $nymdb $nhmsb -fill $qcpat >> input_combfr.txt
+#           echorc.x -template dummy $nymdb $nhmsb -fill $qcpat >> input_combfr.txt
+            set fn = `echorc.x -template dummy $nymdb $nhmsb -fill $qcpat`
+            if ( -e $fn && ! -z $fn ) echo $fn >> input_combfr.txt
          end
-         combfrd.x -d $pbdtg $pbname < input_combfr.txt
-         scanbuf0.x  $pbname >! data_types.log
 
-         if ( `grep PROFLR data_types.log | wc -l `) then
-           setenv PROFQC 1
+         if ( -z input_combfr.txt) then
+# if no files to combine then no input for prepqc, so try setting prepqc 0
+            if ($PREPQC) setenv PREPQC        0
          else
-           setenv PROFQC 0
-         endif
+            combfrd.x -d $pbdtg $pbname < input_combfr.txt
+            scanbuf0.x  $pbname >! data_types.log
 
-         if ( `grep AIRCFT data_types.log | wc -l`) then
-           setenv ACFTQC 1
-         else
-           setenv ACFTQC 0
-         endif
+            if ( `grep PROFLR data_types.log | wc -l `) then
+              setenv PROFQC 1
+            else
+              setenv PROFQC 0
+            endif
 
-         if  ( `grep AIRCAR data_types.log | wc -l`) then
-           setenv ACARSQC 1
-         else
-           setenv ACARSQC 0
+            if ( `grep AIRCFT data_types.log | wc -l`) then
+              setenv ACFTQC 1
+            else
+              setenv ACFTQC 0
+            endif
+
+            if  ( `grep AIRCAR data_types.log | wc -l`) then
+              setenv ACARSQC 1
+            else
+              setenv ACARSQC 0
+            endif
          endif
       endif
    endif
@@ -3526,6 +3553,8 @@ endif
                             echo "s/>>>ANATIME<<</${nhmsb}/1"      >> sed_file
                             /bin/rm -f ./mkiau.rc
                             sed -f sed_file  ./mkiau.rc.tmpl  > ./mkiau.rc
+                            set iaufn = `echorc.x -rc mkiau.rc -template $EXPID $nymdb $nhmsb AGCM_INTERNAL_CHECKPOINT_FILE`
+                            if ( -e $iaufn ) /bin/rm $iaufn
                             $makeiaux
 
                          endif
@@ -3559,6 +3588,13 @@ endif
                     dyn_recenter.x -g5 $anafile $bkg4iau NONE -o $ifile
 
                   endif  # 3D/4D IAU
+
+                  # Model no longer overwrites files, so remove background files at end of predictor
+                  # --------------------------------------------------------------------------------
+                  set bkg_upa   = `echorc.x -template $EXPID $end_ana[1] $end_ana[2] upper-air_bkg_filename`
+                  set bkg_sfc   = `echorc.x -template $EXPID $end_ana[1] $end_ana[2] surface_bkg_filename`
+                  set chm_eta   = `echorc.x -template $EXPID $end_ana[1] $end_ana[2] chem_bkg_filename`
+                  /bin/rm $bkg_upa $bkg_sfc $chm_eta 
 
               else  # 4DVAR or FGAT
 
@@ -3738,6 +3774,17 @@ endif
               endif # < IAU/4DVAR >
 
          endif  # < DOETA2BIN >
+
+#        A bit of a hack to cope with latest handing of GAAS settings
+#        ------------------------------------------------------------
+         foreach fn (`ls $EXPID.aod*.$NCSUFFIX`)
+             set sfx = `echo $fn | cut -d. -f2-`
+             if ( -e das.$sfx ) then
+                /bin/rm das.$sfx
+             else
+                ln -sf $fn das.$sfx 
+             endif
+         end
 
 #        Signal successful completion
 #        ----------------------------
@@ -4011,6 +4058,30 @@ endif
            endif
            /bin/cp ExtData.rc $EXPID.ExtData.$itime.rc
 
+           set            SC_TRUE = `grep -i '^\s*ENABLE_STRATCHEM:\s*\.TRUE\.'     GEOS_ChemGridComp.rc | wc -l`
+           if (          $SC_TRUE == 0 && -e StratChem_ExtData.rc          ) /bin/mv          StratChem_ExtData.rc          StratChem_ExtData.rc.NOT_USED
+           set           GMI_TRUE = `grep -i '^\s*ENABLE_GMICHEM:\s*\.TRUE\.'       GEOS_ChemGridComp.rc | wc -l`
+           if (         $GMI_TRUE == 0 && -e GMI_ExtData.rc                ) /bin/mv                GMI_ExtData.rc                GMI_ExtData.rc.NOT_USED
+           set           GCC_TRUE = `grep -i '^\s*ENABLE_GEOSCHEM:\s*\.TRUE\.'      GEOS_ChemGridComp.rc | wc -l`
+           if (         $GCC_TRUE == 0 && -e GEOSCHEMchem_ExtData.rc       ) /bin/mv       GEOSCHEMchem_ExtData.rc       GEOSCHEMchem_ExtData.rc.NOT_USED
+           set         CARMA_TRUE = `grep -i '^\s*ENABLE_CARMA:\s*\.TRUE\.'         GEOS_ChemGridComp.rc | wc -l`
+           if (       $CARMA_TRUE == 0 && -e CARMAchem_GridComp_ExtData.rc ) /bin/mv CARMAchem_GridComp_ExtData.rc CARMAchem_GridComp_ExtData.rc.NOT_USED
+           set           DNA_TRUE = `grep -i '^\s*ENABLE_DNA:\s*\.TRUE\.'           GEOS_ChemGridComp.rc | wc -l`
+           if (         $DNA_TRUE == 0 && -e DNA_ExtData.rc                ) /bin/mv                DNA_ExtData.rc                DNA_ExtData.rc.NOT_USED
+           set         ACHEM_TRUE = `grep -i '^\s*ENABLE_ACHEM:\s*\.TRUE\.'         GEOS_ChemGridComp.rc | wc -l`
+           if (       $ACHEM_TRUE == 0 && -e GEOSachem_ExtData.rc          ) /bin/mv          GEOSachem_ExtData.rc          GEOSachem_ExtData.rc.NOT_USED
+           set   GOCART_DATA_TRUE = `grep -i '^\s*ENABLE_GOCART_DATA:\s*\.TRUE\.'   GEOS_ChemGridComp.rc | wc -l`
+           if ( $GOCART_DATA_TRUE == 0 && -e GOCARTdata_ExtData.rc         ) /bin/mv         GOCARTdata_ExtData.rc         GOCARTdata_ExtData.rc.NOT_USED
+
+           /bin/mv WSUB_ExtData.rc WSUB_ExtData.tmp
+           cat WSUB_ExtData.tmp | sed -e '/^WSUB_NATURE/ s#ExtData.*#/dev/null#' > WSUB_ExtData.rc
+           /bin/rm WSUB_ExtData.tmp
+
+         #  Run bundleParser.py
+         #  -------------------
+         python bundleParser.py
+         construct_extdata_yaml_list.py $FVWORK/GEOS_ChemGridComp.rc
+
                               # Last line of CoupleAnaToGcm_()
 \end
 
@@ -4119,11 +4190,7 @@ endif
                  "Central AGCM Failed "
     
                  if ( -e agcm_central.j ) then
-                    if ( $BATCH_SUBCMD == "sbatch" ) then
-                       sbatch -W agcm_central.j
-                    else
-                       qsub -W block=true agcm_central.j
-                    endif
+                    $BATCH_SUBCMD $BLOCKFLAG agcm_central.j
                  else
                     echo " ${MYNAME}: AGCM Failed to generate PBS jobs for Central, Aborting ... "
                     exit(1)
@@ -4187,7 +4254,12 @@ endif
      setenv NCPUS_AOD 1
   endif
 
-  @ xtra = $NCPUS - $NCPUS_GSI
+  if ( $?SLURM_CPUS_ON_NODE && $?SLURM_JOB_NUM_NODES ) then
+     @ total_cpus_slurm = $SLURM_CPUS_ON_NODE * $SLURM_JOB_NUM_NODES
+     @ xtra = $total_cpus_slurm - $NCPUS_GSI
+  else
+     @ xtra = $NCPUS - $NCPUS_GSI
+  endif
 
   if ($xtra < $NCPUS_AOD) then
      setenv aod_parallel_flag 0
@@ -4256,22 +4328,6 @@ endif
   /bin/cp $FVHOME/run/gaas/avhrr_l2a.pcf $AODWORK
   /bin/cp $FVHOME/run/gaas/modis_l2a.pcf $AODWORK
 
-  # Reset value of MODIS_L2A_L2_DIR to $MODIS_STAGE_DIR?
-  # ---------------------------------------------------
-  if ($GAAS_ANA && $USE_MODIS_STAGE) then
-      if ( ! $?MODIS_STAGE_DIR ) then
-         echo "Error. MODIS_STAGE_DIR not defined"
-         echo "Aborting ... "
-         Call AbnormalExit_( 5 )
-      endif
-      if ( ! -d $MODIS_STAGE_DIR ) then
-         echo "Error. MODIS_STAGE_DIR directory not found: $MODIS_STAGE_DIR"
-         echo "Aborting ... "
-         Call AbnormalExit_( 5 )
-      endif
-      vED -i -vv MODIS_L2A_L2_DIR=$MODIS_STAGE_DIR $AODWORK/modis_l2a.pcf
-  endif
-
   # Prepare ana.rc from template
   # ----------------------------
   set ana_rc_tmpl = $FVHOME/run/gaas/ana.rc.tmpl
@@ -4299,8 +4355,9 @@ endif
         sed -i "s/#___AVHRR___//" $ana_rc
      endif
 
-     if ($aod_obs == patmosx_asc)     sed -i "s/#___AVHRR___//"   $ana_rc
-     if ($aod_obs == aeronet_obs)     sed -i "s/#___AERONET___//" $ana_rc
+     if ($aod_obs == patmosx_asc || $aod_obs == patmosx_ods)   sed -i "s/#___AVHRR___//"   $ana_rc
+     if ($aod_obs == aeronet_obs || $aod_obs == aeronet_obs_flk || \
+         $aod_obs == aeronet_obs_llk) sed -i "s/#___AERONET___//" $ana_rc
      if ($aod_obs == misr_F12_bright) sed -i "s/#___MISR___//"    $ana_rc
      if ($aod_obs == mod04_land_nnr)  sed -i "s/#___TERRA___//"   $ana_rc
      if ($aod_obs == myd04_land_nnr)  sed -i "s/#___AQUA___//"    $ana_rc
@@ -4317,12 +4374,6 @@ endif
         sed -i "s/#___TERRA_NRT___//" $ana_rc
      endif
   end
-
-#  if ($USE_MODIS_STAGE) then
-#     setenv MODIS_L2_HDF 1
-#     sed -i "s/#___AQUA_NRT___//"  $ana_rc
-#     sed -i "s/#___TERRA_NRT___//" $ana_rc
-#  endif
 
   echo "cat $ana_rc"
   cat $ana_rc
@@ -4419,13 +4470,8 @@ endif
 
      # submit job and save job ID
      #---------------------------
-     if ( $BATCH_SUBCMD == "sbatch" ) then
-         set qblock = "-W"
-     else
-         set qblock = "-W block=true"
-     endif
      if ( $AODBLOCKJOB ) then
-        set jobIDline = (`$PBS_BIN/$BATCH_SUBCMD $qblock -o $gaasLOG $jobf`)
+        set jobIDline = (`$PBS_BIN/$BATCH_SUBCMD $BLOCKFLAG -o $gaasLOG $jobf`)
      else
         set jobIDline = (`$PBS_BIN/$BATCH_SUBCMD -o $gaasLOG $jobf`)
      endif
@@ -4679,7 +4725,33 @@ endif
         sed -i "${line}s/.006./.061./" $FVWORK/ExtData.rc
       end
    endif
+
+   set            SC_TRUE = `grep -i '^\s*ENABLE_STRATCHEM:\s*\.TRUE\.'     GEOS_ChemGridComp.rc | wc -l`
+   if (          $SC_TRUE == 0 && -e StratChem_ExtData.rc          ) /bin/mv          StratChem_ExtData.rc          StratChem_ExtData.rc.NOT_USED
+   set           GMI_TRUE = `grep -i '^\s*ENABLE_GMICHEM:\s*\.TRUE\.'       GEOS_ChemGridComp.rc | wc -l`
+   if (         $GMI_TRUE == 0 && -e GMI_ExtData.rc                ) /bin/mv                GMI_ExtData.rc                GMI_ExtData.rc.NOT_USED
+   set           GCC_TRUE = `grep -i '^\s*ENABLE_GEOSCHEM:\s*\.TRUE\.'      GEOS_ChemGridComp.rc | wc -l`
+   if (         $GCC_TRUE == 0 && -e GEOSCHEMchem_ExtData.rc       ) /bin/mv       GEOSCHEMchem_ExtData.rc       GEOSCHEMchem_ExtData.rc.NOT_USED
+   set         CARMA_TRUE = `grep -i '^\s*ENABLE_CARMA:\s*\.TRUE\.'         GEOS_ChemGridComp.rc | wc -l`
+   if (       $CARMA_TRUE == 0 && -e CARMAchem_GridComp_ExtData.rc ) /bin/mv CARMAchem_GridComp_ExtData.rc CARMAchem_GridComp_ExtData.rc.NOT_USED
+   set           DNA_TRUE = `grep -i '^\s*ENABLE_DNA:\s*\.TRUE\.'           GEOS_ChemGridComp.rc | wc -l`
+   if (         $DNA_TRUE == 0 && -e DNA_ExtData.rc                ) /bin/mv                DNA_ExtData.rc                DNA_ExtData.rc.NOT_USED
+   set         ACHEM_TRUE = `grep -i '^\s*ENABLE_ACHEM:\s*\.TRUE\.'         GEOS_ChemGridComp.rc | wc -l`
+   if (       $ACHEM_TRUE == 0 && -e GEOSachem_ExtData.rc          ) /bin/mv          GEOSachem_ExtData.rc          GEOSachem_ExtData.rc.NOT_USED
+   set   GOCART_DATA_TRUE = `grep -i '^\s*ENABLE_GOCART_DATA:\s*\.TRUE\.'   GEOS_ChemGridComp.rc | wc -l`
+   if ( $GOCART_DATA_TRUE == 0 && -e GOCARTdata_ExtData.rc         ) /bin/mv         GOCARTdata_ExtData.rc         GOCARTdata_ExtData.rc.NOT_USED
+
+   /bin/mv WSUB_ExtData.rc WSUB_ExtData.tmp
+   cat WSUB_ExtData.tmp | sed -e '/^WSUB_NATURE/ s#ExtData.*#/dev/null#' > WSUB_ExtData.rc
+   /bin/rm WSUB_ExtData.tmp
+
    cd -
+
+  # Run bundleParser.py
+  #---------------------
+  python bundleParser.py
+  construct_extdata_yaml_list.py $FVWORK/GEOS_ChemGridComp.rc
+
 #  /bin/cp ExtData.rc $EXPID.ExtData.$itime.rc
 
    /bin/rm -f ./EGRESS
@@ -4821,11 +4893,7 @@ endif
         fname2 " acquire_obsys -v -d $FVWORK $strict $anadate[1] $anadate[2] 060000 1 $tcvitals_class"
         fname2 "exit"
 
-        if ( $BATCH_SUBCMD == "sbatch" ) then
-           sbatch -W -o $acqlog $fname
-        else
-           qsub -W block=true -o $acqlog $fname
-        endif
+        $BATCH_SUBCMD $BLOCKFLAG -o $acqlog $fname
 
      endif
      ls -lrt *vtx.prs* *vtx.mix*
@@ -5742,6 +5810,11 @@ endif
   if ( $FORECAST ) then
        /bin/rm d_rst
        mkdrstdate.x $fcst_end    # create d_rst with current date and time
+  else if ( $SKIPANA ) then
+        set GcmEndDate = $GcmEndEpoch[1]
+        set GcmEndTime = $GcmEndEpoch[2]
+       /bin/rm d_rst
+       mkdrstdate.x $GcmEndDate $GcmEndTime
   endif
 
   set buf  = `rst_date d_rst`
@@ -5984,10 +6057,10 @@ endif
        /bin/rm $EXPID.*rst*iter*.$RSTSUFFIX
     endif
     cd -
-    set lsttrajrst = `ls $EXPID.traj_lcv_rst.*$NCSUFFIX`
-    if ( ${%lsttrajrst}  ) then
-       tar cvf $FVWORK/$EXPID.trajrst.${rtag3}.tar $lsttrajrst
-       /bin/rm $lsttrajrst
+    set lstbkgcrst = `ls $EXPID.bkg_clcv_rst.*$NCSUFFIX`
+    if ( ${%lstbkgcrst}  ) then
+       tar cvf $FVWORK/$EXPID.bkgcrst.${rtag3}.tar $lstbkgcrst
+       /bin/rm $lstbkgcrst
     endif
     if ( $DO4DIAU ) then
        set lstagcmrst = `ls $EXPID.agcm_import_rst.*$NCSUFFIX`

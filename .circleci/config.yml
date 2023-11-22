@@ -1,0 +1,25 @@
+version: 2.1
+
+# Anchors to prevent forgetting to update a version
+baselibs_version: &baselibs_version v7.7.0
+
+orbs:
+  ci: geos-esm/circleci-tools@1
+
+workflows:
+  build-test:
+    jobs:
+      - ci/build:
+          name: build-GEOSadas-on-<< matrix.compiler >>
+          context:
+            - docker-hub-creds
+          matrix:
+            parameters:
+              compiler: [ifort]
+          resource_class: xlarge
+          baselibs_version: *baselibs_version
+          repo: GEOSadas
+          persist_workspace: false # Needs to be true to run fv3/gcm experiment, costs extra
+          mepodevelop: false
+          rebuild_procs: 1
+          build_type: Release

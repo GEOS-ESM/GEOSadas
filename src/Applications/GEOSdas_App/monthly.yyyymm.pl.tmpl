@@ -49,6 +49,7 @@ BEGIN {
 }
 use lib "$fvroot/bin";
 use GMAO_utils qw(get_siteID);
+use Manipulate_time qw(get_htype token_resolve);
 use Perl_Config qw(perl_config);
 use WriteLog qw(chdir_ mkpath_ unlink_ system_);
 
@@ -62,8 +63,8 @@ my ($walltime_cl, $walltime_mm, $walltime_mp, $walltime_pf);
 my ($partition, $qos, $runlocal);
 my ($datamove_constraint);
 
-$partition = "preops";
-$qos = "dastest";
+#$partition = "preops";
+#$qos = "dastest";
 
 my %valid = ( "fetch" => 1,
               "means" => 1,
@@ -239,6 +240,7 @@ sub init {
         $walltime_pf = "2:00:00";
         $numnodes_mm = 6;
     }
+    $walltime_mm = "1:00:00" if $qos eq "debug";
     $walltime_mp = "1:00:00";
     $numnodes_mp = 1;
 
@@ -287,7 +289,7 @@ sub fetch_calc_tar_and_clean {
     my (%opts, $MMWORK, $filestring, $lastFLG);
     my (@fetchArr, $processflags);
     my ($max, $label, $num, $job_tarfile, @list);
-    my ($fileToken, @parts, %ftype, %htype, $ftype, $htype);
+    my ($fileToken, $fileTemplate, @parts, %ftype, %htype, $ftype, $htype);
     my (%doFetch, %doTar);
 
     # check for existence of work directory
@@ -325,10 +327,7 @@ sub fetch_calc_tar_and_clean {
 
         # get $htype from $ftype, unless alternate htype value given
         #-----------------------------------------------------------
-        unless ($htype) {
-            if ($ftype =~  /\./) { $htype = $ftype }
-            else                 { $htype = (split(/_/, $ftype))[0] }
-        }
+        $htype = get_htype($ftype) unless $htype;
 
         $ftype{$filestring} = $ftype;
         $htype{$filestring} = $htype;
@@ -351,11 +350,14 @@ sub fetch_calc_tar_and_clean {
     #-------------------------------------
     $lastFLG = 0;
     foreach $filestring (@fetchArr) {
+        $fileToken = basename($filestring);
+        $fileTemplate = token_resolve($fileToken, $yyyymm);
 
         %opts = ();
         $opts{"filestring"} = $filestring;
         $opts{"ftype"} = $ftype{$filestring};
         $opts{"htype"} = $htype{$filestring};
+        $opts{"fileTemplate"} = $fileTemplate;
 
         $opts{"do_dmput"} = 1;
         $opts{"do_dmput"} = 0 if $doTar{$filestring}; 
@@ -456,6 +458,7 @@ sub fetch_inputs {
     $value{"__RUNDIR__"}     = $rundir;
     $value{"__WORKDIR__"}    = $workdir;
     $value{"__DO_DMPUT__"}   = $do_dmput;
+    $value{"__DO_SKIP_CHK__"}   = 0;
     $value{"__DO_TAR__"}     = $do_tar;
 
     replaceLabels($tmpl, $prefetch_j, %value);
@@ -546,6 +549,7 @@ sub calc_monthly_means {
     $value{"__RUNDIR__"}     = $rundir;
     $value{"__WORKDIR__"}    = $workdir;
     $value{"__DO_DMPUT__"}   = $do_dmput;
+    $value{"__DO_SKIP_CHK__"}   = 1;
 
     replaceLabels($tmpl, $means_j, %value);
 
@@ -574,7 +578,7 @@ sub calc_monthly_means {
 # => $lastFLG: flag indicating whether this is last data collection
 #=======================================================================
 sub tar_and_clean_inputs {
-    my (%opts, $filestring, $ftype, $do_tar, $lastFLG);
+    my (%opts, $filestring, $fileTemplate, $ftype, $do_tar, $lastFLG);
     my ($tmpl, $tarandclean_j, $jobname, $outfile);
     my ($job_name, $time, $output, $parFLG, $vFLG);
     my ($constraint);
@@ -583,10 +587,11 @@ sub tar_and_clean_inputs {
     # input arguments
     #----------------
     %opts = @_;
-    $filestring = $opts{"filestring"};
-    $ftype      = $opts{"ftype"};
-    $do_tar     = $opts{"do_tar"};
-    $lastFLG    = $opts{"lastFLG"};
+    $filestring   = $opts{"filestring"};
+    $fileTemplate = $opts{"fileTemplate"};
+    $ftype        = $opts{"ftype"};
+    $do_tar       = $opts{"do_tar"};
+    $lastFLG      = $opts{"lastFLG"};
 
     # create tarandclean job script
     #-------------------------------
@@ -621,12 +626,13 @@ sub tar_and_clean_inputs {
     $value{"__PARTITION__"}  = $parFLG;
     $value{"__CONSTRAINT__"} = $constraint;
 
-    $value{"__FILESTRING__"} = $filestring;
-    $value{"__YYYYMM__"}     = $yyyymm;
-    $value{"__RUNDIR__"}     = $rundir;
-    $value{"__WORKDIR__"}    = $workdir;
-    $value{"__DO_TAR__"}     = $do_tar;
-    $value{"__LASTFLG__"}    = $lastFLG;
+    $value{"__FILESTRING__"}    = $filestring;
+    $value{"__FILETEMPLATE__"}  = $fileTemplate;
+    $value{"__YYYYMM__"}        = $yyyymm;
+    $value{"__RUNDIR__"}        = $rundir;
+    $value{"__WORKDIR__"}       = $workdir;
+    $value{"__DO_TAR__"}        = $do_tar;
+    $value{"__LASTFLG__"}       = $lastFLG;
 
     replaceLabels($tmpl, $tarandclean_j, %value);
 
@@ -659,7 +665,7 @@ sub archive_monthly_keep_files {
 
     # command flags
     #--------------
-    $outfile = "$listdir/$EXPID.KEEParc.$yyyymm.log.$$.txt.FAILED";
+    $outfile = "$listdir/$EXPID.KEEParc.$yyyymm.log.$$.txt";
     $vars = "arch_type=MKEEP,"
         .   "arch_date=$yyyymm,"
         .   "outfile=$outfile";
@@ -721,7 +727,7 @@ sub archive_monthly_files {
 
     # command flags
     #--------------
-    $outfile = "$listdir/$EXPID.MPParc.$yyyymm.log.$$.txt.FAILED";
+    $outfile = "$listdir/$EXPID.MPParc.$yyyymm.log.$$.txt";
     $vars = "arch_type=MNTHLY,"
         .   "arch_date=$yyyymm,"
         .   "outfile=$outfile,"

@@ -39,7 +39,13 @@ ecbuild_add_executable (
   SOURCES gsidiag_rad_bin2nc4.f90
   LIBS GEOSaana_GridComp NCEP_bufr_r8i4 NCEP_w3_r8i4)
 
-install(PROGRAMS fvssi  DESTINATION bin) 
+ecbuild_add_executable (
+  TARGET getfixsfc.x
+  SOURCES getfixsfc.f90 m_getfixsfc.f90
+  LIBS NCEP_sfcio NCEP_bacio_r4i4 MAPL_cfio_r4 )
+
+install(PROGRAMS fvssi    DESTINATION bin) 
+install(PROGRAMS o3anasa  DESTINATION bin) 
 
 set (DASPERL /usr/bin/perl)
 configure_file(fvssisetup fvssisetup @ONLY)

@@ -23,6 +23,11 @@ ecbuild_add_executable (
   LIBS NCEP_bufr_r4i4 GMAO_mpeu)
 
 ecbuild_add_executable (
+  TARGET scanbuf0_accum.x
+  SOURCES scanbuf0_accum.f
+  LIBS NCEP_bufr_r4i4 GMAO_mpeu)
+
+ecbuild_add_executable (
   TARGET scanbuf2.x
   SOURCES scanbuf2.f
   LIBS NCEP_bufr_r4i4 GMAO_mpeu)

@@ -17,7 +17,7 @@
 #                        eoi0 - arch obs-imp on analysis
 #                        eprg - arch prognostic fields of all members
 #                        erst - arch rst's of all members
-#                        etrj - arch trj's of all members
+#                        ebkgx- arch extra background output of all members
 #                        evtk - arch vortex tracker information
 #                        eoimp- arch ensemble obs-impact-related output
 #                        fstat- arch forecast statistics
@@ -91,7 +91,7 @@ if ( $#argv < 6 ) then
    echo "                          (Default: arch only central bkg files)"
    echo "    ENSARCH_KEEP      - when set will not remove dir with files for arch"
    echo "    ENSARCH_FIELDS    - components (list separate by comma), e.g.,"
-   echo "                          eana,ebkg,edia,eprg,easm,erst,etrj,eoi0,stat,xtra "
+   echo "                          eana,ebkg,edia,eprg,easm,erst,ebkgx,eoi0,stat,xtra "
    echo "                          (Default: stat)          "
    echo "    ENSSILO_KEEP      - when set will not remove siloens dir for current date/time"
    echo "    ENSARCHJOB_KEEP   - will keep cp of archiving script under FVHOME"
@@ -374,11 +374,11 @@ if ( $doall && (-d $myball) ) then
       end
    end
 endif
-# store trj_lcv files
-set myball = $expid.atmens_etrj.${nymdb}_${hhb}z
+# store bkg_clcv files
+set myball = $expid.atmens_ebkgx.${nymdb}_${hhb}z
 if ( -d $myball ) then
    mkdir -p $myball
-  /bin/mv enstraj $myball
+  /bin/mv ensbkgx $myball
 endif
 # store obs-imp on analysis ...
 set myball = $expid.atmens_eoi0.${nymdb}_${hhb}z

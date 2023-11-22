@@ -67,13 +67,14 @@
 !  14dec2000  da Silva  Increased mBoxes from 32 to 128.
 !  05jun2002  Dee       Convert heights to layer-mean virtual temperatures
 !  09feb2010  da Silva  Adapted from old GEOS-4 observer for AOD.
+!  03oct2022  Todling   initilize eps in preamble.
 !
 !EOP
 !-------------------------------------------------------------------------
 
     logical :: do_sqc = .true.      ! whether or not to statistical qc
     logical :: log_transf = .false. ! whether to log-transform AOD
-    real    :: eps                  ! eps for log-transform
+    real    :: eps = -obs_missing   ! eps for log-transform
     logical :: do_dupelim = .true.  ! duplicate elimination?
 
 !   Resource file
