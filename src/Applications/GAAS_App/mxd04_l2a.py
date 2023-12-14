@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -W ignore::DeprecationWarning
 
 """
@@ -21,11 +21,10 @@ import os
 import sys
 import subprocess
 
-from time            import clock
 from optparse        import OptionParser   # Command-line args  
 from dateutil.parser import parse as isoparse
 from mxd04_nnr       import MxD04_NNR
-from MAPL            import strTemplate
+from MAPL.config     import strTemplate
 
 Ident = dict( modo = ('MOD04','ocean'),
               modl = ('MOD04','land'),
@@ -42,10 +41,11 @@ def makethis_dir(filename):
     if path != '':
         rc = os.system('mkdir -p '+path)
         if rc:
-            raise IOError, "could not create directory "+path
+            raise IOError("could not create directory "+path)
         
 #---------------------------------------------------------------------
-
+def wavs_callback(option, opt, value, parser):
+    setattr(parser.values, option.dest, value.split(','))
 if __name__ == "__main__":
 
     expid = 'nnr3'
@@ -59,16 +59,25 @@ if __name__ == "__main__":
         nn_file = '/nobackup/NNR/Net/nnr_003.%ident_Tau.net'
         blank_ods = '/nobackup/NNR/Misc/blank.ods'
         aer_x   = '/nobackup/NNR/Misc/tavg1_2d_aer_Nx'
+        slv_x   = '/nobackup/NNR/Misc/tavg1_2d_slv_Nx'
     else: # Must be somewhere else, no good defaults
         out_dir      = './'
         l2_path = './'
         nn_file = '%ident_Tau.net'
         blank_ods = 'blank.ods'
         aer_x   = 'tavg1_2d_aer_Nx'        
+        slv_x   = 'tavg1_2d_slv_Nx'
 
     out_tmpl = '%s.%prod_l%leva.%algo.%y4%m2%d2_%h2%n2z.%ext'
     coll = '006'
     res = 'c'
+    nsyn = 8
+    aodmax = 2.0
+    cloud_thresh = 0.7
+    cloudFree = None
+    aodSTD = 3.0
+    aodLength = 0.5
+    wavs = '440,470,550,660,870'
     
 #   Parse command line options
 #   --------------------------
@@ -87,6 +96,14 @@ if __name__ == "__main__":
     parser.add_option("-A", "--aer_x", dest="aer_x", default=aer_x,
                       help="GrADS ctl for speciated AOD file (default=%s)"\
                            %aer_x )
+
+    parser.add_option("-S", "--slv_x", dest="slv_x", default=slv_x,
+                      help="GrADS ctl for column absorbers file (default=%s)"\
+                           %slv_x )    
+
+    parser.add_option("--nsyn", dest="nsyn", default=nsyn,type="int",
+                      help="Number of synoptic times (default=%d)"\
+                           %nsyn )
 
     parser.add_option("-B", "--blank_ods", dest="blank_ods", default=blank_ods,
                       help="Blank ODS file name for fillers  (default=%s)"\
@@ -110,8 +127,32 @@ if __name__ == "__main__":
 
     parser.add_option("-r", "--res", dest="res", default=res,
                       help="Resolution for gridded output (default=%s)"\
-                           %out_tmpl )
+                           %res )
 
+    parser.add_option("--cloud_thresh", dest="cloud_thresh", default=cloud_thresh,type='float',
+                      help="Cloud fractions threshhold for good data (default=%f)"\
+                           %cloud_thresh )
+
+    parser.add_option("--cloudFree", dest="cloudFree", default=cloudFree,
+                      help="Extra check for cloudiness when high AOD values are predicted. If not provided, no check is performed. (default=%s)"\
+                           %cloudFree )
+
+    parser.add_option("--aodmax", dest="aodmax", default=aodmax,type='float',
+                      help="max AOD value that will be accepted when cloud fraction is greater than cloudFree (default=%f)"\
+                           %aodmax )
+
+    parser.add_option("--aodSTD", dest="aodSTD", default=aodSTD,type='float',
+                      help="number of standard deviations to check for AOD outliers (default=%f)"\
+                           %aodSTD )
+
+    parser.add_option("--aodLength", dest="aodLength", default=aodLength,type='float',
+                      help="length scale (degrees) to check for AOD outliers (default=%f)"\
+                           %aodLength )
+
+    parser.add_option("--wavs", dest="wavs", default=wavs,type='string',action='callback',callback=wavs_callback,
+                      help="wavelength to output AOD from predicted Angstrom Exponent (default=%s)"\
+                           %wavs )
+        
     parser.add_option("-u", "--uncompressed",
                       action="store_true", dest="uncompressed",default=False,
                       help="Do not use n4zip to compress gridded/ODS output file (default=False)")
@@ -135,11 +176,10 @@ if __name__ == "__main__":
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
         
     if options.verbose:
-        print ""
-        print "                          MODIS Level 2A Processing"
-        print "                          -------------------------"
-        print ""
-        t0 = clock()
+        print("")
+        print("                          MODIS Level 2A Processing")
+        print("                          -------------------------")
+        print("")
 
 #   Time variables
 #   --------------
@@ -154,8 +194,8 @@ if __name__ == "__main__":
     out_file = strTemplate(out_tmpl,expid=options.expid,nymd=nymd,nhms=nhms)
     name, ext = os.path.splitext(out_file)
     if os.path.exists(out_file) and (options.force is not True):
-        print "mxd04_l2a: Output Gridded file <%s> exists --- cannot proceed."%out_file
-        raise IOError, "Specify --force to overwrite existing output file."    
+        print("mxd04_l2a: Output Gridded file <%s> exists --- cannot proceed."%out_file)
+        raise IOError("Specify --force to overwrite existing output file.")    
     if os.path.exists(out_file) and options.force:
         os.remove(out_file)    
 
@@ -165,8 +205,8 @@ if __name__ == "__main__":
     ods_tmpl = ods_tmpl.replace('%coll',options.coll).replace('%prod',prod).replace('%algo',algo).replace('%lev','2').replace('%ext','ods')
     ods_file = strTemplate(ods_tmpl,expid=options.expid,nymd=nymd,nhms=nhms)
     if os.path.exists(ods_file) and (options.force is not True):
-        print "mxd04_l2a: Output ODS file <%s> exists --- cannot proceed."%ods_file
-        raise IOError, "Specify --force to overwrite existing output file."
+        print("mxd04_l2a: Output ODS file <%s> exists --- cannot proceed."%ods_file)
+        raise IOError("Specify --force to overwrite existing output file.")
     if os.path.exists(ods_file) and options.force:
         os.remove(ods_file)
 
@@ -177,25 +217,42 @@ if __name__ == "__main__":
     else:
       aer_x = options.aer_x
 
+#   Column absorbers
+#   ----------------
+    if options.slv_x[-3:] == 'nc4':
+      slv_x = strTemplate(options.slv_x,expid=options.expid,nymd=nymd,nhms=nhms)
+    else:
+      slv_x = options.slv_x
         
 #   MODIS Level 2 NNR Aerosol Retrievals
 #   ------------------------------------
     if options.verbose:
-        print "NNR Retrieving %s %s on "%(prod,algo.upper()),syn_time
+        print("NNR Retrieving %s %s on "%(prod,algo.upper()),syn_time)
 
-    modis = MxD04_NNR(options.l2_path,prod,algo.upper(),syn_time,aer_x,
+    if options.cloudFree == 'None':
+        options.cloudFree = None
+    elif options.cloudFree == None:
+        pass
+    else:
+        options.cloudFree = float(options.cloudFree)
+
+    modis = MxD04_NNR(options.l2_path,prod,algo.upper(),syn_time,aer_x,slv_x,
                       coll=options.coll,
-                      cloud_thresh=0.7,
-                      cloudFree = 0.0,
-                      aodmax = 1.0,
+                      cloud_thresh=options.cloud_thresh,
+                      cloudFree = options.cloudFree,
+                      aodmax = options.aodmax,
+                      aodSTD = options.aodSTD,
+                      aodLength = options.aodLength,
+                      wavs = options.wavs,
+                      nsyn=options.nsyn,
                       verbose=options.verbose)
     if modis.nobs < 1:
         if options.verbose:
-            print 'WARNING: no observation for this time in file <%s>'%ods_file
+            print('WARNING: no observation for this time in file <%s>'%ods_file)
     
     elif any(modis.iGood) == False:
         if options.verbose:
-            print 'WARNING: no GOOD observation for this time in file <%s>'%ods_file
+            print('WARNING: no GOOD observation for this time in file <%s>'%ods_file)
         modis.nobs = 0
 
     nn_file = options.nn_file.replace('%ident',ident)
@@ -205,13 +262,13 @@ if __name__ == "__main__":
 #   ---------
     makethis_dir(ods_file)
     if modis.nobs>0:
-        modis.writeODS(ods_file,revised=True)
+        modis.writeODS(ods_file,revised=True,nsyn=options.nsyn)
     else:
         if os.system('ods_blank.x %s %s %s %s'%(options.blank_ods,nymd,nhms,ods_file)):
             warnings.warn('cannot create empty output file <%s>'%ods_file)
         else:
             if options.verbose:
-                print "[w] Wrote empty ODS file "+ods_file
+                print("[w] Wrote empty ODS file "+ods_file)
 
 #   Write gridded output file (revised channels only)
 #   -------------------------------------------------

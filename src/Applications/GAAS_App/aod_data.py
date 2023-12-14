@@ -1,14 +1,14 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import os, sys
 
 def aod_type(dataID, stdoutFLG=True):
     """
+    input_parameters
+     => dataID: label used to identify data set in the obsys_rc file
+     => stdoutFLG: set to False, if calling directly from Python code
+
     purpose
     Identify AOD data type
-
-    input parameters
-     => dataID: label used to identify data set in the obsys_rc file
-     => stdoutFLG: if True, then print result to STDOUT before returning it
 
     return value
      => aod_type_val: AOD data type
@@ -49,12 +49,13 @@ def aod_type(dataID, stdoutFLG=True):
 #.......................................................................
 def aod_filter(classlist_string, stdoutFLG=True):
     """
-    purpose: remove excess AOD data sets from obsclass list.
+    input_parameters
+     => classlist_string: AOD obsclass list (separated by commas, no spaces)
+     => stdoutFLG: set to False, if calling directly from Python code
 
-    input parameters
-     => classlist_string: AOD obsclass list (string with labels separated by
-                          commas, no spaces)
-     => stdoutFLG: if True, then print result to STDOUT before returning it
+    purpose: remove duplicate AOD data sets from obsclass list
+
+    NOTE: THIS ROUTINE DOES NOT CHECK DATA AVAILABILITY
 
     return value
      => newlist_string: filtered obsclass list string
@@ -111,15 +112,22 @@ def aod_filter(classlist_string, stdoutFLG=True):
 #.......................................................................
 if __name__ == "__main__":
     routineList = { "aod_type":aod_type, "aod_filter": aod_filter }
+    scriptname = os.path.basename(sys.argv[0])
 
     if len(sys.argv) < 2:
-        scriptname = os.path.basename(sys.argv[0])
-        print("\n    usage: {0} routineName routineParams".format(scriptname))
-        print( "     routineName options = {0}\n".format(routineList.keys()))
+        print(("\nusage: {0} routineName input_parameters".format(scriptname)))
+        print(( " routineName options = {0}\n\n".format(list(routineList.keys()))))
         exit()
 
     routineName = sys.argv[1]
-    if routineName not in routineList.keys():
+    if routineName not in list(routineList.keys()):
         raise Exception("Error. Unknown routine name: {0}".format(routineName))
+    routine = routineList[routineName]
+
+    if len(sys.argv) < 3:
+        scriptname = os.path.basename(sys.argv[0])
+        print(("\nusage: {0} {1} input_parameters".format(scriptname, routineName)))
+        print((routineList[routineName].__doc__))
+        exit()
 
     routineList[routineName](*sys.argv[2:])
