@@ -31,6 +31,12 @@ GMAO_Shared:
   branch: feature/pcastell/retire_gmao_pyobs
   develop: main
 
+GMAOpyobs:
+  local: ./src/Shared/@GMAO_Shared/@GMAO_pyobs
+  remote: ../GMAOpyobs.git
+  tag: v1.0.6
+  develop: develop
+
 GEOS_Util:
   local: ./src/Shared/@GMAO_Shared/@GEOS_Util
   remote: ../GEOS_Util.git
