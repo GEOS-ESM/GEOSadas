@@ -38,10 +38,11 @@ GMAOpyobs:
   develop: develop
 
 AeroML:
-  local: ./src/Shared/@GMAO_Shared/@AeroML
+  local: ./src/Shared/@AeroML
   remote: ../AeroML.git
   branch: feature/pcastell/add_pyabc
   develop: develop
+  sparse: ./config/AeroML.sparse
 
 GEOS_Util:
   local: ./src/Shared/@GMAO_Shared/@GEOS_Util
