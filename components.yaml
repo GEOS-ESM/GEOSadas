@@ -37,6 +37,12 @@ GMAOpyobs:
   tag: v1.0.6
   develop: develop
 
+AeroML:
+  local: ./src/Shared/@GMAO_Shared/@AeroML
+  remote: ../AeroML.git
+  branch: feature/pcastell/add_pyabc
+  develop: develop
+
 GEOS_Util:
   local: ./src/Shared/@GMAO_Shared/@GEOS_Util
   remote: ../GEOS_Util.git
