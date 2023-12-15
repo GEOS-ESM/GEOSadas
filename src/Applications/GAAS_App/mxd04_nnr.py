@@ -292,7 +292,7 @@ class MxD04_NNR(MxD04_L2):
 
         # Get TQV and TO3
         # ------------------------------
-        self.getabsorbers(slv_x,Verbose=verbose)
+        #self.getabsorbers(slv_x,Verbose=verbose)
 
     def getabsorbers(self,slv_x,Verbose=False):
         """
