@@ -77,7 +77,7 @@ class AVHRR_NNR(avhrr.AVHRR_L2B):
         for inputName in self.net.InputNames:
 
             if self.verbose>0:
-                print 'Getting NN input ',inputName
+                print('Getting NN input ',inputName)
 
             # Retrieve input
             # --------------
@@ -114,7 +114,7 @@ class AVHRR_NNR(avhrr.AVHRR_L2B):
             return # no good data to work with
 
         if len(self.net.TargetNames)>1:
-            raise ValueError, 'Strange, more than one predictor'
+            raise ValueError('Strange, more than one predictor')
 
         # Evaluate NN on inputs
         # ---------------------
@@ -122,7 +122,7 @@ class AVHRR_NNR(avhrr.AVHRR_L2B):
 
         name = self.net.TargetNames[0]
         if self.verbose>0:
-            print "Evaluating NNR for <%s> with Log-AOD = "%name, self.net.laod 
+            print("Evaluating NNR for <%s> with Log-AOD = "%name, self.net.laod) 
 
         # Output is always AOD
         # --------------------
