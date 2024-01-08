@@ -28,8 +28,21 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  branch: feature/rtodling/atmos_11_4_upd
+  branch: feature/rtodling/atmos_11_4_upd4gaas
   develop: main
+
+GMAOpyobs:
+  local: ./src/Shared/@GMAO_Shared/@GMAO_pyobs
+  remote: ../GMAOpyobs.git
+  tag: v1.0.6
+  develop: develop
+
+AeroML:
+  local: ./src/Shared/@AeroML
+  remote: ../AeroML.git
+  branch: feature/pcastell/add_pyabc
+  develop: develop
+  sparse: ./config/AeroML.sparse
 
 GEOS_Util:
   local: ./src/Shared/@GMAO_Shared/@GEOS_Util
@@ -40,7 +53,7 @@ GEOS_Util:
 MAPL:
   local: ./src/Shared/@MAPL
   remote: ../MAPL.git
-  tag: v2.42.0
+  tag: v2.39.0
   develop: develop
 
 FMS:

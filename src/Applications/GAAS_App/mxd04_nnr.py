@@ -99,6 +99,11 @@ TranslateTarget = dict ( aTau440 = ( 'aod_', 440 ),
                          aTau550 = ( 'aod_', 550 ),
                          aTau660 = ( 'aod_', 660 ),
                          aTau870 = ( 'aod_', 870 ),
+                         aAE440  = ( 'aod_', 440 ),
+                         aAE470  = ( 'aod_', 470 ),
+                         aAE500  = ( 'aod_', 500 ),
+                         aAE660  = ( 'aod_', 660 ),
+                         aAE870  = ( 'aod_', 870 ),
                          )
 
 class MxD04_NNR(MxD04_L2):
@@ -108,13 +113,18 @@ class MxD04_NNR(MxD04_L2):
     with class *abc_c6*.
     """
 
-    def __init__(self,l2_path,prod,algo,syn_time,aer_x,
+    def __init__(self,l2_path,prod,algo,syn_time,aer_x,slv_x,
                  cloud_thresh=0.70,
                  glint_thresh=40.0,
                  scat_thresh=170.0,
                  cloudFree=None,
-                 aodmax=1.0,
-                 coll='006',verbose=0):
+                 aodmax=2.0,
+                 aodSTD=3.0,
+                 aodLength=0.5,
+                 coll='006',
+                 wavs=['440','470','550','660','870'],
+                 nsyn=8,
+                 verbose=0):
         """
         Contructs a MXD04 object from MODIS Aerosol Level 2
         granules. On input,
@@ -129,7 +139,12 @@ class MxD04_NNR(MxD04_L2):
         cloud_tresh --- cloud fraction treshhold
         cloudFree   --- cloud fraction threshhold for assuring no cloud contaminations when aod is > aodmax
                         if None, no cloud free check is made
-              
+        aodSTD      --- number of standard deviations for checking for outliers
+        aodLength   --- length scale (degrees) to look for outliers
+        coll         --- MODIS data collection
+        wavs        --- wavelengths to calculate output AOD from the Angstrom Exponent
+        nsyn         --- number of synoptic times              
+
         The following attributes are also defined:
            fractions dust, sea salt, BC+OC, sulfate
            aod_coarse
@@ -145,18 +160,21 @@ class MxD04_NNR(MxD04_L2):
         self.algo    = algo
         self.cloudFree = cloudFree
         self.aodmax = aodmax
-        
+        self.aodSTD = aodSTD
+        self.aodLength = aodLength
+        self.wavs = wavs
+
         # Initialize superclass
         # ---------------------
-        Files = granules(l2_path,prod,syn_time,coll=coll)
+        Files = granules(l2_path,prod,syn_time,coll=coll,nsyn=nsyn)
         if algo != "DEEP":
-            MxD04_L2.__init__(self,Files,algo,syn_time,
+            MxD04_L2.__init__(self,Files,algo,syn_time=syn_time,nsyn=nsyn,
                               only_good=True,
                               SDS=SDS,
                               alias={'Deep_Blue_Cloud_Fraction_Land':'cloud_deep'},
                               Verb=verbose)            
         else:        
-            MxD04_L2.__init__(self,Files,algo,syn_time,
+            MxD04_L2.__init__(self,Files,algo,syn_time=syn_time,nsyn=nsyn,
                               only_good=False,
                               SDS=SDS,                            
                               alias=ALIAS,
@@ -272,6 +290,20 @@ class MxD04_NNR(MxD04_L2):
         # ------------------------------
         self.speciate(aer_x,Verbose=verbose)
 
+        # Get TQV and TO3
+        # ------------------------------
+        #self.getabsorbers(slv_x,Verbose=verbose)
+
+    def getabsorbers(self,slv_x,Verbose=False):
+        """
+        Get column absorbers amounts
+        """
+        self.sampleFile(slv_x,onlyVars=('TQV','TO3'),Verbose=Verbose)
+
+        self.tqv = self.sample.TQV*0.01
+        self.to3 = self.sample.TO3*0.01
+
+        del self.sample
 
     def speciate(self,aer_x,Verbose=False):
         """
@@ -304,14 +336,14 @@ class MxD04_NNR(MxD04_L2):
         except:
             pass   # ignore it for systems without nitrates
 
-        # Special handle for brown carbon (treat it as it were organic carbon)
-        # ----------------------------------------------------
+        # Handle brown carbon
+        # --------------------
         try:
             self.sampleFile(aer_x,onlyVars=('BREXTTAU',),Verbose=Verbose)
-            self.foc += self.sample.BREXTTAU / s.TOTEXTTAU
-            self.fcc = self.fbc + self.foc
+            self.fcc += self.sample.BRCEXTTAU / s.TOTEXTTAU
         except:
-            pass   # ignore it for systems without brown carbon as a separate tracer
+            pass   # ignore it for systems without brown carbon
+
         del self.sample
 
 #---
@@ -445,6 +477,77 @@ class MxD04_NNR(MxD04_L2):
         # ---------------------
         targets = self.net(self._getInputs())
 
+        # If target is angstrom exponent
+        # calculate AOD 
+        # ------------------------------
+        doAE = False
+        doAEfit = False
+        for targetName in self.net.TargetNames:
+            if 'AEfit' in targetName:
+                doAEfit = True
+            elif 'AE' in targetName:
+                doAE = True
+
+        if doAEfit:
+            wav  = np.array(self.wavs).astype(float)
+            nwav = len(self.wavs)
+            AEfitb = None
+            for i,targetName in enumerate(self.net.TargetNames):
+                    if 'AEfitm' in targetName:
+                        AEfitm = targets[:,i]
+                    if 'AEfitb' in targetName:
+                        AEfitb = targets[:,i]
+                    if 'aTau550' in targetName:
+                        tau550 = targets[:,i]
+
+            if AEfitb is None:
+                AEfitb = -1.*(tau550 + AEfitm*np.log(550.))
+            nobs = targets.shape[0]
+            targets_ = np.zeros([nobs,nwav])
+            targetName = []
+            for i in range(nwav):
+                targets_[:,i] = -1.*(AEfitm*np.log(wav[i]) + AEfitb)
+                targetName.append('aTau'+self.wavs[i])
+
+            targets = targets_
+            self.net.TargetNames = targetName
+
+            # Save predicted angstrom exponent
+            self.ae_ = MISSING*ones(self.nobs)
+            self.ae_[self.iGood] = AEfitm
+
+            # calculate MODIS standard retrieval AE
+            # ------------------------------------
+            I = np.array(self.channels) < 900 # only visible channels, this is relevant for ocean
+            aechannels = np.array(self.channels)[I]
+            aodT = self.aod[:,I].T
+            iIndex = np.arange(len(self.iGood))[self.iGood]
+            aodT = aodT[:,iIndex] + 0.01
+            mask = aodT.min(axis=0) > 0
+            posIndex = iIndex[mask]
+            fit = np.polyfit(np.log(aechannels),-1.*np.log(aodT[:,mask]+0.01),1)
+            self.ae = MISSING*ones(self.nobs)
+            self.ae[posIndex] = fit[0,:]
+
+
+        if doAE:
+            for i,targetName in enumerate(self.net.TargetNames):
+                if 'Tau' in targetName:
+                    name, base_wav = TranslateTarget[targetName]
+                    base_wav = np.float(base_wav)
+                    base_tau = targets[:,i]
+                    if self.net.laod:
+                        base_tau = exp(base_tau) - 0.01 # inverse
+            for i,targetName in enumerate(self.net.TargetNames):
+                if 'AE' in targetName:
+                    AE = targets[:,i]
+                    name, wav = TranslateTarget[targetName]
+                    wav = np.float(wav)
+                    data = base_tau*np.exp(-1.*AE*np.log(wav/base_wav))
+                    if self.net.laod:
+                        targets[:,i] = np.log(data + 0.01)
+                    else:
+                        targets[:,i] = data
 
         # Targets do not have to be in MODIS retrieval
         # ----------------------------------------------
@@ -480,6 +583,7 @@ class MxD04_NNR(MxD04_L2):
 
         # Do extra cloud filtering if required
         if self.cloudFree is not None:                 
+            # start by checking the cloud masks
             if self.algo == "LAND":
                 cloudy = (self.cloud_deep>=self.cloudFree) & (self.cloud>=self.cloudFree)
             elif self.algo == "DEEP":
@@ -487,22 +591,80 @@ class MxD04_NNR(MxD04_L2):
             elif self.algo == "OCEAN":
                 cloudy = (self.cloud>=self.cloudFree)
     
+            # if cloud fraction exceeds cloudFree and the aod exceeds aodmax, filter out
             contaminated = np.zeros(np.sum(self.iGood)).astype(bool)
             for targetName in self.net.TargetNames:
                 name, ch = TranslateTarget[targetName]
                 k = list(self.channels).index(ch) # index of channel
                 result = self.__dict__[name][self.iGood,k]
                 contaminated = contaminated | ( (result > self.aodmax) & cloudy[self.iGood] )
-                
+
+
+            icontaminated = np.arange(self.nobs)[self.iGood][contaminated]
+               
+            if self.verbose:
+                print('Filtering out ',np.sum(contaminated),' suspected cloud contaminated pixels')
+
+
             for targetName in self.net.TargetNames:
                 name, ch = TranslateTarget[targetName]
                 k = list(self.channels).index(ch) # index of channel
-                self.__dict__[name][self.iGood,k][contaminated] = MISSING
+                self.__dict__[name][icontaminated,k] = MISSING
 
-            self.iGood[self.iGood][contaminated] = False
+            if doAEfit:
+                self.ae_[icontaminated] = MISSING
 
+            self.iGood[icontaminated] = False
 
+            # check for outliers
+            # start with highest AOD550 value
+            # find all the pixels within a 1 degree neighborhood
+            # check if it is outside of mean + N*sigma of the other pixels
+            # aodSTD parameter is equal to N
+            # continue until no outliers are found
+            find_outliers = True
+            k = list(self.channels).index(550)
+            aod550 = np.ma.array(self.aod_[self.iGood,k])
+            aod550.mask = np.zeros(len(aod550)).astype(bool)
+            Lon = self.Longitude[self.iGood]
+            Lat = self.Latitude[self.iGood]
+            gIndex = np.arange(self.nobs)[self.iGood]
+            iOutliers = []
+            count = 0
+            while find_outliers & (count<len(aod550)):
+                maxaod = aod550.max()
+                imax   = np.argmax(aod550)
+                aod550.mask[imax] = True
+                lon = Lon[imax]
+                lat = Lat[imax]
 
+                # find the neighborhood of pixels
+                iHood = (Lon<=lon+self.aodLength) & (Lon>=lon-self.aodLength) & (Lat<=lat+self.aodLength) & (Lat>=lat-self.aodLength)
+                if (np.sum(iHood) <= 1) & (maxaod > self.aodmax):
+                    #this pixel has no neighbors and is high. Filter it.
+                    iOutliers.append(gIndex[imax])
+                else:
+                    aodHood = aod550[iHood]
+                    if maxaod > (aodHood.mean() + self.aodSTD*aodHood.std()):
+                        iOutliers.append(gIndex[imax])
+                    else:
+                        find_outliers = False  # done looking for outliers
+                count +=1
+            if self.verbose:
+                print("Filtering out ",len(iOutliers)," outlier pixels")
+
+            self.iOutliers = iOutliers 
+
+            if len(iOutliers) > 0:
+                for targetName in self.net.TargetNames:
+                    name, ch = TranslateTarget[targetName]
+                    k = list(self.channels).index(ch) # index of channel
+                    self.__dict__[name][iOutliers,k] = MISSING
+
+                if doAEfit:
+                    self.ae_[iOutliers] = MISSING
+
+                self.iGood[iOutliers] = False                
 
 
 #---
