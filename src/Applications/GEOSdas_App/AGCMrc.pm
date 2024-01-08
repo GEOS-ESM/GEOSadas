@@ -51,6 +51,7 @@ my %list = (rs5_core     => \@rs5_core,
 # these restarts are required
 @rs5_core = qw ( rst.lcv
                  fvcore_internal_rst
+                 gwd_internal_rst
                  catch_internal_rst
                  lake_internal_rst
                  landice_internal_rst
@@ -102,7 +103,8 @@ my %list = (rs5_core     => \@rs5_core,
 # needed for coupled model
 @rs5_coupled = qw ( ocean_internal_rst
                     seaice_import_rst
-                    seaice_internal_rst );
+                    seaice_internal_rst
+                    seaicethermo_import_rst );
 
 # these restarts are currently not in use
 @rs5_notused = qw ( aiau_import_rst
@@ -422,10 +424,7 @@ sub outputAGCM {
         print(LUN2 "\n# Tracers definition \n");
         print(LUN2 "# ---------------------\n");
         print(LUN2 "TRI_increments:: \n");
-        print(LUN2 "PCHEM::OX \n");
-        print(LUN2 ":: \n");
-        print(LUN2 "MTRI_increments:: \n");
-        print(LUN2 "PCHEM::OX \n");
+        print(LUN2 "PCHEM::OX default \n");
         print(LUN2 ":: \n");
     }
     close(LUN1);

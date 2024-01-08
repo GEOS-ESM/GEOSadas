@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Splits AVHRR into synoptic chunks.
 """
@@ -14,8 +14,8 @@ if __name__ == "__main__":
     onehour = timedelta(seconds=60*60)
         
     if len(sys.argv)<2:
-        print "Usage:"
-        print "        avhrr_all.py  year1 [year2]"
+        print("Usage:")
+        print("        avhrr_all.py  year1 [year2]")
         sys.exit(1)
     else:
         y1 = sys.argv[1]
@@ -23,7 +23,7 @@ if __name__ == "__main__":
             y2 = sys.argv[2]
         else:
             y2 = y1
-        Years = range(int(y1),int(y2)+1)
+        Years = list(range(int(y1),int(y2)+1))
             
     # Loop over years
     # ---------------
@@ -42,5 +42,5 @@ if __name__ == "__main__":
 
                 cmd = 'python avhrr_l2a.py -v asc %d %d'%(nymd,nhms)
 
-                print cmd
+                print(cmd)
                 os.system(cmd)
