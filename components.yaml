@@ -29,6 +29,7 @@ GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
   branch: feature/rtodling/atmos_11_4_upd
+  develop: main
 
 GEOS_Util:
   local: ./src/Shared/@GMAO_Shared/@GEOS_Util
@@ -52,6 +53,7 @@ GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
   branch: feature/rtodling/rt1_5_6-crtm2_3
+  develop: develop
 
 GEOSgcm_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp
@@ -192,6 +194,7 @@ GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
   branch: bugfix/rtodling/fixes4_2_2_8
+  develop: develop
 
 Ocean-LETKF:
   local: ./src/Components/@Ocean-LETKF
