@@ -40,7 +40,7 @@ GMAOpyobs:
 AeroML:
   local: ./src/Shared/@AeroML
   remote: ../AeroML.git
-  branch: feature/pcastell/add_pyabc
+  branch: feature/rtodling/abs2obs
   develop: develop
   sparse: ./config/AeroML.sparse
 
