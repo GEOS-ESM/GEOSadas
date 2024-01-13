@@ -28,7 +28,7 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  branch: feature/rtodling/atmos_11_4_upd4gaas
+  branch: feature/rtodling/atmos_11_4_gaasfix
   develop: main
 
 GMAOpyobs:
@@ -47,7 +47,7 @@ AeroML:
 GEOS_Util:
   local: ./src/Shared/@GMAO_Shared/@GEOS_Util
   remote: ../GEOS_Util.git
-  branch: feature/rtodling/atmos_11_4_gaasfix
+  tag: v2.0.4
   develop: main
 
 MAPL:
