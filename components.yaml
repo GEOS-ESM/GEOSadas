@@ -47,13 +47,13 @@ AeroML:
 GEOS_Util:
   local: ./src/Shared/@GMAO_Shared/@GEOS_Util
   remote: ../GEOS_Util.git
-  tag: v2.0.4
+  branch: feature/rtodling/atmos_11_4_gaasfix
   develop: main
 
 MAPL:
   local: ./src/Shared/@MAPL
   remote: ../MAPL.git
-  tag: v2.39.0
+  tag: v2.42.0
   develop: develop
 
 FMS:
