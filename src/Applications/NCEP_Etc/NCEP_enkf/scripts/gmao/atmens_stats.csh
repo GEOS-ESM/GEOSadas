@@ -164,7 +164,6 @@ set bkgfreq_hh = `echo $bkgfreq_hr |awk '{printf "%02d", $1}'`
 set bkgfreq_mm = `echo $bkgfreq_mn |awk '{printf "%02d", $1}'`
 set bkgfreq_hhmn = ${bkgfreq_hh}${bkgfreq_mm}
 
-
 if ( ("$ftype" == "bkg.eta" || "$ftype" == "ana.eta") ) then
    if( ($?ATMENSETC) ) then
      if( -e $ATMENSETC/atmens_incenergy.rc.tmpl ) setenv DOENERGY 1

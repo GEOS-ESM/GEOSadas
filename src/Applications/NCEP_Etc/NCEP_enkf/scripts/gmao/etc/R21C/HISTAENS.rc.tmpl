@@ -7,6 +7,7 @@ EXPID:  >>>EXPID<<<
 EXPDSC: ensemble_bkg
  
 GRID_LABELS: PC288x181-DC
+	     PE90x540-CF	
  ::
 
 PC288x181-DC.GRID_TYPE: LatLon
@@ -16,6 +17,13 @@ PC288x181-DC.POLE: PC
 PC288x181-DC.DATELINE: DC
 PC288x181-DC.LM: 72
 
+PE90x540-CF.GRID_TYPE: Cubed-Sphere
+PE90x540-CF.IM_WORLD: 90
+PE90x540-CF.JM_WORLD: 540
+PE90x540-CF.POLE: PC
+PE90x540-CF.DATELINE: DC
+PE90x540-CF.LM: 72
+
 # GEOS-R21C File Spec
 COLLECTIONS: 'asm_inst_6hr_glo_L288x181_p48'
              'slv_inst_6hr_glo_L288x181_slv'
@@ -23,7 +31,8 @@ COLLECTIONS: 'asm_inst_6hr_glo_L288x181_p48'
              'rad_tavg_6hr_glo_L288x181_slv'
              'lnd_tavg_6hr_glo_L288x181_slv'
              'lfo_tavg_6hr_glo_L288x181_slv'
-#	     'glc_tavg_6hr_glo_L288x181_slv'
+	     'glc_tavg_6hr_glo_L288x181_slv'
+	     'aer_tavg_6hr_glo_L288x181_slv'
              'int_inst_6hr_glo_L288x181_slv'
              'pbl_inst_6hr_glo_L288x181_z17'
              'bkg.eta'
@@ -139,6 +148,7 @@ COLLECTIONS: 'asm_inst_6hr_glo_L288x181_p48'
   flx_tavg_6hr_glo_L288x181_slv.grid_label:     PC288x181-DC ,
   flx_tavg_6hr_glo_L288x181_slv.frequency:      060000 ,
   flx_tavg_6hr_glo_L288x181_slv.duration:       060000 ,
+  flx_tavg_6hr_glo_L288x181_slv.ref_time:       030000 ,
   flx_tavg_6hr_glo_L288x181_slv.end_date:       >>>IOEDATE<<< ,
   flx_tavg_6hr_glo_L288x181_slv.end_time:       >>>IOETIME<<< ,
   flx_tavg_6hr_glo_L288x181_slv.fields:         'LHFX'                               , 'SURFACE'     , 'EFLUX'        ,
@@ -197,17 +207,18 @@ COLLECTIONS: 'asm_inst_6hr_glo_L288x181_p48'
   rad_tavg_6hr_glo_L288x181_slv.grid_label:     PC288x181-DC ,
   rad_tavg_6hr_glo_L288x181_slv.frequency:      060000 ,
   rad_tavg_6hr_glo_L288x181_slv.duration:       060000 ,
+  rad_tavg_6hr_glo_L288x181_slv.ref_time:       030000 ,
   rad_tavg_6hr_glo_L288x181_slv.end_date:       >>>IOEDATE<<< ,
   rad_tavg_6hr_glo_L288x181_slv.end_time:       >>>IOETIME<<< ,
   rad_tavg_6hr_glo_L288x181_slv.fields:         'EMIS'    , 'SURFACE'  ,
                                                  'TS'      , 'SURFACE'  ,
                                                  'ALBEDO'  , 'SOLAR'    ,
-                                                 'ALBNF'   , 'SOLAR'    , 'ALBNIRDF'     , # confirm                      ,
-                                                 'ALBNR'   , 'SOLAR'    , 'ALBNIRDR'     , # confirm                      ,
-                                                 'ALBVF'   , 'SOLAR'    , 'ALBVISDF'     , # confirm                      ,
-                                                 'ALBVR'   , 'SOLAR'    , 'ALBVISDR'     , # confirm                      ,
-                                                 'ALBNF'   , 'SURFACE'  , 'REFLNIRDF'    , # additional alb from surface  ,
-                                                 'ALBVF'   , 'SURFACE'  , 'REFLVISDF'    , # additional alb from surface  ,
+                                                 'ALBNF'   , 'SOLAR'    , 'ALBNIRDF'     , 
+                                                 'ALBNR'   , 'SOLAR'    , 'ALBNIRDR'     , 
+                                                 'ALBVF'   , 'SOLAR'    , 'ALBVISDF'     , 
+                                                 'ALBVR'   , 'SOLAR'    , 'ALBVISDR'     , 
+                                                 'ALBNF'   , 'SURFACE'  , 'REFLNIRDF'    , 
+                                                 'ALBVF'   , 'SURFACE'  , 'REFLVISDF'    , 
                                                  'SFCEM'   , 'IRRAD'    , 'LWGEM'        ,
                                                  'LWS'     , 'IRRAD'    , 'LWGAB'        ,
                                                  'LCS'     , 'IRRAD'    , 'LWGABCLR'     ,
@@ -251,6 +262,7 @@ COLLECTIONS: 'asm_inst_6hr_glo_L288x181_p48'
   lnd_tavg_6hr_glo_L288x181_slv.grid_label:     PC288x181-DC ,
   lnd_tavg_6hr_glo_L288x181_slv.frequency:      060000 ,
   lnd_tavg_6hr_glo_L288x181_slv.duration:       060000 ,
+  lnd_tavg_6hr_glo_L288x181_slv.ref_time:       030000 ,
   lnd_tavg_6hr_glo_L288x181_slv.end_date:       >>>IOEDATE<<< ,
   lnd_tavg_6hr_glo_L288x181_slv.end_time:       >>>IOETIME<<< ,
   lnd_tavg_6hr_glo_L288x181_slv.fields:         'GRN'        , 'SURFACE'  ,
@@ -316,6 +328,7 @@ COLLECTIONS: 'asm_inst_6hr_glo_L288x181_p48'
   lfo_tavg_6hr_glo_L288x181_slv.grid_label:     PC288x181-DC ,
   lfo_tavg_6hr_glo_L288x181_slv.frequency:      060000 ,
   lfo_tavg_6hr_glo_L288x181_slv.duration:       060000 ,
+  lfo_tavg_6hr_glo_L288x181_slv.ref_time:       030000 ,
   lfo_tavg_6hr_glo_L288x181_slv.end_date:       >>>IOEDATE<<< ,
   lfo_tavg_6hr_glo_L288x181_slv.end_time:       >>>IOETIME<<< ,
   lfo_tavg_6hr_glo_L288x181_slv.fields:         'SLRSF'  , 'SOLAR'    , 'SWGDN'           ,
@@ -336,7 +349,8 @@ COLLECTIONS: 'asm_inst_6hr_glo_L288x181_p48'
   glc_tavg_6hr_glo_L288x181_slv.mode:           'time-averaged' ,
   glc_tavg_6hr_glo_L288x181_slv.frequency:      060000 ,
   glc_tavg_6hr_glo_L288x181_slv.duration:       060000 ,
-  glc_tavg_6hr_glo_L288x181_slv.regrid_name:    'PE360x2160-CF' ,
+  glc_tavg_6hr_glo_L288x181_slv.ref_time:       030000 ,
+  glc_tavg_6hr_glo_L288x181_slv.regrid_name:    'PE90x540-CF' ,
   glc_tavg_6hr_glo_L288x181_slv.regrid_exch:    'tile.bin' ,
   glc_tavg_6hr_glo_L288x181_slv.grid_label:     PC288x181-DC ,
   glc_tavg_6hr_glo_L288x181_slv.end_date:       >>>IOEDATE<<< ,
@@ -396,11 +410,13 @@ COLLECTIONS: 'asm_inst_6hr_glo_L288x181_p48'
   aer_tavg_6hr_glo_L288x181_slv.regrid_method:    'CONSERVE_MONOTONIC' ,
   aer_tavg_6hr_glo_L288x181_slv.template:         '%y4-%m2-%d2T%h2%n2Z.>>>NCSUFFIX<<<' ,
   aer_tavg_6hr_glo_L288x181_slv.mode:             'time-averaged' ,
-  aer_tavg_6hr_glo_L288x181_slv.grid_label:        PC@HIST_IMx@HIST_JM-DC ,
+  aer_tavg_6hr_glo_L288x181_slv.grid_label:        PC288x181-DC ,
   aer_tavg_6hr_glo_L288x181_slv.frequency:         060000 ,
   aer_tavg_6hr_glo_L288x181_slv.duration:          060000 ,
+  aer_tavg_6hr_glo_L288x181_slv.ref_time:          030000 ,
   aer_tavg_6hr_glo_L288x181_slv.end_date:          >>>IOEDATE<<< ,
   aer_tavg_6hr_glo_L288x181_slv.end_time:          >>>IOETIME<<< ,
+  aer_tavg_6hr_glo_L288x181_slv.splitField:       1 ,
   aer_tavg_6hr_glo_L288x181_slv.fields:           'TOTEXTTAU'      , 'GOCART2G'  ,
                                                   'TOTSCATAU'      , 'GOCART2G'  ,
                                                   'TOTANGSTR'      , 'GOCART2G'  ,
@@ -418,7 +434,6 @@ COLLECTIONS: 'asm_inst_6hr_glo_L288x181_p48'
   pbl_inst_6hr_glo_L288x181_z17.grid_label:     PC288x181-DC ,
   pbl_inst_6hr_glo_L288x181_z17.frequency:      060000 ,
   pbl_inst_6hr_glo_L288x181_z17.duration:       060000 ,
-#  pbl_inst_6hr_glo_L288x181_z17.reftime:        060000 ,
   pbl_inst_6hr_glo_L288x181_z17.end_date:       >>>IOEDATE<<< ,
   pbl_inst_6hr_glo_L288x181_z17.end_time:       >>>IOETIME<<< ,
   pbl_inst_6hr_glo_L288x181_z17.vunit:          'm' ,

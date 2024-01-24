@@ -369,7 +369,13 @@ sub init {
   @r21crcs   = qw (atmos_enkf.nml.tmpl
 		   obs1gsi_mean.rc
 		   obs1gsi_member.rc
-		   HISTAENS.rc.tmpl );
+		   HISTAENS.rc.tmpl 
+		   mp_stats_NP.rc
+		   mp_stats_NZ.rc
+		   post_egcm.rc
+		   AtmEnsConfig.csh
+		   atmens_storage.arc
+		   CAP.rc.tmpl);
 
 # location where ensemble RC files reside
   $AENSHOME = "$FVHOME/run/atmens";
@@ -714,29 +720,41 @@ sub ed_stat_rc {
 
   my($acq);
 
-  $tmprc  = "$mydir/tmp.rc";
-  $thisrc = "$mydir/mp_stats.rc";
+#  $tmprc  = "$mydir/tmp.rc";
+#  $thisrc = "$mydir/mp_stats.rc";
+  if ( $opt_r21c ) {
+	  @estat_files = qw ( mp_stats.rc,
+			  mp_stats_NP.rc, 
+			  mp_stats_NZ.rc);
+  } else {
+	  @estat_files = qw ( mp_stats.rc);
+  }
 
-     open(LUN,"$thisrc")  || die "Fail to open $thisrc $!\n";
-     open(LUN2,">$tmprc") || die "Fail to open tmp.rc $!\n";
+  foreach $file (@estat_files) {
 
-     # Change variables to the correct inputs
-     #---------------------------------------
-     while( defined($rcd = <LUN>) ) {
-        chomp($rcd);
-        if($rcd =~ /\@NX/) {$rcd=~ s/\@NX/$stat_nx/g; }
-        if($rcd =~ /\@NY/) {$rcd=~ s/\@NY/$stat_ny/g; }
-        if($rcd =~ /\@MP_STATS_IM/) {$rcd=~ s/\@MP_STATS_IM/$obsv_im/g; }
-        if($rcd =~ /\@MP_STATS_JM/) {$rcd=~ s/\@MP_STATS_JM/$obsv_jm/g; }
-        if($rcd =~ /\@MP_STATS_LM/) {$rcd=~ s/\@MP_STATS_LM/$obsv_lm/g; }
-        print(LUN2 "$rcd\n");
-     }
+  	$tmprc  = "$mydir/tmp.rc";
+  	$thisrc = "$mydir/$file";
 
-     close(LUN);
-     close(LUN2);
-     cp($tmprc, $thisrc);
-     unlink $tmprc;
+  	open(LUN,"$thisrc")  || die "Fail to open $thisrc $!\n";
+  	open(LUN2,">$tmprc") || die "Fail to open tmp.rc $!\n";
 
+  	# Change variables to the correct inputs
+ 	#---------------------------------------
+  	while( defined($rcd = <LUN>) ) {
+     		chomp($rcd);
+     		if($rcd =~ /\@NX/) {$rcd=~ s/\@NX/$stat_nx/g; }
+     		if($rcd =~ /\@NY/) {$rcd=~ s/\@NY/$stat_ny/g; }
+     		if($rcd =~ /\@MP_STATS_IM/) {$rcd=~ s/\@MP_STATS_IM/$obsv_im/g; }
+     		if($rcd =~ /\@MP_STATS_JM/) {$rcd=~ s/\@MP_STATS_JM/$obsv_jm/g; }
+     		if($rcd =~ /\@MP_STATS_LM/) {$rcd=~ s/\@MP_STATS_LM/$obsv_lm/g; }
+     		print(LUN2 "$rcd\n");
+  	}
+
+  	close(LUN);
+  	close(LUN2);
+  	cp($tmprc, $thisrc);
+  	unlink $tmprc;
+  }
 }
 #......................................................................
 sub ed_conf_rc {
