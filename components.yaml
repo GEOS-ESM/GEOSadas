@@ -28,7 +28,7 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  branch: feature/rtodling/atmos_11_4_gaasfix
+  tag: feature/rtodling/atmos_11_4_gaasfix/cak_tag0
   develop: main
 
 GMAOpyobs:
@@ -40,7 +40,7 @@ GMAOpyobs:
 AeroML:
   local: ./src/Shared/@AeroML
   remote: ../AeroML.git
-  branch: feature/rtodling/abs2obs
+  tag: feature/rtodling/abs2obs/cak_tag0 
   develop: develop
   sparse: ./config/AeroML.sparse
 
@@ -65,7 +65,7 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  branch: feature/rtodling/rt1_5_6-crtm2_3
+  tag: geos/compo/t0 
   develop: develop
 
 GEOSgcm_GridComp:
@@ -206,7 +206,7 @@ RRTMGP:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  branch: bugfix/rtodling/fixes4_2_2_8
+  tag: bugfix/rtodling/fixes4_2_2_8/cak_tag0
   develop: develop
 
 Ocean-LETKF:
