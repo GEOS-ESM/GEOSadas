@@ -52,7 +52,13 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  tag: v1.5.7
+  branch: feature/mathomp4/extract-mksi
+  develop: develop
+
+mksi:
+  local: ./src/Components/@GEOSana_GridComp/GEOSaana_GridComp/GSI_GridComp/@mksi
+  remote: ../GEOS_mksi.git
+  branch: develop
   develop: develop
 
 GEOSgcm_GridComp:
