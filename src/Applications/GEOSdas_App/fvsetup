@@ -8958,6 +8958,9 @@ sub write_FVDAS_Run_Config {
         $ENV{"MKSIOZ_SIDB"} = "\$FVHOME/run/gmao_ozinfo.db";
 	$ENV{"MKSICN_SIDB"} = "\$FVHOME/run/gmao_convinfo.db" 
     }
+    if ($r21c){
+        $ENV{"BUFR_MAXOUT"} = "18000"
+    } 
 
     unless ( $ENV{"ARCHIVE"} ) {
         $ENV{"ARCHIVE"} = "lou:."         if $siteName eq "cfe";
@@ -10249,12 +10252,21 @@ sub copy_resources {
           next;
       }
       cp($src,$dest) || die "Cannot write file $dest: $!";
+      if ($r21c and $fname eq "Chem_Registry.rc") {
+	      $cmd = "sed -i 's/doing_CO2: no/doing_CO2: yes/' $dest";
+	      system($cmd); 
+	      $cmd = "sed -i 's/doing_CFC: no/doing_CFC: yes/' $dest";
+	      system($cmd); 
+      }
   }
 
   foreach $fname ( @go2yaml_files ) {
 
       $src = "$fvroot/etc/$emiss/$fname";
       $src = "$fvroot/etc/$fname" unless -e $src;
+      if ($r21c and $fname eq "GAAS_GridComp_ExtData.yaml") {
+	      $src = "$fvroot/etc/$fname"
+      }
       $dest = "$fvhome/run/gocart/$fname";
 
       print "$0: DEBUG handling file $src\n";
@@ -10376,18 +10388,11 @@ sub copy_resources {
                cp("$fn", "$fvhome/run");
             }
          }
-# if ( -d "$fvetc/atmens/R21C" ){     
-#	    my @files = glob("$fvetc/atmens/R21C" . "/*");	 
-#            foreach my $fn ( @files ) {
-#               cp("$fn","$fvhome/run/atmens");
-#            }
-#	 }
       }
 
       # Update gocart files for pre-2000 case
-      if ( $r21c   ) { $casedir = "R21C"  };     
       if ( $geosit ) { $casedir = "GEOSIT"};     
-      if ( $r21c || $geosit ){
+      if ( $geosit ){
          if ( $nymdb < 20000331 && $hhb < 23 ) {
 	    if ( -d "$fvetc/$casedir" ){     
 	       my @files = glob("$fvetc/$casedir/19600101-20000331/" . "/*");	 

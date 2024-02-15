@@ -91,6 +91,9 @@
 !     16May2017  Meta       Adjust maximum BUFR record size (call MAXOUT)
 !                           to avoid losing sounding records that exceed 
 !                           max record size when raobcor changes are added
+!     28Dec2022  Meta       Add option to use environment variable to increase
+!                           the maximum BUFR record size
+!
 !EOP
 !-----------------------------------------------------------------
 
@@ -2269,6 +2272,8 @@ c      if ( TNLev .gt. 0 ) STime = ETime2 ( 1 )
      .           ThisPCode, LastPCode
       real    :: Lat, Lon, Elev
       character ( len = 8 ) :: SubSet
+      character ( len = 5 ) :: cmaxout
+      integer :: imaxout, length
 
 !     Implement options
 !     -----------------
@@ -2367,7 +2372,18 @@ c      if ( TNLev .gt. 0 ) STime = ETime2 ( 1 )
       call OpenBF ( lu_in,  'IN',  lu_in ) ! ... to read 
       call OpenBF ( lu_out, 'OUT', lu_in ) ! ... and write the data
 
-      call maxout(15000)
+      CALL GET_ENVIRONMENT_VARIABLE('BUFR_MAXOUT',cmaxout,length)
+      if (length > 0) then
+        read(cmaxout,*) imaxout
+        if (imaxout > 15000) then
+          call maxout(imaxout)
+        else
+          call maxout(15000)
+        end if
+      else
+        call maxout(15000)
+      end if
+
 !     Set up for Y2k compliant dates
 !     ------------------------------
       call DateLen ( 10 )
