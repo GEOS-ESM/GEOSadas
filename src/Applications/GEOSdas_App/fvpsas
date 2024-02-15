@@ -533,9 +533,9 @@
 #        Save predictor forcings for ldas coupling 
 #----------------------------------------------------
          if ( $LDAS_ANA ) then
-                                                      zeit_ci.x MovePrecitorOutput
+                                                      zeit_ci.x MovePredictorOutput
             Call MovePredictorOutput_() 
-                                                      zeit_co.x MovePrecitorOutput
+                                                      zeit_co.x MovePredictorOutput
          endif 
 
 #        Save desired restarts for future forecasts
