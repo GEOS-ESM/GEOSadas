@@ -40,8 +40,8 @@ GEOS_Util:
 MAPL:
   local: ./src/Shared/@MAPL
   remote: ../MAPL.git
-  branch: release/v2.35.4
-  develop: develop
+  tag: v2.35.3+R21C_v1.0.0
+  develop: R21C
 
 FMS:
   local: ./src/Shared/@FMS
@@ -52,7 +52,7 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  tag: r21c_20240129
+  tag: r21c_20240216
   develop: R21C
 
 GEOSgcm_GridComp:
@@ -107,8 +107,8 @@ geos-chem:
 GOCART:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSphysics_GridComp/@GEOSchem_GridComp/@GOCART
   remote: ../GOCART.git
-  tag: r21c_v2.1.2.1
-  develop: develop
+  tag: v2.1.2+R21C_v1.0.0
+  develop: R21C
 
 QuickChem:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSphysics_GridComp/@GEOSchem_GridComp/@QuickChem
