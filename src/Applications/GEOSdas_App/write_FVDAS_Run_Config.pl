@@ -26,6 +26,7 @@ my ($FVROOT_PORTAL, $RC_LOC, $RTAG, $ANAID, $CASE, $ERR, $ERROR_EXP,
     $FCHOME, $FCSTAGE, $FERR, $FVDOLMS, $FVGROUP, $FVPLOTS, $FVSCRA,
     $FVSILO, $FVSPOOL, $FVSTAGE, $FVWORK, $GRADS_CONFIG, $LIBSZ, $MONTHLY_X);
 my ($ACFTBIAS, $NEWRADBC);
+my ($BUFR_MAXOUT);
 my (%vv);
 
 # main program
@@ -98,6 +99,7 @@ sub init {
     $MKSIOZ_SIDB       = $ENV{"MKSIOZ_SIDB"};
     $MKSICN_SIDB       = $ENV{"MKSICN_SIDB"};
     $NEWRADBC          = $ENV{"NEWRADBC"};
+    $BUFR_MAXOUT       = $ENV{"BUFR_MAXOUT"};
     $MP_SET_NUMTHREADS = $ENV{"MP_SET_NUMTHREADS"};
     $NCEPINPUT         = $ENV{"NCEPINPUT"};
     $OBSCLASS          = $ENV{"OBSCLASS"};
@@ -330,6 +332,7 @@ sub writefile {
     print RUNCONF "setenv MKSI_SIDB $MKSI_SIDB\n" if $MKSI_SIDB;
     print RUNCONF "setenv MKSIOZ_SIDB $MKSIOZ_SIDB\n" if $MKSIOZ_SIDB;
     print RUNCONF "setenv MKSICN_SIDB $MKSICN_SIDB\n" if $MKSICN_SIDB;
+    print RUNCONF "setenv BUFR_MAXOUT $BUFR_MAXOUT\n" if $BUFR_MAXOUT;
     print RUNCONF "setenv MP_SET_NUMTHREADS $MP_SET_NUMTHREADS\n" if $MP_SET_NUMTHREADS;
     print RUNCONF "setenv OMP_NUM_THREADS $OMP_NUM_THREADS\n" if $OMP_NUM_THREADS;
     print RUNCONF "setenv ARCH_QUEUE \"$ARCH_QUEUE\"\n" if $ARCH_QUEUE;
