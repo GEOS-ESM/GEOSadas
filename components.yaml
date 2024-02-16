@@ -182,7 +182,7 @@ RRTMGP:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  tag: v1.9.6+R21C_v1.0.0,
+  tag: v1.9.6+R21C_v1.0.0
   develop: R21C
 
 Ocean-LETKF:
