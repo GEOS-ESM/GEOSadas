@@ -102,6 +102,10 @@ my %list = (rs5_core     => \@rs5_core,
 
 # needed for coupled model
 @rs5_coupled = qw ( ocean_internal_rst
+                    mom_rst
+                    mom1_rst
+                    mom2_rst
+                    mom3_rst
                     seaice_import_rst
                     seaice_internal_rst
                     seaicethermo_import_rst );

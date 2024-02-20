@@ -728,7 +728,12 @@ sub defaults {
   @rs5_core     = AGCM_rsts("rs5_core");
   @rs5_boot     = AGCM_rsts("rs5_boot");
   @rs5_others   = AGCM_rsts("rs5_others");
-  @rs5_files    = (@rs5_core, @rs5_boot, @rs5_others);
+  @rs5_coupled  = AGCM_rsts("rs5_coupled");
+  if ( $coupled ) {
+    @rs5_files = (@rs5_core, @rs5_boot, @rs5_coupled, @rs5_others);
+  } else {
+    @rs5_files = (@rs5_core, @rs5_boot, @rs5_others);
+  }
 
   @ap_files = qw ( errtable
                    fvpsas.rc
@@ -5085,8 +5090,8 @@ EOF
        $agcm_im  =  90;
        $agcm_grid_type = "Cubed-Sphere";
        $agcm_jm  =  $agcm_im * 6;
-       $nx       = 2;
-       $ny       = $nx * 6;
+       $nx       = 5;
+       $ny       = 30;
        $km       = $vres;
        $dt  = 450;
        $long_dt  = $dt;
@@ -5125,8 +5130,8 @@ EOF
        $agcm_grid_type = "Cubed-Sphere";
        $agcm_im  =  180;
        $agcm_jm  =  $agcm_im * 6;
-       $nx       = 4;
-       $ny       = $nx * 6;
+       $nx       = 5;
+       $ny       = 30;
        $km       = $vres;
        $dt  = 450;
        $long_dt  = $dt;
@@ -7672,9 +7677,9 @@ sub build_lnbcs {
      $bcopt = "-geosit"; 
   }
   if ( $cubed ) {
-     $cmd = "$fvbin/gen_lnbcs.pl -fvhome $fvhome -o lnbcs $bcopt -cubed $agcm_im $agcm_jm $ogcm $landbcs";
+     $cmd = "$fvbin/gen_lnbcs.pl -fvhome $fvhome -o lnbcs $bcopt -cubed $agcm_im $agcm_jm ${ogcm}${ogcm_id} $landbcs";
   } else {
-     $cmd = "$fvbin/gen_lnbcs.pl -fvhome $fvhome -o lnbcs $bcopt        $agcm_im $agcm_jm $ogcm $landbcs";
+     $cmd = "$fvbin/gen_lnbcs.pl -fvhome $fvhome -o lnbcs $bcopt        $agcm_im $agcm_jm ${ogcm}${ogcm_id} $landbcs";
   }
   print "$cmd\n";
   system($cmd);

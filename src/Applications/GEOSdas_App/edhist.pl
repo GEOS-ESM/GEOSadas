@@ -1127,7 +1127,7 @@ sub plot_edit {
     foreach $name (@topList) {
         $name =~ s/_NCKS$//;
         next unless $name =~ m/Cp$/ or $name =~ m/Np$/ or $name =~ m/Nx$/
-            or $name =~ m/slv$/ or $name =~ m/p42$/;
+            or $name =~ m/slv$/ or $name =~ m/p42$/ or $name =~ m/v72$/ or $name =~ m/v73$/;
         push @new, $name;
     }
     @topList = @new;
