@@ -6075,9 +6075,9 @@ endif
 #------------------------------------ 
 
   if ( $LDAS_ANA ) then
-    mkdir -p               $FVHOME/recycle/holdpredout 
+    mkdir -p                      $FVHOME/recycle/holdpredout 
     /bin/mv -f $FVWORK/*lfo_Nx+-* $FVHOME/recycle/holdpredout/. 
-    /bin/cp $FVHOME/recycle/holdpredout/*lfo_Nx+-*  $LDHOME/input/met_forcing/. 
+    /bin/cp                       $FVHOME/recycle/holdpredout/*lfo_Nx+-* $LDHOME/input/met_forcing/. 
   endif 
    
   exit 0                      
