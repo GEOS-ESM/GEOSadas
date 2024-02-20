@@ -1093,6 +1093,7 @@ sub defaults {
                         ChemEnv_ExtData.yaml
                         CO2_GridComp_ExtData.yaml
                         CO_GridComp_ExtData.yaml
+                        DataSea_ExtData.yaml
                         DNA_ExtData.yaml
                         DU2G_GridComp_ExtData.yaml
                         GAAS_GridComp_ExtData.yaml
@@ -1108,6 +1109,7 @@ sub defaults {
                         StratChem_ExtData.yaml
                         SU2G_GridComp_ExtData.yaml
                         TR_ExtData.yaml
+                        UMWM_ExtData.yaml
                         WSUB_ExtData.yaml );
 #                       AMIP/CO2_GridComp_ExtData.yaml
 #                       AMIP/CFC_GridComp_ExtData.yaml
