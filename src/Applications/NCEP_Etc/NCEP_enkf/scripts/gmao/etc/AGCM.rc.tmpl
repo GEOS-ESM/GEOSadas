@@ -1,106 +1,142 @@
 
 # Atmospheric Model Configuration Parameters
 # ------------------------------------------
-           NX: @NX
-           NY: @NY
- IOSERVER_NODES: 1
+NX: @NX
+NY: @NY
+IOSERVER_NODES: 1
 NUM_BACKEND_PES: 0
 
-      AGCM_IM: @AGCM_IM
-      AGCM_JM: @AGCM_JM
-      AGCM_LM: @AGCM_LM
+AGCM_IM: @AGCM_IM
+AGCM_JM: @AGCM_JM
+AGCM_LM: @AGCM_LM
 AGCM_GRIDNAME: PE@AGCM_IMx@AGCM_JM-CF
 
-      AGCM.GRID_TYPE: @GRID_TYPE
-      AGCM.GRIDNAME: PE@AGCM_IMx@AGCM_JM-CF
-      AGCM.NF: @AGCM_NF
-      AGCM.LM: @AGCM_LM
-      AGCM.IM_WORLD: @AGCM_IM
-      # AGCM.JM_WORLD: @AGCM_JM
+AGCM.GRID_TYPE: @GRID_TYPE
+AGCM.GRIDNAME: PE@AGCM_IMx@AGCM_JM-CF
+AGCM.NF: @AGCM_NF
+AGCM.LM: @AGCM_LM
+AGCM.IM_WORLD: @AGCM_IM
+# AGCM.JM_WORLD: @AGCM_JM
 
+@CONUS AGCM.STRETCH_FACTOR: @STRETCH_FACTOR
+@CONUS AGCM.TARGET_LAT: 39.5
+@CONUS AGCM.TARGET_LON: -98.35
+
+###########################################################
+# long physics DT options
+# ----------------------------------------
+ADJUST_DT: .FALSE.
+CHEMISTRY_RUN_AT_INTERVAL_START: .TRUE.
+CHEMISTRY_DT: @LONG_DT
+GOCART_DT: @LONG_DT
+HEMCO_DT: @LONG_DT
+GF_DT: @LONG_DT
+UW_DT: @LONG_DT
+###########################################################
+
+###########################################################
+# dynamics options
+# ----------------------------------------
 DYCORE: FV3
+@FV_HWT FV3_CONFIG: HWT
+AdvCore_Advection: 0
+###########################################################
 
+###########################################################
+# radiation options
+# ----------------------------------------
  SOLAR_DT: 3600
  IRRAD_DT: 3600
 SATSIM_DT: 3600
-
 SOLARAvrg: 0
 IRRADAvrg: 0
-
-ORBIT_ANAL2B: .TRUE.
 EOT: .TRUE.
-
-# UNCOMMENT to use Morrison-Gettelman-Barahona cloud microphysics
-#CLDMICRO: 2MOMENT
-
-# UNCOMMENT to use GFDL 6-phase cloud microphysics
-#CLDMICRO: GFDL
-# UNCOMMENT to when GFDL microphysics is run with NonHydrostatic FV3
-#HYDROSTATIC: FALSE
-
-# UNCOMMENT to disable aerosol activation in 1-moment cloud microphysics
-#USE_AEROSOL_NN: 0
+ORBIT_ANAL2B: .TRUE.
+###########################################################
 
 ###########################################################
-# Flag for definition of the convection scheme
-# The options are RAS or GF
+# BACM_1M microphysics options
 # ----------------------------------------
-CONVPAR_OPTION: GF
+@BACM_1M_CLDMICR_OPTION: BACM_1M
+###########################################################
 
-# Override default aerosol convective scavenging and use dz method
-USE_TRACER_SCAVEN: 1
+###########################################################
+# GFDL_1M microphysics options
+# ----------------------------------------
+@GFDL_1M_CLDMICR_OPTION: GFDL_1M
+@GFDL_1M_HYDROSTATIC: @GFDL_HYDRO
+###########################################################
 
-# Flag to activated scale-awareness approach (0 false, 1 true)
-USE_SCALE_DEP: 1
+###########################################################
+# MGB2_2M microphysics options
+# ----------------------------------------
+@MGB2_2M_CLDMICR_OPTION: MGB2_2M
+@MGB2_2M_MGVERSION: @MGVERSION
+###########################################################
 
-# Flag to activated diurnal cycle closure (0 false, 1 true)
-DICYCLE: 1
+###########################################################
+# shallow cumulus options
+# ----------------------------------------
+SHALLOW_OPTION: UW
+###########################################################
 
+###########################################################
+# convection scheme options
+# ----------------------------------------
+CONVPAR_OPTION: @CONVPAR_OPTION
+#USE_GF2020: 1
 # Convective plumes to be activated (1 true, 0 false)
-# ----------------------------------------
 DEEP: 1
 SHALLOW: 0
 CONGESTUS: 1
-
-# UW shallow cumulus settings
-DOSHLW: 1
-
 # Choice for the closures:
-# ----------------------------------------
 # deep : 0 ensemble (all) , 1 GR, 4 ll omega, 7 moist conv, 10 PB
 # shallow : 0 ensemble (Wstar/BLQE) , 1 Wstar, 4 heat-engine or 7 BLQE
 # congestus: 0 ensemble (Wstar/BLQE/PB), 1 Wstar, 2 BLQE, 3 PB, 4 PB_BL
-CLOSURE_DEEP:0
-CLOSURE_SHALLOW:7
-CLOSURE_CONGESTUS:3
+CLOSURE_DEEP: 0
+CLOSURE_SHALLOW: 7
+CLOSURE_CONGESTUS: 3
+###########################################################
 
-# GWD Parameterization
-# --------------------
+###########################################################
+# TRB/GWD Parameterization
+# ------------------------
+@FV_HWT RAYLEIGH_TAU1: 0.0
+###########################################################
 
-# if .FALSE., use GEOS GWD code (default); .TRUE., use new NCAR GWD code
-USE_NCAR_GWD: .FALSE.
+@HIST_GOCART###########################################################
+@HIST_GOCART# Enable wet scavenging
+@HIST_GOCART# NOTE: this section should be commented out when running gocart.data
+@HIST_GOCARTMCHEMTRI_increments::
+@HIST_GOCARTDU::DU default
+@HIST_GOCARTSS::SS default
+@HIST_GOCARTSU::SO4 default
+@HIST_GOCARTCA.bc::CA.bcphilic default
+@HIST_GOCARTCA.br::CA.brphilic default
+@HIST_GOCARTCA.oc::CA.ocphilic default
+@HIST_GOCARTNI::NO3an1 "NI::NO3an2,NI::NO3an3"
+@HIST_GOCARTPCHEM::OX default 
+@HIST_GOCART::
+@HIST_GOCART###########################################################
 
-# This is only used if USE_NCAR_GWD is .TRUE.
-BERES_FILE_NAME: ExtData/g5gcm/gwd/newmfspectra40_dc25.nc
-
+###########################################################
 # Ocean Model Configuration Parameters
 # ------------------------------------
-      OGCM.GRID_TYPE: @OGCM_GRID_TYPE
-      OGCM.GRIDNAME: OC@OGCM_IMx@OGCM_JM-CF
-      OGCM.IM_WORLD: @OGCM_IM
-      OGCM.JM_WORLD: @OGCM_JM
-      OGCM.LM: @OGCM_LM
-      >>>COUPLED<<<OGCM.NX: @OGCM_NX
-      >>>COUPLED<<<OGCM.NY: @OGCM_NY
-      >>>COUPLED<<<OGCM.GRIDSPEC: MAPL_Tripolar.nc
-
-      >>>DATAOCEAN<<<>>>LATLON_OGCM<<<OGCM.POLE: 'PE'
-      >>>DATAOCEAN<<<>>>LATLON_OGCM<<<OGCM.DATELINE: 'DE'
-      >>>DATAOCEAN<<<OGCM.NF: @OGCM_NF
-
-
-OGCM_RUN_DT: 3600
-
+OGCM.GRID_TYPE: @OGCM_GRID_TYPE
+OGCM.GRIDNAME: @OGCM_GRIDNAME
+OGCM.IM_WORLD: @OGCM_IM
+OGCM.JM_WORLD: @OGCM_JM
+OGCM.LM: @OGCM_LM
+@COUPLED OGCM.NX: @OGCM_NX
+@COUPLED OGCM.NY: @OGCM_NY
+@MOM5 OGCM.GRIDSPEC: MAPL_Tripolar.nc
+@MOM6 OGCM.GRIDSPEC: MAPL_Tripolar.nc
+@MIT  OGCM.GRIDSPEC: mit.ascii
+@DATAOCEAN @LATLON_OGCM OGCM.POLE: 'PE'
+@DATAOCEAN @LATLON_OGCM OGCM.DATELINE: 'DE'
+@DATAOCEAN @CUBE_OGCM OGCM.NF: @OGCM_NF
+OGCM_RUN_DT: @OCEAN_DT
+###########################################################
 ##############################################################################################
 ####                                                                                      ####
 ####   SST REMAPPING                                                                      ####
@@ -126,8 +162,19 @@ PRINTRC: 1
 # RESTART_TYPE and or CHECKPOINT_TYPE are set to pbinary or pnc4
 #---------------------------------------------------------------
 PARALLEL_READFORCING: 0
+# The num_readers should be set to multiple of 6 if READ_RESTART_BY_FACE is set to YES
 NUM_READERS: 1
+# The num_writers should be set to multiple of 6 if WRITE_RESTART_BY_FACE is set to YES
 NUM_WRITERS: 1
+
+# If is is set to YES, users should have CS based restarts files split by faces
+# The filenames *_rst should be changed to *_face_x_rst ( x is from 1 to 6)
+READ_RESTART_BY_FACE: NO
+# If it is set to YES, it overwrites WRITE_RESTART_BY_OSERVER to NO
+WRITE_RESTART_BY_FACE: NO
+
+# Write restarts by oserver (Default: NO)
+WRITE_RESTART_BY_OSERVER: @RESTART_BY_OSERVER
 
 # Active observer when desired
 # ----------------------------
@@ -152,10 +199,7 @@ DEFAULT_CHECKPOINT_TYPE: pnc4
 # Tracers definition 
 # ---------------------
 TRI_increments:: 
-PCHEM::OX 
-:: 
-MTRI_increments:: 
-PCHEM::OX 
+PCHEM::OX default 
 :: 
 
 
@@ -277,19 +321,34 @@ PCHEM::OX
 
 #   ASSIMILATION_CYCLE:  nnnnnn       #  (Default: 21600)
 #   IAU_DIGITAL_FILTER:  YES or NO    #  (Default: YES  )
- 
+
 # Typical MERRA-2 Regular REPLAY Configuration
 # --------------------------------------------
 #M2 REPLAY_ANA_EXPID:   MERRA-2
 #M2 REPLAY_ANA_LOCATION: @M2_REPLAY_ANA_LOCATION
 #M2 REPLAY_MODE: Regular
-#M2 REPLAY_FILE: ana/Y%y4/M%m2/MERRA-2.ana.eta.%y4%m2%d2_%h2z.nc4
+#M2 REPLAY_FILE: ana/MERRA2_all/Y%y4/M%m2/MERRA2.ana.eta.%y4%m2%d2_%h2z.nc4
 # -----------------------------------------------------------------
 
 #   ANA EXPID and LOCATION used for REPLAY
 #   --------------------------------------
-#   REPLAY_ANA_EXPID:    @REPLAY_ANA_EXPID
-#   REPLAY_ANA_LOCATION: @REPLAY_ANA_LOCATION
+#X_EXP REPLAY_ANA_EXPID:    @ANA_EXPID
+#X_EXP REPLAY_ANA_LOCATION: /discover/nobackup/projects/gmao/dadev/dao_it/archive/@ANA_EXPID
+#X_EXP REPLAY_MODE: Regular
+#X_EXP REPLAY_FILE: ana/Y%y4/M%m2/@ANA_EXPID.ana.eta.%y4%m2%d2_%h2%n2z.nc4
+#X_EXP REPLAY_FILE_FREQUENCY: 7200
+
+#   Regular REPLAY to ERA5
+#   ----------------------
+#ERA5  REPLAY_MODE:                 Regular
+#ERA5  REPLAY_FILE_FREQUENCY:       21600
+#ERA5  REPLAY_FILE_REFERENCE_TIME:  000000
+#ERA5  REPLAY_ANA_EXPID:            era5
+#ERA5  REPLAY_ANA_LOCATION:         /gpfsm/dnb78s1/projects/p18/sdrabenh/valdat/era5/ana
+#ERA5  REPLAY_FILE:                 /gpfsm/dnb78s1/projects/p18/sdrabenh/valdat/era5/ana/Y%y4/M%m2/era5_eta2eta_L137.%y4%m2%d2_%h2z.nc4
+#ERA5  REPLAY_O3:          NO
+#ERA5  REPLAY_DAMPBEG:  500.0
+#ERA5  REPLAY_DAMPEND: 5000.0
 
 #   Typical Exact REPLAY Configuration
 #   ----------------------------------
@@ -347,14 +406,6 @@ PCHEM::OX
 ####                                                                                            ####
 ####################################################################################################
 #
-#   Regular REPLAY Mode and File
-#   ----------------------------
->>>REGULAR_REPLAY<<<   REPLAY_MODE: Regular
->>>REGULAR_REPLAY<<<   REPLAY_FILE: ana4replay.eta.%y4%m2%d2_%h2z.nc4
-
-#   REPLAY_FILE_FREQUENCY:      nnnnnn    (Default: CORRECTOR_DURATION)
-#   REPLAY_FILE_REFERENCE_TIME: HHMMSS    (Default: 000000)
-
 #   BKG2ANACNSRV: 0 or 1    # (Defaults to 0:BiLinear Interpolation.  Note: Conservative Transformation creates Non-Wavenumber 1 Winds at Poles)
 #   ANA2BKGCNSRV: 0 or 1    # (Defaults to 0:BiLinear Interpolation.  Note: Conservative Transformation creates Non-Wavenumber 1 Winds at Poles)
 #
@@ -422,7 +473,7 @@ PCHEM::OX
 ##REPLAY_REF_TIME: >>>ANATIME<<<
 ##REPLAY_REF_TGAP: 001500
 
-#REPLAY_MODE: Intermittent 
+#REPLAY_MODE: Intermittent
 #REPLAY_FILE: /discover/nobackup/projects/gmao/iesa/aerosol/Data/MERRA/iReplay/576x361/Y%y4/M%m2/d5_merra_jan98.bkg.eta.%y4%m2%d2_%h2z.nc4
 #REPLAY_IM:    576            # Required for Intermittent Replay on Cube
 #REPLAY_JM:    361            # Required for Intermittent Replay on Cube
@@ -472,7 +523,7 @@ PCHEM::OX
 #
 # Possible REPLAY PRECIP Files:
 # -----------------------------
-#PRECIP_FILE: ExtData/PCP/@PRECIP_FILE
+#PRECIP_FILE: ExtData/PCP/d5_merra_jan79/diag/Y%y4/d5_merra_jan79.tavg1_2d_lfo_Nx_corr.%y4%m2%d2_%h230z.nc
 #
 # Latitudinal Tapering between 42.5 and 62.5 degrees mimics NCEP's approach of using GCM-based precip at high latitudes
 # --------------------
@@ -483,44 +534,37 @@ PCHEM::OX
 ##############################################################################################
 
 # Option to Diagnose Precipitation Types for Land Surface
-# -------------------------------------------------------
-DIAGNOSE_PRECIP_TYPE: FALSE
 
 # Choice for Land Surface Model
-#      1 : Catchment 
-#      2 : CatchmentCNCLM40 
-#      3 : CatchmentCNCLM45 
+#      1 : Catchment
+#      2 : CatchmentCNCLM40
+#      3 : CatchmentCNCLM45
 # ------------------------------------------------------------
 LSM_CHOICE: @LSM_CHOICE
 
 # Apply increments from LDAS?
 #      0 : no  (default)
-#      1 : yes 
+#      1 : yes
 # ------------------------------------------------------------
 #LDAS_INCR: 0
 
-# Name of file containing Surface GridComp resource parameters 
+# Name of file containing Surface GridComp resource parameters
 # ------------------------------------------------------------
 # SURFRC: GEOS_SurfaceGridComp.rc
 
 
-# ****************************************************************
-# ******* REQUIRES MAJOR CLEAN-UP ACROSS SEVERAL GRIDCOMPs *******
-# ******* (retained to facilitate this cleanup in future)  *******
-# ******* IMPORTANT: This is merely for future reference   *******
-# *******   The model reads USE_CNNEE from CO2_GridComp.rc *******
-# *******   not from this file.                            *******
+# ----------------------------------------------------------------
+# ------- REQUIRES MAJOR CLEAN-UP ACROSS SEVERAL GRIDCOMPs -------
+# ------- (retained to facilitate this cleanup in future)  -------
+# ------- IMPORTANT: This is merely for future reference   -------
+# -------   The model reads USE_CNNEE from CO2_GridComp.rc -------
+# -------   not from this file.                            -------
 # Atmosphere-Land CO2 coupling
-# ----------------------------	
-# USE_CNNEE: 0 #  options : 0 (default); 1 (Chem uses NNEE from CatchmentCN, NOTE you must add USE_CNNEE: 1 to CO2_GridComp.rc and AMIP/CO2_GridComp.rc,	
+# ----------------------------
+# USE_CNNEE: 0 #  options : 0 (default); 1 (Chem uses NNEE from CatchmentCN, NOTE you must add USE_CNNEE: 1 to CO2_GridComp.rc and AMIP/CO2_GridComp.rc,
 #                           in GOCART/ESMF/GOCART_GridComp/CO2_GridComp/ before you build the model.)
 #
-# ****************************************************************
-
-# Feedback Increments from ldas :1,  no feedback: 0  
-# ---------------------------------------------------
-LDAS_INCR: 0
-
+# ----------------------------------------------------------------
 
 ##############################################################################################
 ##############################################################################################
@@ -548,6 +592,9 @@ DYN_INTERNAL_RESTART_FILE:              fvcore_internal_rst
 DYN_INTERNAL_CHECKPOINT_FILE:           fvcore_internal_checkpoint
 DYN_INTERNAL_HEADER:                    1
 
+GWD_INTERNAL_RESTART_FILE:              gwd_internal_rst
+GWD_INTERNAL_CHECKPOINT_FILE:           gwd_internal_checkpoint
+
 LAKE_INTERNAL_RESTART_FILE:             lake_internal_rst
 LAKE_INTERNAL_CHECKPOINT_FILE:          lake_internal_checkpoint
 
@@ -557,8 +604,11 @@ LANDICE_INTERNAL_CHECKPOINT_FILE:       landice_internal_checkpoint
 CATCH_INTERNAL_RESTART_FILE:            catch_internal_rst
 CATCH_INTERNAL_CHECKPOINT_FILE:         catch_internal_checkpoint
 
-#CATCHCN_INTERNAL_RESTART_FILE:            catchcn_internal_rst
-#CATCHCN_INTERNAL_CHECKPOINT_FILE:         catchcn_internal_checkpoint
+#CATCHCNCLM40_INTERNAL_RESTART_FILE:     catchcn_internal_rst
+#CATCHCNCLM40_INTERNAL_CHECKPOINT_FILE:  catchcn_internal_checkpoint
+
+#CATCHCNCLM45_INTERNAL_RESTART_FILE:     catchcn_internal_rst
+#CATCHCNCLM45_INTERNAL_CHECKPOINT_FILE:  catchcn_internal_checkpoint
 
 MOIST_INTERNAL_RESTART_FILE:            moist_internal_rst
 MOIST_INTERNAL_CHECKPOINT_FILE:         moist_internal_checkpoint
@@ -652,26 +702,26 @@ SU_INTERNAL_CHECKPOINT_FILE:            su_internal_checkpoint
 #MAM_INTERNAL_RESTART_FILE:              mam_internal_rst
 #MAM_INTERNAL_CHECKPOINT_FILE:           mam_internal_checkpoint
 
-ACHEM_INTERNAL_RESTART_FILE:             achem_internal_rst
-ACHEM_INTERNAL_CHECKPOINT_FILE:          achem_internal_checkpoint
+ACHEM_INTERNAL_RESTART_FILE:            achem_internal_rst
+ACHEM_INTERNAL_CHECKPOINT_FILE:         achem_internal_checkpoint
 
-#TR_INTERNAL_RESTART_FILE:               tr_internal_rst
-#TR_INTERNAL_CHECKPOINT_FILE:            tr_internal_checkpoint
+TR_INTERNAL_RESTART_FILE:               tr_internal_rst
+TR_INTERNAL_CHECKPOINT_FILE:            tr_internal_checkpoint
 
-#TR_IMPORT_RESTART_FILE:                 tr_import_rst
-#TR_IMPORT_CHECKPOINT_FILE:              tr_import_checkpoint
+TR_IMPORT_RESTART_FILE:                 tr_import_rst
+TR_IMPORT_CHECKPOINT_FILE:              tr_import_checkpoint
 
-HEMCO_INTERNAL_RESTART_FILE:             hemco_internal_rst
-HEMCO_INTERNAL_CHECKPOINT_FILE:          hemco_internal_checkpoint
+HEMCO_INTERNAL_RESTART_FILE:            hemco_internal_rst
+HEMCO_INTERNAL_CHECKPOINT_FILE:         hemco_internal_checkpoint
 
-HEMCO_IMPORT_RESTART_FILE:               hemco_import_rst
-HEMCO_IMPORT_CHECKPOINT_FILE:            hemco_import_checkpoint
+HEMCO_IMPORT_RESTART_FILE:              hemco_import_rst
+HEMCO_IMPORT_CHECKPOINT_FILE:           hemco_import_checkpoint
 
-#OH_INTERNAL_RESTART_FILE:             oh_internal_rst
-#OH_INTERNAL_CHECKPOINT_FILE:          oh_internal_checkpoint
+#OH_INTERNAL_RESTART_FILE:               oh_internal_rst
+#OH_INTERNAL_CHECKPOINT_FILE:            oh_internal_checkpoint
 
-#OH_IMPORT_RESTART_FILE:               oh_import_rst
-#OH_IMPORT_CHECKPOINT_FILE:            oh_import_checkpoint
+#OH_IMPORT_RESTART_FILE:                 oh_import_rst
+#OH_IMPORT_CHECKPOINT_FILE:              oh_import_checkpoint
 
 # OCEAN Model Restart Files
 # -------------------------
@@ -681,20 +731,27 @@ SALTWATER_IMPORT_CHECKPOINT_FILE:       saltwater_import_checkpoint
 OPENWATER_INTERNAL_RESTART_FILE:        openwater_internal_rst
 OPENWATER_INTERNAL_CHECKPOINT_FILE:     openwater_internal_checkpoint
 
+@CICE6SEAICETHERMO_IMPORT_RESTART_FILE:     seaicethermo_import_rst
+@CICE6SEAICETHERMO_IMPORT_CHECKPOINT_FILE:  seaicethermo_import_checkpoint
+
 SEAICETHERMO_INTERNAL_RESTART_FILE:     seaicethermo_internal_rst
 SEAICETHERMO_INTERNAL_CHECKPOINT_FILE:  seaicethermo_internal_checkpoint
 
->>>COUPLED<<<SEAICE_IMPORT_RESTART_FILE:             seaice_import_rst
->>>COUPLED<<<SEAICE_IMPORT_CHECKPOINT_FILE:          seaice_import_checkpoint
->>>COUPLED<<<SEAICE_IMPORT_CHECKPOINT_TYPE:          @CHECKPOINT_TYPE
+@CICE4CICE4_IMPORT_RESTART_FILE:             seaice_import_rst
+@CICE4CICE4_IMPORT_CHECKPOINT_FILE:          seaice_import_checkpoint
+@CICE6CICE6_IMPORT_RESTART_FILE:             seaice_import_rst
+@CICE6CICE6_IMPORT_CHECKPOINT_FILE:          seaice_import_checkpoint
 
->>>COUPLED<<<SEAICE_INTERNAL_RESTART_FILE:           seaice_internal_rst
->>>COUPLED<<<SEAICE_INTERNAL_CHECKPOINT_FILE:        seaice_internal_checkpoint
->>>COUPLED<<<SEAICE_INTERNAL_CHECKPOINT_TYPE:        @CHECKPOINT_TYPE
+@CICE4CICE4_INTERNAL_RESTART_FILE:           seaice_internal_rst
+@CICE4CICE4_INTERNAL_CHECKPOINT_FILE:        seaice_internal_checkpoint
 
->>>COUPLED<<<OCEAN_INTERNAL_RESTART_FILE:               ocean_internal_rst
->>>COUPLED<<<OCEAN_INTERNAL_CHECKPOINT_FILE:            ocean_internal_checkpoint
->>>COUPLED<<<OCEAN_INTERNAL_CHECKPOINT_TYPE:            @CHECKPOINT_TYPE
+@COUPLEDOCEAN_INTERNAL_RESTART_FILE:               ocean_internal_rst
+@COUPLEDOCEAN_INTERNAL_CHECKPOINT_FILE:            ocean_internal_checkpoint
+
+# IGNI Restart Files
+# ------------------
+#IGNI_INTERNAL_RESTART_FILE:            igni_internal_rst
+#IGNI_INTERNAL_CHECKPOINT_FILE:         igni_internal_checkpoint
 
 # Boundary Datasets
 # -----------------
@@ -705,11 +762,11 @@ TOPO_TRBVAR_FILE:   topo_trbvar.data
 LAI_FILE:                   lai.data
 GREEN_FILE:               green.data
 NDVI_FILE:                 ndvi.data
-TILING_FILE:                tile.bin 
+TILING_FILE:                tile.bin
 VISDF_FILE:                visdf.dat
 NIRDF_FILE:                nirdf.dat
 LNFM_FILE:                 lnfm.data
->>>COUPLED<<<ROUTING_FILE:             runoff.bin
+@COUPLED ROUTING_FILE:             runoff.bin
 
 VEGDYN_INTERNAL_RESTART_FILE:  vegdyn.data
 
@@ -742,20 +799,24 @@ HCFC22_FRIENDLIES: DYNAMICS:TURBULENCE:MOIST
 # Set RADIATION Parameterizations
 # -------------------------------
 USE_RRTMG_IRRAD: 1.0
-
 USE_RRTMG_SORAD: 1.0
 ISOLVAR: 2
 USE_NRLSSI2: .TRUE.
-SOLAR_CYCLE_FILE_NAME: ExtData/g5gcm/solar/NRLSSI2.v2021.txt
+SOLAR_CYCLE_FILE_NAME: ExtData/g5gcm/solar/NRLSSI2.txt
+# NOTE: The NRLSSI2.txt file is a symlink pointing to the latest NRLSSI2 file
+#       in the ExtData/g5gcm/solar directory.  The symlink is updated by the
+#       Boundary Conditions maintainers as new NRLSSI2 files are created. To
+#       use a specific NRLSSI2 file, you must change the above to a specific
+#       file, e.g., NRLSSI2.v2022.txt
 
 NUM_BANDS: 30
 
 #USE_RRTMGP_IRRAD: 1.0
 #USE_RRTMGP_SORAD: 1.0
-#RRTMGP_DATA_LW: /discover/nobackup/pnorris/RRTMGP-data.v1.5/rrtmgp/data/rrtmgp-data-lw-g128-210809.nc
-#RRTMGP_DATA_SW: /discover/nobackup/pnorris/RRTMGP-data.v1.5/rrtmgp/data/rrtmgp-data-sw-g112-210809.nc
-#RRTMGP_CLOUD_OPTICS_COEFFS_LW: /discover/nobackup/pnorris/RRTMGP-data.v1.5/extensions/cloud_optics/rrtmgp-cloud-optics-coeffs-lw.nc
-#RRTMGP_CLOUD_OPTICS_COEFFS_SW: /discover/nobackup/pnorris/RRTMGP-data.v1.5/extensions/cloud_optics/rrtmgp-cloud-optics-coeffs-sw.nc
+#RRTMGP_DATA_LW: /discover/nobackup/pnorris/RRTMGP-data.v1.6/rrtmgp/data/rrtmgp-data-lw-g128-210809.nc
+#RRTMGP_DATA_SW: /discover/nobackup/pnorris/RRTMGP-data.v1.6/rrtmgp/data/rrtmgp-data-sw-g112-210809.nc
+#RRTMGP_CLOUD_OPTICS_COEFFS_LW: /discover/nobackup/pnorris/RRTMGP-data.v1.6/extensions/cloud_optics/rrtmgp-cloud-optics-coeffs-lw.nc
+#RRTMGP_CLOUD_OPTICS_COEFFS_SW: /discover/nobackup/pnorris/RRTMGP-data.v1.6/extensions/cloud_optics/rrtmgp-cloud-optics-coeffs-reordered-sw.nc
 
 DIURNAL_BIOMASS_BURNING: yes
 
@@ -775,11 +836,11 @@ ANALYSIS_OX_PROVIDER: PCHEM   # options: PCHEM, GMICHEM, STRATCHEM, GOCART
 
 # DATAOCEAN Parameters for AMIP-Style Run
 # ----------------------------------------
->>>DATAOCEAN<<<DATA_SST_FILE: sst.data
->>>DATAOCEAN<<<DATA_FRT_FILE: fraci.data
->>>DATAOCEAN<<<MIN_SEAICE_DEPTH: 0.07
->>>DATAOCEAN<<<MAX_SEAICE_DEPTH: 0.07
->>>DATAOCEAN<<<TAU_SIT:          86400
+@DATAOCEAN DATA_SST_FILE: sst.data
+@DATAOCEAN DATA_FRT_FILE: fraci.data
+@DATAOCEAN MIN_SEAICE_DEPTH: 0.07
+@DATAOCEAN MAX_SEAICE_DEPTH: 0.07
+@DATAOCEAN TAU_SIT:          86400
 
 # To compute skin SST over water (or to use SST Analysis Increment) set values to 1
 # ---------------------------------------------------------------------------------
@@ -801,50 +862,51 @@ USE_SATSIM_RADAR: 0
 USE_SATSIM_LIDAR: 0
 USE_SATSIM_MISR:  0
 
->>>COUPLED<<<INTERPOLATE_ATMLM: 0
->>>COUPLED<<<INTERPOLATE_ATMTAU: 1
->>>COUPLED<<<INTERPOLATE_OCEAN_ICE_CURRENTS: 0
+@COUPLED INTERPOLATE_ATMLM: 0
+@COUPLED INTERPOLATE_ATMTAU: 1
+@COUPLED INTERPOLATE_OCEAN_ICE_CURRENTS: 0
 
->>>COUPLED<<<CLDMICRO: 2MOMENT
+@COUPLED CLDMICRO: @CLDMICRO
 
->>>COUPLED<<<# Section for ocean
->>>COUPLED<<<# ----------------
->>>COUPLED<<<USE_DATASEA:0
->>>COUPLED<<<OCEAN_NAME: @OCEAN_NAME
->>>COUPLED<<<USE_DATASEAICE:0
->>>COUPLED<<<steady_state_ocean: 0
->>>COUPLED<<<OCEAN_PICE_SCALING: 0.0
+@COUPLED # Section for ocean
+@COUPLED # ----------------
+@COUPLED USE_DATASEA:0
+@COUPLED OCEAN_NAME: @OCEAN_NAME
+@COUPLED USE_DATASEAICE:0
+@COUPLED steady_state_ocean: 0
+@COUPLED OCEAN_PICE_SCALING: 0.0
 
-# For running MOM5 coupled model in dual ocean mode, uncomment three lines below, 
+# For running MOM5 coupled model in dual ocean mode, uncomment three lines below,
 # make sure that regular replay is enabled, proper PRECIP_FILE is chosen,
 # sst.data and fraci.data are pointing to read forcing files on tripolar grid,
-# the run starts at 21z/03z/09z/15z, 
+# the run starts at 21z/03z/09z/15z,
 # HISTORY.rc collections have proper ref_time field
 # ---------------------------------------------------------------------------
->>>MOM5<<<#DUAL_OCEAN: 1
->>>MOM5<<<#DATA_SST_FILE: sst.data
->>>MOM5<<<#DATA_FRT_FILE: fraci.data
+@MOM5#DUAL_OCEAN: 1
+@MOM5#DATA_SST_FILE: sst.data
+@MOM5#DATA_FRT_FILE: fraci.data
 
->>>COUPLED<<<
->>>COUPLED<<<# Section for CICE 
->>>COUPLED<<<# -----------------
->>>COUPLED<<<USE_CICE_Thermo: 1
->>>COUPLED<<<PRESCRIBED_ICE: 0
->>>COUPLED<<<CICE_DT: @OCEAN_DT
->>>COUPLED<<<CICE_NDTE: 300
->>>COUPLED<<<CICE_GRID: grid_cice.bin
->>>COUPLED<<<CICE_KMT: kmt_cice.bin
->>>COUPLED<<<CICE_N_ICE_CATEGORIES:5
->>>COUPLED<<<CICE_N_ICE_LAYERS:4
->>>COUPLED<<<CICE_MU_RDG: 3.0
->>>COUPLED<<<CICE_AH_MAX: 0.3
->>>COUPLED<<<CICE_STRENGTH: 0
->>>COUPLED<<<ALBICEV: 0.78
->>>COUPLED<<<ALBICEI: 0.36
->>>COUPLED<<<ALBSNOWV: 0.98
->>>COUPLED<<<ALBSNOWI: 0.7 
->>>COUPLED<<<MIN_FREEZE_SALINITY: 5.0 
-
+@COUPLED 
+@COUPLED# Section for CICE
+@COUPLED# -----------------
+@CICE4USE_CICE_Thermo: 1
+@CICE6USE_CICE_Thermo: 2
+@CICE6SEAICE_NAME: CICE6
+@CICE4PRESCRIBED_ICE: 0
+@CICE4CICE_DT: @OCEAN_DT
+@CICE4CICE_NDTE: 300
+@CICE4CICE_GRID: grid_cice.bin
+@CICE4CICE_KMT: kmt_cice.bin
+@COUPLEDCICE_N_ICE_CATEGORIES:5
+@CICE4CICE_N_ICE_LAYERS:4
+@CICE4CICE_MU_RDG: 3.0
+@CICE4CICE_AH_MAX: 0.3
+@CICE4CICE_STRENGTH: 0
+@CICE4ALBICEV: 0.78
+@CICE4ALBICEI: 0.36
+@CICE4ALBSNOWV: 0.98
+@CICE4ALBSNOWI: 0.7
+@CICE4MIN_FREEZE_SALINITY: 5.0
 
 # Flags for SPPT scheme
 SPPT: @AENS_DOSPPT

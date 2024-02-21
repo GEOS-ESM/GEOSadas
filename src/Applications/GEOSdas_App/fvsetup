@@ -9953,14 +9953,10 @@ sub init_agcm_rc {
     if ( $coupled ) { 
        AGCM_label_subst("\@COUPLED"   , " ");
        AGCM_label_subst("\@DATAOCEAN" , "#");
-       AGCM_label_subst("\@CICE6SEAICETHERMO_IMPORT_RESTART_FILE" , "");
-       AGCM_label_subst("\@CICE6CICE6_IMPORT_RESTART_FILE" , "");
        AGCM_label_subst("\@CICE6" , "");
        AGCM_label_subst("\@MOM6" , "");
     } else {
        AGCM_label_subst("\@COUPLED"   , "#");
-       AGCM_label_subst("\@CICE6SEAICETHERMO_IMPORT_RESTART_FILE" , "#");
-       AGCM_label_subst("\@CICE6CICE6_IMPORT_RESTART_FILE" , "#");
        AGCM_label_subst("\@DATAOCEAN" , " ");
        AGCM_label_subst("\@CICE6" , "#");
     }
@@ -9968,7 +9964,6 @@ sub init_agcm_rc {
     AGCM_label_subst("\@MIT" , "#");
     AGCM_label_subst("\@MOM5" , "#");
     AGCM_label_subst("\@CICE4" , "#");
-    AGCM_label_subst("\@CICE4CICE4_IMPORT_RESTART_FILE" , "#");
 
     # directory-specific values
     #--------------------------
