@@ -81,7 +81,7 @@ AeroCom? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/AeroCom]
 > 
 
 FVICS? [/archive/u/jstassi/restarts/GEOSadas-5_24_0]
-> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/x0045_C180/rs_coupled/Y2020/M11/x0045.rst.20201129_21z.tar
+> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_40/Coupled/x0045/rs/Y2020/M11/x0045.rst.20201129_21z.tar
 
 Run model-adjoint-related applications (0=no,1=yes)? [0]
 > 
@@ -134,7 +134,7 @@ Number of procs in the zonal direction (NX)? [6]
 Number of procs in the meridional direction (NY)? [32]
 > 42
 
-Which main class of ObsSys (1: NRT; 2: MERRA; 3: MERRA-2)? [1]
+Which main class of ObsSys (1: NRT; 2: MERRA; 3: MERRA-2; 4: GEOS-IT; 5: R21C)? [1]
 > 
 
 OBSERVING SYSTEM CLASSES?

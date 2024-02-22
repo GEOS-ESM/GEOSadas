@@ -321,7 +321,8 @@ sub means_type {
 sub plots_type {
     my $name = shift;
     return unless means_type($name);
-    return unless $name =~ m/Cp$/ or $name =~ m/Np$/ or $name =~ m/Nx$/;
+    return unless $name =~ m/Cp$/ or $name =~ m/Np$/ or $name =~ m/Nx$/ 
+               or $name =~ m/slv$/ or $name =~ m/p42$/;
     return 1;
 }
 

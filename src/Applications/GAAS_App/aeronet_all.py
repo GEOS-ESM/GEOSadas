@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Splits AERONET into synoptic chunks.
 """
@@ -17,7 +17,7 @@ def makethis_dir(path):
     if path != '':
         rc = os.system('mkdir -p '+path)
         if rc:
-            raise IOError, "could not create directory "+path
+            raise IOError("could not create directory "+path)
 
 if __name__ == "__main__":
 
@@ -28,8 +28,8 @@ if __name__ == "__main__":
     onehour = timedelta(seconds=60*60)
         
     if len(sys.argv)<2:
-        print "Usage:"
-        print "        aeronet4_all.py  year1 [year2]"
+        print("Usage:")
+        print("        aeronet4_all.py  year1 [year2]")
         sys.exit(1)
     else:
         y1 = sys.argv[1]
@@ -37,7 +37,7 @@ if __name__ == "__main__":
             y2 = sys.argv[2]
         else:
             y2 = y1
-        Years = range(int(y1),int(y2)+1)
+        Years = list(range(int(y1),int(y2)+1))
             
     # Loop over years
     # ---------------
@@ -49,7 +49,7 @@ if __name__ == "__main__":
 
             today = tyme0 + (doy-1) * oneday
 
-            print 'Day: ', today
+            print('Day: ', today)
 
             # Read AERONET for this day
             # -------------------------
