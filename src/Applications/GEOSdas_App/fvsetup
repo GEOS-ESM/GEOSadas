@@ -5108,15 +5108,15 @@ EOF
        $ana_jm_ens = 181;
   } elsif ( "$res" eq "C720" ) {  # Cubed-sphere
        $cubed = 1;
-       $o_servers = 8;
-       $bckend_wrts = 8;
+       $o_servers = 22;
+       $bckend_wrts = 22;
        $specres = "254";
        $jcap = "254";
        $agcm_grid_type = "Cubed-Sphere";
        $agcm_im  =  720;
        $agcm_jm  =  $agcm_im * 6;
-       $nx = 6;
-       $ny = $nx * 6;
+       $nx = 15;
+       $ny = 360;
        $km = $vres;
        $dt = 450;
        $pert_dt = 900;
