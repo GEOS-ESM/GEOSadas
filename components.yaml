@@ -28,7 +28,7 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  tag: feature/rtodling/atmos_11_4_gaasfix/cak_tag0
+  tag: geos/compo/t0 
   develop: main
 
 GMAOpyobs:
@@ -65,7 +65,7 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  tag: geos/compo/t0 
+  tag: geos/compo/t1
   develop: develop
 
 GEOSgcm_GridComp:
