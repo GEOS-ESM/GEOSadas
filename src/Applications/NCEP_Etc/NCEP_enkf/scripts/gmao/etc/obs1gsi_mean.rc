@@ -170,6 +170,7 @@ OBS_INPUT::
    iasibufr       iasi        metop-c     iasi_metop-c          0.0     3      0        ncep_mtiasi_bufr
    atmsbufr       atms        npp         atms_npp              0.0     1      0        ncep_atms_bufr
    atmsbufr       atms        n20         atms_n20              0.0     1      0        ncep_atms_bufr
+!  atmsbufr       atms        n21         atms_n21              0.0     1      0        ncep_atms_bufr
    crisfsrbufr    cris-fsr    npp         cris-fsr_npp          0.0     3      0        ncep_crisfsr_bufr
    crisfsrbufr    cris-fsr    n20         cris-fsr_n20          0.0     3      0        ncep_crisfsr_bufr
    satwndbufr     uv          null        uv                    0.0     0      0        ncep_satwnd_bufr
