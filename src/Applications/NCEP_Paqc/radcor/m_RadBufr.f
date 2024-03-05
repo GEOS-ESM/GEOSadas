@@ -19,7 +19,7 @@
       public ::
      .   Get_Raobs,          ! Get raob data
      .   Put_Raobs,          ! Put raob data to buffer file
-     .   Clean_Raobs,        ! Clean up data structures 
+     .   Clean_Raobs,        ! Clean up data structures
      .   Obs_Reorder,        ! Reorder radcor and prep data structures
      .   Bufr_Inq,           ! Inquire about buffer parameters
      .   Set_Options,        ! Set options for reading/writing
@@ -54,7 +54,7 @@
      .      Init_Options,
      .      Copy_Options
       end interface
-! 
+!
 ! !REVISION HISTORY:
 !     01Dec2003  C. Redder  Original code
 !     03Feb2004  C. Redder  Renamed the components, Lev, LevM and LevE to
@@ -67,13 +67,13 @@
 !     11Mar2004  C. Redder  Added the component ProcN to the data
 !                           structure, pbufr_meta
 !     20Apr2004  C. Redder  Added the generic interface, Set_Options.
-!                           and the data structure, prep_options.  
+!                           and the data structure, prep_options.
 !                           Added prep_options to the internal data
 !                           structures, pbufr_mass and pbufr_wind.
 !     16Jun2004  C. Redder  Added the component, write_drift, to the
 !                           type, prep_options.
 !     02Sep2004  C. Redder  Added the component, QC_Local, to the
-!                           types, prep_vector, pbufr_mass and 
+!                           types, prep_vector, pbufr_mass and
 !                           pbufr_wind.
 !     02Nov2004  C. Redder  Added the component, kt_humidity to the
 !                           type pbufr_mass
@@ -89,15 +89,18 @@
 !                           (hradcor and raobcore) to use different
 !                           progam codes
 !     16May2017  Meta       Adjust maximum BUFR record size (call MAXOUT)
-!                           to avoid losing sounding records that exceed 
+!                           to avoid losing sounding records that exceed
 !                           max record size when raobcor changes are added
+!     28Dec2022  Meta       Add option to use environment variable to increase
+!                           the maximum BUFR record size
+!
 !EOP
 !-----------------------------------------------------------------
 
 !     Constants for ...
 !     -----------------
       integer, parameter ::
-     .   IMiss        = -10000,    ! Missing integer attribute 
+     .   IMiss        = -10000,    ! Missing integer attribute
      .   LenID        =  8,        ! String lengh of station ID
      .   BKind        =  8,        ! Size of real
 c     .   ReasonCode   =  1,        ! Reason code for all corrected obs
@@ -108,7 +111,7 @@ c     .   ReasonCode   =  1,        ! Reason code for all corrected obs
 
       integer, parameter ::
      .   VT_Eqtn      = VT_NCEP,   ! Set formula for virtual temperature
-     .   SVP_Eqtn     = wEqtn_NCEP ! ... satuation vapor pressure (Teton's) 
+     .   SVP_Eqtn     = wEqtn_NCEP ! ... satuation vapor pressure (Teton's)
                                    !   to that implemented at NCEP
       real (kind = BKind), parameter ::
      .   BMiss        =  10.0e10,  ! Missing buffer data
@@ -163,7 +166,7 @@ c     .   ReasonCode   =  1,        ! Reason code for all corrected obs
      .   iMassMneDT   = 1,
      .   iMassMneDLat = 2,
      .   iMassMneDLon = 3
-      integer, parameter :: 
+      integer, parameter ::
      .   Masskt_List ( MassNVar ) = (/ kt_Height,    ! in m
      .                                 kt_AirTemp,   ! .. deg K
      .                                 kt_SpecHum /) ! .. g / kg
@@ -217,7 +220,7 @@ c     .   ReasonCode   =  1,        ! Reason code for all corrected obs
      .   iWindMneDT   = iMassMneDT,
      .   iWindMneDLat = iMassMneDLat,
      .   iWindMneDLon = iMassMneDLon
-      integer, parameter :: 
+      integer, parameter ::
      .   Windkt_List ( WindNVar ) = (/ kt_UWind, kt_VWind /)
       character (len=*), parameter ::
      .   WindPStr     =  MassPStr,
@@ -244,7 +247,7 @@ c     .   ReasonCode   =  1,        ! Reason code for all corrected obs
      .      kx_Def      ( : 27 ),   3,   2,   3,   4,
      .      kx_Def      ( :  3 ),   2,
      .      kx_Def      ( : 22 ), 298,
-     .      kx_Def      ( :  9 ),   7,   8, 
+     .      kx_Def      ( :  9 ),   7,   8,
      .      kx_Def      ( :  1 ), 285, 284,
      .      kx_Def      ( :  5 ),  16,  14,  10,  89,
      .      kx_Def      ( :  7 ), 114, 270, 268,
@@ -429,7 +432,7 @@ c     .   ReasonCode   =  1,        ! Reason code for all corrected obs
      .   MPI_Error       =  -8, ! Error from message passing interface routine
      .   Bad_BType       =  -9, ! Invalid buffer type
      .   Dealloc_Error   = -10, ! Deallocation error
-     .   Varying_SDate   = -11, ! Varying synoptic date in bufr data 
+     .   Varying_SDate   = -11, ! Varying synoptic date in bufr data
      .   Index_Error     = -12, ! Array/Char index error
      .   Bad_ProgName    = -13  ! Bad program name
 
@@ -442,8 +445,8 @@ c     .   ReasonCode   =  1,        ! Reason code for all corrected obs
          logical ::
      .      get_latest_QM,    ! = .true. to get QM for latest event regard-
      .                        !   less of the event specified in LastProgName
-     .      reverse_RadCor,   ! = .true. to remove the bias corrections 
-     .                        !   applied by NCEP's RadCor scheme.  
+     .      reverse_RadCor,   ! = .true. to remove the bias corrections
+     .                        !   applied by NCEP's RadCor scheme.
      .      write_drift,      ! = .true. to write drift infomation into
      .                        !   to output buffer file
      .      reject_OIQC       ! = .true. to reject observations that failed
@@ -616,7 +619,7 @@ c     .   ReasonCode   =  1,        ! Reason code for all corrected obs
          logical ::
      .      drift_avail ! = .true. if prep buffer file contains balloon drift
          integer ::     !   data.
-     .      LastPCode,  ! Buffer code for last program 
+     .      LastPCode,  ! Buffer code for last program
      .      CQC_PCode,  ! ... for complex quality control
      .      Rad_PCode,  ! ... for radcor
      .      VT_PCode,   ! ... for calculating virtual temperature
@@ -653,7 +656,7 @@ c     .   ReasonCode   =  1,        ! Reason code for all corrected obs
       integer, intent(in) ::   RCcode    ! reason code to use
 ! !SEE ALSO:
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !     23Jan2014  Meta     Original code
 ! EOP
 !-------------------------------------------------------------------------
@@ -684,7 +687,7 @@ c     .   ReasonCode   =  1,        ! Reason code for all corrected obs
 !                    ! = .false. otherwise
 ! !SEE ALSO:
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !     21Apr2004  C. Redder   Original code
 ! EOP
 !-------------------------------------------------------------------------
@@ -698,7 +701,7 @@ c     .   ReasonCode   =  1,        ! Reason code for all corrected obs
       do iVal = 1, NVal
          XX               = X ( iVal )
          Missing ( iVal ) = XX .gt. RMiss_down .and.
-     .                      XX .lt. RMiss_up 
+     .                      XX .lt. RMiss_up
       end do
 
       return
@@ -729,7 +732,7 @@ c     .   ReasonCode   =  1,        ! Reason code for all corrected obs
 !                          ! = .false. otherwise
 ! !SEE ALSO:
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !     21Apr2004  C. Redder   Original code
 ! EOP
 !-------------------------------------------------------------------------
@@ -740,7 +743,7 @@ c     .   ReasonCode   =  1,        ! Reason code for all corrected obs
       do iVal = 1, NVal
          XX               = X ( iVal )
          Missing ( iVal ) = XX .gt. BMiss_down .and.
-     .                      XX .lt. BMiss_up 
+     .                      XX .lt. BMiss_up
       end do
 
       return
@@ -753,7 +756,7 @@ c     .   ReasonCode   =  1,        ! Reason code for all corrected obs
 !-------------------------------------------------------------------------
 ! BOP
 !
-! !ROUTINE: Bufr_Inq_ () --- Inquire about buffer file parameters 
+! !ROUTINE: Bufr_Inq_ () --- Inquire about buffer file parameters
 !
 ! !DESCRIPTION:
 !
@@ -770,7 +773,7 @@ c     .   ReasonCode   =  1,        ! Reason code for all corrected obs
 !
 ! !SEE ALSO:
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !     03Jul2003  C. Redder   Original code
 ! EOP
 !-------------------------------------------------------------------------
@@ -787,7 +790,7 @@ c     .   ReasonCode   =  1,        ! Reason code for all corrected obs
 !-------------------------------------------------------------------------
 ! BOP
 !
-! !ROUTINE: Bufr_Inq_byFile () --- Inquire about buffer file parameters 
+! !ROUTINE: Bufr_Inq_byFile () --- Inquire about buffer file parameters
 !
 ! !DESCRIPTION:
 !
@@ -823,7 +826,7 @@ c     .   ReasonCode   =  1,        ! Reason code for all corrected obs
 !
 ! !SEE ALSO:
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !     03Jul2003  C. Redder   Original code
 !     31Jan2004  C. Redder   Added error handling for read error.
 !     03Mar2004  C. Redder   Add optional input argument, PName.
@@ -842,7 +845,7 @@ c     .   ReasonCode   =  1,        ! Reason code for all corrected obs
       character ( len = 8 ) :: SubSet
       real    :: RR, CQCRR, RadRR, VTRR
       integer :: lu, iret_mg, STag, SynopticTag, ProgIndx, ProgCode
-      real, parameter :: 
+      real, parameter ::
      .   IMin = -huge ( 1 ),
      .   IMax =  huge ( 1 )
 
@@ -1024,12 +1027,12 @@ c     .   ReasonCode   =  1,        ! Reason code for all corrected obs
 !
 ! !SEE ALSO:
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !     16Apr2003  C. Redder   Origional code
-!     09Jul2003  C. Redder   Fixed bug regarding the calculation of NYMDH 
+!     09Jul2003  C. Redder   Fixed bug regarding the calculation of NYMDH
 !     12Nov2003  C. Redder   Replaced the data sturcture, radcor, with
 !                            radcor_profiles.
-!     04Mar2004  C. Redder   Added optional arguments, PName and 
+!     04Mar2004  C. Redder   Added optional arguments, PName and
 !                            updated_QM.
 !     01Apr2004  C. Redder   Removed the optional arguments, PName and
 !                            updated_QM and added the optional argument,
@@ -1097,11 +1100,11 @@ c         JHr   = ( Julian ( NYMD ) - 1 ) * 24 + HH
 !
 ! !SEE ALSO:
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !     16Apr2003  C. Redder   Origional code
 !     12Nov2003  C. Redder   Replaced the data sturcture, radcor, with
 !                            radcor_profiles.
-!     04Mar2004  C. Redder   Added optional arguments, PName and 
+!     04Mar2004  C. Redder   Added optional arguments, PName and
 !                            updated_QM.
 !     01Apr2004  C. Redder   Removed the optional arguments, PName and
 !                            updated_QM and added the optional argument,
@@ -1165,7 +1168,7 @@ c         JHr   = ( Julian ( NYMD ) - 1 ) * 24 + HH
 !
 ! !SEE ALSO:
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !     16Apr2003  C. Redder   Origional code
 !     09Jul2003  C. Redder   Fixed bug by initializing SynBeg.
 !     12Nov2003  C. Redder   Replaced the data sturcture, radcor, with
@@ -1173,7 +1176,7 @@ c         JHr   = ( Julian ( NYMD ) - 1 ) * 24 + HH
 !     03Mar2004  C. Redder   Added code to set the components, ProgCode
 !                            and latest_QM in the data structures,
 !                            pbufr_mass and pbufr_wind.  Added optional
-!                            arguments, PName and updated_QM.  Added 
+!                            arguments, PName and updated_QM.  Added
 !                            code to handle processor number as well as
 !                            the sequence number.
 !     01Apr2004  C. Redder   Removed the optional arguments, PName and
@@ -1199,8 +1202,8 @@ c         JHr   = ( Julian ( NYMD ) - 1 ) * 24 + HH
       logical :: accept_meta, add_sonde, mass_report, wind_report,
      .           get_all_data, varying_dates, adpupa_processed,
      .           sonde_changed
-      integer :: lu,  iScan, iOb,  iSQN1, iSQN2, iPrN1, iPrN2, 
-     .           Nks, NTObs, NObs, iret_mg, iret_sb, 
+      integer :: lu,  iScan, iOb,  iSQN1, iSQN2, iPrN1, iPrN2,
+     .           Nks, NTObs, NObs, iret_mg, iret_sb,
      .           SynTag, SynTagF, NYMDH_file, NMObs, NWObs
       real    :: Lat, Lon,  Elev, PC
       character ( len = 8 ) :: SubSet
@@ -1212,8 +1215,8 @@ c         JHr   = ( Julian ( NYMD ) - 1 ) * 24 + HH
       call    Init_Options ( LocOptions )
       if ( present ( Options ))
      .   call Copy_Options ( Options,    LocOptions )
-      call    Copy_Options ( LocOptions, Mass % Options ) 
-      call    Copy_Options ( LocOptions, Wind % Options ) 
+      call    Copy_Options ( LocOptions, Mass % Options )
+      call    Copy_Options ( LocOptions, Wind % Options )
 
 !     Implement option to get all data
 !     --------------------------------
@@ -1229,10 +1232,10 @@ c         JHr   = ( Julian ( NYMD ) - 1 ) * 24 + HH
          return
       end if
 
-!     Assume a maximum number of soundings and total number of obs 
+!     Assume a maximum number of soundings and total number of obs
 !     during the first scan and save the observations.  If more space
 !     is needed then the required space can be determined in the first
-!     scan without saving all observations in the file.  During a 
+!     scan without saving all observations in the file.  During a
 !     second scan, the observations can be read and saved.
 !     -----------------------------------------------------------------
       Nks   = Nks_Max
@@ -1332,7 +1335,7 @@ c         JHr   = ( Julian ( NYMD ) - 1 ) * 24 + HH
 
 !        As long as there are more mg blocks ...
 !        ---------------------------------------
-         do while ( iret_mg .eq. 0 ) 
+         do while ( iret_mg .eq. 0 )
 
 !           If the next report exist ...
 !           ----------------------------
@@ -1348,7 +1351,7 @@ c         JHr   = ( Julian ( NYMD ) - 1 ) * 24 + HH
                   iSQN2         =  Meta %  SeqN
                   iPrN2         =  Meta % ProcN
                   sonde_changed =  iSQN2 .ne. iSQN1 .or.
-     .                             iPrN2 .ne. iPrN1 
+     .                             iPrN2 .ne. iPrN1
                   add_sonde     =  sonde_changed .and.
      .                             adpupa_processed
                   mass_report   =  Meta % RType / 100 .eq. 1
@@ -1510,7 +1513,7 @@ c                     print *, 'Nks = ', Nks
 !
 ! !SEE ALSO:
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !     11Aug2003  C. Redder   Origional code
 !     31Oct2003  C. Redder   Set default of and LTHist and ETHist to missing
 !     13Nov2003  C. Redder   Replaced the data structure radcor with
@@ -1520,8 +1523,8 @@ c                     print *, 'Nks = ', Nks
 !                            data structure, radcor_profiles.
 !     20Feb2004  C. Redder   Added the component, P_QM and ObQM, to the
 !                            sub-data structure, prep_vector, in the
-!                            data structure, prep_info. 
-!     21Apr2004  C. Redder   Added the capability of aquiring the 
+!                            data structure, prep_info.
+!     21Apr2004  C. Redder   Added the capability of aquiring the
 !                            data for the components, P_PC, ObPC and
 !                            P_Missing and ObMissing, in the structures,
 !                            pbufr_mass and pbufr_wind.
@@ -1542,7 +1545,7 @@ c                     print *, 'Nks = ', Nks
       integer, parameter :: NVar = MassNVar
       logical :: choose_mass,  drift_avail, reject_OIQC
       real    :: LTime, STime, BTime, DelTime, ET, StnElev
-      integer :: iPBeg, iPEnd, NPObs, MassNLev, WindNLev, 
+      integer :: iPBeg, iPEnd, NPObs, MassNLev, WindNLev,
      .           iSfcLev, iLev, TNLev, iVar, kt_iVar, iOb, NZ2,
      .           iMLev, iWLev, iBeg, rkx, rkx_max
       real,    dimension (:), pointer :: DLat, DLon, P, Obs, ETime, QM,
@@ -1560,15 +1563,15 @@ c                     print *, 'Nks = ', Nks
 !     ------------------------
       MassNLev = 0
       WindNLev = 0
-      if ( Mass % loaded ) MassNLev = Mass % NLev 
-      if ( Wind % loaded ) WindNLev = Wind % NLev 
+      if ( Mass % loaded ) MassNLev = Mass % NLev
+      if ( Wind % loaded ) WindNLev = Wind % NLev
 
 !     Determine the navagators for the current profile (or sounding)
 !     --------------------------------------------------------------
       iPBeg = 1
       if ( Nks .gt. 1 ) iPBeg = RadData % Meta % ksLoc ( Nks - 1 )
      .                        + RadData % Meta % ksLen ( Nks - 1 )
-      NPObs = MassNLev * MassNVar + WindNLev * WindNVar 
+      NPObs = MassNLev * MassNVar + WindNLev * WindNVar
       iPEnd = iPBeg + NPObs  - 1
 
 !     Check bounds
@@ -1630,7 +1633,7 @@ c                     print *, 'Nks = ', Nks
       iSfcLev  = 0
       do iLev = 1, MassNLev
          iMLev = MIndx ( iLev )
-         if ( Mass % Cat ( iLev ) .eq. 0 ) iSfcLev = iMLev            
+         if ( Mass % Cat ( iLev ) .eq. 0 ) iSfcLev = iMLev
          Z2     ( iMLev ) =  Mass % Obs      ( iVarHeight, iLev )
          P2     ( iMLev ) =  Mass % P        ( iLev )
          ETime2 ( iMLev ) =  Mass % ETime    ( iLev )
@@ -1846,7 +1849,7 @@ c      if ( TNLev .gt. 0 ) STime = ETime2 ( 1 )
 !
 ! !SEE ALSO:
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !     11Aug2003  C. Redder   Origional code
 !     13Nov2003  C. Redder   Replaced the data structure radcor with
 !                            radcor_profiles.
@@ -1855,8 +1858,8 @@ c      if ( TNLev .gt. 0 ) STime = ETime2 ( 1 )
 !                            data structure, radcor_profiles.
 !     20Feb2004  C. Redder   Added the component, P_QM and ObQM, to the
 !                            sub-data structure, prep_vector, in the
-!                            data structure, prep_info. 
-!     21Apr2004  C. Redder   Added the capability of aquiring the 
+!                            data structure, prep_info.
+!     21Apr2004  C. Redder   Added the capability of aquiring the
 !                            data from the components, P_PC, ObPC and
 !                            P_Missing and ObMissing, in the structures,
 !                            pbufr_mass and pbufr_wind.
@@ -1867,7 +1870,7 @@ c      if ( TNLev .gt. 0 ) STime = ETime2 ( 1 )
 !     02Sep2004  C. Redder   Added the component, QC_Local, to the
 !                            type (i.e. data structures), prep_vector
 !                            (in prep_infor), pbufr_mass and pbufr_wind
-!     02Nov2006  C. Redder   Set the component kt_humidity in the 
+!     02Nov2006  C. Redder   Set the component kt_humidity in the
 !                            variable Mass of type pbufr_mass.
 !     21Jan2007  C. Redder   Set P_PC_Max and ObPC_Max in the data
 !                            structures, pbufr_max and pbufr_wind.
@@ -1901,7 +1904,7 @@ c      if ( TNLev .gt. 0 ) STime = ETime2 ( 1 )
 
 !     Get list of ...
 !     ---------------
-      RepType  => Prep % Vector % RepType ( iPBeg : iPEnd ) 
+      RepType  => Prep % Vector % RepType ( iPBeg : iPEnd )
       MassNObs =  0
       WindNObs =  0
       do iOb = 1, NPObs
@@ -2080,10 +2083,10 @@ c      if ( TNLev .gt. 0 ) STime = ETime2 ( 1 )
 !
 ! !SEE ALSO:
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !     16Apr2003  C. Redder   Origional code
 !     09Jul2003  C. Redder   Added optional argument, cleanup, and fixed
-!                            bug regarding the calculation of NYMDH 
+!                            bug regarding the calculation of NYMDH
 !     12Nov2003  C. Redder   Replaced the data sturcture, radcor, with
 !                            radcor_profiles.
 !     20Apr2004  C. Redder   Added input optional argument, Options.
@@ -2161,7 +2164,7 @@ c      if ( TNLev .gt. 0 ) STime = ETime2 ( 1 )
 !
 ! !SEE ALSO:
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !     16Apr2003  C. Redder   Origional code
 !     09Jul2003  C. Redder   Added optional argument, cleanup
 !     12Nov2003  C. Redder   Replaced the data sturcture, radcor, with
@@ -2237,7 +2240,7 @@ c      if ( TNLev .gt. 0 ) STime = ETime2 ( 1 )
 !
 ! !SEE ALSO:
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !     16Apr2003  C. Redder   Origional code
 !     09Jul2003  C. Redder   Added optional argument, cleanup
 !     12Nov2003  C. Redder   Replaced the data sturcture, radcor, with
@@ -2269,6 +2272,8 @@ c      if ( TNLev .gt. 0 ) STime = ETime2 ( 1 )
      .           ThisPCode, LastPCode
       real    :: Lat, Lon, Elev
       character ( len = 8 ) :: SubSet
+      character ( len = 5 ) :: cmaxout
+      integer :: imaxout, length
 
 !     Implement options
 !     -----------------
@@ -2280,10 +2285,10 @@ c      if ( TNLev .gt. 0 ) STime = ETime2 ( 1 )
       call    Init_Options ( LocOptions )
       if ( present ( Options ))
      .   call Copy_Options ( Options,    LocOptions     )
-      call    Copy_Options ( LocOptions, Mass % Options ) 
-      call    Copy_Options ( LocOptions, Wind % Options ) 
+      call    Copy_Options ( LocOptions, Mass % Options )
+      call    Copy_Options ( LocOptions, Wind % Options )
 
-!     Determine the output program code 
+!     Determine the output program code
 !     ---------------------------------
       call Bufr_Inq_byFile ( Obs % ObsFile, stat,
      .                       PName = LocOptions % ThisProgName,
@@ -2364,10 +2369,21 @@ c      if ( TNLev .gt. 0 ) STime = ETime2 ( 1 )
 
 !     Set up the Bufr software ...
 !     ----------------------------
-      call OpenBF ( lu_in,  'IN',  lu_in ) ! ... to read 
+      call OpenBF ( lu_in,  'IN',  lu_in ) ! ... to read
       call OpenBF ( lu_out, 'OUT', lu_in ) ! ... and write the data
 
-      call maxout(15000)
+      CALL GET_ENVIRONMENT_VARIABLE('BUFR_MAXOUT',cmaxout,length)
+      if (length > 0) then
+        read(cmaxout,*) imaxout
+        if (imaxout > 15000) then
+          call maxout(imaxout)
+        else
+          call maxout(15000)
+        end if
+      else
+        call maxout(15000)
+      end if
+
 !     Set up for Y2k compliant dates
 !     ------------------------------
       call DateLen ( 10 )
@@ -2419,7 +2435,7 @@ c      if ( TNLev .gt. 0 ) STime = ETime2 ( 1 )
 
 !     As long as there are more mg blocks ...
 !     ---------------------------------------
-      do while ( iret_mg .eq. 0 ) 
+      do while ( iret_mg .eq. 0 )
 
 !        If the next report exist ...
 !        ----------------------------
@@ -2544,7 +2560,7 @@ c             print *, nks
 !BOP
 !
 ! !IROUTINE:  Obs_Reorder --- Reorder prep data structure
-! 
+!
 ! !INTERFACE:
       subroutine Obs_Reorder ( Prep, Obs, reverse )
 !
@@ -2563,17 +2579,17 @@ c             print *, nks
      .   Obs                  ! data structure
 !
 ! !DESCRIPTION:
-!     This routine reorders the mass compoment of the radcor and the 
+!     This routine reorders the mass compoment of the radcor and the
 !     prep data structure except the sorting indices (i.e. the
 !     components Indx in the radcor data structure)
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !     21Jul2003  C. Redder  Original code
 !     01Dec2003  C. Redder  Removed the component, QM, from the data
 !                           structure, prep_info.
 !     20Feb2004  C. Redder  Added the component, P_QM and ObQM, to the
 !                           sub-data structure, prep_vector, in the
-!                           data structure, prep_info. 
+!                           data structure, prep_info.
 !EOP
 !-------------------------------------------------------------------------
 
@@ -2640,7 +2656,7 @@ c             print *, nks
 !
 ! !SEE ALSO:
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !     20Apr2004  C. Redder  Origional code
 !     16Jun2004  C. Redder  Added the component, write_drift, to the
 !                           type, prep_options.
@@ -2649,9 +2665,9 @@ c             print *, nks
 !-------------------------------------------------------------------------
 
       this % get_latest_QM    = .false.
-      this % reverse_RadCor   = .false. 
-      this % write_drift      = .false. 
-      this % reject_OIQC      = .false. 
+      this % reverse_RadCor   = .false.
+      this % write_drift      = .false.
+      this % reject_OIQC      = .false.
       this % LastProgName     = ' '
       this % ThisProgName     = ' '
 
@@ -2677,7 +2693,7 @@ c             print *, nks
 !
 ! !INPUT PARAMETERS:
       type ( prep_options ), intent (in)  ::
-     .   this_in 
+     .   this_in
 !
 ! !OUTPUT PARAMETERS:
       type ( prep_options ), intent (out) ::
@@ -2685,7 +2701,7 @@ c             print *, nks
 !
 ! !SEE ALSO:
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !     20Apr2004  C. Redder  Origional code
 !     16Jun2004  C. Redder  Added the component, write_drift, to the
 !                           type, prep_options.
@@ -2739,17 +2755,17 @@ c             print *, nks
 !
 ! !SEE ALSO:
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !     17Apr2003  C. Redder   Origional code
 !     12Nov2003  C. Redder   Replaced the data sturcture, radcor, with
 !                            radcor_profiles.
 !     20Feb2004  C. Redder   Added the component, P_QM and ObQM, to the
 !                            sub-data structure, prep_vector, in the
-!                            data structure, prep_info. 
+!                            data structure, prep_info.
 !     26Apr2004  C. Redder   Added the components, P_PC and ObPC, to
 !                            the data structure, prep_vector
 !     14Jun2004  C. Redder   Fixed index bug for the array,
-!                            qcx_names_file in the data stucture, 
+!                            qcx_names_file in the data stucture,
 !                            radcor_profiles
 !     21Nov2006  C. Redder   Change modules for accessing MetaStr_Raobs
 !                            from m_RadData to m_RadLists.
@@ -2783,7 +2799,7 @@ c             print *, nks
 !     ----------------------------------
       Obs % Lists %  kx_names_file ( : nkx_file  ) = kx_names_file
       Obs % Lists %  kx_meta_file  ( : nkx_file  ) = ' '
-      do iList = 1, kx_RaobListSz 
+      do iList = 1, kx_RaobListSz
          Obs % Lists %  kx_meta_file  ( kx_RaobList ( iList ))
      .       = MetaStr_Raobs
       end do
@@ -2849,7 +2865,7 @@ c             print *, nks
 !           Find the end of the current mnemonic
 !           ------------------------------------
             LMne    = scan ( OldEvn ( iBegOld : ), ' ' ) - 1
-            if ( LMne .lt. 0 ) LMne = LEvn - iBegOld + 1 
+            if ( LMne .lt. 0 ) LMne = LEvn - iBegOld + 1
             iEndOld = iBegOld + LMne - 1
             NMne    = NMne    + 1
 
@@ -2866,8 +2882,8 @@ c             print *, nks
 
 !              ... new event string
 !              --------------------
-               iEndNew  = min ( iBegNew + LMne, LEvn )              
-               Prep % WrMne ( iVar, NMne )              
+               iEndNew  = min ( iBegNew + LMne, LEvn )
+               Prep % WrMne ( iVar, NMne )
      .                  = OldEvn ( iBegOld : iEndOld )
                iBegNew  = iBegNew  + LMne + 1
 
@@ -2886,8 +2902,8 @@ c             print *, nks
             if ( NBlks .lt. 0 ) iBegOld = LEvn + 1
          end do
 
-!        If the number of mneumonics does not exceed the maximum 
-!        ------------------------------------------------------- 
+!        If the number of mneumonics does not exceed the maximum
+!        -------------------------------------------------------
          if ( NMne .gt. NMne_Max ) then
 
 !           ... return with error status
@@ -2938,7 +2954,7 @@ c             print *, nks
 !
 ! !SEE ALSO:
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !     17Apr2003  C. Redder   Origional code
 !     09Jul2003  C. Redder   Fixed bug by initializing istat to 0
 !     12Nov2003  C. Redder   Replaced the data sturcture, radcor, with
@@ -3026,13 +3042,13 @@ c             print *, nks
 ! !INPUT/OUTPUT PARAMETERS:
       implicit   NONE
       type ( pbufr_mass ),   intent (inout),  optional ::
-     .   Mass              ! Input local meta values 
+     .   Mass              ! Input local meta values
       type ( pbufr_wind ),   intent (inout),  optional ::
-     .   Wind              ! Input local meta values 
+     .   Wind              ! Input local meta values
 !
 ! !SEE ALSO:
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !     13Aug2003  C. Redder   Original code
 ! EOP
 !-------------------------------------------------------------------------
@@ -3062,15 +3078,15 @@ c             print *, nks
 ! !INPUT PARAMETERS:
       implicit   NONE
       type ( prep_info ),    intent (in)    ::
-     .   Prep              ! Input local meta values 
+     .   Prep              ! Input local meta values
 !
 ! !INPUT/OUTPUT PARAMETERS:
       type ( pbufr_file ),   intent (inout) ::
-     .   File              ! Output local meta values 
+     .   File              ! Output local meta values
 !
 ! !SEE ALSO:
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !     03Sep2003  C. Redder   Original code
 ! EOP
 !.................................................................
@@ -3100,7 +3116,7 @@ c             print *, nks
 ! !INPUT PARAMETERS:
       implicit   NONE
       type ( pbufr_file ),   intent (in)  ::
-     .   File1             ! Input local data structure 
+     .   File1             ! Input local data structure
 !
 ! !OUTPUT PARAMETERS:
       type ( pbufr_file ),   intent (out) ::
@@ -3108,7 +3124,7 @@ c             print *, nks
 !
 ! !SEE ALSO:
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !     21Jul2007  C. Redder   Original code
 ! EOP
 !.................................................................
@@ -3139,15 +3155,15 @@ c             print *, nks
 ! !INPUT PARAMETERS:
       implicit   NONE
       type ( pbufr_meta ),   intent (in)  ::
-     .   Meta1             ! Input local meta values 
+     .   Meta1             ! Input local meta values
 !
 ! !OUTPUT PARAMETERS:
       type ( pbufr_meta ),   intent (out) ::
-     .   Meta2             ! Output local meta values 
+     .   Meta2             ! Output local meta values
 !
 ! !SEE ALSO:
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !     17Apr2003  C. Redder   Original code
 !     11Mar2004  C. Redder   Added the component, ProcN, to the data
 !                            structure, pbufr_meta
@@ -3191,7 +3207,7 @@ c             print *, nks
 ! !INPUT PARAMETERS:
       implicit   NONE
       type ( pbufr_meta ),  intent (in) ::
-     .   Meta             ! Local meta values 
+     .   Meta             ! Local meta values
       integer,              intent (in) ::
      .   iSonde           ! Array index number for the selected sonde
 !
@@ -3203,9 +3219,9 @@ c             print *, nks
 !
 ! !SEE ALSO:
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !     17Apr2003  C. Redder   Original code
-!     04Aug2003  C. Redder   Changed input/output argument, NSondes, to 
+!     04Aug2003  C. Redder   Changed input/output argument, NSondes, to
 !                            the input argument, iSonde.
 !     11Feb2004  C. Redder   Added the components, kx and kx_file, to
 !                            the data structure, radcor_meta.
@@ -3271,7 +3287,7 @@ c             print *, nks
 !
 ! !SEE ALSO:
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !     17Apr2003  C. Redder   Origional code
 !     05Sep2003  C. Redder   Added code to accept soundings based on the
 !                            report type and office note 29 report type
@@ -3306,7 +3322,7 @@ c             print *, nks
       else
          accept = .false.
       end if
-      if ( .not. Missing (  2 )) then         ! ... longitude 
+      if ( .not. Missing (  2 )) then         ! ... longitude
          Meta % Lon       = HDR (  2 )        ! required info
          if ( Meta % Lon .gt. 180.0 )
      .        Meta % Lon  = Meta % Lon - 360.0
@@ -3366,7 +3382,7 @@ c             print *, nks
          RType   = nint ( HDR ( 7 ))
          accept  = mod ( RType, 100 ) .eq. 20 ! Accept only rawinsondes in
                                               ! ADPUPA reports.  Skip
-      end if                                  ! dropsonde, pibal and 
+      end if                                  ! dropsonde, pibal and
                                               ! "class sounding" reports.
       return
       end subroutine Get_PrepMeta
@@ -3405,7 +3421,7 @@ c             print *, nks
 !
 ! !SEE ALSO:
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !     17Apr2003  C. Redder   Original code
 !     05Aug2003  C. Redder   Added optional argument, Meta
 !     13Aug2003  C. Redder   Major changes to the interface and internal
@@ -3413,14 +3429,14 @@ c             print *, nks
 !                            rather than radcor.
 !     28Jan2004  C. Redder   Added code to extract the drift lat/lon
 !     26Apr2004  C. Redder   Added code to retreive program codes
-!     09Jun2004  C. Redder   Fixed compilation bug by changing the 
+!     09Jun2004  C. Redder   Fixed compilation bug by changing the
 !                            attribute from integer to real for internal
 !                            variable, PC_Max.
 !     01Sep2004  C. Redder   Condensed code that assigns QC to a single
 !                            call to the routine, Check_PrepQM, which has
 !                            a revised interface.
-!     02Nov2006  C. Redder   Set the component kt_humidity in the 
-!                            variable Mass of type pbufr_mass.  Added 
+!     02Nov2006  C. Redder   Set the component kt_humidity in the
+!                            variable Mass of type pbufr_mass.  Added
 !                            code to convert humidity from specific
 !                            humidity to dew point temperature.
 !     07Dec2006  C. Redder   Renamed kt_HumRadcor to kt_HumBufr
@@ -3429,9 +3445,9 @@ c             print *, nks
 !                            Added code to reject all humidity obs
 !                            if corresponding temperature is also rejected
 !     20Jul2007  C. Redder   Split call to the routine, ConvertH_Prep,
-!                            into two.  The first now performs a range 
+!                            into two.  The first now performs a range
 !                            check and the second a conversion to dew
-!                            point.  This was done as part of a bug 
+!                            point.  This was done as part of a bug
 !                            fix to the computation of air temperature
 !                            from virtual temperature and vice versa.
 !                            A additional call to the routine,
@@ -3489,15 +3505,15 @@ c             print *, nks
       call UFBINT ( lu, Bufr ( : 1, : ), 1, NLev_Max, NLev, 'CAT' )
       NLev = min ( NLev_Max, NLev )
 
-!     7 - PREPBUFR data level category (local descriptor 0-01-194) defined as: 
-!               0 - Surface level (mass reports only) 
-!               1 - Mandatory level (upper-air profile reports) 
-!               2 - Significant temperature level (upper-air profile reports) 
-!               3 - Winds-by-pressure level (upper-air profile reports) 
-!               4 - Winds-by-height level (upper-air profile reports) 
-!               5 - Tropopause level (upper-air profile reports) 
-!               6 - Reports on a single level (e.g., aircraft, satellite-wind, surface wind, precipitable water retrievals, etc.) {default} 
-!               9 - Auxiliary levels generated via interpolation from spanning levels (upper-air profile reports) 
+!     7 - PREPBUFR data level category (local descriptor 0-01-194) defined as:
+!               0 - Surface level (mass reports only)
+!               1 - Mandatory level (upper-air profile reports)
+!               2 - Significant temperature level (upper-air profile reports)
+!               3 - Winds-by-pressure level (upper-air profile reports)
+!               4 - Winds-by-height level (upper-air profile reports)
+!               5 - Tropopause level (upper-air profile reports)
+!               6 - Reports on a single level (e.g., aircraft, satellite-wind, surface wind, precipitable water retrievals, etc.) {default}
+!               9 - Auxiliary levels generated via interpolation from spanning levels (upper-air profile reports)
 
 !     Return only if NObs is desired
 !     ------------------------------
@@ -3536,7 +3552,7 @@ c             print *, nks
       PC_Max = 0.0
       do iLev = 1, NLev
          if ( .not. PCMissing ( iLev ))
-     .      PC_Max = max ( PC_Max, P_PC ( iLev )) 
+     .      PC_Max = max ( PC_Max, P_PC ( iLev ))
       end do
       Mass % P_PC_Max = nint ( PC_Max )
 
@@ -3583,7 +3599,7 @@ c             print *, nks
          Mass % P         ( iLev ) = P         ( iiLev )
          Mass % P_m       ( iLev ) = P_m       ( iiLev )
          Mass % P_e       ( iLev ) = P_e       ( iiLev )
-         Mass % Cat       ( iLev ) = Cat       ( iiLev )            
+         Mass % Cat       ( iLev ) = Cat       ( iiLev )
          Mass % Indx      ( iLev ) =             iiLev
          Mass % ETime     ( iLev ) = ET        ( iiLev )
          Mass % P_QM      ( iLev ) = P_QM      ( iiLev )
@@ -3641,9 +3657,9 @@ c             print *, nks
 !        --------------------------------------------
          do iLev = 1, NLev
             if ( .not. PCMissing ( iLev ))
-     .         PC_Max = max ( PC_Max, ObPC ( iLev )) 
+     .         PC_Max = max ( PC_Max, ObPC ( iLev ))
          end do
- 
+
 !        Save the mass data
 !        ------------------
          M       = MassM ( iVar )
@@ -3662,13 +3678,13 @@ c             print *, nks
 !           ----------------------------------------------------------
             if ( .not. ObMissing_ )  Obs_  = M * Obs_  + B
             if ( .not. FCMissing_ )  ObFC_ = M * ObFC_ + B
-      
+
 !           ... and save the values
 !           -----------------------
             Mass % ObQM      ( iVar, iLev ) = ObQM_
             Mass % ObPC      ( iVar, iLev ) = ObPC_
             Mass % ObFC      ( iVar, iLev ) = ObFC_
-            Mass % Obs       ( iVar, iLev ) = Obs_ 
+            Mass % Obs       ( iVar, iLev ) = Obs_
             Mass % ObMissing ( iVar, iLev ) = ObMissing_
             Mass % FCMissing ( iVar, iLev ) = FCMissing_
          end do
@@ -3821,7 +3837,7 @@ c      end do
 !
 ! !SEE ALSO:
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !     17May2004  C. Redder   Original code
 ! EOP
 !-------------------------------------------------------------------------
@@ -3882,13 +3898,13 @@ c      end do
 !
 ! !SEE ALSO:
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !     03May2004  C. Redder   Original code
 ! EOP
 !-------------------------------------------------------------------------
 
-      real, parameter :: TCor_Thresh = 10.0 * T0 * Tol 
-      integer :: iLev, NLev, Var, iHVar, iList, List1Sz, List2Sz, 
+      real, parameter :: TCor_Thresh = 10.0 * T0 * Tol
+      integer :: iLev, NLev, Var, iHVar, iList, List1Sz, List2Sz,
      .           kt_in, kt_out
       logical :: Missing_Z, Missing_T, Missing_H,
      .           valid, recompute_Hum, in_range
@@ -3905,7 +3921,7 @@ c      end do
          Missing_Z = Mass     % ObMissing     ( iVarHeight, iLev )
          Missing_T = Mass     % ObMissing     ( iVarTemp,   iLev )
          Missing_H = Mass     % ObMissing     ( iVarHum,    iLev )
-         if ( .not. Missing_Z ) 
+         if ( .not. Missing_Z )
      .      Mass % Obs                        ( iVarHeight, iLev )
      .             = Mass     % Obs           ( iVarHeight, iLev )
      .             + RadInfo  % ZCor_RADCOR               ( iLev )
@@ -3944,7 +3960,7 @@ c      end do
          TCor_diff     = abs ( RadInfo % TCor_RADCOR   ( iLev )
      .                       - RadInfo % TCor_preVT    ( iLev ))
          HCor_after_   = abs ( RadInfo % HCor_after    ( iLev ))
-         HCor_Thresh   = 10.0 * Tol * Hum              ( iLev ) 
+         HCor_Thresh   = 10.0 * Tol * Hum              ( iLev )
          recompute_Hum = valid .and. Mass % H_VIRTMP   ( iLev ) .and.
      .                   TCor_RADCOR_ .gt. TCor_Thresh  .and.
      .                 ( TCor_diff    .gt. TCor_Thresh  .or.
@@ -3985,7 +4001,7 @@ c      end do
      .                kt_out   = kt_out,
      .                Obs      = Hum,
      .                SVP_Eqtn = SVP_Eqtn )
- 
+
 !     ... adjust by conserving dew point depression
 !     ---------------------------------------------
       do iList = 1, List2Sz
@@ -4052,7 +4068,7 @@ c      end do
 !
 ! !SEE ALSO:
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !     06Nov2006  C. Redder   Original code
 !     22Dec2006  C. Redder   Fixed bug in generating first guess values
 !                            to be converted.
@@ -4091,7 +4107,7 @@ c      end do
          P         ( iLev )  = Mass % P              ( iLev )
          T         ( iLev )  = Mass % Obs  ( iVarTemp, iLev )
          H         ( iLev )  = Mass % Obs  ( iVarHum,  iLev )
-         if ( convert_ob ) 
+         if ( convert_ob )
      .      Hum    ( iLev )  = H ( iLev )
       end do
 
@@ -4238,16 +4254,16 @@ c      end do
 !
 ! !SEE ALSO:
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !     06May2004  C. Redder   Original code
 !     03Jun2004  C. Redder   Added the optional argument, fcst.
-!     20Jul2007  C. Redder   Added check to local QC flag during 
+!     20Jul2007  C. Redder   Added check to local QC flag during
 !                            the conversion.
 ! EOP
 !-------------------------------------------------------------------------
 
       real, parameter ::   ! Calculation are restricted to levels in the
-     .   P_top = 80.0      !   troposphere or near the tropopause.   
+     .   P_top = 80.0      !   troposphere or near the tropopause.
      .
       integer, parameter ::
      .   NMne  = MassNObMne
@@ -4270,7 +4286,7 @@ c      end do
       if ( present  ( fcst )) convert_fcst = fcst
 
 !     Set default to previous temperature
-!     ---------------------------------- 
+!     ----------------------------------
       NLev    = Mass % NLev
       if ( convert_fcst ) then
          do iLev = 1, NLev
@@ -4339,7 +4355,7 @@ c      end do
 
 !     Compute VT to AT
 !     ----------------
-      call ComputeVT ( List ( : ListSz ), P, Hum, 
+      call ComputeVT ( List ( : ListSz ), P, Hum,
      .                 kt_in    = kt_in,
      .                 kt_out   = kt_out,
      .                 Obs      = T,
@@ -4387,7 +4403,7 @@ c      end do
 !     19May2004  C. Redder   Made changes on handling missing data.
 !     16Jun2004  C. Redder   Added the component, write_drift, to the
 !                            type, prep_options.
-!     02Nov2006  C. Redder   Added code to convert humidity from dew 
+!     02Nov2006  C. Redder   Added code to convert humidity from dew
 !                            point temperature to specific humidity.
 !     21Jul2007  C. Redder   Added code to transfer data structure to
 !                            local space
@@ -4464,9 +4480,9 @@ c      end do
             ObFC      ( iiLev ) =   Mass2 % ObFC      ( iVar, iLev )
             ObMissing_          =   Mass2 % ObMissing ( iVar, iLev )
             FCMissing_          =   Mass2 % FCMissing ( iVar, iLev )
-            if ( .not. ObMissing_ ) 
+            if ( .not. ObMissing_ )
      .         Obs    ( iiLev ) = ( Obs  ( iiLev ) - B ) / M
-            if ( .not. FCMissing_ ) 
+            if ( .not. FCMissing_ )
      .         ObFC   ( iiLev ) = ( ObFC ( iiLev ) - B ) / M
             ObQM      ( iiLev ) =   Mass2 % ObQM      ( iVar, iLev )
             RC        ( iiLev ) =   ReasonCode
@@ -4577,8 +4593,8 @@ c            if ( QC_ .eq. QC_Rejected ) then
 !-------------------------------------------------------------------------
 !BOP
 !
-! !IROUTINE:  Mass2Mass --- Copy data structure of type 
-! 
+! !IROUTINE:  Mass2Mass --- Copy data structure of type
+!
 ! !INTERFACE:
       subroutine Mass2Mass ( Mass1, Mass2 )
 !
@@ -4595,7 +4611,7 @@ c            if ( QC_ .eq. QC_Rejected ) then
 !
 ! !DESCRIPTION:
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !     21Jul2007  C. Redder  Original code
 !EOP
 !-------------------------------------------------------------------------
@@ -4632,7 +4648,7 @@ c            if ( QC_ .eq. QC_Rejected ) then
 
       do iVar = 1, NVar
       do iLev = 1, NLev
-         Mass2 % Obs      ( iVar,iLev ) = Mass1 % Obs      ( iVar,iLev ) 
+         Mass2 % Obs      ( iVar,iLev ) = Mass1 % Obs      ( iVar,iLev )
          Mass2 % ObFC     ( iVar,iLev ) = Mass1 % ObFC     ( iVar,iLev )
          Mass2 % ObQM     ( iVar,iLev ) = Mass1 % ObQM     ( iVar,iLev )
          Mass2 % ObPC     ( iVar,iLev ) = Mass1 % ObPC     ( iVar,iLev )
@@ -4680,7 +4696,7 @@ c            if ( QC_ .eq. QC_Rejected ) then
 !
 ! !SEE ALSO:
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !     17Apr2003  C. Redder   Origional code
 !     05Aug2003  C. Redder   Added optional argument, Meta
 !     13Aug2003  C. Redder   Major changes to the interface and internal
@@ -4691,7 +4707,7 @@ c            if ( QC_ .eq. QC_Rejected ) then
 !                            library.
 !     26Apr2004  C. Redder   Added code to retreive program codes
 !     03Jun2004  C. Redder   Added code to process forecast data.
-!     09Jun2004  C. Redder   Fixed compilation bug by changing the 
+!     09Jun2004  C. Redder   Fixed compilation bug by changing the
 !                            attribute from integer to real for internal
 !                            variable, PC_Max.
 !     01Sep2004  C. Redder   Condensed code that assigns QC to a single
@@ -4774,7 +4790,7 @@ c      call UFBINT      ( lu, PBufr, NPMne, NLev_Max, NLev, PStr )
       PC_Max = 0.0
       do iLev = 1, NLev
          if ( .not. PCMissing ( iLev ))
-     .      PC_Max = max ( PC_Max, P_PC ( iLev )) 
+     .      PC_Max = max ( PC_Max, P_PC ( iLev ))
       end do
       Wind % P_PC_Max = nint ( PC_Max )
 
@@ -4786,7 +4802,7 @@ c      call UFBINT      ( lu, PBufr, NPMne, NLev_Max, NLev, PStr )
 
 !     Get the drift data (if available)
 !     ---------------------------------
-      call UFBINT  ( lu, DBufr, NDMne, NLev_Max, NL, DrStr ) 
+      call UFBINT  ( lu, DBufr, NDMne, NLev_Max, NL, DrStr )
       drift_avail =  NL .eq. NLev  ! Determine if elapsed time is available
       iMne = iWindMneDT
       call B2DtoR1D    ( DBufr ( iMne : iMne, : NL   ), ET   )
@@ -4845,7 +4861,7 @@ c      call UFBINT      ( lu, PBufr, NPMne, NLev_Max, NLev, PStr )
       PC_Max  = 0.0
       do iLev = 1, NLev
          if ( .not. PCMissing ( iLev ))
-     .      PC_Max = max ( PC_Max, ObPC ( iLev )) 
+     .      PC_Max = max ( PC_Max, ObPC ( iLev ))
       end do
       Wind % ObPC_Max = nint ( PC_Max )
 
@@ -4862,7 +4878,7 @@ c      call UFBINT      ( lu, PBufr, NPMne, NLev_Max, NLev, PStr )
          Wind % P_QM         ( iLev ) = P_QM      ( iiLev )
          Wind % P_PC         ( iLev ) = P_PC      ( iiLev )
          Wind % P_Missing    ( iLev ) = P_Missing ( iiLev )
-         Wind % Cat          ( iLev ) = Cat       ( iiLev )            
+         Wind % Cat          ( iLev ) = Cat       ( iiLev )
          Wind % Indx         ( iLev ) =             iiLev
          Wind % ETime        ( iLev ) = ET        ( iiLev )
          Wind % Obs       ( 1, iLev ) = UObs      ( iiLev )
@@ -4973,7 +4989,7 @@ c      end if
 !     22Feb2004  C. Redder   Added code to process pressure data.
 !     11Mar2004  C. Redder   Removed code to process pressure data and
 !                            observation data.  Added code to ensure that
-!                            DLon is written to file with the value in 
+!                            DLon is written to file with the value in
 !                            the range [0,360)
 !     19Apr2004  C. Redder   Made the argument, Wind, required.
 !     16Jun2004  C. Redder   Added the component, write_drift, to the
@@ -5052,7 +5068,7 @@ c     .                    QC   = QC_Local )
 !BOP
 !
 ! !IROUTINE:  Sort_byLev --- Sort each sounding by level
-! 
+!
 ! !INTERFACE:
       subroutine Sort_byLev ( Indx, Man, Exp )
 !
@@ -5074,7 +5090,7 @@ c     .                    QC   = QC_Local )
 !     levels are expressed as mantessa and exponents to eliminate
 !     uncertainty due to round-off error.
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !     12Aug2003  C. Redder  Original code
 !EOP
 !-------------------------------------------------------------------------
@@ -5116,7 +5132,7 @@ c     .                    QC   = QC_Local )
 !-------------------------------------------------------------------------
 ! BOP
 !
-! !ROUTINE: SfcTime () --- Estimate the observation time at the surface 
+! !ROUTINE: SfcTime () --- Estimate the observation time at the surface
 !
 ! !DESCRIPTION:
 !     Given the station elevation, this routine estimates the ob time
@@ -5147,7 +5163,7 @@ c     .                    QC   = QC_Local )
 !
 ! EOP
 !-------------------------------------------------------------------------
- 
+
       real    :: Z_, ET_, Del_Above, Del, ET1, Z1, ET2, Z2, RRate
       integer :: iLev_Above, NLev, iLev, iLev1, iLev2
       logical :: mask_in
@@ -5168,12 +5184,12 @@ c     .                    QC   = QC_Local )
 
 !     Find the nearest point above the surface.
 !     -----------------------------------------
-      Del_Above   = DelZ_Max 
+      Del_Above   = DelZ_Max
       iLev_Above  = 0
       do iLev = 1, NLev
          mask_in = Mask ( iLev )
          if ( mask_in ) then               ! ... that is acceptable
-            Del = Z ( iLev ) - Elev 
+            Del = Z ( iLev ) - Elev
             if ( Del .gt. DelZ_Min .and.
      .           Del .le. Del_Above ) then ! ... below a maximum height
                iLev_Above = iLev
@@ -5195,7 +5211,7 @@ c     .                    QC   = QC_Local )
       do iLev = 1, NLev
          mask_in = Mask ( iLev )
          if ( mask_in ) then               ! ... that is acceptable
-            Del = ET ( iLev ) - ET1 
+            Del = ET ( iLev ) - ET1
             if ( Del .lt. DelET_Max .and.  ! ... with enough distance above
      .           Del .ge. Del_Above ) then ! ... but below a maximum height
                iLev_Above = iLev           !   in order to obtain a robust
@@ -5238,7 +5254,7 @@ c     .                    QC   = QC_Local )
 !-------------------------------------------------------------------------
 ! BOP
 !
-! !ROUTINE: B1DtoI1D () --- Copy 1-D buffer array to 1-D, native integer array 
+! !ROUTINE: B1DtoI1D () --- Copy 1-D buffer array to 1-D, native integer array
 !
 ! !DESCRIPTION:
 !     This routine copies a 1-dimensional, buffer array to a 1-dimension,
@@ -5250,7 +5266,7 @@ c     .                    QC   = QC_Local )
 ! !INPUT PARAMETERS:
       implicit   NONE
       real ( kind = BKind ), intent (in)    ::
-     .   B1D (:)           ! 1-D input buffer array 
+     .   B1D (:)           ! 1-D input buffer array
 !
 ! !OUTPUT PARAMETERS:
       integer,               intent (inout) ::
@@ -5258,7 +5274,7 @@ c     .                    QC   = QC_Local )
 !
 ! !SEE ALSO:
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !     17Apr2003  C. Redder   Origional code
 !     29Jan2004  C. Redder   Made argument, I1D, input/output.
 ! EOP
@@ -5287,7 +5303,7 @@ c     .                    QC   = QC_Local )
 !-------------------------------------------------------------------------
 ! BOP
 !
-! !ROUTINE: B1DtoR1D () --- Copy 1-D buffer array to 1-D, native real array 
+! !ROUTINE: B1DtoR1D () --- Copy 1-D buffer array to 1-D, native real array
 !
 ! !DESCRIPTION:
 !     This routine copies a 1-dimensional, buffer array to a 1-dimension,
@@ -5299,7 +5315,7 @@ c     .                    QC   = QC_Local )
 ! !INPUT PARAMETERS:
       implicit   NONE
       real ( kind = BKind ), intent (in)    ::
-     .   B1D (:)           ! 1-D input buffer array 
+     .   B1D (:)           ! 1-D input buffer array
 !
 ! !OUTPUT PARAMETERS:
       real,                  intent (inout) ::
@@ -5307,7 +5323,7 @@ c     .                    QC   = QC_Local )
 !
 ! !SEE ALSO:
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !     17Apr2003  C. Redder   Original code
 !     10Dec2003  C. Redder   Removed bug by removing call to intrinsic
 !                            function, nint.
@@ -5346,7 +5362,7 @@ c     .                    QC   = QC_Local )
 !-------------------------------------------------------------------------
 ! BOP
 !
-! !ROUTINE: B2DtoI1D () --- Copy 2-D buffer array to 1-D, native integer array 
+! !ROUTINE: B2DtoI1D () --- Copy 2-D buffer array to 1-D, native integer array
 !
 ! !DESCRIPTION:
 !     This routine copies a 2-dimensional, buffer array to a 1-dimension,
@@ -5367,7 +5383,7 @@ c     .                    QC   = QC_Local )
 !
 ! !SEE ALSO:
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !     17Apr2003  C. Redder   Origional code
 !     29Jan2004  C. Redder   Made argument, I1D, input/output.
 ! EOP
@@ -5393,7 +5409,7 @@ c     .                    QC   = QC_Local )
          else
             ii1 = 1
             ii2 = ii2 + 1
-         end if 
+         end if
       end do
 
       return
@@ -5406,7 +5422,7 @@ c     .                    QC   = QC_Local )
 !-------------------------------------------------------------------------
 ! BOP
 !
-! !ROUTINE: B2DtoR1D () --- Copy 2-D buffer array to 1-D, native real array 
+! !ROUTINE: B2DtoR1D () --- Copy 2-D buffer array to 1-D, native real array
 !
 ! !DESCRIPTION:
 !     This routine copies a 2-dimensional, buffer array to a 1-dimension,
@@ -5419,7 +5435,7 @@ c     .                    QC   = QC_Local )
 ! !INPUT PARAMETERS:
       implicit   NONE
       real ( kind = BKind ), intent (in)    ::
-     .   B2D (:,:)         ! 2-D input buffer array 
+     .   B2D (:,:)         ! 2-D input buffer array
 !
 ! !OUTPUT PARAMETERS:
       real,                  intent (inout) ::
@@ -5427,7 +5443,7 @@ c     .                    QC   = QC_Local )
 !
 ! !SEE ALSO:
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !     17Apr2003  C. Redder   Origional code
 !     29Jan2004  C. Redder   Made argument, R1D, input/output.
 ! EOP
@@ -5461,7 +5477,7 @@ c     .                    QC   = QC_Local )
          else
             ii1 = 1
             ii2 = ii2 + 1
-         end if 
+         end if
       end do
 
       return
@@ -5490,11 +5506,11 @@ c     .                    QC   = QC_Local )
 !
 ! !OUTPUT PARAMETERS:
       real ( kind = BKind ), intent (inout) ::
-     .   B1D (:)           ! 1-D input buffer array 
+     .   B1D (:)           ! 1-D input buffer array
 !
 ! !SEE ALSO:
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !     17Apr2003  C. Redder   Origional code
 !     29Jan2004  C. Redder   Made argument, B1D, input/output.
 ! EOP
@@ -5539,11 +5555,11 @@ c     .                    QC   = QC_Local )
 !
 ! !OUTPUT PARAMETERS:
       real ( kind = BKind ), intent (inout) ::
-     .   B1D (:)           ! 1-D input buffer array 
+     .   B1D (:)           ! 1-D input buffer array
 !
 ! !SEE ALSO:
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !     17Apr2003  C. Redder   Origional code
 !     29Jan2004  C. Redder   Made argument, B1D, input/output.
 ! EOP
@@ -5596,11 +5612,11 @@ c     .                    QC   = QC_Local )
 !
 ! !OUTPUT PARAMETERS:
       real ( kind = BKind ), intent (inout) ::
-     .   B2D (:,:)         ! 2-D input buffer array 
+     .   B2D (:,:)         ! 2-D input buffer array
 !
 ! !SEE ALSO:
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !     17Apr2003  C. Redder   Origional code
 !     29Jan2004  C. Redder   Made argument, B2D, input/output.
 !
@@ -5624,7 +5640,7 @@ c     .                    QC   = QC_Local )
          else
             ii1 = 1
             ii2 = ii2 + 1
-         end if 
+         end if
       end do
 
       return
@@ -5637,10 +5653,10 @@ c     .                    QC   = QC_Local )
 !-------------------------------------------------------------------------
 ! BOP
 !
-! !ROUTINE: R1DtoB2D () --- Copy 1-D, native real array to 2-D, buffer array 
+! !ROUTINE: R1DtoB2D () --- Copy 1-D, native real array to 2-D, buffer array
 !
 ! !DESCRIPTION:
-!     This routine copies a 1-dimension, native real array to a 
+!     This routine copies a 1-dimension, native real array to a
 !     2-dimensional, buffer array.  The first (leftmost) dimension is
 !     assumed to correspond to the fastest running index.
 !
@@ -5654,11 +5670,11 @@ c     .                    QC   = QC_Local )
 !
 ! !OUTPUT PARAMETERS:
       real ( kind = BKind ), intent (inout) ::
-     .   B2D (:,:)         ! 2-D input buffer array 
+     .   B2D (:,:)         ! 2-D input buffer array
 !
 ! !SEE ALSO:
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !     17Apr2003  C. Redder   Origional code
 !     29Jan2004  C. Redder   Made argument, B2D, input/output.
 !
@@ -5693,7 +5709,7 @@ c     .                    QC   = QC_Local )
          else
             ii1 = 1
             ii2 = ii2 + 1
-         end if 
+         end if
       end do
 
       return
@@ -5733,7 +5749,7 @@ c     .                    QC   = QC_Local )
      .   ObQM      (:,:)  ! ... for observed value
       logical, intent (in),  optional ::
      .   reject_OIQC      ! = .true. to reject observations that failed
-                          !   IOQC.  Default: QIQC = .false. to classify 
+                          !   IOQC.  Default: QIQC = .false. to classify
                           !   obs that failed IOQC as suspect.
 !
 ! !OUTPUT PARAMETERS:
@@ -5741,7 +5757,7 @@ c     .                    QC   = QC_Local )
      .     QM      (:,:)  ! combined quality mark
       integer, intent (out), optional ::
      .   P_QC        (:), ! quality control flag for pressure ob
-     .   ObQC      (:,:), ! ... for observed value 
+     .   ObQC      (:,:), ! ... for observed value
      .     QC      (:,:)  ! ... combined
       logical, intent (out), optional ::
      .   local_QC         ! = .true. if the options are consistent with
@@ -5749,7 +5765,7 @@ c     .                    QC   = QC_Local )
 !
 ! !SEE ALSO:
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !     01Sep2004  C. Redder   Original code
 ! EOP
 !-------------------------------------------------------------------------
@@ -5811,7 +5827,7 @@ c     .                    QC   = QC_Local )
             do iLev = 1, NLev
                P_QC ( iLev ) = tP_QC ( iLev )
             end do
-         end if         
+         end if
       end if
 
 !     ... observed values
@@ -5848,7 +5864,7 @@ c     .                    QC   = QC_Local )
                if ( ObMissing ( iVar, iLev )) tQC ( iLev ) = QC_Rejected
             end do
 
-!           ... convert the QM to the QC for ... 
+!           ... convert the QM to the QC for ...
 !           ------------------------------------
             call PrepQMtoQC ( tObQM ( : NLev ), tQC,
      .                        reject_OIQC = reject_OIQC )
@@ -5865,7 +5881,7 @@ c     .                    QC   = QC_Local )
 !           ---------------------------------
             if ( get_QM ) then
                do iLev = 1, NLev
-                  QM ( iVar, iLev ) = P_QM ( iLev ) 
+                  QM ( iVar, iLev ) = P_QM ( iLev )
                   if ( tQC ( iLev ) .gt. tP_QC ( iLev ))
      .               QM ( iVar, iLev ) = tObQM ( iLev )
                end do
@@ -5889,7 +5905,7 @@ c     .                    QC   = QC_Local )
 !     This converts QM from the prep buffer file to QC flags.  The
 !     returned flag to OK if the Prep QM is 0 or 2, suspect if QM is 1
 !     or 3, and rejected for all other values.  The flags are modified
-!     only if the input value is less than the new value.  QM is also 
+!     only if the input value is less than the new value.  QM is also
 !     modified and set to 17 if it is missing and 16 if it is invalid.
 !
 ! !INTERFACE:
@@ -5903,7 +5919,7 @@ c     .                    QC   = QC_Local )
      .   QM   (:)         ! Quality marks
       logical, optional,    intent (in) ::
      .   reject_OIQC      ! = .true. to reject observations that failed
-                          !   IOQC.  Default: QIQC = .false. to classify 
+                          !   IOQC.  Default: QIQC = .false. to classify
                           !   obs that failed IOQC as suspect.
 !
 ! !INPUT/OUTPUT PARAMETERS:
@@ -5918,7 +5934,7 @@ c     .                    QC   = QC_Local )
 !
 ! !SEE ALSO:
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !     17Apr2003  C. Redder   Original code
 !     20Aug2003  C. Redder   Changed type of input argument, QM, from
 !                            integer, to real.
@@ -5946,12 +5962,12 @@ c     .                    QC   = QC_Local )
       integer :: Table ( iQM_Min : iQM_Max ), NObs, iOb, iList, iQM_,
      .           OutFlag
       logical :: Missing, in_valid_range, reject_OIQC_
-c      Missing ( X ) = X .ge. BMiss_down .and. 
+c      Missing ( X ) = X .ge. BMiss_down .and.
 c     .                X .le. BMiss_up
 
       if ( present ( OK       )) OK       = QC_OK
       if ( present ( Suspect  )) Suspect  = QC_Suspect
-      if ( present ( Rejected )) Rejected = QC_Rejected 
+      if ( present ( Rejected )) Rejected = QC_Rejected
 
 !     Return if return flag values are not desired
 !     --------------------------------------------
@@ -5980,7 +5996,7 @@ c     .                X .le. BMiss_up
          end do
       end if
 
-!     Return the flag values for the given QM 
+!     Return the flag values for the given QM
 !     ---------------------------------------
       Del    = real ( iQM_Max   - iQM_Min )
       QM_Min = real ( iQM_Min ) -  Tol * Del
@@ -5990,7 +6006,7 @@ c     .                X .le. BMiss_up
          in_valid_range = QM_ .ge. QM_Min .and.
      .                    QM_ .lt. QM_Max
          if ( .not. in_valid_range ) then
-            Missing = QM_ .ge. BMiss_down .and. 
+            Missing = QM_ .ge. BMiss_down .and.
      .                QM_ .le. BMiss_up
             if ( Missing ) then
                QM_ = QM_Missing
@@ -6046,18 +6062,18 @@ c         QM ( iOb ) = QM_
       logical,                intent (inout), optional ::
      .   T_VIRTMP    ( : ), ! = .true. if virtual temperature was computed
      .   H_VIRTMP    ( : )  ! ... and humidity was re-computed by VIRTMP
-!           Note: The routine does not change any value unless the 
+!           Note: The routine does not change any value unless the
 !                 appropriate data type is specified
 !
 ! !OUTPUT PARAMETERS:
       integer,                intent (out) ::
-     .   NLev               ! Number of levels of data returned 
+     .   NLev               ! Number of levels of data returned
       real ( kind = BKind ),  intent (out) ::
      .    Bufr    ( :, : )  ! Data from the latest event
 !
 ! !SEE ALSO:
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !     01Mar2004  C. Redder  Original code
 !     03May2004  C. Redder  Added the arguments, Options, File, HCor and
 !                           ZCor and H_VIRTMP.  Removed the optional
@@ -6072,18 +6088,18 @@ c         QM ( iOb ) = QM_
      .   Latest   =  0
       real ( kind = BKind ), parameter ::
      .   BM_Temp  = MassB ( iVarTemp ) / MassM ( iVarTemp ),
-     .   TK_min   = 1.0_BKind  ! Set (in deg K) to prevent division by zero 
+     .   TK_min   = 1.0_BKind  ! Set (in deg K) to prevent division by zero
       real ( kind = BKind ), parameter ::
      .   BM_min   = TK_min             / MassM ( iVarTemp )
 
       integer :: DType, iLev, iMne, iMneOb, iMnePC, iMneQM,
      .   NMne, NMne_Out, PCode, PCode_Max, PCode0,
      .   Indx_, Indx1_, Indx2_, NEvn, iEvn, Indx ( NLev_Max ),
-     .   Indx_first ( NLev_Max ), Indx_last ( NLev_Max ), 
+     .   Indx_first ( NLev_Max ), Indx_last ( NLev_Max ),
      .   Rad_PCode, VT_PCode, CQC_PCode
       real ( kind = BKind ) :: B_PCode_Max, B_PCode, B_PCode0, BVal,
-     .                         Diff, Diff_VIRTMP,    Diff_after, 
-     .                         Ob_RADCOR, Ob_before, Ob_first, Ob_last, 
+     .                         Diff, Diff_VIRTMP,    Diff_after,
+     .                         Ob_RADCOR, Ob_before, Ob_first, Ob_last,
      .                         Ob_VIRTMP, Ob_after,
      .                         T_RADCOR,  VT_VIRTMP, VT_after
       real ( kind = BKind ), target  ::
@@ -6097,7 +6113,7 @@ c         QM ( iOb ) = QM_
      .                       len (WindObStr),
      .                       len (WindPStr))) :: ObStr
       logical :: Missing ( NLev_Max ), no_more_events, scan,
-     .           get_latest_QM, get_ZCor, get_TCor, get_HCor, 
+     .           get_latest_QM, get_ZCor, get_TCor, get_HCor,
      .           get_AirTemp, get_T_VIRTMP, get_H_VIRTMP, get_event,
      .           get_all_events
 !
@@ -6106,7 +6122,7 @@ c         QM ( iOb ) = QM_
       PCode0      =  File % LastPCode
       if ( PCode0 .gt. NPrepEvn_Max .or.
      .     PCode0 .lt. Latest )  PCode0 = Latest
-      B_PCode0    =  real ( PCode0, kind = BKind )  
+      B_PCode0    =  real ( PCode0, kind = BKind )
 
       get_latest_QM =  Options % get_latest_QM
 
@@ -6118,7 +6134,7 @@ c         QM ( iOb ) = QM_
          iMneOb   = iWindMneUOb
          iMnePC   = iWindMnePC
          iMneQM   = iWindMneQM
-         XBufr    => WBufr 
+         XBufr    => WBufr
          ObStr    =  WindObStr
       else
          NMne     =  MassNObMne
@@ -6142,7 +6158,7 @@ c         QM ( iOb ) = QM_
 !     ---------------------------
       call UFBINT    ( lu, XBufr, NMne, NLev_Max, NLev, ObStr )
 
-      NMne_Out = min ( NMne, size ( Bufr, dim = 1 )) 
+      NMne_Out = min ( NMne, size ( Bufr, dim = 1 ))
       do iMne = 1, NMne_Out
       do iLev = 1, NLev
           Bufr ( iMne, iLev ) = XBufr ( iMne, iLev, 1 )
@@ -6222,7 +6238,7 @@ c         QM ( iOb ) = QM_
       B_PCode_Max = 0.0_BKind
       do iLev = 1, NLev
          B_PCode = Bufr ( iMnePC, iLev )
-         if ( B_PCode .lt. BMiss_down .or. 
+         if ( B_PCode .lt. BMiss_down .or.
      .        B_PCode .gt. BMiss_up )
      .      B_PCode_Max =  max ( B_PCode_Max, B_PCode )
       end do
@@ -6264,10 +6280,10 @@ c         QM ( iOb ) = QM_
 !     -----------------------------------------------
       if ( get_all_events ) then
          NEvn = NPrepEvn_Max
-         call UFBEVN  ( lu, XBufr, NMne, NLev_Max, NEvn, NLev, ObStr ) 
+         call UFBEVN  ( lu, XBufr, NMne, NLev_Max, NEvn, NLev, ObStr )
          do iEvn = 1, NEvn
          do iLev = 1, NLev
-            PCBufr ( iLev, iEvn ) = XBufr ( iMnePC, iLev, iEvn ) 
+            PCBufr ( iLev, iEvn ) = XBufr ( iMnePC, iLev, iEvn )
          end do
          end do
       else
@@ -6307,7 +6323,7 @@ c         QM ( iOb ) = QM_
 
 !        Compute the air temperature
 !        ---------------------------
-         do iLev = 1, NLev 
+         do iLev = 1, NLev
             Indx_= Indx ( iLev )
             if ( Indx_ .gt. 0 ) then
                T_RADCOR = XBufr ( iMneOb, iLev, Indx_ + 1 )
@@ -6325,7 +6341,7 @@ c         QM ( iOb ) = QM_
                   if ( get_AirTemp )
      .               Bufr ( iMneOb, iLev ) = ( T_RADCOR / VT_VIRTMP )
      .                                       * VT_after - BM_Temp
-                  if ( get_T_VIRTMP ) 
+                  if ( get_T_VIRTMP )
      .               T_VIRTMP     ( iLev ) = .true.
                end if
             end if
@@ -6342,7 +6358,7 @@ c         QM ( iOb ) = QM_
 
 !        ... compute the corrections by radcor
 !        -------------------------------------
-         do iLev = 1, NLev 
+         do iLev = 1, NLev
             Indx_  = Indx ( iLev )
             if ( Indx_ .gt. 0 ) then
                Ob_before = XBufr ( iMneOb, iLev, Indx_ + 1 )
@@ -6372,7 +6388,7 @@ c         QM ( iOb ) = QM_
      .                      before_Evn = .true.,
      .                      not_at_Evn = .true. )
 
- 
+
             do iLev = 1, NLev
                Indx1_ = Indx_first ( iLev )
                Indx2_ = Indx_last  ( iLev )
@@ -6388,7 +6404,7 @@ c         QM ( iOb ) = QM_
      .               Diff = Ob_first - Ob_last
                end if
                RadInfo % TCor_preVT ( iLev ) = Diff
-            end do 
+            end do
          end if
       end if
 
@@ -6463,7 +6479,7 @@ c         QM ( iOb ) = QM_
       integer,               intent (in)  ::
      .   PCode               ! Program code for specified event.  For
                              !   earliest event, set PCode = 0.
-      real ( kind = BKind ), intent (in),  dimension (:,:) :: 
+      real ( kind = BKind ), intent (in),  dimension (:,:) ::
      .   PCodes              ! Program codes
       logical, optional,     intent (in)  ::
      .   before_Evn,         ! = .true. select all before the specified
@@ -6481,7 +6497,7 @@ c         QM ( iOb ) = QM_
 !           PCodes.
 ! !SEE ALSO:
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !     28Apr2004  C. Redder   Origional code
 ! EOP
 !-------------------------------------------------------------------------
@@ -6498,9 +6514,9 @@ c         QM ( iOb ) = QM_
 !     Set upper and lower range of program codes for selected
 !     event which will be used for comparisons of reals numbers
 !     ---------------------------------------------------------
-      PCode_down  =       real (  PCode, kind = BKind ) 
+      PCode_down  =       real (  PCode, kind = BKind )
      .            - Tol * real (  NEvn,  kind = BKind )
-      PCode_up    =       real (  PCode, kind = BKind ) 
+      PCode_up    =       real (  PCode, kind = BKind )
      .            + Tol * real (  NEvn,  kind = BKind )
 
 !     Impliment options
@@ -6512,7 +6528,7 @@ c         QM ( iOb ) = QM_
       end if
       if ( present ( not_at_Evn )) then
          if ( not_at_Evn )
-     .      PCode_up    =       real (  PCode, kind = BKind ) 
+     .      PCode_up    =       real (  PCode, kind = BKind )
      .                  - Tol * real (  NEvn,  kind = BKind )
       end if
 
@@ -6612,7 +6628,7 @@ c         QM ( iOb ) = QM_
 !      implicit   NONE
 !      integer,               intent (in)  ::
 !     .   iPCode              ! Program code for selected event
-!      real ( kind = BKind ), intent (in),  dimension (:,:) :: 
+!      real ( kind = BKind ), intent (in),  dimension (:,:) ::
 !     .   rPCodes             ! Program codes
 !
 ! !OUTPUT PARAMETERS:
@@ -6622,7 +6638,7 @@ c         QM ( iOb ) = QM_
 !!                            !   returned for that Ob
 ! !SEE ALSO:
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !     24Feb2004  C. Redder   Origional code
 !
 ! EOP
@@ -6631,7 +6647,7 @@ c         QM ( iOb ) = QM_
 !      real (kind = BKind) :: rPCode_down, X, rPCode, NEvn_up
 !      integer :: NEvn, NObs, iEvn, iOb, Indx_
 !      logical :: Missing, scan
-!      Missing ( X ) = X .ge. BMiss_down .and. 
+!      Missing ( X ) = X .ge. BMiss_down .and.
 !     .                X .le. BMiss_up
 !
 !     Initialize
@@ -6652,10 +6668,10 @@ c         QM ( iOb ) = QM_
 !      do iOb  = 1, NObs
 !         rPCode = rPCodes ( iOb, iEvn )
 !         Indx_  =   Indx  ( iOb )
-!         scan   =   Indx_ .eq. 0 
+!         scan   =   Indx_ .eq. 0
 !         if ( scan ) then
 !            if      ( rPCode .le. rPCode_down ) then
-!               Indx_ = iEvn 
+!               Indx_ = iEvn
 !            else if ( rPCode .lt. NEvn_up    ) then
 !               if ( Missing ( rPCode )) Indx_ = -1
 !            end if
@@ -6701,7 +6717,7 @@ c         QM ( iOb ) = QM_
 !
 ! !SEE ALSO:
 !
-! !REVISION HISTORY: 
+! !REVISION HISTORY:
 !     17Apr2003  C. Redder   Origional code
 !
 ! EOP
@@ -6717,7 +6733,7 @@ c         QM ( iOb ) = QM_
 !      integer :: SynMin, RepYMD, DHr, LMin
 !      integer :: Type,   LTime,  RadCode, NLev, ObTime
 !      logical :: Missing
-!      Missing ( X ) = X .ge. BMiss_down .and. 
+!      Missing ( X ) = X .ge. BMiss_down .and.
 !     .                X .le. BMiss_up
 !      equivalence ( CStnID, HDR1 )
 !
@@ -6740,12 +6756,12 @@ c         QM ( iOb ) = QM_
 !      else
 !         accept = .false.
 !      end if
-!      if ( .not. Missing ( HDR2 ( 2 ))) then  ! ... longitude 
+!      if ( .not. Missing ( HDR2 ( 2 ))) then  ! ... longitude
 !         Meta % Lon      = HDR2 ( 2 )         ! required info
 !      else
 !         accept = .false.
 !      end if
-!      if ( .not. Missing ( HDR2 ( 3 ))) then  ! ... longitude 
+!      if ( .not. Missing ( HDR2 ( 3 ))) then  ! ... longitude
 !         Meta % Elev     = HDR2 ( 3 )         ! required info
 !      else
 !         accept = .false.
@@ -6820,7 +6836,7 @@ c         QM ( iOb ) = QM_
       implicit none
 
 ! !OUTPUT PARAMETERS:
-      integer,           intent (out), optional :: 
+      integer,           intent (out), optional ::
      .   NTypes          ! Number of entries in the table
       character (len=*), intent (out), dimension (:), optional ::
      .   Table           ! Discription of each radiosonde instrument type

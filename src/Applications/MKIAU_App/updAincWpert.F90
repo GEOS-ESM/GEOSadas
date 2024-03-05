@@ -131,13 +131,11 @@ CONTAINS
 !   Create a regular Lat/Lon grid over which ANA-INC defined
 !   --------------------------------------------------------
     call mapl_defgridname (IM_INC,JM_INC,AINCGRIDNAME,MAPL_am_I_root())
-    block
-      type(LatLonGridFactory) :: ll_factory
-      ll_factory = LatLonGridFactory(grid_name=trim(AINCGRIDNAME), nx=ny, ny=ny, &
-                                     im_world=im_inc, jm_world=jm_inc, lm=lm_inc, &
-                                     pole='PC',dateline='DC', __RC__)
-      AINCgrid= ll_factory%make_grid(__RC__)
-    end block
+    AINCGrid = grid_manager%make_grid(LatLonGridFactory(grid_name=trim(AINCGRIDNAME), nx=nx, ny=ny, &
+               im_world=im_inc, jm_world=jm_inc, lm=lm_inc, &
+               pole='PC',dateline='DC', rc=status))
+    _VERIFY(status)
+
 !   Validate grid
 !   -------------
     call ESMF_GridValidate(AINCgrid,__RC__)

@@ -8,7 +8,6 @@ esma_add_subdirectories(
   GAAS_App
   MKIAU_App
   GMAO_Etc
-  @UMD_Etc
   @CPLFCST_Etc
   )
 

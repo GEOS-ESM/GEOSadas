@@ -76,6 +76,8 @@ C         TO AVOID LOSING SOUNDING RECORDS THAT SLIGHTLY EXCEED MAX
 C 2018-02-01  M. SIENKIEWICZ INCREASE MAXREP FROM 900K TO 1400K AND
 C         MAXLEV FROM 1100K TO 1800K - SLOW CREEP IN OBS COUNTS
 C 2019-06-20  S. Melchior Explicit declartion of bmiss in subr. STORE
+C 2022-12-27  M. SIENKIEWICZ ADD OPTION TO GET MAX RECORD SIZE FROM
+C             ENVIRONMENT VARIABLE IF IT NEEDS TO BE INCREASED
 C
 C USAGE:
 C   INPUT FILES:
@@ -1790,6 +1792,8 @@ C$$$
       CHARACTER*30 OSTR,QSTR,PSTR,RSTR
       CHARACTER*8  SUBSET
       CHARACTER*3  TAG
+      CHARACTER*5  CMAXOUT
+      INTEGER      IMAXOUT, LENGTH
       LOGICAL      EVENT1,EVENTN,SMI,SFC
       REAL*8       OBS,QMS,OBE,QME,PCS,RCS,SID
  
@@ -1813,7 +1817,18 @@ C  -------------------------------
 C     CALL OPENBF(LUBIN,'IN',LUBIN)
       CALL UFBQCD(LUBIN,'OIQC',QCD)
       CALL OPENBF(LUBOT,'OUT',LUBIN)
+      CALL GET_ENVIRONMENT_VARIABLE('BUFR_MAXOUT',cmaxout,length)
+      if (length > 0) then
+        read(cmaxout,*) imaxout
+        if (imaxout > 15000) then
+          call maxout(imaxout)
+        else
+          call maxout(15000)
+        end if
+      else
       call maxout(15000)
+      end if
+
       imsg = 1
       irec = 1
       ifld = 1
@@ -2127,7 +2142,7 @@ C  ---------------------------------------
          WRITE(6 ,30)ITRY,NFG,NFB,NFL,NBB,NCK
       endif
 
-30    FORMAT('ITERATION ',I2,' : NFLIP=',3I6,' NBAD=',I6,' NTOT=',I6)
+30    FORMAT('ITERATION ',I2,' : NFLIP=',3I6,' NBAD=',I6,' NTOT=',I7)
 
 C  FINISHED YET?
 C  -------------

@@ -3,7 +3,7 @@
 #------------
 
 codeID: 523f29e
-description: C180RPY__GEOSadas-5_29_3__agrid_C180__ogrid_C
+description: C180RPY__GEOSadas-5_30_0__agrid_C180__ogrid_C
 fvsetupID: f7aaa973c7
 
 ---ENDHEADERS---
@@ -29,7 +29,7 @@ EXPID? [u000_C180]
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [C180RPY__GEOSadas-5_29_3__agrid_C180__ogrid_C]
+EXPDSC? [C180RPY__GEOSadas-5_30_0__agrid_C180__ogrid_C]
 > 
 
 Land Boundary Conditions? [Icarus_Updated]
@@ -81,7 +81,7 @@ AeroCom? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/AeroCom]
 > 
 
 FVICS? [/archive/u/jstassi/restarts/GEOSadas-5_24_0]
-> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/x0045_C180/rs_coupled/Y2020/M11/x0045.rst.20201129_21z.tar
+> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/x0045_C180/rs/Y2020/M11/x0045.rst.20201129_21z.tar
 
 Run model-adjoint-related applications (0=no,1=yes)? [0]
 > 

@@ -41,6 +41,8 @@
 !  12nov1999 da Silva First crack.
 !  12sep2016 Todling  Replaced peanut extinctions with total extinction.
 !  01oct2016 Todling  Backward-compatible read for extinctions.
+!  01Dec2022 Todling  - Read tau as rank-3 array;
+!                     - Add DREXTAU and NIEXTAU to case when total not found
 !
 !EOP
 !--------------------------------------------------------------------------
@@ -538,7 +540,7 @@ subroutine AOD_GetTau1ch ( filename, im, jm, km, nymd, nhms, verbose, w_tau, rc 
 !                               ---
   type(Chem_Registry) :: aodReg
   integer             :: n, fid, incSecs
-  real                :: tau(im,jm)
+  real                :: tau(im,jm,1)
 
   integer :: nch = 1
   real :: channels(1) = (/ 550. /) ! this is hardwired for hyperwall files
@@ -603,11 +605,11 @@ subroutine AOD_GetTau1ch ( filename, im, jm, km, nymd, nhms, verbose, w_tau, rc 
 ! read tau for individual species and sum them up
 ! -----------------------------------------------
   do n = 1, nq
-     call GFIO_GetVar ( fid, vname(n), nymd, nhms, im, jm, 0, 1, tau, rc )
+     call GFIO_GetVar ( fid, vname(n), nymd, nhms, im, jm, 1, 1, tau, rc )
      if ( rc == 0 ) then
         if (verbose) &
              print *, '[+] Adding '//trim(vname(n))//' contribution at ', nymd, nhms
-        w_tau%qa(1)%data3d(:,:,1) = w_tau%qa(1)%data3d(:,:,1) + tau
+        w_tau%qa(1)%data3d(:,:,1) = w_tau%qa(1)%data3d(:,:,1) + tau(:,:,1)
      else
         print *, 'warning cannot read hyperwall variable ', vname(n)
         print *, 'will try reading old wired-in specifies ...'
@@ -619,14 +621,14 @@ subroutine AOD_GetTau1ch ( filename, im, jm, km, nymd, nhms, verbose, w_tau, rc 
   if ( rc/=0 ) then
      rc=0 ! reset error code
      do n = 1, nqori
-        call GFIO_GetVar ( fid, vname_ori(n), nymd, nhms, im, jm, 0, 1, tau, rc )
+        call GFIO_GetVar ( fid, vname_ori(n), nymd, nhms, im, jm, 1, 1, tau, rc )
         if ( rc /= 0 ) then
            print *, 'warning cannot read hyperwall variable ', vname_ori(n)
            return
         end if
         if (verbose) &
              print *, '[+] Adding '//trim(vname(n))//' contribution at ', nymd, nhms
-        w_tau%qa(1)%data3d(:,:,1) = w_tau%qa(1)%data3d(:,:,1) + tau
+        w_tau%qa(1)%data3d(:,:,1) = w_tau%qa(1)%data3d(:,:,1) + tau(:,:,1)
      end do
   endif
 

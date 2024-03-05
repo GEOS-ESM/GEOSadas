@@ -230,13 +230,11 @@ CONTAINS
 !   Create a regular Lat/Lon grid
 !   -----------------------------
     call MAPL_DefGridName (IM_OUT,JM_OUT,ABKGGRIDNAME,MAPL_am_I_root())
-    block
-      type(LatLonGridFactory) :: ll_factory
-      ll_factory = LatLonGridFactory(grid_name=trim(ABKGGRIDNAME), nx=nx, ny=ny, &
-                                     im_world=im_out, jm_world=jm_out, lm=lm_out, &
-                                     pole='PC',dateline='DC', __RC__)
-      inGrid= ll_factory%make_grid(__RC__)
-    end block
+    inGrid = grid_manager%make_grid(LatLonGridFactory(grid_name=trim(ABKGGRIDNAME), nx=nx, ny=ny, &
+             im_world=im_out, jm_world=jm_out, lm=lm_out, &
+             pole='PC',dateline='DC', rc=status))
+    _VERIFY(status)
+
 
 !   Validate grid
 !   -------------
