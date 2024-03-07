@@ -82,8 +82,8 @@ if ( $opt_sstdir ) {
 
 if ( $opt_merra2 ) {
   $pcp_loc = "/discover/nobackup/projects/gmao/share/dao_ops/fvInput/merra_land/precip_CPCUexcludeAfrica-CMAP_corrected_MERRA/GEOSdas-2_1_4";
-} elsif ( $opt_r21c ) { # This will updated
-  $pcp_loc = "/discover/nobackup/projects/gmao/share/dao_ops/fvInput/merra_land/precip_CPCUexcludeAfrica-CMAP_corrected_MERRA/GEOSdas-2_1_4";
+} elsif ( $opt_r21c ) {
+  $pcp_loc = "/discover/nobackup/projects/gmao/share/dao_ops/fvInput/precip_correction";
 } else {
   $pcp_loc = "/gpfsm/dnb51/projects/p15/iau/merra_land/precip_CPCU-CMAP_corrected_MERRA/GEOSdas-2_1_4";
 }

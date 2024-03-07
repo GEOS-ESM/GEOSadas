@@ -1,0 +1,18 @@
+ 
+COLLECTIONS::
+             'bkg.eta'
+             'bkg.sfc'
+             'cbkg.eta'
+             'abkg.eta'
+             'gaas_bkg.sfc'
+             'asm_inst_6hr_glo_L288x181_p48'
+             'slv_inst_6hr_glo_L288x181_slv'
+             'flx_tavg_6hr_glo_L288x181_slv'
+             'rad_tavg_6hr_glo_L288x181_slv'
+             'lnd_tavg_6hr_glo_L288x181_slv'
+             'lfo_tavg_6hr_glo_L288x181_slv'
+	     'glc_tavg_6hr_glo_L288x181_slv'
+	     'aer_tavg_6hr_glo_L288x181_slv'
+             'int_inst_6hr_glo_L288x181_slv'
+             'pbl_inst_6hr_glo_L288x181_z17'
+              ::

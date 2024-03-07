@@ -10,6 +10,7 @@
    ifact10=0,
    pseudo_q2=.true.,
    use_prepb_satwnd=>>>USE_PREPB_SATWND<<<,
+   ta2tb=.true.,
    ec_amv_qc=.false.,
    iguess=-1,
    diag_version=30303,
@@ -20,7 +21,8 @@
    biascor=-0.10,bcoption=0,diurnalbc=1.0,
    crtm_coeffs_path="CRTM_Coeffs/",
    print_diag_pcg=.false.,
-   use_compress=.true.,nsig_ext=@NSIG_EXT,gpstop=60.,lgpsbnd_revint=.true.,
+   use_compress=.true.,nsig_ext=@NSIG_EXT,gpstop=55.,lgpsbnd_revint=.true.,
+   commgpstop=45.,spiregpserrinf=2.,
    use_sp_eqspace=.true.,
    reduce_diag=.true.,
    luse_obsdiag=.true.,
@@ -57,12 +59,13 @@
  /
  &OBSQC
    dfact=0.75,dfact1=3.0,noiqc=.false.,oberrflg=.true.,c_varqc=0.02,blacklst=.true.,
-   use_poq7=.true.,qc_noirjaco3=.true.,qc_satwnds=.false.,cld_det_dec2bin=.true.,
+   use_poq7=.true.,qc_noirjaco3=.false.,qc_satwnds=.false.,cld_det_dec2bin=.true.,
+   half_goesr_err=.false.,
 !  tcp_ermin=0.75,tcp_ermax=0.75,
    >>>AIRCFT_BIAS<<<
  /
  &OBS_INPUT
-   dmesh(1)=145.0,dmesh(2)=150.0,dmesh(3)=180.0,time_window_max=3.0,
+   dmesh(1)=145.0,dmesh(2)=150.0,dmesh(3)=180.0,time_window_max=3.0, 
  /
 OBS_INPUT::
 !  dfile          dtype       dplat       dsis                  dval     dthin dsfcalc  obclass
@@ -89,15 +92,18 @@ OBS_INPUT::
    sbuvbufr       sbuv2       n18         sbuv8_n18             0.0      0     0        r21c_osbuv8_bufr
    sbuvbufr       sbuv2       n19         sbuv8_n19             0.0      0     0        r21c_osbuv8_bufr
    ompsnmeffnc    ompsnmeff   npp         ompsnmeff_npp         0.0      2     0        r21c_npp_ompsnmeff_nc
+   ompsnmeffnc    ompsnmeff   n20         ompsnmeff_n20         0.0      2     0        r21c_n20_ompsnmeff_nc
+   ompsnmeffnc    ompsnmeff   n21         ompsnmeff_n21         0.0      2     0        r21c_n21_ompsnmeff_nc
 !  ompsnpnc       ompsnpnc    npp         ompsnpnc_npp          0.0      0     0        r21c_npp_ompsnp_nc
-!  ompsnpnc       ompsnpnc    npp         ompsnpnc_npp          0.0      0     0        r21c_npp_ompsnp_nc
-   ompslpvisnc    ompslpvis   npp         ompslpvis_npp         0.0      0     0        r21c_ompslpvis_nc
+   ompslpnc       ompslpnc    npp         ompslpnc_npp          0.0      0     0        r21c_npp_ompslp_nc
+   ompslpnc       ompslpnc    n21         ompslpnc_n21          0.0      0     0        r21c_n21_ompslp_nc
+!  ompslpvisnc    ompslpvis   npp         ompslpvis_npp         0.0      0     0        r21c_ompslpvis_nc
    mlsnc          mls55       aura        mls55_aura            0.0      0     0        r21c_mls_nc
    omieffnc       omieff      aura        omieff_aura           0.0      2     0        r21c_aura_omieff_nc
    hirs2bufr      hirs2       n11         hirs2_n11             0.0      1     0        r21c_1bhrs2_bufr
    hirs2bufr      hirs2       n12         hirs2_n12             0.0      1     0        r21c_1bhrs2_bufr
    hirs2bufr      hirs2       n14         hirs2_n14             0.0      1     0        r21c_1bhrs2_bufr
-   hirs3bufr      hirs3       n15         hirs3_n15             0.0      1     0        r21c_1bhrs3_bufr
+   hirs3bufr      hirs3       n15         hirs3_n15             0.0      1     0        r21c_1bhrs3_bufr 
    hirs3bufr      hirs3       n16         hirs3_n16             0.0      1     0        r21c_1bhrs3_bufr
    hirs3bufr      hirs3       n17         hirs3_n17             0.0      1     0        r21c_1bhrs3_bufr
    hirs4bufr      hirs4       n18         hirs4_n18             0.0      1     0        r21c_1bhrs4_bufr
@@ -125,7 +131,7 @@ OBS_INPUT::
    mhsbufr        mhs         n19         mhs_n19               0.0      1     0        r21c_1bmhs_bufr
    mhsbufr        mhs         metop-a     mhs_metop-a           0.0      1     0        r21c_1bmhs_bufr
    mhsbufr        mhs         metop-b     mhs_metop-b           0.0      1     0        r21c_1bmhs_bufr
-   mhsbufr        mhs         metop-c     mhs_metop-c           0.0      1     0        r21c_mhs_bufr
+   mhsbufr        mhs         metop-c     mhs_metop-c           0.0      1     0        r21c_1bmhs_bufr
    seviribufr     seviri      m08         seviri_m08            0.0      1     0        r21c_sevcsr_bufr
    seviribufr     seviri      m09         seviri_m09            0.0      1     0        r21c_sevcsr_bufr
    seviribufr     seviri      m10         seviri_m10            0.0      1     0        r21c_sevcsr_bufr
@@ -138,6 +144,7 @@ OBS_INPUT::
    iasibufr       iasi        metop-c     iasi_metop-c          0.0      3     0        r21c_mtiasi_bufr
    atmsbufr       atms        npp         atms_npp              0.0      1     0        r21c_atms_bufr
    atmsbufr       atms        n20         atms_n20              0.0      1     0        r21c_atms_bufr
+   atmsbufr       atms        n21         atms_n21              0.0      1     0        r21c_atms_bufr
    crisfsrbufr    cris-fsr    npp         cris-fsr_npp          0.0      3     0        r21c_crisfsr_bufr
    crisfsrbufr    cris-fsr    n20         cris-fsr_n20          0.0      3     0        r21c_crisfsr_bufr
    tmibufr        tmi         trmm        tmi_trmm              0.0      1     0        r21c_tmi_bufr
@@ -164,7 +171,7 @@ OBS_INPUT::
 !  ompsnpbufr  ompsnp      npp         ompsnp_npp            0.0      0     0        npp_ompsnp_bufr
 !  ompslpuvnc  ompslpuv    npp         ompslpuv_npp          1.0      0     0        ompslpuv_nc
 !  sbuvbufr    sbuv2       nim07       sbuv8_nim07           0.0      0     0        osbuv8_bufr
-::
+:: 
  &SUPEROB_RADAR
  /
  &LAG_DATA

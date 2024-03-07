@@ -151,6 +151,9 @@ if ($?ATMENS_BKGSTATFRQ) then
    setenv BKGFREQ $ATMENS_BKGSTATFRQ
 endif
 
+set yyyy = `echo $nymd | cut -c1-4`
+set mm   = `echo $nymd | cut -c5-6`
+set dd   = `echo $nymd | cut -c7-8`
 set hh   = `echo $nhms | cut -c1-2`
 set hhmn = `echo $nhms | cut -c1-4`
 set yyyymmddhhmn =  ${nymd}${hhmn}
@@ -172,11 +175,29 @@ if ( ("$ftype" == "ana.eta" ) ) then
      if( -e $ATMENSETC/easyeana.rc ) setenv FAKEMEAN 1
    endif
 endif
+
+set lmtype = `echo $ftype | cut -d_ -f6`
+if (("$lmtype" == "p48") || ("$lmtype" == "z17") || ("$lmtype" == "slv")) then 
+     set timetagz  =  ${yyyy}-${mm}-${dd}T${hhmn}Z
+     setenv myloc $ensloc/ensdiag
+else
+     setenv myloc $ensloc
+endif
+
+if ("$lmtype" == "p48") then 
+     set statsrc = "mp_stats_NP.rc"
+else if ("$lmtype" == "z17") then
+     set statsrc = "mp_stats_NZ.rc"
+else 
+     set statsrc = "mp_stats.rc"
+endif
+
 set etag  = "NULL"
 
 # get positioned ...
 # ------------------
-cd $ensloc/
+#cd $ensloc/
+cd $myloc/
 if( !($?ENSWORK) ) then
     setenv ENSWORK $ensloc
 endif
@@ -184,20 +205,22 @@ endif
 # if new stat calculation ...
 # ---------------------------
 if( ($?ATMENSETC) ) then
-  if ( -e $ATMENSETC/mp_stats.rc ) then
+  if ( -e $ATMENSETC/$statsrc ) then
      if ( !($?AENSTAT_MPIRUN) ) then
         echo " ${MYNAME}: env(AENSTAT_MPIRUN) not defined, aborting ..."
         exit 1
      endif
-     if(! -d ensmean ) mkdir -p $ensloc/ensmean
-     if(! -d ensrms  ) mkdir -p $ensloc/ensrms
+     if(! -d ensmean ) mkdir -p $myloc/ensmean
+     if(! -d ensrms  ) mkdir -p $myloc/ensrms
      cd mem001
      set alltype = `ls *.${ftype}.*${timetagz}.$NCSUFFIX`
      foreach fn ( $alltype )
-        set my_date = `echo $fn | cut -d. -f4 | cut -c1-8`
-        set my_hhmn = `echo $fn | cut -d. -f4 | cut -c10-13`
-        set mopt = "-o   ../ensmean/$fn"
-        set sopt = "-stdv ../ensrms/$fn"
+#        set my_date = `echo $fn | cut -d. -f4 | cut -c1-8`
+#        set my_hhmn = `echo $fn | cut -d. -f4 | cut -c10-13`
+        set my_date = $nymd
+        set my_hhmn = $hhmn 
+        set mopt = "-o    $myloc/ensmean/$fn"
+        set sopt = "-stdv $myloc/ensrms/$fn"
         set eopt = ""
         if ("$ftype" == "bkg.eta" || "$ftype" == "ana.eta" || "$ftype" == "prog.eta" ) then
             if("$ftype" == "bkg.eta" ) set etype = "bene.err"
@@ -205,15 +228,21 @@ if( ($?ATMENSETC) ) then
             if("$ftype" == "prog.eta") set etype = "pene.err"
             set eopt = "-ene ../ensrms/$EXPID.${etype}.${my_date}_${my_hhmn}z.$NCSUFFIX"
         endif
+        if (("$lmtype" == "p48") || ("$lmtype" == "z17") || ("$lmtype" == "slv")) then 
+           if(! -d ensvar  ) mkdir -p $myloc/ensvar
+           set sopt = "-variance $myloc/ensvar/$fn"
+        endif
         if(! -e .MP_STATS_EGRESS_${ftype}_${my_date}${my_hhmn} ) then
-           $dry_run $AENSTAT_MPIRUN -rc $ATMENSETC/mp_stats.rc $mopt $sopt $eopt -inc ${bkgfreq_hhmn}00 \
+           $dry_run $AENSTAT_MPIRUN -rc $ATMENSETC/$statsrc $mopt $sopt $eopt -inc ${bkgfreq_hhmn}00 \
                                     -egress .MP_STATS_EGRESS_${ftype}_${my_date}${my_hhmn} ../mem*/$fn
         endif
      end
      # make sure all is successfully done
-     foreach fn ( $alltype )
-        set my_date = `echo $fn | cut -d. -f4 | cut -c1-8`
-        set my_hhmn = `echo $fn | cut -d. -f4 | cut -c10-13`
+    foreach fn ( $alltype )
+        set my_date = $nymd
+        set my_hhmn = $hhmn 
+#       set my_date = `echo $fn | cut -d. -f4 | cut -c1-8`
+#       set my_hhmn = `echo $fn | cut -d. -f4 | cut -c10-13`
         if (! -e .MP_STATS_EGRESS_${ftype}_${my_date}${my_hhmn} ) then
            echo " ${MYNAME}: Failed to calculate stats (mp_stats.x) for ${ftype}_${my_date}${my_hhmn}, Aborting ... "
            touch $ENSWORK/.FAILED

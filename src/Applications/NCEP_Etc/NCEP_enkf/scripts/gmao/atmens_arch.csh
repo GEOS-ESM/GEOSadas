@@ -386,12 +386,6 @@ if ( -d $myball ) then
    mkdir -p $myball
   /bin/mv obsimp0hr $myball
 endif
-# store diagnostic files ...
-set myball = $expid.atmens_edia.${nymdb}_${hhb}z
-if ( -d $myball ) then
-   mkdir -p $myball
-  /bin/mv ensdiag $myball
-endif
 # store mostly every thing (rsts, etc) ...
 set myball = $expid.atmens_erst.${nymdb}_${hhb}z
 if ( -d $myball ) then
@@ -407,6 +401,18 @@ set myball = $expid.atmens_stat.${nymdb}_${hhb}z
 if ( -d $myball ) then
   /bin/mv ensmean $myball
   /bin/mv ensrms  $myball
+endif
+# store diagnostic stats ...
+set myball = $expid.atmens_edstat.${nymdb}_${hhb}z
+if ( -d $myball ) then
+  /bin/mv ensdiag/ensmean $myball
+  /bin/mv ensdiag/ensvar  $myball
+endif
+# store diagnostic files ...
+set myball = $expid.atmens_edia.${nymdb}_${hhb}z
+if ( -d $myball ) then
+   mkdir -p $myball
+  /bin/mv ensdiag $myball
 endif
 # store forecast stats ...
 set myball = $expid.atmens_fstat.${nymdb}_${hhb}z

@@ -7287,10 +7287,12 @@ C  ---------------------------------------------------------------------
       CHARACTER*40     HSTR, OSTR, FCSTR, RCSTR, C1STR, CAT0,
      &                 C1FSTR, OSTRW, OSTRW2
       CHARACTER*50     OBSTR(2,5)
+      CHARACTER*5      CMAXOUT
       LOGICAL          START, ENDIN, WIND, SKIP, SAME
       LOGICAL          ZG, TG, TDG, QG, ERROR
       EQUIVALENCE      (HDR_8,CDR)
       INTEGER          IORDER(0:13)
+      INTEGER          IMAXOUT, LENGTH
 
       COMMON /BUFRLIB_MISSING/BMISS,XMISS,IMISS
 
@@ -7341,7 +7343,18 @@ C  -------------------
         REWIND NFIN
         CALL OPENBF(NFIN,'IN',NFIN)
         IF(ITIME.EQ.2) CALL OPENBF(NFOUT,'OUT',NFIN)
+        CALL GET_ENVIRONMENT_VARIABLE('BUFR_MAXOUT',cmaxout,length)
+        if (length > 0) then
+          read(cmaxout,*) imaxout
+          if (imaxout > 15000) then
+            call maxout(imaxout)
+          else
+            call maxout(15000)
+          end if
+        else
         call maxout(15000)
+        end if
+
         IS = 0
         DO I=1,NST
           SQN(I) = 0.

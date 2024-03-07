@@ -164,6 +164,7 @@
   if ( !($?VTRKFRQF ) )           setenv VTRKFRQF      0
   if ( !($?VTXRELOC ) )           setenv VTXRELOC      1
   if ( !($?WCONSTRAINT) )         setenv WCONSTRAINT   0
+  if ( !($?SATWND_DATE) )         setenv SATWND_DATE   20100701 
 
   if ( $BATCH_SUBCMD == "sbatch" ) then
       setenv BLOCKFLAG "-W"
@@ -957,7 +958,8 @@ exit 1
      endsw
 
      # control satwnd source based on date ...
-     if ( $beg_ana[1] < 20100701 ) then
+#     if ( $beg_ana[1] < 20100701 ) then
+     if ( $end_ana[1] < $SATWND_DATE ) then
         echo "s/>>>USE_PREPB_SATWND<<</.true./g"  >> sed_file
      else
         echo "s/>>>USE_PREPB_SATWND<<</.false./g" >> sed_file
@@ -1176,7 +1178,8 @@ exit 1
      endsw
 
       # control satwnd source based on date ...
-     if ( $beg_ana[1] < 20100701 ) then
+#     if ( $beg_ana[1] < 20100701 ) then
+     if ( $end_ana[1] < $SATWND_DATE ) then
         echo "s/>>>USE_PREPB_SATWND<<</.true./g"  >> sed_file
      else
         echo "s/>>>USE_PREPB_SATWND<<</.false./g" >> sed_file
@@ -3030,10 +3033,12 @@ endif
        Call AbnormalExit_( 2 )
    endif  
 
+   set acftpname = `echorc.x -template $EXPID $nymdb $nhmsb -fill %s.acft_profl.%y4%m2%d2.t%h2z.bfr`
    if ( ($HYBRIDGSI != "/dev/null") ) then
      if ( ($STAGE4HYBGSI != "/dev/null") ) then
         if (! -e $FVHOME/run/atmens_replay.acq) then
            /bin/cp $pbname $STAGE4HYBGSI/
+           /bin/cp $acftpname $STAGE4HYBGSI/
         endif
      endif
    endif

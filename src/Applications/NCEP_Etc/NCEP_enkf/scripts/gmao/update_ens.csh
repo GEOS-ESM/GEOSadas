@@ -162,6 +162,10 @@ endif
                  set newname = `echo $fn | cut -d. -f1-3 `
                  /bin/mv $fn ../updated_ens/ensdiag/${member}/$newname.$ncsuffix
               end # fn
+              foreach fn ( `/bin/ls $expid.${fntype}.*.$ncsuffix` )
+                 set newname = `echo $fn | cut -d. -f1-3 `
+                 /bin/mv $fn ../updated_ens/ensdiag/${member}/$newname.$ncsuffix
+              end # fn
            endif
         end # fntype
     endif

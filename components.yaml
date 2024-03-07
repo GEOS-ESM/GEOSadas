@@ -28,8 +28,8 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  tag: v1.7.2
-  develop: main
+  tag: v1.7.2+R21C_v1.0.0
+  develop: R21C
 
 GEOS_Util:
   local: ./src/Shared/@GMAO_Shared/@GEOS_Util
@@ -40,8 +40,8 @@ GEOS_Util:
 MAPL:
   local: ./src/Shared/@MAPL
   remote: ../MAPL.git
-  tag: v2.35.2
-  develop: develop
+  tag: v2.35.3+R21C_v1.0.0
+  develop: R21C
 
 FMS:
   local: ./src/Shared/@FMS
@@ -52,15 +52,15 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  tag: v1.5.5
-  develop: develop
+  tag: v1.5.5-R21C-1
+  develop: R21C
 
 GEOSgcm_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp
   remote: ../GEOSgcm_GridComp.git
-  tag: v1.17.4
+  tag: v1.18.1
   sparse: ./config/GEOSgcm_GridComp.sparse
-  develop: develop
+  develop: release/v1
 
 g5pert:
   local: ./src/Components/@g5pert
@@ -77,8 +77,8 @@ GEOSagcmPert_GridComp:
 FVdycoreCubed_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSsuperdyn_GridComp/@FVdycoreCubed_GridComp
   remote: ../FVdycoreCubed_GridComp.git
-  tag: v1.12.1
-  develop: develop
+  tag: v1.13.1
+  develop: release/v1
 
 fvdycore:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSsuperdyn_GridComp/@FVdycoreCubed_GridComp/@fvdycore
@@ -89,7 +89,7 @@ fvdycore:
 GEOSchem_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSphysics_GridComp/@GEOSchem_GridComp
   remote: ../GEOSchem_GridComp.git
-  tag: v1.12.0
+  tag: v1.13.0
   develop: develop
 
 HEMCO:
@@ -107,8 +107,8 @@ geos-chem:
 GOCART:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSphysics_GridComp/@GEOSchem_GridComp/@GOCART
   remote: ../GOCART.git
-  tag: v2.1.2
-  develop: develop
+  tag: v2.1.2+R21C_v1.0.0
+  develop: R21C
 
 QuickChem:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSphysics_GridComp/@GEOSchem_GridComp/@QuickChem
@@ -119,7 +119,7 @@ QuickChem:
 TR:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSphysics_GridComp/@GEOSchem_GridComp/@TR
   remote: ../TR.git
-  tag: v1.0.0
+  tag: v1.0.0.1
   develop: develop
 
 GMI:
@@ -182,8 +182,8 @@ RRTMGP:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  tag: v1.9.4
-  develop: develop
+  tag: v1.9.6+R21C_v1.0.0
+  develop: R21C
 
 Ocean-LETKF:
   local: ./src/Components/@Ocean-LETKF

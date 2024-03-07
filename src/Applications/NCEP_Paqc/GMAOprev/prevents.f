@@ -84,6 +84,9 @@ C     *_8
 C 2020-01-06  J. Dong -- In program PREPOBS_PREVENTS, changed the
 C             windowing decade from 20 to 40 for cases when the year 
 C             is represented by 2 digits instead of 4.
+C 2022-12-27  M. SIENKIEWICZ - ADD ENVIRONMENT VARIABLE TO ENABLE
+C             SPECIFYING A LARGER MAXIMUM BUFR RECORD VALUE TO USE IN
+C             CALL TO MAXOUT
 C
 C USAGE:
 C   INPUT FILES:
@@ -151,6 +154,8 @@ C$$$
 
       CHARACTER*4  NET
       CHARACTER*8  SUBSET,LAST
+      CHARACTER*5  CMAXOUT
+      INTEGER      IMAXOUT, LENGTH
 
       DIMENSION IUNITG(2)
 
@@ -239,7 +244,18 @@ C  --------------------------------------------------------
 
       CALL OPENBF(IUNITI,'IN ',IUNITI)
       CALL OPENBF(IUNITP,'OUT',IUNITI)
+
+      CALL GET_ENVIRONMENT_VARIABLE('BUFR_MAXOUT',cmaxout,length)
+      if (length > 0) then
+        read(cmaxout,*) imaxout
+        if (imaxout > 15000) then
+          call maxout(imaxout)
+        else
       call maxout(15000)
+        end if
+      else
+        call maxout(15000)
+      end if
 
 C  DETERMINE WHICH NETWORK WE ARE RUNNING UNDER
 C  --------------------------------------------

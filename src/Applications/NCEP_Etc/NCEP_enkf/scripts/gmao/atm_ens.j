@@ -243,9 +243,9 @@
 # Check for Variational Aircraft Bias Correction
 # ----------------------------------------------
   if ( (! $PREPQC ) && $ACFTBIAS == 2 ) then
-     set check_acfb = `echo $OBSCLASS | grep ncep_acftpfl_bufr`
+     set check_acfb = `echo $OBSCLASS | grep acftpfl_bufr`
      if ($status) then
-        echo "Required ncep_acftpfl_bufr missing from OBSCLASS"
+        echo "Required acftpfl_bufr missing from OBSCLASS"
         echo "Cannot perform Variational Aircraft Bias Correction"
         echo "Aborting ..."
         exit 1

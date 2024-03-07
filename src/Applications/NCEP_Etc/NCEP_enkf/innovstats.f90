@@ -290,7 +290,7 @@
 		sumaod_sh,biasaod_sh,sumaod_spread_sh,sumaod_oberr_sh,sumaodjo_sh,nobsaod_sh,&
 		sumaod_tr,biasaod_tr,sumaod_spread_tr,sumaod_oberr_tr,sumaodjo_tr,nobsaod_tr)
            if(nobs_oz>0) then
-	     call printstats(' sbuv2 oz',sumoz_nh,biasoz_nh,sumoz_spread_nh,sumoz_oberr_nh,sumozjo_nh,nobsoz_nh,&
+	     call printstats('   all oz',sumoz_nh,biasoz_nh,sumoz_spread_nh,sumoz_oberr_nh,sumozjo_nh,nobsoz_nh,&
 		  sumoz_sh,biasoz_sh,sumoz_spread_sh,sumoz_oberr_sh,sumozjo_sh,nobsoz_sh,&
 		  sumoz_tr,biasoz_tr,sumoz_spread_tr,sumoz_oberr_tr,sumozjo_tr,nobsoz_tr)
            endif
