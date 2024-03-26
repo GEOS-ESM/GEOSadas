@@ -32,7 +32,7 @@ COLLECTIONS: 'asm_inst_6hr_glo_L288x181_p48'
              'lnd_tavg_6hr_glo_L288x181_slv'
              'lfo_tavg_6hr_glo_L288x181_slv'
 	     'glc_tavg_6hr_glo_L288x181_slv'
-	     'aer_tavg_6hr_glo_L288x181_slv'
+	     'aer_inst_6hr_glo_L288x181_slv'
              'int_inst_6hr_glo_L288x181_slv'
              'pbl_inst_6hr_glo_L288x181_z17'
              'bkg.eta'
@@ -404,21 +404,20 @@ COLLECTIONS: 'asm_inst_6hr_glo_L288x181_p48'
                                                  'THV'   , 'AGCM'  ,
                                                  ::
 
-  aer_tavg_6hr_glo_L288x181_slv.format:           'CFIO' ,
-  aer_tavg_6hr_glo_L288x181_slv.descr:            '2d,6-Hourly,Time-Averaged,Single-Level,Analysis,Aerosol Diagnostics' ,
-  aer_tavg_6hr_glo_L288x181_slv.nbits:             10 ,
-  aer_tavg_6hr_glo_L288x181_slv.deflate:           2 ,
-  aer_tavg_6hr_glo_L288x181_slv.regrid_method:    'CONSERVE_MONOTONIC' ,
-  aer_tavg_6hr_glo_L288x181_slv.template:         '%y4-%m2-%d2T%h2%n2Z.>>>NCSUFFIX<<<' ,
-  aer_tavg_6hr_glo_L288x181_slv.mode:             'time-averaged' ,
-  aer_tavg_6hr_glo_L288x181_slv.grid_label:        PC288x181-DC ,
-  aer_tavg_6hr_glo_L288x181_slv.frequency:         060000 ,
-  aer_tavg_6hr_glo_L288x181_slv.duration:          060000 ,
-  aer_tavg_6hr_glo_L288x181_slv.ref_time:          030000 ,
-  aer_tavg_6hr_glo_L288x181_slv.end_date:          >>>IOEDATE<<< ,
-  aer_tavg_6hr_glo_L288x181_slv.end_time:          >>>IOETIME<<< ,
-  aer_tavg_6hr_glo_L288x181_slv.splitField:       1 ,
-  aer_tavg_6hr_glo_L288x181_slv.fields:           'TOTEXTTAU'      , 'GOCART2G'  ,
+  aer_inst_6hr_glo_L288x181_slv.format:           'CFIO' ,
+  aer_inst_6hr_glo_L288x181_slv.descr:            '2d,6-Hourly,Instantaneous,Single-Level,Analysis,Aerosol Diagnostics' ,
+  aer_inst_6hr_glo_L288x181_slv.nbits:             10 ,
+  aer_inst_6hr_glo_L288x181_slv.deflate:           2 ,
+  aer_inst_6hr_glo_L288x181_slv.regrid_method:    'CONSERVE_MONOTONIC' ,
+  aer_inst_6hr_glo_L288x181_slv.template:         '%y4-%m2-%d2T%h2%n2Z.>>>NCSUFFIX<<<' ,
+  aer_inst_6hr_glo_L288x181_slv.mode:             'instantaneous' ,
+  aer_inst_6hr_glo_L288x181_slv.grid_label:        PC288x181-DC ,
+  aer_inst_6hr_glo_L288x181_slv.frequency:         060000 ,
+  aer_inst_6hr_glo_L288x181_slv.duration:          060000 ,
+  aer_inst_6hr_glo_L288x181_slv.end_date:          >>>IOEDATE<<< ,
+  aer_inst_6hr_glo_L288x181_slv.end_time:          >>>IOETIME<<< ,
+  aer_inst_6hr_glo_L288x181_slv.splitField:       1 ,
+  aer_inst_6hr_glo_L288x181_slv.fields:           'TOTEXTTAU'      , 'GOCART2G'  ,
                                                   'TOTSCATAU'      , 'GOCART2G'  ,
                                                   'TOTANGSTR'      , 'GOCART2G'  ,
          					  'PM25'           , 'GOCART2G'  ,
