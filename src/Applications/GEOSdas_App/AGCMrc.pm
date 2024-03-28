@@ -83,7 +83,8 @@ my %list = (rs5_core     => \@rs5_core,
                  tr_import_rst
                  turb_internal_rst
                  turb_import_rst
-                 gwd_import_rst );
+                 gwd_import_rst 
+		 igni_internal_rst);
 
 # warn but do not abort if these restarts are not present
 @rs5_others = qw ( ana_satbang_rst
