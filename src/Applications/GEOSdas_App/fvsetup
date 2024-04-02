@@ -887,6 +887,7 @@ sub defaults {
                      OBS_GridComp.rc.tmpl
                      saverst.rc 
                      GEOS_SurfaceGridComp.rc
+                     GEOS_IgniGridComp.rc
                      logging.yaml );
 
   @coupled_files = qw( data_table
@@ -8959,7 +8960,8 @@ sub write_FVDAS_Run_Config {
 	$ENV{"MKSICN_SIDB"} = "\$FVHOME/run/gmao_convinfo.db" 
     }
     if ($r21c){
-        $ENV{"BUFR_MAXOUT"} = "18000"
+        $ENV{"BUFR_MAXOUT"} = "18000";
+	$ENV{"CRTM_COEFFS"} = "\$FVHOME/fvInput/gsi/etc/r21c_ncep20221018/Little_Endian";
     } 
 
     unless ( $ENV{"ARCHIVE"} ) {
