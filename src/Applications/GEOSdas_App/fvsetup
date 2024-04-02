@@ -9931,7 +9931,11 @@ sub init_agcm_rc {
     AGCM_label_subst("\@DFLT_CHECKPOINT_TYPE" ,"pbinary") if $rstype eq "bin";
     AGCM_label_subst("\@DFLT_CHECKPOINT_TYPE" ,"pnc4")    if $rstype eq "nc4";
 
-    AGCM_label_subst("\@RESTART_BY_OSERVER" ,"YES");
+    if ( "$myrun" eq "run" ) {
+       AGCM_label_subst("\@RESTART_BY_OSERVER" ,"YES");
+    } else {
+       AGCM_label_subst("\@RESTART_BY_OSERVER" ,"NO");
+    }
 
     AGCM_label_subst("\@USE_SKIN_LAYER" ,"1");
     AGCM_label_subst("\@ANALYZE_TS" ,"1");
