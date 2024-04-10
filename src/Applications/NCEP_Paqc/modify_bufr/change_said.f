@@ -72,18 +72,6 @@
       cf = 'N'
       iarg = 0
 
-      CALL GET_ENVIRONMENT_VARIABLE('BUFR_MAXOUT',cmaxout,length)
-      if (length > 0) then
-        read(cmaxout,*) imaxout
-        if (imaxout > 15000) then
-          call maxout(imaxout)
-        else
-          call maxout(15000)
-        end if
-      else
-      call maxout(15000)
-      end if
-
       call GetArg( 1_4, oldID)
       if (argc .gt. 4 .and. oldID .eq. '-c') then
         iarg = 1
@@ -98,6 +86,18 @@
       open(unit=luout,file=trim(outputfile),form='unformatted')
       call openbf(luin,'IN ',luin)
       call openbf(luout,'OUT',luin)
+
+      CALL GET_ENVIRONMENT_VARIABLE('BUFR_MAXOUT',cmaxout,length)
+      if (length > 0) then
+        read(cmaxout,*) imaxout
+        if (imaxout > 15000) then
+          call maxout(imaxout)
+        else
+          call maxout(15000)
+        end if
+      else
+      call maxout(15000)
+      end if
 
       call cmpmsg(cf)
 
