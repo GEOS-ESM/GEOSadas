@@ -71,7 +71,8 @@ GEOSana_GridComp:
 mksi:
    local: ./src/Components/@GEOSana_GridComp/GEOSaana_GridComp/GSI_GridComp/@mksi
    remote: ../GEOS_mksi.git
-   branch: develop
+   branch: feature/rtodling/x50R7rt
+   develop: develop
 
 GEOSgcm_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp
