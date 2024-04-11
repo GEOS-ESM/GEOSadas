@@ -11,7 +11,7 @@ env:
 cmake:
   local: ./@cmake
   remote: ../ESMA_cmake.git
-  tag: v3.38.0
+  tag: v3.41.0
   develop: develop
 
 ecbuild:
@@ -47,13 +47,13 @@ AeroML:
 GEOS_Util:
   local: ./src/Shared/@GMAO_Shared/@GEOS_Util
   remote: ../GEOS_Util.git
-  tag: v2.0.5
+  tag: v2.0.7
   develop: main
 
 MAPL:
   local: ./src/Shared/@MAPL
   remote: ../MAPL.git
-  tag: v2.43.1
+  tag: v2.44.0
   develop: develop
 
 FMS:
@@ -77,7 +77,7 @@ mksi:
 GEOSgcm_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp
   remote: ../GEOSgcm_GridComp.git
-  tag: v2.5.1
+  tag: v2.5.2
   sparse: ./config/GEOSgcm_GridComp.sparse
   develop: develop
 
@@ -96,7 +96,7 @@ GEOSagcmPert_GridComp:
 FVdycoreCubed_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSsuperdyn_GridComp/@FVdycoreCubed_GridComp
   remote: ../FVdycoreCubed_GridComp.git
-  tag: v2.10.0
+  tag: v2.11.0
   develop: develop
 
 fvdycore:
@@ -156,7 +156,7 @@ StratChem:
 GEOS_OceanGridComp:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSogcm_GridComp/@GEOS_OceanGridComp
   remote: ../GEOS_OceanGridComp.git
-  tag: v2.1.5
+  tag: v2.1.6
   develop: develop
 
 mom:
@@ -168,7 +168,7 @@ mom:
 mom6:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSogcm_GridComp/@GEOS_OceanGridComp/MOM6_GEOSPlug/@mom6
   remote: ../MOM6.git
-  tag: geos/v2.2.3
+  tag: geos/v3.1
   develop: main
   recurse_submodules: true
 
@@ -187,7 +187,7 @@ cice6:
 icepack:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSogcm_GridComp/GEOSseaice_GridComp/CICE_GEOSPlug/@cice6/icepack
   remote: ../Icepack.git
-  tag: geos/v0.1.1
+  tag: geos/v0.2.0
   develop: geos/develop
 
 sis2:
@@ -199,13 +199,13 @@ sis2:
 GEOSradiation_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSphysics_GridComp/@GEOSradiation_GridComp
   remote: ../GEOSradiation_GridComp.git
-  tag: v1.6.0
+  tag: v1.8.0
   develop: develop
 
 RRTMGP:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSphysics_GridComp/@GEOSradiation_GridComp/GEOS_RadiationShared/@RRTMGP
   remote: ../rte-rrtmgp.git
-  tag: geos/v1.6+1.1.0
+  tag: geos/v1.7+1.0.0
   develop: geos/develop
   sparse: ./config/RRTMGP.sparse
 
@@ -224,7 +224,7 @@ umwm:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  tag: v2.3.1
+  tag: v2.3.2
   develop: develop
 
 Ocean-LETKF:

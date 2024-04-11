@@ -9913,7 +9913,7 @@ sub init_agcm_rc {
 
     AGCM_label_subst("\@CONVPAR_OPTION", "GF");
 
-    AGCM_label_subst("\@IS_FCST",        $is_fcst);
+    AGCM_label_subst("\@OGCM_IS_FCST",   $is_fcst);
 
     AGCM_label_subst("\@DYCORE",         $dycore);
     AGCM_label_subst("\@AGCM_GRIDNAME",  $AGCM_GRIDNAME);
