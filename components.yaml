@@ -65,7 +65,7 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  branch: feature/rtodling/x50R8rt
+  branch: feature/rtodling/x50R9rt
   develop: develop
 
 mksi:
