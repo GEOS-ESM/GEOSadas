@@ -161,11 +161,8 @@ Land DAS Analysis (y/n)? [n]
 Enable LDAS feedback to model y/n ?  [n]
 > y
 
-LDAS HOME ? [default: /discover/nobackup/qzhang/x3dvar_ladas_LDAS]
+LDAS HOME ? [default: /discover/nobackup/qzhang/x3dvar_ladas/lana/x3dvar_ladas_LDAS]
 >  
-
-LDAS HOME for atmens ? [default: /discover/nobackup/qzhang/x3dvar_ladas_LDAS4ens]
-> 
 
 Frequency (in days) for writing restarts? [0]
 > 

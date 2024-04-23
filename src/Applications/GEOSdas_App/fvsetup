@@ -577,20 +577,23 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
   $rc = system("$fvbin/fix_gocart_rc.csh $vres $fvhome/run/gocart");
   die "Failed to fix GOCART levels-referencing $!" if ( $rc );
 
-# LDAS Setup is done separately, follow instructions in GEOSldas/README.md   
+# LDAS Setup is done separately, follow instructions in GEOSldas/README.md
+# Provide ldas config input files: YOUR_det_exeinp.txt, YOUR_det_batinp.txt 
+# ln -s YOUR_det_exeinp.txt  $fvbin/det_exeinp.txt 
+# ln -s YOUR_det_batinp.txt  $fvbin/det_batinp.txt  
+# For Hyb-4dEnVar, do same for ens_exeinp.txt and ens_batinp.txt
 # ------------------------------------------------------------------------
     print "\n checkprintout  ldas_ana == 1 ($ldas_ana)\n";
     if ($ldas_ana == 1 ) {
-    print "\n Please run ldas_setup following instructions in GEOSldas/README.md\n";
-    #print "\n requires config input files: YOUR_exeinp.txt, YOUR_batinp.txt.\n" ;
-    #print "\n example LDROOT: /discover/nobackup/$user/GEOSldas\n" ;
-    #print "\n example LDHOME: /discover/nobackup/$user/ldascoup_C180\n" ;
-    #print "\n example cd $LDROOT/install/bin/ \n";
-    #print "\n example salloc \n";
-    # $rc = system("source $fvbin/g5_modules") ; 
-    $rc = system("$fvbin/ldas_setup setup $fvhome/lana $fvbin/det_exeinp.txt $fvbin/det_batinp.txt");
-    die "Failed to setup ldas det $!" if ( $rc );
-      }
+       $rc = system("$fvbin/ldas_setup setup $fvhome/lana $fvbin/det_exeinp.txt $fvbin/det_batinp.txt");
+       die "Failed to setup ldas for det, check ldas config input files $!" if ( $rc );
+      
+       if ($hyb_ens == 4 ) {
+          $rc = system("$fvbin/ldas_setup setup $fvhome/lana $fvbin/ens_exeinp.txt $fvbin/ens_batinp.txt");
+          die "Failed to setup ldas for ens, check ldas config input files $!" if ( $rc );
+       }
+
+     }
     
 # Monthly Setup
 # -------------------------------------------------------------
@@ -3539,9 +3542,11 @@ sub set_ldasANA {
 
       $ans3 = query(" LDAS HOME?  [DEFAULT: $ldashome]");
       $ldashome = $ans3  unless blank($ans3); 
-
-      $ans4 = query(" LDAS HOME for atmens? [DEFAULT: $ldashome4ens]");
-      $ldashome4ens = $ans4  unless blank($ans4); 
+      
+      if ($hyb_ens == 4 ) {
+         $ans4 = query(" LDAS HOME for atmens? [DEFAULT: $ldashome4ens]");
+         $ldashome4ens = $ans4  unless blank($ans4); 
+      }
 
    } 
 return 0;
