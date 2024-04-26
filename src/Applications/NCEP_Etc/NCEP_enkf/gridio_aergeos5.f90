@@ -35,7 +35,7 @@
 
  use MAPL_IOMod
  use PFIO
- use gftl_StringVector
+ use gftl2_StringVector
 
  use m_tick, only: tick
  use m_die, only: die
@@ -304,7 +304,7 @@
        siter = vars%begin()
        variables => aer_bkg_meta%get_variables()
        do while (siter /= vars%end())
-          var_name => siter%get()
+          var_name => siter%of()
           myVar => variables%at(var_name)
           var_dims => myVar%get_dimensions()
           nrk = var_dims%size()
