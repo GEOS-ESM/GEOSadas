@@ -5,7 +5,7 @@ GEOSadas:
 env:
   local: ./@env
   remote: ../ESMA_env.git
-  tag: v3.4.0
+  branch: feature/rtodling/fp_5295_patch6
   develop: main
 
 cmake:
@@ -28,7 +28,26 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  tag: v1.4.10.5-GEOS-FP-2
+  branch: feature/rtodling/fp_5295_patch6
+  develop: main
+
+GMAOpyobs:
+  local: ./src/Shared/@GMAO_Shared/@GMAO_pyobs
+  remote: ../GMAOpyobs.git
+  tag: v1.0.6
+  develop: develop
+
+AeroML:
+  local: ./src/Shared/@AeroML
+  remote: ../AeroML.git
+  tag: feature/rtodling/abs2obs/cak_tag0
+  develop: develop
+  sparse: ./config/AeroML.sparse
+
+GEOS_Util:
+  local: ./src/Shared/@GMAO_Shared/@GEOS_Util
+  remote: ../GEOS_Util.git
+  tag: v2.0.7
   develop: main
 
 MAPL:
