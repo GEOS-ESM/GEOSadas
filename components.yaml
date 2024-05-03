@@ -53,7 +53,7 @@ GEOS_Util:
 MAPL:
   local: ./src/Shared/@MAPL
   remote: ../MAPL.git
-  tag: v2.8.0.9
+  branch: feature/mathomp4/update-mapl-2.8.0-to-python3
   develop: develop
 
 FMS:
