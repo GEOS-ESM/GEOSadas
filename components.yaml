@@ -5,7 +5,7 @@ GEOSadas:
 env:
   local: ./@env
   remote: ../ESMA_env.git
-  branch: feature/rtodling/fp_5295_patch6
+  tag: v3.4.0.1
   develop: main
 
 cmake:
@@ -28,7 +28,7 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  branch: feature/rtodling/fp_5295_patch6
+  tag: v1.4.10.5-GEOS-FP-6
   develop: main
 
 GMAOpyobs:
@@ -40,7 +40,7 @@ GMAOpyobs:
 AeroML:
   local: ./src/Shared/@AeroML
   remote: ../AeroML.git
-  tag: feature/rtodling/abs2obs/cak_tag0
+  tag: g5.29.5-GEOS-FP-6
   develop: develop
   sparse: ./config/AeroML.sparse
 
@@ -53,7 +53,7 @@ GEOS_Util:
 MAPL:
   local: ./src/Shared/@MAPL
   remote: ../MAPL.git
-  branch: feature/mathomp4/update-mapl-2.8.0-to-python3
+  tag: v2.8.0.10
   develop: develop
 
 FMS:
@@ -65,7 +65,7 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  branch: feature/rtodling/fp_5295_patch6
+  tag: v1.5.4.8-GEOS-FP-6
   develop: develop
 
 GEOSgcm_GridComp:
