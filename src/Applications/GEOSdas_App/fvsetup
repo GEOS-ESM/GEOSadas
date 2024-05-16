@@ -887,6 +887,7 @@ sub defaults {
                      OBS_GridComp.rc.tmpl
                      saverst.rc 
                      GEOS_SurfaceGridComp.rc
+		     GEOS_IgniGridComp.rc
                      logging.yaml );
 
   @coupled_files = qw( data_table
