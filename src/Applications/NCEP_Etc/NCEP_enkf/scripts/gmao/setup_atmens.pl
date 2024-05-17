@@ -246,7 +246,12 @@ sub init {
          $obsv_nx =    4; $obsv_ny =    8;
          $stat_nx =    2; $stat_ny =    2;
      } elsif ($nodename eq "cas") {
-         die "Sorry this node/resolution not set yet, aborting \n";
+         $enkf_cpus = 368;
+         $agcm_nx =    6; $agcm_ny =   24;
+         $miau_nx =    2; $miau_ny =   12;
+         $obsv_nx =    4; $obsv_ny =   24;
+         $stat_nx =    2; $stat_ny =   24;
+#         die "Sorry this node/resolution not set yet, aborting \n";
 #        $agcm_ncpus_per_node = 46;
      } else {
          die "Unknown node name, aborting \n";
