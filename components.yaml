@@ -77,7 +77,7 @@ mksi:
 GEOSgcm_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp
   remote: ../GEOSgcm_GridComp.git
-  tag: v2.5.2
+  tag: v2.5.3
   sparse: ./config/GEOSgcm_GridComp.sparse
   develop: develop
 
@@ -224,7 +224,7 @@ umwm:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  tag: v2.3.2
+  branch: feature/rtodling/qrqstot_export_rename
   develop: develop
 
 Ocean-LETKF:
