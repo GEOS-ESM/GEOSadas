@@ -35,12 +35,12 @@
 
    use ESMF
    use ESMF_CFIOFileMod
+   use ESMF_CFIOUtilMod
    use MAPL
    use MAPL_CubedSphereGridFactoryMod 
    use CubeToLatLonRegridderMod
    use CubeToCubeRegridderMod
    use LatLonToCubeRegridderMod
-   use ESMF_CFIOUtilMod
    use m_set_eta, only: set_eta
    use m_ioutil, only: luavail
    use m_StrTemplate, only: StrTemplate
@@ -1296,7 +1296,7 @@ CONTAINS
 
 !  Open the file
 !  -------------
-   call CFIO_Open ( trim(fname), READ_ONLY, fid, ier )
+   call GFIO_Open ( trim(fname), READ_ONLY, fid, ier )
    if ( ier .ne. 0 ) then
      write(6,*) 'dyn_getdim: trouble reading dims from ',trim(fname)
      rc = 1
@@ -1305,7 +1305,7 @@ CONTAINS
 
 !  Get dimensions
 !  --------------
-   call CFIO_DimInquire ( fid, myim, myjm, mykm, mylm, nvars, ngatts, ier )
+   call GFIO_DimInquire ( fid, myim, myjm, mykm, mylm, nvars, ngatts, ier )
    if ( ier .ne. 0 ) then
      write(6,*) 'dyn_getdim: trouble getting dims from ',trim(fname)
      rc = 2
@@ -1314,12 +1314,13 @@ CONTAINS
 
 ! Close file
 ! ----------
-  call CFIO_close ( fid, ier )
+  call GFIO_close ( fid, ier )
 
   im = myim
   jm = myjm
   km = mykm
   lm = mylm
+  if (im==jm) jm=6*im
 
   end subroutine getdim_
 
