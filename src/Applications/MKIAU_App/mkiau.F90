@@ -34,10 +34,13 @@
    Program mkIAU
 
    use ESMF
+   use ESMF_CFIOFileMod
    use MAPL
+   use MAPL_CubedSphereGridFactoryMod 
    use CubeToLatLonRegridderMod
    use CubeToCubeRegridderMod
    use LatLonToCubeRegridderMod
+   use ESMF_CFIOUtilMod
    use m_set_eta, only: set_eta
    use m_ioutil, only: luavail
    use m_StrTemplate, only: StrTemplate
@@ -75,7 +78,7 @@
    type(ESMF_Clock)    :: CLOCK
    type(MAPL_MetaComp), pointer :: MAPLOBJ
 
-   type (CubedSphereGridFactory) :: factory
+!  type (CubedSphereGridFactory) :: factory
    type (CubedSphereGridFactory) :: cs_factory
    type (LatlonGridFactory) :: ll_factory
    !type (CubeToCubeRegridder)   :: cube_to_cube_prototype
@@ -150,6 +153,7 @@
    class (BaseProfiler), pointer :: t_p
    type(ESMF_GridComp) :: temp_gc
    type(ESMF_Config) :: temp_config
+   type(ServerManager) :: io_server
     
     call Main()
 
@@ -157,7 +161,7 @@ CONTAINS
 
     subroutine Main()
 
-    character(len=30) ABKGGRIDNAME
+    character(len=80) ABKGGRIDNAME
 
 !   Initialize the ESMF. For performance reasons, it is important
 !    to turn OFF ESMF''s automatic logging feature
@@ -170,6 +174,7 @@ CONTAINS
     !mapl_comm%esmf%comm=comm
     call MAPL_Initialize(rc=status)
     VERIFY_(status)
+    call io_server%initialize(comm)
     t_p => get_global_time_profiler()
     call t_p%start("mkiau.x")
 
@@ -196,14 +201,11 @@ CONTAINS
 
 !   If bkg grid is cubed or desired iau output is cubed ...
 !   -------------------------------------------------------
-    if(trim(dyntyp)=='FV3' .or. JM_BKG==6*IM_BKG) cubed=.true.
+    if(JM_BKG==6*IM_BKG) cubed=.true.
 
 !   Create a regular Lat/Lon grid over which BKG/ANA defined
 !   --------------------------------------------------------
     if(cubed) then
-      !call grid_manager%add_prototype('Cubed-Sphere',factory)
-    endif
-    if (JM_BKG==6*IM_BKG) then
        !call new_regridder_manager%add_prototype('Cubed-Sphere', 'Cubed-Sphere', REGRID_METHOD_BILINEAR, cube_to_cube_prototype)
        if ( MAPL_am_I_root() ) then
           print *
@@ -275,8 +277,9 @@ CONTAINS
     BkgBundle = ESMF_FieldBundleCreate ( name='BKG bundle', __RC__ )
     call ESMF_FieldBundleSet ( BkgBundle, grid=BKGgrid, __RC__ )
 
-    call MAPL_CFIORead  ( bkgfname, Time, BkgBundle, &
-                          TIME_IS_CYCLIC=.false., verbose=.true., __RC__ )
+!   call MAPL_CFIORead  ( bkgfname, Time, BkgBundle, &
+!                         TIME_IS_CYCLIC=.false., verbose=.true., __RC__ )
+    call MAPL_read_bundle( BkgBundle, bkgfname, Time, __RC__ )
 
 !   Now create a component to handle the increment output
 !   -----------------------------------------------------
@@ -377,6 +380,7 @@ CONTAINS
     end if
     call final_
     call t_p%stop('mkiau.x')
+    call io_server%finalize()
     call MAPL_Finalize()
     call ESMF_Finalize(__RC__)
 
@@ -1292,7 +1296,7 @@ CONTAINS
 
 !  Open the file
 !  -------------
-   call GFIO_Open ( trim(fname), READ_ONLY, fid, ier )
+   call CFIO_Open ( trim(fname), READ_ONLY, fid, ier )
    if ( ier .ne. 0 ) then
      write(6,*) 'dyn_getdim: trouble reading dims from ',trim(fname)
      rc = 1
@@ -1301,16 +1305,16 @@ CONTAINS
 
 !  Get dimensions
 !  --------------
-   call GFIO_DimInquire ( fid, myim, myjm, mykm, mylm, nvars, ngatts, ier )
+   call CFIO_DimInquire ( fid, myim, myjm, mykm, mylm, nvars, ngatts, ier )
    if ( ier .ne. 0 ) then
      write(6,*) 'dyn_getdim: trouble getting dims from ',trim(fname)
      rc = 2
      return
    endif
 
-! Close GFIO file
-! ---------------
-  call GFIO_close ( fid, ier )
+! Close file
+! ----------
+  call CFIO_close ( fid, ier )
 
   im = myim
   jm = myjm
