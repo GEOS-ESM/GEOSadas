@@ -78,7 +78,6 @@
    type(ESMF_Clock)    :: CLOCK
    type(MAPL_MetaComp), pointer :: MAPLOBJ
 
-!  type (CubedSphereGridFactory) :: factory
    type (CubedSphereGridFactory) :: cs_factory
    type (LatlonGridFactory) :: ll_factory
    !type (CubeToCubeRegridder)   :: cube_to_cube_prototype
@@ -108,7 +107,7 @@
    integer, parameter :: r_quad  = selected_real_kind(20)
    integer :: comm
    logical :: SDFoutput,OIFoutput
-   logical :: sameres,cubed
+   logical :: sameres,cubediau,cubedbkg
    real    :: sclinc
 !
    real*8, pointer :: ak(:), bk(:)
@@ -201,18 +200,18 @@ CONTAINS
 
 !   If bkg grid is cubed or desired iau output is cubed ...
 !   -------------------------------------------------------
-    if(JM_BKG==6*IM_BKG) cubed=.true.
+    if(JM_BKG==6*IM_BKG) cubedbkg=.true.
 
 !   Create a regular Lat/Lon grid over which BKG/ANA defined
 !   --------------------------------------------------------
-    if(cubed) then
+    call MAPL_DefGridName (IM_BKG,JM_BKG,ABKGGRIDNAME,MAPL_am_I_root())
+    if(cubedbkg) then
        !call new_regridder_manager%add_prototype('Cubed-Sphere', 'Cubed-Sphere', REGRID_METHOD_BILINEAR, cube_to_cube_prototype)
        if ( MAPL_am_I_root() ) then
           print *
-          print *, 'Background on the cubed grid '
+          print *, 'Background on the cubed grid ', trim(ABKGGRIDNAME)
           print *
        endif
-       !cs_factory = CubedSphereGridFactory(im_world=IM_BKG,lm=LM_BKG,nx=nx,ny=ny/6,__RC__)
        cs_factory = CubedSphereGridFactory(im_world=IM_BKG,lm=LM_BKG,nx=nx_cube,ny=ny_cube,__RC__)
        BKGGrid = grid_manager%make_grid(cs_factory,__RC__)
     else
@@ -220,10 +219,9 @@ CONTAINS
        !call new_regridder_manager%add_prototype('LatLon', 'Cubed-Sphere', REGRID_METHOD_BILINEAR, latlon_to_cube_prototype)
        if ( MAPL_am_I_root() ) then
           print *
-          print *, 'Background on the lat-lon grid '
+          print *, 'Background on the lat-lon grid ', trim(ABKGGRIDNAME)
           print *
        endif
-       call MAPL_DefGridName (IM_BKG,JM_BKG,ABKGGRIDNAME,MAPL_am_I_root())
        ll_factory = LatLonGridFactory(grid_name=trim(ABKGGRIDNAME), &
                         Nx = Nx, Ny = Ny,   &
                         IM_World = IM_BKG,  &
@@ -239,7 +237,7 @@ CONTAINS
 
 !   Create either a regular Lat/Lon grid or cubed grid over which IAU defined
 !   -------------------------------------------------------------------------
-    if (cubed) then
+    if (cubediau) then
        ! check for pert-get-weights
        !if (Ny/=6*Nx) then
           !if ( MAPL_am_I_root() ) then
@@ -251,6 +249,7 @@ CONTAINS
        !cs_factory = CubedSphereGridFactory(im_world=IM_IAU,lm=LM_IAU,nx=nx,ny=ny/6,__RC__)
        cs_factory = CubedSphereGridFactory(im_world=IM_IAU,lm=LM_IAU,nx=nx_cube,ny=ny_cube,__RC__)
        GCMGrid = grid_manager%make_grid(cs_factory,__RC__)
+
     else
        call MAPL_DefGridName (IM_IAU,JM_IAU,ABKGGRIDNAME,MAPL_am_I_root())
        ll_factory = LatLonGridFactory(grid_name=trim(ABKGGRIDNAME), &
@@ -261,10 +260,11 @@ CONTAINS
                                __RC__)
        GCMgrid = grid_manager%make_grid(ll_factory,__RC__)
 
-!      Validate grid
-!      -------------
-       call ESMF_GridValidate(GCMgrid,__RC__)
     endif
+
+!   Validate grid
+!   -------------
+    call ESMF_GridValidate(GCMgrid,__RC__)
 
     sameres = IM_BKG==IM_IAU .and. JM_BKG==JM_IAU
 
@@ -277,9 +277,11 @@ CONTAINS
     BkgBundle = ESMF_FieldBundleCreate ( name='BKG bundle', __RC__ )
     call ESMF_FieldBundleSet ( BkgBundle, grid=BKGgrid, __RC__ )
 
-!   call MAPL_CFIORead  ( bkgfname, Time, BkgBundle, &
-!                         TIME_IS_CYCLIC=.false., verbose=.true., __RC__ )
+    print *, 'DEBUG_RT will read ...'
+!   call MAPL_CFIORead   ( bkgfname, Time, BkgBundle, &
+!                          TIME_IS_CYCLIC=.false., verbose=.true., __RC__ )
     call MAPL_read_bundle( BkgBundle, bkgfname, Time, __RC__ )
+    print *, 'DEBUG_RT      read ...'
 
 !   Now create a component to handle the increment output
 !   -----------------------------------------------------
@@ -290,14 +292,15 @@ CONTAINS
     maplobj => null()
     call MAPL_InternalStateCreate(temp_gc, maplobj, rc=status)
     VERIFY_(status)
-   call MAPL_InternalStateRetrieve(temp_gc, maplobj, RC=status)
-   VERIFY_(status)
+    call MAPL_InternalStateRetrieve(temp_gc, maplobj, RC=status)
+    VERIFY_(status)
     BASE = MAPL_AddChild ( MAPLOBJ, Grid=BKGgrid,    &
                                        ConfigFile=myRC,   &
                                           name= 'ABKG',   &
                                 SS = MKIAUSetServices,    &
                                                   __RC__  )
-    if (cubed) then
+    print *, 'DEBUG_RT  pass base...'
+    if (cubediau) then
        STUB = MAPL_AddChild ( MAPLOBJ, Grid=GCMgrid,    &
                                           ConfigFile=myRC,     &
                                              name= 'AGCM',     &
@@ -310,12 +313,13 @@ CONTAINS
                                      SS = IAUSetServices,      &
                                                      __RC__    )
     endif
+    print *, 'DEBUG_RT  pass stub ...'
 
 !   Initialize component
 !   --------------------
     call MAPL_Get  ( MAPLOBJ, GCS=GCS, GIM=IMPORTS, GEX=EXPORTS, __RC__ )
 
-    if (cubed) then
+    if (cubediau) then
        call MAPL_GridCreate  (GCS(STUB),ESMFGRID=GCMgrid, __RC__)
        call ESMF_GridCompGet (GCS(STUB), grid=GCMgrid, __RC__ )
        call ESMF_GridValidate(GCMgrid,__RC__)
@@ -432,7 +436,7 @@ CONTAINS
 !  Set defaults
 !  ------------
    rc = 0
-   cubed = .false.
+   cubediau = .false.
 
    !call ESMF_ConfigGetAttribute( CF, NX, label ='NX:', __RC__ )
    !call ESMF_ConfigGetAttribute( CF, NY, label ='NY:', __RC__ )
@@ -456,6 +460,7 @@ CONTAINS
    if(itest==1) c2l_fwtest = .true.
    if(itest==2) c2l_adtest = .true.
    if(itest==3) l2c_adtest = .true.
+   if(JM_IAU==6*IM_IAU) cubediau=.true.
 
    call ESMF_ConfigGetAttribute( CF, ino_dqvdt, label ='NO_DQVDT:', default=0, __RC__ )
 
@@ -780,7 +785,7 @@ CONTAINS
 
         call ESMFL_State2Bundle (EXPORTS(BASE), IAUBundleBase)
 
-        if (cubed) then
+        if (cubediau) then
 
             iaubase = MAPL_SimpleBundleCreate ( IAUBundleBase, __RC__ )
             iaustub = MAPL_SimpleBundleCreate ( IAUBundleStub, __RC__ )
