@@ -80,9 +80,6 @@
 
    type (CubedSphereGridFactory) :: cs_factory
    type (LatlonGridFactory) :: ll_factory
-   !type (CubeToCubeRegridder)   :: cube_to_cube_prototype
-   !type (CubeToLatLonRegridder) :: cube_to_latlon_prototype
-   !type (LatLonToCubeRegridder) :: latlon_to_cube_prototype
 
 !  Basic information about the parallel environment
 !         PET = Persistent Execution Threads
@@ -206,7 +203,6 @@ CONTAINS
 !   --------------------------------------------------------
     call MAPL_DefGridName (IM_BKG,JM_BKG,ABKGGRIDNAME,MAPL_am_I_root())
     if(cubedbkg) then
-       !call new_regridder_manager%add_prototype('Cubed-Sphere', 'Cubed-Sphere', REGRID_METHOD_BILINEAR, cube_to_cube_prototype)
        if ( MAPL_am_I_root() ) then
           print *
           print *, 'Background on the cubed grid ', trim(ABKGGRIDNAME)
@@ -215,8 +211,6 @@ CONTAINS
        cs_factory = CubedSphereGridFactory(im_world=IM_BKG,lm=LM_BKG,nx=nx_cube,ny=ny_cube,__RC__)
        BKGGrid = grid_manager%make_grid(cs_factory,__RC__)
     else
-       !call new_regridder_manager%add_prototype('Cubed-Sphere', 'LatLon', REGRID_METHOD_BILINEAR, cube_to_latlon_prototype)
-       !call new_regridder_manager%add_prototype('LatLon', 'Cubed-Sphere', REGRID_METHOD_BILINEAR, latlon_to_cube_prototype)
        if ( MAPL_am_I_root() ) then
           print *
           print *, 'Background on the lat-lon grid ', trim(ABKGGRIDNAME)
@@ -238,15 +232,6 @@ CONTAINS
 !   Create either a regular Lat/Lon grid or cubed grid over which IAU defined
 !   -------------------------------------------------------------------------
     if (cubediau) then
-       ! check for pert-get-weights
-       !if (Ny/=6*Nx) then
-          !if ( MAPL_am_I_root() ) then
-             !print *, 'Error: expecting Ny=6*Nx, since this uses old get-weights'
-             !print *, 'Error: aborting ...'
-          !end if
-          !ASSERT_(.FALSE.)
-       !endif
-       !cs_factory = CubedSphereGridFactory(im_world=IM_IAU,lm=LM_IAU,nx=nx,ny=ny/6,__RC__)
        cs_factory = CubedSphereGridFactory(im_world=IM_IAU,lm=LM_IAU,nx=nx_cube,ny=ny_cube,__RC__)
        GCMGrid = grid_manager%make_grid(cs_factory,__RC__)
 
@@ -277,11 +262,7 @@ CONTAINS
     BkgBundle = ESMF_FieldBundleCreate ( name='BKG bundle', __RC__ )
     call ESMF_FieldBundleSet ( BkgBundle, grid=BKGgrid, __RC__ )
 
-    print *, 'DEBUG_RT will read ...'
-!   call MAPL_CFIORead   ( bkgfname, Time, BkgBundle, &
-!                          TIME_IS_CYCLIC=.false., verbose=.true., __RC__ )
     call MAPL_read_bundle( BkgBundle, bkgfname, Time, __RC__ )
-    print *, 'DEBUG_RT      read ...'
 
 !   Now create a component to handle the increment output
 !   -----------------------------------------------------
@@ -299,7 +280,6 @@ CONTAINS
                                           name= 'ABKG',   &
                                 SS = MKIAUSetServices,    &
                                                   __RC__  )
-    print *, 'DEBUG_RT  pass base...'
     if (cubediau) then
        STUB = MAPL_AddChild ( MAPLOBJ, Grid=GCMgrid,    &
                                           ConfigFile=myRC,     &
@@ -313,7 +293,6 @@ CONTAINS
                                      SS = IAUSetServices,      &
                                                      __RC__    )
     endif
-    print *, 'DEBUG_RT  pass stub ...'
 
 !   Initialize component
 !   --------------------
@@ -437,6 +416,7 @@ CONTAINS
 !  ------------
    rc = 0
    cubediau = .false.
+   cubedbkg = .false.
 
    !call ESMF_ConfigGetAttribute( CF, NX, label ='NX:', __RC__ )
    !call ESMF_ConfigGetAttribute( CF, NY, label ='NY:', __RC__ )
@@ -1301,7 +1281,7 @@ CONTAINS
 
 !  Open the file
 !  -------------
-   call GFIO_Open ( trim(fname), READ_ONLY, fid, ier )
+   call CFIO_Open ( trim(fname), READ_ONLY, fid, ier )
    if ( ier .ne. 0 ) then
      write(6,*) 'dyn_getdim: trouble reading dims from ',trim(fname)
      rc = 1
@@ -1310,7 +1290,7 @@ CONTAINS
 
 !  Get dimensions
 !  --------------
-   call GFIO_DimInquire ( fid, myim, myjm, mykm, mylm, nvars, ngatts, ier )
+   call CFIO_DimInquire ( fid, myim, myjm, mykm, mylm, nvars, ngatts, rc=ier )
    if ( ier .ne. 0 ) then
      write(6,*) 'dyn_getdim: trouble getting dims from ',trim(fname)
      rc = 2
@@ -1319,13 +1299,12 @@ CONTAINS
 
 ! Close file
 ! ----------
-  call GFIO_close ( fid, ier )
+  call CFIO_close ( fid, ier )
 
   im = myim
   jm = myjm
   km = mykm
   lm = mylm
-  if (im==jm) jm=6*im
 
   end subroutine getdim_
 
