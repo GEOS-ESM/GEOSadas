@@ -106,6 +106,7 @@
    logical :: SDFoutput,OIFoutput
    logical :: sameres,cubediau,cubedbkg
    real    :: sclinc
+   logical :: summarize
 !
    real*8, pointer :: ak(:), bk(:)
    real,   pointer :: levels(:)=>NULL()
@@ -442,6 +443,10 @@ CONTAINS
    if(itest==3) l2c_adtest = .true.
    if(JM_IAU==6*IM_IAU) cubediau=.true.
 
+   summarize = .false.
+   call ESMF_ConfigGetAttribute( CF, idum, label ='SUMMARIZE:', default=0, __RC__ )
+   if (idum==1) summarize = .true.
+
    call ESMF_ConfigGetAttribute( CF, ino_dqvdt, label ='NO_DQVDT:', default=0, __RC__ )
 
    call ESMF_ConfigGetAttribute( CF, nymd, label ='IAU_DATE:', __RC__ )
@@ -698,28 +703,28 @@ CONTAINS
 !       ---------------------------
         call MAPL_GetPointer(IMPORTS(STUB),  sdudt, 'DUDT' , __RC__)
         sdudt = sclinc * dudt
-        if ( MAPL_am_I_root() ) then
-           print *, 'dudt = ',maxval(sdudt), minval(sdudt) 
+        if ( summarize ) then
+           call var3d_summary_ ('DUDT', sdudt)
         endif
         call MAPL_GetPointer(IMPORTS(STUB),  sdvdt, 'DVDT' , __RC__)
         sdvdt = sclinc * dvdt
-        if ( MAPL_am_I_root() ) then
-           print *, 'dvdt = ',maxval(sdvdt), minval(sdvdt) 
+        if ( summarize ) then
+           call var3d_summary_ ('DVDT', sdvdt)
         endif
         call MAPL_GetPointer(IMPORTS(STUB),  sdtdt, 'DTDT' , __RC__)
         sdtdt = sclinc * dtdt
-        if ( MAPL_am_I_root() ) then
-           print *, 'dtdt = ',maxval(sdtdt), minval(sdtdt) 
+        if ( summarize ) then
+           call var3d_summary_ ('DTDT', sdtdt)
         endif
         call MAPL_GetPointer(IMPORTS(STUB), sdpedt, 'DPEDT', __RC__)
         sdpedt = sclinc * dpedt
-        if ( MAPL_am_I_root() ) then
-           print *, 'dpedt = ',maxval(sdpedt), minval(sdpedt) 
+        if ( summarize ) then
+           call var3d_summary_ ('DPEDT', sdpedt)
         endif
         call MAPL_GetPointer(IMPORTS(STUB), sdqvdt, 'DQVDT', __RC__)
         sdqvdt = sclinc * dqvdt
-        if ( MAPL_am_I_root() ) then
-           print *, 'dqvdt = ',maxval(sdqvdt), minval(sdqvdt) 
+        if ( summarize ) then
+           call var3d_summary_ ('DQVDT', sdqvdt)
         endif
         call MAPL_GetPointer(IMPORTS(STUB), sdo3dt, 'DO3DT', __RC__)
         if ( trim(O3NAME) /= 'NULL' ) then
@@ -727,14 +732,14 @@ CONTAINS
         else
            sdo3dt = 0.0
         endif
-        if ( MAPL_am_I_root() ) then
-           print *, 'do3dt = ',maxval(sdo3dt), minval(sdo3dt) 
+        if ( summarize ) then
+           call var3d_summary_ ('DO3DT', sdo3dt)
         endif
         call MAPL_GetPointer(IMPORTS(STUB), sdtsdt, 'DTSDT', __RC__)
         if(associated(sdtsdt).and.associated(dtsdt))then
            sdtsdt = sclinc * dtsdt
-           if ( MAPL_am_I_root() ) then
-              print *, 'dtsdt = ',maxval(sdtsdt), minval(sdtsdt) 
+           if ( summarize ) then
+              call var2d_summary_ ('DRSDT', sdtsdt)
            endif
         endif
 
@@ -796,26 +801,42 @@ CONTAINS
             endif
             iaustub%r3(ju)%q = sclinc * iaustub%r3(ju)%q
             iaustub%r3(jv)%q = sclinc * iaustub%r3(jv)%q
+            if ( summarize ) then
+               call var3d_summary_ ('DUDT', iaustub%r3(ju)%q)
+               call var3d_summary_ ('DVDT', iaustub%r3(jv)%q)
+            endif
 
             ii = MAPL_SimpleBundleGetIndex ( iaubase, 'DTDT', 3, __RC__ )
             jj = MAPL_SimpleBundleGetIndex ( iaustub, 'DTDT', 3, __RC__ )
             call L2C%regrid(iaubase%r3(ii)%q, iaustub%r3(jj)%q, __RC__ )
             iaustub%r3(jj)%q = sclinc * iaustub%r3(jj)%q
+            if ( summarize ) then
+               call var3d_summary_ ('DTDT', iaustub%r3(jj)%q)
+            endif
 
             ii = MAPL_SimpleBundleGetIndex ( iaubase, 'DPEDT', 3, __RC__ )
             jj = MAPL_SimpleBundleGetIndex ( iaustub, 'DPEDT', 3, __RC__ )
             call L2C%regrid(iaubase%r3(ii)%q, iaustub%r3(jj)%q, __RC__ )
             iaustub%r3(jj)%q = sclinc * iaustub%r3(jj)%q
+            if ( summarize ) then
+               call var3d_summary_ ('DPEDT', iaustub%r3(jj)%q)
+            endif
 
             ii = MAPL_SimpleBundleGetIndex ( iaubase, 'DQVDT', 3, __RC__ )
             jj = MAPL_SimpleBundleGetIndex ( iaustub, 'DQVDT', 3, __RC__ )
             call L2C%regrid(iaubase%r3(ii)%q, iaustub%r3(jj)%q, __RC__ )
             iaustub%r3(jj)%q = sclinc * iaustub%r3(jj)%q
+            if ( summarize ) then
+               call var3d_summary_ ('DQVDT', iaustub%r3(jj)%q)
+            endif
 
             ii = MAPL_SimpleBundleGetIndex ( iaubase, 'DO3DT', 3, __RC__ )
             jj = MAPL_SimpleBundleGetIndex ( iaustub, 'DO3DT', 3, __RC__ )
             call L2C%regrid(iaubase%r3(ii)%q, iaustub%r3(jj)%q, __RC__ )
             iaustub%r3(jj)%q = sclinc * iaustub%r3(jj)%q
+            if ( summarize ) then
+               call var3d_summary_ ('DO3DT', iaustub%r3(jj)%q)
+            endif
 
             ii = MAPL_SimpleBundleGetIndex ( iaubase, 'DTSDT', 2, __RC__ )
             jj = MAPL_SimpleBundleGetIndex ( iaustub, 'DTSDT', 2, __RC__ )
@@ -827,6 +848,9 @@ CONTAINS
                    aux (:,:,1) = iaubase%r2(ii)%q
               call L2C%regrid(aux, aux2, __RC__ )
                  iaustub%r2(jj)%q = sclinc * aux2(:,:,1)
+                 if ( summarize ) then
+                    call var2d_summary_ ('DRSDT', iaustub%r2(jj)%q)
+                 endif
                  deallocate(aux2)
                  deallocate(aux )
             endif
@@ -1346,5 +1370,39 @@ CONTAINS
          deallocate ( a   )
          return
    end subroutine xwritit
+
+   subroutine var2d_summary_ (varname, var)
+   use m_mpif90, only: MP_TYPE,MP_MAX,MP_MIN
+   implicit none
+   character(len=*) :: varname
+   real,pointer, intent(in) :: var(:,:)
+
+   real smax, smin
+   real rmax, rmin
+
+   smax = maxval(var); smin = minval(var)
+   call MPI_allreduce(smax,rmax,1,MP_TYPE(smax),MP_MAX,comm,status)
+   call MPI_allreduce(smin,rmin,1,MP_TYPE(smin),MP_MIN,comm,status)
+   if ( MAPL_am_I_root() ) then
+        write(6,'(2a,1p,2(a,e13.6))') trim(varname), ':', ' min= ', smin, ' max= ', smax
+   endif
+   end subroutine var2d_summary_
+
+   subroutine var3d_summary_ (varname, var)
+   use m_mpif90, only: MP_TYPE,MP_MAX,MP_MIN
+   implicit none
+   character(len=*) :: varname
+   real,pointer, intent(in) :: var(:,:,:)
+
+   real smax, smin
+   real rmax, rmin
+
+   smax = maxval(var); smin = minval(var)
+   call MPI_allreduce(smax,rmax,1,MP_TYPE(smax),MP_MAX,comm,status)
+   call MPI_allreduce(smin,rmin,1,MP_TYPE(smin),MP_MIN,comm,status)
+   if ( MAPL_am_I_root() ) then
+        write(6,'(2a,1p,2(a,e13.6))') trim(varname), ':', ' min= ', smin, ' max= ', smax
+   endif
+   end subroutine var3d_summary_
 
 end Program mkIAU
