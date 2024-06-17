@@ -71,7 +71,7 @@ g5pert:
 GEOSagcmPert_GridComp:
   local: ./src/Components/@GEOSagcmPert_GridComp
   remote: ../GEOSagcmPert_GridComp.git
-  tag: rt-GEOSagcmPert-g530-fix
+  branch: feature/mathomp4/update-for-new-fv
   develop: main
 
 FVdycoreCubed_GridComp:
