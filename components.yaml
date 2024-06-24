@@ -5,7 +5,7 @@ GEOSadas:
 env:
   local: ./@env
   remote: ../ESMA_env.git
-  tag: v3.4.0
+  tag: v3.4.0.1
   develop: main
 
 cmake:
@@ -28,13 +28,32 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  tag: v1.4.10.5-GEOS-FP-2
+  tag: v1.4.10.5-GEOS-FP-6
+  develop: main
+
+GMAOpyobs:
+  local: ./src/Shared/@GMAO_Shared/@GMAO_pyobs
+  remote: ../GMAOpyobs.git
+  tag: v1.0.6
+  develop: develop
+
+AeroML:
+  local: ./src/Shared/@AeroML
+  remote: ../AeroML.git
+  tag: g5.29.5-GEOS-FP-6
+  develop: develop
+  sparse: ./config/AeroML.sparse
+
+GEOS_Util:
+  local: ./src/Shared/@GMAO_Shared/@GEOS_Util
+  remote: ../GEOS_Util.git
+  tag: rt-v1.0.2-sst
   develop: main
 
 MAPL:
   local: ./src/Shared/@MAPL
   remote: ../MAPL.git
-  tag: v2.8.0.9
+  tag: v2.8.0.10
   develop: develop
 
 FMS:
@@ -46,7 +65,7 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  tag: v1.5.4.8-GEOS-FP-2
+  tag: v1.5.4.8-GEOS-FP-6
   develop: develop
 
 GEOSgcm_GridComp:

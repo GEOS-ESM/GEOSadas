@@ -204,7 +204,7 @@ class MxD04_NNR(MxD04_L2):
                 elif rank == 2:
                     self.__dict__[sds] = self.__dict__[sds][m,:]
                 else:
-                    raise IndexError, 'invalid rank=%d'%rank
+                    raise IndexError('invalid rank=%d'%rank)
 
             # Reset aliases
             for sds in self.SDS:
@@ -245,7 +245,7 @@ class MxD04_NNR(MxD04_L2):
             self.iGood = self.iGood & (self.ScatteringAngle < scat_thresh)
 
         if any(self.iGood) == False:
-            print "WARNING: Strange, no good obs left to work with"
+            print("WARNING: Strange, no good obs left to work with")
             return
 
         # Create attribute for holding NNR predicted AOD
@@ -304,6 +304,14 @@ class MxD04_NNR(MxD04_L2):
         except:
             pass   # ignore it for systems without nitrates
 
+        # Special handle for brown carbon (treat it as it were organic carbon)
+        # ----------------------------------------------------
+        try:
+            self.sampleFile(aer_x,onlyVars=('BREXTTAU',),Verbose=Verbose)
+            self.foc += self.sample.BREXTTAU / s.TOTEXTTAU
+            self.fcc = self.fbc + self.foc
+        except:
+            pass   # ignore it for systems without brown carbon as a separate tracer
         del self.sample
 
 #---
@@ -322,7 +330,7 @@ class MxD04_NNR(MxD04_L2):
           if fh.lm == 1:
             timeInterp = False    # no time interpolation in this case
           else:
-            raise ValueError, "cannot handle files with more tha 1 time, use ctl instead"
+            raise ValueError("cannot handle files with more tha 1 time, use ctl instead")
         else:
           fh = GFIOctl(inFile)  # open timeseries
           timeInterp = True     # perform time interpolation
@@ -341,7 +349,7 @@ class MxD04_NNR(MxD04_L2):
         # ---------------------------
         for v in onlyVars:
             if Verbose:
-                print "<> Sampling ", v
+                print("<> Sampling ", v)
             if timeInterp:
               var = fh.sample(v,lons,lats,tymes,Verbose=Verbose)
             else:
@@ -354,7 +362,7 @@ class MxD04_NNR(MxD04_L2):
                 var = var.T # shape should be (nobs,nz)
                 self.sample.__dict__[v] = var
             else:
-                raise IndexError, 'variable <%s> has rank = %d'%(v,len(var.shape))
+                raise IndexError('variable <%s> has rank = %d'%(v,len(var.shape)))
 
         if npzFile is not None:
             savez(npzFile,**self.sample.__dict__)            
@@ -381,7 +389,7 @@ class MxD04_NNR(MxD04_L2):
                 iName = inputName
 
             if self.verbose>0:
-                print 'Getting NN input ',iName
+                print('Getting NN input ',iName)
 
             # Retrieve input
             # --------------
@@ -402,7 +410,7 @@ class MxD04_NNR(MxD04_L2):
                 input = self.__dict__[name][:]
                 
             else:
-                raise ValueError, "strange, len(iName)=%d"%len(iName)
+                raise ValueError("strange, len(iName)=%d"%len(iName))
 
             # Concatenate Inputs
             # ------------------
@@ -457,9 +465,9 @@ class MxD04_NNR(MxD04_L2):
             name, ch = TranslateTarget[targetName]
             if self.verbose>0:
                 if self.net.laod:
-                    print "NN Retrieving log(AOD+0.01) at %dnm "%ch
+                    print("NN Retrieving log(AOD+0.01) at %dnm "%ch)
                 else:
-                    print "NN Retrieving AOD at %dnm "%ch
+                    print("NN Retrieving AOD at %dnm "%ch)
             k = list(self.channels).index(ch) # index of channel            
             self.channels_ = self.channels_ + [ch,]
             if self.net.laod:
