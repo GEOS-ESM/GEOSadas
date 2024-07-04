@@ -220,7 +220,7 @@ sub init {
 
   if ( $nodename eq "hasw" ) { $ncpus_per_node = 24; }
   if ( $nodename eq "sky"  ) { $ncpus_per_node = 36; }
-  if ( $nodename eq "cas"  ) { $ncpus_per_node = 46; }
+  if ( $nodename eq "cas"  ) { $ncpus_per_node = 40; }
   $agcm_ncpus_per_node = -1;
 
 # define layout depending on resolution
@@ -241,7 +241,7 @@ sub init {
          $stat_nx =    2; $stat_ny =    2;
      } elsif ($nodename eq "cas") {
          die "Sorry this node/resolution not set yet, aborting \n";
-#        $agcm_ncpus_per_node = 46;
+#        $agcm_ncpus_per_node = 40;
      } else {
          die "Unknown node name, aborting \n";
      }
@@ -266,13 +266,12 @@ sub init {
          $obsv_nx =    4; $obsv_ny =   20;
          $stat_nx =    2; $stat_ny =   20;
      } elsif ($nodename eq "cas") {
-#        $agcm_ncpus_per_node = 46;
+#        $agcm_ncpus_per_node = 40;
          $enkf_cpus = 442;
-         $agcm_nx =    6; $agcm_ny =   24;
+         $agcm_nx =    6; $agcm_ny =   30;
          $miau_nx =    2; $miau_ny =   12;
          $obsv_nx =    4; $obsv_ny =   24;
          $stat_nx =    2; $stat_ny =   24;
-         die "Sorry this node/resolution not set yet, aborting \n";
      } else {
          die "Unknown node name, aborting \n";
      }
@@ -294,7 +293,7 @@ sub init {
 #        $agcm_ncpus_per_node = 36;
      } elsif ($nodename eq "cas") {
          die "Sorry this node/resolution not set yet, aborting \n";
-#        $agcm_ncpus_per_node = 46;
+#        $agcm_ncpus_per_node = 40;
      } else {
          die "Unknown node name, aborting \n";
      }

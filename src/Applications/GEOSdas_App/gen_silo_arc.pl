@@ -617,6 +617,7 @@ sub append_other_info {
 \${PESTOROOT}%s/etc/Y%y4/M%m2/%s.ExtData.%y4%m2%d2_%h2z.rc
 \${PESTOROOT}%s/etc/Y%y4/M%m2/%s.gcm.log.%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.txt
 \${PESTOROOT}%s/etc/Y%y4/M%m2/%s.ana.log.%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.txt
+\${PESTOROOT}%s/etc/Y%y4/M%m2/%s.ana_jo.log.%y4%m2%d2_%h2z.txt
 \${PESTOROOT}%s/etc/Y%y4/M%m2/%s.ana_stats.log.%y4%m2%d2_%h2z.txt
 \${PESTOROOT}%s/etc/Y%y4/M%m2/%s.sac.log.%y4%m2%d2_%h2z.txt
 \${PESTOROOT}%s/etc/Y%y4/M%m2/%s.ods.log.%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.txt
@@ -649,9 +650,11 @@ sub append_other_info {
 #               -------------------------
 #
 \${PESTOROOT}%s/jedi/ana/Y%y4/M%m2/%s.jedi_ana.%y4%m2%d2_%h2z.tar
+\${PESTOROOT}%s/jedi/ana/Y%y4/M%m2/%s.jedi_inc.%y4%m2%d2_%h2z.tar
 \${PESTOROOT}%s/jedi/obs/Y%y4/M%m2/%s.jedi_hofx.%y4%m2%d2_%h2z.tar
 \${PESTOROOT}%s/jedi/obs/Y%y4/M%m2/%s.jedi_osen.%y4%m2%d2_%h2z.tar
 \${PESTOROOT}%s/jedi/obs/Y%y4/M%m2/%s.jedi_ioda.%y4%m2%d2_%h2z.tar
+\${PESTOROOT}%s/jedi/obs/Y%y4/M%m2/%s.jedi_vbc.%y4%m2%d2_%h2z.tar
 #
 #               -------------------------
 #                    LSM FILES

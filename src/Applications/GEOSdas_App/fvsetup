@@ -3176,7 +3176,7 @@ sub get_nodeflg {
   elsif ($ans == 3) { $nodeflg = "ivy";  $ncpus_per_node = 20 }
   elsif ($ans == 4) { $nodeflg = "hasw"; $ncpus_per_node = 24 }
   elsif ($ans == 5) { $nodeflg = "sky";  $ncpus_per_node = 36 }
-  elsif ($ans == 6) { $nodeflg = "cas";  $ncpus_per_node = 45 }
+  elsif ($ans == 6) { $nodeflg = "cas";  $ncpus_per_node = 40 }
 
   # currently not applicable at nccs
   #---------------------------------
@@ -5168,7 +5168,7 @@ EOF
        $hist_pert_jm = 181;
        $apert_im = 90;
        $apert_jm = $apert_im * 6;
-       $bjedi_im = 90;
+       $bjedi_im = $agcm_im;
        $bjedi_jm = $bjedi_im * 6;
        $anahgrd = "d";
        $jcap_ens = 126;
@@ -5203,7 +5203,7 @@ EOF
        $hist_pert_jm = 361;
        $apert_im = 180;
        $apert_jm = $apert_im * 6;
-       $bjedi_im = 90;
+       $bjedi_im = 180;
        $bjedi_jm = $bjedi_im * 6;
        $anahgrd = "d";
        $use_shmem = 1;

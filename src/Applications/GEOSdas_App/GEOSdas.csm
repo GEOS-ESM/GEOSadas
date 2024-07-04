@@ -3268,6 +3268,11 @@ endif
   set ana_datetime = ( `tick $gcm_nymd0 $gcm_nhms0 $idummy` )
 
   set this_hh0 = `echo $gcm_nhms0 | cut -c1-2`
+  set this_hha = `echo $ana_datetime[2] | cut -c1-2`
+
+  set this_log = $EXPID.ana_jo.log.${ana_datetime[1]}_${this_hha}z.txt
+  obimp_summary.pl -rc $FVROOT/etc/odsstats4jedi.rc -type diag -josummary -o $this_log $ana_datetime[1] $ana_datetime[2]
+
 
   jedi_driver.csh $gcm_nymd0 $gcm_nhms0 $ana_datetime[1] $ana_datetime[2] |& tee -a $FVWORK/$EXPID.jedi_drv.log.${gcm_nymd0}_${this_hh0}z.txt
   if ( $status ) then
