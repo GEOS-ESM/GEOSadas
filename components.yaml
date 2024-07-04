@@ -47,7 +47,7 @@ AeroML:
 GEOS_Util:
   local: ./src/Shared/@GMAO_Shared/@GEOS_Util
   remote: ../GEOS_Util.git
-  tag: v2.0.7
+  tag: rt-2.0.8+pr73
   develop: main
 
 MAPL:
@@ -65,7 +65,7 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  branch: feature/rtodling/x50R9rt
+  branch: feature/rtodling/x50R12rt
   develop: develop
 
 mksi:
@@ -77,7 +77,7 @@ mksi:
 GEOSgcm_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp
   remote: ../GEOSgcm_GridComp.git
-  tag: v2.5.3
+  tag: rt-2.5.3-cubed-mkiau
   sparse: ./config/GEOSgcm_GridComp.sparse
   develop: develop
 
