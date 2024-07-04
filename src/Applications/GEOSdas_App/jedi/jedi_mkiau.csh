@@ -54,7 +54,24 @@ setenv JEDIWORK $FVWORK/jedi.$nymda.${nhmsa}
 
 # Create analysis from increment
 cd $JEDIWORK/Data/inc
-foreach fn ( `ls *.jedi_inc1.eta.*` )
+set these_incs = (`ls *.jedi_inc1.eta.*`)
+if ( $#these_incs == 1 ) then
+   # In case of running FGAT, JEDI puts out a single increment - the solution - a the start
+   # of the var window. What we need is the increment at synoptic time, since in 3D, the increment
+   # is constant within the window, we rename/retime the increment as in the middle of the window.
+   # This makes it fully consistent w/ what we would expect in a 3D setting, i.e., increment at the 
+   # synoptic time.
+   set ttag = `echo $these_incs[1] | cut -d. -f4`
+   set nymd = `echo $ttag | cut -c1-8` 
+   set   hh = `echo $ttag | cut -c10-11` 
+   set nhms = ${hh}0000
+   if ( $nymd != $nymda || $nhms != $nhmsa ) then
+      /bin/mv $these_incs[1] $EXPID.jedi_inc1.eta.${nymda}_${nhmsa}z.nc4
+      reset_time.x $EXPID.jedi_inc1.eta.${nymda}_${nhmsa}z.nc4 $nymda $nhmsa -9
+   endif
+   set these_incs = (`ls *.jedi_inc1.eta.*`)
+endif
+foreach fn ( $these_incs )
   set ttag = `echo $fn   | cut -d. -f4`
   set nymd = `echo $ttag | cut -c1-8` 
   set   hh = `echo $ttag | cut -c10-11` 
@@ -102,7 +119,7 @@ if ( ! -e IAU_EGRESS ) then
     $JEDI_MKIAU_MPIRUN -np $ncpus mkiau.x
 
     # clean up
-    rm -f input.nml mkiau.rc
+    #rm -f input.nml mkiau.rc
   end
 endif
 

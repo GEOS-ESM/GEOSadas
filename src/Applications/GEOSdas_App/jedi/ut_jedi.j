@@ -3,8 +3,8 @@
 setenv GID g0613
 setenv BATCH_SUBCMD "sbatch"
 
-setenv EXPID j48rt4
-setenv FVHOME /gpfsm/dnb05/projects/p139/rtodling/JEDI/$EXPID
+setenv EXPID j49rt00
+setenv FVHOME /discover/nobackup/projects/gmao/dadev/rtodling/JEDI/x49/$EXPID
 setenv FVROOT `cat $FVHOME/.FVROOT`
 setenv JEDIDIR $FVHOME/run/jedi
 setenv VAROFFSET 180
@@ -12,10 +12,10 @@ setenv VAROFFSET 180
 source $FVROOT/bin/g5_modules
 set path = ( . $FVHOME/run $JEDIDIR $FVROOT/bin $SHARE/dasilva/opengrads/Contents $BASEDIR/$ARCH/bin $path )
 
-set nymd = 20211205
+set nymd = 20230725
 set hh   = 00
 set nhms = ${hh}0000
-setenv FVWORK $FVHOME/../fvwork.28374
+setenv FVWORK $FVHOME/../fvwork.1177
 
 @ varoffset_sec = $VAROFFSET * 60
 set date0 = (`tick $nymd ${hh}0000 -$varoffset_sec`)

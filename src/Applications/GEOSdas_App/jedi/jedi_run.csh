@@ -57,7 +57,6 @@ if ( !($?EXPID)            )  setenv FAILED   1
 if ( !($?FVHOME)           )  setenv FAILED   1
 if ( !($?FVWORK)           )  setenv FAILED   1
 if ( !($?JEDI_ROOT)        )  setenv FAILED   1
-if ( !($?JEDI_HYBRID)      )  setenv FAILED   1
 if ( !($?JEDI_RUN_ANA)     )  setenv FAILED   1
 if ( !($?JEDI_RUN_CNVANA)  )  setenv FAILED   1
 if ( !($?JEDI_RUN_UPDRST)  )  setenv FAILED   1
@@ -171,26 +170,19 @@ if ( $JEDI_RUN_ANA ) then
       setenv MYCONF Config/adenvarfgat.yaml
       if (! -d Data/inc ) mkdir Data/inc 
    endif
-   if ( $JEDI_HYBRID ) then
-      if ( -e Config/hybens_info ) then
-        /bin/cp Config/hybens_info .
-     else
-        echo "${MYNAME}: failed to find hybens_info"
-        exit (1)
-     endif
-   endif
 
-#  if ( -e $FVHOME/run/jedi/jedi_run_var.j ) then
-#     vED -env $FVHOME/run/jedi/jedi_run_var.j -o jedi_run_var.j
-#     sbatch -W jedi_run_var.j
-#     sleep 2
-#  else
-#     $JEDI_FV3VAR_MPIRUN $JEDIBUILD/bin/fv3jedi_var.x $MYCONF |& tee -a $FVWORK/$JEDIVARLOG
-#     if ( $status ) then
-#         echo " ${MYNAME}: failed in VAR, aborting ..."
-#         exit (1)
-#     endif
-#  endif
+   if ( -e $FVHOME/run/jedi/jedi_run_var.j ) then
+      vED -env $FVHOME/run/jedi/jedi_run_var.j -o jedi_run_var.j
+      sbatch -W jedi_run_var.j
+      sleep 2
+   else
+#     $JEDI_FV3VAR_MPIRUN $JEDIBUILD/bin/fv3jedi_var.x.default $MYCONF |& tee -a $FVWORK/$JEDIVARLOG
+      $JEDI_FV3VAR_MPIRUN $JEDIBUILD/bin/fv3jedi_var.x         $MYCONF |& tee -a $FVWORK/$JEDIVARLOG
+      if ( $status ) then
+          echo " ${MYNAME}: failed in VAR, aborting ..."
+          exit (1)
+      endif
+   endif
 
    # If testing Adjoint analysis ...
    # -------------------------------
@@ -219,13 +211,7 @@ if ( $JEDI_RUN_CNVANA ) then
    # Create restart increment from analysis and background
    # -----------------------------------------------------
    if ( -d Data/inc ) then
-      if ( $JEDI_HYBRID ) then
-         foreach cf ( `ls Config/convertinc_geos_*.yaml` )
-            $JEDI_CNVINC_MPIRUN $JEDIBUILD/bin/fv3jedi_convertincrement.x  $cf
-         end
-      else
-         $JEDI_CNVINC_MPIRUN $JEDIBUILD/bin/fv3jedi_convertincrement.x  Config/convertinc_geos.yaml
-      endif
+      $JEDI_CNVINC_MPIRUN $JEDIBUILD/bin/fv3jedi_convertincrement.x  Config/convertinc_geos.yaml
    else
       echo " ${MYNAME}: failed in convert inc, aborting ..."
       exit (1)
@@ -253,7 +239,7 @@ cd -
 # archive varBC
 # -------------
 cd $JEDIWORK/Data/vbc
-tar cvf $FVWORK/$EXPID.jedi_vbc.${nymdb}_${hhb}z.tar *satbias*nc4
+tar cvf $FVWORK/$EXPID.jedi_vbc.${nymdb}_${hhb}z.tar *satbias*nc4 *aircraft*csv
 cd -
 
 # If here, likely successful

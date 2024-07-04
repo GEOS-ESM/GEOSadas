@@ -40,6 +40,8 @@ if ( !($?GID)           )  setenv FAILED   1
 if ( !($?JEDI_OBS_OPT)  )  setenv FAILED   1
 if ( !($?JEDI_OBS_DIR)  )  setenv FAILED   1
 if ( !($?JEDI_HYBRID)   )  setenv FAILED   1
+if ( !($?JEDI_FEEDBACK_VARBC) )  setenv FAILED   1
+if ( !($?OFFLINE_IODA_DIR) ) setenv FAILED   1
 
 if ( $FAILED ) then
   env
@@ -130,20 +132,12 @@ end
 foreach fn ( `ls $JEDIETC/*.tmpl` )
   /bin/cp $fn .
 end
-if ( $JEDI_HYBRID ) then
-  if ( -e $JEDIETC/hybens_info ) then
-     /bin/cp $JEDIETC/hybens_info .
-  else
-     echo "${MYNAME}: failed to find hybens_info"
-     exit (1)
-  endif
-endif
 cd -
 
 # Get positined in Data ...
 cd $JEDIWRK/Data
 
-foreach dir ( ana bkg atmens hofx iau obs osen inc vbc )
+foreach dir ( ana bkg ensemble hofx iau obs osen inc vbc )
    if ( ! -d $dir ) mkdir -p $dir
 end
 
@@ -178,9 +172,11 @@ if ( $JEDI_RUN_ADANA || $JEDI_OBS_OPT == 1 ) then
 # Also link forecast sensitivity at this time
 # -------------------------------------------
   if ( ! -d $JEDIWRK/Data/inc ) mkdir -p $JEDIWRK/Data/inc
-  cd $JEDIWRK/Data/inc
-  ln -sf $FVWORK/jedi.fsens.eta.nc4 .
-  cd -
+  if ( -e $FVWORK/jedi.fsens.eta.nc4 ) then
+    cd $JEDIWRK/Data/inc
+    ln -sf $FVWORK/jedi.fsens.eta.nc4 .
+    cd -
+  endif
 endif # adjoint analysis
 
 # Link IODA observation files
@@ -189,40 +185,82 @@ if ( $JEDI_OBS_OPT == 2 ) then
    pwd
    ls
    cd obs
+   if ( -d $OFFLINE_IODA_DIR/${nymda}T${nhmsa}Z/geos_atmosphere ) then
+      ln -sf $OFFLINE_IODA_DIR/${nymda}T${nhmsa}Z/geos_atmosphere/* .
+   else
+      echo " ${MYNAME}: failed to link IODA files, aborting ..."
+      exit 1
+   endif
+   cd -
+   echo " ${MYNAME}: linked IODA files successfully"
+endif
+
+# Link IODA observation files
+# ---------------------------
+if ( $JEDI_OBS_OPT == 3 ) then
+   pwd
+   ls
+   cd obs
    ln -sf $FVWORK/ioda.${nymda}_${hha}0000/* .
    cd -
    echo " ${MYNAME}: linked IODA files successfully"
 endif
 
+# If so, feedback VarBC (from previous cycle)
+# -------------------------------------------
+if ( ! -e $FVHOME/run/AGCM.BOOTSTRAP.rc.tmpl ) then # do not do this in the 1st cycle for now
+                                                    # TBD: better mechanism to control initial VarBC
+ if ( $JEDI_FEEDBACK_VARBC ) then
+  cd obs
+  # get tar-ball of varBC files from previous cycle
+  setenv NYMDP  $nymdp
+  setenv NHMSP  $nhmsp
+  setenv ACQWORK $JEDIWRK/Data/obs
+  vED -env $FVHOME/run/jedi/jedi_acquire_vbc.j -o jedi_acquire_vbc.j
+  if ( $BATCH_SUBCMD == "sbatch" ) then
+     sbatch -W -o jedi_vbc.log jedi_acquire_vbc.j
+  else
+     qsub -W block=true -o jedi_vbc.log jedi_acquire_vbc.j
+  endif
+  set lstvbc = `ls *vbc*tar`
+  if ($status) then
+    echo "${MYNAME}: failed to retrieve vbc tar-ball"
+    exit 1
+  endif
+ #/bin/rm *satbias*.nc4 *aircraft*csv - NOTE: there is no fully functional aircraft VarBC TBD
+  /bin/rm *satbias*.nc4
+  # unfold tar-ball and overwrite all bias correction files
+  tar xvf *vbc*tar
+  cd -
+ endif
+
+endif
+
+# The following accommodates for the case when the satbias coeff and cov are in the same
+# file - typically the stuff in R2D2 ca June 2024.
+cd obs
+set satbcov = `ls *.sabias_cov.*nc4`
+if ( $status ) then
+  echo "${MYNAME}: could not find satbias_cov"
+  echo "${MYNAME}: linking satbias to satbias_cov ..."
+  foreach fn ( `ls *.satbias.*nc4` )
+    set prefix = `echo $fn | cut -d. -f1-2`
+    ln -s $fn $prefix.satbias_cov.nc4
+  end
+endif
+cd -
+
 # ensemble & background files
 setenv JEDI_GET_ENSBKG 0
 if ( $JEDI_HYBRID ) then
-  if ( -d $FVHOME/atmens ) then # full hybrid DAS
-     cd atmens
-     ln -sf $FVHOME/atmens/mem* . 
+  set efn = `echo $EXPID.traj_lcv.${nymdb}_${hhb}00z.nc4` # wired template name for now
+  if ( -e $FVHOME/atmens/enstraj/mem001/$efn ) then
+     cd ensemble
+     ln -sf $FVHOME/atmens/enstraj/mem* . 
      cd -
-     echo "${MYNAME}: Got ensemble from FVHOME"
+  else
      setenv JEDI_GET_ENSBKG 1
   endif
-  if ( ! $JEDI_GET_ENSBKG ) then
-     if ( -d $FVWORK/atmens ) then # replay hybrid DAS
-        cd atmens
-        ln -sf $FVWORK/atmens/mem* . 
-        cd -
-        echo "${MYNAME}: Got ensemble from FVWORK"
-        setenv JEDI_GET_ENSBKG 1
-     endif
-  endif
-# if ( ! $JEDI_GET_ENSBKG ) then
-#    set efn = `echo $EXPID.bkg_clcv.${nymdb}_${hhb}00z.nc4` # wired template name for now
-#    if ( -e $FVHOME/atmens/enstraj/mem001/$efn ) then
-#       cd atmens
-#       ln -sf $FVHOME/atmens/enstraj/mem* . 
-#       cd -
-#    else
-#       setenv JEDI_GET_ENSBKG 1
-#    endif
-# endif
 endif
 
 cd bkg
@@ -275,16 +313,15 @@ else
    echo " ${MYNAME}: failed to retrieve bkg tar ball, aborting ..."
    exit(3)
 endif
-setenv JEDI_GET_ENSBKG 0 # below is old stuff that needs revising, bypass for now
 if( $JEDI_GET_ENSBKG ) then
    set lst = `ls *.atmens_etrj.*.tar `
    if ( $#lst == 1 ) then
       tar xvf $lst
       set vexpid = `ls -d *.atmens_etrj*z | cut -d. -f1`
-      /bin/mv $vexpid.atmens_etrj*z/enstraj/mem* $JEDIWRK/Data/atmens
+      /bin/mv $vexpid.atmens_etrj*z/enstraj/mem* $JEDIWRK/Data/ensemble
       /bin/rm -r $vexpid.atmens_etrj*z $vexpid.atmens_etrj*z.tar
       if ( $vexpid != $EXPID ) then # care for tarball from another exp
-         cd $JEDIWRK/Data/atmens
+         cd $JEDIWRK/Data/ensemble
          foreach dir (`ls -d mem*`)
              cd $dir
              foreach fn (`ls *.nc4`)
