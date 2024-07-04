@@ -1,9 +1,9 @@
 #------------
-# x50R9rt.input
+# x50R12rt.input
 #------------
 
 codeID: 523f29e
-description: x50R9rt__GEOSadas-5_40_0__agrid_C360__ogrid_C
+description: x50R12rt__GEOSadas-5_40_0__agrid_C360__ogrid_C
 fvsetupID: f7aaa973c7
 
 ---ENDHEADERS---
@@ -29,7 +29,7 @@ EXPID? [u000_C360]
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [x50R9rt__GEOSadas-5_40_0__agrid_C360__ogrid_C]
+EXPDSC? [x50R12rt__GEOSadas-5_40_0__agrid_C360__ogrid_C]
 > 
 
 Land Boundary Conditions? [Icarus_Updated]
@@ -38,10 +38,10 @@ Land Boundary Conditions? [Icarus_Updated]
 Catchment Model choice? [1]
 > 
 
-FVHOME? [/discover/nobackup/rtodling/x50R9rt]
+FVHOME? [/discover/nobackup/rtodling/x50R12rt]
 > /discover/nobackup/projects/gmao/dadev/rtodling/$expid
 
-The directory /discover/nobackup/projects/gmao/obsdev/rtodling/x50R9rt already exists. Clean it? [y]
+The directory /discover/nobackup/projects/gmao/obsdev/rtodling/x50R12rt already exists. Clean it? [y]
 > 
 
 Processing nodes (1:Westmere, 2:SandyBridge, 3:Ivy Bridge, 4:Haswell, 5:Skylake, 6:Cascase)? [4]
@@ -98,7 +98,7 @@ Run singular vector experiments (0=n,1=yes)? [0]
 Run analysis-sensitivity applications (0=no,1=yes)? [0]
 > 1
 
-Verifying experiment id: [x50R9rt]
+Verifying experiment id: [x50R12rt]
 > 
 
 Ending year-month-day? [20191121]
