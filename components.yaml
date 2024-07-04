@@ -58,7 +58,7 @@ GEOSana_GridComp:
 GEOSgcm_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp
   remote: ../GEOSgcm_GridComp.git
-  tag: v1.17.4
+  tag: rt-1.17.4-cubed-mkiau
   sparse: ./config/GEOSgcm_GridComp.sparse
   develop: develop
 
