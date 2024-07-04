@@ -22,7 +22,7 @@ ecbuild:
 NCEP_Shared:
   local: ./src/Shared/@NCEP_Shared
   remote: ../NCEP_Shared.git
-  tag: v1.2.0
+  tag: v1.3.0
   develop: main
 
 GMAO_Shared:
@@ -65,7 +65,7 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  tag: rt-1.5.7-x50R12rt
+  branch: feature/rtodling/merge_5295p7_x50R1_2_dev
   develop: develop
 
 mksi:
