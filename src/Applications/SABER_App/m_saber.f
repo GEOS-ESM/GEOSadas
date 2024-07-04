@@ -14,6 +14,8 @@
       use m_odsmeta, only: H_DESCEND, H_ASCEND
       use m_odsmeta, only: ktTT, kto3mx, ktww
 
+      use m_saber_err, only: saber_err_get
+
       implicit none
 
 !
@@ -72,21 +74,23 @@
 ! 
 ! !INTERFACE:
 
-      subroutine SABER_GetM_ ( version, fname, nymd, nhms, 
-     $                         ods, rc)
+      subroutine SABER_GetM_ ( version, fname, nymd, nhms, kscnt,
+     $                         kxtyp, ods, rc)
       implicit none
 
 ! !INPUT PARAMETERS: 
 !
       character(len=*), intent(in)   :: version   ! SABER version
       character(len=*), intent(in)   :: fname     ! SABER file name
-      integer, intent(in)            :: nymd ! year-month-day, e.g., 19990701
-      integer, intent(in)            :: nhms ! hour-min-sec,   e.g., 120000
+      integer, intent(in)            :: nymd      ! year-month-day, e.g., 19990701
+      integer, intent(in)            :: nhms      ! hour-min-sec,   e.g., 120000
+      integer, intent(in)            :: kscnt     ! ks counter
+      integer, intent(in)            :: kxtyp     ! kx indicator
 
 ! !OUTPUT PARAMETERS:
 !
 
-      type(ods_vect), intent(out)    ::  ods ! ODS vector
+      type(ods_vect), intent(inout)  ::  ods ! ODS vector
 
       integer, intent(out)           ::  rc ! Error return code:
                                               ! = 0    - all is well
@@ -160,7 +164,7 @@
 ! Begin writing to ODS vector. 
 
       oc=1
-      ksnum=1 
+      ksnum=kscnt 
       ! Cycle through the events.
       do n=1,n_events !start_pt-1   
          levflag=.false.  ! This flag is activated when processing reaches
@@ -278,6 +282,7 @@
                                  ods%data%ks(oc)=ksnum
                                  if(k.eq.1)then
                                     ods%data%kt(oc)=ktTT
+                                    call saber_err_get(ods%data%lev(oc),ods%data%xvec(oc))
                                  elseif (k==2) then
                                     ods%data%kt(oc)=ktww
                                  elseif (k==3) then
@@ -285,7 +290,7 @@
 !                                elseif(k.eq.4)then
 !                                   ods%data%kt(oc)=43
                                  endif
-                                 ods%data%kx(oc)=294
+                                 ods%data%kx(oc)=kxtyp
                                  ods%data%qcexcl(oc)=0
                                  select case (tpAD(n))
                                  case (0)
@@ -313,6 +318,7 @@
 !_RT        print*,"Warning: current array has less than ", mflush, " levels."
 !_RT        print*,"File may be incomplete."
          endif
+!        ksnum=ksnum+1
       enddo ! Reading event array.
 
       if(oc.eq.1)then
@@ -322,7 +328,6 @@
       endif
       return
       end subroutine SABER_GetM_
-
 
       subroutine saber_dims_ ( fname,
      $                         nymd,
@@ -429,8 +434,8 @@
       integer event_id, date_id
       integer alt_id
       integer varid
-      character*100 varname
-      character*100 dimname
+      character(len=100) varname
+      character(len=100) dimname
       integer dimsize
 
       integer vartype, nvdims, vdims(MAXVDIMS), nvatts
@@ -640,7 +645,7 @@
       ktnames = ' '
       ktunits = ' '
 
-      kxnames(294)=
+      kxnames(394)=
      $'SABER - Sounding of the Atmosphere Broadband Emission Radiometer'
 
       ktnames(ktww)='Upper-air water vapor mixing ratio'

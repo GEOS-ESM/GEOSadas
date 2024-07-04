@@ -105,7 +105,7 @@
 
       if (present(append)) then
          apnfile = append
-! if true, inquire about output file.  if not exist, set false
+!  if true, inquire about output file.  if not exist, set false
 !  IF  true will use 'apn' when opening bufr file.
          if (apnfile) then
             inquire(file=outputfile,exist=ex)
@@ -138,7 +138,7 @@
          ludx = luavail()
          if ( usebufr ) then
            open(unit=ludx,file=bufrtable,action='read',
-     &           form='unformatted')
+     &          form='unformatted')
          else
            open(unit=ludx,file=bufrtable,action='read',form='formatted')
          endif

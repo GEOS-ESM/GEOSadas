@@ -67,7 +67,7 @@
       logical :: verbose,bexist
       logical :: syn(5)
       type(ods_vect)  ::  ods_struct(2), odsm ! ODS vector
-      integer :: tnobs,nfiles
+      integer :: kxtyp,tnobs,nfiles
  
       logical :: debug=.false.
 
@@ -82,11 +82,12 @@
       nhms(3)=120000
       nhms(4)=180000
       nhms(5)=000000
+      kxtyp = 394
       i=1
       nfiles=0
       s_string='SABER_L2A_'
-      bfrtmpl='saber.l2a.obs.%y4%m2%d2_%h2z.bfr'
       bfrtmpl='NULL'
+      bfrtmpl='saber.l2a.obs.%y4%m2%d2_%h2z.bfr'
       odstmpl='saber.l2a.obs.%y4%m2%d2_%h2z.ods'
 
       ! Process argument list
@@ -175,17 +176,19 @@
             call StrTemplate ( bfrfname, bfrtmpl, 'GRADS', xid="saber", &
                                nymd=nymd, nhms=nhms(k), stat=rc )               
             if ( trim(bfrfname) /= "NULL" ) then
-               if(verbose) print*,'Writing data at ',nymd,nhms(k),'Z to ',bfrfname 
+
                inquire(file=bfrfname,exist=bexist)
                if (bexist) then
-                  print *,'Append to output bfr file ',trim(bfrfname)
+                  if(verbose) print *,'Append to output bfr file ',trim(bfrfname)
                   call init_bufr(bfrfname,append=.true.)
                else
-                  print *,'Create output bfr file ',trim(bfrfname)
+                  if(verbose) print *,'Create output bfr file ',trim(bfrfname)
                   call init_bufr(bfrfname,tablefile='saber_prepbufr_table',append=.false.)
                endif
  
-               call ods2bfr_ (ods_struct(1))
+               call ods2bfr_ (nymd,nhms(k),ods_struct(1))
+
+               call end_bufr
 
             endif
 
@@ -202,17 +205,26 @@ contains
       subroutine saberods_ (odsname)
  
       character(len=*), intent(in) :: odsname
-! Initialize ods vector
-       call SABER_Get(version,fnames(j),nymd,nhms(k),ods_struct(1),rc)
 
-! If data matching the selected synoptic time were found, continue.
+      integer :: ks
+
+!     Check existence of ODS file
+      ks = 1
+      inquire(file=odsname,exist=found)
+      if (found) then
+          call ODS_Get( odsname, nymd, nhms(k), ftype, ods_struct(2), rc )
+          ks=maxval(ods_struct(2)%data%ks) + 1
+      endif
+
+!     Initialize ods vector
+      call SABER_Get(version,fnames(j),nymd,nhms(k),ks,kxtyp,ods_struct(1),rc)
+
+!     If data matching the selected synoptic time were found, continue.
        if(rc.eq.0)then ! If something was read from the file, continue
 !         hit=.true.
 
 ! Check to see if ods file already exists.
-          inquire(file=odsname,exist=found)
           if(found)then
-             call ODS_Get( odsname, nymd, nhms(k), ftype, ods_struct(2), rc )
              call ODS_Merge ( ods_struct, 2, odsm, rc )
              write(cmd,'(2a)') '/bin/rm -r ', trim(odsname)
              call system(cmd)
@@ -243,19 +255,54 @@ contains
       return
       end subroutine saberods_
 
-      subroutine ods2bfr_(ods)
+      subroutine ods2bfr_(nymd,nhms,ods)
 
+      use m_odsmeta, only: ktTT, kto3mx, ktww
+
+      implicit none
+ 
+      integer :: nymd, nhms
       type(ods_vect)  ::  ods
 
-!              call write_bfr(stnid, xob, yob, dhr, typ, ib, &
-!                             rstat, quality(jtm), convergence(jtm), &
-!                             pob, tob, tqm, tprec, subset, idate)
+      integer idate
+      real xob, yob, dhr, typ, rstat, qual, conv
+      real,allocatable :: pob(:), tob(:), tqm(:), tprec(:)
+      character(len=8) stnid, subset
+
+      integer ii, ib
+
+      subset = 'SABER'
+      idate=nymd*100 + nhms/10000
+      ib=1
+      allocate (pob(ib), tob(ib), tqm(ib), tprec(ib))
+      do ii=1,ods%data%nobs,3
+         xob = ods%data%lon(ii)
+         if (xob .lt. 0.) xob = xob + 360.
+         yob = ods%data%lat(ii)
+         pob(1) = ods%data%lev(ii)
+         tprec(1) = 1.03
+         if ( ods%data%kt(ii)  ==ktTT ) then
+             tob(1) = ods%data%obs(ii)- 273.15 ! Celsius
+             tprec(1) = ods%data%xvec(ii)
+         endif
+         if ( ods%data%kt(ii+1)==ktww ) tqm(1) = ods%data%obs(ii+1) ! units?
+         rstat = ods%data%qcexcl(ii)
+         dhr = ods%data%time(ii)/60. ! seconds
+         typ = ods%data%kx(ii)
+         write(stnid,'(''S'',i7.7)') ods%data%ks(ii)
+         call write_bfr(stnid, xob, yob, dhr, typ, ib, &
+                        rstat, 9., 1.0, &
+                        pob, tob, tqm, tprec, subset, idate)
+      enddo
+      deallocate (pob, tob, tqm, tprec)
+
       end subroutine ods2bfr_
       subroutine write_bfr(stnid, xob, yob, dhr, typ, ib, &
                            rstat, qual, conv, &
                            pob, tob, tqm, tprec, subset, idate)
 
-      integer idate, ib, l
+      implicit none
+      integer idate, ib
       character(len=8) stnid, subset
       real xob, yob, dhr, typ, rstat, qual, conv
       real pob(ib), tob(ib), tqm(ib), tprec(ib)
@@ -264,6 +311,7 @@ contains
       real(8)               ::    rid
       real(8), dimension(8,255) :: pobs, tobs
 
+      integer l 
       integer, parameter :: MXBLVL = 255 ! max no. of report levels allowed
       integer(i_bfr), parameter :: iarr = 8    ! size of bfr arrays
       integer(i_bfr), parameter :: i1   = 1    ! single level
@@ -275,7 +323,7 @@ contains
       character(len=40) hdstr, pobstr, tobstr
       data hdstr /'SID XOB YOB DHR TYP SABERT SABERQ SABERC'/
       data pobstr /'POB PQM PPC PRC CAT'/
-      data tobstr /'TOB TQM TPC TRC SABERRT'/
+      data tobstr /'TOB TQM TPC TRC SABERPT'/
 
       hdr(1) = transfer(stnid, rid)
       hdr(2) = xob
@@ -304,7 +352,6 @@ contains
 
       ibdate = idate
       ilevs = ib
-
       call openmb(lu_b, subset, ibdate)
       call ufbint(lu_b, hdr,    iarr, i1   , iret, hdstr)
       call ufbint(lu_b, pobs,   iarr, ilevs, iret, pobstr)

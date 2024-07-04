@@ -22,7 +22,7 @@
 | MSONET   | A60245 | MESONET SURFACE REPORTS (COOPERATIVE NETWORKS)           |
 | GPSIPW   | A60246 | GLOBAL POSITIONING SATELLITE-INTEGRATED PRECIP. WATER    |
 | RASSDA   | A60247 | RADIO ACOUSTIC SOUNDING SYSTEM (RASS) TEMP PROFILE RPTS  |
-| EOSSABER | A60254 | EOS-SABER SATELLITE DATA (SOUNDINGS, RETRIEVALS)         |
+| SABER    | A60255 | TIMED-SABER SATELLITE DATA (SOUNDINGS, RETRIEVALS)       |
 |          |        |                                                          |
 | HEADR    | 361001 | REPORT HEADER SEQUENCE                                   |
 | PRSLEVEL | 361002 | PRESSURE LEVEL SEQUENCE (ALL TYPES EXCEPT GOESND)        |
@@ -61,13 +61,13 @@
 | PTENDSEQ | 361035 | PRESSURE TENDENCY SEQUENCE                               |
 | PTE24SEQ | 361036 | 24 HOUR PRESSURE TENDENCY SEQUENCE                       |
 | PREC_SEQ | 361098 | SABERRET PRECISION SEQUENCE                              |
-| PRSLEVLM | 361099 | MLSRET PRESSURE LEVEL SEQUENCE                           |
+| PRSLEVLM | 361099 | SABERRET PRESSURE LEVEL SEQUENCE                         |
 | RSRD_SEQ | 361101 | RESTRICTIONS ON REDISTRIBUTION SEQUENCE                  |
-| PM__INFO | 362031 | PRESSURE (MLS) INFORMATION                               |
+| PM__INFO | 362031 | PRESSURE (SABER) INFORMATION                             |
 | P___INFO | 362001 | PRESSURE INFORMATION                                     |
 | Q___INFO | 362002 | SPECIFIC HUMIDITY INFORMATION                            |
 | T___INFO | 362003 | TEMPERATURE INFORMATION                                  |
-| TM__INFO | 362033 | TEMPERATURE INFORMATION (MLS)                            |
+| TM__INFO | 362033 | TEMPERATURE INFORMATION (SABER)                          |
 | Z___INFO | 362004 | HEIGHT INFORMATION                                       |
 | W___INFO | 362005 | WIND INFORMATION                                         |
 | PW__INFO | 362006 | PRECIPITABLE WATER INFORMATION                           |
@@ -83,10 +83,10 @@
 | RRT_INFO | 362017 | RAIN RATE INFORMATION                                    |
 | CTP_INFO | 362018 | CLOUD TOP INFORMATION                                    |
 | SST_INFO | 362019 | SEA TEMPERATURE INFORMATION                              |
-| PM_EVENT | 362131 | PRESSURE EVENT SEQUENCE (MLS)                            |
+| PM_EVENT | 362131 | PRESSURE EVENT SEQUENCE (SABER)                          |
 | P__EVENT | 362101 | PRESSURE EVENT SEQUENCE                                  |
 | Q__EVENT | 362102 | SPECIFIC HUMIDITY EVENT SEQUENCE                         |
-| TM_EVENT | 362133 | TEMPERATURE EVENT SEQUENCE (MLS)                         |
+| TM_EVENT | 362133 | TEMPERATURE EVENT SEQUENCE (SABER)                       |
 | T__EVENT | 362103 | TEMPERATURE EVENT SEQUENCE                               |
 | Z__EVENT | 362104 | HEIGHT EVENT SEQUENCE                                    |
 | W__EVENT | 362105 | WIND EVENT SEQUENCE                                      |
@@ -112,7 +112,7 @@
 | RRTBACKG | 362211 | RAIN RATE BACKGROUND SEQUENCE                            |
 | CTPBACKG | 362212 | CLOUD TOP PRESSURE BACKGROUND SEQUENCE                   |
 | SSTBACKG | 362213 | SEA TEMPERATURE BACKGROUND SEQUENCE                      |
-| TM_BACKG | 362214 | TEMPERATURE BACKGROUND SEQUENCE (MLS)                    |
+| TM_BACKG | 362214 | TEMPERATURE BACKGROUND SEQUENCE (SABER)                  |
 | P__POSTP | 362221 | PRESSURE POSTPROCESSING SEQUENCE                         |
 | Q__POSTP | 362222 | SPECIFIC HUMIDITY POSTPROCESSING SEQUENCE                |
 | T__POSTP | 362223 | TEMPERATURE POSTPROCESSING SEQUENCE                      |
@@ -393,8 +393,8 @@
 | SABERT   | 025226 | SABER RETRIEVAL STATUS FLAG                              |
 | SABERQ   | 025227 | SABER RETRIEVAL QUALITY VALUE                            |
 | SABERC   | 025228 | SABER RETRIEVAL CONVERGENCE VALUE                        |
-| SABERRT  | 025229 | SABER TEMP RETRIEVAL                                     |
-| SABERRQ  | 025230 | SABER MIXR RETRIEVAL                                     |
+| SABERPT  | 025229 | SABER TEMP RETRIEVAL PRECISION VALUE                     |
+| SABERPQ  | 025230 | SABER MIXR RETRIEVAL PRECISION VALUE                     |
 |          |        |                                                          |
 |------------------------------------------------------------------------------|
 | MNEMONIC | SEQUENCE                                                          |
@@ -445,7 +445,7 @@
 |          |                                                                   |
 | RASSDA   | HEADR  {PRSLEVEL}                                                 |
 |          |                                                                   |
-| EOSSABER | HEADR  SABERT  SABERQ  SABERC  {PRSLEVLM}                         |
+| SABER    | HEADR  SABERT  SABERQ  SABERC  {PRSLEVLM}                         |
 |          |                                                                   |
 | HEADR    | SID  XOB  YOB  DHR  ELV  TYP  T29  TSB  ITP  SQN  PROCN  RPT      |
 | HEADR    | TCOR  <RSRD_SEQ>                                                  |
@@ -522,7 +522,7 @@
 |          |                                                                   |
 | PTE24SEQ | 24PC                                                              |
 |          |                                                                   |
-| PREC_SEQ | SABERRT  SABERRQ                                                  |
+| PREC_SEQ | SABERPT  SABERPQ                                                  |
 |          |                                                                   |
 | PRSLEVLM | CAT  <PM__INFO>  <Q___INFO>  <TM__INFO>  <PREC_SEQ>               |
 |          |                                                                   |
@@ -925,7 +925,7 @@
 | SABERT   |    0 |           0 |  16 | FLAG TABLE               |-------------|
 | SABERQ   |    2 |           0 |  16 | NUMERIC                  |-------------|
 | SABERC   |    2 |           0 |  16 | NUMERIC                  |-------------|
-| SABERRT  |    2 |           0 |  16 | KELVIN                   |-------------|
-| SABERRQ  |    2 |           0 |  16 | NUMERIC                  |-------------|
+| SABERPT  |    2 |           0 |  16 | DEG C                    |-------------|
+| SABERPQ  |    2 |           0 |  16 | NUMERIC                  |-------------|
 |          |      |             |     |                          |-------------|
 `------------------------------------------------------------------------------'
