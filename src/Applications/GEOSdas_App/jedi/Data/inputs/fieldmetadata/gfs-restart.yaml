@@ -1,0 +1,20 @@
+field metadata:
+
+- long name: u_component_of_native_D_grid_wind
+  io name: u
+
+- long name: v_component_of_native_D_grid_wind
+  io name: v
+
+- long name: air_temperature
+  io name: T
+
+- long name: air_pressure_thickness
+  io name: DELP
+
+- long name: stc
+  io file: surface
+
+- long name: soilMoistureVolumetric 
+  io name: smc
+  io file: surface

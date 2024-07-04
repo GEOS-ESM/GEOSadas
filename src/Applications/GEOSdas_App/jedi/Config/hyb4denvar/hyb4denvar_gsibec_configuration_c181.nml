@@ -1,0 +1,144 @@
+ &SETUP
+!  qoption=2,
+!  pseudo_q2=.true.,
+   mockbkg=.false.,
+ /
+ &GRIDOPTS
+   JCAP=96,NLAT=181,NLON=288,nsig=72,use_sp_eqspace=.false.,
+ /
+ &BKGERR
+   vs=0.6,
+   hzscl=0.588,1.25,2.0,
+   hswgt=0.45,0.3,0.25,
+   bw=0.0,norsp=4,
+   bkgv_flowdep=.false.,bkgv_rewgtfct=1.5,
+   fpsproj=.true.,
+   adjustozvar=.true.,
+!  bkgv_write=.true.,
+!  bkgv_write_cv='gsicv',
+!  simcv=.true,
+!  bkgv_write_sv='gsisv',
+   simcv=.false,
+ /
+
+ &HYBRID_ENSEMBLE
+   l_hyb_ens=.true.,n_ens=32,beta_s0=0.00,generate_ens=.false.,uv_hyb_ens=.true.,
+   s_ens_h=800.,s_ens_v=-0.5,
+   jcap_ens=62,nlat_ens=181,nlon_ens=288,aniso_a_en=.false.,
+   jcap_ens_test=62,
+!  oz_univ_static=.false.,
+   oz_univ_static=.true.,
+!  sst_staticB=.false.,
+!  use_localization_grid=.true.,
+   readin_localization=.true.,
+   readin_beta=.true.,
+!  use_gfs_ens=.false.,
+!  eqspace_ensgrid=.true.,
+!  write_ens_sprd=.true.,
+!  bens_recenter=.true.,
+   ens_fname_tmpl='Data/atmens/mem%e3/j48rt4.bkg.eta.%y4%m2%d2_%h200z.nc4',
+   EnsSource='GEOS',
+ /
+
+met_guess::
+!var     level   crtm_use    desc                 orig_name
+  ps        1      -1         surface_pressure     ps
+  z         1      -1         geopotential_height  phis
+  u        72       2         zonal_wind           u
+  v        72       2         meridional_wind      v
+  div      72      -1         zonal_wind           div
+  vor      72      -1         meridional_wind      vor
+  tv       72       2         virtual_temperature  tv
+  tsen     72       2         sensible_temperature tsen
+  q        72       2         specific_humidity    q
+  oz       72       2         ozone                o3ppmv
+# cw       72      -1         cloud_condensate     qctot
+  ql       72      12         Water                ql
+  qi       72      12         Ice                  qi
+# qr       72      12         Rain                 qr
+# qs       72      12         Snow                 qs
+# qg       72      10         Graupel              qg
+# qh       72      10         Hail                 qh
+# cf       72       2         cloud_frac4rad(fcld) cloud
+#_RT  z_c       1      -1         cool_layer_depth     DCOOL
+#_RT  z_w       1      -1         warm_layer_depth     DWARM
+#_RT  dt_cool   1      -1         cool_layer_tdrop     TDROP
+#_RT  tdel      1      -1         warm_layer_ttop      TDEL
+#_RT  tref      1      -1         foundation_temp      TS_FOUND
+  ts        1      -1         skin_temperature     ts
+! slmsk     1      -1         surface_mask         slmsk
+  frlake    1      -1         fraction_lake        frlake
+  frocean   1      -1         fraction_ocean       frocean
+  frseaice  1      -1         fraction_seaice      frseaice
+! snowdep   1      -1         snow_depth           SNOWDP
+! soilmst   1      -1         snow_depth           GWETTOP
+::
+
+state_derivatives::
+!var  level  src
+ ps   1      met_guess
+ u    72     met_guess
+ v    72     met_guess
+ tv   72     met_guess
+ q    72     met_guess
+ oz   72     met_guess
+#cw   72     met_guess
+ ql   72     met_guess
+ qi   72     met_guess
+#qr   72     met_guess
+#qs   72     met_guess
+ prse 73     met_guess
+#sst  central  --> I don't think this is needed
+::
+
+state_tendencies::
+!var  levels  source
+ prse 73      met_guess
+ oz   72      met_guess
+ u    72      met_guess
+ v    72      met_guess
+ tv   72      met_guess
+ q    72      met_guess
+#cw   72      met_guess
+ ql   72      met_guess
+ qi   72      met_guess
+#qr   72      met_guess
+#qs   72      met_guess
+::
+
+state_vector::
+!var     level  itracer source     funcof
+ u        72      0     met_guess    u
+ v        72      0     met_guess    v
+ tv       72      0     met_guess    tv
+ tsen     72      0     met_guess    tv,q
+ q        72      1     met_guess    q
+ oz       72      1     met_guess    oz
+#cw       72      1     met_guess    cw
+ ql       72      1     met_guess    ql
+ qi       72      1     met_guess    qi
+#qr       72      1     met_guess    qr
+#qs       72      1     met_guess    qs
+ prse     73      0     met_guess    prse
+ ps        1      0     met_guess    prse
+ sst       1      0     met_guess    sst
+::
+
+control_vector::
+!var     level  itracer as/tsfc_sdv  an_amp0   source  funcof  be
+ sf       72      0       0.45        -1.0     state    u:v     -1.00   
+ vp       72      0       0.55        -1.0     state    u:v     -1.00
+ t        72      0       0.90        -1.0     state    tv      -1.00
+ q        72      1       0.60        -1.0     state    q       -1.00
+ oz       72      1       0.20        -1.0     state    oz      -1.00
+ ql       72      1       0.00        -1.0     state    ql      -1.00
+ qi       72      1       0.00        -1.0     state    qi      -1.00
+#qr       72      1       0.00        -1.0     state    qr      -1.00
+#qs       72      1       0.00        -1.0     state    qs      -1.00
+ ps        1      0       0.75        -1.0     state    prse    -1.00
+ sst       1      0       1.20        -1.0     state    sst     -1.00
+ stl       1      0       3.00        -1.0     motley   sst     -1.00
+ sti       1      0       3.00        -1.0     motley   sst     -1.00
+!             sf    vp    t    q    oz   q2 qi ql qr qs    ps
+! afcts_ = "0.51  0.65 0.98 0.62  0.20 0.64  1  1  1  1  0.83"
+::

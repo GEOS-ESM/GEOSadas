@@ -1,0 +1,296 @@
+#
+# (C) Copyright 2020 UCAR
+#
+# This software is licensed under the terms of the Apache Licence Version 2.0
+# which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+
+
+# Field definitions for the UFO observation operators
+# *** Do not add different FieldIONames or LongName, ufo only uses one name ***
+
+Geometry: fv3
+
+Fields:
+  - FieldName: tropopause_pressure
+    Units: Pa
+    Levels: 1
+
+  - FieldName: geopotential_height
+    Units: m
+    Levels: full
+
+  - FieldName: geopotential_height_levels
+    Units: m
+    Levels: half
+
+  - FieldName: height
+    Units: m
+    Levels: full
+
+  - FieldName: surface_altitude
+    Units: m
+    Levels: 1
+
+  - FieldName: surface_geopotential_height
+    Units: m
+    Levels: 1
+
+  - FieldName: humidity_mixing_ratio
+    Units: 1
+    Levels: full
+
+#  - FieldName: mole_fraction_of_ozone_in_air
+#    Units: none
+#    Levels: full
+
+  - FieldName: integrated_layer_ozone_in air
+    Units: none
+    Levels: full
+
+  - FieldName: mole_fraction_of_carbon_dioxide_in_air
+    Units: none
+    Levels: full
+
+  - FieldName: mass_content_of_cloud_liquid_water_in_atmosphere_layer
+    Units: none
+    Levels: full
+
+  - FieldName: mass_content_of_cloud_ice_in_atmosphere_layer
+    Units: none
+    Levels: full
+
+  - FieldName: mass_content_of_rain_in_atmosphere_layer
+    Units: none
+    Levels: full
+
+  - FieldName: mass_content_of_snow_in_atmosphere_layer
+    Units: none
+    Levels: full
+
+  - FieldName: mass_content_of_graupel_in_atmosphere_layer
+    Units: none
+    Levels: full
+
+  - FieldName: mass_content_of_hail_in_atmosphere_layer
+    Units: none
+    Levels: full
+
+  - FieldName: effective_radius_of_cloud_liquid_water_particle
+    Units: none
+    Levels: full
+
+  - FieldName: effective_radius_of_cloud_ice_particle
+    Units: none
+    Levels: full
+
+  - FieldName: effective_radius_of_rain_particle
+    Units: none
+    Levels: full
+
+  - FieldName: effective_radius_of_snow_particle
+    Units: none
+    Levels: full
+
+  - FieldName: effective_radius_of_graupel_particle
+    Units: none
+    Levels: full
+
+  - FieldName: effective_radius_of_hail_particle
+    Units: none
+    Levels: full
+
+  - FieldName: totalSnowDepth_background_error
+    Units: none
+    Levels: 1
+
+  - FieldName: water_area_fraction
+    Units: none
+    Levels: 1
+
+  - FieldName: land_area_fraction
+    Units: none
+    Levels: 1
+
+  - FieldName: ice_area_fraction
+    Units: none
+    Levels: 1
+
+  - FieldName: surface_snow_area_fraction
+    Units: none
+    Levels: 1
+
+  - FieldName: surface_temperature_where_sea
+    Units: none
+    Levels: 1
+
+  - FieldName: surface_temperature_where_land
+    Units: none
+    Levels: 1
+
+  - FieldName: surface_temperature_where_ice
+    Units: none
+    Levels: 1
+
+  - FieldName: surface_temperature_where_snow
+    Units: none
+    Levels: 1
+
+  - FieldName: surface_snow_thickness
+    Units: none
+    Levels: 1
+
+  - FieldName: vegetation_area_fraction
+    Units: none
+    Levels: 1
+
+  - FieldName: surface_wind_speed
+    Units: none
+    Levels: 1
+
+  - FieldName: surface_wind_from_direction
+    Units: none
+    Levels: 1
+    Space: direction
+    InterpType: nearest
+
+  - FieldName: leaf_area_index
+    Units: none
+    Levels: 1
+
+  - FieldName: volume_fraction_of_condensed_water_in_soil
+    Units: none
+    Levels: 1
+
+  - FieldName: soil_temperature
+    Units: none
+    Levels: 1
+
+  - FieldName: land_type_index_NPOESS
+    Units: none
+    Levels: 1
+    Kind: integer
+    InterpType: integer
+
+  - FieldName: vegetation_type_index
+    Units: none
+    Levels: 1
+    Kind: integer
+    InterpType: integer
+
+  - FieldName: soil_type
+    Units: none
+    Levels: 1
+    Kind: integer
+    InterpType: integer
+
+  - FieldName: surface_roughness_length
+    Units: m
+    Levels: 1
+
+  - FieldName: wind_reduction_factor_at_10m
+    Units: none
+    Levels: 1
+
+  - FieldName: surface_emissivity
+    Units: none
+    Levels: 1
+
+  - FieldName: optical_thickness_of_atmosphere_layer
+    Units: none
+    Levels: 1
+
+  - FieldName: toa_outgoing_radiance_per_unit_wavenumber
+    Units: none
+    Levels: 1
+
+  - FieldName: brightness_temperature
+    Units: none
+    Levels: full
+
+  - FieldName: brightness_temperature_assuming_clear_sky
+    Units: none
+    Levels: full
+
+  - FieldName: transmittances_of_atmosphere_layer
+    Units: none
+    Levels: full
+
+  - FieldName: weightingfunction_of_atmosphere_layer
+    Units: none
+    Levels: full
+
+  - FieldName: pressure_level_at_peak_of_weightingfunction
+    Units: none
+    Levels: 1
+
+  - FieldName: average_surface_temperature_within_field_of_view
+    Units: none
+    Levels: 1
+
+  - FieldName: equivalent_reflectivity_factor
+    Units: none
+    Levels: full
+
+  - FieldName: sea_ice_category_area_fraction
+    Units: none
+    Levels: 1
+
+  - FieldName: sea_ice_category_thickness
+    Units: none
+    Levels: 1
+
+  - FieldName: sea_surface_height_above_geoid
+    Units: none
+    Levels: 1
+
+  - FieldName: sea_water_potential_temperature
+    Units: none
+    Levels: full
+
+  - FieldName: sea_water_conservative_temperature
+    Units: none
+    Levels: full
+
+  - FieldName: sea_water_absolute_salinity
+    Units: none
+    Levels: full
+
+  - FieldName: sea_water_practical_salinity
+    Units: none
+    Levels: full
+
+  - FieldName: sea_water_salinity
+    Units: none
+    Levels: full
+
+  - FieldName: sea_water_cell_thickness
+    Units: none
+    Levels: full
+
+  - FieldName: sea_surface_foundation_temperature
+    Units: none
+    Levels: 1
+
+  - FieldName: latent_heat_vaporization
+    Units: none
+    Levels: full
+
+  - FieldName: net_downwelling_shortwave_radiation
+    Units: none
+    Levels: full
+
+  - FieldName: upward_latent_heat_flux_in_air
+    Units: none
+    Levels: full
+
+  - FieldName: upward_sensible_heat_flux_in_air
+    Units: none
+    Levels: full
+
+  - FieldName: net_downwelling_longwave_radiation
+    Units: none
+    Levels: 1
+
+  - FieldName: friction_velocity_over_water
+    Units: none
+    Levels: 1

@@ -1,0 +1,46 @@
+input geometry:
+  fms initialization:
+    namelist filename: Data/fv3files/input_geos_c90.nml
+    field table filename: Data/fv3files/field_table_gmao
+  layout: [2,1]
+  akbk: Data/fv3files/akbk72.nc4
+  npx: 181
+  npy: 181
+  npz: 72
+  field metadata override: Data/fieldmetadata/geos.yaml
+output geometry:
+  layout: [2,1]
+  akbk: Data/fv3files/akbk72.nc4
+  npx: 181
+  npy: 181
+  npz: 72
+  field metadata override: Data/fieldmetadata/geos.yaml
+
+linear variable change:
+  variable change name: Model2GeoVaLs
+  input variables: &inputvars [ua,va,t,ps,q,o3ppmv,ts]
+  output variables: [ua,va,t,ps,q,o3ppmv,ts]
+increments:
+- date: "$JEDI_ISO_DATE_007"
+  input variables: *inputvars
+  trajectory:
+    datetime: "$JEDI_ISO_DATE_007"
+    state variables: *inputvars
+    filetype: cube sphere history
+    provider: geos
+    datapath: Data/bkg
+    filename: bkg.$YYYYMMDD_HH00_007Z.nc4
+  input:
+    datetime: "$JEDI_ISO_DATE_007"
+    filetype: cube sphere history
+    provider: geos
+    datapath: Data/inc
+    filename: $EXPID.jedi_inc-iter1.ceta.$YYYYMMDD_HH00_007Z.nc4
+  output:
+   filetype: auxgrid
+   gridtype: latlon
+   filename: Data/inc/$EXPID.jedi_inc1.eta.
+
+#test:
+#  reference filename: testoutput/convertincrement_geos_model2geovals.ref
+#  test output filename: testoutput/convertincrement_geos_model2geovals.test.out

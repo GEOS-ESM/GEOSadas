@@ -1,0 +1,40 @@
+field metadata:
+
+# Winds
+# -----
+
+- long name: u_component_of_native_D_grid_wind
+  io name: u
+
+- long name: v_component_of_native_D_grid_wind
+  io name: v
+
+# Clouds
+# ------
+
+- long name: specific_humidity
+  io name: q
+
+- long name: cloud_liquid_ice
+  io name: qi
+
+- long name: cloud_liquid_water
+  io name: ql
+
+- long name: snow_water
+  io name: qs
+
+- long name: rain_water
+  io name: qr
+
+# Surface fields
+# --------------
+
+- long name: sea_surface_temperature
+  io name: ts
+
+- long name: surface_eastward_wind
+  io name: u10m
+
+- long name: surface_northward_wind
+  io name: v10m
