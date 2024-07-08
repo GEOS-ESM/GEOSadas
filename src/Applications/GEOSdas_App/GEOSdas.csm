@@ -140,6 +140,7 @@
   if ( !($?IGNORE_0) )            setenv IGNORE_0      0
   if ( !($?INITTAG) )             setenv INITTAG       0
   if ( !($?LDAS_ANA) )            setenv LDAS_ANA      0
+  if ( !($?LDHOME) )              setenv LDHOME        none
   if ( !($?LOCAL_ACQUIRE) )       setenv LOCAL_ACQUIRE 0
   if ( !($?MAP05RST) )            setenv MAP05RST      0
   if ( !($?MKRESRST ) )           setenv MKRESRST      0
@@ -5864,13 +5865,6 @@ endif
               /bin/cp $EXPID.ana_radstat_rst.$rtag.tar $RSTHOLD/ &
             endif
 
-            # hold lfo files for the next segment of ldas coupling
-            #----------------------------------------------------------
-            if ( $LDAS_ANA ) then
-               mkdir -p              $FVHOME/recycle/holdforc
-               /bin/cp  *2d_lfo*nc4  $FVHOME/recycle/holdforc/
-            endif
-
             # local copy to be moved by pesto, 2nd copy to be dealt w/ by recycle
             #--------------------------------------------------------------------
             if ( -e biasinp.$RSTSUFFIX ) then
@@ -6076,6 +6070,22 @@ endif
 \end
 
 #.............................................................................
+# -----------------------------------
+  Sub MovePredictorOutput_( )
+#------------------------------------ 
+
+  if ( $LDAS_ANA ) then
+    mkdir -p               $FVHOME/recycle/holdpredout 
+    /bin/mv -f $FVWORK/*lfo_Nx+-* $FVHOME/recycle/holdpredout/. 
+    /bin/cp $FVHOME/recycle/holdpredout/*lfo_Nx+-*  $LDHOME/input/met_forcing/. 
+  endif 
+   
+  exit 0                      
+                              # Last line of MovePredictorOutput_()
+       
+\end
+ 
+#............................................................................. 
 
 # ------------------------------------
   Sub AbnormalExit_( _exitcode )
