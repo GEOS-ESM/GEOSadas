@@ -140,6 +140,7 @@
   if ( !($?IGNORE_0) )            setenv IGNORE_0      0
   if ( !($?INITTAG) )             setenv INITTAG       0
   if ( !($?LDAS_ANA) )            setenv LDAS_ANA      0
+  if ( !($?LDHOME) )              setenv LDHOME        none
   if ( !($?LOCAL_ACQUIRE) )       setenv LOCAL_ACQUIRE 0
   if ( !($?MAP05RST) )            setenv MAP05RST      0
   if ( !($?MKRESRST ) )           setenv MKRESRST      0
@@ -3268,6 +3269,11 @@ endif
   set ana_datetime = ( `tick $gcm_nymd0 $gcm_nhms0 $idummy` )
 
   set this_hh0 = `echo $gcm_nhms0 | cut -c1-2`
+  set this_hha = `echo $ana_datetime[2] | cut -c1-2`
+
+  set this_log = $EXPID.ana_jo.log.${ana_datetime[1]}_${this_hha}z.txt
+  obimp_summary.pl -rc $FVROOT/etc/odsstats4jedi.rc -type diag -josummary -o $this_log $ana_datetime[1] $ana_datetime[2]
+
 
   jedi_driver.csh $gcm_nymd0 $gcm_nhms0 $ana_datetime[1] $ana_datetime[2] |& tee -a $FVWORK/$EXPID.jedi_drv.log.${gcm_nymd0}_${this_hh0}z.txt
   if ( $status ) then
@@ -5864,13 +5870,6 @@ endif
               /bin/cp $EXPID.ana_radstat_rst.$rtag.tar $RSTHOLD/ &
             endif
 
-            # hold lfo files for the next segment of ldas coupling
-            #----------------------------------------------------------
-            if ( $LDAS_ANA ) then
-               mkdir -p              $FVHOME/recycle/holdforc
-               /bin/cp  *2d_lfo*nc4  $FVHOME/recycle/holdforc/
-            endif
-
             # local copy to be moved by pesto, 2nd copy to be dealt w/ by recycle
             #--------------------------------------------------------------------
             if ( -e biasinp.$RSTSUFFIX ) then
@@ -6076,6 +6075,22 @@ endif
 \end
 
 #.............................................................................
+# -----------------------------------
+  Sub MovePredictorOutput_( )
+#------------------------------------ 
+
+  if ( $LDAS_ANA ) then
+    mkdir -p               $FVHOME/recycle/holdpredout 
+    /bin/mv -f $FVWORK/*lfo_Nx+-* $FVHOME/recycle/holdpredout/. 
+    /bin/cp $FVHOME/recycle/holdpredout/*lfo_Nx+-*  $LDHOME/input/met_forcing/. 
+  endif 
+   
+  exit 0                      
+                              # Last line of MovePredictorOutput_()
+       
+\end
+ 
+#............................................................................. 
 
 # ------------------------------------
   Sub AbnormalExit_( _exitcode )

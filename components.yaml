@@ -56,6 +56,11 @@ MAPL:
   tag: v2.44.0
   develop: develop
 
+GEOSldas_GridComp:
+  local: ./src/Components/@GEOSldas_GridComp
+  remote: ../GEOSldas_GridComp.git
+  tag: v1.0.2
+
 FMS:
   local: ./src/Shared/@FMS
   remote: ../FMS.git
