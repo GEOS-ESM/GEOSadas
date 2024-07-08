@@ -340,6 +340,7 @@
 # 26May2017 Sienkiewicz Additions for new radiance bias correction
 # 25Jul2017 Holdaway   Added resource files associated with NGGPS FV3 tlm/adjoint, sens and svec
 # 19Jul2018 Wargan     Additions for OMPS
+# 2022,2024 sqz        Additions for LADAS 
 #-------------------------------------------------------------------------
 use Cwd qw(abs_path cwd);
 use English;
@@ -576,19 +577,23 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
   $rc = system("$fvbin/fix_gocart_rc.csh $vres $fvhome/run/gocart");
   die "Failed to fix GOCART levels-referencing $!" if ( $rc );
 
-# LDAS Setup is done separately, follow instructions in GEOSldas/README.md   
+# LDAS Setup is done separately, follow instructions in GEOSldas/README.md
+# Provide ldas config input files: YOUR_det_exeinp.txt, YOUR_det_batinp.txt 
+# ln -s YOUR_det_exeinp.txt  $fvbin/det_exeinp.txt 
+# ln -s YOUR_det_batinp.txt  $fvbin/det_batinp.txt  
+# For Hyb-4dEnVar, do same for ens_exeinp.txt and ens_batinp.txt
 # ------------------------------------------------------------------------
     print "\n checkprintout  ldas_ana == 1 ($ldas_ana)\n";
     if ($ldas_ana == 1 ) {
-    print "\n Please run ldas_setup following instructions in GEOSldas/README.md\n";
-    print "\n requires config input files: YOUR_exeinp.txt, YOUR_batinp.txt.\n" ;
-    print "\n example LDROOT: /discover/nobackup/$user/GEOSldas\n" ;
-    print "\n example LDHOME: /discover/nobackup/$user/ldascoup_C180\n" ;
-    print "\n example cd $LDROOT/install/bin/ \n";
-    print "\n example salloc \n";
-    print "\n example source g5_modules \n" ;
-    print "\n example ldas_setup setup $LDHOME exp_exeinp.txt exp_batinp.txt \n" ;
-      }
+       $rc = system("$fvbin/ldas_setup setup $fvhome/lana $fvbin/det_exeinp.txt $fvbin/det_batinp.txt");
+       die "Failed to setup ldas for det, check ldas config input files $!" if ( $rc );
+      
+       if ($hyb_ens == 4 ) {
+          $rc = system("$fvbin/ldas_setup setup $fvhome/lana $fvbin/ens_exeinp.txt $fvbin/ens_batinp.txt");
+          die "Failed to setup ldas for ens, check ldas config input files $!" if ( $rc );
+       }
+
+     }
     
 # Monthly Setup
 # -------------------------------------------------------------
@@ -3176,7 +3181,7 @@ sub get_nodeflg {
   elsif ($ans == 3) { $nodeflg = "ivy";  $ncpus_per_node = 20 }
   elsif ($ans == 4) { $nodeflg = "hasw"; $ncpus_per_node = 24 }
   elsif ($ans == 5) { $nodeflg = "sky";  $ncpus_per_node = 36 }
-  elsif ($ans == 6) { $nodeflg = "cas";  $ncpus_per_node = 40 }
+  elsif ($ans == 6) { $nodeflg = "cas";  $ncpus_per_node = 45 }
 
   # currently not applicable at nccs
   #---------------------------------
@@ -3517,8 +3522,8 @@ sub set_ldasANA {
     $ldasfdbk = 0;
     $ldas_flag = 0;
     $dflt = "n";
-    $ldashome = "NULL" ;
-    $ldashome4ens = "NULL" ;
+    $ldashome = "${fvhome}/lana/${expid}_LDAS" ;
+    $ldashome4ens = "${fvhome}/lana/${expid}_LDAS4ens" ;
 
     print "\n-------------\n";
     print   "LDAS Analysis\n";
@@ -3535,11 +3540,13 @@ sub set_ldasANA {
           $ldas_flag = 1;
       }
 
-      $ans3 = query("LDAS HOME = ${fvhome}_LDAS , full path? ", $ldashome);
-      $ldashome = $ans3 ;
-
-      $ans4 = query("LDAS HOME for land ensemble = ${fvhome}_LDAS/run/atmens, full path? ", $ldashome4ens);
-      $ldashome4ens = $ans4 ;
+      $ans3 = query(" LDAS HOME?  [DEFAULT: $ldashome]");
+      $ldashome = $ans3  unless blank($ans3); 
+      
+      if ($hyb_ens == 4 ) {
+         $ans4 = query(" LDAS HOME for atmens? [DEFAULT: $ldashome4ens]");
+         $ldashome4ens = $ans4  unless blank($ans4); 
+      }
 
    } 
 return 0;
@@ -4487,29 +4494,6 @@ sub get_history {
         $g5hist_rc = query("  Which template?", $g5hist_rc);
     }
 
-    # verify that HISTORY.rc.tmpl has collections needed by LDAS
-    #-----------------------------------------------------------
-    if ( $ldas_ana == 1 ) {
-        $verify = 0;
-        @ldasinputs = qw / tavg1_2d_lfo inst1_2d_lfo /;
-        foreach $prod ( @ldasinputs ) {
-            open HIST, "< $fvroot/etc/$g5hist_rc";
-            unless ( grep /$prod/, <HIST> ) {
-                print "\n  Required Land DAS inputs: @ldasinputs\n"
-                    unless ($verify);
-                print "  >>> WARNING <<< $prod not defined in $g5hist_rc\n";
-                $verify = 1;
-                close HIST;
-            }
-        }
-        if ($verify) {
-            print "\n"
-                . "  1. Use $g5hist_rc anyway\n"
-                . "  2. Select again\n\n";
-            $ans = query("  Choose option 1 or 2:", "2");
-            return 1 unless $ans eq "1";
-        }      
-    }
     print "  Using HISTORY template: $g5hist_rc\n";
 
     # query for GCMPROG.rc.tmpl (fcst HISTORY file)
