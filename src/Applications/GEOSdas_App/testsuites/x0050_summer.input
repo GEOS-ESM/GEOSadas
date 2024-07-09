@@ -81,7 +81,7 @@ AeroCom? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/AeroCom]
 > 
 
 FVICS? [/archive/u/jstassi/restarts/GEOSadas-5_24_0]
-> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_40/c360/c360.rst.20230714_21z.tar
+> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_41/c360/c360.rst.20230714_21z.tar
 
 Run model-adjoint-related applications (0=no,1=yes)? [0]
 > 1
@@ -237,7 +237,7 @@ Ensemble Vertical Levels?  [72]
 > 
 
 Experiment archive directory for ensemble restarts or 'later': [/archive/u/dao_it/x0050]
-> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_40/c360
+> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_41/c360
 
 Edit COLLECTIONS list in run/HISTORY.rc.tmpl (y/n)? [n]
 > 
