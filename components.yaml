@@ -28,7 +28,7 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  branch: feature/rtodling/mrg_Over1_9_7_jedi_x49
+  tag: g5.41.0
   develop: main
 
 GMAOpyobs:
@@ -70,13 +70,13 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  branch: feature/rtodling/merge_5295p7_x50R1_2_dev
+  tag: g5.41.0
   develop: develop
 
 mksi:
    local: ./src/Components/@GEOSana_GridComp/GEOSaana_GridComp/GSI_GridComp/@mksi
    remote: ../GEOS_mksi.git
-   branch: feature/sync_with_2_29_5-p5
+   tag: g5.41.0
    develop: develop
 
 GEOSgcm_GridComp:
@@ -229,7 +229,7 @@ umwm:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  branch: feature/rtodling/qrqstot_export_rename
+  tag: g5.41.0
   develop: develop
 
 Ocean-LETKF:
