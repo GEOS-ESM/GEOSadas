@@ -207,7 +207,7 @@ Do Aerosol Analysis (y/n)? [y]
 > 
 
 AOD OBSERVING CLASSES [or type 'none']?
-> mod04_061_llk,myd04_061_llk,aeronet_obs_llk,mod04_061_flk,myd04_061_flk,aeronet_obs_flk
+> mod04_061_flk,myd04_061_flk,aeronet_obs_llk
 
 Enable GAAS feedback to model (y/n)? [y]
 > 
