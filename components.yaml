@@ -28,7 +28,7 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  tag: v1.4.10.1
+  branch: feature/yzhu/PBLH
   develop: main
 
 MAPL:
@@ -46,13 +46,13 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  tag: v1.5.4.6
+  branch: feature/yzhu/PBLH
   develop: develop
 
 GEOSgcm_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp
   remote: ../GEOSgcm_GridComp.git
-  tag: v1.12.4.1
+  branch: feature/yzhu/PBLH
   sparse: ./config/GEOSgcm_GridComp.sparse
   develop: develop
 
@@ -121,7 +121,7 @@ mom6:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  tag: v1.5.6.1
+  branch: feature/yzhu/PBLH
   develop: develop
 
 UMD_Etc:
