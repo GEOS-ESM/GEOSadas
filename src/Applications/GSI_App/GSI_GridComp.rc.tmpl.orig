@@ -12,43 +12,43 @@ GSIGridType: 0
 # GSI grid information 
 
 #regular grid use:
-GEOS IM: @AGCM_IM
-GEOS JM: @AGCM_JM
-GEOS KM: @AGCM_LM
-GSI IM:  @GSI_IM
-GSI JM:  @GSI_JM
-GSI LM:  @GSI_LM
+GEOS IM: @GCMNLON
+GEOS JM: @GCMNLAT
+GEOS KM: @NSIG
+GSI IM:  @GSINLON
+GSI JM:  @GSINLAT
+GSI LM:  @NSIG
 
 #Gaussian grid use:
-#GEOS IM: 512
+#GEOS IM: @JCAP
 #GEOS JM: @NLAT
-#GEOS KM: 72
-#GSI IM:  512
+#GEOS KM: @NSIG
+#GSI IM:  @JCAP
 #GSI JM:  @NLAT
-#GSI LM:  72
+#GSI LM:  @NSIG
 
 # NPEs along x and y
-NX:      @NX 
-NY:      @NY
-ANA_NX:  @NX
-ANA_NY:  @NY
+NX:      @NXGSI
+NY:      @NYGSI
+ANA_NX:  @NXGSI
+ANA_NY:  @NYGSI
 ORIGIN_CENTER_LON: 0.0
 ORIGIN_CENTER_LAT: -90.0
 
 BEG_DATE: >>>IOBBKGD<<< >>>IOBBKGT<<<
 END_DATE: >>>IOEBKGD<<< >>>IOEBKGT<<<
-JOB_SGMT: 0 60000
+JOB_SGMT: 0 @VARWINDOW
 
-RUN_DT:  10800
+RUN_DT:   @SECASYNFRQ
 
-BKG_FREQUENCY: 030000
-ANA_FREQUENCY: 60000
+BKG_FREQUENCY: @ASYNFRQ
+ANA_FREQUENCY: @VARWINDOW
 OBS_FREQUENCY: 060000
 
-ANALYSIS_INCREMENT: NO
+ANALYSIS_INCREMENT: @ANAINC
 
 RECORD_ANALYSIS: >>>RECANA<<<
-RECORD_FREQUENCY: 030000
+RECORD_FREQUENCY: @ASYNFRQ
 RECORD_REF_TIME:  >>>ANATIME<<<
 RECORD_REF_DATE:  >>>ANADATE<<<
 
@@ -61,7 +61,7 @@ surface_ana_filename:   %s.ana.sfc.%y4%m2%d2_%h2%n2z.>>>NCSUFFIX<<<
 surface_inc_filename:   %s.inc.sfc.%y4%m2%d2_%h2%n2z.>>>NCSUFFIX<<<
 chem_bkg_filename:      %s.cbkg.eta.%y4%m2%d2_%h2%n2z.>>>NCSUFFIX<<<
 aero_bkg_filename:      NONE  # %s.abkg.eta.%y4%m2%d2_%h2%n2z.>>>NCSUFFIX<<<
-ensemble_upabkg_filename:  %s.bkg.eta.%y4%m2%d2_%h2%n2z.>>>NCSUFFIX<<<
+ensemble_upabkg_filename:  @AENSUPAFN
 upper-air_bkg_filename: %s.bkg.eta.%y4%m2%d2_%h2%n2z.>>>NCSUFFIX<<<
 upper-air_ana_filename: %s.ana.eta.%y4%m2%d2_%h2%n2z.>>>NCSUFFIX<<<
 upper-air_inc_filename: %s.inc.eta.%y4%m2%d2_%h2%n2z.>>>NCSUFFIX<<<
@@ -71,8 +71,11 @@ upaprs_ptrj_filename: %s.ptrj.prs.%y4%m2%d2_%h2%n2z.>>>NCSUFFIX<<<
 #sfcexp_filename: %s.sfc_export.%y4%m2%d2_%h2%n2z
 post-analysis_obs_filename: %s.ana.obs.%y4%m2%d2_%h2z.ods
 
-vars_anaeta_file: phis,ps,ts,pblri,pblrf,pblkh,frland,frlandice,frlake,frocean,frseaice,delp,u,v,tv,sphu,ozone,qitot,qltot
-vars_bkgeta_file: phis,ps,ts,pblri,pblrf,pblkh,frland,frlandice,frlake,frocean,frseaice,u,v,tv,sphu,ozone,qitot,qltot
+ensemble_upaprgb_filename: %s.prog.eta.%y4%m2%d2_%h2%n2z.nc4
+forecast_errorB_filename: fsens.eta.nc4
+
+vars_anaeta_file: phis,ps,ts,frland,frlandice,frlake,frocean,frseaice,delp,u,v,tv,sphu,ozone,qitot,qltot,qrtot,qstot
+vars_bkgeta_file: phis,ps,ts,frland,frlandice,frlake,frocean,frseaice,u,v,tv,sphu,ozone,qitot,qltot,qrtot,qstot
 vars_bkgsfc_file: U10M,V10M,SNOWDP,GWETTOP,TSOIL1,Z0M,DCOOL,DWARM,TDROP,TS_FOUND,TDEL
 
 # used in read_guess
@@ -82,7 +85,6 @@ pdryini: 98.3161392
 vtid:    21.
 xncld:   1.
 
-# GSI LM + 1, ak, bk
 SIGMAS:
 1.00000000  0.99733466
 0.99467099  0.99165040
@@ -150,5 +152,24 @@ SIGMAS:
 0.00064200  0.00026640
 0.00000000
 
+# In the event that this is 4DVAR tell the adjoint we
+# are in the Observer so SetServices doesnt attempt
+# to generate a grid with insufficient information
+# ---------------------------------------------------
+PertObserverMode: 1
 
-
+# The following is to make the Split-Observer happy - avoid
+# having it complaint about missing MAPL stuff - this should
+# be removed when running the real observer (inside the GCM)
+# ----------------------------------------------------------
+    CHEM_METHOD: PCHEM
+   OX_RELAXTIME: 0.001      # Standard Options:  GCM: 0.001,     DAS: 0.000
+  OX_FRIENDLIES: ANALYSIS   # Standard Options:  GCM: ANALYSIS,  DAS: ANALYSIS:D
+YNAMICS:TURBULENCE:MOIST
+  CH4_RELAXTIME: 0.001
+  N2O_RELAXTIME: 0.001
+CFC11_RELAXTIME: 0.001
+CFC12_RELAXTIME: 0.001
+HCFC22_RELAXTIME: 0.001
+  H2O_RELAXTIME: 259200.
+     pchem_clim: species.data

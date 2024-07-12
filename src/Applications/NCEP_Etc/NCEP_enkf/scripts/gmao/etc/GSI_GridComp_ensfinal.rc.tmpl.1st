@@ -47,7 +47,7 @@ OBS_FREQUENCY: 060000
 
 ANALYSIS_INCREMENT: NO
 
-RECORD_ANALYSIS: >>>RECANA<<<
+RECORD_ANALYSIS: NO
 RECORD_FREQUENCY: 030000
 RECORD_REF_TIME:  >>>ANATIME<<<
 RECORD_REF_DATE:  >>>ANADATE<<<
@@ -62,17 +62,17 @@ surface_inc_filename:   %s.inc.sfc.%y4%m2%d2_%h2%n2z.>>>NCSUFFIX<<<
 chem_bkg_filename:      %s.cbkg.eta.%y4%m2%d2_%h2%n2z.>>>NCSUFFIX<<<
 aero_bkg_filename:      NONE  # %s.abkg.eta.%y4%m2%d2_%h2%n2z.>>>NCSUFFIX<<<
 ensemble_upabkg_filename:  %s.bkg.eta.%y4%m2%d2_%h2%n2z.>>>NCSUFFIX<<<
-upper-air_bkg_filename: %s.bkg.eta.%y4%m2%d2_%h2%n2z.>>>NCSUFFIX<<<
+upper-air_bkg_filename: %s.ana.eta.%y4%m2%d2_%h2%n2z.>>>NCSUFFIX<<<
 upper-air_ana_filename: %s.ana.eta.%y4%m2%d2_%h2%n2z.>>>NCSUFFIX<<<
 upper-air_inc_filename: %s.inc.eta.%y4%m2%d2_%h2%n2z.>>>NCSUFFIX<<<
 upalcv_traj_filename: %s.traj.lcv.%y4%m2%d2_%h2%n2z.>>>NCSUFFIX<<<
 upaprs_ptrj_filename: %s.ptrj.prs.%y4%m2%d2_%h2%n2z.>>>NCSUFFIX<<<
-#forecast-bias_filename: %s.bias.eta.%y4%m2%d2_%h2z.>>>NCSUFFIX<<<
+#forecast-bias_filename: %s.bias.eta.%y4%m2%d2_%h2%n2z.>>>NCSUFFIX<<<
 #sfcexp_filename: %s.sfc_export.%y4%m2%d2_%h2%n2z
 post-analysis_obs_filename: %s.ana.obs.%y4%m2%d2_%h2z.ods
 
-vars_anaeta_file: phis,ps,ts,pblri,pblrf,pblkh,frland,frlandice,frlake,frocean,frseaice,delp,u,v,tv,sphu,ozone,qitot,qltot
-vars_bkgeta_file: phis,ps,ts,pblri,pblrf,pblkh,frland,frlandice,frlake,frocean,frseaice,u,v,tv,sphu,ozone,qitot,qltot
+vars_anaeta_file: phis,ps,ts,PBLH,frland,frlandice,frlake,frocean,frseaice,delp,u,v,tv,sphu,ozone,qitot,qltot
+vars_bkgeta_file: phis,ps,ts,PBLH,frland,frlandice,frlake,frocean,frseaice,u,v,tv,sphu,ozone,qitot,qltot
 vars_bkgsfc_file: U10M,V10M,SNOWDP,GWETTOP,TSOIL1,Z0M,DCOOL,DWARM,TDROP,TS_FOUND,TDEL
 
 # used in read_guess

@@ -327,17 +327,7 @@
   ! pblh is next ...
   if(nsfcvars>2) then
     nsfc=nsfc-1
-    grdin(:,nvars*nlevs+nsfc,nb) = reshape(x_b%pblri,(/npts/))
-  endif
-
-  if(nsfcvars>3) then
-    nsfc=nsfc-1
-    grdin(:,nvars*nlevs+nsfc,nb) = reshape(x_b%pblrf,(/npts/))
-  endif
-
-  if(nsfcvars>4) then
-    nsfc=nsfc-1
-    grdin(:,nvars*nlevs+nsfc,nb) = reshape(x_b%pblkh,(/npts/))
+    grdin(:,nvars*nlevs+nsfc,nb) = reshape(x_b%pblh,(/npts/))
   endif
 
   if (scaleit) then
@@ -462,15 +452,7 @@
   endif
   if(nsfcvars>2) then
      nsfc=nsfc-1
-     x_a%pblri = x_a%pblri + reshape(grdin(:,nvars*nlevs+nsfc,nb),(/im,jm/))
-  endif
-  if(nsfcvars>3) then
-     nsfc=nsfc-1
-     x_a%pblrf = x_a%pblrf + reshape(grdin(:,nvars*nlevs+nsfc,nb),(/im,jm/))
-  endif
-  if(nsfcvars>4) then
-     nsfc=nsfc-1
-     x_a%pblkh = x_a%pblkh + reshape(grdin(:,nvars*nlevs+nsfc,nb),(/im,jm/))
+     x_a%pblh = x_a%pblh + reshape(grdin(:,nvars*nlevs+nsfc,nb),(/im,jm/))
   endif
 
 ! convert analysis to GMAO units

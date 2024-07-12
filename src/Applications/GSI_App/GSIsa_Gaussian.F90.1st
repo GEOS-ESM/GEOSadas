@@ -599,17 +599,7 @@
    call FieldRead (unit, Efield, rc=status) !HS
    VERIFY_(STATUS)
 
-   call ESMF_StateGetField(impSt, 'pblri', Efield, rc=status)
-   VERIFY_(STATUS)
-   call FieldRead (unit, Efield, rc=status)
-   VERIFY_(STATUS)
-
-   call ESMF_StateGetField(impSt, 'pblrf', Efield, rc=status)
-   VERIFY_(STATUS)
-   call FieldRead (unit, Efield, rc=status)
-   VERIFY_(STATUS)
-
-   call ESMF_StateGetField(impSt, 'pblkh', Efield, rc=status)
+   call ESMF_StateGetField(impSt, 'PBLH', Efield, rc=status)
    VERIFY_(STATUS)
    call FieldRead (unit, Efield, rc=status)
    VERIFY_(STATUS)
@@ -973,15 +963,15 @@
     real, pointer                :: lons_in(:), lats_in(:)
     real, pointer                ::  PTR2(:,:),  PTR3(:,:,:)
     character(len=ESMF_MAXSTR)   :: NAME
-    character(len=ESMF_MAXSTR) :: difnam(19), defnam(10)
-    integer                    :: difdim(19), defdim(10)
+    character(len=ESMF_MAXSTR) :: difnam(17), defnam(8)
+    integer                    :: difdim(17), defdim(8)
 
-   data difnam /'phis','ps','pblri','pblrf','pblkh','uwnd','vwnd','theta','sphu','ozone',&
+   data difnam /'phis','ps','PBLH','uwnd','vwnd','theta','sphu','ozone',&
               'qitot','qltot','TSKIN','U10M','V10M','SNOWDP', &
               'GWETTOP','TSOIL1','ORO'/
-   data difdim /2,2,2,2,2,3,3,3,3,3,3,3,2,2,2,2,2,2,2/
-   data defnam /'dps','dpblri','dpblrf','dpblkh','du','dv','dt','dq','doz','dql'/
-   data defdim /2,2,2,2,3,3,3,3,3,3/
+   data difdim /2,2,2,3,3,3,3,3,3,3,2,2,2,2,2,2,2/
+   data defnam /'dps','dpblh','du','dv','dt','dq','doz','dql'/
+   data defdim /2,2,3,3,3,3,3,3/
 
 ! Start
 

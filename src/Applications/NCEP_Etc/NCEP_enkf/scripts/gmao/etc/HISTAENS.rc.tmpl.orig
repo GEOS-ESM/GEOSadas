@@ -2,9 +2,36 @@
 #                 Create History List for Output
 #######################################################################
  
+#VERSION: 1
 EXPID:  >>>EXPID<<<
 EXPDSC: ensemble_bkg
  
+GRID_LABELS: PC@LHIS_IMx@LHIS_JM-DC
+             PC@HHIS_IMx@HHIS_JM-DC
+             PE@CHIS_IMx@CHIS_JM-CF
+:: 
+
+PC@LHIS_IMx@LHIS_JM-DC.GRID_TYPE: LatLon
+PC@LHIS_IMx@LHIS_JM-DC.IM_WORLD: @LHIS_IM
+PC@LHIS_IMx@LHIS_JM-DC.JM_WORLD: @LHIS_JM
+PC@LHIS_IMx@LHIS_JM-DC.POLE: PC
+PC@LHIS_IMx@LHIS_JM-DC.DATELINE: DC
+PC@LHIS_IMx@LHIS_JM-DC.LM: @AGCM_LM
+
+PC@HHIS_IMx@HHIS_JM-DC.GRID_TYPE: LatLon
+PC@HHIS_IMx@HHIS_JM-DC.IM_WORLD: @HHIS_IM
+PC@HHIS_IMx@HHIS_JM-DC.JM_WORLD: @HHIS_JM
+PC@HHIS_IMx@HHIS_JM-DC.POLE: PC
+PC@HHIS_IMx@HHIS_JM-DC.DATELINE: DC
+PC@HHIS_IMx@HHIS_JM-DC.LM: @AGCM_LM
+
+PE@CHIS_IMx@CHIS_JM-CF.GRID_TYPE: Cubed-Sphere
+PE@CHIS_IMx@CHIS_JM-CF.IM_WORLD: @CHIS_IM
+PE@CHIS_IMx@CHIS_JM-CF.JM_WORLD: @CHIS_JM
+PE@CHIS_IMx@CHIS_JM-CF.POLE: PC
+PE@CHIS_IMx@CHIS_JM-CF.DATELINE: DC
+PE@CHIS_IMx@CHIS_JM-CF.LM: @AGCM_LM
+
 COLLECTIONS: 'bkg.eta'
 @HRESAENS    'Bkg.eta'
              'bkg.sfc'
@@ -17,8 +44,7 @@ COLLECTIONS: 'bkg.eta'
 #            'prog.eta'
 #            'tavg1_2d_slv_Nx'
 #            'inst1_2d_asm_Nx'
-#            'inst1_2d_ocn_Nx'
-             'inst3_3d_asm_Np'
+             'inst1_2d_ocn_Nx'
 # WxMaps and Meteograms
 #            'inst3_3d_wxmc_Cp'
 #            'inst3_3d_wxme_Np'
@@ -26,9 +52,13 @@ COLLECTIONS: 'bkg.eta'
 # Land output
 #            'tavg1_2d_lfo_Nx'
 #            'inst1_2d_lfo_Nx'
-#            'tavg1_2d_lnd_Nx'  
+#            'tavg1_2d_lnd_Nx' 
+#            'tavg1_2d_lfo_Nx+-'
+#            'inst1_2d_lfo_Nx+-' 
 # Vortex track/relocator
 #             'vtx.mix'
+# Cubed trajectory (background for JEDI)
+#             'bkg_clcv'
               ::
 
 #                      --------------------------
@@ -91,10 +121,6 @@ COLLECTIONS: 'bkg.eta'
                       'SGH'      , 'AGCM'          , 'hs_stdv'      ,
                       'PS'       , 'DYN'           , 'ps'           ,
                       'TS'       , 'SURFACE'       , 'ts'           ,
-#                     'ZPBL'     , 'TURBULENCE'    , 'PBLH'         ,
-                      'TCZPBL'     ,   'TURBULENCE' , 'pblri'     ,
-                      'ZPBLRFRCT'  ,   'TURBULENCE' , 'pblrf'  ,
-                      'ZPBL10p'    ,   'TURBULENCE' , 'pblkh'     ,
                       'FRLAND'   , 'SURFACE'       , 'frland'       ,
                       'FRLANDICE', 'SURFACE'       , 'frlandice'    ,
                       'FRLAKE'   , 'SURFACE'       , 'frlake'       ,
@@ -170,10 +196,7 @@ COLLECTIONS: 'bkg.eta'
                       'TS_FOUND'       , 'SURFACE'  ,
                       'TDEL'           , 'SURFACE'  ,
                       'EVAP'           , 'SURFACE'  ,
-#                     'ZPBL'           , 'TURBULENCE', 'PBLH'        ,
-                      'TCZPBL'     ,   'TURBULENCE' , 'pblri'     ,
-                      'ZPBLRFRCT'  ,   'TURBULENCE' , 'pblrf'  ,
-                      'ZPBL10p'    ,   'TURBULENCE' , 'pblkh'     ,
+                      'ZPBL'           , 'TURBULENCE', 'PBLH'        ,
                       ::
 
   cbkg.eta.format:      'CFIO' ,
@@ -305,41 +328,6 @@ COLLECTIONS: 'bkg.eta'
 
 # General diagnostics ...
 # -----------------------
-
-  inst3_3d_asm_Np.format:      'CFIO' ,
-  inst3_3d_asm_Np.descr:       '3d,3-Hourly,Instantaneous,Pressure-Level,Assimilation Fields (wind,temperature)' ,
-  inst3_3d_asm_Np.nbits:       10 ,
-  inst3_3d_asm_Np.deflate:    2      ,
-  inst3_3d_asm_Np.regrid_method:  'BILINEAR_MONOTONIC' ,
-  inst3_3d_asm_Np.template:    '%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.>>>NCSUFFIX<<<' ,
-  inst3_3d_asm_Np.mode:        'instantaneous' ,
-  inst3_3d_asm_Np.resolution:  @LHIS_IM @LHIS_JM ,
-  inst3_3d_asm_Np.frequency:   060000 ,
-  inst3_3d_asm_Np.duration:    060000 ,
-  inst3_3d_asm_Np.end_date:    >>>IOBBKGD<<< ,
-  inst3_3d_asm_Np.end_time:    >>>IOBBKGT<<< ,
-  inst3_3d_asm_Np.vscale:      100.0 ,
-  inst3_3d_asm_Np.vunit:       'hPa' ,
-  inst3_3d_asm_Np.vvars:       'log(PLE)' , 'DYN' ,
-  inst3_3d_asm_Np.levels:      1000 975 950 925 900 875 850 825 800 775 750 725 700 650 600 550 500 450 400 350 300 250 200 150 100 70 50 40 30 20 10 7 5 4 3 2 1 0.7 0.5 0.4 0.3 0.1 ,
-  inst3_3d_asm_Np.fields:      'SLP'        , 'DYN'        ,
-                               'PS'         , 'DYN'        ,
-                               'PHIS'       , 'AGCM'       ,
-                               'T2M'        , 'SURFACE'    ,
-                               'U10M;V10M'  , 'SURFACE'    ,
-                               'T'          , 'DYN'        ,
-                               'U;V'        , 'DYN'        ,
-                               'OMEGA'      , 'DYN'        ,
-                               'Q'          , 'MOIST'      , 'QV'  ,
-                               'QLTOT'      , 'AGCM'       , 'QL'  ,
-                               'QITOT'      , 'AGCM'       , 'QI'  ,
-                               'QRTOT'      , 'MOIST'      , 'QR'  ,
-                               'QSTOT'      , 'MOIST'      , 'QS'  ,
-                               'RH2'        , 'MOIST'      , 'RH'  ,
-                               'ZLE'        , 'DYN'        , 'H'   ,
-                               'O3'         , 'CHEMISTRY'  ,
-                               'EPV'        , 'DYN'        ,
-                               ::
 
   inst1_2d_asm_Nx.format:      'CFIO' ,
   inst1_2d_asm_Nx.descr:       '2d,1-Hourly,Instantaneous,Single-Level,Assimilation,Single-Level Diagnostics' ,
@@ -673,6 +661,43 @@ COLLECTIONS: 'bkg.eta'
                                'SPSNOW'    , 'SURFACE'  ,
                                ::
 
+  tavg1_2d_lfo_Nx+-.format:    'CFIO',
+  tavg1_2d_lfo_Nx+-.descr:     '2d,1-Hourly,Time-Averaged,Single-Level,Forecast,Land forcing' ,
+  tavg1_2d_lfo_Nx+-.template:  '%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.>>>NCSUFFIX<<<',
+  tavg1_2d_lfo_Nx+-.mode:      'time-averaged',
+  tavg1_2d_lfo_Nx+-.ref_date:   >>>IOBBKGD<<< ,
+  tavg1_2d_lfo_Nx+-.ref_time:   >>>IOBBKGT<<< ,
+  tavg1_2d_lfo_Nx+-.end_date:   >>>IOEBKGD<<< ,
+  tavg1_2d_lfo_Nx+-.end_time:   >>>IOEBKGT<<< ,
+  tavg1_2d_lfo_Nx+-.frequency:  010000,
+  tavg1_2d_lfo_Nx+-.duration:   010000 ,
+  tavg1_2d_lfo_Nx+-.fields:      'SLRSF'   , 'SOLAR'    , 'SWGDN'    ,
+                               'SWLAND'  , 'SURFACE'  ,
+                               'LWS'     , 'IRRAD'    , 'LWGAB'    ,
+                               'PCU'     , 'SURFACE'  , 'PRECCU'   ,
+                               'PLS'     , 'SURFACE'  , 'PRECLS'   ,
+                               'SNO'     , 'SURFACE'  , 'PRECSNO'  ,
+                               'DFPAR'   , 'SOLAR'    , 'PARDF'    ,
+                               'DRPAR'   , 'SOLAR'    , 'PARDR'    ,
+                               ::
+
+  inst1_2d_lfo_Nx+-.format:    'CFIO',
+  inst1_2d_lfo_Nx+-.descr:     '2d,1-Hourly,Instantaneous,Single-Level,Forecast,land forcing'
+  inst1_2d_lfo_Nx+-.template:  '%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.>>>NCSUFFIX<<<',
+  inst1_2d_lfo_Nx+-.mode:      'instantaneous' ,
+  inst1_2d_lfo_Nx+-.ref_date:   >>>IOBBKGD<<< ,
+  inst1_2d_lfo_Nx+-.ref_time:   >>>IOBBKGT<<< ,
+  inst1_2d_lfo_Nx+-.end_date:   >>>IOEBKGD<<< ,
+  inst1_2d_lfo_Nx+-.end_time:   >>>IOEBKGT<<< ,
+  inst1_2d_lfo_Nx+-.frequency:  010000,
+  inst1_2d_lfo_Nx+-.duration:   010000 ,
+  inst1_2d_lfo_Nx+-.fields:      'DZ'     , 'DYN'  , 'HLML'      ,
+                               'TA'     , 'DYN'  , 'TLML'      ,
+                               'QA'     , 'DYN'  , 'QLML'      ,
+                               'SPEED'  , 'DYN'  , 'SPEEDLML'  ,
+                               'PS'     , 'DYN'  ,
+                                ::
+
 
 # Caution: this stream does not follow convention of output from
 #          ensemble - file does not carry member information ...
@@ -772,3 +797,63 @@ COLLECTIONS: 'bkg.eta'
                             'DUDT_ANA;DVDT_ANA'  , 'AGCM' , 'DUDTANA;DVDTANA'  ,
                             'DQVDT_ANA'          , 'AGCM' , 'DQVDTANA' ,
                           ::  
+
+  bkg_clcv.format:     'CFIO' ,
+  bkg_clcv.template:   '%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.nc4',
+  bkg_clcv.nbits:      10     ,
+  bkg_clcv.deflate:    2      ,
+  bkg_clcv.regrid_method:  'BILINEAR_MONOTONIC' ,
+  bkg_clcv.ref_date:    >>>IOBBKGD<<< ,
+  bkg_clcv.ref_time:    >>>IOBBKGT<<< ,
+  bkg_clcv.end_date:    >>>IOEDATE<<< ,
+  bkg_clcv.end_time:    >>>IOETIME<<< ,
+  bkg_clcv.frequency:   010000      ,
+  bkg_clcv.duration:    010000      ,
+  bkg_clcv.mode:       'instantaneous',
+  bkg_clcv.grid_label:  PE@CHIS_IMx@CHIS_JM-CF ,
+  bkg_clcv.fields:      'U_DGRID;V_DGRID'  , 'DYN'         , 'u;v'        ,
+                        'U;V'              , 'DYN'         , 'ua;va'      ,
+                        'T'                , 'DYN'         , 't'          ,
+                        'TV'               , 'DYN'         , 'tv'         ,
+                        'Q'                , 'MOIST'       , 'q'          ,
+                        'DELP'             , 'DYN'         , 'delp'       ,
+                        'QITOT'            , 'AGCM'        , 'qi'         ,
+                        'QLTOT'            , 'AGCM'        , 'ql'         ,
+                        'QSTOT'            , 'MOIST'       , 'qs'         ,
+                        'QRTOT'            , 'MOIST'       , 'qr'         ,
+                        'O3PPMV'           , 'CHEMISTRY'   , 'o3ppmv'     ,
+                        'GOCART::CO2'      , 'GOCART'      , 'co2'        ,
+                        'QCLSX0'           , 'MOIST'       , 'qls'        ,
+                        'QCCNX0'           , 'MOIST'       , 'qcn'        ,
+                        'CLCNX0'           , 'MOIST'       , 'cfcn'       ,
+                        'PS'               , 'DYN'         , 'ps'         ,
+                        'PHIS'             , 'AGCM'        , 'phis'       ,
+                        'FRLAND'           , 'SURFACE'     , 'frland'     ,
+                        'FRLANDICE'        , 'SURFACE'     , 'frlandice'  ,
+                        'FRLAKE'           , 'SURFACE'     , 'frlake'     ,
+                        'FROCEAN'          , 'SURFACE'     , 'frocean'    ,
+                        'FRACI'            , 'SURFACE'     , 'frseaice'   ,
+                        'KCBL_moist'       , 'MOIST'       , 'kcbl'       ,
+                        'TS_moist'         , 'MOIST'       , 'tsm'        ,
+                        'KHl_moist'        , 'MOIST'       , 'khl'        ,
+                        'KHu_moist'        , 'MOIST'       , 'khu'        ,
+                        'VARFLT'           , 'AGCM'        , 'varflt'     ,
+                        'USTAR'            , 'SURFACE'     , 'ustar'      ,
+                        'BSTAR'            , 'SURFACE'     , 'bstar'      ,
+                        'ZPBL'             , 'TURBULENCE'  , 'zpbl'       ,
+                        'CM'               , 'SURFACE'     , 'cm'         ,
+                        'CT'               , 'SURFACE'     , 'ct'         ,
+                        'CQ'               , 'SURFACE'     , 'cq'         ,
+                        'U10N;V10N'        , 'SURFACE'     , 'u10m;v10m'  ,
+                        'TA'               , 'DYN'         , 'ta'         ,
+                        'TS'               , 'SURFACE'     , 'ts'         ,
+                        'SNOMAS'           , 'SURFACE'     , 'sheleg'     ,
+                        'TSOIL1'           , 'SURFACE'     , 'soilt'      ,
+                        'WET1'             , 'SURFACE'     , 'soilm'      ,
+                        'DCOOL'            , 'SURFACE'     , 'dcool'      ,
+                        'DWARM'            , 'SURFACE'     , 'dwarm'      ,
+                        'TDROP'            , 'SURFACE'     , 'tdrop'      ,
+                        'TS_FOUND'         , 'SURFACE'     , 'ts_found'   ,
+                        'TDEL'             , 'SURFACE'     , 'tdel'       ,
+                        'Z0'               , 'SURFACE'     , 'z0m'        ,
+                        ::
