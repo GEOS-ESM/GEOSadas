@@ -28,7 +28,7 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  tag: v1.9.7
+  branch: bugfix/mathomp4/fixes-for-intel2024.2
   develop: main
 
 GEOS_Util:
@@ -65,7 +65,7 @@ GEOSgcm_GridComp:
 g5pert:
   local: ./src/Components/@g5pert
   remote: ../g5pert.git
-  tag: v1.1.2
+  tag: v1.1.3
   develop: main
 
 GEOSagcmPert_GridComp:
