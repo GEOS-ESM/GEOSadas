@@ -81,7 +81,7 @@ OBS_INPUT::
    prepbufrt      uv          null        uv                    0.0      0     0        r21c_prep_bufr
    prepbufrt_profl t          prof        t                     0.0      0     0        r21c_acftpfl_bufr
    prepbufrt_profl uv         prof        uv                    0.0      0     0        r21c_acftpfl_bufr
-   loonwinds      uv          null        uv                    0.0      0     0        r21c_loon_winds
+   loonwinds      uv          null        uv                    0.0      0     0        r21c_loon_bufr
    mlstbufr       t           aura        t                     0.0      0     0        r21c_gmao_mlst_bufr
    gpsrobufr      gps_bnd     null        gps                   0.0      0     0        r21c_gpsro_bufr
    tcvitl         tcp         null        tcp                   0.0      0     0        r21c_ncep_tcvitals
@@ -115,6 +115,7 @@ OBS_INPUT::
    msubufr        msu         n11         msu_n11               0.0      1     0        r21c_1bmsu_bufr
    msubufr        msu         n12         msu_n12               0.0      1     0        r21c_1bmsu_bufr
    msubufr        msu         n14         msu_n14               0.0      1     0        r21c_1bmsu_bufr
+   ssubufr        ssu         n11         ssu_n11               0.0      1     0        r21c_1bssu_bufr
    ssubufr        ssu         n14         ssu_n14               0.0      1     0        r21c_1bssu_bufr
    amsuabufr      amsua       n15         amsua_n15             0.0      1     0        r21c_1bamua_bufr
    amsuabufr      amsua       n16         amsua_n16             0.0      1     0        r21c_1bamua_bufr

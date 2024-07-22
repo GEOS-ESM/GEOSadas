@@ -1372,7 +1372,8 @@ sub add_silo_mstorage_traits {
                   _odt_ _qdt_ _rad_ _slv_ _tdt_ _tmp_ _trb_ _udt_ _wnd_ 
                    asm_        cld_  csp_  dyn_  ext_  flx_  glc_
                    hwl_  int_  lfo_  lnd_  lsf_  met_  mst_  ocn_
-                   odt_  qdt_  rad_  slv_  tdt_  tmp_  trb_  udt_  wnd_ );
+                   odt_  qdt_  rad_  slv_  tdt_  tmp_  trb_  udt_  wnd_ 
+		   lmv_  lmf_  ocf_  trc_  fwi_  pbl_  slv_ );
     @progID = qw( prog traj ptrj );
 
     # add silo trait if not present

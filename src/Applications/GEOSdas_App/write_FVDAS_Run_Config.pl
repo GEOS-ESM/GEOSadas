@@ -219,7 +219,7 @@ sub init {
     $FVWORK       = "$TMPDIR/fvwork.\$\$";
     $GRADS_CONFIG = "\$FVSHARE/opengrads/setup.csh 1.9.8" if $FVSHARE;
     $LIBSZ        = "\$BASEDIR/\$ARCH/lib";
-    $MONTHLY_X    = "\$FVROOT/bin/time_ave.x";
+    $MONTHLY_X    = "\$FVROOT/bin/time_ave_util.x";
 
     # substitute variables for values
     #--------------------------------
