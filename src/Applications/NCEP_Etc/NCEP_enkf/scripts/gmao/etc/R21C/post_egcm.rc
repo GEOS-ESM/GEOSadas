@@ -14,5 +14,6 @@ COLLECTIONS::
 	     'glc_tavg_6hr_glo_L288x181_slv'
 	     'aer_tavg_6hr_glo_L288x181_slv'
              'int_inst_6hr_glo_L288x181_slv'
+	     'int_tavg_6hr_glo_L288x181_slv'
              'pbl_inst_6hr_glo_L288x181_z17'
               ::
