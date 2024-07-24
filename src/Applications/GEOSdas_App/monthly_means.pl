@@ -150,7 +150,7 @@ sub init {
 
         # check monthly means program
         #----------------------------
-        $monthly_means_x = "$fvroot/bin/time_ave.x"        unless $monthly_means_x;
+        $monthly_means_x = "$fvroot/bin/time_ave_util.x"        unless $monthly_means_x;
         die "Error: monthly_means_x is required. Use -M;"  unless -e $monthly_means_x;
         die "Error: $monthly_means_x not executable;"      unless -x $monthly_means_x;
     }

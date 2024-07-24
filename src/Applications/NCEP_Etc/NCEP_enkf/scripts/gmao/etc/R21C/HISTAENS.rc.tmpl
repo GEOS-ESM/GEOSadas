@@ -35,6 +35,7 @@ COLLECTIONS: 'asm_inst_6hr_glo_L288x181_p48'
 	     'glc_tavg_6hr_glo_L288x181_slv'
 	     'aer_inst_6hr_glo_L288x181_slv'
              'int_inst_6hr_glo_L288x181_slv'
+	     'int_tavg_6hr_glo_L288x181_slv'
              'pbl_inst_6hr_glo_L288x181_z17'
              'bkg.eta'
              'bkg.sfc'
@@ -48,8 +49,8 @@ COLLECTIONS: 'asm_inst_6hr_glo_L288x181_p48'
 # asm collections
 
   asm_inst_6hr_glo_L288x181_p48.format:         'CFIO' ,
-  asm_inst_6hr_glo_L288x181_p48.descr:          '3d,6-Hourly,Instantaneous,Pressure-Level,Assimilation Fields (wind,temperature)' ,
-  asm_inst_6hr_glo_L288x181_p48.nbits:          10 ,
+  asm_inst_6hr_glo_L288x181_p48.descr:          '3d,6-Hourly,Instantaneous,Pressure-Level,Assimilation,Ensemble Assimilation Fields' ,
+  asm_inst_6hr_glo_L288x181_p48.nbits:          12 ,
   asm_inst_6hr_glo_L288x181_p48.deflate:        2 ,
   asm_inst_6hr_glo_L288x181_p48.regrid_method:  'BILINEAR_MONOTONIC' ,
   asm_inst_6hr_glo_L288x181_p48.template:       '%y4-%m2-%d2T%h2%n2Z.>>>NCSUFFIX<<<' ,
@@ -82,8 +83,8 @@ COLLECTIONS: 'asm_inst_6hr_glo_L288x181_p48'
 
 
   slv_inst_6hr_glo_L288x181_slv.format:         'CFIO' ,
-  slv_inst_6hr_glo_L288x181_slv.descr:          '2d,6-Hourly,Instantaneous,Single-Level,Assimilation,Single-Level Diagnostics' ,
-  slv_inst_6hr_glo_L288x181_slv.nbits:          10 ,
+  slv_inst_6hr_glo_L288x181_slv.descr:          '2d,6-Hourly,Instantaneous,Single-Level,Assimilation,Ensemble Single-Level Diagnostics' ,
+  slv_inst_6hr_glo_L288x181_slv.nbits:          12 ,
   slv_inst_6hr_glo_L288x181_slv.deflate:        2 ,
   slv_inst_6hr_glo_L288x181_slv.regrid_method:  'BILINEAR_MONOTONIC' ,
   slv_inst_6hr_glo_L288x181_slv.template:       '%y4-%m2-%d2T%h2%n2Z.>>>NCSUFFIX<<<' ,
@@ -141,8 +142,8 @@ COLLECTIONS: 'asm_inst_6hr_glo_L288x181_p48'
 
 
   flx_tavg_6hr_glo_L288x181_slv.format:         'CFIO' ,
-  flx_tavg_6hr_glo_L288x181_slv.descr:          '2d,6-Hourly,Time-Averaged,Single-Level,Assimilation,Surface Flux Diagnostics' ,
-  flx_tavg_6hr_glo_L288x181_slv.nbits:          10 ,
+  flx_tavg_6hr_glo_L288x181_slv.descr:          '2d,6-Hourly,Time-Averaged,Single-Level,Assimilation,Ensemble Surface Flux Diagnostics' ,
+  flx_tavg_6hr_glo_L288x181_slv.nbits:          12 ,
   flx_tavg_6hr_glo_L288x181_slv.deflate:        2 ,
   flx_tavg_6hr_glo_L288x181_slv.regrid_method:  'BILINEAR_MONOTONIC' ,
   flx_tavg_6hr_glo_L288x181_slv.template:       '%y4-%m2-%d2T%h2%n2Z.>>>NCSUFFIX<<<' ,
@@ -183,13 +184,13 @@ COLLECTIONS: 'asm_inst_6hr_glo_L288x181_p48'
                                                  'FRACI'                              , 'SURFACE'     , 'FRSEAICE'     ,
 # Additional variables
                                                  'OFRACI'                             , 'SURFACE'     , 'AICE'         ,
-                                                 'RUNOFF'                             , 'SURFACE'     , 'RUNOFFTOT'    , # total runoff from glc & lnd                   ,
+                                                 'RUNOFF'                             , 'SURFACE'     , 'RUNOFFTOT'    , 
                                                  'AN_PRCP'                            , 'MOIST'       , 'PRECANV'      ,
                                                  'CN_PRCP'                            , 'MOIST'       , 'PRECCON'      ,
                                                  'LS_PRCP'                            , 'MOIST'       , 'PRECLSC'      ,
                                                  'SNO'                                , 'MOIST'       , 'PRECSNO'      ,
                                                  'TPREC'                              , 'MOIST'       , 'PRECTOT'      ,
-                                                 'PRECTOT'                            , 'SURFACE'     , 'PRECTOTCORR'  , # append "CORR" if reanalysis and from SURFACE  ,
+                                                 'PRECTOT'                            , 'SURFACE'     , 'PRECTOTCORR'  , 
                                                  'PGENTOT'                            , 'MOIST'       ,
                                                  'PREVTOT'                            , 'MOIST'       ,
                                                  'LS_ARF'                             , 'MOIST'       , 'FRCLS'        ,
@@ -200,8 +201,8 @@ COLLECTIONS: 'asm_inst_6hr_glo_L288x181_p48'
                                                  ::
 
   rad_tavg_6hr_glo_L288x181_slv.format:         'CFIO' ,
-  rad_tavg_6hr_glo_L288x181_slv.descr:          '2d,6-Hourly,Time-Averaged,Single-Level,Assimilation,Radiation Diagnostics' ,
-  rad_tavg_6hr_glo_L288x181_slv.nbits:          10 ,
+  rad_tavg_6hr_glo_L288x181_slv.descr:          '2d,6-Hourly,Time-Averaged,Single-Level,Assimilation,Ensemble Radiation Diagnostics' ,
+  rad_tavg_6hr_glo_L288x181_slv.nbits:          12 ,
   rad_tavg_6hr_glo_L288x181_slv.deflate:        2 ,
   rad_tavg_6hr_glo_L288x181_slv.regrid_method:  'BILINEAR_MONOTONIC' ,
   rad_tavg_6hr_glo_L288x181_slv.template:       '%y4-%m2-%d2T%h2%n2Z.>>>NCSUFFIX<<<' ,
@@ -255,8 +256,8 @@ COLLECTIONS: 'asm_inst_6hr_glo_L288x181_p48'
                                                  ::
 
   lnd_tavg_6hr_glo_L288x181_slv.format:         'CFIO' ,
-  lnd_tavg_6hr_glo_L288x181_slv.descr:          '2d,6-Hourly,Time-Averaged,Single-Level,Assimilation,Land Surface Diagnostics' ,
-# lnd_tavg_6hr_glo_L288x181_slv.nbits:          10 ,
+  lnd_tavg_6hr_glo_L288x181_slv.descr:          '2d,6-Hourly,Time-Averaged,Single-Level,Assimilation,Ensemble Land Surface Diagnostics' ,
+# lnd_tavg_6hr_glo_L288x181_slv.nbits:          12 ,
   lnd_tavg_6hr_glo_L288x181_slv.deflate:        2 ,
   lnd_tavg_6hr_glo_L288x181_slv.regrid_method:  'BILINEAR_MONOTONIC' ,
   lnd_tavg_6hr_glo_L288x181_slv.template:       '%y4-%m2-%d2T%h2%n2Z.>>>NCSUFFIX<<<' ,
@@ -287,8 +288,8 @@ COLLECTIONS: 'asm_inst_6hr_glo_L288x181_p48'
                                                  'TSOIL4'     , 'SURFACE'  ,
                                                  'TSOIL5'     , 'SURFACE'  ,
                                                  'TSOIL6'     , 'SURFACE'  ,
-                                                 'PRLAND'     , 'SURFACE'  , 'PRECTOTCORR'   , # append "CORR" if reanalysis and from SURFACE  ,
-                                                 'SNOLAND'    , 'SURFACE'  , 'PRECSNOCORR'   , # append "CORR" if reanalysis and from SURFACE  ,
+                                                 'PRLAND'     , 'SURFACE'  , 'PRECTOTCORR'   , 
+                                                 'SNOLAND'    , 'SURFACE'  , 'PRECSNOCORR'   , 
                                                  'TSLAND'     , 'SURFACE'  , 'SNOMASLAND'    ,
                                                  'SNOWDP'     , 'SURFACE'  , 'SNODPLAND'     ,
                                                  'EVPSOI'     , 'SURFACE'  , 'EVPLANDSOIL'   ,
@@ -321,8 +322,8 @@ COLLECTIONS: 'asm_inst_6hr_glo_L288x181_p48'
                                                  ::
 
   lfo_tavg_6hr_glo_L288x181_slv.format:         'CFIO' ,
-  lfo_tavg_6hr_glo_L288x181_slv.descr:          '2d,6-Hourly,Time-Averaged,Single-Level,Assimilation,Land Surface Forcings' ,
-# lfo_tavg_6hr_glo_L288x181_slv.nbits:          10 ,
+  lfo_tavg_6hr_glo_L288x181_slv.descr:          '2d,6-Hourly,Time-Averaged,Single-Level,Assimilation,Ensemble Land Surface Forcings' ,
+# lfo_tavg_6hr_glo_L288x181_slv.nbits:          12 ,
   lfo_tavg_6hr_glo_L288x181_slv.deflate:        2 ,
   lfo_tavg_6hr_glo_L288x181_slv.regrid_method:  'BILINEAR_MONOTONIC' ,
   lfo_tavg_6hr_glo_L288x181_slv.template:       '%y4-%m2-%d2T%h2%n2Z.>>>NCSUFFIX<<<' ,
@@ -335,16 +336,16 @@ COLLECTIONS: 'asm_inst_6hr_glo_L288x181_p48'
   lfo_tavg_6hr_glo_L288x181_slv.end_time:       >>>IOETIME<<< ,
   lfo_tavg_6hr_glo_L288x181_slv.fields:         'SLRSF'  , 'SOLAR'    , 'SWGDN'           ,
                                                  'LWS'    , 'IRRAD'    , 'LWGAB'           ,
-                                                 'PCU'    , 'SURFACE'  , 'PRECRAINCUCORR'  , # append "CORR" if reanalysis and from SURFACE  ,
-                                                 'PLS'    , 'SURFACE'  , 'PRECRAINLSCORR'  , # append "CORR" if reanalysis and from SURFACE  ,
-                                                 'SNO'    , 'SURFACE'  , 'PRECSNOCORR'     , # append "CORR" if reanalysis and from SURFACE  ,
+                                                 'PCU'    , 'SURFACE'  , 'PRECRAINCUCORR'  , 
+                                                 'PLS'    , 'SURFACE'  , 'PRECRAINLSCORR'  ,
+                                                 'SNO'    , 'SURFACE'  , 'PRECSNOCORR'     , 
                                                  'DFPAR'  , 'SOLAR'    , 'PARDF'           ,
                                                  'DRPAR'  , 'SOLAR'    , 'PARDR'           ,
                                                  ::
 
   glc_tavg_6hr_glo_L288x181_slv.format:         'CFIO' ,
-  glc_tavg_6hr_glo_L288x181_slv.descr:          '2d,6-Hourly,Time-Averaged,Single-Level,Assimilation,Land Ice Surface Diagnostics' ,
-  glc_tavg_6hr_glo_L288x181_slv.nbits:          10 ,
+  glc_tavg_6hr_glo_L288x181_slv.descr:          '2d,6-Hourly,Time-Averaged,Single-Level,Assimilation,Ensemble Land Ice Surface Diagnostics' ,
+  glc_tavg_6hr_glo_L288x181_slv.nbits:          12 ,
   glc_tavg_6hr_glo_L288x181_slv.deflate:        2 ,
   glc_tavg_6hr_glo_L288x181_slv.regrid_method:  'BILINEAR_MONOTONIC' ,
   glc_tavg_6hr_glo_L288x181_slv.template:       '%y4-%m2-%d2T%h2%n2Z.>>>NCSUFFIX<<<' ,
@@ -384,8 +385,8 @@ COLLECTIONS: 'asm_inst_6hr_glo_L288x181_p48'
                                                  ::
 
   int_inst_6hr_glo_L288x181_slv.format:         'CFIO' ,
-  int_inst_6hr_glo_L288x181_slv.descr:          '2d,6-Hourly,Instantaneous,Single-Level,Assimilation,Vertically Integrated Diagnostics' ,
-  int_inst_6hr_glo_L288x181_slv.nbits:          10 ,
+  int_inst_6hr_glo_L288x181_slv.descr:          '2d,6-Hourly,Instantaneous,Single-Level,Assimilation,Ensemble Vertically Integrated Diagnostics' ,
+  int_inst_6hr_glo_L288x181_slv.nbits:          12 ,
   int_inst_6hr_glo_L288x181_slv.deflate:        2 ,
   int_inst_6hr_glo_L288x181_slv.regrid_method:  'BILINEAR_MONOTONIC' ,
   int_inst_6hr_glo_L288x181_slv.template:       '%y4-%m2-%d2T%h2%n2Z.>>>NCSUFFIX<<<' ,
@@ -405,9 +406,35 @@ COLLECTIONS: 'asm_inst_6hr_glo_L288x181_p48'
                                                  'THV'   , 'AGCM'  ,
                                                  ::
 
+  int_tavg_6hr_glo_L288x181_slv.format:           'CFIO' ,
+  int_tavg_6hr_glo_L288x181_slv.descr:            '2d,6-Hourly,Time-Averaged,Single-Level,Assimilation,Vertically Integrated Ensemble Diagnostics' ,
+  int_tavg_6hr_glo_L288x181_slv.nbits:             12 ,
+  int_tavg_6hr_glo_L288x181_slv.deflate:           2 ,
+  int_tavg_6hr_glo_L288x181_slv.regrid_method:    'BILINEAR_MONOTONIC' ,
+  int_tavg_6hr_glo_L288x181_slv.template:         '%y4-%m2-%d2T%h2%n2Z.>>>NCSUFFIX<<<' ,
+  int_tavg_6hr_glo_L288x181_slv.mode:             'time-averaged' ,
+  int_tavg_6hr_glo_L288x181_slv.grid_label:        PC288x181-DC ,
+  int_tavg_6hr_glo_L288x181_slv.frequency:         060000 ,
+  int_tavg_6hr_glo_L288x181_slv.duration:          060000 ,
+  int_tavg_6hr_glo_L288x181_slv.end_date:          >>>IOEDATE<<< ,
+  int_tavg_6hr_glo_L288x181_slv.end_time:          >>>IOETIME<<< ,
+  int_tavg_6hr_glo_L288x181_slv.fields:           'UCPT'          , 'DYN'         , 'UFLXCPT'      ,
+                                                  'VCPT'          , 'DYN'         , 'VFLXCPT'      ,
+                                                  'UPHI'          , 'DYN'         , 'UFLXPHI'      ,
+                                                  'VPHI'          , 'DYN'         , 'VFLXPHI'      ,
+                                                  'UKE'           , 'DYN'         , 'UFLXKE'       ,
+                                                  'VKE'           , 'DYN'         , 'VFLXKE'       ,
+                                                  'UQV'           , 'DYN'         , 'UFLXQV'       ,
+                                                  'VQV'           , 'DYN'         , 'VFLXQV'       ,
+                                                  'UQL'           , 'DYN'         , 'UFLXQL'       ,
+                                                  'VQL'           , 'DYN'         , 'VFLXQL'       ,
+                                                  'UQI'           , 'DYN'         , 'UFLXQI'       ,
+                                                  'VQI'           , 'DYN'         , 'VFLXQI'       ,
+                                                 ::
+
   aer_inst_6hr_glo_L288x181_slv.format:           'CFIO' ,
-  aer_inst_6hr_glo_L288x181_slv.descr:            '2d,6-Hourly,Instantaneous,Single-Level,Analysis,Aerosol Diagnostics' ,
-  aer_inst_6hr_glo_L288x181_slv.nbits:             10 ,
+  aer_inst_6hr_glo_L288x181_slv.descr:            '2d,6-Hourly,Instantaneous,Single-Level,Analysis,Ensemble Aerosol Diagnostics' ,
+  aer_inst_6hr_glo_L288x181_slv.nbits:             12 ,
   aer_inst_6hr_glo_L288x181_slv.deflate:           2 ,
   aer_inst_6hr_glo_L288x181_slv.regrid_method:    'CONSERVE_MONOTONIC' ,
   aer_inst_6hr_glo_L288x181_slv.template:         '%y4-%m2-%d2T%h2%n2Z.>>>NCSUFFIX<<<' ,
@@ -426,8 +453,8 @@ COLLECTIONS: 'asm_inst_6hr_glo_L288x181_p48'
                                                   ::
 
   pbl_inst_6hr_glo_L288x181_z17.format:         'CFIO' ,
-  pbl_inst_6hr_glo_L288x181_z17.descr:          '3d,6-Hourly,Instantaneous,Constant-Height,PBL Diagnostics' ,
-  pbl_inst_6hr_glo_L288x181_z17.nbits:          10 ,
+  pbl_inst_6hr_glo_L288x181_z17.descr:          '3d,6-Hourly,Instantaneous,Constant-Height,Assimilation, Ensemble PBL Diagnostics' ,
+  pbl_inst_6hr_glo_L288x181_z17.nbits:          12 ,
   pbl_inst_6hr_glo_L288x181_z17.deflate:        2 ,
   pbl_inst_6hr_glo_L288x181_z17.regrid_method:  'BILINEAR_MONOTONIC' ,
   pbl_inst_6hr_glo_L288x181_z17.template:       '%y4-%m2-%d2T%h2%n2Z.>>>NCSUFFIX<<<' ,
