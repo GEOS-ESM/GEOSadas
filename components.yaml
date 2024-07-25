@@ -5,13 +5,13 @@ GEOSadas:
 env:
   local: ./@env
   remote: ../ESMA_env.git
-  tag: v4.9.1
+  tag: v4.9.4
   develop: main
 
 cmake:
   local: ./@cmake
   remote: ../ESMA_cmake.git
-  tag: v3.26.0
+  tag: v3.26.1
   develop: develop
 
 ecbuild:
@@ -52,13 +52,13 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  tag: v1.5.5-R21C-2
+  tag: v1.5.5-R21C-3
   develop: R21C
 
 GEOSgcm_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp
   remote: ../GEOSgcm_GridComp.git
-  tag: v1.18.1+R21C_v1.0.1
+  tag: v1.18.1+R21C_v1.0.2
   sparse: ./config/GEOSgcm_GridComp.sparse
   develop: R21C
 
@@ -77,8 +77,8 @@ GEOSagcmPert_GridComp:
 FVdycoreCubed_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSsuperdyn_GridComp/@FVdycoreCubed_GridComp
   remote: ../FVdycoreCubed_GridComp.git
-  tag: v1.13.1
-  develop: release/v1
+  tag: v1.13.1+R21C_v1.0.0
+  develop: R21C
 
 fvdycore:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSsuperdyn_GridComp/@FVdycoreCubed_GridComp/@fvdycore
@@ -107,7 +107,7 @@ geos-chem:
 GOCART:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSphysics_GridComp/@GEOSchem_GridComp/@GOCART
   remote: ../GOCART.git
-  tag: v2.1.2+R21C_v1.0.2
+  tag: v2.1.2+R21C_v2.0.0
   develop: R21C
 
 QuickChem:
@@ -169,7 +169,7 @@ sis2:
 GEOSradiation_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSphysics_GridComp/@GEOSradiation_GridComp
   remote: ../GEOSradiation_GridComp.git
-  tag: v1.2.0
+  tag: v1.2.0+R21C_v1.0.0
   develop: develop
 
 RRTMGP:
@@ -182,7 +182,7 @@ RRTMGP:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  tag: v1.9.6+R21C_v1.0.3
+  tag: v1.9.6+R21C_v1.0.4
   develop: R21C
 
 Ocean-LETKF:
