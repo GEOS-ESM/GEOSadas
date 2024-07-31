@@ -11,7 +11,7 @@ env:
 cmake:
   local: ./@cmake
   remote: ../ESMA_cmake.git
-  tag: v3.46.0
+  tag: v3.48.0
   develop: develop
 
 ecbuild:
@@ -28,13 +28,13 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  branch: bugfix/mathomp4/fixes-for-intel2024.2
+  tag: v1.9.8
   develop: main
 
 GEOS_Util:
   local: ./src/Shared/@GMAO_Shared/@GEOS_Util
   remote: ../GEOS_Util.git
-  tag: v2.1.0
+  tag: v2.1.2
   develop: main
 
 MAPL:
