@@ -19,11 +19,18 @@ ecbuild:
   remote: ../ecbuild.git
   tag: geos/v1.3.0
 
+crtm:
+  local: ./src/Shared/JCSDA_crtm/@crtm
+  remote: ../crtm.git
+  tag: v2.4.1-jedi.1
+  develop: master
+
 NCEP_Shared:
   local: ./src/Shared/@NCEP_Shared
   remote: ../NCEP_Shared.git
   tag: v1.3.0
   develop: main
+  sparse: ./config/NCEP_Shared.sparse
 
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
