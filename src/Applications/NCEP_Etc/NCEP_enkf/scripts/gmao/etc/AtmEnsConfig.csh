@@ -32,8 +32,8 @@ setenv ACFTBIAS @ACFTBIAS  # 0: no aircraft bias correction
 # ---------
 setenv ENSARCH_ALLBKG 1   # set this and ALL bkg files are saved in tar ball
 setenv ENSARCH_FIELDS "eana,ebkg,stat,ecbkg,eoi0,edia,ebaer,erst,ebkgx,eprg,eniana"
-setenv ENSARCH_FIELDS "eana,ebkg,stat,ecbkg,eoi0,edia,ebaer,erst,ebkgx"
 setenv ENSARCH_FIELDS "eana,ebkg,stat,ecbkg,eoi0,edia,ebaer,erst"
+setenv ENSARCH_FIELDS "eana,ebkg,stat,ecbkg,eoi0,edia,ebaer,erst,ebkgx"
 setenv ENSARCH_WALLCLOCK 2:00:00
 setenv ARCHLOC $FVARCH
 

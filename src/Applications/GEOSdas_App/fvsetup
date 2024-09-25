@@ -625,6 +625,16 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
 #           fsens_script(), and anasa_script() in the %inputparam hash.
 #=======================================================================
 sub set_inputparams {
+
+    if ($ncpus_per_node) {
+#       $nodes_gsi = in($ncpus_gsi / $ncpus_per_node + 0.5);
+        $nodes_avail = int($ncpus / $ncpus_per_node  + 0.5);
+        $perhost_gsi = int($ncpus_gsi / $nodes_avail + 0.5);
+
+    } else {
+       die ">>> ERROR <<< ncpus_per_node must be declared.";
+    }
+
     %inputparams = ("acftbias"       => $acftbias,
                     "asynbkg_min"    => $asynbkg_min, 
                     "berror_env"     => $berror_env, 
@@ -652,6 +662,7 @@ sub set_inputparams {
                     "nametag"        => $nametag, 
                     "ncpus"          => $ncpus, 
                     "ncpus_gsi"      => $ncpus_gsi,
+                    "perhost_gsi"    => $perhost_gsi,
                     "nodeflg"        => $nodeflg, 
                     "ncsuffix"       => $ncsuffix,
 		    "newradbc"       => $newradbc,
@@ -666,11 +677,6 @@ sub set_inputparams {
                     "varwindow"      => $varwindow, 
                     "wcnstrt"        => $wcnstrt );
 
-    if ($ncpus_per_node) {
-        $nodes_gsi = $ncpus_gsi / $ncpus_per_node;
-        $inputparams{"ncpus_per_node"} = $ncpus_per_node;
-        $inputparams{"nodes_gsi"}      = $nodes_gsi;
-    }
 }
 
 #=======================================================================
@@ -3150,7 +3156,7 @@ sub get_nodeflg {
   $proc = "";
   # reset default if applicable
 
-  $ans = query(" Processing nodes (1:Westmere, 2:SandyBridge, 3:Ivy Bridge, 4:Haswell, 5:Skylake, 6:Cascase)?", "4");
+  $ans = query(" Processing nodes (1:Westmere, 2:SandyBridge, 3:Ivy Bridge, 4:Haswell, 5:Skylake, 6:Cascase, 7:Milan)?", "4");
 
   if    ($ans == 1) { $nodeflg = "wes";  $ncpus_per_node = 12 }
   elsif ($ans == 2) { $nodeflg = "san";  $ncpus_per_node = 16 }
@@ -3158,6 +3164,7 @@ sub get_nodeflg {
   elsif ($ans == 4) { $nodeflg = "hasw"; $ncpus_per_node = 24 }
   elsif ($ans == 5) { $nodeflg = "sky";  $ncpus_per_node = 36 }
   elsif ($ans == 6) { $nodeflg = "cas";  $ncpus_per_node = 45 }
+  elsif ($ans == 7) { $nodeflg = "mil";  $ncpus_per_node = 126 }
 
   # currently not applicable at nccs
   #---------------------------------
@@ -5076,7 +5083,7 @@ EOF
        $agcm_im  =  90;
        $agcm_grid_type = "Cubed-Sphere";
        $agcm_jm  =  $agcm_im * 6;
-       $nx       = 2;
+       $nx       = 3;
        $ny       = $nx * 6;
        $km       = $vres;
        $dt  = 450;
@@ -5116,7 +5123,7 @@ EOF
        $agcm_grid_type = "Cubed-Sphere";
        $agcm_im  =  180;
        $agcm_jm  =  $agcm_im * 6;
-       $nx       = 4;
+       $nx       = 6;
        $ny       = $nx * 6;
        $km       = $vres;
        $dt  = 450;
@@ -5152,7 +5159,7 @@ EOF
        $agcm_grid_type = "Cubed-Sphere";
        $agcm_im  =  360;
        $agcm_jm  =  $agcm_im * 6;
-       $nx       = 6;
+       $nx       = 12;
        $ny       = $nx * 6;
        $km       = $vres;
        $dt  = 450;
@@ -7731,6 +7738,15 @@ if ( $fvchem && $lm > 2 ) {
      $paroff = 0;
  }
 
+# Allow for expanded memory usage when running GSI
+# ------------------------------------------------
+  if ($ncpus_per_node) {
+      $nodes_avail = int($ncpus / $ncpus_per_node  + 0.5);
+      $perhost_gsi = int($ncpus_gsi / $nodes_avail + 0.5);
+  } else {
+     die ">>> ERROR <<< ncpus_per_node must be declared.";
+  }
+
 # Batch wall-clock time setting
 #------------------------------
  if    ($dbqueue)                       { $daswallclk = "1:00" }
@@ -8212,7 +8228,7 @@ print  SCRIPT <<"EOF";
 #-setenv MPIRUN_IAU    "PBS_NODEFILE=\$FVWORK/IAU_list; esma_mpirun -np \$NCPUS_IAU \$IAUX"
   setenv MPIRUN_IAU    "esma_mpirun -np \$NCPUS_IAU \$IAUX"
 #-setenv MPIRUN_UPRST  "esma_mpirun -np \$NCPUS_IAU \$RSTUPDX"
-  setenv MPIRUN_ANA    "PBS_NODEFILE=\$FVWORK/ANA_list; esma_mpirun -perhost 8 -np \$NCPUS_GSI \$ANAX"
+  setenv MPIRUN_ANA    "PBS_NODEFILE=\$FVWORK/ANA_list; esma_mpirun -perhost $perhost_gsi -np \$NCPUS_GSI \$ANAX"
   setenv MPIRUN_OBSVR  "esma_mpirun -np \$NCPUS_GSI \$ANAX"
   setenv MPIRUN_SAC    "esma_mpirun -np  1      \$SACX"
   setenv MPIRUN_OIQC   "PBS_NODEFILE=\$FVWORK/OIQC_list; esma_mpirun -np 4"
@@ -9414,7 +9430,7 @@ print  SCRIPT <<"EOF";
   setenv OMP_NUM_THREADS $omp_num_threads
   setenv MPIRUN_IDF    "esma_mpirun -np \$NCPUS_IDF \$IDFX"
   setenv MPIRUN_IAU    "esma_mpirun -np \$NCPUS_IAU \$IAUX"
-  setenv MPIRUN_ANA    "PBS_NODEFILE=\$FVWORK/ANA_list; esma_mpirun -perhost 8 -np \$NCPUS_GSI \$ANAX"
+  setenv MPIRUN_ANA    "PBS_NODEFILE=\$FVWORK/ANA_list; esma_mpirun -perhost $perhost_gsi -np \$NCPUS_GSI \$ANAX"
   setenv MPIRUN_OBSVR  "PBS_NODEFILE=\$FVWORK/ANA_list; esma_mpirun -np \$NCPUS_GSI \$ANAX"
   setenv MPIRUN_SAC    "esma_mpirun -np  1      \$SACX"
   setenv MPIRUN_OIQC   "PBS_NODEFILE=\$FVWORK/OIQC_list; esma_mpirun -np 4"
@@ -10912,7 +10928,7 @@ sub expand_EnvVars {
 
     # look for ${var} format
     #-----------------------
-    while ($string =~ m/(\${(\w+)})/)   {
+    while ($string =~ m/(\$[{(\w+)}])/)   {
         $var = $1; $name = $2;
         $var =~ s/\$/\\\$/;
         $string =~ s/$var/$ENV{$name}/;

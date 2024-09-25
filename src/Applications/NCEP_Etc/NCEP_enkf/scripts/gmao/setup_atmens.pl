@@ -226,6 +226,7 @@ sub init {
   if ( $nodename eq "hasw" ) { $ncpus_per_node = 24; }
   if ( $nodename eq "sky"  ) { $ncpus_per_node = 36; }
   if ( $nodename eq "cas"  ) { $ncpus_per_node = 46; }
+  if ( $nodename eq "mil"  ) { $ncpus_per_node = 126; }
   $agcm_ncpus_per_node = -1;
 
 # define layout depending on resolution
@@ -245,8 +246,19 @@ sub init {
          $obsv_nx =    4; $obsv_ny =    8;
          $stat_nx =    2; $stat_ny =    2;
      } elsif ($nodename eq "cas") {
-         die "Sorry this node/resolution not set yet, aborting \n";
 #        $agcm_ncpus_per_node = 46;
+         $enkf_cpus = 244;
+         $agcm_nx =    3; $agcm_ny =   30;
+         $miau_nx =    2; $miau_ny =   12;
+         $obsv_nx =    4; $obsv_ny =    8;
+         $stat_nx =    2; $stat_ny =    2;
+     } elsif ($nodename eq "mil") {
+#        $agcm_ncpus_per_node = 126;
+         $enkf_cpus = 244;
+         $agcm_nx =    3; $agcm_ny =   30;
+         $miau_nx =    2; $miau_ny =   12;
+         $obsv_nx =    4; $obsv_ny =    8;
+         $stat_nx =    2; $stat_ny =    2;
      } else {
          die "Unknown node name, aborting \n";
      }
@@ -273,11 +285,17 @@ sub init {
      } elsif ($nodename eq "cas") {
 #        $agcm_ncpus_per_node = 46;
          $enkf_cpus = 442;
-         $agcm_nx =    6; $agcm_ny =   24;
+         $agcm_nx =    4; $agcm_ny =   30;
          $miau_nx =    2; $miau_ny =   12;
          $obsv_nx =    4; $obsv_ny =   24;
          $stat_nx =    2; $stat_ny =   24;
-         die "Sorry this node/resolution not set yet, aborting \n";
+     } elsif ($nodename eq "mil") {
+#        $agcm_ncpus_per_node = 126;
+         $enkf_cpus = 504;
+         $agcm_nx =    6; $agcm_ny =   36;
+         $miau_nx =    2; $miau_ny =   12;
+         $obsv_nx =    4; $obsv_ny =   24;
+         $stat_nx =    2; $stat_ny =   24;
      } else {
          die "Unknown node name, aborting \n";
      }

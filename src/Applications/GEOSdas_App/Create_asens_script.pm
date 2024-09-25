@@ -71,6 +71,7 @@ sub asens_script {
     my $newradbc        = $inputparams{"newradbc"};
     my $doRcorr         = $inputparams{"doRcorr"};
     my $qsub            = $inputparams{"qsub"};
+    my $perhost_gsi     = $inputparams{"perhost_gsi"};
 
  # local variables
  my( $os, $siteID );
@@ -379,7 +380,7 @@ EOF
 # ---------------------------------
   set ANAX = `which GSIsa.x`
   set SACX = `which sac.x`
-  setenv MPIRUN_ANA    "esma_mpirun -perhost 8 -np \$NCPUS \$ANAX"
+  setenv MPIRUN_ANA    "esma_mpirun -perhost $perhost_gsi -np \$NCPUS \$ANAX"
 # setenv MPIRUN_SAC    "esma_mpirun -np \$NCPUS \$SACX"
   setenv MPIRUN_SAC    "esma_mpirun -np  1      \$SACX"
 
