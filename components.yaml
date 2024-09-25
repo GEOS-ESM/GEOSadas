@@ -5,7 +5,7 @@ GEOSadas:
 env:
   local: ./@env
   remote: ../ESMA_env.git
-  tag: v4.25.1
+  tag: v4.25.2
   develop: main
 
 cmake:
@@ -28,7 +28,7 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  tag: g5.41.0
+  branch: feature/rtodling/milan
   develop: main
 
 GMAOpyobs:
@@ -70,13 +70,13 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  tag: g5.41.0
+  tag: g5.41.1
   develop: develop
 
 mksi:
    local: ./src/Components/@GEOSana_GridComp/GEOSaana_GridComp/GSI_GridComp/@mksi
    remote: ../GEOS_mksi.git
-   tag: g5.41.0
+   tag: g5.41.1
    develop: develop
 
 GEOSgcm_GridComp:
