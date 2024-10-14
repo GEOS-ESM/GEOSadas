@@ -77,13 +77,13 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  tag: g5.41.1
+  branch: feature/rtodling/crtm_241_as_jedi
   develop: develop
 
 mksi:
    local: ./src/Components/@GEOSana_GridComp/GEOSaana_GridComp/GSI_GridComp/@mksi
    remote: ../GEOS_mksi.git
-   tag: g5.41.1
+   branch: bugfix/rtodling/satwind_date_stamp
    develop: develop
 
 GEOSgcm_GridComp:
