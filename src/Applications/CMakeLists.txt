@@ -9,5 +9,6 @@ esma_add_subdirectories(
   MKIAU_App
   GMAO_Etc
   @CPLFCST_Etc
+  SABER_App
   )
 
