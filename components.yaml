@@ -35,7 +35,7 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  branch: feature/rtodling/milan
+  tag: g5.41.2
   develop: main
 
 GMAOpyobs:
@@ -77,13 +77,13 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  branch: feature/rtodling/crtm_241_as_jedi
+  tag: g5.41.2
   develop: develop
 
 mksi:
    local: ./src/Components/@GEOSana_GridComp/GEOSaana_GridComp/GSI_GridComp/@mksi
    remote: ../GEOS_mksi.git
-   branch: bugfix/rtodling/satwind_date_stamp
+   tag: g5.41.2
    develop: develop
 
 GEOSgcm_GridComp:
