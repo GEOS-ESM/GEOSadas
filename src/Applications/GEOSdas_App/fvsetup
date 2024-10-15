@@ -3156,15 +3156,12 @@ sub get_nodeflg {
   $proc = "";
   # reset default if applicable
 
-  $ans = query(" Processing nodes (1:Westmere, 2:SandyBridge, 3:Ivy Bridge, 4:Haswell, 5:Skylake, 6:Cascase, 7:Milan)?", "4");
+  $ans = query(" Processing nodes (1:Haswell, 2:Skylake, 3:Cascase, 4:Milan)?", "2");
 
-  if    ($ans == 1) { $nodeflg = "wes";  $ncpus_per_node = 12 }
-  elsif ($ans == 2) { $nodeflg = "san";  $ncpus_per_node = 16 }
-  elsif ($ans == 3) { $nodeflg = "ivy";  $ncpus_per_node = 20 }
-  elsif ($ans == 4) { $nodeflg = "hasw"; $ncpus_per_node = 24 }
-  elsif ($ans == 5) { $nodeflg = "sky";  $ncpus_per_node = 36 }
-  elsif ($ans == 6) { $nodeflg = "cas";  $ncpus_per_node = 45 }
-  elsif ($ans == 7) { $nodeflg = "mil";  $ncpus_per_node = 126 }
+  if    ($ans == 1) { $nodeflg = "hasw"; $ncpus_per_node = 24 }
+  elsif ($ans == 2) { $nodeflg = "sky";  $ncpus_per_node = 36 }
+  elsif ($ans == 3) { $nodeflg = "cas";  $ncpus_per_node = 45 }
+  elsif ($ans == 4) { $nodeflg = "mil";  $ncpus_per_node = 54 }
 
   # currently not applicable at nccs
   #---------------------------------
@@ -7743,6 +7740,7 @@ if ( $fvchem && $lm > 2 ) {
   if ($ncpus_per_node) {
       $nodes_avail = int($ncpus / $ncpus_per_node  + 0.5);
       $perhost_gsi = int($ncpus_gsi / $nodes_avail + 0.5);
+      if ($analat == 361 && $nodeflg == "mil") { $perhost_gsi = 42 };
   } else {
      die ">>> ERROR <<< ncpus_per_node must be declared.";
   }
@@ -7891,7 +7889,8 @@ print SCRIPT <<"EOF";
       if( `uname -m` != "ia64" ) then
           setenv FORT90L -Wl,-T
       endif
-      setenv FVWORK $diren/fvwork.\$\$
+#     setenv FVWORK $diren/fvwork.\$\$
+      setenv FVWORK \$TSE_TMPDIR
       if (\$?kidwork) then # this case, overwrite FVWORK with user-specific
          setenv FVWORK \$kidwork
       endif
@@ -8080,6 +8079,10 @@ print  SCRIPT <<"EOF";
      setenv I_MPI_EXTRA_FILESYSTEM 1
      setenv I_MPI_EXTRA_FILESYSTEM_LIST gpfs
      setenv I_MPI_DEBUG 6
+     if ( \$?ARCH == "install_SLES15" ) then
+       setenv I_MPI_FABRICS shm:ofi
+       setenv I_MPI_OFI_PROVIDER psm3
+     endif
 #    setenv ROMIO_FSTYPE_FORCE         "gpfs:"
 #    setenv I_MPI_FABRICS shm:ofi
 #    setenv I_MPI_FABRICS shm:dapl
@@ -9055,9 +9058,10 @@ print SCRIPT <<"EOF";
   endif
   if( (`uname -s` == "Linux") && ( (`uname -m` == "ia64") || (`uname -m` == "x86_64") ) ) then
       setenv FORT90L -Wl,-T
-      setenv FVWORK $fvhome/../tmp.\$\$
-      if(   -d \$FVWORK ) /bin/rm -r  \$FVWORK
-      /bin/mkdir -p \$FVWORK
+#     setenv FVWORK $fvhome/../tmp.\$\$
+#     if(   -d \$FVWORK ) /bin/rm -r  \$FVWORK
+#     /bin/mkdir -p \$FVWORK
+      setenv FVWORK \$TSE_TMPDIR
       if (-e /usr/bin/lfs) then
          /usr/bin/lfs setstripe -c 1 -s 1048576 -i -1 \$FVWORK
       endif
@@ -9150,7 +9154,10 @@ print  SCRIPT <<"EOF";
 # -----------------
   if (\$?I_MPI_ROOT) then
 #    setenv I_MPI_USE_DYNAMIC_CONNECTIONS 0
-     setenv I_MPI_FABRICS shm:ofi
+     if ( \$?ARCH == "install_SLES15" ) then
+       setenv I_MPI_FABRICS shm:ofi
+       setenv I_MPI_OFI_PROVIDER psm3
+     endif
 #    setenv I_MPI_FABRICS shm:dapl
 #    setenv I_MPI_FABRICS_LIST "dapl,ofa"
 #    setenv I_MPI_FALLBACK "enable"

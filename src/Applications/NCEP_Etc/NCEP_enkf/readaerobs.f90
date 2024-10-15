@@ -36,6 +36,7 @@ subroutine get_num_aerobs(obspath,datestring,num_obs_tot,id)
     character(12) :: geosdate
     character(14) :: geosdate2
     integer(i_kind) iunit, nhms, nymd, nymd0, nhms0, nsel, nb, rc
+    logical :: fexist
   
     type(ods_vect):: ods
 
@@ -53,6 +54,11 @@ subroutine get_num_aerobs(obspath,datestring,num_obs_tot,id)
       write(geosdate2,'(i8.8,a,i4.4,a)') nymd, '_', nhms/100, 'z'
 
       obsfile = trim(adjustl(obspath))//"ensmean/"//trim(expid)//".ensmean_aod.obs."//geosdate//".ods"
+      inquire(file=obsfile,exist=fexist)
+      if (.not. fexist) then
+         nb=nb+1
+         cycle
+      endif
       print *,'[r] reading ensmean aerosol file: ', trim(obsfile)
 
       call ods_get (obsfile, nymd, nhms, ftype, ods, rc)

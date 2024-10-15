@@ -44,8 +44,8 @@ FVHOME? [/discover/nobackup/rtodling/prePP]
 The directory /discover/nobackup/projects/gmao/dadev/rtodling/prePP does not exist. Create it now? [y]
 > 
 
-Processing nodes (1:Westmere, 2:SandyBridge, 3:Ivy Bridge, 4:Haswell, 5:Skylake, 6:Cascase)? [4]
-> 5
+Processing nodes (1:Haswell, 2:Skylake, 3:Cascase, 4:Milan)? [2]
+> 4
 
 Which case of variational analysis? [1]
 > 
