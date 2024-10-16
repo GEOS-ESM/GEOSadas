@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 
 Utility to read MISR ODS and write a smaller file with data only over land.
@@ -22,7 +22,7 @@ apath = '/nobackup/MODIS/Level3/ALBEDO/albedo_clim.ctl'
 if __name__ == "__main__":
 
     def blank(nymd,nhms):
-        print "    - NO DATA for %8d %6d "%(nymd, nhms)
+        print("    - NO DATA for %8d %6d "%(nymd, nhms))
         ods = ODS(nobs=1,kt=45,kx=313)
         ods.qcx[0] = 1
         ods.ks[0] = 1
@@ -38,7 +38,7 @@ if __name__ == "__main__":
             if os.path.isdir(item):      doDir(item)
             elif os.path.isfile(item):   doFile(item)
             else:
-                print "%s is not a valid file or directory, ignoring it"%item
+                print("%s is not a valid file or directory, ignoring it"%item)
 
     def doDir(dir):
         """Recursively, look for files in directory."""
@@ -47,13 +47,13 @@ if __name__ == "__main__":
             if os.path.isdir(path):      doDir(path)
             elif os.path.isfile(path):   doFile(path)
             else:
-                print "%s is not a valid file or directory, ignoring it"%item
+                print("%s is not a valid file or directory, ignoring it"%item)
 
 
     def doFile(fname):
 
         if fname.split('.')[-1] != 'ods':
-            print "[*] NOT ODS "+fname
+            print("[*] NOT ODS "+fname)
             return
 
         dirn = os.path.abspath(os.path.dirname(fname))
@@ -69,12 +69,12 @@ if __name__ == "__main__":
             landfn = landdn+'/'+basen.replace('aero_','aland_')
 
         if os.path.exists(landfn):
-            print "[ ] Skipping "+landfn
+            print("[ ] Skipping "+landfn)
             return
 
         os.system('/bin/mkdir -p '+landdn)
 
-        print "[x] Working on "+landfn
+        print("[x] Working on "+landfn)
 
         for nhms in range(0,240000,30000):
 
@@ -105,7 +105,7 @@ if __name__ == "__main__":
                         ods = blank(nymd,nhms)
 
                 if any(I):
-                    print "    + Processing %8d %6d with %5d obs left"%(nymd, nhms, len(v[I]))
+                    print("    + Processing %8d %6d with %5d obs left"%(nymd, nhms, len(v[I])))
 
             except:
                 ods = blank(nymd,nhms)
@@ -121,8 +121,8 @@ if __name__ == "__main__":
     #---
             
     if len(sys.argv) < 2 :
-        print 'Usage: '
-        print '        %s misr_ods_files/dir_names'%os.path.basename(sys.argv[0])
+        print('Usage: ')
+        print('        %s misr_ods_files/dir_names'%os.path.basename(sys.argv[0]))
         sys.exit(1)
 
     # Albedo dataset
@@ -131,7 +131,7 @@ if __name__ == "__main__":
         from grads import GrADS
         ga = GrADS(Echo=False,Window=False)
         fh = ga.open(apath)
-        print fh
+        print(fh)
 
     # Process list of files or directories
     # ------------------------------------

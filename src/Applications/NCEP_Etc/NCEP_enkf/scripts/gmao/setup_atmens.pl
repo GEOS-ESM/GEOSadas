@@ -173,6 +173,8 @@ sub init {
 # determined whether cubed or not
   $cubed = "";
   $jm_cubed = 6 * $aim;
+  $dt = 450; # wired for all resolutions
+  $odt = 3600; # wired for all resolutions
   if ( $jm_cubed == $ajm ) { 
       $cubed = "-cubed";
       $grid_type = "Cubed-Sphere";
@@ -198,6 +200,7 @@ sub init {
     $ogcm_nf  = 1;
     $cube_ogcm = "#";
     $latlon_ogcm = "";
+    $ogridname = "OC${ogcm_im}x${ogcm_jm}-DE";
   }
   if( "$ogrid" eq "f" ) {
     $ogcm_grid_type = "LatLon";
@@ -207,6 +210,7 @@ sub init {
     $ogcm_nf  = 1;
     $cube_ogcm = "#";
     $latlon_ogcm = "";
+    $ogridname = "OC${ogcm_im}x${ogcm_jm}-DE";
   }
   if( "$ogrid" eq "C" ) {
     $ogcm_grid_type = "Cubed-Sphere";
@@ -216,6 +220,7 @@ sub init {
     $ogcm_nf  = 6;
     $cube_ogcm = "";
     $latlon_ogcm = "#";
+    $ogridname = "OC${ogcm_im}x${ogcm_jm}-CF";
   }
 
   if ( $nodename eq "hasw" ) { $ncpus_per_node = 24; }
@@ -481,6 +486,28 @@ sub ed_agcm_rc {
         if($rcd =~ /\@AGCM_LM/) {$rcd=~ s/\@AGCM_LM/$agcm_lm/g; }
         if($rcd =~ /\@AGCM_NF/) {$rcd=~ s/\@AGCM_NF/$agcm_nf/g; }
 
+        if($rcd =~ /\@CONUS/)     {$rcd=~ s/\@CONUS/#/g; }
+        if($rcd =~ /\@FV_HWT/)    {$rcd=~ s/\@FV_HWT/#/g; }
+        if($rcd =~ /\@BACM_1M_/)  {$rcd=~ s/\@BACM_1M_/ /g; }  # Bacmeister microphysics (wired)
+        if($rcd =~ /\@GFDL_1M_/)  {$rcd=~ s/\@GFDL_1M_/#/g; }
+        if($rcd =~ /\@GMGB2_2M_/) {$rcd=~ s/\@MGB2_2M_/#/g; }
+        if($rcd =~ /\@HIST_GOCART/) {$rcd=~ s/\@HIST_GOCART/ /g; }
+        if($rcd =~ /\@CONVPAR_OPTION/)  {$rcd=~ s/\@CONVPAR_OPTION/GF/g; }
+
+        if($rcd =~ /\@COUPLED/) {$rcd=~ s/\@COUPLED/#/g; } # wired for now
+
+        if($rcd =~ /\@OCEAN_DT/) {$rcd=~ s/\@OCEAN_DT/${odt}/g; } # wired for now
+        if($rcd =~ /\@OGCM_GRIDNAME/) {$rcd=~ s/\@OGCM_GRIDNAME/${ogridname}/g; } # wired for now
+        if($rcd =~ /\@DATAOCEAN/) {$rcd=~ s/\@DATAOCEAN/ /g; } # wired for now
+        if($rcd =~ /\@MOM5/) {$rcd=~ s/\@MOM5/#/g; } # wired for now
+        if($rcd =~ /\@MOM6/) {$rcd=~ s/\@MOM6/#/g; } # wired for now
+        if($rcd =~ /\@MIT/) {$rcd=~ s/\@MIT/#/g; } # wired for now
+        if($rcd =~ /\@CICE4/) {$rcd=~ s/\@CICE4/#/g; } # wired for now
+        if($rcd =~ /\@CICE6/) {$rcd=~ s/\@CICE6/#/g; } # wired for now
+
+        if($rcd =~ /\@LONG_DT/)   {$rcd=~ s/\@LONG_DT/$dt/g; }
+
+        if($rcd =~ /\@OCEAN_NAME/) {$rcd=~ s/\@OCEAN_NAME/MOM6/g; }  # wired
         if($rcd =~ /\@OGCM_GRID_TYPE/) {$rcd=~ s/\@OGCM_GRID_TYPE/$ogcm_grid_type/g; }
         if($rcd =~ /\@CUBE_OGCM/) {$rcd=~ s/\@CUBE_OGCM/$cube_ogcm/g; }
         if($rcd =~ /\@LATLON_OGCM/) {$rcd=~ s/\@LATLON_OGCM/$latlon_ogcm/g; }
@@ -488,6 +515,10 @@ sub ed_agcm_rc {
         if($rcd =~ /\@OGCM_JM/) {$rcd=~ s/\@OGCM_JM/$ogcm_jm/g; }
         if($rcd =~ /\@OGCM_LM/) {$rcd=~ s/\@OGCM_LM/$ogcm_lm/g; }
         if($rcd =~ /\@OGCM_NF/) {$rcd=~ s/\@OGCM_NF/$ogcm_nf/g; }
+
+        if($rcd =~ /\@CLDMICRO/) {$rcd=~ s/\@CLDMICRO/1MOMENT/g; } # wired
+
+        if($rcd =~ /\@RESTART_BY_OBSERVER/) {$rcd=~ s/\@RESTART_BY_OBSERVER/YES/g; }
 
         if ( $dosppt ) {
            if($rcd =~ /\@AENS_DOSPPT/) {$rcd=~ s/\@AENS_DOSPPT/1/g; }
@@ -835,6 +866,13 @@ sub ed_g5fvlay_rc {
      } else {
        if($rcd =~ /\@FV_N_SPLIT/)   {$rcd=~ s/\@FV_N_SPLIT/ /g; }
      }
+     if($rcd =~ /\@FV_SCHMIDT/)     {$rcd=~ s/\@FV_SCHMIDT/do_schmidt = .false./g; }
+     if($rcd =~ /\@FV_STRETCH_FAC/) {$rcd=~ s/\@FV_STRETCH_FAC/stretch_fac = 1.0/g; }
+     if($rcd =~ /\@FV_TARGET_LON/)  {$rcd=~ s/\@FV_TARGET_LON/target_lon = 0.0/g; }
+     if($rcd =~ /\@FV_TARGET_LAT/)  {$rcd=~ s/\@FV_TARGET_LAT/target_lat = 0.0/g; }
+     if($rcd =~ /\@GFDL_PROG_CCN/)  {$rcd=~ s/\@GFDL_PROG_CCN/prog_ccn = .true./g; }
+     if($rcd =~ /\@GFDL_USE_CCN/)   {$rcd=~ s/\@GFDL_USE_CCN/use_ccn = .true./g; }
+
      print(LUN2 "$rcd\n");
   }
 

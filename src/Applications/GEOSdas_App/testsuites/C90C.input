@@ -95,10 +95,10 @@ Number of one-day DAS segments per PBS job? [1]
 > 
 
 Number of PEs in the zonal direction (NX)? [4]
-> 
+> 5
 
 Number of PEs in the meridional direction (NY)? [24]
-> 
+> 30
 
 Job nickname? [g5das]
 > 

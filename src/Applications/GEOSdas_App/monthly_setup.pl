@@ -186,6 +186,9 @@ sub write_plotfiles {
     $values{"\@GEOSBIN"} = "$FVROOT/bin";
     $values{"\@GEOSSRC"} = $ENV{"GEOSUTIL"};
 
+    $values{"\@MPT_SHEPHERD"} = "";
+    $values{"\@LD_LIBRARY_PATH_CMD"} = "LD_LIBRARY_PATH";
+
     $values{"\@BATCH_TIME"} = "SBATCH --time=";
     $values{"\@BATCH_JOBNAME"} = "SBATCH --job-name=";
     $values{"\@BATCH_OUTPUTNAMEOUTPUT"} = "SBATCH --output=OUTPUT";
