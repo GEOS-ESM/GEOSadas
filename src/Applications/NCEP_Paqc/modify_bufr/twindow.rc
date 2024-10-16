@@ -20,6 +20,9 @@
 #
 # 2021-01-04 Meta - Add specification for converting new format EUMETSAT
 #                   winds (NC005067,NC005068) to old format for 5_12
+#
+# 2024-10-15 Meta - Add NC005072, NC005081, and NC005091 - unused new format
+#                   winds, avoid warning about unknown wind type
 
 
 action_table::
@@ -51,7 +54,9 @@ NC005068        3          -120         120     NC005065            #   METEOSAT
 NC005069       -1             0           0                         #   METEOSAT WV
 NC005070        0             0           0                         #   MODIS IR
 NC005071        0             0           0                         #   MODIS WV
+NC005072       -1             0           0                         #   SSEC/WISC LEO-GEO
 NC005080        0             0           0                         #   AVHRR IR
+NC005081       -1             0           0                         #   AVHRR IR (new format MetOp)
 NC005090       -1             0           0                         #   VIIRS IR
 NC005091       -1             0           0                         #   new VIIRS IR
 
@@ -68,6 +73,6 @@ NC005091       -1             0           0                         #   new VIIR
 #
 # other winds passed as is or are excluded (to avoid array overflow
 # and duplication of data)
-# 
+#
 # for RPIT some Meteosat winds are excluded to allow extra buffer
 # size for AVHRR winds
