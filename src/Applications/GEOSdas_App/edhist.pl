@@ -355,7 +355,7 @@ sub parse_input {
 
         # (4) get collection fields
         #--------------------------
-        if ($look4fields and ($_ !~ m/\b(\S+)\.(\S+)\s*:(.*)$/)) {
+        if ($look4fields and (($_ !~ m/\b(\S+)\.(\S+)\s*:(.*)$/)| ($_ !~ m/\b(\S+)\.(\S+)(\S+)\.(\S+)\s*:(.*)$/)) ) {
             if ( (/[\'|\"]/) and (/\,/) ) {
                 $value = clean($_);
                 store($cname, $name, $traitN, $value);
@@ -1524,7 +1524,7 @@ sub write_collection_def {
         }
     }
     print $comments{"$name.end"} if $comments{"$name.end"};
-    print " "x$tmax ." ::\n";
+    print " "x$tmax ."::\n";
 }
 
 #=======================================================================

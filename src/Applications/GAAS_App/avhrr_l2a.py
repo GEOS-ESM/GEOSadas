@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -W ignore::DeprecationWarning
 
 """
@@ -54,10 +54,10 @@ if __name__ == "__main__":
     i = 0
     for orbit in cf('AVHRR_L2A_ORBITS').split(','):
         cmd = "patmosx_l2a.py %s %s %s %s"%(Options,orbit,nymd,nhms)
-        print cmd
+        print(cmd)
         if not options.dryrun:
             if system(cmd):
-                raise ValueError, "patmosx_l2a.py failed for %s on %s %s"%(orbit,nymd,nhms)
+                raise ValueError("patmosx_l2a.py failed for %s on %s %s"%(orbit,nymd,nhms))
 
         i += 1
     
