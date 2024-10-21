@@ -148,6 +148,7 @@
 !
 !  15May2002  Dee       Created this module from psas_qc.f version 1.61
 !  31Mar2003 (Dee/Rukh) Minor changes to the buddy check
+!  13Oct2020 (Todling)  Store sigO in xvec!
 !
 !EOP
 !-------------------------------------------------------------------------
@@ -189,7 +190,7 @@
       nexcl = 0
       if (verbose) write(stdout,'(2a,i8,a)') myname, ': ', &
                         nobs-nexcl, ' observations remain'
-      print*, 'I am in sqc test3'
+
 !     Get datatype information from the resource file
 !     -----------------------------------------------
       call RC_ktinfo_ ( )
@@ -237,6 +238,12 @@
                   'buddy check excluded ', nx, ' observations'
       if (verbose) write(stdout,'(2a,i8,a)') myname, ': ', &
                         nobs-nexcl, ' observations remain'
+
+!     Store sigO in xvec for diagnostic purposes
+!     ------------------------------------------
+      where (varO>0.0 .and. y%qcexcl>0)
+         y%xvec = sqrt(varO)
+      endwhere
 
 !     Done with statistical tests:
 !     ---------------------------
