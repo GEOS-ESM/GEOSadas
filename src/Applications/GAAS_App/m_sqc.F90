@@ -148,7 +148,6 @@
 !
 !  15May2002  Dee       Created this module from psas_qc.f version 1.61
 !  31Mar2003 (Dee/Rukh) Minor changes to the buddy check
-!  13Oct2020 (Todling)  Store sigO in xvec
 !
 !EOP
 !-------------------------------------------------------------------------
@@ -190,7 +189,7 @@
       nexcl = 0
       if (verbose) write(stdout,'(2a,i8,a)') myname, ': ', &
                         nobs-nexcl, ' observations remain'
-
+      print*, 'I am in sqc test3'
 !     Get datatype information from the resource file
 !     -----------------------------------------------
       call RC_ktinfo_ ( )
@@ -238,12 +237,6 @@
                   'buddy check excluded ', nx, ' observations'
       if (verbose) write(stdout,'(2a,i8,a)') myname, ': ', &
                         nobs-nexcl, ' observations remain'
-
-!     Store sigO in xvec for diagnostic purposes
-!     ------------------------------------------
-      where (varO>0.0 .and. y%qcexcl>0)
-         y%xvec = sqrt(varO)
-      endwhere
 
 !     Done with statistical tests:
 !     ---------------------------
@@ -801,7 +794,7 @@
               ktPSAS(np) = kta
          end if
       end do
-
+      
 !     Move those data up...
 !     ---------------------
       nmoved = 0
@@ -1267,6 +1260,7 @@
 !     Index vector for sorts (cannot be allocatable because of OMP)
 !     -------------------------------------------------------------
       integer indx(nobs)
+      integer, allocatable :: indx2(:)
 
 !     List of suspect observations
 !     ----------------------------
@@ -1275,8 +1269,9 @@
 
 !     List of buddies
 !     ---------------
-      integer :: ki_buddy(nobs) ! index of buddy
-      real*8    :: wt_buddy(nobs) ! weight of buddy
+      integer, allocatable :: ki_buddy(:) ! index of buddy
+      real*8, allocatable  :: wt_buddy(:) ! weight of buddy
+      real, allocatable :: mysep(:,:)
 
 !     Suspect and reaccept flags
 !     --------------------------
@@ -1304,7 +1299,7 @@
       integer   rc, iter, ireg, ibeg, iend, ilen, i, is, ib, ibb, j
       integer   kis, kts, krs, niter
       integer   maxreg                ! number of PSAS regions
-      real*8      tol2, exponent, scgain
+      real*8      tol2, myexponent, scgain
 
       real*8      dist2, z_dist2
 
@@ -1448,16 +1443,37 @@
                                ' with ', n_susp, ' suspect observations'
 
          n_reacc = 0
+         allocate(mysep(n_susp, maxreg))
+
+         !!!$omp parallel do default(none) private(is, krs) shared(n_susp, maxreg, kr_susp, partition, mysep)
+         do is = 1, n_susp
+            krs = kr_susp(is)
+            do ireg = 1, maxreg
+               mysep(is,ireg) = Separation(GetRegion(ireg,partition),GetRegion(krs,partition),SEPANG_MIN)
+            end do
+         end do
+         !!!$omp end parallel do
+
 
 !$omp  parallel do                                                &
-!$omp  default(shared),                                           &
-!$omp  private(is,kis,kts,krs,nbuddy,ireg,ibeg,iend,i,exponent,   &
-!$omp          scgain,ki_buddy,wt_buddy,indx,accum_del,accum_de2, &
-!$omp          accum_wgt,accum_var,ib,ibb,del_star,alpha,tol2),   &
-!$omp  reduction(+:n_reacc)
+!$omp& schedule(dynamic)                                         & 
+!$omp&  default(none)                                           &
+!$omp&  firstprivate(nobs)                                      &
+!$omp&  private(lvs,is,kis,kts,krs,nbuddy,ireg,ibeg,iend,i,myexponent,   &
+!$omp&          scgain,accum_del,accum_de2, ki_buddy, wt_buddy, indx2,&
+!$omp&          accum_wgt,accum_var,ib,ibb,del_star,alpha,tol2)   &
+!$omp&  shared(n_susp, ki_susp, kt, kr_susp, lev, maxreg, &
+!$omp&         ireglen, seplim, iregbeg, single_level, issuspect, &
+!$omp&         qcx, xobs, yobs, zobs, ls_h, ls_v, search_rad, &
+!$omp&         varF, VarO, nbuddy_max, OmF, nstar, tau_buddy, reaccept,mysep) &
+!$omp&  reduction(+:n_reacc)
+
 
          do is = 1, n_susp      ! for each suspect obs
-
+            allocate(ki_buddy(nobs))
+            allocate(wt_buddy(nobs))
+            allocate(indx2(nobs))
+            
             kis = ki_susp(is)   ! this suspect's index
             kts = kt(kis)       ! this suspect's kt
             krs = kr_susp(is)   ! this suspect's region
@@ -1468,9 +1484,8 @@
             nbuddy = 0
             do ireg = 1, maxreg
 
-               if ((Separation(GetRegion(ireg,partition),GetRegion(krs,partition),SEPANG_MIN) <= seplim) &
+                if ( (mysep(is,ireg) <= seplim) &
                     .and. (ireglen(ireg)   >0     ) ) then  ! nearby region with data
-
                   ibeg = iregbeg(ireg)
                   iend = ibeg + ireglen(ireg) - 1
 
@@ -1484,15 +1499,15 @@
                      if ( .not. issuspect(i) .AND. qcx(i)==0 .AND.  &
                                                   kt(i)==kts) then
 
-                        exponent = dist2(kis,i)/ls_h(kts)**2
+                       myexponent = dist2(kis,i)/ls_h(kts)**2
 
                         if ( ls_v(kts)>tol_rel ) then     ! upper-air data
-                             exponent = exponent + z_dist2(kis,i)/ls_v(kts)**2
+                             myexponent = myexponent + z_dist2(kis,i)/ls_v(kts)**2
                         end if
 
                         ! only if not too far (search_rad length scales):
 
-                        if ( exponent<search_rad**2 ) then
+                        if ( myexponent<search_rad**2 ) then
 
                         ! found a candidate buddy:
 
@@ -1502,7 +1517,7 @@
                         ! associate weight with this candidate:
 
                              scgain = varF(i) / (varF(i) + varO(i))
-                             wt_buddy(nbuddy) =  scgain * exp(-0.5*exponent)
+                             wt_buddy(nbuddy) =  scgain * exp(-0.5*myexponent)
 
                         end if      ! not too far
 
@@ -1518,9 +1533,9 @@
 
 !              Find the best buddies
 !              ---------------------
-               call IndexSet  ( nbuddy, indx )
-               call IndexSort ( nbuddy, indx, wt_buddy, descend=.true. )
-
+               
+               call IndexSet  ( nbuddy, indx2 )
+               call IndexSort ( nbuddy, indx2, wt_buddy, descend=.true. )
                nbuddy = min(nbuddy, nbuddy_max)      ! pick highest weights
 
 !              Do buddy check
@@ -1532,14 +1547,13 @@
 
                do ib = 1, nbuddy       ! accumulate weights, variances, etc.
 
-                  ibb = indx(ib)       ! index in ki_buddy of best buddy
+                  ibb = indx2(ib)       ! index in ki_buddy of best buddy
                   i = ki_buddy(ibb)    ! index in OmF of best buddy
 
                   accum_del = accum_del + OmF(i) * wt_buddy(ibb)
                   accum_wgt = accum_wgt + wt_buddy(ibb)
                   accum_de2 = accum_de2 + (OmF(i))**2
                   accum_var = accum_var + varO(i) + varF(i)
-
                end do
 
                del_star = sngl(accum_del/accum_wgt)    ! prediction
@@ -1560,10 +1574,15 @@
 
             end if
 
+            deallocate(indx2)
+            deallocate(ki_buddy)
+            deallocate(wt_buddy)
+
          end do
 
 !$omp end parallel do
 
+         deallocate(mysep)
          if (verbose) then
              write(stdout,'(2a,i8,a,i2)') myname, ': ',   &
                      n_reacc,' observations reaccepted after iteration', iter
@@ -1629,7 +1648,6 @@
              write(stderr,'(2a)') myname,': allocate() error'
              call die(myname)
          end if
-
 !        Compute iregn from (x,y,z)
 !        -------------------------
          call XYZ2REG ( nobs, xobs, yobs, zobs, kr, partition )
@@ -1644,9 +1662,9 @@
          zobs = zobs( (/ (indx(i), i=1,nobs) /) )
          varF = varF( (/ (indx(i), i=1,nobs) /) )
          varO = varO( (/ (indx(i), i=1,nobs) /) )
-
+         
 !        Also re-sort local arrays
-!        -------------------------
+!       -------------------------- 
          lon = lon( (/ (indx(i), i=1,nobs) /) )
          lat = lat( (/ (indx(i), i=1,nobs) /) )
          OmF = OmF( (/ (indx(i), i=1,nobs) /) )
