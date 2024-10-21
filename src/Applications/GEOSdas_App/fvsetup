@@ -1594,7 +1594,7 @@ sub ed_g5prog_rc_new {
     if($cubed) { $fvtraj = "#"; $fv3traj = " " }
     else       { $fvtraj = " "; $fv3traj = "#" }
 
-    $cmd = "$fvbin/edhist.pl $fdfn -$iflag"
+    $cmd = "$fvbin/edhist.pl $fdfn $iflag"
         .                 " -s \@EXPID=$expid"
         .                 " -s \@EXPDSC=$expdsc"
         .                 " -s \@EXPSRC=$cvstag"
