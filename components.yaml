@@ -34,13 +34,13 @@ GMAO_Shared:
 GEOS_Util:
   local: ./src/Shared/@GMAO_Shared/@GEOS_Util
   remote: ../GEOS_Util.git
-  tag: v1.0.3
+  tag: v1.0.4
   develop: main
 
 MAPL:
   local: ./src/Shared/@MAPL
   remote: ../MAPL.git
-  tag: v2.35.3+R21C_v1.2.0
+  tag: v2.35.3+R21C_v1.3.1
   develop: R21C
 
 FMS:
@@ -52,13 +52,13 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  tag: v1.5.5-R21C-3
+  tag: v1.5.5-R21C-4
   develop: R21C
 
 GEOSgcm_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp
   remote: ../GEOSgcm_GridComp.git
-  tag: v1.18.1+R21C_v1.0.2
+  tag: v1.18.1+R21C_v1.0.4
   sparse: ./config/GEOSgcm_GridComp.sparse
   develop: R21C
 
@@ -182,7 +182,7 @@ RRTMGP:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  tag: v1.9.6+R21C_v1.0.4
+  tag: v1.9.6+R21C_v1.0.6
   develop: R21C
 
 Ocean-LETKF:
