@@ -250,8 +250,13 @@ EOF
  if ( $fvroot ) {
  print  SCRIPT <<"EOF";
  setenv FVROOT $fvroot
+ setenv OSVERSION `basename \$FVROOT`
  source \$FVROOT/bin/g5_modules
  set path = ( . \$FVHOME/run \$FVROOT/bin \$path )
+ if ( \$OSVERSION == "install-SLES15" ) then
+   setenv I_MPI_FABRICS shm:ofi
+   setenv I_MPI_OFI_PROVIDER psm3
+ endif
 EOF
  }
 

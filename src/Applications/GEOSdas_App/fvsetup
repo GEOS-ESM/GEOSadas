@@ -1094,6 +1094,7 @@ sub defaults {
                      TR_GridComp---SF6.rc
                      TR_GridComp---st80_25.rc
                      TR_GridComp---stOX.rc
+                     TR_GridComp.rc
                      TR_Registry.rc
                      WSUB_ExtData.rc );
 
@@ -7872,6 +7873,7 @@ print SCRIPT <<"EOF";
   setenv EXPID   $expid   # experiment ID
   setenv CASE    \$EXPID  # experiment ID (for LSM's sake)
   setenv FVROOT  $fvroot  # fvDAS installation root dir
+  setenv OSVERSION `basename \$FVROOT`
   setenv FVRUN   \$FVHOME/run
   if(`uname -s` == "OSF1" ) then
      cd \$TMPDIR_UBC
@@ -8079,7 +8081,7 @@ print  SCRIPT <<"EOF";
      setenv I_MPI_EXTRA_FILESYSTEM 1
      setenv I_MPI_EXTRA_FILESYSTEM_LIST gpfs
      setenv I_MPI_DEBUG 6
-     if ( \$?ARCH == "install_SLES15" ) then
+     if ( \$OSVERSION == "install-SLES15" ) then
        setenv I_MPI_FABRICS shm:ofi
        setenv I_MPI_OFI_PROVIDER psm3
      endif
@@ -9046,6 +9048,7 @@ print SCRIPT <<"EOF";
   setenv CASE    \$EXPID  # experiment ID (for LSM's sake)
   setenv FVHOME  $fvhome  # experiment home directory
   setenv FVROOT  `cat \$FVHOME/.FVROOT`
+  setenv OSVERSION `basename \$FVROOT`
   setenv FVFCST  \$FVHOME/fcst
   if(`uname -s` == "OSF1" ) then
     cd \$TMPDIR_UBC
@@ -9154,7 +9157,7 @@ print  SCRIPT <<"EOF";
 # -----------------
   if (\$?I_MPI_ROOT) then
 #    setenv I_MPI_USE_DYNAMIC_CONNECTIONS 0
-     if ( \$?ARCH == "install_SLES15" ) then
+     if ( \$OSVERSION == "install-SLES15" ) then
        setenv I_MPI_FABRICS shm:ofi
        setenv I_MPI_OFI_PROVIDER psm3
      endif

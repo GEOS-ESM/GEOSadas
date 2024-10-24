@@ -67,6 +67,7 @@
          setenv FORT90L -Wl,-T
       endif
       setenv FVWORK $FVHOME/../enswork.$BIGNAME
+#     setenv FVWORK /discover/nobackup/projects/gmao/dadev/TSE_staging/$user/enswork.$BIGNAME
       if ($?kidwork) then  # this case, overwrite FVWORK with user-specific
          setenv FVWORK $FVHOME/../$kidwork
       endif
@@ -144,7 +145,7 @@
   setenv NCSUFFIX nc4
   setenv NCEPINPUT $FVBCS
   setenv VAROFFSET 180    # abs value of time off from 1st synoptic hour of var window
-  setenv SPECRES    62    # should be able to revisit analyzer to avoid needing this
+  setenv SPECRES   254    # should be able to revisit analyzer to avoid needing this
 
   setenv GAAS_ANA 1
   setenv LDAS_ANA >>>LDAS_ANA<<<
