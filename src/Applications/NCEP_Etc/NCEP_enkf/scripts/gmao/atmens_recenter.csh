@@ -20,6 +20,7 @@
 #  21Feb2020  Todling   Allow for high freq bkg (up to 1mn)
 #  04Jun2020  Todling   Revise parallelization strategy
 #  23Jun2020  Todling   Redef meaning of ATMENSLOC
+#  25Oct2024  Todling   Implement slurm array distribution opt
 #------------------------------------------------------------------
 if ( !($?ATMENS_VERBOSE) ) then
     setenv ATMENS_VERBOSE 0
@@ -72,6 +73,7 @@ if ( $#argv < 8 ) then
    echo "    ADDINF_FACTOR      - inflation factor (such as 0.25)"
    echo "    AENS_ADDINFLATION  - when set, apply additive inflation to analyzed members"
    echo "    AENS_DONORECENTER  - allow bypassing recentering"
+   echo "    AENS_RECENTER_ARRAY  - distribute multiple using slurm array capability"
    echo "    AENS_RECENTER_DSTJOB  - distribute multiple works within smaller jobs"
    echo "    ASYNBKG            - background frequency (when adaptive inflation on)"
    echo "    CENTRAL_BLEND      - 0 or 1=to blend members with central (def: 1)"
@@ -82,7 +84,7 @@ if ( $#argv < 8 ) then
    echo "    ENSRECENTER_NCPUS  - when parallel ens on, this sets NCPUS for recentering"
    echo "                         (NOTE: required when ENSPARALLEL is on)"
    echo "    RECENTER_WALLCLOCK - wall clock time to run dyn_recenter, default 0:10:00 "
-   echo "    RECENTER_QNAME     - name of queue (default: NULL, that is, let pbs pick) "
+   echo "    RECENTER_QNAME     - name of queue (default: NULL, that is, let batch pick) "
    echo " "
    echo " REMARKS "
    echo " "
@@ -104,6 +106,7 @@ if ( !($?FVROOT)         ) setenv FAILED 1
 
 if ( !($?AENS_ADDINFLATION)  ) setenv AENS_ADDINFLATION 0
 if ( !($?AENS_DONORECENTER)  ) setenv AENS_DONORECENTER 0
+if ( !($?AENS_RECENTER_ARRAY) ) setenv AENS_RECENTER_ARRAY 0
 if ( !($?AENS_RECENTER_DSTJOB) ) setenv AENS_RECENTER_DSTJOB 0
 if ( !($?CENTRAL_BLEND)      ) setenv CENTRAL_BLEND 1
 if ( !($?NCSUFFIX)           ) setenv NCSUFFIX nc4
@@ -279,7 +282,7 @@ while ( $ic < $nmem )
 
 
          if ( $AENS_RECENTER_DSTJOB != 0 ) then # case of multiple jobs within few larger ones
-            set cmdline = "serial_run $cmdline"
+            if ( $AENS_RECENTER_DSTJOB == 0 ) set cmdline = "serial_run $cmdline"
 
             # collect multiple recenter calls into jumbo file
             if ( $ipoe < $AENS_RECENTER_DSTJOB ) then  # nmem better devide by AENS_PERTS_DSTJOB
@@ -305,48 +308,80 @@ while ( $ic < $nmem )
               $ENSWORK/.DONE_MEM${memtag}_${MYNAME}_${ftype1}_${ftype2}.$yyyymmddhh \
                "Recenter ANA Failed"
 
-
           if ( $AENS_RECENTER_DSTJOB != 0 ) then
              if ( -e recenter_mem${memtag}.j ) then
                 chmod +x recenter_mem${memtag}.j
              else
-                echo " ${MYNAME}: Recenter Failed to generate PBS jobs for Member ${memtag}, Aborting ... "
+                echo " ${MYNAME}: Recenter Failed to generate batch jobs for Member ${memtag}, Aborting ... "
                 touch $ENSWORK/.FAILED
                 exit(1)
              endif
 
+             if ( $AENS_RECENTER_ARRAY != 0 ) then
 
-             if ( ($ipoe == $AENS_RECENTER_DSTJOB) || (($fpoe == $ntodo ) && ($ipoe < $AENS_RECENTER_DSTJOB) ) ) then
-                @ myncpus = $ipoe
-                setenv JOBGEN_NCPUS $myncpus
-                jobgen.pl \
-                     -q $RECENTER_QNAME \
-                     recenter_dst${npoe}       \
-                     $GID                      \
-                     $RECENTER_WALLCLOCK       \
-                     "job_distributor.csh -machfile $ENSWORK/recenter_machfile$npoe -usrcmd $ENSWORK/recenter_poe.$npoe -usrntask $ENSRECENTER_NCPUS -njobs $ipoe " \
-                     $ENSWORK  \
-                     $MYNAME             \
-                     $ENSWORK/.DONE_POE${npoe}_${MYNAME}.$yyyymmddhh \
-                     "Recenter Failed for Member ${npoe}"
-                if (! -e recenter_dst${npoe}.j ) then
-                   echo " ${MYNAME}: Recenter Failed to generate DST PBS jobs for Member ${memtag}, Aborting ... "
-                   touch $ENSWORK/.FAILED
-                   exit(1)
-                endif
-                /bin/mv recenter_dst${npoe}.j $ENSWORK/
-                $ATMENS_BATCHSUB $ENSWORK/recenter_dst${npoe}.j
-                touch .SUBMITTED
-                @ ipoe = 0 # reset counter
                 @ npoe++
-             endif 
+                if ( $npoe == $nmem ) then # time to launch slurm ARRAY job 
+
+                   cd $ensloc
+
+                   jobgen.pl \
+                        -egress DYNRECENTER_EGRESS \
+                        -q $RECENTER_QNAME         \
+                        recenter_array_${ftype1}_${ftype2}.$yyyymmddhh \
+                        $GID                       \
+                        -array "1-${nmem}%${AENS_RECENTER_DSTJOB}" \
+                        $RECENTER_WALLCLOCK        \
+                        recenter_mem\${memtag}.j   \
+                        $ensloc/mem\$memtag        \
+                        $MYNAME                    \
+                        $ENSWORK/.DONE_ARRAY_${MYNAME}_${ftype1}_${ftype2}.$yyyymmddhh \
+                         "Recenter ANA Failed (Array)"
+
+                   if ( -e $ensloc/recenter_array_${ftype1}_${ftype2}.$yyyymmddhh.j ) then
+                      $ATMENS_BATCHSUB recenter_array_${ftype1}_${ftype2}.$yyyymmddhh.j
+                   else
+                      echo " ${MYNAME}: Failed to generate array batch jobs for Recentering ANA, Aborting ... "
+                      touch $ensloc/.FAILED
+                      exit(1)
+                   endif
+                endif
+
+             else
+
+                if ( ($ipoe == $AENS_RECENTER_DSTJOB) || (($fpoe == $ntodo ) && ($ipoe < $AENS_RECENTER_DSTJOB) ) ) then
+                   @ myncpus = $ipoe
+                   setenv JOBGEN_NCPUS $myncpus
+                   jobgen.pl \
+                        -q $RECENTER_QNAME \
+                        recenter_dst${npoe}       \
+                        $GID                      \
+                        $RECENTER_WALLCLOCK       \
+                        "job_distributor.csh -machfile $ENSWORK/recenter_machfile$npoe -usrcmd $ENSWORK/recenter_poe.$npoe -usrntask $ENSRECENTER_NCPUS -njobs $ipoe " \
+                        $ENSWORK  \
+                        $MYNAME             \
+                        $ENSWORK/.DONE_POE${npoe}_${MYNAME}.$yyyymmddhh \
+                        "Recenter Failed for Member ${npoe}"
+                   if (! -e recenter_dst${npoe}.j ) then
+                      echo " ${MYNAME}: Recenter Failed to generate DST batch jobs for Member ${memtag}, Aborting ... "
+                      touch $ENSWORK/.FAILED
+                      exit(1)
+                   endif
+                   /bin/mv recenter_dst${npoe}.j $ENSWORK/
+                   $ATMENS_BATCHSUB $ENSWORK/recenter_dst${npoe}.j
+                   touch .SUBMITTED
+                   @ ipoe = 0 # reset counter
+                   @ npoe++
+
+                endif 
+
+             endif # <ARRAY>
 
           else
 
              if ( -e recenter_mem${memtag}.j ) then
                 $ATMENS_BATCHSUB recenter_mem${memtag}.j
              else
-                echo " ${MYNAME}: Failed to generate PBS jobs for Recentering ANA, Aborting ... "
+                echo " ${MYNAME}: Failed to generate batch jobs for Recentering ANA, Aborting ... "
                 touch $ensloc/.FAILED
                 exit(1)
              endif
@@ -391,6 +426,7 @@ while ( $ic < $nmem )
    endif # <failure check>
    cd -
 end
+cd $ensloc
 
 # Monitor status of ongoing jobs
 # ------------------------------

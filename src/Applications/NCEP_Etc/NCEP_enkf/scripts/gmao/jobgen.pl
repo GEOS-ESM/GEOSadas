@@ -28,7 +28,8 @@ my $scriptname = basename($0);
 
 # Command line options
 
-  GetOptions ( "egress=s",
+  GetOptions ( "array=s",
+               "egress=s",
                "expid=s",
                "q=s",
                "proc=s",
@@ -205,12 +206,15 @@ EOF
 #SBATCH --ntasks=${ncpus}
 #_SBATCH --ntasks-per-node=${ncpus_per_node}
 EOF
- }
-
- if ( $opt_q ne "datamove" ) {
    if ( $ENV{JOBGEN_STREAM} ) {
  print  SCRIPT <<"EOF";
 #SBATCH --constraint=$ENV{JOBGEN_STREAM}
+EOF
+   }
+   if ( $opt_array ) {
+ print  SCRIPT <<"EOF";
+#SBATCH --array=$opt_array
+#SBATCH -o ${jobname}_output.%A_%a
 EOF
    }
  }
@@ -266,6 +270,11 @@ EOF
 EOF
  }
 
+ if( $opt_array ) {
+ print  SCRIPT <<"EOF";
+   set memtag  = `echo \${SLURM_ARRAY_TASK_ID} |awk '{printf "%03d", \$1}'`
+EOF
+ }
  print  SCRIPT <<"EOF";
 
 # These env vars are here because the batch system is messed up
@@ -279,6 +288,7 @@ EOF
  /bin/rm .SUBMITTED
  touch .RUNNING
 EOF
+
  if( $opt_egress ) {
  print  SCRIPT <<"EOF";
  if ( -e $opt_egress ) then
@@ -454,6 +464,7 @@ DESCRIPTION
 
 OPTIONS
 
+     -array        slurm array distribution (only, i.e., not packable)
      -egress       specify file to watch for completion of job (e.g., EGRESS for GCM)
      -expid        experiment name
      -q            specify pbs queue (e.g., datamove when archiving)

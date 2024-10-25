@@ -10,6 +10,7 @@
 #  07May2017  Todling   Allow own config of mkiau when running GEPS
 #  03May2020  Todling   Logic not to over-subscribe node
 #  21Jun2020  Todling   Add ability to handle a control case
+#  25Oct2024  Todling   Implement slurm array distribution opt
 #------------------------------------------------------------------
 #
 if ( !($?ATMENS_VERBOSE) ) then
@@ -60,12 +61,13 @@ if ( $#argv < 3 ) then
    echo " "
    echo "   ATMGEPS        - set when running atmopheric GEOS EPS"
    echo "   AENS_IAU_DSTJOB- distribute multiple works within smaller jobs"
+   echo "   AENS_IAU_ARRAY - let slurm array control job distribution"
    echo "   NCSUFFIX       - suffix of hdf/netcdf files (default: nc4)"
    echo "   ENSPARALLEL    - when set, runs all ensemble components in parallel "
    echo "                    (default: off)"
    echo "   ENSIAU_NCPUS   - when parallel ens on, this sets NCPUS for IAU calculation"
    echo "   IAU_WALLCLOCK  - wall clock time to run makeiau, default 0:10:00 "
-   echo "   IAU_QNAME      - name of queue (default: NULL, that is, let pbs pick) "
+   echo "   IAU_QNAME      - name of queue (default: NULL, that is, let batch pick) "
    echo "   MPIRUN_ENSIAU  - specifies mprun command line, needed when ENSPARALLEL is on"
    echo " "
    echo " SEE ALSO"
@@ -89,6 +91,7 @@ if ( !($?GID)           ) setenv FAILED 1
 
 if ( !($?ATMGEPS)       ) setenv ATMGEPS 0
 if ( !($?AENS_IAU_DSTJOB) ) setenv AENS_IAU_DSTJOB 0
+if ( !($?AENS_IAU_ARRAY) ) setenv AENS_IAU_ARRAY 0
 if ( !($?NCSUFFIX)      ) setenv NCSUFFIX nc4
 if ( !($?ENSPARALLEL)   ) setenv ENSPARALLEL 0
 if ( !($?IAU_WALLCLOCK) ) setenv IAU_WALLCLOCK 0:10:00
@@ -184,7 +187,7 @@ if ( -d $ENSWORK/ensctrl ) then
                if ( -e iau_ensctrl.j ) then
                   $ATMENS_BATCHSUB iau_ensctrl.j
                else
-                  echo " ${MYNAME}: Failed to generate PBS jobs for makeiau (ctrl), Aborting ... "
+                  echo " ${MYNAME}: Failed to generate batch jobs for makeiau (ctrl), Aborting ... "
                   touch $ENSWORK/.FAILED
                   exit(1)
                endif
@@ -255,6 +258,7 @@ while ( $ic < $nmem )
 
           @ fpoe++
 
+          set machfile = ""
           if ( $AENS_IAU_DSTJOB != 0 ) then # case of multiple jobs within few larger ones
              # collect multiple iau calls into jumbo file
              if ( $ipoe < $AENS_IAU_DSTJOB ) then  # nmem better devide by AENS_IAU_DSTJOB
@@ -263,9 +267,9 @@ while ( $ic < $nmem )
                 echo $this_script_name >> $ENSWORK/iau_poe.$npoe
                 chmod +x $ENSWORK/iau_poe.$npoe
              endif
-             set machfile = "-machfile $ENSWORK/iau_machfile$npoe.$ipoe"
-          else
-             set machfile = ""
+             if ( $AENS_IAU_DSTJOB == 0 ) then
+                set machfile = "-machfile $ENSWORK/iau_machfile$npoe.$ipoe"
+             endif
           endif
 
           jobgen.pl \
@@ -284,57 +288,90 @@ while ( $ic < $nmem )
                   if ( -e iau_mem${memtag}.j ) then
                      chmod +x iau_mem${memtag}.j
                   else
-                     echo " ${MYNAME}: Failed to generate IAU PBS jobs for Member ${memtag}, Aborting ... "
+                     echo " ${MYNAME}: Failed to generate IAU batch jobs for Member ${memtag}, Aborting ... "
                      touch $ENSWORK/.FAILED
                      exit(1)
                   endif
  
-                  if ( ($ipoe == $AENS_IAU_DSTJOB) || (($fpoe == $ntodo ) && ($ipoe < $AENS_IAU_DSTJOB) ) ) then
-                     set this_ntasks_per_node = `facter processorcount`
-                     @ ncores_needed = $ENSIAU_NCPUS / $this_ntasks_per_node
-                     if ( $ncores_needed == 0 ) then
-                       @ myncpus = $this_ntasks_per_node
-                     else
-                       if ( $ENSIAU_NCPUS == $ncores_needed * $this_ntasks_per_node ) then
-                          @ myncpus = $ENSIAU_NCPUS
-                       else
-                          @ myncpus = $ENSIAU_NCPUS / $this_ntasks_per_node
-                          @ module = $myncpus * $this_ntasks_per_node - $ENSIAU_NCPUS
-                          if ( $module != 0 ) @ myncpus = $myncpus + 1
-                          @ myncpus = $myncpus * $this_ntasks_per_node
-                       endif
-                     endif
-                     @ myncpus = $ipoe * $myncpus
-                     #_ @ myncpus = $AENS_IAU_DSTJOB * $ENSIAU_NCPUS
-                     setenv JOBGEN_NCPUS $myncpus
-                     jobgen.pl \
-                          -egress AIAU_EGRESS -q $IAU_QNAME \
-                          iau_dst${npoe}       \
-                          $GID                \
-                          $IAU_WALLCLOCK    \
-                          "job_distributor.csh -machfile $ENSWORK/iau_machfile$npoe -usrcmd $ENSWORK/iau_poe.$npoe -usrntask $ENSIAU_NCPUS -njobs $ipoe" \
-                          $ENSWORK  \
-                          $MYNAME   \
-                          $ENSWORK/.DONE_POE${npoe}_${MYNAME}.$yyyymmddhh \
-                          "IAU Failed for Member ${npoe}"
-                     /bin/mv iau_dst${npoe}.j $ENSWORK/
-                     $ATMENS_BATCHSUB $ENSWORK/iau_dst${npoe}.j
-                     touch .SUBMITTED
-                     @ ipoe = 0 # reset counter
+                  if ( $AENS_IAU_ARRAY != 0 ) then
+
                      @ npoe++
-                  endif 
+                     if ( ($npoe == $nmem) || ($fpoe == $ntodo) ) then
 
-               else
+                        cd $ENSWORK
+                        jobgen.pl \
+                             -egress IAU_EGRESS \
+                             -q $IAU_QNAME          \
+                             iau_array.$yyyymmddhh  \
+                             -array "1-${nmem}%${AENS_IAU_DSTJOB}" \
+                             $GID                   \
+                             $IAU_WALLCLOCK         \
+                             iau_mem\${memtag}.j    \
+                             $ENSWORK/mem\${memtag} \
+                             $MYNAME                \
+                             $ENSWORK/.DONE_ARRAY_${MYNAME}.$yyyymmddhh \
+                             "IAU Failed (Array)"
 
-                  if ( -e iau_mem${memtag}.j ) then
-                     $ATMENS_BATCHSUB iau_mem${memtag}.j
+                         if ( -e iau_array.$yyyymmddhh.j ) then
+                            $ATMENS_BATCHSUB iau_array.$yyyymmddhh.j 
+                         else
+                            echo " ${MYNAME}: Failed to generate array atch job for makeiau, Aborting ... "
+                            touch $ENSWORK/.FAILED
+                            exit(1)
+                         endif   
+
+                     endif
+
+                  else # old style distribution
+   
+                     if ( ($ipoe == $AENS_IAU_DSTJOB) || (($fpoe == $ntodo ) && ($ipoe < $AENS_IAU_DSTJOB) ) ) then
+                        set this_ntasks_per_node = `facter processorcount`
+                        @ ncores_needed = $ENSIAU_NCPUS / $this_ntasks_per_node
+                        if ( $ncores_needed == 0 ) then
+                          @ myncpus = $this_ntasks_per_node
+                        else
+                          if ( $ENSIAU_NCPUS == $ncores_needed * $this_ntasks_per_node ) then
+                             @ myncpus = $ENSIAU_NCPUS
+                          else
+                             @ myncpus = $ENSIAU_NCPUS / $this_ntasks_per_node
+                             @ module = $myncpus * $this_ntasks_per_node - $ENSIAU_NCPUS
+                             if ( $module != 0 ) @ myncpus = $myncpus + 1
+                             @ myncpus = $myncpus * $this_ntasks_per_node
+                          endif
+                        endif
+                        @ myncpus = $ipoe * $myncpus
+                        #_ @ myncpus = $AENS_IAU_DSTJOB * $ENSIAU_NCPUS
+                        setenv JOBGEN_NCPUS $myncpus
+                        jobgen.pl \
+                             -egress AIAU_EGRESS -q $IAU_QNAME \
+                             iau_dst${npoe}       \
+                             $GID                \
+                             $IAU_WALLCLOCK    \
+                             "job_distributor.csh -machfile $ENSWORK/iau_machfile$npoe -usrcmd $ENSWORK/iau_poe.$npoe -usrntask $ENSIAU_NCPUS -njobs $ipoe" \
+                             $ENSWORK  \
+                             $MYNAME   \
+                             $ENSWORK/.DONE_POE${npoe}_${MYNAME}.$yyyymmddhh \
+                             "IAU Failed for Member ${npoe}"
+                        /bin/mv iau_dst${npoe}.j $ENSWORK/
+                        $ATMENS_BATCHSUB $ENSWORK/iau_dst${npoe}.j
+                        touch .SUBMITTED
+                        @ ipoe = 0 # reset counter
+                        @ npoe++
+                     endif 
+
                   else
-                     echo " ${MYNAME}: Failed to generate PBS jobs for makeiau, Aborting ... "
-                     touch $ENSWORK/.FAILED
-                     exit(1)
-                  endif
+   
+                     if ( -e iau_mem${memtag}.j ) then
+                        $ATMENS_BATCHSUB iau_mem${memtag}.j
+                     else
+                        echo " ${MYNAME}: Failed to generate batch jobs for makeiau, Aborting ... "
+                        touch $ENSWORK/.FAILED
+                        exit(1)
+                     endif
 
-              endif # <poe>
+                 endif # <poe>
+
+               endif # <ARRAY>
 
       else # do serial work
    
@@ -352,6 +389,7 @@ while ( $ic < $nmem )
 
    endif # check for termination of individual case
 end
+cd $ENSWORK
 
 # Monitor status of ongoing jobs
 # ------------------------------

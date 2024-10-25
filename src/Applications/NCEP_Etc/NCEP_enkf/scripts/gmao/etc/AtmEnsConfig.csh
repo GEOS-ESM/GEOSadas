@@ -66,10 +66,11 @@ setenv AENS_DONORECENTER 0     # do not recenter ensemble
 setenv ADDINF_FACTOR 0.35      # additive inflation coeff (seems small after mass-div fix)
 setenv ADDINF_FACTOR_SPPT 0.2  # additive inflation for when SPPT is used
 
-setenv RECENTER_WALLCLOCK 1:00:00
+setenv RECENTER_WALLCLOCK 0:30:00
 setenv ENSRECENTER_NCPUS 1
 setenv RECENTER_QNAME $ATMENS_QNAME
-#_SLES15 setenv AENS_RECENTER_DSTJOB 4
+setenv AENS_RECENTER_DSTJOB 4  # the many exec in single batch job
+setenv AENS_RECENTER_ARRAY  1  # let slrum handle parallelization of distributed job
 
 # ensemble GAAS and AERO EnKF
 # ---------------------------
@@ -87,9 +88,10 @@ setenv MPIRUN_ATMENKFAERO "$ATMENS_MPIRUN -np $AENKFAERO_NCPUS enkf_aero.x"
 
 # atmos_ens2gcm.csh
 # -----------------
-#_SLES15 setenv AENS_IAU_DSTJOB 8
+setenv AENS_IAU_DSTJOB 8
+setenv AENS_IAU_ARRAY 1
 setenv IAU_QNAME $ATMENS_QNAME
-setenv IAU_WALLCLOCK 1:00:00
+setenv IAU_WALLCLOCK 0:30:00
 setenv ENSIAU_NCPUS @MIAU_CPUS
 setenv MPIRUN_ENSIAU  "$ATMENS_MPIRUN -np $ENSIAU_NCPUS $IAUX"
 
