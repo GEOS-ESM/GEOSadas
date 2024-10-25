@@ -421,10 +421,11 @@
 # Need some info from templated RC file
 # ------------------------------------
   if( -e $ATMENSETC/gsi_mean.rc ) then
-     set myrc = $ATMENSETC/gsi_mean.rc
+     /bin/cp $ATMENSETC/gsi_mean.rc mock.rc
   else
-     set myrc = $ATMENSETC/obs1gsi_mean.rc
+     /bin/cp $ATMENSETC/obs1gsi_mean.rc mock.rc
   endif
+  set myrc = $FVWORK/mock.rc
 
 # Run ANALYZER in observer setting mode
 # -------------------------------------
