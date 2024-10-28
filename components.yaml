@@ -5,7 +5,7 @@ GEOSadas:
 env:
   local: ./@env
   remote: ../ESMA_env.git
-  tag: v4.29.0
+  tag: v4.29.1
   develop: main
 
 cmake:
@@ -22,7 +22,7 @@ ecbuild:
 crtm:
   local: ./src/Shared/JCSDA_crtm/@crtm
   remote: ../crtm.git
-  tag: v2.4.1-jedi.1
+  tag: geos/v2.4.1-jedi.1+1.1.0
   develop: master
 
 NCEP_Shared:
@@ -60,7 +60,7 @@ GEOS_Util:
 MAPL:
   local: ./src/Shared/@MAPL
   remote: ../MAPL.git
-  tag: rt-2.44.0-griddef
+  tag: rt2.47.1-1
   develop: develop
 
 GEOSldas_GridComp:
@@ -77,7 +77,7 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  tag: g5.41.2
+  branch: feature/rtodling/sync_fixedsfc_with_jedi
   develop: develop
 
 mksi:
@@ -89,7 +89,7 @@ mksi:
 GEOSgcm_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp
   remote: ../GEOSgcm_GridComp.git
-  tag: rt-2.5.3-cubed-mkiau
+  branch: feature/rtodling/rt-2.6.1-cubed-mkiau
   sparse: ./config/GEOSgcm_GridComp.sparse
   develop: develop
 
@@ -102,7 +102,7 @@ g5pert:
 GEOSagcmPert_GridComp:
   local: ./src/Components/@GEOSagcmPert_GridComp
   remote: ../GEOSagcmPert_GridComp.git
-  tag: rt-GEOSagcmPert-g530-fix
+  branch: bugfix/rtodling/fms_11_6_x
   develop: main
 
 FVdycoreCubed_GridComp:
