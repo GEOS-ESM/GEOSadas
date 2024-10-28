@@ -7891,8 +7891,11 @@ print SCRIPT <<"EOF";
       if( `uname -m` != "ia64" ) then
           setenv FORT90L -Wl,-T
       endif
-#     setenv FVWORK $diren/fvwork.\$\$
-      setenv FVWORK \$TSE_TMPDIR
+# NOTE: if user has access to TSE:
+#       (i) comment out line below
+#       (ii) uncomment and adjust following line
+      setenv FVWORK $diren/fvwork.\$\$
+#     setenv FVWORK \$TSE_TMPDIR/fvwork.\$\$
       if (\$?kidwork) then # this case, overwrite FVWORK with user-specific
          setenv FVWORK \$kidwork
       endif
@@ -9061,10 +9064,13 @@ print SCRIPT <<"EOF";
   endif
   if( (`uname -s` == "Linux") && ( (`uname -m` == "ia64") || (`uname -m` == "x86_64") ) ) then
       setenv FORT90L -Wl,-T
-#     setenv FVWORK $fvhome/../tmp.\$\$
-#     if(   -d \$FVWORK ) /bin/rm -r  \$FVWORK
-#     /bin/mkdir -p \$FVWORK
-      setenv FVWORK \$TSE_TMPDIR
+# NOTE: if user has access to TSE: 
+#       (i) comment out three lines below
+#       (ii) uncomment and adjust following line
+      setenv FVWORK $fvhome/../tmp.\$\$
+      if(   -d \$FVWORK ) /bin/rm -r  \$FVWORK
+      /bin/mkdir -p \$FVWORK
+#     setenv FVWORK \$TSE_TMPDIR/tmp.\$\$
       if (-e /usr/bin/lfs) then
          /usr/bin/lfs setstripe -c 1 -s 1048576 -i -1 \$FVWORK
       endif
@@ -9157,6 +9163,13 @@ print  SCRIPT <<"EOF";
 # -----------------
   if (\$?I_MPI_ROOT) then
 #    setenv I_MPI_USE_DYNAMIC_CONNECTIONS 0
+     setenv I_MPI_SHM_HEAP_VSIZE   512
+     setenv PSM2_MEMORY            large
+     setenv I_MPI_ADJUST_GATHERV   3
+     setenv I_MPI_ADJUST_ALLREDUCE 12
+     setenv I_MPI_EXTRA_FILESYSTEM 1
+     setenv I_MPI_EXTRA_FILESYSTEM_LIST gpfs
+     setenv I_MPI_DEBUG 6
      if ( \$OSVERSION == "install-SLES15" ) then
        setenv I_MPI_FABRICS shm:ofi
        setenv I_MPI_OFI_PROVIDER psm3
@@ -9207,6 +9220,7 @@ print  SCRIPT <<"EOF";
      setenv DAPL_UCM_RETRY 10
      setenv DAPL_ACK_RETRY 10
   endif
+  setenv SLURM_DISTRIBUTION block
 
 # Needed for TLM/ADM
 # ------------------
