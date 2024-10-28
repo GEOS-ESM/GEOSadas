@@ -26,6 +26,7 @@
 #  31Mar2020  Todling   Jobmonitor to protect against faulty batch-block
 #  03May2020  Todling   Logic not to over-subscribe node
 #  23Jun2020  Todling   Refef meaning of ATMENSLOC
+#  26Oct2024  Todling   Implement slurm array distribution opt
 #------------------------------------------------------------------
 
 if ( !($?ATMENS_VERBOSE) ) then
@@ -99,6 +100,7 @@ if ( $#argv < 4 ) then
    echo "                       (default: off)"
    echo "    ENSGSI_NCPUS     - when parallel ens on, this sets NCPUS for Observer calculation"
    echo "    AENS_OBSVR_DSTJOB- distribute multiple works within smaller jobs"
+   echo "    AENS_OBSVR_ARRAY - let slurm array control job distribution"
    echo "    OBSVR_WALLCLOCK  - wall clock time to run observer, default 1:00:00 "
    echo "    OBSVR_QNAME      - name of queue (default: NULL, that is, let BATCH pick) "
    echo " "
@@ -131,12 +133,19 @@ if ( !($?STAGE4HYBGSI)  ) setenv FAILED 1 # TBD hack
 
 if ( !($?AENS_ADDINFLATION) ) setenv AENS_ADDINFLATION 0
 if ( !($?AENS_OBSVR_DSTJOB) ) setenv AENS_OBSVR_DSTJOB 0
+if ( !($?AENS_OBSVR_ARRAY)  ) setenv AENS_OBSVR_ARRAY  0
 if ( !($?NCSUFFIX)      ) setenv NCSUFFIX nc4
 if ( !($?ENSMEANONLY)   ) setenv ENSMEANONLY 0 # used for testing this script only (not to be global)
 if ( !($?ENSPARALLEL)   ) setenv ENSPARALLEL 0
 if ( !($?OBSVR_WALLCLOCK))setenv OBSVR_WALLCLOCK 1:00:00
 if ( !($?OBSVR_QNAME))    setenv OBSVR_QNAME NULL
 if ( !($?STRICT)         ) setenv STRICT 1
+
+if ( !($?JOBGEN_PFXNAME) ) then
+  set pfxname = ""
+else
+  set pfxname = ${JOBGEN_PFXNAME}_
+endif
 
 if ( $ENSPARALLEL ) then
    if ( !($?ENSGSI_NCPUS) ) then
@@ -158,6 +167,11 @@ set nymd     = $3
 set nhms     = $4
 set hh0      = `echo $nhms | cut -c1-2`
 set yyyymmddhh = ${nymd}${hh0}
+set yyyy     = `echo $nymd | cut -c1-4`
+set mm       = `echo $nymd | cut -c5-6`
+set dd       = `echo $nymd | cut -c7-8`
+set ddmmyyyy = ${dd}${mm}${yyyy}
+set hhzddmmyyyy = ${hh0}Z${ddmmyyyy} # used in jobname (easier to see cycle date/time)
 
 setenv ENSWORK $FVWORK
 if ( -e $ENSWORK/.DONE_${MYNAME}.$yyyymmddhh ) then
@@ -539,6 +553,7 @@ while ( $n < $nmem )
      
         @ fpoe++
 
+        set machfile = ""
         if ( $AENS_OBSVR_DSTJOB != 0 ) then # case of multiple jobs within few larger ones
            # collect multiple observer calls into jumbo file
            if ( $ipoe < $AENS_OBSVR_DSTJOB ) then  # nmem better devide by AENS_OBSVR_DSTJOB
@@ -547,9 +562,9 @@ while ( $n < $nmem )
               echo $this_script_name >> $ENSWORK/obsvr_poe.$npoe
               chmod +x $ENSWORK/obsvr_poe.$npoe
            endif
-           set machfile = "-machfile $ENSWORK/obsvr_machfile$npoe.$ipoe"
-        else
-           set machfile = ""
+           if ( $AENS_OBSVR_ARRAY == 0 ) then
+              set machfile = "-machfile $ENSWORK/obsvr_machfile$npoe.$ipoe"
+           endif
         endif
 
         jobgen.pl \
@@ -565,6 +580,7 @@ while ( $n < $nmem )
              "Observer Failed for Member ${nnn}"
 
              if ( $AENS_OBSVR_DSTJOB != 0 ) then
+
                 if ( -e obs_mem${nnn}.j ) then
                    chmod +x obs_mem${nnn}.j
                 else
@@ -573,46 +589,81 @@ while ( $n < $nmem )
                    exit(1)
                 endif
 
-                if ( ($ipoe == $AENS_OBSVR_DSTJOB) || (($fpoe == $ntodo ) && ($ipoe < $AENS_OBSVR_DSTJOB) ) ) then
-                   set this_ntasks_per_node = `facter processorcount`
-                   @ ncores_needed = $ENSGSI_NCPUS / $this_ntasks_per_node
-                   if ( $ncores_needed == 0 ) then
-                     @ myncpus = $this_ntasks_per_node
-                   else
-                     if ( $ENSGSI_NCPUS == $ncores_needed * $this_ntasks_per_node ) then
-                        @ myncpus = $ENSGSI_NCPUS
-                     else
-                        @ myncpus = $ENSGSI_NCPUS / $this_ntasks_per_node
-                        @ module = $myncpus * $this_ntasks_per_node - $ENSGSI_NCPUS
-                        if ( $module != 0 ) @ myncpus = $myncpus + 1
-                        @ myncpus = $myncpus * $this_ntasks_per_node
-                     endif
-                   endif
-                   @ myncpus = $ipoe * $myncpus
-                   #_ @ myncpus = $ipoe * $ENSGSI_NCPUS
-                   setenv JOBGEN_NCPUS $myncpus
-                   jobgen.pl \
-                        -q $OBSVR_QNAME     \
-                        obsvr_dst${npoe}    \
-                        $GID                \
-                        $OBSVR_WALLCLOCK    \
-                        "job_distributor.csh -machfile $ENSWORK/obsvr_machfile$npoe -usrcmd $ENSWORK/obsvr_poe.$npoe -usrntask $ENSGSI_NCPUS -njobs $ipoe " \
-                        $ENSWORK  \
-                        $MYNAME             \
-                        $ENSWORK/.DONE_POE${npoe}_${MYNAME}.$yyyymmddhh \
-                        "Observer Failed for Member ${npoe}"
-                   if (! -e obsvr_dst${npoe}.j ) then
-                      echo " ${MYNAME}: Observer Failed to generate DST BATCH jobs for Member ${nnn}, Aborting ... "
-                      touch $ENSWORK/.FAILED
-                      exit(1)
-                   endif
-                   /bin/mv obsvr_dst${npoe}.j $ENSWORK/
-                   $ATMENS_BATCHSUB $ENSWORK/obsvr_dst${npoe}.j
-                   touch .SUBMITTED
-                   @ ipoe = 0 # reset counter
+                if ( $AENS_OBSVR_ARRAY ) then
+
                    @ npoe++
-                endif 
-             else
+                   if ( ($npoe == $nmem) || ($fpoe == $ntodo) ) then
+
+                      cd $ENSWORK
+                      jobgen.pl \
+                           -egress GSI_EGRESS -q $OBSVR_QNAME \
+                           ${pfxname}obsvr_array.$hhzddmmyyyy \
+                           -array "1-$nmem%${AENS_OBSVR_DSTJOB}"  \
+                           $GID                   \
+                           $OBSVR_WALLCLOCK       \
+                           obs_mem\${memtag}.j    \
+                           $ENSWORK/mem\${memtag} \
+                           $MYNAME                \
+                           $ENSWORK/.DONE_ARRAY_${MYNAME}.$yyyymmddhh \
+                           "Observer Array Job Failed"
+
+                      if ( -e ${pfxname}obsvr_array.$hhzddmmyyyy.j ) then
+                         $ATMENS_BATCHSUB ${pfxname}obsvr_array.$hhzddmmyyyy.j
+                      else
+                         echo " ${MYNAME}: Observer Failed to generate ARRAY BATCH jobs, Aborting ... "
+                         touch $ENSWORK/.FAILED
+                         exit(1)
+                      endif
+
+                   endif
+
+                else # old style distribution
+
+                   if ( ($ipoe == $AENS_OBSVR_DSTJOB) || (($fpoe == $ntodo ) && ($ipoe < $AENS_OBSVR_DSTJOB) ) ) then
+                      set this_ntasks_per_node = `facter processorcount`
+                      @ ncores_needed = $ENSGSI_NCPUS / $this_ntasks_per_node
+                      if ( $ncores_needed == 0 ) then
+                        @ myncpus = $this_ntasks_per_node
+                      else
+                        if ( $ENSGSI_NCPUS == $ncores_needed * $this_ntasks_per_node ) then
+                           @ myncpus = $ENSGSI_NCPUS
+                        else
+                           @ myncpus = $ENSGSI_NCPUS / $this_ntasks_per_node
+                           @ module = $myncpus * $this_ntasks_per_node - $ENSGSI_NCPUS
+                           if ( $module != 0 ) @ myncpus = $myncpus + 1
+                           @ myncpus = $myncpus * $this_ntasks_per_node
+                        endif
+                      endif
+                      @ myncpus = $ipoe * $myncpus
+                      #_ @ myncpus = $ipoe * $ENSGSI_NCPUS
+                      setenv JOBGEN_NCPUS $myncpus
+                      jobgen.pl \
+                           -q $OBSVR_QNAME     \
+                           obsvr_dst${npoe}    \
+                           $GID                \
+                           $OBSVR_WALLCLOCK    \
+                           "job_distributor.csh -machfile $ENSWORK/obsvr_machfile$npoe -usrcmd $ENSWORK/obsvr_poe.$npoe -usrntask $ENSGSI_NCPUS -njobs $ipoe " \
+                           $ENSWORK  \
+                           $MYNAME             \
+                           $ENSWORK/.DONE_POE${npoe}_${MYNAME}.$yyyymmddhh \
+                           "Observer Failed for Member ${npoe}"
+                         if (! -e obsvr_dst${npoe}.j ) then
+                         echo " ${MYNAME}: Observer Failed to generate DST BATCH jobs for Member ${nnn}, Aborting ... "
+                         touch $ENSWORK/.FAILED
+                         exit(1)
+                      endif
+                      /bin/mv obsvr_dst${npoe}.j $ENSWORK/
+                      $ATMENS_BATCHSUB $ENSWORK/obsvr_dst${npoe}.j
+                      touch .SUBMITTED
+                      @ ipoe = 0 # reset counter
+                      @ npoe++
+
+                   endif  # <poe>
+
+                endif  # <ARRAY>
+
+             else 
+
                 if ( -e obs_mem${nnn}.j ) then
                    $ATMENS_BATCHSUB obs_mem${nnn}.j
                    touch .SUBMITTED
@@ -647,6 +698,7 @@ while ( $n < $nmem )
      cd ../
   endif # DONE_MEM
 end
+cd $ENSWORK
 
 # Monitor status of ongoing jobs
 # ------------------------------
@@ -676,6 +728,7 @@ while ( $n < $nmem )
       cd -
       /bin/rm obsvr_dst*
       /bin/rm obsvr_poe*
+      /bin/rm *obsvr_array*output*
   else
      sleep 20 # allow for system-delay
      if (! -e .DONE_MEM${nnn}_${MYNAME}.$yyyymmddhh ) then # check for file one more time before giving up

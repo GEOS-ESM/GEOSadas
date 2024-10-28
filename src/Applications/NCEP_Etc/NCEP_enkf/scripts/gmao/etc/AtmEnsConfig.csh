@@ -69,8 +69,8 @@ setenv ADDINF_FACTOR_SPPT 0.2  # additive inflation for when SPPT is used
 setenv RECENTER_WALLCLOCK 0:30:00
 setenv ENSRECENTER_NCPUS 1
 setenv RECENTER_QNAME $ATMENS_QNAME
-setenv AENS_RECENTER_DSTJOB 4  # the many exec in single batch job
-setenv AENS_RECENTER_ARRAY  1  # let slrum handle parallelization of distributed job
+setenv AENS_RECENTER_DSTJOB 16
+setenv AENS_RECENTER_ARRAY  1
 
 # ensemble GAAS and AERO EnKF
 # ---------------------------
@@ -105,7 +105,8 @@ setenv MPIRUN_ATMENKF "$ATMENS_MPIRUN -np $AENKF_NCPUS enkf_geos.x"
 
 # gcm_ensemble.j
 # --------------
-#_SLES15 setenv AENS_GCM_DSTJOB 4
+setenv AENS_GCM_DSTJOB 8
+setenv AENS_GCM_ARRAY 1
 setenv AGCM_QNAME $ATMENS_QNAME
 setenv AGCM_WALLCLOCK 1:00:00
 setenv ENSGCM_NCPUS @AGCM_CPUS
@@ -131,7 +132,8 @@ setenv VTXLEVS "1000 925 850 700 600 500 400 300 250 200 150 100 70 50 30 20 10"
 
 # obsvr_ensemble.j
 # ----------------
-#_SLES15 setenv AENS_OBSVR_DSTJOB 4
+setenv AENS_OBSVR_DSTJOB 8
+setenv AENS_OBSVR_ARRAY 1
 setenv OBSVR_QNAME $ATMENS_QNAME
 setenv OBSVR_WALLCLOCK 0:45:00
 setenv ENSGSI_NCPUS @OBSV_CPUS

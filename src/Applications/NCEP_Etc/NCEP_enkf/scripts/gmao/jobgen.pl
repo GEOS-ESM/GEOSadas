@@ -134,6 +134,11 @@ sub init {
      $newjobname = $newjobname . "_" . $ENV{JOBGEN_SFXNAME};
   }
 
+  $forcerun = 0;
+  if ( $ENV{JOBGEN_FORCERUN} ) {
+    $forcerun = 1;
+  }
+
 #  The following is a tricky one: replace mpirun w/ mpiexec
    if ( $opt_machfile ) {
 
@@ -291,6 +296,9 @@ EOF
 
  if( $opt_egress ) {
  print  SCRIPT <<"EOF";
+#if ( (! $forcerun) && ( $file2touch != "NULL" ) ) then
+#   if ( -e $file2touch ) exit 0
+#endif
  if ( -e $opt_egress ) then
     /bin/rm $opt_egress 
  endif
@@ -317,7 +325,9 @@ EOF
  print  SCRIPT <<"EOF";
  $xcommand
  /bin/rm .RUNNING
- touch $file2touch
+ if ( $file2touch != "NULL" ) then
+    touch $file2touch
+ endif
 EOF
 
 }

@@ -113,6 +113,12 @@ if ( !($?NCSUFFIX)           ) setenv NCSUFFIX nc4
 if ( !($?ENSPARALLEL)        ) setenv ENSPARALLEL 0
 if ( !($?RECENTER_WALLCLOCK) ) setenv RECENTER_WALLCLOCK 0:10:00
 
+if ( !($?JOBGEN_PFXNAME) ) then
+  set pfxname = ""
+else
+  set pfxname = ${JOBGEN_PFXNAME}_
+endif
+
 if ( $ENSPARALLEL ) then
    if ( !($?RECENTER_QNAME) ) then
       echo "${MYNAME}: error, env var RECENTER_QNAME not defined"
@@ -145,6 +151,11 @@ set infloc = $8
 set hh     = `echo $nhms | cut -c1-2`
 set hhmn   = `echo $nhms | cut -c1-4`
 set yyyymmddhh = ${nymd}${hh}
+set yyyy     = `echo $nymd | cut -c1-4`
+set mm       = `echo $nymd | cut -c5-6`
+set dd       = `echo $nymd | cut -c7-8`
+set ddmmyyyy = ${dd}${mm}${yyyy}
+set hhzddmmyyyy = ${hh}Z${ddmmyyyy} # used in jobname (easier to see cycle date/time)
 
 if ( -e $ENSWORK/.DONE_${MYNAME}_${ftype1}_${ftype2}.$yyyymmddhh ) then
    echo " ${MYNAME}: already done"
@@ -317,7 +328,7 @@ while ( $ic < $nmem )
                 exit(1)
              endif
 
-             if ( $AENS_RECENTER_ARRAY != 0 ) then
+             if ( $AENS_RECENTER_ARRAY ) then
 
                 @ npoe++
                 if ( $npoe == $nmem ) then # time to launch slurm ARRAY job 
@@ -327,18 +338,18 @@ while ( $ic < $nmem )
                    jobgen.pl \
                         -egress DYNRECENTER_EGRESS \
                         -q $RECENTER_QNAME         \
-                        recenter_array_${ftype1}_${ftype2}.$yyyymmddhh \
+                        ${pfxname}recenter_array_${ftype1}_${ftype2}.$hhzddmmyyyy \
                         $GID                       \
                         -array "1-${nmem}%${AENS_RECENTER_DSTJOB}" \
                         $RECENTER_WALLCLOCK        \
                         recenter_mem\${memtag}.j   \
                         $ensloc/mem\$memtag        \
                         $MYNAME                    \
-                        $ENSWORK/.DONE_ARRAY_${MYNAME}_${ftype1}_${ftype2}.$yyyymmddhh \
-                         "Recenter ANA Failed (Array)"
+                        $ENSWORK/.DONE_ARRAY_${MYNAME}_${ftype1}_${ftype2}.$hhzddmmyyyy \
+                         "Recenter ANA Array Job Failed"
 
-                   if ( -e $ensloc/recenter_array_${ftype1}_${ftype2}.$yyyymmddhh.j ) then
-                      $ATMENS_BATCHSUB recenter_array_${ftype1}_${ftype2}.$yyyymmddhh.j
+                   if ( -e $ensloc/${pfxname}recenter_array_${ftype1}_${ftype2}.$hhzddmmyyyy.j ) then
+                      $ATMENS_BATCHSUB $ensloc/${pfxname}recenter_array_${ftype1}_${ftype2}.$hhzddmmyyyy.j
                    else
                       echo " ${MYNAME}: Failed to generate array batch jobs for Recentering ANA, Aborting ... "
                       touch $ensloc/.FAILED
@@ -454,6 +465,7 @@ while ( $ic < $nmem + 1 )
    @ ic = $ic + 1
 end
 /bin/rm $ENSWORK/recenter_poe.*
+/bin/rm $ENSWORK/*recenter_array*output*
 #/bin/rm $ENSWORK/recenter_poe*.j
 
 if ($failed) then

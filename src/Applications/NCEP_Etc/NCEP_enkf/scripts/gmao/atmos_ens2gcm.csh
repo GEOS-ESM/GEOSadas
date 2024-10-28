@@ -97,6 +97,12 @@ if ( !($?ENSPARALLEL)   ) setenv ENSPARALLEL 0
 if ( !($?IAU_WALLCLOCK) ) setenv IAU_WALLCLOCK 0:10:00
 if ( !($?IAU_QNAME)     ) setenv IAU_QNAME NULL
 
+if ( !($?JOBGEN_PFXNAME) ) then
+  set pfxname = ""
+else
+  set pfxname = ${JOBGEN_PFXNAME}_
+endif
+
 if ( $ENSPARALLEL ) then
    if ( !($?MPIRUN_ENSIAU) ) setenv FAILED 1
    if ( !($?ENSIAU_NCPUS) ) then
@@ -117,6 +123,11 @@ set nymd  = $2
 set nhms  = $3
 set hh     = `echo $nhms | cut -c1-2`
 set yyyymmddhh = ${nymd}${hh}
+set yyyy     = `echo $nymd | cut -c1-4`
+set mm       = `echo $nymd | cut -c5-6`
+set dd       = `echo $nymd | cut -c7-8`
+set ddmmyyyy = ${dd}${mm}${yyyy}
+set hhzddmmyyyy = ${hh}Z${ddmmyyyy} # used in jobname (easier to see cycle date/time)
 
 setenv ENSWORK $FVWORK
 if ( -e $ENSWORK/.DONE_${MYNAME}.$yyyymmddhh ) then
@@ -267,7 +278,7 @@ while ( $ic < $nmem )
                 echo $this_script_name >> $ENSWORK/iau_poe.$npoe
                 chmod +x $ENSWORK/iau_poe.$npoe
              endif
-             if ( $AENS_IAU_DSTJOB == 0 ) then
+             if ( $AENS_IAU_ARRAY == 0 ) then
                 set machfile = "-machfile $ENSWORK/iau_machfile$npoe.$ipoe"
              endif
           endif
@@ -293,7 +304,7 @@ while ( $ic < $nmem )
                      exit(1)
                   endif
  
-                  if ( $AENS_IAU_ARRAY != 0 ) then
+                  if ( $AENS_IAU_ARRAY ) then
 
                      @ npoe++
                      if ( ($npoe == $nmem) || ($fpoe == $ntodo) ) then
@@ -302,7 +313,7 @@ while ( $ic < $nmem )
                         jobgen.pl \
                              -egress IAU_EGRESS \
                              -q $IAU_QNAME          \
-                             iau_array.$yyyymmddhh  \
+                             ${pfxname}iau_array.$hhzddmmyyyy  \
                              -array "1-${nmem}%${AENS_IAU_DSTJOB}" \
                              $GID                   \
                              $IAU_WALLCLOCK         \
@@ -310,10 +321,10 @@ while ( $ic < $nmem )
                              $ENSWORK/mem\${memtag} \
                              $MYNAME                \
                              $ENSWORK/.DONE_ARRAY_${MYNAME}.$yyyymmddhh \
-                             "IAU Failed (Array)"
+                             "IAU Array Job Failed"
 
-                         if ( -e iau_array.$yyyymmddhh.j ) then
-                            $ATMENS_BATCHSUB iau_array.$yyyymmddhh.j 
+                         if ( -e ${pfxname}iau_array.$hhzddmmyyyy.j ) then
+                            $ATMENS_BATCHSUB ${pfxname}iau_array.$hhzddmmyyyy.j 
                          else
                             echo " ${MYNAME}: Failed to generate array atch job for makeiau, Aborting ... "
                             touch $ENSWORK/.FAILED
@@ -417,6 +428,7 @@ if( -e $ENSWORK/.FAILED ) then
 else
   /bin/rm iau_dst*
   /bin/rm iau_poe*
+  /bin/rm *iau_array*output*
 endif
 
 touch .DONE_${MYNAME}.$yyyymmddhh
