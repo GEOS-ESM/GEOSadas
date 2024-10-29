@@ -81,6 +81,12 @@ GEOSana_GridComp:
   develop: develop
 
 mksi:
+  local: ./src/Components/@GEOSana_GridComp/GEOSaana_GridComp/GSI_GridComp/@mksi
+  remote: ../GEOS_mksi.git
+  tag: g5.41.2
+  develop: develop
+
+mksi:
    local: ./src/Components/@GEOSana_GridComp/GEOSaana_GridComp/GSI_GridComp/@mksi
    remote: ../GEOS_mksi.git
    tag: g5.41.2
