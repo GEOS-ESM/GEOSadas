@@ -10,6 +10,7 @@
 #                     MPT we must prevent this.
 #  30Mar2017 Todling  Hack to fix env that looks for missing lib under messed up NCCS batch system
 #  21Feb2020 Todling  Allow for high freq bkg (up to 1mn)
+#  25Oct2024 Todling  Handling slurm array (and packable jobs)
 #-----------------------------------------------------------------------------------------------------
 
 use Env;                 # make env vars readily available
@@ -36,6 +37,8 @@ my $scriptname = basename($0);
                "mpiprocs=s",
                "machfile=s",
                "xc=s",
+               "ncc",
+               "packable",
                "h" );
 
   usage() if $opt_h;
@@ -95,6 +98,15 @@ sub init {
       $proc = "";
    }
 
+   if ( $opt_packable ) {
+     if ( ! $opt_array ) {
+       print "$0: must specify array opt when using packable jobs \n\n";
+       exit(1);
+     }
+   }
+
+   $check_completion = 1;
+   if ( $opt_ncc ) {$check_completion = 0;}
 
 # FVROOT is where the binaries have been installed
 # ------------------------------------------------
@@ -182,16 +194,24 @@ EOF
 
  if ( $ENV{JOBGEN_QOS} ) {
    if ( $opt_q ne "datamove" ) {
+    if ( ! $opt_packable ) {  # RT: until unfil NCCS allows dastest to run packable
  print  SCRIPT <<"EOF";
 #SBATCH --qos=$ENV{JOBGEN_QOS}
 EOF
+     }
    }
  }
  if ( $ENV{JOBGEN_PARTITION} ) {
    if ( $opt_q ne "datamove" ) {
+     if ( $opt_packable ) {
+ print  SCRIPT <<"EOF";
+#SBATCH --partition=packable
+EOF
+     } else {
  print  SCRIPT <<"EOF";
 #SBATCH --partition=$ENV{JOBGEN_PARTITION}
 EOF
+     }
    }
  }
  if ( $ENV{JOBGEN_RESERVATION} ) {
@@ -296,9 +316,11 @@ EOF
 
  if( $opt_egress ) {
  print  SCRIPT <<"EOF";
-#if ( (! $forcerun) && ( $file2touch != "NULL" ) ) then
-#   if ( -e $file2touch ) exit 0
-#endif
+ if ( $check_completion ) then
+   if ( (! $forcerun) ) then
+      if ( -e $file2touch ) exit 0
+   endif
+ endif
  if ( -e $opt_egress ) then
     /bin/rm $opt_egress 
  endif
@@ -325,9 +347,7 @@ EOF
  print  SCRIPT <<"EOF";
  $xcommand
  /bin/rm .RUNNING
- if ( $file2touch != "NULL" ) then
-    touch $file2touch
- endif
+ touch $file2touch
 EOF
 
 }
@@ -474,9 +494,11 @@ DESCRIPTION
 
 OPTIONS
 
-     -array        slurm array distribution (only, i.e., not packable)
-     -egress       specify file to watch for completion of job (e.g., EGRESS for GCM)
-     -expid        experiment name
+     -array    X   slurm array distribution (w/ or w/o packable)
+     -egress   X   specify file to watch for completion of job (e.g., EGRESS for GCM)
+     -expid    X   experiment name
+     -ncc          no check completion (run regardless whether completed before)
+     -packable     slurm packable distribution (must include array opt)
      -q            specify pbs queue (e.g., datamove when archiving)
      -h            prints this usage notice
 

@@ -109,9 +109,13 @@ sub fsens_script {
   setenv STAGE4FSENS \$FVHOME/save4fsens   # set to whatever else user wants
 
   if( (`uname -s` == "Linux") && ( (`uname -m` == "ia64") || (`uname -m` == "x86_64") ) ) then
+# NOTE: if user has access to TSE: 
+#       (i) comment out three lines below
+#       (ii) uncomment and adjust following line
       setenv FVWORK $fvhome/../tmp.\$\$
       if(   -d \$FVWORK ) /bin/rm -r  \$FVWORK
       /bin/mkdir -p \$FVWORK
+#     setenv FVWORK \$TSE_TMPDIR/tmp.\$\$
   else
       echo " dont know about to run in this architecture"
       exit 1

@@ -140,9 +140,13 @@ sub asens_script {
   endif
   if( (`uname -s` == "Linux") && ((`uname -m` == "ia64") || (`uname -m` == "x86_64") )) then
      setenv FORT90L -Wl,-T
+# NOTE: if user has access to TSE: 
+#       (i) comment out three lines below
+#       (ii) uncomment and adjust following line
      setenv FVWORK $fvhome/../tmp.\$\$
      if(   -d \$FVWORK ) /bin/rm -r  \$FVWORK
      /bin/mkdir -p \$FVWORK
+#    setenv FVWORK \$TSE_TMPDIR/tmp.\$\$
   endif
 
 # Load BASEDIR and modules

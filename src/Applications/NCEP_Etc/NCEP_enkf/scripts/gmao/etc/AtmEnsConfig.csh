@@ -71,6 +71,7 @@ setenv ENSRECENTER_NCPUS 1
 setenv RECENTER_QNAME $ATMENS_QNAME
 setenv AENS_RECENTER_DSTJOB 16
 setenv AENS_RECENTER_ARRAY  1
+#setenv AENS_RECENTER_PACKL  1
 
 # ensemble GAAS and AERO EnKF
 # ---------------------------
@@ -132,7 +133,7 @@ setenv VTXLEVS "1000 925 850 700 600 500 400 300 250 200 150 100 70 50 30 20 10"
 
 # obsvr_ensemble.j
 # ----------------
-setenv AENS_OBSVR_DSTJOB 8
+setenv AENS_OBSVR_DSTJOB 4
 setenv AENS_OBSVR_ARRAY 1
 setenv OBSVR_QNAME $ATMENS_QNAME
 setenv OBSVR_WALLCLOCK 0:45:00

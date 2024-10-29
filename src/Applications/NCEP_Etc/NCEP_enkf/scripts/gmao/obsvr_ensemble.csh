@@ -598,7 +598,7 @@ while ( $n < $nmem )
                       jobgen.pl \
                            -egress GSI_EGRESS -q $OBSVR_QNAME \
                            ${pfxname}obsvr_array.$hhzddmmyyyy \
-                           -array "1-$nmem%${AENS_OBSVR_DSTJOB}"  \
+                           -array "1-$nmem%${AENS_OBSVR_DSTJOB}" -ncc \
                            $GID                   \
                            $OBSVR_WALLCLOCK       \
                            obs_mem\${memtag}.j    \

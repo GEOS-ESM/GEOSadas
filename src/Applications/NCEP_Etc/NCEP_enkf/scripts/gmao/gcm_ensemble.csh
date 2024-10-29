@@ -494,7 +494,7 @@ if(! -e .DONE_ENSFCST ) then
                            -egress EGRESS -q $AGCM_QNAME \
                            ${pfxname}agcm_array.$hhzddmmyyyy \
                            $GID                   \
-                           -array "1-$nmem%${AENS_GCM_DSTJOB}" \
+                           -array "1-$nmem%${AENS_GCM_DSTJOB}" -ncc \
                            $AGCM_WALLCLOCK        \
                            agcm_mem\${memtag}.j   \
                            $ENSWORK/mem\${memtag} \

@@ -74,7 +74,8 @@ if ( $#argv < 8 ) then
    echo "    AENS_ADDINFLATION  - when set, apply additive inflation to analyzed members"
    echo "    AENS_DONORECENTER  - allow bypassing recentering"
    echo "    AENS_RECENTER_ARRAY  - distribute multiple using slurm array capability"
-   echo "    AENS_RECENTER_DSTJOB  - distribute multiple works within smaller jobs"
+   echo "    AENS_RECENTER_DSTJOB - distribute multiple works within smaller jobs"
+   echo "    AENS_RECENTER_PACKL - distribute multiple using slurm packable capability"
    echo "    ASYNBKG            - background frequency (when adaptive inflation on)"
    echo "    CENTRAL_BLEND      - 0 or 1=to blend members with central (def: 1)"
    echo "    FVHOME             - location of experiment            "
@@ -108,6 +109,7 @@ if ( !($?AENS_ADDINFLATION)  ) setenv AENS_ADDINFLATION 0
 if ( !($?AENS_DONORECENTER)  ) setenv AENS_DONORECENTER 0
 if ( !($?AENS_RECENTER_ARRAY) ) setenv AENS_RECENTER_ARRAY 0
 if ( !($?AENS_RECENTER_DSTJOB) ) setenv AENS_RECENTER_DSTJOB 0
+if ( !($?AENS_RECENTER_PACKL) ) setenv AENS_RECENTER_PACKL 0
 if ( !($?CENTRAL_BLEND)      ) setenv CENTRAL_BLEND 1
 if ( !($?NCSUFFIX)           ) setenv NCSUFFIX nc4
 if ( !($?ENSPARALLEL)        ) setenv ENSPARALLEL 0
@@ -179,6 +181,11 @@ else
    else
       set rec_rcfile = "NONE"
    endif
+endif
+
+set packable = ""
+if ( $AENS_RECENTER_PACKL ) then
+  set packable = "-packable"
 endif
 
 if ( $CENTRAL_BLEND ) then
@@ -337,10 +344,10 @@ while ( $ic < $nmem )
 
                    jobgen.pl \
                         -egress DYNRECENTER_EGRESS \
-                        -q $RECENTER_QNAME         \
+                        -q $RECENTER_QNAME  $packable \
                         ${pfxname}recenter_array_${ftype1}_${ftype2}.$hhzddmmyyyy \
                         $GID                       \
-                        -array "1-${nmem}%${AENS_RECENTER_DSTJOB}" \
+                        -array "1-${nmem}%${AENS_RECENTER_DSTJOB}" -ncc \
                         $RECENTER_WALLCLOCK        \
                         recenter_mem\${memtag}.j   \
                         $ensloc/mem\$memtag        \

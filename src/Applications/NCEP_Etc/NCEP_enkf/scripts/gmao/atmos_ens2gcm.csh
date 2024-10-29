@@ -314,7 +314,7 @@ while ( $ic < $nmem )
                              -egress IAU_EGRESS \
                              -q $IAU_QNAME          \
                              ${pfxname}iau_array.$hhzddmmyyyy  \
-                             -array "1-${nmem}%${AENS_IAU_DSTJOB}" \
+                             -array "1-${nmem}%${AENS_IAU_DSTJOB}" -ncc \
                              $GID                   \
                              $IAU_WALLCLOCK         \
                              iau_mem\${memtag}.j    \
