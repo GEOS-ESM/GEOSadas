@@ -89,8 +89,7 @@ setenv MPIRUN_ATMENKFAERO "$ATMENS_MPIRUN -np $AENKFAERO_NCPUS enkf_aero.x"
 
 # atmos_ens2gcm.csh
 # -----------------
-setenv AENS_IAU_DSTJOB 8
-setenv AENS_IAU_ARRAY 1
+setenv AENS_IAU_DSTJOB 4
 setenv IAU_QNAME $ATMENS_QNAME
 setenv IAU_WALLCLOCK 0:30:00
 setenv ENSIAU_NCPUS @MIAU_CPUS
@@ -106,8 +105,7 @@ setenv MPIRUN_ATMENKF "$ATMENS_MPIRUN -np $AENKF_NCPUS enkf_geos.x"
 
 # gcm_ensemble.j
 # --------------
-setenv AENS_GCM_DSTJOB 8
-setenv AENS_GCM_ARRAY 1
+setenv AENS_GCM_DSTJOB 4
 setenv AGCM_QNAME $ATMENS_QNAME
 setenv AGCM_WALLCLOCK 1:00:00
 setenv ENSGCM_NCPUS @AGCM_CPUS
@@ -134,7 +132,6 @@ setenv VTXLEVS "1000 925 850 700 600 500 400 300 250 200 150 100 70 50 30 20 10"
 # obsvr_ensemble.j
 # ----------------
 setenv AENS_OBSVR_DSTJOB 4
-setenv AENS_OBSVR_ARRAY 1
 setenv OBSVR_QNAME $ATMENS_QNAME
 setenv OBSVR_WALLCLOCK 0:45:00
 setenv ENSGSI_NCPUS @OBSV_CPUS

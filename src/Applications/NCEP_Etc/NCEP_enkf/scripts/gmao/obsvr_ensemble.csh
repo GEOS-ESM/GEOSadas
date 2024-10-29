@@ -621,9 +621,11 @@ while ( $n < $nmem )
 
                    if ( ($ipoe == $AENS_OBSVR_DSTJOB) || (($fpoe == $ntodo ) && ($ipoe < $AENS_OBSVR_DSTJOB) ) ) then
                       set this_ntasks_per_node = `facter processorcount`
+                      @ this_ntasks_per_node = $this_ntasks_per_node - 2
                       @ ncores_needed = $ENSGSI_NCPUS / $this_ntasks_per_node
                       if ( $ncores_needed == 0 ) then
-                        @ myncpus = $this_ntasks_per_node
+                        @ ncores_needed = 1
+                        @ myncpus = $ENSGSI_NCPUS
                       else
                         if ( $ENSGSI_NCPUS == $ncores_needed * $this_ntasks_per_node ) then
                            @ myncpus = $ENSGSI_NCPUS

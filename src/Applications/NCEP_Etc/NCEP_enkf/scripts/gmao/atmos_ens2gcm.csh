@@ -337,9 +337,11 @@ while ( $ic < $nmem )
    
                      if ( ($ipoe == $AENS_IAU_DSTJOB) || (($fpoe == $ntodo ) && ($ipoe < $AENS_IAU_DSTJOB) ) ) then
                         set this_ntasks_per_node = `facter processorcount`
+                        @ this_ntasks_per_node = $this_ntasks_per_node - 2
                         @ ncores_needed = $ENSIAU_NCPUS / $this_ntasks_per_node
                         if ( $ncores_needed == 0 ) then
-                          @ myncpus = $this_ntasks_per_node
+                            @ ncores_needed = 1
+>                           @ myncpus = $ENSIAU_NCPUS
                         else
                           if ( $ENSIAU_NCPUS == $ncores_needed * $this_ntasks_per_node ) then
                              @ myncpus = $ENSIAU_NCPUS
