@@ -341,7 +341,7 @@ while ( $ic < $nmem )
                         @ ncores_needed = $ENSIAU_NCPUS / $this_ntasks_per_node
                         if ( $ncores_needed == 0 ) then
                             @ ncores_needed = 1
->                           @ myncpus = $ENSIAU_NCPUS
+                            @ myncpus = $ENSIAU_NCPUS
                         else
                           if ( $ENSIAU_NCPUS == $ncores_needed * $this_ntasks_per_node ) then
                              @ myncpus = $ENSIAU_NCPUS
