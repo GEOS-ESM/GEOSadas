@@ -35,7 +35,7 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  tag: g5.41.2
+  tag: g5.41.3
   develop: main
 
 GMAOpyobs:
@@ -47,7 +47,7 @@ GMAOpyobs:
 AeroML:
   local: ./src/Shared/@AeroML
   remote: ../AeroML.git
-  tag: feature/rtodling/abs2obs/cak_tag0
+  tag: rt1.0.0-cak_tag0
   develop: develop
   sparse: ./config/AeroML.sparse
 
@@ -77,7 +77,7 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  branch: feature/rtodling/sync_fixedsfc_with_jedi
+  tag: g5.41.3
   develop: develop
 
 mksi:
@@ -89,7 +89,7 @@ mksi:
 GEOSgcm_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp
   remote: ../GEOSgcm_GridComp.git
-  branch: feature/rtodling/rt-2.6.1-cubed-mkiau
+  tag: rt2.6.1.1
   sparse: ./config/GEOSgcm_GridComp.sparse
   develop: develop
 
@@ -102,7 +102,7 @@ g5pert:
 GEOSagcmPert_GridComp:
   local: ./src/Components/@GEOSagcmPert_GridComp
   remote: ../GEOSagcmPert_GridComp.git
-  branch: bugfix/rtodling/fms_11_6_x
+  tag: rt5.41.1
   develop: main
 
 FVdycoreCubed_GridComp:
