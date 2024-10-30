@@ -109,6 +109,7 @@ if ( $ENSPARALLEL ) then
      setenv FAILED 1
    else
      setenv JOBGEN_NCPUS $ENSIAU_NCPUS
+     setenv JOBGEN_NCPUS_PER_NODE -1
    endif
 endif
 
@@ -336,25 +337,9 @@ while ( $ic < $nmem )
                   else # old style distribution
    
                      if ( ($ipoe == $AENS_IAU_DSTJOB) || (($fpoe == $ntodo ) && ($ipoe < $AENS_IAU_DSTJOB) ) ) then
-                        set this_ntasks_per_node = `facter processorcount`
-                        @ this_ntasks_per_node = $this_ntasks_per_node - 2
-                        @ ncores_needed = $ENSIAU_NCPUS / $this_ntasks_per_node
-                        if ( $ncores_needed == 0 ) then
-                            @ ncores_needed = 1
-                            @ myncpus = $ENSIAU_NCPUS
-                        else
-                          if ( $ENSIAU_NCPUS == $ncores_needed * $this_ntasks_per_node ) then
-                             @ myncpus = $ENSIAU_NCPUS
-                          else
-                             @ myncpus = $ENSIAU_NCPUS / $this_ntasks_per_node
-                             @ module = $myncpus * $this_ntasks_per_node - $ENSIAU_NCPUS
-                             if ( $module != 0 ) @ myncpus = $myncpus + 1
-                             @ myncpus = $myncpus * $this_ntasks_per_node
-                          endif
-                        endif
-                        @ myncpus = $ipoe * $myncpus
-                        #_ @ myncpus = $AENS_IAU_DSTJOB * $ENSIAU_NCPUS
-                        setenv JOBGEN_NCPUS $myncpus
+                        set mydist = (`atmens_ntasks.pl $ENSIAU_NCPUS $ipoe`)
+                        setenv JOBGEN_NCPUS $mydist[1]
+                        setenv JOBGEN_NCPUS_PER_NODE $mydist[2]
                         jobgen.pl \
                              -egress AIAU_EGRESS -q $IAU_QNAME \
                              iau_dst${npoe}       \

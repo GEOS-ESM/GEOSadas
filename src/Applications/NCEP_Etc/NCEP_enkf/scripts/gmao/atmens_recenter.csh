@@ -126,13 +126,11 @@ if ( $ENSPARALLEL ) then
       echo "${MYNAME}: error, env var RECENTER_QNAME not defined"
       setenv FAILED 1
    endif
-   if ( ! $AENS_RECENTER_DSTJOB ) then
-      setenv JOBGEN_NCPUS_PER_NODE 2
-   endif
    if ( !($?ENSRECENTER_NCPUS) ) then
      setenv FAILED 1
    else
      setenv JOBGEN_NCPUS $ENSRECENTER_NCPUS
+     setenv JOBGEN_NCPUS_PER_NODE -1
    endif
 endif
 

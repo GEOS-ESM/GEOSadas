@@ -34,7 +34,6 @@ my $scriptname = basename($0);
                "expid=s",
                "q=s",
                "proc=s",
-               "mpiprocs=s",
                "machfile=s",
                "xc=s",
                "ncc",
@@ -124,17 +123,6 @@ sub init {
    if ( ! $ncpus_per_node ) {
       print "$0: failed due undefined or zero ncpus_per_node \n\n";
       exit(1);
-   }
-   $nodes = $ncpus / $ncpus_per_node;
-
-   if ( $opt_mpiprocs ) {
-      $mpiprocs = $opt_mpiprocs;
-      if ( $mpiprocs > $ncpus_per_node ) {
-          print "$0: failed due to invalid mpiprocs \n\n";
-          exit(1);
-      }
-   } else {
-      $mpiprocs = $ncpus_per_node;
    }
 
 # allow overwrite of job name
@@ -229,8 +217,12 @@ EOF
    }
    print  SCRIPT <<"EOF";
 #SBATCH --ntasks=${ncpus}
-#_SBATCH --ntasks-per-node=${ncpus_per_node}
 EOF
+  if ( $ncpus_per_node > 0 ) {
+   print  SCRIPT <<"EOF";
+#SBATCH --ntasks-per-node=${ncpus_per_node}
+EOF
+  }
    if ( $ENV{JOBGEN_STREAM} ) {
  print  SCRIPT <<"EOF";
 #SBATCH --constraint=$ENV{JOBGEN_STREAM}

@@ -116,7 +116,7 @@ setenv DO_DMGET 1   # force dmget to be used when acquire retrieve files
 setenv dry_run
 
 if ( $ENSPARALLEL ) then
-   setenv JOBGEN_NCPUS_PER_NODE 2
+   setenv JOBGEN_NCPUS_PER_NODE -1
    if ( !($?ENSRECENTER_NCPUS) ) then
      setenv FAILED 1
    else

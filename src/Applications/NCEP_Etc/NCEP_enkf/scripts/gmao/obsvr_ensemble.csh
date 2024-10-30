@@ -152,6 +152,7 @@ if ( $ENSPARALLEL ) then
      setenv FAILED 1 
    else
      setenv JOBGEN_NCPUS $ENSGSI_NCPUS
+     setenv JOBGEN_NCPUS_PER_NODE -1
    endif
 endif
 
@@ -620,25 +621,26 @@ while ( $n < $nmem )
                 else # old style distribution
 
                    if ( ($ipoe == $AENS_OBSVR_DSTJOB) || (($fpoe == $ntodo ) && ($ipoe < $AENS_OBSVR_DSTJOB) ) ) then
-                      set this_ntasks_per_node = `facter processorcount`
-                      @ this_ntasks_per_node = $this_ntasks_per_node - 2
-                      @ ncores_needed = $ENSGSI_NCPUS / $this_ntasks_per_node
-                      if ( $ncores_needed == 0 ) then
-                        @ ncores_needed = 1
-                        @ myncpus = $ENSGSI_NCPUS
-                      else
-                        if ( $ENSGSI_NCPUS == $ncores_needed * $this_ntasks_per_node ) then
-                           @ myncpus = $ENSGSI_NCPUS
-                        else
-                           @ myncpus = $ENSGSI_NCPUS / $this_ntasks_per_node
-                           @ module = $myncpus * $this_ntasks_per_node - $ENSGSI_NCPUS
-                           if ( $module != 0 ) @ myncpus = $myncpus + 1
-                           @ myncpus = $myncpus * $this_ntasks_per_node
-                        endif
-                      endif
-                      @ myncpus = $ipoe * $myncpus
-                      #_ @ myncpus = $ipoe * $ENSGSI_NCPUS
-                      setenv JOBGEN_NCPUS $myncpus
+#                     set this_ntasks_per_node = `facter processorcount`
+#                     @ this_ntasks_per_node = $this_ntasks_per_node - 2
+#                     @ ncores_needed = $ENSGSI_NCPUS / $this_ntasks_per_node
+#                     if ( $ncores_needed == 0 ) then
+#                       @ ncores_needed = 1
+#                       @ myncpus = $ENSGSI_NCPUS
+#                     else
+#                       if ( $ENSGSI_NCPUS == $ncores_needed * $this_ntasks_per_node ) then
+#                          @ myncpus = $ENSGSI_NCPUS
+#                       else
+#                          @ myncpus = $ENSGSI_NCPUS / $this_ntasks_per_node
+#                          @ module = $myncpus * $this_ntasks_per_node - $ENSGSI_NCPUS
+#                          if ( $module != 0 ) @ myncpus = $myncpus + 1
+#                          @ myncpus = $myncpus * $this_ntasks_per_node
+#                       endif
+#                     endif
+#                     @ myncpus = $ipoe * $ENSGSI_NCPUS
+                      set mydist = (`atmens_ntasks.pl $ENSGSI_NCPUS $ipoe`)
+                      setenv JOBGEN_NCPUS $mydist[1]
+                      setenv JOBGEN_NCPUS_PER_NODE $mydist[2]
                       jobgen.pl \
                            -q $OBSVR_QNAME     \
                            obsvr_dst${npoe}    \

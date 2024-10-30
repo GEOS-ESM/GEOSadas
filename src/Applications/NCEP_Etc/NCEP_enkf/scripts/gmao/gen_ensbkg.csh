@@ -92,7 +92,7 @@ if ( !($?NCSUFFIX)  )  setenv NCSUFFIX nc4
 # ---------------------------------------------------------------
 if ( !($?ATMENS_DOSTATS) ) setenv ATMENS_DOSTATS    1
 
-setenv JOBGEN_NCPUS_PER_NODE 2
+setenv JOBGEN_NCPUS_PER_NODE -1
 if ( !($?ENSRECENTER_NCPUS) ) then
   setenv FAILED 1
 else

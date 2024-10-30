@@ -108,11 +108,11 @@ if ( !($?EXPID)       )  setenv FAILED   1
 if ( !($?NCSUFFIX)    )  setenv NCSUFFIX nc4
 
 if ( $ENSPARALLEL ) then
-   setenv JOBGEN_NCPUS_PER_NODE 2
    if ( !($?AENSTAT_NCPUS) ) then
      setenv FAILED 1
    else
      setenv JOBGEN_NCPUS $AENSTAT_NCPUS
+     setenv JOBGEN_NCPUS_PER_NODE -1
    endif
    if ( !($?GID)               )  setenv FAILED  1
    if ( !($?AENSTAT_QNAME)     )  setenv FAILED  1
