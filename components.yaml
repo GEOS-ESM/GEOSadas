@@ -41,7 +41,7 @@ GMAO_Shared:
 GMAOpyobs:
   local: ./src/Shared/@GMAO_Shared/@GMAO_pyobs
   remote: ../GMAOpyobs.git
-  tag: v1.0.6
+  branch: feature/mathomp4/allow-no-f2py-1.0.6
   develop: develop
 
 AeroML:
