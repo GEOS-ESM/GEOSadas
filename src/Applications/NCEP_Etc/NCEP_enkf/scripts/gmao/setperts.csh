@@ -74,7 +74,7 @@ if ( $#argv < 6 ) then
    echo " " 
    echo " AUTHOR"
    echo "   Amal El Akkraoui (Amal.ElAkkraoui@nasa.gov), NASA/GMAO "
-   echo "     Last modified: 08Apr2013      by: R. Todling"
+   echo "     Last modified: 30Oct2024      by: R. Todling"
    echo " \\end{verbatim} "
    echo " \\clearpage "
    exit(0)
