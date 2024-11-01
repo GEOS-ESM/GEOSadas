@@ -168,6 +168,7 @@ sub gen {
 #SBATCH --job-name=$jobname
 #SBATCH --output=batch_${jobname}.log
 #SBATCH --time=$pbs_wallclk
+#SBATCH --no-requeue
 #PBS -N $jobname
 #PBS -o $jobname.log
 #PBS -l walltime=$pbs_wallclk

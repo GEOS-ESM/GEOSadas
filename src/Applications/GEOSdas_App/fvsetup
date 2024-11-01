@@ -7802,17 +7802,7 @@ print SCRIPT <<"EOF";
 #SBATCH --job-name=$jobn
 #SBATCH --output=$jobn.log.o%j.txt
 #SBATCH --time=${daswallclk}:00
-#PBS -N $jobn
-#PBS -o $jobn.log.o%j.txt
-#PBS -l walltime=${daswallclk}:00
-##PBS -l mem=$mem
-#PBS -S /bin/csh
-#PBS -j eo
-#BSUB -J $jobn
-#BSUB -n $ncpus
-#BSUB -W $daswallclk
-#BSUB -o ${jobn}.log.o%J.txt
-#BSUB -e ${jobn}.log.o%J.txt
+#SBATCH --no-requeue
 }
 
 if ($dbqueue) {
@@ -8076,7 +8066,6 @@ print  SCRIPT <<"EOF";
 
   if (\$?I_MPI_ROOT) then
 #    The following as recommended by Scott and SI Team
-#    setenv I_MPI_USE_DYNAMIC_CONNECTIONS 0
      setenv I_MPI_SHM_HEAP_VSIZE   512
      setenv PSM2_MEMORY            large
      setenv I_MPI_ADJUST_GATHERV   3
@@ -8088,19 +8077,6 @@ print  SCRIPT <<"EOF";
        setenv I_MPI_FABRICS shm:ofi
        setenv I_MPI_OFI_PROVIDER psm3
      endif
-#    setenv ROMIO_FSTYPE_FORCE         "gpfs:"
-#    setenv I_MPI_FABRICS shm:ofi
-#    setenv I_MPI_FABRICS shm:dapl
-#    setenv I_MPI_FABRICS_LIST "dapl,ofa"
-#    setenv I_MPI_FALLBACK "enable"
-#    setenv I_MPI_MPD_RSH sshmpi
-#    setenv I_MPI_DAPL_CHECK_MAX_RDMA_SIZE 1
-#    setenv I_MPI_DAPL_UD_SEND_BUFFER_NUM 4096
-#    setenv I_MPI_DAPL_UD_RECV_BUFFER_NUM 4096
-#    setenv I_MPI_DAPL_UD_ACK_SEND_POOL_SIZE 4096
-#    setenv I_MPI_DAPL_UD_ACK_RECV_POOL_SIZE 4096
-#    setenv I_MPI_DAPL_UD_RNDV_EP_NUM 2
-#    setenv I_MPI_DAPL_UD_REQ_EVD_SIZE 2000
   endif
   if (\$?MPT_VERSION) then
      setenv DAPL_UCM_CQ_SIZE 4096
@@ -8996,17 +8972,7 @@ print  SCRIPT <<"EOF";
 #SBATCH --job-name=fcst
 #SBATCH --output=fcst.log.o%j.txt
 #SBATCH --time=${fcswallclk}:00
-#PBS -N fcst
-#PBS -o fcst.log.o%j.txt
-#PBS -l walltime=${fcswallclk}:00
-##PBS -l mem=$mem
-#PBS -S /bin/csh
-#PBS -j eo
-#BSUB -J forecasting
-#BSUB -n $ncpus
-#BSUB -W $fcswallclk
-#BSUB -o fcst.log.o%J.txt
-#BSUB -e fcst.log.o%J.txt
+#SBATCH --no-requeue
 EOF
 }
 
@@ -9174,29 +9140,6 @@ print  SCRIPT <<"EOF";
        setenv I_MPI_FABRICS shm:ofi
        setenv I_MPI_OFI_PROVIDER psm3
      endif
-#    setenv I_MPI_FABRICS shm:dapl
-#    setenv I_MPI_FABRICS_LIST "dapl,ofa"
-#    setenv I_MPI_FALLBACK "enable"
-#    setenv I_MPI_MPD_RSH sshmpi
-#    setenv I_MPI_DAPL_CHECK_MAX_RDMA_SIZE 1
-##   setenv I_MPI_DAPL_UD on
-#    setenv I_MPI_DAPL_UD_SEND_BUFFER_NUM 4096
-#    setenv I_MPI_DAPL_UD_RECV_BUFFER_NUM 4096
-#    setenv I_MPI_DAPL_UD_ACK_SEND_POOL_SIZE 4096
-#    setenv I_MPI_DAPL_UD_ACK_RECV_POOL_SIZE 4096
-#    setenv I_MPI_DAPL_UD_RNDV_EP_NUM 2
-#    setenv I_MPI_DAPL_UD_REQ_EVD_SIZE 2000
-#    setenv I_MPI_JOB_STARTUP_TIMEOUT 10000
-#    setenv I_MPI_RDMA_RNDV_WRITE 1
-#    The following as recommended by Scott and SI Team
-     setenv I_MPI_SHM_HEAP_VSIZE   512
-     setenv PSM2_MEMORY            large
-     setenv I_MPI_ADJUST_GATHERV   3
-     setenv I_MPI_ADJUST_ALLREDUCE 12
-     setenv I_MPI_EXTRA_FILESYSTEM 1
-     setenv I_MPI_EXTRA_FILESYSTEM_LIST gpfs
-     setenv I_MPI_DEBUG 6
-#    setenv ROMIO_FSTYPE_FORCE         "gpfs:"
   endif
   if (\$?MPT_VERSION) then
      setenv MPI_COLL_REPRODUCIBLE

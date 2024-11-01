@@ -5,6 +5,7 @@
 #SBATCH --ntasks=96
 #SBATCH --ntasks-per-node=>>>NCPUS_PER_NODE<<<
 #SBATCH --time=6:00:00
+#SBATCH --no-requeue 
 #
 #SBATCH --job-name=atm_ens
 #SBATCH --output=atm_ens.log.o%j

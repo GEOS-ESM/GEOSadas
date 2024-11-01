@@ -80,6 +80,8 @@ if ( $#argv < 5 ) then
    echo "    NCSUFFIX       - suffix of hdf/netcdf files (default: nc4)"
    echo "    PEGCM_ARRAY    - let slurm control distribution of jobs   "
    echo "    PEGCM_PACKL    - let arrays combined with packable jobs   "
+   echo "    PEGCM_ALLPARALLEL - parallelize all streams (a little aggressive)"
+   echo "                        (default: parallize by date/time)"
    echo " "
    echo " OPTIONAL RESOURCE FILES"
    echo " "
@@ -107,6 +109,7 @@ if ( !($?TIMEINC)       ) setenv FAILED 1
 
 if ( !($?NCSUFFIX)      ) setenv NCSUFFIX nc4
 
+if ( !($?PEGCM_ALLPARALLEL) ) setenv PEGCM_ALLPARALLEL  0
 if ( !($?PEGCM_ARRAY)    ) setenv PEGCM_ARRAY    0
 if ( !($?PEGCM_PACKL)    ) setenv PEGCM_PACKL    0
 if ( !($?PEGCM_QNAME)    ) setenv PEGCM_QNAME    NULL
@@ -117,6 +120,7 @@ setenv JOBGEN_NCPUS_PER_NODE -1
 
 if ( $PEGCM_QNAME == "NULL" || $PEGCM_WALLCLOCK == "NULL" ) then
    setenv PEGCM_SERIAL 1
+   setenv PEGCM_ALLPARALLEL 0  # override user specs
 else
    if ( !($?AENSTAT_NCPUS)   ) then
       echo "${MYNAME}: must define AENSTAT_NCPUS"
@@ -181,7 +185,7 @@ touch .no_archiving
 
 # Calculate mean/rms of newly generated ensemble
 # ----------------------------------------------
-if (! -e $ENSWORK/.DONE_redone_allbkgstat_$MYNAME.$yyyymmddhhmn ) then
+if (! -e $ENSWORK/.DONE_redone_allstat_$MYNAME.$yyyymmddhhmn ) then
 
   cd $ENSWORK
 
@@ -211,10 +215,12 @@ if (! -e $ENSWORK/.DONE_redone_allbkgstat_$MYNAME.$yyyymmddhhmn ) then
   @ anafreq_sec = $TIMEINC   * 60
   @ toffset_sec = $toffset   * 60
   @ nt = $anafreq_sec / $bkgfreq_sec + 1
+  @ ntotal = $nt * $ntyps
   set adate = ( `tick $nymdb $nhmsb $toffset_sec` )
   @ n = 0
   while ( $n < $nt )
      @ n++
+     set nnn = `echo $n | awk '{printf "%03d", $1}'`
      set this_nymd = $adate[1]
      set this_nhms = $adate[2]
      set this_hhmn = `echo $this_nhms | cut -c1-4`
@@ -223,7 +229,7 @@ if (! -e $ENSWORK/.DONE_redone_allbkgstat_$MYNAME.$yyyymmddhhmn ) then
      set this_hh   = `echo $this_nhms | cut -c1-2`
      set this_hhzddmm = ${this_hh}Z${this_dd}${this_mm}
      set this_yyyymmddhhmn = ${this_nymd}${this_hhmn}
-     if (! -e $ENSWORK/.DONE_redone_bkgstat_$MYNAME.$this_yyyymmddhhmn ) then
+     if (! -e $ENSWORK/.DONE_redone_stat_$MYNAME.$this_yyyymmddhhmn ) then
        @ m = 0
        foreach outkind ( $alltyps )
           @ m++
@@ -240,80 +246,142 @@ if (! -e $ENSWORK/.DONE_redone_allbkgstat_$MYNAME.$yyyymmddhhmn ) then
 
           else # submit stat calls as independent jobs
 
+             if ( $PEGCM_ALLPARALLEL ) then
+                set idx = $nnn
+             else
+                set idx = $mmm
+             endif
              setenv JOBGEN_NCPUS $AENSTAT_NCPUS
              jobgen.pl \
                  -q $PEGCM_QNAME       \
-                 pegcm_${mmm}_${this_hhzddmm} \
+                 pegcm_${idx}.${this_hhzddmm} \
                  $GID                  \
                  $PEGCM_WALLCLOCK      \
                  "atmens_stats.csh $nmem $outkind $ENSWORK $this_nymd $this_nhms |& tee -a $ENSWORK/pegcm_${outkind}.$this_yyyymmddhhmn.log"\
                  $ENSWORK              \
                  $MYNAME               \
-                 $ENSWORK/.DONE_MEM${mmm}_${MYNAME}.$yyyymmddhhmn \
+                 $ENSWORK/.DONE_MEM${idx}_${MYNAME}.$this_yyyymmddhhmn \
                  "PEGCM Failed"
 
-                 if ( ! $PEGCM_ARRAY ) then
-                    if ( -e pegcm_${mmm}_${this_hhzddmm}.j ) then
-                       $ATMENS_BATCHSUB pegcm_${mmm}_${this_hhzddmm}.j
+                 if ( -e pegcm_${idx}.${this_hhzddmm}.j ) then
+                    chmod +x pegcm_${idx}.${this_hhzddmm}.j
+                    if ( ! $PEGCM_ARRAY ) then
+                       $ATMENS_BATCHSUB pegcm_${idx}.${this_hhzddmm}.j
                        touch .SUBMITTED
-                    else
-                       echo " ${MYNAME}: PostEGCM Failed to generate job for ${mmm}_${this_hhzddmm}, Aborting ... "
-                       touch $ENSWORK/.FAILED
-                       exit(1)
                     endif
+                 else
+                    echo " ${MYNAME}: PostEGCM Failed to generate job for ${mmm}_${this_hhzddmm}, Aborting ... "
+                    touch $ENSWORK/.FAILED
+                    exit(1)
                  endif
 
           endif # parallel jobs
 
        end # <outkind>
+       touch $ENSWORK/.DONE_redone_stat_$MYNAME.$this_yyyymmddhhmn
 
-       if ( $PEGCM_ARRAY ) then
-          # Note: the parameter called "mem" in the job-name line below is
-          #       is a parameter if jobgen.pl - not of the present program;
-          #       the name of the var in jobgen is "mem", and is properly
-          #       set internally in jobgen.
-          jobgen.pl \
-               -q $PEGCM_QNAME  $packable \
-               ${pfxname}pegcm_array.$this_hhzddmm \
-               $GID                    \
-               -array "1-${mmm}" -ncc  \
-               $RECENTER_WALLCLOCK     \
-               pegcm_\${mem}_${this_hhzddmm}.j \
-               $ENSWORK                \
-               $MYNAME                 \
-               $ENSWORK/.DONE_ARRAY_${MYNAME}.$hhzddmmyyyy \
-                "Recenter PEGCM Array Job Failed"
+        # In case of parallel jobs ...
+        # ----------------------------
+        if( ! $PEGCM_SERIAL ) then
+           if ( ! $PEGCM_ALLPARALLEL ) then
 
-          if ( -e $ensloc/${pfxname}pegcm_array.$this_hhzddmm.j ) then
-             $ATMENS_BATCHSUB $ensloc/${pfxname}pegcm_array.$this_hhzddmm.j
-          else
-             echo " ${MYNAME}: Failed to generate array batch jobs for Recentering ANA, Aborting ... "
-             touch $ensloc/.FAILED
-             exit(1)
-          endif
-       endif # <ARRAY>
-   
-       # In case of doing separated jobs, monitor their completion
-       # ---------------------------------------------------------
-       if( ! $PEGCM_SERIAL ) then
-          jobmonitor.csh $mmm $MYNAME $ENSWORK $yyyymmddhhmn
-          if ($status) then
-              echo "${MYNAME}: cannot complete due to failed jobmonitor, aborting"
-              exit(1)
-          endif
-          # clean up
-          # --------
-          /bin/rm pegcm_*.j pegcm_*.j.*
-          /bin/rm pegcm_*.log
-       endif
-       touch $ENSWORK/.DONE_redone_allbkgstat_$MYNAME.$yyyymmddhhmn
+             # If slurm arrays, launch before monitoring ...
+             # ---------------------------------------------
+             if ( $PEGCM_ARRAY ) then
+                # Note: the parameter called "memtag" in the job-name line below is
+                #       is a parameter if jobgen.pl - not of the present program;
+                #       the name of the var in jobgen is "memtag", and is properly
+                #       set internally in jobgen.
+                jobgen.pl \
+                     -q $PEGCM_QNAME  $packable \
+                     ${pfxname}pegcm_array.$this_hhzddmm \
+                     $GID                      \
+                     -array "1-${ntyps}" -ncc  \
+                     $PEGCM_WALLCLOCK          \
+                     pegcm_\${memtag}.${this_hhzddmm}.j \
+                     $ENSWORK                  \
+                     $MYNAME                   \
+                     $ENSWORK/.DONE_ARRAY_${MYNAME}_\${memtag}.$this_yyyymmddhhmn \
+                      "PEGCM Array Job Failed"
+
+                if ( -e $ensloc/${pfxname}pegcm_array.$this_hhzddmm.j ) then
+                   $ATMENS_BATCHSUB $ensloc/${pfxname}pegcm_array.$this_hhzddmm.j
+                else
+                   echo " ${MYNAME}: Failed to generate array batch PEGCM jobs, Aborting ... "
+                   touch $ensloc/.FAILED
+                   exit(1)
+                endif
+             endif # <ARRAY>
+
+             # Monitor batch jobs
+             # ------------------
+             jobmonitor.csh $ntyps ${MYNAME} $ENSWORK $this_yyyymmddhhmn
+             if ($status) then
+                 echo "${MYNAME}: cannot complete due to failed jobmonitor, aborting"
+                 exit(1)
+             endif
+             # clean up
+             # --------
+#            /bin/rm $ENSWORK/pegcm_*.j
+             /bin/rm $ENSWORK/pegcm_*.j.*
+             /bin/rm $ENSWORK/*pegcm_*.log
+
+           endif # <.not.PEGCM_ALLPARALLEL>
+
+        endif # <.not.SERIAL>
 
      endif # <given-date>
+     touch $ENSWORK/.DONE_redone_allstat_$MYNAME.$yyyymmddhhmn
 
      # Increment date/time
      # -------------------
      set adate = (`tick $this_nymd $this_nhms $bkgfreq_sec`)
-  end
+  end # <date/time>
+
+  # In case of doing separated jobs, monitor their completion
+  # ---------------------------------------------------------
+  if( $PEGCM_ALLPARALLEL ) then
+
+     # If slurm arrays, launch before monitoring ...
+     # ---------------------------------------------
+     if ( $PEGCM_ARRAY ) then
+        # Note: the parameter called "memtag" in the job-name line below is
+        #       is a parameter if jobgen.pl - not of the present program;
+        #       the name of the var in jobgen is "memtag", and is properly
+        #       set internally in jobgen.
+        jobgen.pl \
+             -q $PEGCM_QNAME  $packable \
+             ${pfxname}pegcm_array.$this_hhzddmm \
+             $GID                      \
+             -array "1-${ntotal}" -ncc \
+             $PEGCM_WALLCLOCK          \
+             pegcm_\${memtag}.${this_hhzddmm}.j \
+             $ENSWORK                  \
+             $MYNAME                   \
+             $ENSWORK/.DONE_ARRAY_${MYNAME}_\${memtag}.$this_yyyymmddhhmn \
+              "PEGCM Array Job Failed"
+
+        if ( -e $ensloc/${pfxname}pegcm_array.$this_hhzddmm.j ) then
+           $ATMENS_BATCHSUB $ensloc/${pfxname}pegcm_array.$this_hhzddmm.j
+        else
+           echo " ${MYNAME}: Failed to generate array batch PEGCM jobs, Aborting ... "
+           touch $ensloc/.FAILED
+           exit(1)
+        endif
+     endif # <ARRAY>
+
+     # Monitor batch jobs
+     # ------------------
+     jobmonitor.csh $ntotal ${MYNAME} $ENSWORK $this_yyyymmddhhmn
+     if ($status) then
+         echo "${MYNAME}: cannot complete due to failed jobmonitor, aborting"
+         exit(1)
+     endif
+     # clean up
+     # --------
+     /bin/rm $ENSWORK/pegcm_*.j $ENSWORK/pegcm_*.j.*
+     /bin/rm $ENSWORK/*pegcm_*.log
+  endif
 
 endif
 

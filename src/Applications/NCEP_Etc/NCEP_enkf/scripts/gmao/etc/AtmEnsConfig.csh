@@ -154,6 +154,8 @@ setenv AENSTAT_QNAME $ATMENS_QNAME
 
 # post-egcm calculations
 # ----------------------
+setenv PEGCM_ALLPARALLEL 0
+setenv PEGCM_ARRAY 0
 setenv PEGCM_WALLCLOCK 1:00:00
 setenv PEGCM_QNAME $ATMENS_QNAME
 
