@@ -91,7 +91,7 @@ if ( $#argv < 5 ) then
    echo " " 
    echo " AUTHOR"
    echo "   Ricardo Todling (Ricardo.Todling@nasa.gov), NASA/GMAO "
-   echo "     Last modified: 02May2020      by: R. Todling"
+   echo "     Last modified: 01Nov2024      by: R. Todling"
    echo " \\end{verbatim} "
    echo " \\clearpage "
    exit(0)
