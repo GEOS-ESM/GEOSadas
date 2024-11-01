@@ -217,10 +217,9 @@ if (! -e $ENSWORK/.DONE_redone_allstat_$MYNAME.$yyyymmddhhmn ) then
   @ nt = $anafreq_sec / $bkgfreq_sec + 1
   @ ntotal = $nt * $ntyps
   set adate = ( `tick $nymdb $nhmsb $toffset_sec` )
-  @ n = 0
+  @ n = 0; @ idx = 0
   while ( $n < $nt )
      @ n++
-     set nnn = `echo $n | awk '{printf "%03d", $1}'`
      set this_nymd = $adate[1]
      set this_nhms = $adate[2]
      set this_hhmn = `echo $this_nhms | cut -c1-4`
@@ -247,26 +246,31 @@ if (! -e $ENSWORK/.DONE_redone_allstat_$MYNAME.$yyyymmddhhmn ) then
           else # submit stat calls as independent jobs
 
              if ( $PEGCM_ALLPARALLEL ) then
-                set idx = $nnn
+                @   idx  = $idx + 1
+                set idx = `echo $idx | awk '{printf "%03d", $1}'`
+                set tagA = $yyyymmddhhmn
+                set tagB = $yyyymmddhhmn
              else
-                set idx = $mmm
+                set idx  = $mmm
+                set tagA = $this_hhzddmm
+                set tagB = $this_yyyymmddhhmn
              endif
              setenv JOBGEN_NCPUS $AENSTAT_NCPUS
              jobgen.pl \
                  -q $PEGCM_QNAME       \
-                 pegcm_${idx}.${this_hhzddmm} \
+                 pegcm_${idx}.${tagA} \
                  $GID                  \
                  $PEGCM_WALLCLOCK      \
                  "atmens_stats.csh $nmem $outkind $ENSWORK $this_nymd $this_nhms |& tee -a $ENSWORK/pegcm_${outkind}.$this_yyyymmddhhmn.log"\
                  $ENSWORK              \
                  $MYNAME               \
-                 $ENSWORK/.DONE_MEM${idx}_${MYNAME}.$this_yyyymmddhhmn \
+                 $ENSWORK/.DONE_MEM${idx}_${MYNAME}.$tagB \
                  "PEGCM Failed"
 
-                 if ( -e pegcm_${idx}.${this_hhzddmm}.j ) then
-                    chmod +x pegcm_${idx}.${this_hhzddmm}.j
+                 if ( -e pegcm_${idx}.${tagA}.j ) then
+                    chmod +x pegcm_${idx}.${tagA}.j
                     if ( ! $PEGCM_ARRAY ) then
-                       $ATMENS_BATCHSUB pegcm_${idx}.${this_hhzddmm}.j
+                       $ATMENS_BATCHSUB pegcm_${idx}.${tagA}.j
                        touch .SUBMITTED
                     endif
                  else
@@ -320,14 +324,14 @@ if (! -e $ENSWORK/.DONE_redone_allstat_$MYNAME.$yyyymmddhhmn ) then
                  echo "${MYNAME}: cannot complete due to failed jobmonitor, aborting"
                  exit(1)
              endif
+
              # clean up
              # --------
-#            /bin/rm $ENSWORK/pegcm_*.j
+             /bin/rm $ENSWORK/pegcm_*.j
              /bin/rm $ENSWORK/pegcm_*.j.*
              /bin/rm $ENSWORK/*pegcm_*.log
 
            endif # <.not.PEGCM_ALLPARALLEL>
-
         endif # <.not.SERIAL>
 
      endif # <given-date>
@@ -351,18 +355,18 @@ if (! -e $ENSWORK/.DONE_redone_allstat_$MYNAME.$yyyymmddhhmn ) then
         #       set internally in jobgen.
         jobgen.pl \
              -q $PEGCM_QNAME  $packable \
-             ${pfxname}pegcm_array.$this_hhzddmm \
+             ${pfxname}pegcm_array.$yyyymmddhhmn \
              $GID                      \
              -array "1-${ntotal}" -ncc \
              $PEGCM_WALLCLOCK          \
-             pegcm_\${memtag}.${this_hhzddmm}.j \
+             pegcm_\${memtag}.${yyyymmddhhmn}.j \
              $ENSWORK                  \
              $MYNAME                   \
-             $ENSWORK/.DONE_ARRAY_${MYNAME}_\${memtag}.$this_yyyymmddhhmn \
+             $ENSWORK/.DONE_ARRAY_${MYNAME}_\${memtag}.$yyyymmddhhmn \
               "PEGCM Array Job Failed"
 
-        if ( -e $ensloc/${pfxname}pegcm_array.$this_hhzddmm.j ) then
-           $ATMENS_BATCHSUB $ensloc/${pfxname}pegcm_array.$this_hhzddmm.j
+        if ( -e $ensloc/${pfxname}pegcm_array.$yyyymmddhhmn.j ) then
+           $ATMENS_BATCHSUB $ensloc/${pfxname}pegcm_array.$yyyymmddhhmn.j
         else
            echo " ${MYNAME}: Failed to generate array batch PEGCM jobs, Aborting ... "
            touch $ensloc/.FAILED
@@ -372,16 +376,18 @@ if (! -e $ENSWORK/.DONE_redone_allstat_$MYNAME.$yyyymmddhhmn ) then
 
      # Monitor batch jobs
      # ------------------
-     jobmonitor.csh $ntotal ${MYNAME} $ENSWORK $this_yyyymmddhhmn
+     jobmonitor.csh $ntotal ${MYNAME} $ENSWORK $yyyymmddhhmn
      if ($status) then
          echo "${MYNAME}: cannot complete due to failed jobmonitor, aborting"
          exit(1)
      endif
+
      # clean up
      # --------
-     /bin/rm $ENSWORK/pegcm_*.j $ENSWORK/pegcm_*.j.*
+     /bin/rm $ENSWORK/pegcm_*.j
+     /bin/rm $ENSWORK/pegcm_*.j.*
      /bin/rm $ENSWORK/*pegcm_*.log
-  endif
+  endif # <PEGCM_ALLPARALLEL>
 
 endif
 
