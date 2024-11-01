@@ -15,6 +15,7 @@
 #  25Mar2013  Todling   Allow mp_stats to run under mpi
 #  21Feb2020  Todling   Allow for high freq bkg (up to 1mn)
 #  02May2020  Todling   Allow for user-spec freq of bkg stat calc
+#  01Nov2024  Todling   Design fix: hidden files belong to parent dir
 #------------------------------------------------------------------
 
 if ( !($?ATMENS_VERBOSE) ) then
@@ -193,21 +194,22 @@ if( ($?ATMENSETC) ) then
      if(! -d ensrms  ) mkdir -p $ensloc/ensrms
      cd mem001
      set alltype = `ls *.${ftype}.*${timetagz}.$NCSUFFIX`
+     cd -
      foreach fn ( $alltype )
         set my_date = `echo $fn | cut -d. -f4 | cut -c1-8`
         set my_hhmn = `echo $fn | cut -d. -f4 | cut -c10-13`
-        set mopt = "-o   ../ensmean/$fn"
-        set sopt = "-stdv ../ensrms/$fn"
+        set mopt = "-o   ensmean/$fn"
+        set sopt = "-stdv ensrms/$fn"
         set eopt = ""
         if ("$ftype" == "bkg.eta" || "$ftype" == "ana.eta" || "$ftype" == "prog.eta" ) then
             if("$ftype" == "bkg.eta" ) set etype = "bene.err"
             if("$ftype" == "ana.eta" ) set etype = "aene.err"
             if("$ftype" == "prog.eta") set etype = "pene.err"
-            set eopt = "-ene ../ensrms/$EXPID.${etype}.${my_date}_${my_hhmn}z.$NCSUFFIX"
+            set eopt = "-ene ensrms/$EXPID.${etype}.${my_date}_${my_hhmn}z.$NCSUFFIX"
         endif
         if(! -e .MP_STATS_EGRESS_${ftype}_${my_date}${my_hhmn} ) then
            $dry_run $AENSTAT_MPIRUN -rc $ATMENSETC/mp_stats.rc $mopt $sopt $eopt -inc ${bkgfreq_hhmn}00 \
-                                    -egress .MP_STATS_EGRESS_${ftype}_${my_date}${my_hhmn} ../mem*/$fn
+                                    -egress .MP_STATS_EGRESS_${ftype}_${my_date}${my_hhmn} mem*/$fn
         endif
      end
      # make sure all is successfully done
@@ -235,17 +237,17 @@ if ( $ATMENS_DOMEAN ) then
      if(! -d ens$this ) mkdir -p $ensloc/ens$this
      cd mem001
      set alltype = `ls *.${ftype}.*${timetagz}.$NCSUFFIX`
+     cd -
      foreach fn ( $alltype )
         set my_date = `echo $fn | cut -d. -f4 | cut -c1-8`
         set my_hhmn = `echo $fn | cut -d. -f4 | cut -c10-13`
         if ( "$this" == "mean" && $FAKEMEAN ) then 
-           $dry_run /bin/cp $fn ../ens$this/$fn
+           $dry_run /bin/cp $fn ens$this/$fn
         else
-           $dry_run GFIO_mean_r4.x -o ../ens$this/$fn $opt -date $my_date -time ${my_hhmn}00 -inc ${bkgfreq_hhmn}00 ../mem*/$fn &
+           $dry_run GFIO_mean_r4.x -o ens$this/$fn $opt -date $my_date -time ${my_hhmn}00 -inc ${bkgfreq_hhmn}00 mem*/$fn &
         endif
      end
      wait
-     cd ../
   end
 endif # <ATMENS_DOMEAN>
 
