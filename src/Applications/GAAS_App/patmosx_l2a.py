@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -W ignore::DeprecationWarning
 
 """
@@ -37,13 +37,13 @@ def makethis_dir(filename):
     if path != '':
         rc = os.system('mkdir -p '+path)
         if rc:
-            raise IOError, "could not create directory "+path
+            raise IOError("could not create directory "+path)
 
 def patmosx_has_obs(fname):
     """
     Returns true if PATMOSX reflectance file has something in it.
     """
-    return 'latitude' in load(fname,allow_pickle=True).keys()
+    return 'latitude' in list(load(fname).keys())
 
 #---------------------------------------------------------------------
 
@@ -149,10 +149,10 @@ if __name__ == "__main__":
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
         
     if options.verbose:
-        print ""
-        print "                          AVHRR NNR Retrievals"
-        print "                          --------------------"
-        print ""
+        print("")
+        print("                          AVHRR NNR Retrievals")
+        print("                          --------------------")
+        print("")
         t0 = clock()
 
 #   Time variables
@@ -177,13 +177,13 @@ if __name__ == "__main__":
                         replace('%lev','2').replace('%ext','ods')
     ods_file = strTemplate(ods_tmpl,expid=options.expid,nymd=nymd,nhms=nhms)
     if os.path.exists(ods_file) and (options.force is not True):
-        print "avhrr_l3a: Output ODS file <%s> exists --- cannot proceed."%ods_file
-        raise IOError, "Specify --force to overwrite existing output file."
+        print("avhrr_l3a: Output ODS file <%s> exists --- cannot proceed."%ods_file)
+        raise IOError("Specify --force to overwrite existing output file.")
 
 #   Produce Level 2 AVHRR Aerosol Retrievals
 #   ----------------------------------------
     if options.verbose:
-        print "Retrieving AVHRR AOD from %s (%sing) on "%(prod,orb),syn_tyme
+        print("Retrieving AVHRR AOD from %s (%sing) on "%(prod,orb),syn_tyme)
 
     t = syn_tyme
     patmosx = options.l2_path+'/Y%d/M%02d/D%02d/%s.%s.%d%02d%02d_%02dz.npz'%\
@@ -202,12 +202,12 @@ if __name__ == "__main__":
         
     if a.nobs < 1:
         if options.verbose:
-            print 'WARNING: no observation for this time in file <%s>'%ods_file
+            print('WARNING: no observation for this time in file <%s>'%ods_file)
     
     # elif any(a.iValid) == False:
     elif len(a.tyme[a.iValid]) < 2:
         if options.verbose:
-            print 'WARNING: not enough GOOD observation for this time in file <%s>'%ods_file
+            print('WARNING: not enough GOOD observation for this time in file <%s>'%ods_file)
         a.nobs = 0
 
     else:
@@ -234,7 +234,7 @@ if __name__ == "__main__":
             warnings.warn('cannot create empty output file <%s>'%ods_file)
         else:
             if options.verbose:
-                print "[w] Wrote empty ODS file "+ods_file
+                print("[w] Wrote empty ODS file "+ods_file)
 
 #   Write gridded output file
 #   -------------------------

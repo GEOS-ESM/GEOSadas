@@ -5,6 +5,7 @@
 #SBATCH --ntasks=96
 #SBATCH --ntasks-per-node=>>>NCPUS_PER_NODE<<<
 #SBATCH --time=6:00:00
+#SBATCH --no-requeue 
 #
 #SBATCH --job-name=atm_ens
 #SBATCH --output=atm_ens.log.o%j
@@ -66,7 +67,11 @@
       if( `uname -m` != "ia64" ) then
          setenv FORT90L -Wl,-T
       endif
+# NOTE: if user has access to TSE:
+#       (i) comment out line below
+#       (ii) uncomment and adjust following line
       setenv FVWORK $FVHOME/../enswork.$BIGNAME
+#     setenv FVWORK /discover/nobackup/projects/gmao/dadev/TSE_staging/$user/enswork.$BIGNAME
       if ($?kidwork) then  # this case, overwrite FVWORK with user-specific
          setenv FVWORK $FVHOME/../$kidwork
       endif
@@ -144,7 +149,7 @@
   setenv NCSUFFIX nc4
   setenv NCEPINPUT $FVBCS
   setenv VAROFFSET 180    # abs value of time off from 1st synoptic hour of var window
-  setenv SPECRES    62    # should be able to revisit analyzer to avoid needing this
+  setenv SPECRES   254    # should be able to revisit analyzer to avoid needing this
 
   setenv GAAS_ANA 1
   setenv LDAS_ANA >>>LDAS_ANA<<<

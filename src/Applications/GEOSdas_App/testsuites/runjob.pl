@@ -461,13 +461,13 @@ sub envsubst {
 
         # substitute for format $variable
         #--------------------------------
-        if ($string =~ m/(\$$var)/) {
+        if ($string =~ m/(\$[$var])/) {
             $string =~ s/\$$var/$ENV{$var}/g if $ENV{$var};
         }
 
         # substitute for format ${variable}
         #----------------------------------
-        if ($string =~ m/(\${$var})/) {
+        if ($string =~ m/(\$[$var])/) {
             $string =~ s/\${$var}/$ENV{$var}/g if $ENV{$var};
         }
     }
