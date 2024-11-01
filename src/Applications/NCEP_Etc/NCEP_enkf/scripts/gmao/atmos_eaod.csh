@@ -99,7 +99,7 @@ if ( $#argv < 4 ) then
    echo " "
    echo " AUTHOR"
    echo "   Ricardo Todling (Ricardo.Todling@nasa.gov), NASA/GMAO "
-   echo "     Last modified: 26Mar2017      by: R. Todling"
+   echo "     Last modified: 29Oct2024      by: R. Todling"
    echo " \\end{verbatim} "
    echo " \\clearpage "
    exit(0)
@@ -122,7 +122,6 @@ if ( !($?NCSUFFIX)        ) setenv NCSUFFIX nc4
 
 if ( !($?ENSPARALLEL)      ) setenv ENSPARALLEL 0
 if ( !($?ATMENS_DEBUG)     ) setenv ATMENS_DEBUG 0
-if ( !($?ATMENKFAERO_MPIPROCS) ) setenv ATMENKFAERO_MPIPROCS 0
 if ( !($?ATMENKFAERO_WALLCLOCK)) setenv ATMENKFAERO_WALLCLOCK 1:00:00
 if ( !($?ATMENKFAERO_QNAME)    ) setenv ATMENKFAERO_QNAME NULL
 
@@ -596,14 +595,9 @@ if ( $AENS_GAAS_OPT > 1 ) then
                echo "${MYNAME}: running EnKF-aero analysis at ${eyyyymmddhh} ..."
                if( $ENSPARALLEL ) then
    
-                  if ( $ATMENKFAERO_MPIPROCS ) then
-                     set mpiprocs = "-mpiprocs $ATMENKFAERO_MPIPROCS"
-                  else
-                     set mpiprocs = ""
-                  endif
                   jobgen.pl \
                        -egress aenkfaero${xtag}.$eyyyymmddhh.log    \
-                       -q $ATMENKFAERO_QNAME $mpiprocs  \
+                       -q $ATMENKFAERO_QNAME \
                        aenkfaero${xtag}    \
                        $GID                \
                        $ATMENKFAERO_WALLCLOCK  \

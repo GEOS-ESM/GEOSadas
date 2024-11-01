@@ -85,7 +85,7 @@ if ( $#argv < 3 ) then
    echo " "
    echo " AUTHOR"
    echo "   Ricardo Todling (Ricardo.Todling@nasa.gov), NASA/GMAO "
-   echo "     Last modified: 03Mar2017      by: R. Todling"
+   echo "     Last modified: 29Oct2024      by: R. Todling"
    echo " \\end{verbatim} "
    echo " \\clearpage "
    exit(0)
@@ -102,7 +102,6 @@ if ( !($?MPIRUN_ATMENKF) ) setenv FAILED 1
 if ( !($?NCSUFFIX)         ) setenv NCSUFFIX nc4
 if ( !($?ENSPARALLEL)      ) setenv ENSPARALLEL 0 
 if ( !($?ATMENS_DEBUG)     ) setenv ATMENS_DEBUG 0
-if ( !($?ATMENKF_MPIPROCS) ) setenv ATMENKF_MPIPROCS 0
 if ( !($?ATMENKF_WALLCLOCK)) setenv ATMENKF_WALLCLOCK 1:00:00 
 if ( !($?ATMENKF_QNAME)    ) setenv ATMENKF_QNAME NULL
 
@@ -230,14 +229,9 @@ else
   # ------------
    if( $ENSPARALLEL ) then
 
-        if ( $ATMENKF_MPIPROCS ) then
-           set mpiprocs = "-mpiprocs $ATMENKF_MPIPROCS"
-        else
-           set mpiprocs = ""
-        endif
         jobgen.pl \
              -egress enkf.log    \
-             -q $ATMENKF_QNAME $mpiprocs  \
+             -q $ATMENKF_QNAME   \
              aenkf               \
              $GID                \
              $ATMENKF_WALLCLOCK  \
