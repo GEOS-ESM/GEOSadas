@@ -46,8 +46,6 @@ set (R21C_files
    R21C/obs1gsi_member.rc
    R21C/HISTAENS.rc.tmpl
    R21C/post_egcm.rc
-   R21C/mp_stats_NZ.rc
-   R21C/mp_stats_NP.rc
    R21C/CAP.rc.tmpl
    R21C/atmens_storage.arc
    R21C/AtmEnsConfig.csh

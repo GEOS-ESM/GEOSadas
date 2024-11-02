@@ -175,8 +175,16 @@ endif
 
 # Inquire from HISTORY
 # --------------------
-set ttemplate = `echorc.x -rc $ATMENSETC/HISTAENS.rc.tmpl -template dummy $nymd ${hh}0000 $ftype.template`
-set timetagz  = `echo $ttemplate | cut -d. -f1`
+set timetagz  = ${nymd}_${hhmm}z
+if ( $ftype != "ana.eta" && $ftype != "inc.eta" ) then # these types are not in HISTORY
+   set hist = (`ls $ATMENSETC/HIST*.rc.tmpl`)
+   if ( $#hist != 1 ) then
+      echo " ${MYNAME}: should only find single HIST*rc.tmpl in $ATMENSETC, Aborting ..."
+      exit 1
+   endif
+   set ttemplate = `echorc.x -rc $hist[1] -template dummy $nymd ${hh}0000 $ftype.template`
+   set timetagz  = `echo $ttemplate | cut -d. -f1`
+endif
 
 ###set lmtype = `echorc.x -rc HISTAENS.rc.tmpl $ftype`
 set lmtype = `echo $ftype | cut -d_ -f6`
