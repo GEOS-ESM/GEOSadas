@@ -34,7 +34,10 @@
    Program mkIAU
 
    use ESMF
+   use ESMF_CFIOFileMod
+   use ESMF_CFIOUtilMod
    use MAPL
+   use MAPL_CubedSphereGridFactoryMod 
    use CubeToLatLonRegridderMod
    use CubeToCubeRegridderMod
    use LatLonToCubeRegridderMod
@@ -75,12 +78,8 @@
    type(ESMF_Clock)    :: CLOCK
    type(MAPL_MetaComp), pointer :: MAPLOBJ
 
-   type (CubedSphereGridFactory) :: factory
    type (CubedSphereGridFactory) :: cs_factory
    type (LatlonGridFactory) :: ll_factory
-   !type (CubeToCubeRegridder)   :: cube_to_cube_prototype
-   !type (CubeToLatLonRegridder) :: cube_to_latlon_prototype
-   !type (LatLonToCubeRegridder) :: latlon_to_cube_prototype
 
 !  Basic information about the parallel environment
 !         PET = Persistent Execution Threads
@@ -105,8 +104,9 @@
    integer, parameter :: r_quad  = selected_real_kind(20)
    integer :: comm
    logical :: SDFoutput,OIFoutput
-   logical :: sameres,cubed
+   logical :: sameres,cubediau,cubedbkg
    real    :: sclinc
+   logical :: summarize
 !
    real*8, pointer :: ak(:), bk(:)
    real,   pointer :: levels(:)=>NULL()
@@ -150,6 +150,7 @@
    class (BaseProfiler), pointer :: t_p
    type(ESMF_GridComp) :: temp_gc
    type(ESMF_Config) :: temp_config
+   type(ServerManager) :: io_server
     
     call Main()
 
@@ -157,7 +158,7 @@ CONTAINS
 
     subroutine Main()
 
-    character(len=30) ABKGGRIDNAME
+    character(len=80) ABKGGRIDNAME
 
 !   Initialize the ESMF. For performance reasons, it is important
 !    to turn OFF ESMF''s automatic logging feature
@@ -170,6 +171,7 @@ CONTAINS
     !mapl_comm%esmf%comm=comm
     call MAPL_Initialize(rc=status)
     VERIFY_(status)
+    call io_server%initialize(comm)
     t_p => get_global_time_profiler()
     call t_p%start("mkiau.x")
 
@@ -196,32 +198,25 @@ CONTAINS
 
 !   If bkg grid is cubed or desired iau output is cubed ...
 !   -------------------------------------------------------
-    if(trim(dyntyp)=='FV3' .or. JM_BKG==6*IM_BKG) cubed=.true.
+    if(JM_BKG==6*IM_BKG) cubedbkg=.true.
 
 !   Create a regular Lat/Lon grid over which BKG/ANA defined
 !   --------------------------------------------------------
-    if(cubed) then
-      !call grid_manager%add_prototype('Cubed-Sphere',factory)
-    endif
-    if (JM_BKG==6*IM_BKG) then
-       !call new_regridder_manager%add_prototype('Cubed-Sphere', 'Cubed-Sphere', REGRID_METHOD_BILINEAR, cube_to_cube_prototype)
+    call MAPL_DefGridName (IM_BKG,JM_BKG,ABKGGRIDNAME,MAPL_am_I_root())
+    if(cubedbkg) then
        if ( MAPL_am_I_root() ) then
           print *
-          print *, 'Background on the cubed grid '
+          print *, 'Background on the cubed grid ', trim(ABKGGRIDNAME)
           print *
        endif
-       !cs_factory = CubedSphereGridFactory(im_world=IM_BKG,lm=LM_BKG,nx=nx,ny=ny/6,__RC__)
        cs_factory = CubedSphereGridFactory(im_world=IM_BKG,lm=LM_BKG,nx=nx_cube,ny=ny_cube,__RC__)
        BKGGrid = grid_manager%make_grid(cs_factory,__RC__)
     else
-       !call new_regridder_manager%add_prototype('Cubed-Sphere', 'LatLon', REGRID_METHOD_BILINEAR, cube_to_latlon_prototype)
-       !call new_regridder_manager%add_prototype('LatLon', 'Cubed-Sphere', REGRID_METHOD_BILINEAR, latlon_to_cube_prototype)
        if ( MAPL_am_I_root() ) then
           print *
-          print *, 'Background on the lat-lon grid '
+          print *, 'Background on the lat-lon grid ', trim(ABKGGRIDNAME)
           print *
        endif
-       call MAPL_DefGridName (IM_BKG,JM_BKG,ABKGGRIDNAME,MAPL_am_I_root())
        ll_factory = LatLonGridFactory(grid_name=trim(ABKGGRIDNAME), &
                         Nx = Nx, Ny = Ny,   &
                         IM_World = IM_BKG,  &
@@ -237,18 +232,10 @@ CONTAINS
 
 !   Create either a regular Lat/Lon grid or cubed grid over which IAU defined
 !   -------------------------------------------------------------------------
-    if (cubed) then
-       ! check for pert-get-weights
-       !if (Ny/=6*Nx) then
-          !if ( MAPL_am_I_root() ) then
-             !print *, 'Error: expecting Ny=6*Nx, since this uses old get-weights'
-             !print *, 'Error: aborting ...'
-          !end if
-          !ASSERT_(.FALSE.)
-       !endif
-       !cs_factory = CubedSphereGridFactory(im_world=IM_IAU,lm=LM_IAU,nx=nx,ny=ny/6,__RC__)
+    if (cubediau) then
        cs_factory = CubedSphereGridFactory(im_world=IM_IAU,lm=LM_IAU,nx=nx_cube,ny=ny_cube,__RC__)
        GCMGrid = grid_manager%make_grid(cs_factory,__RC__)
+
     else
        call MAPL_DefGridName (IM_IAU,JM_IAU,ABKGGRIDNAME,MAPL_am_I_root())
        ll_factory = LatLonGridFactory(grid_name=trim(ABKGGRIDNAME), &
@@ -259,10 +246,11 @@ CONTAINS
                                __RC__)
        GCMgrid = grid_manager%make_grid(ll_factory,__RC__)
 
-!      Validate grid
-!      -------------
-       call ESMF_GridValidate(GCMgrid,__RC__)
     endif
+
+!   Validate grid
+!   -------------
+    call ESMF_GridValidate(GCMgrid,__RC__)
 
     sameres = IM_BKG==IM_IAU .and. JM_BKG==JM_IAU
 
@@ -275,8 +263,7 @@ CONTAINS
     BkgBundle = ESMF_FieldBundleCreate ( name='BKG bundle', __RC__ )
     call ESMF_FieldBundleSet ( BkgBundle, grid=BKGgrid, __RC__ )
 
-    call MAPL_CFIORead  ( bkgfname, Time, BkgBundle, &
-                          TIME_IS_CYCLIC=.false., verbose=.true., __RC__ )
+    call MAPL_read_bundle( BkgBundle, bkgfname, Time, __RC__ )
 
 !   Now create a component to handle the increment output
 !   -----------------------------------------------------
@@ -287,14 +274,14 @@ CONTAINS
     maplobj => null()
     call MAPL_InternalStateCreate(temp_gc, maplobj, rc=status)
     VERIFY_(status)
-   call MAPL_InternalStateRetrieve(temp_gc, maplobj, RC=status)
-   VERIFY_(status)
+    call MAPL_InternalStateRetrieve(temp_gc, maplobj, RC=status)
+    VERIFY_(status)
     BASE = MAPL_AddChild ( MAPLOBJ, Grid=BKGgrid,    &
                                        ConfigFile=myRC,   &
                                           name= 'ABKG',   &
                                 SS = MKIAUSetServices,    &
                                                   __RC__  )
-    if (cubed) then
+    if (cubediau) then
        STUB = MAPL_AddChild ( MAPLOBJ, Grid=GCMgrid,    &
                                           ConfigFile=myRC,     &
                                              name= 'AGCM',     &
@@ -312,7 +299,7 @@ CONTAINS
 !   --------------------
     call MAPL_Get  ( MAPLOBJ, GCS=GCS, GIM=IMPORTS, GEX=EXPORTS, __RC__ )
 
-    if (cubed) then
+    if (cubediau) then
        call MAPL_GridCreate  (GCS(STUB),ESMFGRID=GCMgrid, __RC__)
        call ESMF_GridCompGet (GCS(STUB), grid=GCMgrid, __RC__ )
        call ESMF_GridValidate(GCMgrid,__RC__)
@@ -377,6 +364,7 @@ CONTAINS
     end if
     call final_
     call t_p%stop('mkiau.x')
+    call io_server%finalize()
     call MAPL_Finalize()
     call ESMF_Finalize(__RC__)
 
@@ -428,7 +416,8 @@ CONTAINS
 !  Set defaults
 !  ------------
    rc = 0
-   cubed = .false.
+   cubediau = .false.
+   cubedbkg = .false.
 
    !call ESMF_ConfigGetAttribute( CF, NX, label ='NX:', __RC__ )
    !call ESMF_ConfigGetAttribute( CF, NY, label ='NY:', __RC__ )
@@ -452,6 +441,11 @@ CONTAINS
    if(itest==1) c2l_fwtest = .true.
    if(itest==2) c2l_adtest = .true.
    if(itest==3) l2c_adtest = .true.
+   if(JM_IAU==6*IM_IAU) cubediau=.true.
+
+   summarize = .false.
+   call ESMF_ConfigGetAttribute( CF, idum, label ='SUMMARIZE:', default=0, __RC__ )
+   if (idum==1) summarize = .true.
 
    call ESMF_ConfigGetAttribute( CF, ino_dqvdt, label ='NO_DQVDT:', default=0, __RC__ )
 
@@ -709,28 +703,28 @@ CONTAINS
 !       ---------------------------
         call MAPL_GetPointer(IMPORTS(STUB),  sdudt, 'DUDT' , __RC__)
         sdudt = sclinc * dudt
-        if ( MAPL_am_I_root() ) then
-           print *, 'dudt = ',maxval(sdudt), minval(sdudt) 
+        if ( summarize ) then
+           call var3d_summary_ ('DUDT', sdudt)
         endif
         call MAPL_GetPointer(IMPORTS(STUB),  sdvdt, 'DVDT' , __RC__)
         sdvdt = sclinc * dvdt
-        if ( MAPL_am_I_root() ) then
-           print *, 'dvdt = ',maxval(sdvdt), minval(sdvdt) 
+        if ( summarize ) then
+           call var3d_summary_ ('DVDT', sdvdt)
         endif
         call MAPL_GetPointer(IMPORTS(STUB),  sdtdt, 'DTDT' , __RC__)
         sdtdt = sclinc * dtdt
-        if ( MAPL_am_I_root() ) then
-           print *, 'dtdt = ',maxval(sdtdt), minval(sdtdt) 
+        if ( summarize ) then
+           call var3d_summary_ ('DTDT', sdtdt)
         endif
         call MAPL_GetPointer(IMPORTS(STUB), sdpedt, 'DPEDT', __RC__)
         sdpedt = sclinc * dpedt
-        if ( MAPL_am_I_root() ) then
-           print *, 'dpedt = ',maxval(sdpedt), minval(sdpedt) 
+        if ( summarize ) then
+           call var3d_summary_ ('DPEDT', sdpedt)
         endif
         call MAPL_GetPointer(IMPORTS(STUB), sdqvdt, 'DQVDT', __RC__)
         sdqvdt = sclinc * dqvdt
-        if ( MAPL_am_I_root() ) then
-           print *, 'dqvdt = ',maxval(sdqvdt), minval(sdqvdt) 
+        if ( summarize ) then
+           call var3d_summary_ ('DQVDT', sdqvdt)
         endif
         call MAPL_GetPointer(IMPORTS(STUB), sdo3dt, 'DO3DT', __RC__)
         if ( trim(O3NAME) /= 'NULL' ) then
@@ -738,14 +732,14 @@ CONTAINS
         else
            sdo3dt = 0.0
         endif
-        if ( MAPL_am_I_root() ) then
-           print *, 'do3dt = ',maxval(sdo3dt), minval(sdo3dt) 
+        if ( summarize ) then
+           call var3d_summary_ ('DO3DT', sdo3dt)
         endif
         call MAPL_GetPointer(IMPORTS(STUB), sdtsdt, 'DTSDT', __RC__)
         if(associated(sdtsdt).and.associated(dtsdt))then
            sdtsdt = sclinc * dtsdt
-           if ( MAPL_am_I_root() ) then
-              print *, 'dtsdt = ',maxval(sdtsdt), minval(sdtsdt) 
+           if ( summarize ) then
+              call var2d_summary_ ('DRSDT', sdtsdt)
            endif
         endif
 
@@ -776,7 +770,7 @@ CONTAINS
 
         call ESMFL_State2Bundle (EXPORTS(BASE), IAUBundleBase)
 
-        if (cubed) then
+        if (cubediau) then
 
             iaubase = MAPL_SimpleBundleCreate ( IAUBundleBase, __RC__ )
             iaustub = MAPL_SimpleBundleCreate ( IAUBundleStub, __RC__ )
@@ -807,26 +801,42 @@ CONTAINS
             endif
             iaustub%r3(ju)%q = sclinc * iaustub%r3(ju)%q
             iaustub%r3(jv)%q = sclinc * iaustub%r3(jv)%q
+            if ( summarize ) then
+               call var3d_summary_ ('DUDT', iaustub%r3(ju)%q)
+               call var3d_summary_ ('DVDT', iaustub%r3(jv)%q)
+            endif
 
             ii = MAPL_SimpleBundleGetIndex ( iaubase, 'DTDT', 3, __RC__ )
             jj = MAPL_SimpleBundleGetIndex ( iaustub, 'DTDT', 3, __RC__ )
             call L2C%regrid(iaubase%r3(ii)%q, iaustub%r3(jj)%q, __RC__ )
             iaustub%r3(jj)%q = sclinc * iaustub%r3(jj)%q
+            if ( summarize ) then
+               call var3d_summary_ ('DTDT', iaustub%r3(jj)%q)
+            endif
 
             ii = MAPL_SimpleBundleGetIndex ( iaubase, 'DPEDT', 3, __RC__ )
             jj = MAPL_SimpleBundleGetIndex ( iaustub, 'DPEDT', 3, __RC__ )
             call L2C%regrid(iaubase%r3(ii)%q, iaustub%r3(jj)%q, __RC__ )
             iaustub%r3(jj)%q = sclinc * iaustub%r3(jj)%q
+            if ( summarize ) then
+               call var3d_summary_ ('DPEDT', iaustub%r3(jj)%q)
+            endif
 
             ii = MAPL_SimpleBundleGetIndex ( iaubase, 'DQVDT', 3, __RC__ )
             jj = MAPL_SimpleBundleGetIndex ( iaustub, 'DQVDT', 3, __RC__ )
             call L2C%regrid(iaubase%r3(ii)%q, iaustub%r3(jj)%q, __RC__ )
             iaustub%r3(jj)%q = sclinc * iaustub%r3(jj)%q
+            if ( summarize ) then
+               call var3d_summary_ ('DQVDT', iaustub%r3(jj)%q)
+            endif
 
             ii = MAPL_SimpleBundleGetIndex ( iaubase, 'DO3DT', 3, __RC__ )
             jj = MAPL_SimpleBundleGetIndex ( iaustub, 'DO3DT', 3, __RC__ )
             call L2C%regrid(iaubase%r3(ii)%q, iaustub%r3(jj)%q, __RC__ )
             iaustub%r3(jj)%q = sclinc * iaustub%r3(jj)%q
+            if ( summarize ) then
+               call var3d_summary_ ('DO3DT', iaustub%r3(jj)%q)
+            endif
 
             ii = MAPL_SimpleBundleGetIndex ( iaubase, 'DTSDT', 2, __RC__ )
             jj = MAPL_SimpleBundleGetIndex ( iaustub, 'DTSDT', 2, __RC__ )
@@ -838,6 +848,9 @@ CONTAINS
                    aux (:,:,1) = iaubase%r2(ii)%q
               call L2C%regrid(aux, aux2, __RC__ )
                  iaustub%r2(jj)%q = sclinc * aux2(:,:,1)
+                 if ( summarize ) then
+                    call var2d_summary_ ('DRSDT', iaustub%r2(jj)%q)
+                 endif
                  deallocate(aux2)
                  deallocate(aux )
             endif
@@ -1292,7 +1305,7 @@ CONTAINS
 
 !  Open the file
 !  -------------
-   call GFIO_Open ( trim(fname), READ_ONLY, fid, ier )
+   call CFIO_Open ( trim(fname), READ_ONLY, fid, ier )
    if ( ier .ne. 0 ) then
      write(6,*) 'dyn_getdim: trouble reading dims from ',trim(fname)
      rc = 1
@@ -1301,16 +1314,16 @@ CONTAINS
 
 !  Get dimensions
 !  --------------
-   call GFIO_DimInquire ( fid, myim, myjm, mykm, mylm, nvars, ngatts, ier )
+   call CFIO_DimInquire ( fid, myim, myjm, mykm, mylm, nvars, ngatts, rc=ier )
    if ( ier .ne. 0 ) then
      write(6,*) 'dyn_getdim: trouble getting dims from ',trim(fname)
      rc = 2
      return
    endif
 
-! Close GFIO file
-! ---------------
-  call GFIO_close ( fid, ier )
+! Close file
+! ----------
+  call CFIO_close ( fid, ier )
 
   im = myim
   jm = myjm
@@ -1357,5 +1370,39 @@ CONTAINS
          deallocate ( a   )
          return
    end subroutine xwritit
+
+   subroutine var2d_summary_ (varname, var)
+   use m_mpif90, only: MP_TYPE,MP_MAX,MP_MIN
+   implicit none
+   character(len=*) :: varname
+   real,pointer, intent(in) :: var(:,:)
+
+   real smax, smin
+   real rmax, rmin
+
+   smax = maxval(var); smin = minval(var)
+   call MPI_allreduce(smax,rmax,1,MP_TYPE(smax),MP_MAX,comm,status)
+   call MPI_allreduce(smin,rmin,1,MP_TYPE(smin),MP_MIN,comm,status)
+   if ( MAPL_am_I_root() ) then
+        write(6,'(2a,1p,2(a,e13.6))') trim(varname), ':', ' min= ', smin, ' max= ', smax
+   endif
+   end subroutine var2d_summary_
+
+   subroutine var3d_summary_ (varname, var)
+   use m_mpif90, only: MP_TYPE,MP_MAX,MP_MIN
+   implicit none
+   character(len=*) :: varname
+   real,pointer, intent(in) :: var(:,:,:)
+
+   real smax, smin
+   real rmax, rmin
+
+   smax = maxval(var); smin = minval(var)
+   call MPI_allreduce(smax,rmax,1,MP_TYPE(smax),MP_MAX,comm,status)
+   call MPI_allreduce(smin,rmin,1,MP_TYPE(smin),MP_MIN,comm,status)
+   if ( MAPL_am_I_root() ) then
+        write(6,'(2a,1p,2(a,e13.6))') trim(varname), ':', ' min= ', smin, ' max= ', smax
+   endif
+   end subroutine var3d_summary_
 
 end Program mkIAU

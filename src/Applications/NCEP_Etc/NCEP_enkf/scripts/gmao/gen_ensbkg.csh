@@ -74,7 +74,7 @@ if ( $#argv < 4 ) then
    echo " " 
    echo " AUTHOR"
    echo "   Ricardo Todling (Ricardo.Todling@nasa.gov), NASA/GMAO "
-   echo "     Last modified: 08Apr2013      by: R. Todling"
+   echo "     Last modified: 30Oct2024      by: R. Todling"
    echo " \\end{verbatim} "
    echo " \\clearpage "
    exit(0)
@@ -92,7 +92,7 @@ if ( !($?NCSUFFIX)  )  setenv NCSUFFIX nc4
 # ---------------------------------------------------------------
 if ( !($?ATMENS_DOSTATS) ) setenv ATMENS_DOSTATS    1
 
-setenv JOBGEN_NCPUS_PER_NODE 2
+setenv JOBGEN_NCPUS_PER_NODE -1
 if ( !($?ENSRECENTER_NCPUS) ) then
   setenv FAILED 1
 else

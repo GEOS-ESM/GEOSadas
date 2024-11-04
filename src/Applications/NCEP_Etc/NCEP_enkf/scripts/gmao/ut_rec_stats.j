@@ -10,7 +10,6 @@ setenv GET_TAR_BATCH 1
 setenv ATMENS_BATCHSUB sbatch
 
 # to run pegcm stats in parallel
-setenv PEGCM_NCPUS 4
 setenv PEGCM_WALLCLOCK 0:30:00
 setenv PEGCM_QNAME nccs2
 

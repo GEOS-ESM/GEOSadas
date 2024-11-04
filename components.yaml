@@ -5,7 +5,7 @@ GEOSadas:
 env:
   local: ./@env
   remote: ../ESMA_env.git
-  tag: v4.29.0
+  tag: v4.29.1
   develop: main
 
 cmake:
@@ -19,17 +19,37 @@ ecbuild:
   remote: ../ecbuild.git
   tag: geos/v1.3.0
 
+crtm:
+  local: ./src/Shared/JCSDA_crtm/@crtm
+  remote: ../crtm.git
+  tag: geos/v2.4.1-jedi.1+1.1.0
+  develop: master
+
 NCEP_Shared:
   local: ./src/Shared/@NCEP_Shared
   remote: ../NCEP_Shared.git
   tag: v1.3.0
   develop: main
+  sparse: ./config/NCEP_Shared.sparse
 
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
   tag: v1.9.8
   develop: main
+
+GMAOpyobs:
+  local: ./src/Shared/@GMAO_Shared/@GMAO_pyobs
+  remote: ../GMAOpyobs.git
+  tag: v1.0.6
+  develop: develop
+
+AeroML:
+  local: ./src/Shared/@AeroML
+  remote: ../AeroML.git
+  tag: rt1.0.0-cak_tag0
+  develop: develop
+  sparse: ./config/AeroML.sparse
 
 GEOS_Util:
   local: ./src/Shared/@GMAO_Shared/@GEOS_Util
@@ -43,6 +63,11 @@ MAPL:
   branch: release/MAPL-v3
   develop: develop
 
+GEOSldas_GridComp:
+  local: ./src/Components/@GEOSldas_GridComp
+  remote: ../GEOSldas_GridComp.git
+  tag: v1.0.2
+
 FMS:
   local: ./src/Shared/@FMS
   remote: ../FMS.git
@@ -52,14 +77,14 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  branch: feature/mathomp4/extract-mksi
+  tag: g5.41.3
   develop: develop
 
 mksi:
-  local: ./src/Components/@GEOSana_GridComp/GEOSaana_GridComp/GSI_GridComp/@mksi
-  remote: ../GEOS_mksi.git
-  branch: develop
-  develop: develop
+   local: ./src/Components/@GEOSana_GridComp/GEOSaana_GridComp/GSI_GridComp/@mksi
+   remote: ../GEOS_mksi.git
+   tag: g5.41.2
+   develop: develop
 
 GEOSgcm_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp
