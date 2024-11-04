@@ -375,12 +375,10 @@ sub init {
 		   obs1gsi_mean.rc
 		   obs1gsi_member.rc
 		   HISTAENS.rc.tmpl 
-		   mp_stats_NP.rc
-		   mp_stats_NZ.rc
 		   post_egcm.rc
+		   post_egcm_diag.rc
 		   AtmEnsConfig.csh
-		   atmens_storage.arc
-		   CAP.rc.tmpl);
+		   atmens_storage.arc);
 
 # location where ensemble RC files reside
   $AENSHOME = "$FVHOME/run/atmens";

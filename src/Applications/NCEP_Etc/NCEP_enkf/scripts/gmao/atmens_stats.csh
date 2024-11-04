@@ -238,6 +238,7 @@ if( ($?ATMENSETC) ) then
            $dry_run $AENSTAT_MPIRUN -rc mp_stats.${ftype}.${timetagz}.rc $mopt $sopt $eopt -inc ${bkgfreq_hhmn}00 \
                                     -egress .MP_STATS_EGRESS_${ftype}_${timetagz} mem*/$fn
         endif
+        if ( -e .MP_STATS_EGRESS_${ftype}_${timetagz} ) /bin/rm mp_stats.${ftype}.${timetagz}.rc
      end
      # make sure all is successfully done
     foreach fn ( $alltype )
@@ -250,7 +251,6 @@ if( ($?ATMENSETC) ) then
      exit (0)
   endif
 endif
-/bin/rm $ensloc/mp_stats.*.rc
 
 setenv NCPUS 1 # NOTE: for now since there is a memory issue
 

@@ -316,9 +316,9 @@ if (! -e $ENSWORK/.DONE_redone_allstat_${MYNAME}_${xstat}.$yyyymmddhhmn ) then
 
              # clean up
              # --------
-             /bin/rm $ENSWORK/pegcm_*.j
-             /bin/rm $ENSWORK/pegcm_*.j.*
-             /bin/rm $ENSWORK/pegcm_*output*
+             /bin/rm $ENSWORK/*pegcm_*.j
+             /bin/rm $ENSWORK/*pegcm_*.j.*
+             /bin/rm $ENSWORK/*pegcm_*output*
              /bin/rm $ENSWORK/*pegcm_*.log
 
            endif # <.not.PEGCM_ALLPARALLEL>
@@ -374,9 +374,9 @@ if (! -e $ENSWORK/.DONE_redone_allstat_${MYNAME}_${xstat}.$yyyymmddhhmn ) then
 
      # clean up
      # --------
-     /bin/rm $ENSWORK/pegcm_*.j
-     /bin/rm $ENSWORK/pegcm_*.j.*
-     /bin/rm $ENSWORK/pegcm_*output*
+     /bin/rm $ENSWORK/*pegcm_*.j
+     /bin/rm $ENSWORK/*pegcm_*.j.*
+     /bin/rm $ENSWORK/*pegcm_*output*
      /bin/rm $ENSWORK/*pegcm_*.log
   endif # <PEGCM_ALLPARALLEL>
 
