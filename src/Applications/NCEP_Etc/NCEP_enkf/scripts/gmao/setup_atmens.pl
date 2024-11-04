@@ -723,12 +723,8 @@ sub ed_stat_rc {
 
   my($acq);
 
-#  $tmprc  = "$mydir/tmp.rc";
-#  $thisrc = "$mydir/mp_stats.rc";
   if ( $opt_r21c ) {
-	  @estat_files = qw ( mp_stats.rc
-			  mp_stats_NP.rc 
-			  mp_stats_NZ.rc);
+	  @estat_files = qw ( mp_stats.rc);
   } else {
 	  @estat_files = qw ( mp_stats.rc);
   }
