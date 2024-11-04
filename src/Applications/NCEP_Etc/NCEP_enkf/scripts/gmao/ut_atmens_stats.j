@@ -11,7 +11,6 @@ setenv JOBGEN_QOS advda
 setenv JOBGEN_CONSTRAINT hasw
 
 # to run pegcm stats in parallel
-setenv PEGCM_NCPUS 4
 setenv PEGCM_WALLCLOCK 1:30:00
 setenv PEGCM_QNAME compute
 

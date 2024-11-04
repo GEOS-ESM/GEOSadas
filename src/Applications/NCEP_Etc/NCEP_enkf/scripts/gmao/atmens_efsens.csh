@@ -97,6 +97,7 @@ if ( $ENSPARALLEL ) then
      setenv FAILED 1
    else
      setenv JOBGEN_NCPUS $ENSGCMADJ_NCPUS
+     setenv JOBGEN_NCPUS_PER_NODE -1
    endif
 endif
 
@@ -290,9 +291,11 @@ set nmem = $members[1]
 
                 if ( ($ipoe == $AENS_GCMADJ_DSTJOB) || (($fpoe == $ntodo) && ($ipoe < $AENS_GCMADJ_DSTJOB) ) ) then
                    set this_ntasks_per_node = `facter processorcount`
+                   @ this_ntasks_per_node = $this_ntasks_per_node - 2
                    @ ncores_needed = $ENSGCMADJ_NCPUS / $this_ntasks_per_node
                    if ( $ncores_needed == 0 ) then
-                    @ myncpus = $this_ntasks_per_node
+                    @ ncores_needed = 1
+                    @ myncpus = $ENSGCMADJ_NCPUS
                    else
                      if ( $ENSGCMADJ_NCPUS == $ncores_needed * $this_ntasks_per_node ) then
                         @ myncpus = $ENSGCMADJ_NCPUS

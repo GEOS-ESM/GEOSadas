@@ -16,6 +16,7 @@
    id_drifter=.true.,
    id_ship=.false.,
    tzr_qc=1,
+   ta2tb=.false.,
    oneobtest=.false.,retrieval=.false.,
    biascor=-0.10,bcoption=0,diurnalbc=1.0,
    crtm_coeffs_path="CRTM_Coeffs/",
@@ -170,8 +171,10 @@ OBS_INPUT::
    iasibufr       iasi        metop-c     iasi_metop-c          0.0     3      0        ncep_mtiasi_bufr
    atmsbufr       atms        npp         atms_npp              0.0     1      0        ncep_atms_bufr
    atmsbufr       atms        n20         atms_n20              0.0     1      0        ncep_atms_bufr
+   atmsbufr       atms        n21         atms_n21              0.0     1      0        ncep_atms_bufr
    crisfsrbufr    cris-fsr    npp         cris-fsr_npp          0.0     3      0        ncep_crisfsr_bufr
    crisfsrbufr    cris-fsr    n20         cris-fsr_n20          0.0     3      0        ncep_crisfsr_bufr
+!  crisfsrbufr    cris-fsr    n21         cris-fsr_n21          0.0     3      0        ncep_crisfsr_bufr
    satwndbufr     uv          null        uv                    0.0     0      0        ncep_satwnd_bufr
    avcspmbufr     avhrr       n18         avhrr3_n18            0.0     1      0        ncep_avcspm_bufr
    avcspmbufr     avhrr       n19         avhrr3_n19            0.0     1      0        ncep_avcspm_bufr
