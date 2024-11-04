@@ -16,6 +16,7 @@
 #                         job-monitor works at date/time level.
 #                       - Add option to pack jobs with slurm arrays 
 #                         and possibly packable.
+#  02Nov2024  Todling   Revise handling of ensdiag and stats opt (API)
 #------------------------------------------------------------------
 
 if ( !($?ATMENS_VERBOSE) ) then
@@ -26,7 +27,7 @@ endif
 
 setenv MYNAME post_egcm.csh
 
-if ( $#argv < 5 ) then
+if ( $#argv < 7 ) then
    echo " "
    echo " \\begin{verbatim} "
    echo " "
@@ -36,13 +37,15 @@ if ( $#argv < 5 ) then
    echo " "
    echo " SYNOPSIS"
    echo " "
-   echo "  $MYNAME  expid nymd nhms toffset ensloc"
+   echo "  $MYNAME  expid nymd nhms toffset xstat rc ensloc"
    echo " "
    echo " where"
    echo "   expid   -  usual experiment name, e.g., b541iau"
    echo "   nymd    -  initial date of forecast, as in YYYYMMDD "
    echo "   nhms    -  initial time of forecast, as HHMMSS"
    echo "   toffset -  time offset to start calculating stats (min)"
+   echo "   xstat   -  addition statics (beyond mean, e.g. spread/variance"
+   echo "   rc      -  post_egcm resource file"
    echo "   ensloc  -  location of ensemble members"
    echo " "
    echo " DESCRIPTION"
@@ -65,7 +68,7 @@ if ( $#argv < 5 ) then
    echo "  it is also possible to have a files like post_egcm_21.rc."
    echo " "
    echo "  Example of valid command line:"
-   echo "  $MYNAME b541iau 20091018 210000 360 FVWORK/updated_ens"
+   echo "  $MYNAME b541iau 20091018 210000 360 spread post_egcm.rc FVWORK/updated_ens"
    echo " "
    echo " REQUIRED ENVIRONMENT VARIABLES"
    echo " "
@@ -84,8 +87,6 @@ if ( $#argv < 5 ) then
    echo "                        (default: parallize by date/time)"
    echo " "
    echo " OPTIONAL RESOURCE FILES"
-   echo " "
-   echo "  post_egcm.rc - user specific collection subset"
    echo " "
    echo " SEE ALSO "
    echo " "
@@ -148,14 +149,16 @@ set expid   = $1
 set nymdb   = $2
 set nhmsb   = $3
 set toffset = $4
-set ensloc  = $5
+set xstat   = $5
+set egcmrc  = $6
+set ensloc  = $7
 
 set hhb     = `echo $nhmsb | cut -c1-2`
 set hhmnb   = `echo $nhmsb | cut -c1-4`
 set yyyymmddhhmn = ${nymdb}${hhmnb}
 
 setenv ENSWORK $ensloc
-if (-e $ENSWORK/.DONE_${MYNAME}.$yyyymmddhhmn ) then
+if (-e $ENSWORK/.DONE_${MYNAME}_${xstat}.$yyyymmddhhmn ) then
    echo " ${MYNAME}: already done"
    exit(0)
 endif
@@ -185,27 +188,13 @@ touch .no_archiving
 
 # Calculate mean/rms of newly generated ensemble
 # ----------------------------------------------
-if (! -e $ENSWORK/.DONE_redone_allstat_$MYNAME.$yyyymmddhhmn ) then
+if (! -e $ENSWORK/.DONE_redone_allstat_${MYNAME}_${xstat}.$yyyymmddhhmn ) then
 
   cd $ENSWORK
 
   # determine history selections to handle
   # --------------------------------------
-  if ( -e $ATMENSETC/post_egcm.rc || -e $ATMENSETC/post_egcm_${hhb}.rc ) then
-     if ( -e $ATMENSETC/post_egcm_${hhb}.rc ) then
-        set this_histrc = $ATMENSETC/post_egcm_${hhb}.rc
-     else
-        set this_histrc = $ATMENSETC/post_egcm.rc
-     endif
-     set alltyps = (`echorc.x -rc $this_histrc COLLECTIONS`)
-  else
-     if ( -e $ATMENSETC/HISTAENS_${hhb}.rc.tmpl ) then
-        set this_histrc = $ATMENSETC/HISTAENS_${hhb}.rc.tmpl
-     else
-        set this_histrc = $ATMENSETC/HISTAENS.rc.tmpl
-     endif
-     set alltyps = (`edhist.pl -q 3 -list inc -i $this_histrc`)
-  endif
+  set alltyps = (`echorc.x -rc $egcmrc COLLECTIONS`)
   set nn = `echo $alltyps | wc`
   set ntyps = $nn[2] # number of types to handle
   
@@ -235,7 +224,7 @@ if (! -e $ENSWORK/.DONE_redone_allstat_$MYNAME.$yyyymmddhhmn ) then
           set mmm = `echo $m | awk '{printf "%03d", $1}'`
           if ( $PEGCM_SERIAL ) then
 
-             atmens_stats.csh $nmem $outkind $ENSWORK $this_nymd $this_nhms
+             atmens_stats.csh $nmem $outkind $xstat $ENSWORK $this_nymd $this_nhms
              if ($status) then
                 echo " ${MYNAME}: trouble calculating stats for $this_nymd $this_nhms, aborting ..."
                 exit(1)
@@ -261,7 +250,7 @@ if (! -e $ENSWORK/.DONE_redone_allstat_$MYNAME.$yyyymmddhhmn ) then
                  pegcm_${idx}.${tagA} \
                  $GID                  \
                  $PEGCM_WALLCLOCK      \
-                 "atmens_stats.csh $nmem $outkind $ENSWORK $this_nymd $this_nhms |& tee -a $ENSWORK/pegcm_${outkind}.$this_yyyymmddhhmn.log"\
+                 "atmens_stats.csh $nmem $outkind $xstat $ENSWORK $this_nymd $this_nhms |& tee -a $ENSWORK/pegcm_${outkind}.$this_yyyymmddhhmn.log"\
                  $ENSWORK              \
                  $MYNAME               \
                  $ENSWORK/.DONE_MEM${idx}_${MYNAME}.$tagB \
@@ -329,13 +318,14 @@ if (! -e $ENSWORK/.DONE_redone_allstat_$MYNAME.$yyyymmddhhmn ) then
              # --------
              /bin/rm $ENSWORK/pegcm_*.j
              /bin/rm $ENSWORK/pegcm_*.j.*
+             /bin/rm $ENSWORK/pegcm_*output*
              /bin/rm $ENSWORK/*pegcm_*.log
 
            endif # <.not.PEGCM_ALLPARALLEL>
         endif # <.not.SERIAL>
 
      endif # <given-date>
-     touch $ENSWORK/.DONE_redone_allstat_$MYNAME.$yyyymmddhhmn
+     touch $ENSWORK/.DONE_redone_allstat_${MYNAME}_${xstat}.$yyyymmddhhmn
 
      # Increment date/time
      # -------------------
@@ -386,6 +376,7 @@ if (! -e $ENSWORK/.DONE_redone_allstat_$MYNAME.$yyyymmddhhmn ) then
      # --------
      /bin/rm $ENSWORK/pegcm_*.j
      /bin/rm $ENSWORK/pegcm_*.j.*
+     /bin/rm $ENSWORK/pegcm_*output*
      /bin/rm $ENSWORK/*pegcm_*.log
   endif # <PEGCM_ALLPARALLEL>
 
@@ -393,6 +384,6 @@ endif
 
 # made it down here, all done
 # ---------------------------
-touch $ENSWORK/.DONE_${MYNAME}.$yyyymmddhhmn
+touch $ENSWORK/.DONE_${MYNAME}_${xstat}.$yyyymmddhhmn
 echo " ${MYNAME}: Complete "
 exit(0)

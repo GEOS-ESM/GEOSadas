@@ -212,7 +212,7 @@ if ( "$doing_gaas" == ".TRUE." ) then
          # Launch acquire job to retrieve pre-existing ensemble
          # ----------------------------------------------------
            #setenv JOBGEN_NCPUS          1
-           #setenv JOBGEN_NCPUS_PER_NODE 1
+           setenv JOBGEN_NCPUS_PER_NODE -1
            jobgen.pl \
                 -expid $expid         \
                 acq_aodana            \

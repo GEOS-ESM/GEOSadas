@@ -511,7 +511,7 @@
 # -------------------------------------------
   if ( $RUN_PEANA || $DO_ATM_ENS ) then
       zeit_ci.x post_eana
-      post_eana.csh $EXPID $anymd $anhms |& tee -a atm_ens.log
+      post_eana.csh $EXPID $anymd $anhms spread |& tee -a atm_ens.log
       if( $status) then
          echo "post_eana failed"
          exit(1)
@@ -595,10 +595,21 @@
   set arch_nhms = $nhmsb
   if( $RUN_AENSFCST || $DO_ATM_ENS ) then
       zeit_ci.x post_egcm
-      post_egcm.csh $EXPID $nymdb $nhmsb $TIMEINC $FVHOME/atmens
+      set myrc = $ATMENSETC/post_egcm.rc
+      if ( -e $ATMENSETC/post_egcm_${hhb}.rc ) set myrc = $ATMENSETC/post_egcm_${hhb}.rc
+      post_egcm.csh $EXPID $nymdb $nhmsb $TIMEINC spread $myrc $FVHOME/atmens
       if ($status) then
-         echo "post_egcm failed"
+         echo "post_egcm (bkg) failed"
          exit(1)
+      endif
+      set myrc = $ATMENSETC/post_egcm_diag.rc
+      if ( -e $ATMENSETC/post_egcm_diag_${hhb}.rc ) set myrc = $ATMENSETC/post_egcm_diag_${hhb}.rc
+      if ( -e $myrc ) then
+         post_egcm.csh $EXPID $nymdb $nhmsb 0 variance $myrc $FVHOME/atmens/ensdiag
+         if ($status) then
+            echo "post_egcm (diag) failed"
+            exit(1)
+         endif
       endif
       zeit_co.x post_egcm
   endif

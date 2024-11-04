@@ -110,6 +110,7 @@ if ( $ENSPARALLEL ) then
      setenv FAILED 1
    else
      setenv JOBGEN_NCPUS $AENKF_NCPUS
+     setenv JOBGEN_NCPUS_PER_NODE -1
    endif
 endif
 
