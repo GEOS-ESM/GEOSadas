@@ -52,7 +52,7 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  tag: v1.5.5-R21C-4
+  branch: bugfix/rtodling/typo_pound_better_than_dollar
   develop: R21C
 
 GEOSgcm_GridComp:
