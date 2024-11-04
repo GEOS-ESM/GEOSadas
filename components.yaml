@@ -35,7 +35,7 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  tag: v1.9.8
+  branch: g5.41.3-with-main-updates
   develop: main
 
 GMAOpyobs:
