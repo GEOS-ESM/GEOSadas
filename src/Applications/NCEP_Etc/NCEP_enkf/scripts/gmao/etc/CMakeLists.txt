@@ -28,6 +28,7 @@ set (ALLETC
    mp_stats.rc
    nmcperts.rc
    post_egcm.rc
+   post_egcm_diag.rc
    odsstats_ktonly.rc
    obs_aodmean.rc
    obs_aodmember.rc
@@ -47,8 +48,8 @@ set (R21C_files
      R21C/HISTAENS.rc.tmpl
      R21C/obs1gsi_mean.rc
      R21C/obs1gsi_member.rc
-     R21C/post_egcm_diag.rc
      R21C/post_egcm.rc
+     R21C/post_egcm_diag.rc
    )
 
 install (
