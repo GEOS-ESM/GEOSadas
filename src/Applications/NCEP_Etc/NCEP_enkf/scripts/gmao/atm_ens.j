@@ -610,7 +610,7 @@
       set myrc = $ATMENSETC/post_egcm_diag.rc
       if ( -e $ATMENSETC/post_egcm_diag_${hhb}.rc ) set myrc = $ATMENSETC/post_egcm_diag_${hhb}.rc
       if ( -e $myrc ) then
-         post_egcm.csh $EXPID $nymdb $nhmsb 0 variance $myrc $FVHOME/atmens/ensdiag
+         post_egcm.csh $EXPID $nymdb $nhmsb $TIMEINC variance $myrc $FVHOME/atmens/ensdiag
          if ($status) then
             echo "post_egcm (diag) failed"
             exit(1)
