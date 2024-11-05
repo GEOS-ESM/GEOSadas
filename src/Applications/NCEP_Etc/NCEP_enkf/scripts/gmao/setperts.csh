@@ -74,7 +74,7 @@ if ( $#argv < 6 ) then
    echo " " 
    echo " AUTHOR"
    echo "   Amal El Akkraoui (Amal.ElAkkraoui@nasa.gov), NASA/GMAO "
-   echo "     Last modified: 08Apr2013      by: R. Todling"
+   echo "     Last modified: 30Oct2024      by: R. Todling"
    echo " \\end{verbatim} "
    echo " \\clearpage "
    exit(0)
@@ -116,7 +116,7 @@ setenv DO_DMGET 1   # force dmget to be used when acquire retrieve files
 setenv dry_run
 
 if ( $ENSPARALLEL ) then
-   setenv JOBGEN_NCPUS_PER_NODE 2
+   setenv JOBGEN_NCPUS_PER_NODE -1
    if ( !($?ENSRECENTER_NCPUS) ) then
      setenv FAILED 1
    else

@@ -418,12 +418,22 @@
        endif
   endif
 
+# Need some info from templated RC file
+# ------------------------------------
+  if( -e $ATMENSETC/gsi_mean.rc ) then
+     /bin/cp $ATMENSETC/gsi_mean.rc mock.rc
+  else
+     /bin/cp $ATMENSETC/obs1gsi_mean.rc mock.rc
+  endif
+  set myrc = $FVWORK/mock.rc
+
 # Run ANALYZER in observer setting mode
 # -------------------------------------
   set gsinlat = `echorc.x -rc GSI_GridComp.rc.tmpl "GSI JM"`
   set gsinlon = `echorc.x -rc GSI_GridComp.rc.tmpl "GSI IM"`
   set gsinlev = `echorc.x -rc GSI_GridComp.rc.tmpl "GSI LM"`
-  analyzer $nymd1 $nhms1 $STF $SKA $SSB -expid $EXPID -t $SPECRES -levs $gsinlev -x $gsinlon -y $gsinlat -observer -lnobs -log obs.log
+  analyzer $nymd1 $nhms1 $STF $SKA $SSB -expid $EXPID -t $SPECRES -levs $gsinlev -rc $myrc \
+                                        -x $gsinlon -y $gsinlat -observer -lnobs -log obs.log
   if( $status) then
      echo " ${myname}: trouble use analyzer/observer"
      exit(1)
