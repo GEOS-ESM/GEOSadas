@@ -15,7 +15,8 @@
 #  25Mar2013  Todling   Allow mp_stats to run under mpi
 #  21Feb2020  Todling   Allow for high freq bkg (up to 1mn)
 #  02May2020  Todling   Allow for user-spec freq of bkg stat calc
-#  01Nov2024  Todling   Design fix: hidden files belong to parent dir
+#  01Nov2024  Todling   - Design fix: hidden files belong to parent dir
+#                       - Enhanced flexibility in handling mp_stats.rc
 #------------------------------------------------------------------
 
 if ( !($?ATMENS_VERBOSE) ) then
@@ -28,7 +29,7 @@ setenv MYNAME atmens_stats.csh
 
 # need usage here
 # ---------------
-if ( $#argv < 5 ) then
+if ( $#argv < 6 ) then
    echo " "
    echo " \\begin{verbatim} "
    echo " "
@@ -43,6 +44,7 @@ if ( $#argv < 5 ) then
    echo " where" 
    echo "   nmem   -  number of members to be created"
    echo "   ftype  -  file type (e.g., bkg.eta, bkg.sfc, ana.eta)"
+   echo "   xstat  -  extra statistics (e.g., spread or variance"
    echo "   ensloc -  location to place generated ensemble"
    echo "   nymd   -  date of members to calc stats for (as YYYYMMDD)"
    echo "   nhms   -  time of members to calc stats for (as HHMMSS)"
@@ -59,7 +61,7 @@ if ( $#argv < 5 ) then
    echo "  of RMS; and finally performing (iv) calculation of energy-based spread."
    echo " " 
    echo "  Example of valid command line:"
-   echo "   $MYNAME 10 /archive/u/$user/u000_c72/atmens 20111201 210000"
+   echo "   $MYNAME 10 bkg.eta spread /archive/u/$user/u000_c72/atmens 20111201 210000"
    echo " " 
    echo " REQUIRED RESOURCE FILES"
    echo " " 
@@ -81,6 +83,7 @@ if ( $#argv < 5 ) then
    echo "    AENSTAT_NCPUS - number of cpus to use for this procedure"
    echo "                    (NOTE: required when ENSPARALLEL is on)"
    echo "    ATMENS_BKGSTATFRQ - specific bkg freq for stats calculation"
+   echo " " 
    echo " SEE ALSO"
    echo "  mp_stats.x   - program to calculate statistics from fields in SDF files"
    echo "  dyn_diff.x   - program to calculate difference between dyn-vector files"
@@ -143,9 +146,10 @@ endif
 # -----------------------
 set nmem   = $1  # number of ensemble members
 set ftype  = $2  # file type (e.g, bkg.eta)
-set ensloc = $3  # root location for members and mean
-set nymd   = $4  # date of members to calc stats for (YYYYMMDD)
-set nhms   = $5  # time of members to calc stats for (HHMMSS)
+set xstat  = $3  # file type (e.g, bkg.eta)
+set ensloc = $4  # root location for members and mean
+set nymd   = $5  # date of members to calc stats for (YYYYMMDD)
+set nhms   = $6  # time of members to calc stats for (HHMMSS)
 
 setenv BKGFREQ $ASYNBKG
 if ($?ATMENS_BKGSTATFRQ) then
@@ -155,7 +159,6 @@ endif
 set hh   = `echo $nhms | cut -c1-2`
 set hhmn = `echo $nhms | cut -c1-4`
 set yyyymmddhhmn =  ${nymd}${hhmn}
-set timetagz   =  ${nymd}_${hhmn}z
 @ bkgfreq_hr  =  $BKGFREQ / 60
 @ bkgfreq_mn  =  $BKGFREQ - $bkgfreq_hr * 60
 set bkgfreq_hh = `echo $bkgfreq_hr |awk '{printf "%02d", $1}'`
@@ -173,6 +176,20 @@ if ( ("$ftype" == "ana.eta" ) ) then
      if( -e $ATMENSETC/easyeana.rc ) setenv FAKEMEAN 1
    endif
 endif
+
+# Inquire from HISTORY
+# --------------------
+set timetagz  = ${nymd}_${hhmn}z
+if ( $ftype != "ana.eta" && $ftype != "inc.eta" ) then # these types are not in HISTORY
+   set hist = (`ls $ATMENSETC/HIST*.rc.tmpl`)
+   if ( $#hist != 1 ) then
+      echo " ${MYNAME}: should only find single HIST*rc.tmpl in $ATMENSETC, Aborting ..."
+      exit 1
+   endif
+   set ttemplate = `echorc.x -rc $hist[1] -template dummy $nymd ${hh}0000 $ftype.template`
+   set timetagz  = `echo $ttemplate | cut -d. -f1`
+endif
+
 set etag  = "NULL"
 
 # get positioned ...
@@ -191,33 +208,42 @@ if( ($?ATMENSETC) ) then
         exit 1
      endif
      if(! -d ensmean ) mkdir -p $ensloc/ensmean
-     if(! -d ensrms  ) mkdir -p $ensloc/ensrms
-     cd mem001
+     if( $xstat == "spread"   && (! -d ensrms) ) mkdir -p $ensloc/ensrms
+     if( $xstat == "variance" && (! -d ensvar) ) mkdir -p $ensloc/ensvar
+     cd $ensloc/mem001
      set alltype = `ls *.${ftype}.*${timetagz}.$NCSUFFIX`
      cd -
      foreach fn ( $alltype )
-        set my_date = `echo $fn | cut -d. -f4 | cut -c1-8`
-        set my_hhmn = `echo $fn | cut -d. -f4 | cut -c10-13`
-        set mopt = "-o   ensmean/$fn"
-        set sopt = "-stdv ensrms/$fn"
+        set mopt = "-o $ensloc/ensmean/$fn"
+        if ( -d $ensloc/ensrms ) then
+           set sopt = "-stdv $ensloc/ensrms/$fn"
+        endif
+        if ( -d $ensloc/ensvar ) then
+           set sopt = "-variance $ensloc/ensvar/$fn"
+        endif
         set eopt = ""
         if ("$ftype" == "bkg.eta" || "$ftype" == "ana.eta" || "$ftype" == "prog.eta" ) then
             if("$ftype" == "bkg.eta" ) set etype = "bene.err"
             if("$ftype" == "ana.eta" ) set etype = "aene.err"
             if("$ftype" == "prog.eta") set etype = "pene.err"
-            set eopt = "-ene ensrms/$EXPID.${etype}.${my_date}_${my_hhmn}z.$NCSUFFIX"
+            set eopt = "-ene ensrms/$EXPID.${etype}.${timetagz}.$NCSUFFIX"
         endif
-        if(! -e .MP_STATS_EGRESS_${ftype}_${my_date}${my_hhmn} ) then
-           $dry_run $AENSTAT_MPIRUN -rc $ATMENSETC/mp_stats.rc $mopt $sopt $eopt -inc ${bkgfreq_hhmn}00 \
-                                    -egress .MP_STATS_EGRESS_${ftype}_${my_date}${my_hhmn} mem*/$fn
+        set dims = (`getgfiodim.x mem001/$fn` )
+        setenv MP_STATS_LM $dims[3]
+        if ( $MP_STATS_LM == 0 ) then
+            setenv MP_STATS_LM 1
         endif
+        vED -env $ATMENSETC/mp_stats.rc -o mp_stats.${ftype}.${timetagz}.rc
+        if(! -e .MP_STATS_EGRESS_${ftype}_${timetagz} ) then
+           $dry_run $AENSTAT_MPIRUN -rc mp_stats.${ftype}.${timetagz}.rc $mopt $sopt $eopt -inc ${bkgfreq_hhmn}00 \
+                                    -egress .MP_STATS_EGRESS_${ftype}_${timetagz} mem*/$fn
+        endif
+        if ( -e .MP_STATS_EGRESS_${ftype}_${timetagz} ) /bin/rm mp_stats.${ftype}.${timetagz}.rc
      end
      # make sure all is successfully done
-     foreach fn ( $alltype )
-        set my_date = `echo $fn | cut -d. -f4 | cut -c1-8`
-        set my_hhmn = `echo $fn | cut -d. -f4 | cut -c10-13`
-        if (! -e .MP_STATS_EGRESS_${ftype}_${my_date}${my_hhmn} ) then
-           echo " ${MYNAME}: Failed to calculate stats (mp_stats.x) for ${ftype}_${my_date}${my_hhmn}, Aborting ... "
+    foreach fn ( $alltype )
+        if (! -e .MP_STATS_EGRESS_${ftype}_${timetagz} ) then
+           echo " ${MYNAME}: Failed to calculate stats (mp_stats.x) for ${ftype}_${timetagz}, Aborting ... "
            touch $ENSWORK/.FAILED
            exit(1)
         endif
