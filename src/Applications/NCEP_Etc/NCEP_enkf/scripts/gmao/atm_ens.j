@@ -5,6 +5,7 @@
 #SBATCH --ntasks=96
 #SBATCH --ntasks-per-node=>>>NCPUS_PER_NODE<<<
 #SBATCH --time=6:00:00
+#SBATCH --no-requeue 
 #
 #SBATCH --job-name=atm_ens
 #SBATCH --output=atm_ens.log.o%j
@@ -66,7 +67,11 @@
       if( `uname -m` != "ia64" ) then
          setenv FORT90L -Wl,-T
       endif
+# NOTE: if user has access to TSE:
+#       (i) comment out line below
+#       (ii) uncomment and adjust following line
       setenv FVWORK $FVHOME/../enswork.$BIGNAME
+#     setenv FVWORK /discover/nobackup/projects/gmao/dadev/TSE_staging/$user/enswork.$BIGNAME
       if ($?kidwork) then  # this case, overwrite FVWORK with user-specific
          setenv FVWORK $FVHOME/../$kidwork
       endif
