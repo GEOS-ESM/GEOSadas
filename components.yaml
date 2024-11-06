@@ -25,10 +25,23 @@ NCEP_Shared:
   tag: v1.3.0
   develop: main
 
+GMAOpyobs:
+  local: ./src/Shared/@GMAO_Shared/@GMAO_pyobs
+  remote: ../GMAOpyobs.git
+  tag: v1.0.6
+  develop: develop
+
+AeroML:
+  local: ./src/Shared/@AeroML
+  remote: ../AeroML.git
+  tag: rt1.0.0-cak_tag0
+  develop: develop
+  sparse: ./config/AeroML.sparse
+
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  tag: v1.7.2+R21C_v1.0.2
+  branch: feature/rtodling/r21c_milan
   develop: R21C
 
 GEOS_Util:
