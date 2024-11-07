@@ -1,0 +1,246 @@
+#---------------
+# m21c_j98.input
+#---------------
+
+codeID: 271edc7
+description: m21c_j98__agrid_C360__ogrid_CS
+fvsetupID: 
+
+---ENDHEADERS---
+
+Remote account for Intranet plots? [rtodling@train]
+> 
+
+Is this a MERRA2 (1), GEOSIT (2), R21C (3) experiment? [0]
+> 3
+
+AGCM Horizontal Resolution? [C360]
+> C360
+
+AGCM Vertical Resolution? [72]
+> 
+
+OGCM Resolution? [C]
+> CS
+
+EXPID? [u000_C360]
+> $expid
+
+Check for previous use of expid (y/n)? [y]
+> n
+
+EXPDSC? [m21c_j98__agrid_C360__ogrid_CS]
+> 
+
+Land Boundary Conditions? [Icarus-NLv3]
+> 
+
+Catchment Model choice? [1]
+> 
+
+FVHOME? [/discover/nobackup/rtodling/m21c_j98]
+> /discover/nobackup/projects/gmao/dadev/rtodling/M21C/$expid
+
+The directory /discover/nobackup/projects/gmao/dadev/rtodling/M21C/m21c_j98 does not exist. Create it now? [y]
+> 
+
+Processing nodes (1:Westmere, 2:SandyBridge, 3:Ivy Bridge, 4:Haswell, 5:Skylake, 6:Cascase)? [4]
+> 6
+
+Which case of variational analysis? [1]
+> 
+
+Window of the variational analysis (min)? [360]
+> 
+
+FVINPUT? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar]
+> 
+
+REAL TIME BCS? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/g5gcm/bcs/realtime/OSTIA_REYNOLDS]
+> 
+
+agcmpert? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/agcmpert]
+> 
+
+chemistry? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/chemistry]
+> 
+
+g5chem? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/g5chem]
+> 
+
+g5gcm? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/g5gcm]
+> 
+
+PIESA? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/PIESA]
+> 
+
+MERRA2? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/MERRA2]
+> 
+
+AeroCom? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/AeroCom]
+> 
+
+FVICS? [/archive/u/jstassi/restarts/GEOSadas-5_24_0]
+> /home/dao_ops/e5303_m21c_jan98/run/.../archive/rs/Y1997/M12/e5303_m21c_jan98.rst.19971230_21z.tar
+
+Run model-adjoint-related applications (0=no,1=yes)? [0]
+> 0
+
+Run analysis-sensitivity applications (0=no,1=yes)? [0]
+>
+
+Ending year-month-day? [20190119]
+> 19980206
+
+Length of FORECAST run segments (in hours)? [123]
+> 
+
+Number of one-day DAS segments per PBS job? [1]
+> 
+
+Number of PEs in the zonal direction (NX)? [8]
+> 
+
+Number of PEs in the meridional direction (NY)? [48]
+> 
+
+Job nickname? [g5das]
+> m21cA
+
+Run in split executable mode (1=yes;0=no)? [1]
+> 
+
+Frequency of background fields (min)? [60]
+> 
+
+Triangular spectral truncation? [254]
+> 
+
+Analysis vertical levels (sig))? [72]
+> 
+
+GSI grid resolution? [NA]
+> 
+
+GEOS grid resolution instead? [d]
+> 
+
+Ensemble Hybrid (<0;3=3dHyb;4=Hyb4d)? [4]
+> 
+
+Number of procs in the zonal direction (NX)? [12]
+> 
+
+Number of procs in the meridional direction (NY)? [20]
+> 
+
+Which main class of ObsSys (1: NRT; 2: MERRA; 3: MERRA-2; 4: GEOS-IT; 5: R21C)? [5]
+> 
+
+OBSERVING SYSTEM CLASSES?
+> r21c_igra2_raob_pre-qc_bufr,r21c_cdas_conv_pre-qc_bufr,r21c_prof_pre-qc_bufr,r21c_avhrrwnd_pre-qc_bufr,r21c_nmodis_pre-qc_bufr,r21c_goes_pre-qc_prep_bufr,r21c_metsat_pre-qc_prep_bufr,r21c_jma_pre-qc_prep_bufr,r21c_ascat_pre-qc_bufr,r21c_repro_ers2_pre-qc_bufr,r21c_qscat_jpl_pre-qc_bufr,r21c_loon_bufr,r21c_gmao_mlst_bufr,r21c_prep_bufr,r21c_acftpfl_bufr,r21c_satwnd_bufr,r21c_avhrr_satwnd_bufr,r21c_ncep_tcvitals,r21c_tmi_bufr,r21c_gpsro_bufr,r21c_sevcsr_bufr,r21c_1bamua_bufr,r21c_1bamub_bufr,r21c_1bhrs2_bufr,r21c_1bhrs3_bufr,r21c_1bhrs4_bufr,r21c_1bmsu_bufr,r21c_1bmhs_bufr,r21c_1bssu_bufr,r21c_eosairs_bufr,r21c_eosamsua_bufr,r21c_mtiasi_bufr,r21c_atms_bufr,r21c_ssmit11_bufr,r21c_ssmit13_bufr,r21c_ssmit14_bufr,r21c_ssmit15_bufr,r21c_amsre_bufr,r21c_osbuv8_bufr,r21c_mls_nc,r21c_npp_ompslp_nc,r21c_aura_omieff_nc,r21c_npp_ompsnmeff_nc,r21c_avcsam_bufr,r21c_avcspm_bufr,r21c_amsr2_bufr,r21c_crisfsr_bufr,r21c_gmi_bufr,r21c_prep_bufr,r21c_acftpfl_bufr
+
+CHECKING OBSYSTEM? [2]
+> 1
+
+Which RADCOR option? [HAIMB_HRAD]
+> 
+
+Use sat channel-correlated observation errors (y/n)? [y]
+> 
+
+Use aircraft bias correction (y/n)? [y]
+> 
+
+Use unified radiance bias correction (y/n)? [y]
+> 
+
+Land DAS Analysis (y/n)? [n]
+> 
+
+Frequency (in days) for writing restarts? [0]
+> 
+
+Frequency for PROGNOSTIC fields? [010000]
+> 
+
+Frequency for surface (2D) DIAGNOSTIC fields? [010000]
+> 
+
+Frequency for upper air (3D) DIAGNOSTIC fields? [030000]
+> 
+
+Dimension of output in zonal direction? [1152]
+> 
+
+Dimension of output in meridional direction? [721]
+> 
+
+Would you like 2D diagnostics? [y]
+> 
+
+Would you like 3D diagnostics? [y]
+> 
+
+Would you like to compress diagnostics output files? [n]
+> 
+
+Include GOCART tracers (CO,CO2,aerosols,etc) (y/n)? [y]
+> 
+
+Select GOCART Emission Files to use: [AMIP]
+> 
+
+Do Aerosol Analysis (y/n)? [y]
+> 
+
+AOD OBSERVING CLASSES [or type 'none']?
+> patmosx_ods,mod04_061_his,myd04_061_his,aeronet_obs
+
+Enable GAAS feedback to model (y/n)? [y]
+> 
+
+Which template? [HISTORY_R21C.rc.tmpl]
+> 
+
+Which template? [GCMPROG.rc.tmpl]
+> 
+
+Output Restart TYPE (bin or nc4) [nc4]
+> 
+
+Select group: [g2538]
+> g0613
+
+Replayed Ensemble?  [no]
+> 
+
+Use SPPT-scheme for Ensemble?  [yes]
+> 
+
+Use Precip Correction for Ensemble?  [yes]
+> 
+
+Ensemble Resolution?  [C90]
+> 
+
+Ensemble Vertical Levels?  [72]
+> 
+
+Experiment archive directory for ensemble restarts or 'later': [/archive/u/rtodling/m21c_j98]
+> /gpfsm/dnb08/projects/p253/archive/e5303_m21c_jan98
+
+Continue without missing resource files? [y]
+> 
+
+Edit COLLECTIONS list in run/HISTORY.rc.tmpl (y/n)? [n]
+> 
+
+Edit COLLECTIONS list in fcst/HISTORY.rc.tmpl (y/n)? [n]
+> 
+
+Edit files in run directory for CERES configuration (y/n)? [n]
+> 
+
+Which? [Q]
+> 

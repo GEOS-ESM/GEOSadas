@@ -10,6 +10,7 @@
 #                     MPT we must prevent this.
 #  30Mar2017 Todling  Hack to fix env that looks for missing lib under messed up NCCS batch system
 #  21Feb2020 Todling  Allow for high freq bkg (up to 1mn)
+#  25Oct2024 Todling  Handling slurm array (and packable jobs)
 #-----------------------------------------------------------------------------------------------------
 
 use Env;                 # make env vars readily available
@@ -28,13 +29,15 @@ my $scriptname = basename($0);
 
 # Command line options
 
-  GetOptions ( "egress=s",
+  GetOptions ( "array=s",
+               "egress=s",
                "expid=s",
                "q=s",
                "proc=s",
-               "mpiprocs=s",
                "machfile=s",
                "xc=s",
+               "ncc",
+               "packable",
                "h" );
 
   usage() if $opt_h;
@@ -94,6 +97,15 @@ sub init {
       $proc = "";
    }
 
+   if ( $opt_packable ) {
+     if ( ! $opt_array ) {
+       print "$0: must specify array opt when using packable jobs \n\n";
+       exit(1);
+     }
+   }
+
+   $check_completion = 1;
+   if ( $opt_ncc ) {$check_completion = 0;}
 
 # FVROOT is where the binaries have been installed
 # ------------------------------------------------
@@ -112,17 +124,6 @@ sub init {
       print "$0: failed due undefined or zero ncpus_per_node \n\n";
       exit(1);
    }
-   $nodes = $ncpus / $ncpus_per_node;
-
-   if ( $opt_mpiprocs ) {
-      $mpiprocs = $opt_mpiprocs;
-      if ( $mpiprocs > $ncpus_per_node ) {
-          print "$0: failed due to invalid mpiprocs \n\n";
-          exit(1);
-      }
-   } else {
-      $mpiprocs = $ncpus_per_node;
-   }
 
 # allow overwrite of job name
   $newjobname = $jobname;
@@ -131,6 +132,11 @@ sub init {
   }
   if ( $ENV{JOBGEN_SFXNAME} ) {
      $newjobname = $newjobname . "_" . $ENV{JOBGEN_SFXNAME};
+  }
+
+  $forcerun = 0;
+  if ( $ENV{JOBGEN_FORCERUN} ) {
+    $forcerun = 1;
   }
 
 #  The following is a tricky one: replace mpirun w/ mpiexec
@@ -176,16 +182,24 @@ EOF
 
  if ( $ENV{JOBGEN_QOS} ) {
    if ( $opt_q ne "datamove" ) {
+    if ( ! $opt_packable ) {  # RT: until unfil NCCS allows dastest to run packable
  print  SCRIPT <<"EOF";
 #SBATCH --qos=$ENV{JOBGEN_QOS}
 EOF
+     }
    }
  }
  if ( $ENV{JOBGEN_PARTITION} ) {
    if ( $opt_q ne "datamove" ) {
+     if ( $opt_packable ) {
+ print  SCRIPT <<"EOF";
+#SBATCH --partition=packable
+EOF
+     } else {
  print  SCRIPT <<"EOF";
 #SBATCH --partition=$ENV{JOBGEN_PARTITION}
 EOF
+     }
    }
  }
  if ( $ENV{JOBGEN_RESERVATION} ) {
@@ -203,14 +217,21 @@ EOF
    }
    print  SCRIPT <<"EOF";
 #SBATCH --ntasks=${ncpus}
-#_SBATCH --ntasks-per-node=${ncpus_per_node}
 EOF
- }
-
- if ( $opt_q ne "datamove" ) {
+  if ( $ncpus_per_node > 0 ) {
+   print  SCRIPT <<"EOF";
+#SBATCH --ntasks-per-node=${ncpus_per_node}
+EOF
+  }
    if ( $ENV{JOBGEN_STREAM} ) {
  print  SCRIPT <<"EOF";
 #SBATCH --constraint=$ENV{JOBGEN_STREAM}
+EOF
+   }
+   if ( $opt_array ) {
+ print  SCRIPT <<"EOF";
+#SBATCH --array=$opt_array
+#SBATCH -o ${jobname}_output.%A_%a
 EOF
    }
  }
@@ -250,8 +271,13 @@ EOF
  if ( $fvroot ) {
  print  SCRIPT <<"EOF";
  setenv FVROOT $fvroot
+ setenv OSVERSION `basename \$FVROOT`
  source \$FVROOT/bin/g5_modules
  set path = ( . \$FVHOME/run \$FVROOT/bin \$path )
+ if ( \$OSVERSION == "install-SLES15" ) then
+   setenv I_MPI_FABRICS shm:ofi
+   setenv I_MPI_OFI_PROVIDER psm3
+ endif
 EOF
  }
 
@@ -261,6 +287,11 @@ EOF
 EOF
  }
 
+ if( $opt_array ) {
+ print  SCRIPT <<"EOF";
+   set memtag  = `echo \${SLURM_ARRAY_TASK_ID} |awk '{printf "%03d", \$1}'`
+EOF
+ }
  print  SCRIPT <<"EOF";
 
 # These env vars are here because the batch system is messed up
@@ -274,8 +305,14 @@ EOF
  /bin/rm .SUBMITTED
  touch .RUNNING
 EOF
+
  if( $opt_egress ) {
  print  SCRIPT <<"EOF";
+ if ( $check_completion ) then
+   if ( (! $forcerun) ) then
+      if ( -e $file2touch ) exit 0
+   endif
+ endif
  if ( -e $opt_egress ) then
     /bin/rm $opt_egress 
  endif
@@ -449,8 +486,11 @@ DESCRIPTION
 
 OPTIONS
 
-     -egress       specify file to watch for completion of job (e.g., EGRESS for GCM)
-     -expid        experiment name
+     -array    X   slurm array distribution (w/ or w/o packable)
+     -egress   X   specify file to watch for completion of job (e.g., EGRESS for GCM)
+     -expid    X   experiment name
+     -ncc          no check completion (run regardless whether completed before)
+     -packable     slurm packable distribution (must include array opt)
      -q            specify pbs queue (e.g., datamove when archiving)
      -h            prints this usage notice
 

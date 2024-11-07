@@ -68,7 +68,8 @@ setenv ADDINF_FACTOR_SPPT 0.2  # additive inflation for when SPPT is used
 setenv RECENTER_WALLCLOCK 1:00:00
 setenv ENSRECENTER_NCPUS 1
 setenv RECENTER_QNAME $ATMENS_QNAME
-setenv AENS_RECENTER_DSTJOB 4
+setenv AENS_RECENTER_DSTJOB 16
+setenv AENS_RECENTER_ARRAY 1
 
 # ensemble GAAS and AERO EnKF
 # ---------------------------
@@ -151,7 +152,7 @@ setenv AENSTAT_QNAME $ATMENS_QNAME
 
 # post-egcm calculations
 # ----------------------
-setenv PEGCM_NCPUS @STAT_CPUS
+setenv PEGCM_ARRAY 1
 setenv PEGCM_WALLCLOCK 1:00:00
 setenv PEGCM_QNAME $ATMENS_QNAME
 

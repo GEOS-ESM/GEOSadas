@@ -341,7 +341,8 @@ sub init {
                     mp_stats_perts.rc
                     nmcperts.rc
                     odsstats_ktonly.rc
-                    post_egcm.rc );
+                    post_egcm.rc
+                    post_egcm_diag.rc );
 
   @osercs =    qw ( AGCM.rc.tmpl
                     AtmOSEConfig.csh
@@ -375,12 +376,10 @@ sub init {
 		   obs1gsi_mean.rc
 		   obs1gsi_member.rc
 		   HISTAENS.rc.tmpl 
-		   mp_stats_NP.rc
-		   mp_stats_NZ.rc
 		   post_egcm.rc
+		   post_egcm_diag.rc
 		   AtmEnsConfig.csh
-		   atmens_storage.arc
-		   CAP.rc.tmpl);
+		   atmens_storage.arc);
 
 # location where ensemble RC files reside
   $AENSHOME = "$FVHOME/run/atmens";
@@ -725,12 +724,8 @@ sub ed_stat_rc {
 
   my($acq);
 
-#  $tmprc  = "$mydir/tmp.rc";
-#  $thisrc = "$mydir/mp_stats.rc";
   if ( $opt_r21c ) {
-	  @estat_files = qw ( mp_stats.rc
-			  mp_stats_NP.rc 
-			  mp_stats_NZ.rc);
+	  @estat_files = qw ( mp_stats.rc);
   } else {
 	  @estat_files = qw ( mp_stats.rc);
   }

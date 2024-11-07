@@ -65,10 +65,11 @@ setenv AENS_DONORECENTER 0     # do not recenter ensemble
 setenv ADDINF_FACTOR 0.35      # additive inflation coeff (seems small after mass-div fix)
 setenv ADDINF_FACTOR_SPPT 0.2  # additive inflation for when SPPT is used
 
-setenv RECENTER_WALLCLOCK 1:00:00
+setenv RECENTER_WALLCLOCK 0:30:00
 setenv ENSRECENTER_NCPUS 1
 setenv RECENTER_QNAME $ATMENS_QNAME
-setenv AENS_RECENTER_DSTJOB 4
+setenv AENS_RECENTER_DSTJOB 16
+setenv AENS_RECENTER_ARRAY 1
 
 # ensemble GAAS and AERO EnKF
 # ---------------------------
@@ -136,7 +137,7 @@ setenv MPIRUN_ENSANA  "$ATMENS_MPIRUN -np $ENSGSI_NCPUS GSIsa.x"     # esma_mpir
 
 # setup_perts.csh
 #----------------
-setenv AENS_PERTS_DSTJOB 8
+#setenv AENS_PERTS_DSTJOB 8
 setenv PERTS_QNAME $ATMENS_QNAME
 setenv PERTS_WALLCLOCK 1:00:00
 setenv PERTS_NCPUS 24 
@@ -151,12 +152,14 @@ setenv AENSTAT_QNAME $ATMENS_QNAME
 
 # post-egcm calculations
 # ----------------------
-setenv PEGCM_NCPUS @STAT_CPUS
+setenv PEGCM_ALLPARALLEL 1
+setenv PEGCM_ARRAY 1
 setenv PEGCM_WALLCLOCK 1:00:00
 setenv PEGCM_QNAME $ATMENS_QNAME
 
 
 # NOTES:
-setenv OBSCLASS1 "r21c_igra2_raob_pre-qc_bufr,r21c_cdas_conv_pre-qc_bufr,r21c_prof_pre-qc_bufr,r21c_avhrrwnd_pre-qc_bufr,r21c_nmodis_pre-qc_bufr,r21c_goes_pre-qc_prep_bufr,r21c_metsat_pre-qc_prep_bufr,r21c_jma_pre-qc_prep_bufr,r21c_ascat_pre-qc_bufr,r21c_repro_ers2_pre-qc_bufr,r21c_qscat_jpl_pre-qc_bufr,r21c_loon_bufr,r21c_gmao_mlst_bufr,r21c_prep_bufr,r21c_acftpfl_bufr,r21c_satwnd_bufr,r21c_avhrr_satwnd_bufr,r21c_ncep_tcvitals,r21c_tmi_bufr,r21c_gpsro_bufr,r21c_sevcsr_bufr,r21c_1bamua_bufr,r21c_1bamub_bufr,r21c_1bhrs2_bufr,r21c_1bhrs3_bufr,r21c_1bhrs4_bufr,r21c_1bmsu_bufr,r21c_1bmhs_bufr,r21c_1bssu_bufr,r21c_eosairs_bufr,r21c_eosamsua_bufr,r21c_mtiasi_bufr,r21c_atms_bufr,r21c_ssmit11_bufr,r21c_ssmit13_bufr,r21c_ssmit14_bufr,r21c_ssmit15_bufr,r21c_amsre_bufr,r21c_osbuv8_bufr,r21c_mls_nc,r21c_npp_ompslp_nc,r21c_aura_omieff_nc,r21c_npp_ompsnmeff_nc,r21c_avcsam_bufr,r21c_avcspm_bufr,r21c_amsr2_bufr,r21c_crisfsr_bufr,r21c_gmi_bufr,r21c_prep_bufr,r21c_acftpfl_bufr"
+setenv OBSCLASS1 "r21c_loon_bufr,r21c_gmao_mlst_bufr,r21c_prep_bufr,r21c_acftpfl_bufr,r21c_satwnd_bufr,r21c_avhrr_satwnd_bufr,r21c_ncep_tcvitals,r21c_tmi_bufr,r21c_gpsro_bufr,r21c_sevcsr_bufr,r21c_1bamua_bufr,r21c_1bamub_bufr,r21c_1bhrs2_bufr,r21c_1bhrs3_bufr,r21c_1bhrs4_bufr,r21c_1bmsu_bufr,r21c_1bmhs_bufr,r21c_1bssu_bufr,r21c_eosairs_bufr,r21c_eosamsua_bufr,r21c_mtiasi_bufr,r21c_atms_bufr,r21c_ssmit11_bufr,r21c_ssmit13_bufr,r21c_ssmit14_bufr,r21c_ssmit15_bufr,r21c_amsre_bufr,r21c_osbuv8_bufr,r21c_mls_nc,r21c_npp_ompslp_nc,r21c_aura_omieff_nc,r21c_npp_ompsnmeff_nc,r21c_avcsam_bufr,r21c_avcspm_bufr,r21c_amsr2_bufr,r21c_crisfsr_bufr,r21c_gmi_bufr,r21c_prep_bufr,r21c_acftpfl_bufr"
+
 setenv OBSCLASS "gmao_prep_bufr,gmao_acftpfl_bufr,$OBSCLASS1"
 
