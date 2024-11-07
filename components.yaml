@@ -28,7 +28,7 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  branch: feature/rtodling/r21c_milan
+  tag: v1.7.2+R21C_v1.0.3
   develop: R21C
 
 GMAOpyobs:
