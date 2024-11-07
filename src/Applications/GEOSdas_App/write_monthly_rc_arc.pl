@@ -389,7 +389,7 @@ sub get_info_from_SILO {
     #---------------------------------------------------------------
     open SILO, "< $siloarc" or die "Error during open $siloarc;";
     while (<SILO>) {
-        next unless /\${PESTOROOT}/;
+        next unless /\$[{PESTOROOT}]/;
         next if /\+/;
 
         chomp($line = $_);
@@ -401,7 +401,7 @@ sub get_info_from_SILO {
 
             # modified line for $outRc file
             #------------------------------
-            ($mline1 = $mline) =~ s|\${PESTOROOT}\%s/||;
+            ($mline1 = $mline) =~ s|\$[{PESTOROOT}]\%s/||;
             $mline1 =~ s|%s|\${EXPID}|;
             next if $mline1 eq $mline;
 
@@ -432,7 +432,7 @@ sub get_info_from_SILO {
         foreach $mline (sort keys %tempOutRcHash) {
             if ($tempOutRcHash{$mline} eq $listflags) {
                 $name = "";
-                $name = $1 if $mline =~ /\${EXPID}\.(.*)\.%y/;
+                $name = $1 if $mline =~ /\$[{EXPID}]\.(.*)\.%y/;
 
                 $mline = "#".$mline if $listflags =~ m/C/;
                 ($flags = $listflags) =~ s/C//;
