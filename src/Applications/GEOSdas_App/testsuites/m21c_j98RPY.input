@@ -1,9 +1,9 @@
 #---------------
-# m21c_j98.input
+# m21c_j98RPY.input
 #---------------
 
 codeID: 271edc7
-description: m21c_j98__agrid_C360__ogrid_CS
+description: m21c_j98RPY__agrid_C360__ogrid_CS
 fvsetupID: 
 
 ---ENDHEADERS---
@@ -29,7 +29,7 @@ EXPID? [u000_C360]
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [m21c_j98__agrid_C360__ogrid_CS]
+EXPDSC? [m21c_j98RPY__agrid_C360__ogrid_CS]
 > 
 
 Land Boundary Conditions? [Icarus-NLv3]
@@ -38,10 +38,10 @@ Land Boundary Conditions? [Icarus-NLv3]
 Catchment Model choice? [1]
 > 
 
-FVHOME? [/discover/nobackup/rtodling/m21c_j98]
+FVHOME? [/discover/nobackup/rtodling/m21c_j98RPY]
 > /discover/nobackup/projects/gmao/dadev/rtodling/M21C/$expid
 
-The directory /discover/nobackup/projects/gmao/dadev/rtodling/M21C/m21c_j98 does not exist. Create it now? [y]
+The directory /discover/nobackup/projects/gmao/dadev/rtodling/M21C/m21c_j98RPY does not exist. Create it now? [y]
 > 
 
 Processing nodes (1:Haswell, 2:Skylake, 3:Cascase, 4:Milan)? [3]
@@ -212,26 +212,14 @@ Output Restart TYPE (bin or nc4) [nc4]
 Select group: [g2538]
 > g0613
 
-Replayed Ensemble?  [no]
-> 
+Replayed Ensemble (from OPS)?  [no]
+> yes
 
-Use SPPT-scheme for Ensemble?  [yes]
-> 
+Replay exp name? [x0046d]
+> e5303_m21c_jan98
 
-Use Precip Correction for Ensemble?  [yes]
-> 
-
-Ensemble Resolution?  [C90]
-> 
-
-Ensemble Vertical Levels?  [72]
-> 
-
-Experiment archive directory for ensemble restarts or 'later': [/archive/u/rtodling/m21c_j98]
+Replay archive directory? [/discover/nobackup/projects/gmao/dadev/rtodling/archive/x0046d]
 > /gpfsm/dnb08/projects/p253/archive/e5303_m21c_jan98
-
-Continue without missing resource files? [y]
-> 
 
 Edit COLLECTIONS list in run/HISTORY.rc.tmpl (y/n)? [n]
 > 
