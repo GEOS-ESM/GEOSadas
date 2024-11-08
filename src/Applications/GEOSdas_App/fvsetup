@@ -388,7 +388,7 @@ my ($acqloc);
 my ($fcstimes,$fcswait_hrs,$asnwait_hrs);
 my ($landbcs);
 my ($coupled, $ores, $mometc);
-my ($o_servers,$bckend_wrts);
+my ($o_servers,$bckend_wrts, $xncpus, $ncpus_per_node);
 
 my ($sysfile, $nodeflg);
 my (@rmTilde);
@@ -3347,6 +3347,8 @@ EOF
   $nx = query("  Number of PEs in the zonal direction (NX)?", $nx);
   $ny = query("  Number of PEs in the meridional direction (NY)?", $ny);
   $ncpus = $nx * $ny;
+  my $this_many_nodes = ceil($ncpus/$ncpus_per_node) + $o_servers;
+  $xncpus = $this_many_nodes * $ncpus_per_node;
 
   $jobn = query("  Job nickname?", $jobn);
   $jobn = substr($jobn,0,5);
@@ -3663,10 +3665,10 @@ EOF
       $nxgsi = query("  Number of procs in the zonal direction (NX)?", $nxDEF);
       $nygsi = query("  Number of procs in the meridional direction (NY)?", $nyDEF);
       $ncpus_gsi = $nxgsi * $nygsi;
-      last if $ncpus_gsi <= $ncpus;
+      last if $ncpus_gsi <= $xncpus;
 
       print "\n  >>> WARNING <<<"
-          . "\n  GSI CPUs ($ncpus_gsi) exceeds total number of CPUs ($ncpus)\n";
+          . "\n  GSI CPUs ($ncpus_gsi) exceeds total number of CPUs ($xncpus)\n";
       die ">>> ERROR <<< too many unsuccessful attempts;" if ++$cnt > 3;
       print "  Try again.\n\n";
   }
@@ -7790,9 +7792,6 @@ if ( $fvchem && $lm > 2 ) {
  }
  $pi = $i;       # p for PSAS
 
- my $this_many_nodes = ceil($ncpus/$ncpus_per_node) + $o_servers;
- my $xncpus = $this_many_nodes * $ncpus_per_node;
-
 # Turn off some parallelization on discover
 #------------------------------------------
  if ( ($siteID eq "nccs") || ($siteID eq "nas") ) {
@@ -8994,8 +8993,6 @@ sub create_fscript {
 
  open(SCRIPT,">$fvhome/fcst/$jobf.j") or
  die ">>> ERROR <<< cannot write $fvhome/fcst/$jobf.j";
-
- my $xncpus = $ncpus + $o_servers * $ncpus_per_node;
 
  print  SCRIPT <<"EOF";
 #!/bin/csh -fx
