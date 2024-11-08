@@ -351,6 +351,7 @@ use File::Path qw(mkpath rmtree);
 use Getopt::Long qw(GetOptions);
 use Sys::Hostname;
 use Time::Local;         # time functions
+use POSIX qw(ceil);
 
 use FindBin;             # so we can find where this script resides
 use lib ("$FindBin::Bin", "$ESMADIR/$ARCH/bin");
@@ -387,7 +388,7 @@ my ($acqloc);
 my ($fcstimes,$fcswait_hrs,$asnwait_hrs);
 my ($landbcs);
 my ($coupled, $ores, $mometc);
-my ($o_servers,$bckend_wrts);
+my ($o_servers,$bckend_wrts, $xncpus, $ncpus_per_node);
 
 my ($sysfile, $nodeflg);
 my (@rmTilde);
@@ -3232,8 +3233,8 @@ sub get_times {
 #                                                    #       ----
       if    ($res eq "C48")  { $nx =  4; $ny = 24 }  # (b)    96
       elsif ($res eq "C90")  { $nx =  4; $ny = 24 }  # (c)    96
-      elsif ($res eq "C180") { $nx = 15; $ny = 36 }  # (d)   360
-      elsif ($res eq "C360") { $nx =  8; $ny = 48 }  # (e)   384
+      elsif ($res eq "C180") { $nx =  9; $ny = 30 }  # (d)   270
+      elsif ($res eq "C360") { $nx = 10; $ny = 36 }  # (e)   360
       else                   { $nx = 28; $ny = 48 }  # (f+) 1344
   }
   else {
@@ -3346,6 +3347,8 @@ EOF
   $nx = query("  Number of PEs in the zonal direction (NX)?", $nx);
   $ny = query("  Number of PEs in the meridional direction (NY)?", $ny);
   $ncpus = $nx * $ny;
+  my $this_many_nodes = ceil($ncpus/$ncpus_per_node) + $o_servers;
+  $xncpus = $this_many_nodes * $ncpus_per_node;
 
   $jobn = query("  Job nickname?", $jobn);
   $jobn = substr($jobn,0,5);
@@ -3662,10 +3665,10 @@ EOF
       $nxgsi = query("  Number of procs in the zonal direction (NX)?", $nxDEF);
       $nygsi = query("  Number of procs in the meridional direction (NY)?", $nyDEF);
       $ncpus_gsi = $nxgsi * $nygsi;
-      last if $ncpus_gsi <= $ncpus;
+      last if $ncpus_gsi <= $xncpus;
 
       print "\n  >>> WARNING <<<"
-          . "\n  GSI CPUs ($ncpus_gsi) exceeds total number of CPUs ($ncpus)\n";
+          . "\n  GSI CPUs ($ncpus_gsi) exceeds total number of CPUs ($xncpus)\n";
       die ">>> ERROR <<< too many unsuccessful attempts;" if ++$cnt > 3;
       print "  Try again.\n\n";
   }
@@ -4872,7 +4875,6 @@ EOF
   $use_shmem = 0;
   $o_servers = 0;
   $bckend_wrts = 0;
-  $ios_nds = 1;
   $cldmicro = "1MOMENT";
   if ( "$res" eq "c" && "$vres" eq "55" ) {
        $anahgrd = substr($res,0,1);
@@ -5167,7 +5169,6 @@ EOF
           $bckend_wrts = 24;
        }
        $cubed = 1;
-#      $ios_nds = 2;
        $specres = "254";
        $jcap = "254";
        $agcm_grid_type = "Cubed-Sphere";
@@ -5201,8 +5202,11 @@ EOF
        $ana_im_ens = 288;
        $ana_jm_ens = 181;
   } elsif ( "$res" eq "C360" ) {  # Cubed-sphere
+       if ($r21c) {
+          $o_servers = 3;
+          $bckend_wrts = 24;
+       }
        $cubed = 1;
-#      $ios_nds = 2;
        $specres = "254";
        $jcap = "254";
        $agcm_grid_type = "Cubed-Sphere";
@@ -5276,7 +5280,6 @@ EOF
   } elsif ( "$res" eq "C1440" ) {  # Cubed-sphere
        $cubed = 1;
        $o_servers = 8;
-#      $ios_nds = 4;
        $specres = "254";
        $jcap = "254";
        $agcm_grid_type = "Cubed-Sphere";
@@ -7789,8 +7792,6 @@ if ( $fvchem && $lm > 2 ) {
  }
  $pi = $i;       # p for PSAS
 
- my $xncpus = $ncpus + $o_servers * $ncpus_per_node;
-
 # Turn off some parallelization on discover
 #------------------------------------------
  if ( ($siteID eq "nccs") || ($siteID eq "nas") ) {
@@ -8993,8 +8994,6 @@ sub create_fscript {
  open(SCRIPT,">$fvhome/fcst/$jobf.j") or
  die ">>> ERROR <<< cannot write $fvhome/fcst/$jobf.j";
 
- my $xncpus = $ncpus + $o_servers * $ncpus_per_node;
-
  print  SCRIPT <<"EOF";
 #!/bin/csh -fx
 # ------------------------------------------
@@ -9887,7 +9886,11 @@ sub init_agcm_rc {
     AGCM_label_subst("\@GRID_TYPE", $agcm_grid_type);
     AGCM_label_subst("\@CUBE_AGCM", $cube_agcm);
     AGCM_label_subst("\@LATLON_AGCM", $latlon_agcm);
-    AGCM_label_subst("\@NUM_OSERVER_NODES", $ios_nds);
+    if ( $o_servers > 0 ) {
+       AGCM_label_subst("\@NUM_OSERVER_NODES", $o_servers);
+    } else {
+       AGCM_label_subst("\@NUM_OSERVER_NODES", 1);
+    }
     AGCM_label_subst("\@NUM_BACKEND_PES", $bckend_wrts);
 
     AGCM_label_subst("\@AANA_IM", $ana_im);
