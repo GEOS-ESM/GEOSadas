@@ -171,7 +171,7 @@
    real   , allocatable, dimension(:,:,:)    :: sphu
    real   , allocatable, dimension(:,:)      :: pert_ps ! ps-perturbation
 
-   logical :: verbose,rms,stdv,doene
+   logical :: verbose,rms,stdv,variance,doene
    integer :: id
    integer :: MAXFILES = 100
    integer :: nfiles
@@ -336,7 +336,7 @@ CONTAINS
        call zeit_co('CFIORead')
     endif
 
-!   If recursive mean, rms and/or stdv are required ...
+!   If recursive mean, rms and/or stdv or variance are required ...
 !   ---------------------------------------------------
     if (.not.skip_main) then
 
@@ -419,7 +419,7 @@ CONTAINS
                       else
                          val = ptr2d(i,j)
                       endif
-                      if (stdv) then
+                      if (stdv .or. variance) then
                          if (recursive_stats) then
                              smom = val - mean2d(i,j,i2d); smom = smom*smom
                              smom2d(i,j,i2d) = smom2d(i,j,i2d) + cin*cm1*smom
@@ -439,7 +439,7 @@ CONTAINS
                    else ! not defined ...
                       cnt2d (i,j,i2d) = 0
                       mean2d(i,j,i2d) = MAPL_UNDEF
-                      if (stdv.and.recursive_stats) then
+                      if ((stdv.or.variance).and.recursive_stats) then
                          smom2d(i,j,i2d) = MAPL_UNDEF
                       endif
                    endif
@@ -477,7 +477,7 @@ CONTAINS
                          cin = 1.0/cnt3d(i,j,L,i3d)
                          cm1 = cnt3d(i,j,L,i3d)-1.0
                          val = ptr3d(i,j,L)
-                         if (stdv) then
+                         if (stdv .or. variance) then
                              if (recursive_stats) then
                                  smom = val - mean3d(i,j,L,i3d); smom = smom*smom
                                  smom3d(i,j,L,i3d) = smom3d(i,j,L,i3d) + cin*cm1*smom
@@ -497,7 +497,7 @@ CONTAINS
                       else ! not defined ...
                          cnt3d (i,j,L,i3d) = 0
                          mean3d(i,j,L,i3d) = MAPL_UNDEF
-                         if (stdv.and.recursive_stats) then
+                         if ((stdv .or. variance) .and.recursive_stats) then
                             smom3d(i,j,L,i3d) = MAPL_UNDEF
                          endif
                       end if
@@ -819,7 +819,7 @@ CONTAINS
              endif
           END DO
        else ! <.not.umean>
-    if (stdv.or.doene) then
+    if (stdv .or. variance .or.doene) then
           if(n2d>0) then
              allocate(smom2d(im,jm,n2d))
              smom2d = 0.0
@@ -828,9 +828,9 @@ CONTAINS
              allocate(smom3d(im,jm,lm,n3d))
              smom3d = 0.0
           endif
-    endif ! <stdv>
+    endif ! <stdv or variance>
        endif ! <umean>
-!   endif ! <stdv>
+!   endif ! <stdv or variance>
 
   end subroutine get_fields_info_
 
@@ -893,6 +893,11 @@ CONTAINS
                 ptr2d = sqrt(ptr2d/cnt2d(:,:,j2d))
              endwhere
           endif
+          if (variance) then
+             where(cnt2d(:,:,j2d)>0.0)
+                ptr2d = ptr2d/cnt2d(:,:,j2d)
+             endwhere
+          endif
        endif ! <sec_mom>
      endif ! <rank=2>
      if (rank == 3) then
@@ -932,6 +937,11 @@ CONTAINS
           if (stdv) then
              where(cnt3d(:,:,:,j3d)>0.0)
                 ptr3d = sqrt(ptr3d/cnt3d(:,:,:,j3d))
+             endwhere
+          endif
+          if (variance) then
+             where(cnt3d(:,:,:,j3d)>0.0)
+                ptr3d = ptr3d/cnt3d(:,:,:,j3d)
              endwhere
           endif
        endif ! <sec_mom>
@@ -1146,6 +1156,7 @@ CONTAINS
    verbose = .false.
    rms     = .false.
    stdv    = .false.
+   variance = .false.
    umean   = .false.
    doene   = .false.
    efile   = "NONE"
@@ -1241,6 +1252,10 @@ CONTAINS
              iarg = iarg + 1
              call GetArg ( iArg, sfile )
              stdv = .true.
+           case ("-variance")
+             iarg = iarg + 1
+             call GetArg ( iArg, sfile )
+             variance = .true.
            case ("-tmpl")
              if ( iarg+1 .gt. argc ) call usage_()
              iarg = iarg + 1
@@ -1299,6 +1314,7 @@ CONTAINS
    call mpi_bcast(log_eps,       1,mp_real4    ,MAPL_root,comm,iret)
    call mpi_bcast(rms   ,        1,mp_logical  ,MAPL_root,comm,iret)
    call mpi_bcast(stdv  ,        1,mp_logical  ,MAPL_root,comm,iret)
+   call mpi_bcast(variance,      1,mp_logical  ,MAPL_root,comm,iret)
    call mpi_bcast(umean ,        1,mp_logical  ,MAPL_root,comm,iret)
    call mpi_bcast(doene ,        1,mp_logical  ,MAPL_root,comm,iret)
    call mpi_bcast(verbose,       1,mp_logical  ,MAPL_root,comm,iret)
@@ -1333,7 +1349,7 @@ CONTAINS
        freq    = mod(freq_,100)
        freq    = freq_hr*3600 + freq_mn*60 + freq
    endif
-   if (stdv) then
+   if (stdv.or.variance) then
       call mpi_bcast(sfile,ESMF_MAXSTR,mp_character,MAPL_root,comm,iret)
       if(recursive_stats) then
          rms = .false.
@@ -1376,7 +1392,9 @@ CONTAINS
    if (umean) then             ! when mean is provided by user ...
        if(.not.rms) then       ! ... and rms is not requested ...
           if(.not.stdv) then   ! ... and stdv is also not requested
-             skip_main=.true.  ! then bypass main part of usual calculation
+             if(.not.variance) then ! ... and variance is also not requested
+                skip_main=.true.  ! then bypass main part of usual calculation
+             endif
           endif
        endif
    endif
@@ -1407,6 +1425,7 @@ CONTAINS
        write(6,'(a)') '                     (NOTE: this will sweep through the data twice)'
        write(6,'(a)') '-rms              calculate rms'
        write(6,'(a)') '-stdv  FILE       provide filename of output stdv'
+       write(6,'(a)') '-variance  FILE   provide filename of output variance'
        write(6,'(a)') '-umean FILE       provide available estimate of mean'
        write(6,'(a)') '                    (only used in non-recursive calcuation'
        write(6,'(a)') '                     of standard deviations)'
@@ -1455,6 +1474,13 @@ CONTAINS
        write(6,*)
        write(6,'(a)') ' 9. removing mean of energy fields:'
        write(6,'(a)') '    mp_stats.x -alpha -1.0 -tmpl energy_anomaly.%y4%m2%d2_%h2z -usrmean mean_energy.nc4 energy.20120410_00z.*.nc4'
+       write(6,*)
+       write(6,'(a)') ' 10. Recursively obtain variance from original fields:'
+       write(6,'(a)') '    mp_stats.x -o mean.nc4 -variance variance.nc4 mem0*/hy05a.bkg.eta.20120410_00z.nc4'
+       write(6,*)
+       write(6,'(a)') ' 11. Non-recursively obtain variance by subtracting user-provided mean can be triggered by:'
+       write(6,'(a)') '    mp_stats.x -o variance.nc4 -usrmean mean.nc4 -rms -variance NONE mem0*/hy05a.bkg.eta.20120410_00z.nc4'
+       write(6,'(a)') '    in this case, the file mean.nc4 is an input such as that obtained from (1)'
        write(6,*)
        write(6,'(a)') 'REMARKS:'
        write(6,'(a)') ' a. To calculate energy measure for single case (member)'
