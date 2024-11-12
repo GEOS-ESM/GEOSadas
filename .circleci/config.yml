@@ -1,10 +1,10 @@
 version: 2.1
 
 # Anchors to prevent forgetting to update a version
-baselibs_version: &baselibs_version v7.25.0
+baselibs_version: &baselibs_version v7.23.0
 
 orbs:
-  ci: geos-esm/circleci-tools@2
+  ci: geos-esm/circleci-tools@2.10
 
 workflows:
   build-test:
@@ -21,5 +21,5 @@ workflows:
           repo: GEOSadas
           persist_workspace: false # Needs to be true to run fv3/gcm experiment, costs extra
           mepodevelop: false
-          rebuild_procs: 1
+          rebuild_procs: 4
           build_type: Release
