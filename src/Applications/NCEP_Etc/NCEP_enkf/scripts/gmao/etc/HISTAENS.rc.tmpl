@@ -46,7 +46,7 @@ COLLECTIONS: 'bkg.eta'
 #            'tavg1_2d_slv_Nx'
 #            'inst1_2d_asm_Nx'
              'inst1_2d_ocn_Nx'
-             'asm.eta'
+             'asm_eta'
 # WxMaps and Meteograms
 #            'inst3_3d_wxmc_Cp'
 #            'inst3_3d_wxme_Np'
@@ -242,18 +242,18 @@ COLLECTIONS: 'bkg.eta'
                             'TOTEXTTAU'    , 'GOCART2G'  ,
                             ::
 
-  asm.eta.format:     'CFIO' ,
-  asm.eta.deflate:    2      ,
-  asm.eta.regrid_method:  'BILINEAR_MONOTONIC' ,
-  asm.eta.template:   '%y4%m2%d2_%h2%n2z.>>>NCSUFFIX<<<',
-  asm.eta.end_date:  >>>IOBBKGD<<< ,
-  asm.eta.end_time:  >>>IOBBKGT<<< ,
-  asm.eta.frequency: 060000 ,
-  asm.eta.duration:  060000 ,
-  asm.eta.ref_time:  030000 ,
-  asm.eta.mode:       'instantaneous',
-  asm.eta.resolution:  @LHIS_IM @LHIS_JM ,
-  asm.eta.fields:     'PHIS'     , 'AGCM'          , 'phis'         ,
+  asm_eta.format:     'CFIO' ,
+  asm_eta.deflate:    2      ,
+  asm_eta.regrid_method:  'BILINEAR_MONOTONIC' ,
+  asm_eta.template:   '%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.>>>NCSUFFIX<<<',
+  asm_eta.end_date:  >>>IOBBKGD<<< ,
+  asm_eta.end_time:  >>>IOBBKGT<<< ,
+  asm_eta.frequency: 030000 ,
+  asm_eta.duration:  030000 ,
+  asm_eta.ref_time:  030000 ,
+  asm_eta.mode:       'instantaneous',
+  asm_eta.resolution:  @LHIS_IM @LHIS_JM ,
+  asm_eta.fields:     'PHIS'     , 'AGCM'          , 'phis'         ,
                       'SGH'      , 'AGCM'          , 'hs_stdv'      ,
                       'PS'       , 'DYN'           , 'ps'           ,
                       'TS'       , 'SURFACE'       , 'ts'           ,

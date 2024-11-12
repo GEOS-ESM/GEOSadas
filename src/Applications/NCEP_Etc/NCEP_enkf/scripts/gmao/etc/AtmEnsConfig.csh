@@ -33,7 +33,7 @@ setenv ACFTBIAS @ACFTBIAS  # 0: no aircraft bias correction
 setenv ENSARCH_ALLBKG 1   # set this and ALL bkg files are saved in tar ball
 setenv ENSARCH_FIELDS "eana,ebkg,stat,ecbkg,eoi0,edia,ebaer,erst,ebkgx,eprg,eniana"
 setenv ENSARCH_FIELDS "eana,ebkg,stat,ecbkg,eoi0,edia,ebaer,erst"
-setenv ENSARCH_FIELDS "eana,ebkg,stat,ecbkg,eoi0,edia,ebaer,erst,ebkgx"
+setenv ENSARCH_FIELDS "eana,ebkg,stat,ecbkg,eoi0,edia,ebaer,erst,ebkgx,edstat"
 setenv ENSARCH_WALLCLOCK 2:00:00
 setenv ARCHLOC $FVARCH
 
@@ -139,7 +139,7 @@ setenv MPIRUN_ENSANA  "$ATMENS_MPIRUN -np $ENSGSI_NCPUS GSIsa.x"     # esma_mpir
 
 # setup_perts.csh
 #----------------
-#_SLES15 setenv AENS_PERTS_DSTJOB 8
+# setenv AENS_PERTS_DSTJOB 8
 setenv PERTS_QNAME $ATMENS_QNAME
 setenv PERTS_WALLCLOCK 1:00:00
 setenv PERTS_NCPUS 24 
@@ -154,8 +154,8 @@ setenv AENSTAT_QNAME $ATMENS_QNAME
 
 # post-egcm calculations
 # ----------------------
-setenv PEGCM_ALLPARALLEL 0
-setenv PEGCM_ARRAY 0
+setenv PEGCM_ALLPARALLEL 1
+#setenv PEGCM_ARRAY 1
 setenv PEGCM_WALLCLOCK 1:00:00
 setenv PEGCM_QNAME $ATMENS_QNAME
 
