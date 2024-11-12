@@ -11,6 +11,7 @@
 #                       NMC-like perturbations to them
 #  20Oct2012  Todling   Update API of stats script
 #  12Mar2014  Todling   Update interface to main re-center program
+#  02Nov2024  Todling   Update API of stats script
 #------------------------------------------------------------------
 
 if ( !($?ATMENS_VERBOSE) ) then
@@ -74,7 +75,7 @@ if ( $#argv < 4 ) then
    echo " " 
    echo " AUTHOR"
    echo "   Ricardo Todling (Ricardo.Todling@nasa.gov), NASA/GMAO "
-   echo "     Last modified: 30Oct2024      by: R. Todling"
+   echo "     Last modified: 02Nov2024      by: R. Todling"
    echo " \\end{verbatim} "
    echo " \\clearpage "
    exit(0)
@@ -314,7 +315,7 @@ if ( $ATMENS_DOSTATS ) then
       set nymd = `echo $bkgeta | cut -d. -f3 | cut -c1-8`
       set hh   = `echo $bkgeta | cut -d. -f3 | cut -c10-11`
       set nhms = ${hh}0000
-      atmens_stats.csh $nmem bkg.eta $ensloc $nymd $nhms
+      atmens_stats.csh $nmem bkg.eta spread $ensloc $nymd $nhms
    end
 else
    echo " ${MYNAME}: by request, no statistics calculated"

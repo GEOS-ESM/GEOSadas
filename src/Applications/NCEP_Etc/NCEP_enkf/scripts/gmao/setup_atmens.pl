@@ -353,7 +353,8 @@ sub init {
                     mp_stats_perts.rc
                     nmcperts.rc
                     odsstats_ktonly.rc
-                    post_egcm.rc );
+                    post_egcm.rc
+                    post_egcm_diag.rc );
 
   @osercs =    qw ( AGCM.rc.tmpl
                     AtmOSEConfig.csh
