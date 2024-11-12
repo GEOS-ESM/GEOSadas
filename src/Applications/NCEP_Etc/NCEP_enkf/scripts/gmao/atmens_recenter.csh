@@ -470,7 +470,7 @@ while ( $ic < $nmem + 1 )
    @ ic = $ic + 1
 end
 /bin/rm $ENSWORK/recenter_poe.*
-/bin/rm $ENSWORK/*recenter_array*output*
+/bin/rm $ENSWORK/*recenter_array*
 #/bin/rm $ENSWORK/recenter_poe*.j
 
 if ($failed) then
