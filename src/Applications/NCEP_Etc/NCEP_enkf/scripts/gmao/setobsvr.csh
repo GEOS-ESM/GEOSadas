@@ -18,6 +18,7 @@
 #  16Apr2018  Todling   Revise access to Y. Zhu sat-bias-correction files
 #  15Feb2020  Todling   Allow acquire to work as non-batch call
 #  20Jun2020  Todling   Minor changes for flexible location of RC files
+#  29Oct2024  Todling   Edit obsys.rc and fill in env vars
 #------------------------------------------------------------------
 
   if ( !($?ATMENS_VERBOSE) ) then
@@ -182,6 +183,12 @@
   /bin/cp $ATMENSETC/GSI_GridComp.rc.tmpl .
   /bin/cp $ATMENSETC/satbias.acq          .
 
+# obsys.rc might have env vars to be filled in
+# --------------------------------------------
+  if (-e obsys.rc ) then
+    /bin/mv obsys.rc obsys.rc.env
+    vED -env obsys.rc.env -o obsys.rc
+  endif
 
   # acquire initial conditions
   
