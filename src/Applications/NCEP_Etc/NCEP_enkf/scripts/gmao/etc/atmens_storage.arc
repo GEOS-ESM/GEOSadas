@@ -23,6 +23,7 @@
 #
 ${PESTOROOT}%s/atmens/Y%y4/M%m2/%s.atmens_ebkg.%y4%m2%d2_%h2z.tar.gz
 ${PESTOROOT}%s/atmens/Y%y4/M%m2/%s.atmens_ecbkg.%y4%m2%d2_%h2z.tar.gz
+${PESTOROOT}%s/atmens/Y%y4/M%m2/%s.atmens_edstat.%y4%m2%d2_%h2z.tar.gz
 ${PESTOROOT}%s/atmens/Y%y4/M%m2/%s.atmens_erst.%y4%m2%d2_%h2z.tar.gz
 ${PESTOROOT}%s/atmens/Y%y4/M%m2/%s.atmens_fstat.%y4%m2%d2_%h2z.tar.gz
 ${PESTOROOT}%s/atmens/Y%y4/M%m2/%s.atmens_stat.%y4%m2%d2_%h2z.tar.gz
@@ -50,6 +51,7 @@ ${PESTOROOT}%s/atmens/Y%y4/M%m2/%s.atmens_eoi0.%y4%m2%d2_%h2z.tar
 #${PESTOROOT}%s/atmens/Y%y4/M%m2/%s.atmens_eprg.%y4%m2%d2_15z.tar
 ${PESTOROOT}%s/atmens/Y%y4/M%m2/%s.atmens_erst.%y4%m2%d2_21z.tar
 ${PESTOROOT}%s/atmens/Y%y4/M%m2/%s.atmens_evtk.%y4%m2%d2_%h2z.tar
+${PESTOROOT}%s/atmens/Y%y4/M%m2/%s.atmens_edstat.%y4%m2%d2_%h2z.tar
 ${PESTOROOT}%s/atmens/Y%y4/M%m2/%s.atmens_fstat.%y4%m2%d2_%h2z.tar
 ${PESTOROOT}%s/atmens/Y%y4/M%m2/%s.atmens_stat.%y4%m2%d2_%h2z.tar
 ${PESTOROOT}%s/atmens/Y%y4/M%m2/%s.atmens_olog.%y4%m2%d2_%c%c%c.tar
