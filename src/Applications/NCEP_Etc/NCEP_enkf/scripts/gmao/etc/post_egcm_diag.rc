@@ -1,8 +1,7 @@
- 
+# This file should never have collections
+# named this.that - only non-dotted strings
+# allowed. 
 COLLECTIONS::
-             'asm.eta'
-#            'tavg1_2d_slv_Nx'
-#            'inst1_2d_asm_Nx'
+             'asm_eta'
              'inst1_2d_ocn_Nx'
-             'asm.eta'
               ::
