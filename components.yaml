@@ -77,13 +77,13 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  tag: g5.41.3
+  tag: g5.41.4
   develop: develop
 
 mksi:
    local: ./src/Components/@GEOSana_GridComp/GEOSaana_GridComp/GSI_GridComp/@mksi
    remote: ../GEOS_mksi.git
-   tag: g5.41.2
+   tag: g5.41.3
    develop: develop
 
 GEOSgcm_GridComp:
