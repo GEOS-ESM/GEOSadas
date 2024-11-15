@@ -352,6 +352,7 @@ use File::Path qw(mkpath rmtree);
 use Getopt::Long qw(GetOptions);
 use Sys::Hostname;
 use Time::Local;         # time functions
+use POSIX qw(ceil);
 
 use FindBin;             # so we can find where this script resides
 use lib ("$FindBin::Bin", "$ESMADIR/$ARCH/bin");
@@ -388,7 +389,7 @@ my ($acqloc);
 my ($fcstimes,$fcswait_hrs,$asnwait_hrs);
 my ($landbcs);
 my ($coupled, $ores, $mometc);
-my ($o_servers,$bckend_wrts);
+my ($o_servers,$bckend_wrts, $xncpus, $ncpus_per_node);
 
 my ($sysfile, $nodeflg);
 my (@rmTilde);
@@ -3210,8 +3211,8 @@ sub get_times {
 #                                                    #       ----
       if    ($res eq "C48")  { $nx =  4; $ny = 24 }  # (b)    96
       elsif ($res eq "C90")  { $nx =  4; $ny = 24 }  # (c)    96
-      elsif ($res eq "C180") { $nx = 15; $ny = 36 }  # (d)   360
-      elsif ($res eq "C360") { $nx =  8; $ny = 48 }  # (e)   384
+      elsif ($res eq "C180") { $nx =  9; $ny = 30 }  # (d)   270
+      elsif ($res eq "C360") { $nx = 10; $ny = 36 }  # (e)   360
       else                   { $nx = 28; $ny = 48 }  # (f+) 1344
   }
   else {
@@ -3224,6 +3225,7 @@ sub get_times {
   }
   $ncpus = $nx * $ny;
   $ncpus_per_node /= 2 if $ncpus_per_node and $hres eq "e";
+
 
   if ( $g5gcm ) {
      $jobn  = "g5das";
@@ -3323,6 +3325,8 @@ EOF
   $nx = query("  Number of PEs in the zonal direction (NX)?", $nx);
   $ny = query("  Number of PEs in the meridional direction (NY)?", $ny);
   $ncpus = $nx * $ny;
+  my $this_many_nodes = ceil($ncpus/$ncpus_per_node) + $o_servers;
+  $xncpus = $this_many_nodes * $ncpus_per_node;
 
   $jobn = query("  Job nickname?", $jobn);
   $jobn = substr($jobn,0,5);
@@ -3633,10 +3637,10 @@ EOF
       $nxgsi = query("  Number of procs in the zonal direction (NX)?", $nxDEF);
       $nygsi = query("  Number of procs in the meridional direction (NY)?", $nyDEF);
       $ncpus_gsi = $nxgsi * $nygsi;
-      last if $ncpus_gsi <= $ncpus;
+      last if $ncpus_gsi <= $xncpus;
 
       print "\n  >>> WARNING <<<"
-          . "\n  GSI CPUs ($ncpus_gsi) exceeds total number of CPUs ($ncpus)\n";
+          . "\n  GSI CPUs ($ncpus_gsi) exceeds total number of CPUs ($xncpus)\n";
       die ">>> ERROR <<< too many unsuccessful attempts;" if ++$cnt > 3;
       print "  Try again.\n\n";
   }
@@ -4811,7 +4815,6 @@ EOF
   $use_shmem = 0;
   $o_servers = 0;
   $bckend_wrts = 0;
-  $ios_nds = 1;
   $cldmicro = "1MOMENT";
   if ( "$res" eq "c" && "$vres" eq "55" ) {
        $anahgrd = substr($res,0,1);
@@ -5115,7 +5118,6 @@ EOF
           $bckend_wrts = 24;
        }
        $cubed = 1;
-#      $ios_nds = 2;
        $specres = "254";
        $jcap = "254";
        $agcm_grid_type = "Cubed-Sphere";
@@ -5150,8 +5152,9 @@ EOF
        $ana_im_ens = 288;
        $ana_jm_ens = 181;
   } elsif ( "$res" eq "C360" ) {  # Cubed-sphere
+       $o_servers = 3;
+       $bckend_wrts = 24;
        $cubed = 1;
-#      $ios_nds = 2;
        $specres = "254";
        $jcap = "254";
        $agcm_grid_type = "Cubed-Sphere";
@@ -5189,7 +5192,7 @@ EOF
   } elsif ( "$res" eq "C720" ) {  # Cubed-sphere
        $cubed = 1;
        $o_servers = 8;
-       $bckend_wrts = 8;
+       $bckend_wrts = 36;
        $specres = "254";
        $jcap = "254";
        $agcm_grid_type = "Cubed-Sphere";
@@ -5227,7 +5230,7 @@ EOF
   } elsif ( "$res" eq "C1440" ) {  # Cubed-sphere
        $cubed = 1;
        $o_servers = 8;
-#      $ios_nds = 4;
+       $bckend_wrts = 36;
        $specres = "254";
        $jcap = "254";
        $agcm_grid_type = "Cubed-Sphere";
@@ -5589,10 +5592,13 @@ sub archiving_rules {
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_msu_tirosn_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_omi_aura_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpnc_npp_%c%c%c.%y4%m2%d2_%h2z.bin
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpnc_n21_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpuv_npp_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpvis_npp_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnm_npp_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnmeff_npp_%c%c%c.%y4%m2%d2_%h2z.bin
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnmeff_n20_%c%c%c.%y4%m2%d2_%h2z.bin
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnmeff_n21_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnp_npp_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnpnc_npp_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_pcp_tmi_%c%c%c%c_%c%c%c.%y4%m2%d2_%h2z.bin
@@ -5647,10 +5653,13 @@ sub archiving_rules {
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_msu_tirosn.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_omi_aura.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpnc_npp.%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpnc_n21.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpuv_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpvis_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnm_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnmeff_npp.%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnmeff_n20.%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnmeff_n21.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnp_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnpnc_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_pcp_ssmi_dmsp%c%c.%y4%m2%d2_%h2z.ods
@@ -5704,10 +5713,13 @@ sub archiving_rules {
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_msu_tirosn.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_omi_aura.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_ompslpnc_npp.%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_ompslpnc_n21.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_ompslpuv_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_ompslpvis_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_ompsnm_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_ompsnmeff_npp.%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_ompsnmeff_n20.%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_ompsnmeff_n21.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_ompsnp_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_ompsnpnc_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_pcp_ssmi_%c%c%c%c.%y4%m2%d2_%h2z.ods
@@ -5745,6 +5757,7 @@ sub archiving_rules {
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_sbuv%c_%c%c%c_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_omi_aura_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpnc_npp_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpnc_n21_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpuv_npp_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpvis_npp_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnm_npp_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
@@ -5782,6 +5795,7 @@ sub archiving_rules {
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_sbuv%c_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_omi_aura_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpnc_npp_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpnc_n21_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpuv_npp_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpvis_npp_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompsnm_npp_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
@@ -5820,6 +5834,7 @@ sub archiving_rules {
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_sbuv%c_%c%c%c_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_omi_aura_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpnc_npp_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpnc_n21_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpuv_npp_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpvis_npp_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompsnm_npp_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
@@ -7015,12 +7030,15 @@ sub arch_asens {
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_omi_aura.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_omieff_aura.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpnc_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpnc_n21.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpuv_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpvis_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpnm_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpnp_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompsnm_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompsnmeff_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompsnmeff_n20.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompsnmeff_n21.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompsnp_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompsnpnc_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_o3lev_aura.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
@@ -7726,8 +7744,6 @@ if ( $fvchem && $lm > 2 ) {
  }
  $pi = $i;       # p for PSAS
 
- my $xncpus = $ncpus + $o_servers * $ncpus_per_node;
-
 # Turn off some parallelization on discover
 #------------------------------------------
  if ( ($siteID eq "nccs") || ($siteID eq "nas") ) {
@@ -7780,6 +7796,7 @@ print  SCRIPT <<"EOF";
 #SBATCH --ntasks-per-node=$ncpus_per_node
 #SBATCH --constraint=$nodeflg
 #SBATCH --time=${daswallclk}:00
+#SBATCH --no-requeue
 EOF
 
 }else{
@@ -7885,7 +7902,7 @@ print SCRIPT <<"EOF";
 #       (i) comment out line below
 #       (ii) uncomment and adjust following line
       setenv FVWORK $diren/fvwork.\$\$
-#     setenv FVWORK \$TSE_TMPDIR/fvwork.\$\$
+#     setenv FVWORK \$TSE_TMPDIR/$user/fvwork.\$\$
       if (\$?kidwork) then # this case, overwrite FVWORK with user-specific
          setenv FVWORK \$kidwork
       endif
@@ -8925,8 +8942,6 @@ sub create_fscript {
  open(SCRIPT,">$fvhome/fcst/$jobf.j") or
  die ">>> ERROR <<< cannot write $fvhome/fcst/$jobf.j";
 
- my $xncpus = $ncpus + $o_servers * $ncpus_per_node;
-
  print  SCRIPT <<"EOF";
 #!/bin/csh -fx
 # ------------------------------------------
@@ -8949,6 +8964,7 @@ print  SCRIPT <<"EOF";
 #SBATCH --ntasks-per-node=$ncpus_per_node
 #SBATCH --constraint=$nodeflg
 #SBATCH --time=${fcswallclk}:00
+#SBATCH --no-requeue
 EOF
 
 }else{
@@ -9036,7 +9052,7 @@ print SCRIPT <<"EOF";
       setenv FVWORK $fvhome/../tmp.\$\$
       if(   -d \$FVWORK ) /bin/rm -r  \$FVWORK
       /bin/mkdir -p \$FVWORK
-#     setenv FVWORK \$TSE_TMPDIR/tmp.\$\$
+#     setenv FVWORK \$TSE_TMPDIR/$user/tmp.\$\$
       if (-e /usr/bin/lfs) then
          /usr/bin/lfs setstripe -c 1 -s 1048576 -i -1 \$FVWORK
       endif
@@ -9818,7 +9834,11 @@ sub init_agcm_rc {
     AGCM_label_subst("\@GRID_TYPE", $agcm_grid_type);
     AGCM_label_subst("\@CUBE_AGCM", $cube_agcm);
     AGCM_label_subst("\@LATLON_AGCM", $latlon_agcm);
-    AGCM_label_subst("\@NUM_OSERVER_NODES", $ios_nds);
+    if ( $o_servers > 0 ) {
+       AGCM_label_subst("\@NUM_OSERVER_NODES", $o_servers);
+    } else {
+       AGCM_label_subst("\@NUM_OSERVER_NODES", 1);
+    }
     AGCM_label_subst("\@NUM_BACKEND_PES", $bckend_wrts);
 
     AGCM_label_subst("\@AANA_IM", $ana_im);

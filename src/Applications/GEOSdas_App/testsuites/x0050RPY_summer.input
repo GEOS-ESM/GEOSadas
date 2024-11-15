@@ -39,13 +39,13 @@ Catchment Model choice? [1]
 > 
 
 FVHOME? [/discover/nobackup/dao_it/x0050RPY]
-> /discover/nobackup/projects/gmao/dadev/dao_it/$expid
+> /discover/nobackup/projects/gmao/dadev/TSE_staging/dao_it/$expid
 
-The directory /discover/nobackup/projects/gmao/obsdev/dao_it/x0050RPY already exists. Clean it? [y]
+The directory /discover/nobackup/projects/gmao/dadev/TSE_staging/dao_it/x0050RPY already exists. Clean it? [y]
 > 
 
 Processing nodes (1:Haswell, 2:Skylake, 3:Cascase, 4:Milan)? [2]
->
+> 4
 
 Which case of variational analysis? [1]
 > 
@@ -81,7 +81,7 @@ AeroCom? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/AeroCom]
 > 
 
 FVICS? [/archive/u/jstassi/restarts/GEOSadas-5_24_0]
-> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_41/c360/c360.rst.20230714_21z.tar
+> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_41/c360/BCstrato/c360.rst.20230714_21z.tar
 
 Run model-adjoint-related applications (0=no,1=yes)? [0]
 > 1
@@ -98,7 +98,7 @@ Run singular vector experiments (0=n,1=yes)? [0]
 Run analysis-sensitivity applications (0=no,1=yes)? [0]
 > 1
 
-Verifying experiment id: [x50Rrt]
+Verifying experiment id: [x0050RPY]
 > 
 
 Ending year-month-day? [20191121]
@@ -110,11 +110,11 @@ Length of FORECAST run segments (in hours)? [123]
 Number of one-day DAS segments per PBS job? [1]
 > 
 
-Number of PEs in the zonal direction (NX)? [8]
+Number of PEs in the zonal direction (NX)? [10]
 > 12
 
-Number of PEs in the meridional direction (NY)? [48]
-> 72
+Number of PEs in the meridional direction (NY)? [36]
+> 48
 
 Job nickname? [g5das]
 > x50r
@@ -150,7 +150,7 @@ Which main class of ObsSys (1: NRT; 2: MERRA; 3: MERRA-2; 4: GEOS-IT; 5: R21C)? 
 > 
 
 OBSERVING SYSTEM CLASSES?
-> disc_airs_bufr,disc_amsua_bufr,gmao_amsr2_bufr,gmao_gmi_bufr,mls_nrt_nc,ncep_1bamua_bufr,ncep_1bhrs4_bufr,ncep_acftpfl_bufr,ncep_atms_bufr,ncep_aura_omi_bufr,ncep_avcsam_bufr,ncep_avcspm_bufr,ncep_crisfsr_bufr,ncep_goesfv_bufr,ncep_gpsro_bufr,ncep_mhs_bufr,ncep_mtiasi_bufr,ncep_prep_bufr,ncep_satwnd_bufr,ncep_ssmis_bufr,ncep_tcvitals,npp_ompsnm_bufr,gmao_mlst_bufr
+> disc_airs_bufr,disc_amsua_bufr,gmao_amsr2_bufr,gmao_gmi_bufr,mls_nrt_nc,ncep_1bamua_bufr,ncep_acftpfl_bufr,ncep_atms_bufr,ncep_aura_omi_bufr,ncep_avcsam_bufr,ncep_avcspm_bufr,ncep_crisfsr_bufr,ncep_goesfv_bufr,ncep_gpsro_bufr,ncep_mhs_bufr,ncep_mtiasi_bufr,ncep_prep_bufr,ncep_satwnd_bufr,ncep_ssmis_bufr,ncep_tcvitals,npp_ompsnm_bufr,r21c_npp_ompslp_nc,m2scr_n21_ompslp_nc,gmao_mlst_bufr
 
 CHECKING OBSYSTEM? [2]
 > 1
