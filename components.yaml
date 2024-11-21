@@ -35,7 +35,7 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  tag: g5.41.3
+  tag: g5.41.4
   develop: main
 
 GMAOpyobs:
