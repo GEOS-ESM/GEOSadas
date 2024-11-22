@@ -35,7 +35,7 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  branch: g5.41.3-with-main-updates
+  branch: g5.41.4-with-main-updates
   develop: main
 
 GMAOpyobs:
@@ -77,7 +77,7 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  tag: g5.41.4
+  tag: v5.41.5
   develop: develop
 
 mksi:
