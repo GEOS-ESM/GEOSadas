@@ -53,7 +53,7 @@ GEOS_Util:
 MAPL:
   local: ./src/Shared/@MAPL
   remote: ../MAPL.git
-  tag: release/2.35.3+R21C_v1.4.0
+  tag: v2.35.3+R21C_v1.4.0
   develop: R21C
 
 FMS:
