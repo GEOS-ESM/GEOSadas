@@ -28,7 +28,7 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  tag: v1.7.2+R21C_v1.0.4
+  tag: v1.7.2+R21C_v1.0.5
   develop: R21C
 
 GMAOpyobs:
@@ -53,7 +53,7 @@ GEOS_Util:
 MAPL:
   local: ./src/Shared/@MAPL
   remote: ../MAPL.git
-  tag: v2.35.3+R21C_v1.3.1
+  tag: v2.35.3+R21C_v1.4.0
   develop: R21C
 
 FMS:
@@ -65,7 +65,7 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  tag: v1.5.5-R21C-6
+  tag: v1.5.5-R21C-7
   develop: R21C
 
 GEOSgcm_GridComp:
