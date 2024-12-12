@@ -340,6 +340,7 @@
 # 26May2017 Sienkiewicz Additions for new radiance bias correction
 # 25Jul2017 Holdaway   Added resource files associated with NGGPS FV3 tlm/adjoint, sens and svec
 # 19Jul2018 Wargan     Additions for OMPS
+# 2022,2024 sqz        Additions for LADAS 
 #-------------------------------------------------------------------------
 use Cwd qw(abs_path cwd);
 use English;
@@ -351,6 +352,7 @@ use File::Path qw(mkpath rmtree);
 use Getopt::Long qw(GetOptions);
 use Sys::Hostname;
 use Time::Local;         # time functions
+use POSIX qw(ceil);
 
 use FindBin;             # so we can find where this script resides
 use lib ("$FindBin::Bin", "$ESMADIR/$ARCH/bin");
@@ -387,7 +389,7 @@ my ($acqloc);
 my ($fcstimes,$fcswait_hrs,$asnwait_hrs);
 my ($landbcs);
 my ($coupled, $ores, $mometc);
-my ($o_servers,$bckend_wrts);
+my ($o_servers,$bckend_wrts, $xncpus, $ncpus_per_node);
 
 my ($sysfile, $nodeflg);
 my (@rmTilde);
@@ -576,19 +578,23 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
   $rc = system("$fvbin/fix_gocart_rc.csh $vres $fvhome/run/gocart");
   die "Failed to fix GOCART levels-referencing $!" if ( $rc );
 
-# LDAS Setup is done separately, follow instructions in GEOSldas/README.md   
+# LDAS Setup is done separately, follow instructions in GEOSldas/README.md
+# Provide ldas config input files: YOUR_det_exeinp.txt, YOUR_det_batinp.txt 
+# ln -s YOUR_det_exeinp.txt  $fvbin/det_exeinp.txt 
+# ln -s YOUR_det_batinp.txt  $fvbin/det_batinp.txt  
+# For Hyb-4dEnVar, do same for ens_exeinp.txt and ens_batinp.txt
 # ------------------------------------------------------------------------
     print "\n checkprintout  ldas_ana == 1 ($ldas_ana)\n";
     if ($ldas_ana == 1 ) {
-    print "\n Please run ldas_setup following instructions in GEOSldas/README.md\n";
-    print "\n requires config input files: YOUR_exeinp.txt, YOUR_batinp.txt.\n" ;
-    print "\n example LDROOT: /discover/nobackup/$user/GEOSldas\n" ;
-    print "\n example LDHOME: /discover/nobackup/$user/ldascoup_C180\n" ;
-    print "\n example cd $LDROOT/install/bin/ \n";
-    print "\n example salloc \n";
-    print "\n example source g5_modules \n" ;
-    print "\n example ldas_setup setup $LDHOME exp_exeinp.txt exp_batinp.txt \n" ;
-      }
+       $rc = system("$fvbin/ldas_setup setup $fvhome/lana $fvbin/det_exeinp.txt $fvbin/det_batinp.txt");
+       die "Failed to setup ldas for det, check ldas config input files $!" if ( $rc );
+      
+       if ($hyb_ens == 4 ) {
+          $rc = system("$fvbin/ldas_setup setup $fvhome/lana $fvbin/ens_exeinp.txt $fvbin/ens_batinp.txt");
+          die "Failed to setup ldas for ens, check ldas config input files $!" if ( $rc );
+       }
+
+     }
     
 # Monthly Setup
 # -------------------------------------------------------------
@@ -620,6 +626,16 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
 #           fsens_script(), and anasa_script() in the %inputparam hash.
 #=======================================================================
 sub set_inputparams {
+
+    if ($ncpus_per_node) {
+#       $nodes_gsi = in($ncpus_gsi / $ncpus_per_node + 0.5);
+        $nodes_avail = int($ncpus / $ncpus_per_node  + 0.5);
+        $perhost_gsi = int($ncpus_gsi / $nodes_avail + 0.5);
+
+    } else {
+       die ">>> ERROR <<< ncpus_per_node must be declared.";
+    }
+
     %inputparams = ("acftbias"       => $acftbias,
                     "asynbkg_min"    => $asynbkg_min, 
                     "berror_env"     => $berror_env, 
@@ -647,6 +663,7 @@ sub set_inputparams {
                     "nametag"        => $nametag, 
                     "ncpus"          => $ncpus, 
                     "ncpus_gsi"      => $ncpus_gsi,
+                    "perhost_gsi"    => $perhost_gsi,
                     "nodeflg"        => $nodeflg, 
                     "ncsuffix"       => $ncsuffix,
 		    "newradbc"       => $newradbc,
@@ -661,11 +678,6 @@ sub set_inputparams {
                     "varwindow"      => $varwindow, 
                     "wcnstrt"        => $wcnstrt );
 
-    if ($ncpus_per_node) {
-        $nodes_gsi = $ncpus_gsi / $ncpus_per_node;
-        $inputparams{"ncpus_per_node"} = $ncpus_per_node;
-        $inputparams{"nodes_gsi"}      = $nodes_gsi;
-    }
 }
 
 #=======================================================================
@@ -728,7 +740,12 @@ sub defaults {
   @rs5_core     = AGCM_rsts("rs5_core");
   @rs5_boot     = AGCM_rsts("rs5_boot");
   @rs5_others   = AGCM_rsts("rs5_others");
-  @rs5_files    = (@rs5_core, @rs5_boot, @rs5_others);
+  @rs5_coupled  = AGCM_rsts("rs5_coupled");
+  if ( $coupled ) {
+    @rs5_files = (@rs5_core, @rs5_boot, @rs5_coupled, @rs5_others);
+  } else {
+    @rs5_files = (@rs5_core, @rs5_boot, @rs5_others);
+  }
 
   @ap_files = qw ( errtable
                    fvpsas.rc
@@ -868,6 +885,7 @@ sub defaults {
 
   @gaas_files = qw ( GAAS_AerRegistry.rc
                      GAAS_AodRegistry.rc
+                     GAAS_GridComp_ExtData.rc
                      GAAS_GridComp.rc
                      GAAS_History___.rc
                      GAAS_Mie.rc
@@ -881,11 +899,14 @@ sub defaults {
 
   @g5rc_files = qw ( AGCM.rc.tmpl
                      GEOS_ChemGridComp.rc
+                     GEOS_ChemGridComp.tmp
                      GCMPROG.rc.tmpl
                      HISTORY.rc.tmpl
                      OBS_GridComp.rc.tmpl
                      saverst.rc 
                      GEOS_SurfaceGridComp.rc
+                     GEOS_SurfaceGridComp.tmp
+                     GWD_GridComp.rc
                      logging.yaml );
 
   @coupled_files = qw( data_table
@@ -898,47 +919,48 @@ sub defaults {
 #                      OC_GridComp_ExtData-clim.rc
 #                      SU_GridComp_ExtData-clim.rc );
 
-  @chem_files = qw ( aop_calculator.rc
-                     Aod-550nm_Registry.rc
-                     Aod3d_1064nm.rc      
+  @chem_files = qw ( Aod3d_1064nm.rc
                      Aod3d_355nm.rc
                      Aod3d_532nm.rc
+                     Aod-550nm_Registry.rc
                      AodBands_Registry.rc
                      Aod_CALIPSO.rc
                      Aod_EOS.rc
                      Aod_MODIS.rc
                      Aod_Registry.rc
-                     BC_GridComp---full.rc
-                     BC_GridComp.rc
-                     BC_GridComp_ExtData.rc
-                     BC_History___.rc
-                     BC_Registry.rc
-                     BRC_GridComp---full.rc
-                     BRC_GridComp.rc
-                     BRC_GridComp_ExtData.rc
-                     BRC_Registry.rc
+                     aop_calculator.rc
                      CA2G_GridComp_ExtData.rc
                      CA2G_instance_CA.bc.rc
                      CA2G_instance_CA.br.rc
                      CA2G_instance_CA.oc.rc
                      CA2G_StateSpecs.rc
-                     CARMA_History___.rc
                      CARMAchem_GridComp_ExtData.rc
                      CARMAchem_MieRegistry.rc
                      CARMAchem_Registry.rc
-                     CFC_GridComp.rc
+                     CARMA_History___.rc
                      CFC_GridComp_ExtData.rc
+                     CFC_GridComp.rc
                      CFC_History___.rc
                      CFC_Registry.rc
                      CH4_GridComp---animls.rc
-                     CH4_GridComp.rc
                      CH4_GridComp_ExtData.rc
+                     CH4_GridComp.rc
                      CH4_History___.rc
                      CH4_Registry.rc
-                     CO2_GridComp.rc
+                     Chem_AerRegistry.rc
+                     ChemEnv_ExtData.rc
+                     ChemEnv.rc
+                     Chem_Ext3d.rc
+                     Chem_ExtRegistry.rc
+                     Chem_Init.rc
+                     Chem_Mie-550nm.rc
+                     Chem_Mie.rc
+                     Chem_MieRegistry.rc
+                     Chem_Registry.rc
                      CO2_GridComp_ExtData.rc
+                     CO2_GridComp.rc
                      CO2_History___.rc
-                     CO2_Registry.rc 
+                     CO2_Registry.rc
                      CO_GridComp---bbae.rc
                      CO_GridComp---bbaf.rc
                      CO_GridComp---bbbo.rc
@@ -946,6 +968,7 @@ sub defaults {
                      CO_GridComp---bbla.rc
                      CO_GridComp---bbna.rc
                      CO_GridComp---bbnb.rc
+                     CO_GridComp_ExtData.rc
                      CO_GridComp---ffas.rc
                      CO_GridComp---ffeu.rc
                      CO_GridComp---ffna.rc
@@ -956,55 +979,30 @@ sub defaults {
                      CO_GridComp---nbgl.rc
                      CO_GridComp---nbna.rc
                      CO_GridComp.rc
-                     CO_GridComp_ExtData.rc
                      CO_History___.rc
                      CO_Registry.rc
-                     Chem_AerRegistry.rc
-                     Chem_ExtRegistry.rc
-                     Chem_Init.rc
-                     Chem_Mie-550nm.rc
-                     Chem_Mie.rc
-                     Chem_MieRegistry.rc
-                     Chem_Registry.rc
-                     ChemEnv_ExtData.rc
-                     ChemEnv.rc
-                     Chem_Ext3d.rc
+                     Deposition_Registry___.rc
                      DNA_ExtData.rc
                      DNA_GridComp.rc
                      DNA_Registry.rc
-                     DU_GridComp---full.rc
-                     DU_GridComp_ExtData.rc
-                     DU_History___.rc
-                     DU_Registry.rc
                      DU2G_GridComp_ExtData.rc
                      DU2G_instance_DU.rc
                      DU2G_StateSpecs.rc
-                     Deposition_Registry___.rc 
-                     GAAS_GridComp_ExtData.rc
-                     GEOSCHEMchem_ExtData.rc
-                     GEOSCHEMchem_GridComp.rc
-                     GEOSCHEMchem_Registry.rc
                      GEOSachem_ExtData.rc
-                     GEOSachem_Registry.rc
                      GEOS_AChemGridComp.rc
                      GEOS_AChem_History___.rc
+                     GEOSachem_Registry.rc
                      GEOSCHEMCHEM_History___.rc
+                     GEOSCHEMchem_Registry.rc
+                     GEOS_IgniGridComp.rc
                      GMICHEM_History___.rc
                      GMI_ExtData.rc
                      GMI_GridComp.rc
+                     GMI_Mech_Registry.rc
                      GMI_Registry.rc
                      GMI_Tendency_Registry___.rc
-                     GOCARTdata_AerRegistry.rc 
-                     GOCARTdata_ExtData.rc
                      GOCART2G_GridComp.rc
-                     HEMCO_Config.rc
-                     HEMCO_DiagnFile.rc
-                     HEMCO_GridComp.rc
-                     HEMCO_Registry.rc
-                     HEMCOgocart_Config.rc
-                     HEMCOgocart_Diagn.rc
-                     HEMCOgocart_ExtData.rc
-                     HEMCOgocart_Spec.rc
+                     GOCARTdata_AerRegistry.rc
                      HEMCOgmi_Config.rc
                      HEMCOgmi_Diagn.rc
                      HEMCOgmi_ExtData.rc
@@ -1013,77 +1011,62 @@ sub defaults {
                      HEMCOgocart2g_Diagn.rc
                      HEMCOgocart2g_ExtData.rc
                      HEMCOgocart2g_Spec.rc
-                     mam_optics_calculator.rc
+                     HEMCO_GridComp.rc
+                     HEMCO_Registry.rc
                      MAM7_ExtData.rc
                      MAMchem_GridComp.rc
                      MAMchem_History___.rc
                      MAMchem_Registry.rc
+                     mam_optics_calculator.rc
                      MATRIXchem_GridComp.rc
                      MATRIXchem_History___.rc
                      MATRIXchem_Registry.rc
-                     NI_GridComp---full.rc
-                     NI_GridComp.rc
-                     NI_GridComp_ExtData.rc
-                     NI_History___.rc
-                     NI_Registry.rc
                      NI2G_GridComp_ExtData.rc
                      NI2G_instance_NI.rc
                      NI2G_StateSpecs.rc
-                     O3_GridComp.rc
                      O3_GridComp_ExtData.rc
+                     O3_GridComp.rc
                      O3_History___.rc
                      O3_Registry.rc
-                     OC_GridComp---bbbo.rc
-                     OC_GridComp---bbnb.rc
-                     OC_GridComp---full.rc
-                     OC_GridComp.rc
-                     OC_GridComp_ExtData.rc
-                     OC_History___.rc
-                     OC_Registry.rc
-                     Reactions_Registry___.rc 
+                     Reactions_Registry___.rc
                      Rn_GridComp---Afri.rc
                      Rn_GridComp---Asia.rc
                      Rn_GridComp---Aust.rc
                      Rn_GridComp---Euro.rc
-                     Rn_GridComp---NoAm.rc
-                     Rn_GridComp---SoAm.rc
-                     Rn_GridComp---full.rc
-                     Rn_GridComp.rc
                      Rn_GridComp_ExtData.rc
+                     Rn_GridComp---full.rc
+                     Rn_GridComp---NoAm.rc
+                     Rn_GridComp.rc
+                     Rn_GridComp---SoAm.rc
                      Rn_History___.rc
                      Rn_Registry.rc
-                     setkin_chem_mech.txt___.rc
                      SC_GridComp.rc
+                     SC_Mech_Registry.rc
                      SC_Registry.rc
-                     SS_GridComp.rc
-                     SS_GridComp---full.rc
-                     SS_History___.rc
-                     SS_Registry.rc
-                     StratChem_ExtData.rc
-                     StratChem_History___.rc
+                     setkin_chem_mech.txt___.rc
+                     SITE.rc
                      SS2G_GridComp_ExtData.rc
                      SS2G_instance_SS.rc
                      SS2G_StateSpecs.rc
-                     SU_GridComp---full.rc
-                     SU_GridComp---volc.rc
-                     SU_GridComp.rc
-                     SU_GridComp_ExtData.rc
-                     SU_History___.rc
-                     SU_Registry.rc 
+                     StratChem_ExtData.rc
+                     StratChem_History___.rc
                      SU2G_GridComp_ExtData.rc
                      SU2G_instance_SU.rc
                      SU2G_StateSpecs.rc
                      TR_ExtData.rc
+                     TR_GridComp---aoa_bl.rc
+                     TR_GridComp---aoa_nh.rc
+                     TR_GridComp---aoa.rc
                      TR_GridComp---Be10.rc
                      TR_GridComp---Be10s.rc
                      TR_GridComp---Be7.rc
                      TR_GridComp---Be7s.rc
                      TR_GridComp---CH3I.rc
                      TR_GridComp---CO_25.rc
-                     TR_GridComp---CO_50.rc
                      TR_GridComp---CO_50_ea.rc
                      TR_GridComp---CO_50_eu.rc
                      TR_GridComp---CO_50_na.rc
+                     TR_GridComp---CO_50.rc
                      TR_GridComp---CO_50_sa.rc
                      TR_GridComp---CO_ANZ.rc
                      TR_GridComp---CO_ARC.rc
@@ -1091,6 +1074,7 @@ sub defaults {
                      TR_GridComp---CO_CAS.rc
                      TR_GridComp---CO_EAS.rc
                      TR_GridComp---CO_EUR.rc
+                     TR_GridComp---CO_from_CH4.rc
                      TR_GridComp---CO_GLB.rc
                      TR_GridComp---CO_MDE.rc
                      TR_GridComp---CO_NAF.rc
@@ -1100,47 +1084,46 @@ sub defaults {
                      TR_GridComp---CO_SAM.rc
                      TR_GridComp---CO_SAS.rc
                      TR_GridComp---CO_SEA.rc
-                     TR_GridComp---CO_from_CH4.rc
+                     TR_GridComp---e90_n.rc
+                     TR_GridComp---e90.rc
+                     TR_GridComp---e90_s.rc
+                     TR_GridComp---nh_50.rc
+                     TR_GridComp---nh_5.rc
                      TR_GridComp---Pb210.rc
                      TR_GridComp---Pb210s.rc
                      TR_GridComp---Rn222.rc
                      TR_GridComp---SF6.rc
-                     TR_GridComp---aoa.rc
-                     TR_GridComp---aoa_bl.rc
-                     TR_GridComp---aoa_nh.rc
-                     TR_GridComp---e90.rc
-                     TR_GridComp---e90_n.rc
-                     TR_GridComp---e90_s.rc
-                     TR_GridComp---nh_50.rc
-                     TR_GridComp---nh_5.rc
-                     TR_GridComp---stOX.rc
-                     TR_Registry.rc
                      TR_GridComp---st80_25.rc
-                     WSUB_ExtData.rc ); 
+                     TR_GridComp---stOX.rc
+                     TR_GridComp.rc
+                     TR_Registry.rc
+                     WSUB_ExtData.rc );
 
-  @gocart2g_yaml = qw ( CO2_GridComp_ExtData.yaml
+  @gocart2g_yaml = qw ( CA2G_GridComp_ExtData.yaml
+                        CARMAchem_GridComp_ExtData.yaml
                         CFC_GridComp_ExtData.yaml
-                        Rn_GridComp_ExtData.yaml
-                        GEOSachem_ExtData.yaml
                         CH4_GridComp_ExtData.yaml
-                        StratChem_ExtData.yaml
-                        NI2G_GridComp_ExtData.yaml
-                        SS2G_GridComp_ExtData.yaml
-                        TR_ExtData.yaml
                         ChemEnv_ExtData.yaml
+                        CO2_GridComp_ExtData.yaml
+                        CO_GridComp_ExtData.yaml
+                        DataSea_ExtData.yaml
                         DNA_ExtData.yaml
                         DU2G_GridComp_ExtData.yaml
-                        CARMAchem_GridComp_ExtData.yaml
-                        HEMCOgocart2g_ExtData.yaml
-                        O3_GridComp_ExtData.yaml
-                        CO_GridComp_ExtData.yaml
-                        HEMCOgmi_ExtData.yaml
-                        SU2G_GridComp_ExtData.yaml
-                        WSUB_ExtData.yaml
-                        MAM7_ExtData.yaml
-                        CA2G_GridComp_ExtData.yaml
+                        GAAS_GridComp_ExtData.yaml
+                        GEOSachem_ExtData.yaml
                         GMI_ExtData.yaml
-                        GAAS_GridComp_ExtData.yaml );
+                        HEMCOgmi_ExtData.yaml
+                        HEMCOgocart2g_ExtData.yaml
+                        MAM7_ExtData.yaml
+                        NI2G_GridComp_ExtData.yaml
+                        O3_GridComp_ExtData.yaml
+                        Rn_GridComp_ExtData.yaml
+                        SS2G_GridComp_ExtData.yaml
+                        StratChem_ExtData.yaml
+                        SU2G_GridComp_ExtData.yaml
+                        TR_ExtData.yaml
+                        UMWM_ExtData.yaml
+                        WSUB_ExtData.yaml );
 #                       AMIP/CO2_GridComp_ExtData.yaml
 #                       AMIP/CFC_GridComp_ExtData.yaml
 #                       AMIP/Rn_GridComp_ExtData.yaml
@@ -2361,6 +2344,12 @@ sub ed_g5fvlay_rc {
      if($rcd =~ /\@FV_SATADJ/) {$rcd=~ s/\@FV_SATADJ/do_sat_adj  = .F./g; }
      if($rcd =~ /\@FV_ZTRACER/){$rcd=~ s/\@FV_ZTRACER/z_tracer = .T./g; }
      if($rcd =~ /\@FV_NWAT/)   {$rcd=~ s/\@FV_NWAT/ /g; }
+     if($rcd =~ /\@FV_SCHMIDT/){$rcd=~ s/\@FV_SCHMIDT/do_schmidt  = .false./g; }
+     if($rcd =~ /\@FV_STRETCH_FAC/){$rcd=~ s/\@FV_STRETCH_FAC/stretch_fac = 1.0/g; }
+     if($rcd =~ /\@FV_TARGET_LON/){$rcd=~ s/\@FV_TARGET_LON/target_lon  = 0.0/g; }
+     if($rcd =~ /\@FV_TARGET_LAT/){$rcd=~ s/\@FV_TARGET_LAT/target_lat  = 0.0/g; }
+     if($rcd =~ /\@GFDL_PROG_CCN/){$rcd=~ s/\@GFDL_PROG_CCN/prog_ccn = .true./g; }
+     if($rcd =~ /\@GFDL_USE_CCN/){$rcd=~ s/\@GFDL_USE_CCN/use_ccn = .true./g; }
      if ( "$res" eq "C720" ) {
        if($rcd =~ /\@FV_N_SPLIT/)   {$rcd=~ s/\@FV_N_SPLIT/n_split = 12/g; }
      } else {
@@ -3169,14 +3158,12 @@ sub get_nodeflg {
   $proc = "";
   # reset default if applicable
 
-  $ans = query(" Processing nodes (1:Westmere, 2:SandyBridge, 3:Ivy Bridge, 4:Haswell, 5:Skylake, 6:Cascase)?", "4");
+  $ans = query(" Processing nodes (1:Haswell, 2:Skylake, 3:Cascase, 4:Milan)?", "2");
 
-  if    ($ans == 1) { $nodeflg = "wes";  $ncpus_per_node = 12 }
-  elsif ($ans == 2) { $nodeflg = "san";  $ncpus_per_node = 16 }
-  elsif ($ans == 3) { $nodeflg = "ivy";  $ncpus_per_node = 20 }
-  elsif ($ans == 4) { $nodeflg = "hasw"; $ncpus_per_node = 24 }
-  elsif ($ans == 5) { $nodeflg = "sky";  $ncpus_per_node = 36 }
-  elsif ($ans == 6) { $nodeflg = "cas";  $ncpus_per_node = 45 }
+  if    ($ans == 1) { $nodeflg = "hasw"; $ncpus_per_node = 24 }
+  elsif ($ans == 2) { $nodeflg = "sky";  $ncpus_per_node = 36 }
+  elsif ($ans == 3) { $nodeflg = "cas";  $ncpus_per_node = 45 }
+  elsif ($ans == 4) { $nodeflg = "mil";  $ncpus_per_node = 54 }
 
   # currently not applicable at nccs
   #---------------------------------
@@ -3224,8 +3211,8 @@ sub get_times {
 #                                                    #       ----
       if    ($res eq "C48")  { $nx =  4; $ny = 24 }  # (b)    96
       elsif ($res eq "C90")  { $nx =  4; $ny = 24 }  # (c)    96
-      elsif ($res eq "C180") { $nx = 15; $ny = 36 }  # (d)   360
-      elsif ($res eq "C360") { $nx =  8; $ny = 48 }  # (e)   384
+      elsif ($res eq "C180") { $nx =  9; $ny = 30 }  # (d)   270
+      elsif ($res eq "C360") { $nx = 10; $ny = 36 }  # (e)   360
       else                   { $nx = 28; $ny = 48 }  # (f+) 1344
   }
   else {
@@ -3238,6 +3225,7 @@ sub get_times {
   }
   $ncpus = $nx * $ny;
   $ncpus_per_node /= 2 if $ncpus_per_node and $hres eq "e";
+
 
   if ( $g5gcm ) {
      $jobn  = "g5das";
@@ -3337,6 +3325,8 @@ EOF
   $nx = query("  Number of PEs in the zonal direction (NX)?", $nx);
   $ny = query("  Number of PEs in the meridional direction (NY)?", $ny);
   $ncpus = $nx * $ny;
+  my $this_many_nodes = ceil($ncpus/$ncpus_per_node) + $o_servers;
+  $xncpus = $this_many_nodes * $ncpus_per_node;
 
   $jobn = query("  Job nickname?", $jobn);
   $jobn = substr($jobn,0,5);
@@ -3517,8 +3507,8 @@ sub set_ldasANA {
     $ldasfdbk = 0;
     $ldas_flag = 0;
     $dflt = "n";
-    $ldashome = "NULL" ;
-    $ldashome4ens = "NULL" ;
+    $ldashome = "${fvhome}/lana/${expid}_LDAS" ;
+    $ldashome4ens = "${fvhome}/lana/${expid}_LDAS4ens" ;
 
     print "\n-------------\n";
     print   "LDAS Analysis\n";
@@ -3535,11 +3525,13 @@ sub set_ldasANA {
           $ldas_flag = 1;
       }
 
-      $ans3 = query("LDAS HOME = ${fvhome}_LDAS , full path? ", $ldashome);
-      $ldashome = $ans3 ;
-
-      $ans4 = query("LDAS HOME for land ensemble = ${fvhome}_LDAS/run/atmens, full path? ", $ldashome4ens);
-      $ldashome4ens = $ans4 ;
+      $ans3 = query(" LDAS HOME?  [DEFAULT: $ldashome]");
+      $ldashome = $ans3  unless blank($ans3); 
+      
+      if ($hyb_ens == 4 ) {
+         $ans4 = query(" LDAS HOME for atmens? [DEFAULT: $ldashome4ens]");
+         $ldashome4ens = $ans4  unless blank($ans4); 
+      }
 
    } 
 return 0;
@@ -3645,10 +3637,10 @@ EOF
       $nxgsi = query("  Number of procs in the zonal direction (NX)?", $nxDEF);
       $nygsi = query("  Number of procs in the meridional direction (NY)?", $nyDEF);
       $ncpus_gsi = $nxgsi * $nygsi;
-      last if $ncpus_gsi <= $ncpus;
+      last if $ncpus_gsi <= $xncpus;
 
       print "\n  >>> WARNING <<<"
-          . "\n  GSI CPUs ($ncpus_gsi) exceeds total number of CPUs ($ncpus)\n";
+          . "\n  GSI CPUs ($ncpus_gsi) exceeds total number of CPUs ($xncpus)\n";
       die ">>> ERROR <<< too many unsuccessful attempts;" if ++$cnt > 3;
       print "  Try again.\n\n";
   }
@@ -4487,29 +4479,6 @@ sub get_history {
         $g5hist_rc = query("  Which template?", $g5hist_rc);
     }
 
-    # verify that HISTORY.rc.tmpl has collections needed by LDAS
-    #-----------------------------------------------------------
-    if ( $ldas_ana == 1 ) {
-        $verify = 0;
-        @ldasinputs = qw / tavg1_2d_lfo inst1_2d_lfo /;
-        foreach $prod ( @ldasinputs ) {
-            open HIST, "< $fvroot/etc/$g5hist_rc";
-            unless ( grep /$prod/, <HIST> ) {
-                print "\n  Required Land DAS inputs: @ldasinputs\n"
-                    unless ($verify);
-                print "  >>> WARNING <<< $prod not defined in $g5hist_rc\n";
-                $verify = 1;
-                close HIST;
-            }
-        }
-        if ($verify) {
-            print "\n"
-                . "  1. Use $g5hist_rc anyway\n"
-                . "  2. Select again\n\n";
-            $ans = query("  Choose option 1 or 2:", "2");
-            return 1 unless $ans eq "1";
-        }      
-    }
     print "  Using HISTORY template: $g5hist_rc\n";
 
     # query for GCMPROG.rc.tmpl (fcst HISTORY file)
@@ -4846,7 +4815,6 @@ EOF
   $use_shmem = 0;
   $o_servers = 0;
   $bckend_wrts = 0;
-  $ios_nds = 1;
   $cldmicro = "1MOMENT";
   if ( "$res" eq "c" && "$vres" eq "55" ) {
        $anahgrd = substr($res,0,1);
@@ -4858,6 +4826,7 @@ EOF
        $agcm_jm  = 181;
        $km  =  55;
        $dt  = 1800;
+       $long_dt  = $dt;
        $pert_dt  = $dt;
        $chemdt = $dt;
        $solardt = 3600;
@@ -4889,6 +4858,7 @@ EOF
        $agcm_jm  =  46;
        $km  =  72;
        $dt  =  900;
+       $long_dt  = $dt;
        $pert_dt  = $dt;
        $chemdt = $dt;
        $solardt = 3600;
@@ -4920,6 +4890,7 @@ EOF
        $agcm_jm  =  91;
        $km  =  72;
        $dt  = 450;
+       $long_dt  = $dt;
        $pert_dt  = $dt;
        $chemdt = $dt;
        $solardt = 3600;
@@ -4951,6 +4922,7 @@ EOF
        $agcm_jm  = 181;
        $km  =  72;
        $dt  = 450;
+       $long_dt  = $dt;
        $pert_dt  = $dt;
        $chemdt = $dt;
        $solardt = 3600;
@@ -4980,6 +4952,7 @@ EOF
        $agcm_jm  = 361;
        $km  =  72;
        $dt  = 450;
+       $long_dt  = $dt;
        $pert_dt  = 900;
        $chemdt = $dt;
        $solardt = 3600;
@@ -5013,6 +4986,7 @@ EOF
        $agcm_jm  =  721;
        $km  =   72;
        $dt  =  450;
+       $long_dt  = $dt;
        $pert_dt  = 900;
        $chemdt = $dt;
        $solardt = 3600;
@@ -5046,6 +5020,7 @@ EOF
        $agcm_jm  =  91;
        $km  =  55;
        $dt  = 1800;
+       $long_dt  = $dt;
        $pert_dt  = $dt;
        $chemdt = $dt;
        $solardt = 3600;
@@ -5078,6 +5053,7 @@ EOF
        $ny  = $nx * 6;
        $km  = $vres;
        $dt  = 450;
+       $long_dt  = $dt;
        $pert_dt  = 900;
        $chemdt = $dt;
        $solardt = 3600;
@@ -5108,10 +5084,11 @@ EOF
        $agcm_im  =  90;
        $agcm_grid_type = "Cubed-Sphere";
        $agcm_jm  =  $agcm_im * 6;
-       $nx       = 2;
+       $nx       = 3;
        $ny       = $nx * 6;
        $km       = $vres;
        $dt  = 450;
+       $long_dt  = $dt;
        $pert_dt  = 900;
        $chemdt = $dt;
        $solardt = 3600;
@@ -5141,16 +5118,16 @@ EOF
           $bckend_wrts = 24;
        }
        $cubed = 1;
-#      $ios_nds = 2;
        $specres = "254";
        $jcap = "254";
        $agcm_grid_type = "Cubed-Sphere";
        $agcm_im  =  180;
        $agcm_jm  =  $agcm_im * 6;
-       $nx       = 4;
+       $nx       = 6;
        $ny       = $nx * 6;
        $km       = $vres;
        $dt  = 450;
+       $long_dt  = $dt;
        $pert_dt  = 900;
        $chemdt = $dt;
        $solardt = 3600;
@@ -5168,24 +5145,26 @@ EOF
        $hist_pert_jm = 181;
        $apert_im = 90;
        $apert_jm = $apert_im * 6;
-       $bjedi_im = 90;
+       $bjedi_im = $agcm_im;
        $bjedi_jm = $bjedi_im * 6;
        $anahgrd = "d";
        $jcap_ens = 126;
        $ana_im_ens = 288;
        $ana_jm_ens = 181;
   } elsif ( "$res" eq "C360" ) {  # Cubed-sphere
+       $o_servers = 3;
+       $bckend_wrts = 24;
        $cubed = 1;
-#      $ios_nds = 2;
        $specres = "254";
        $jcap = "254";
        $agcm_grid_type = "Cubed-Sphere";
        $agcm_im  =  360;
        $agcm_jm  =  $agcm_im * 6;
-       $nx       = 6;
+       $nx       = 12;
        $ny       = $nx * 6;
        $km       = $vres;
        $dt  = 450;
+       $long_dt  = $dt;
        $pert_dt  = 900;
        $chemdt = $dt;
        $solardt = 3600;
@@ -5203,26 +5182,27 @@ EOF
        $hist_pert_jm = 361;
        $apert_im = 180;
        $apert_jm = $apert_im * 6;
-       $bjedi_im = 90;
+       $bjedi_im = 180;
        $bjedi_jm = $bjedi_im * 6;
        $anahgrd = "d";
-       $use_shmem = 1;
+       $use_shmem = 0;
        $jcap_ens = 126;
        $ana_im_ens = 288;
        $ana_jm_ens = 181;
   } elsif ( "$res" eq "C720" ) {  # Cubed-sphere
        $cubed = 1;
        $o_servers = 8;
-       $bckend_wrts = 8;
+       $bckend_wrts = 36;
        $specres = "254";
        $jcap = "254";
        $agcm_grid_type = "Cubed-Sphere";
        $agcm_im  =  720;
        $agcm_jm  =  $agcm_im * 6;
-       $nx = 6;
+       $nx = 24;
        $ny = $nx * 6;
        $km = $vres;
-       $dt = 450;
+       $dt = 300;
+       $long_dt  = $dt;
        $pert_dt = 900;
        $chemdt = $dt;
        $solardt = 3600;
@@ -5250,20 +5230,21 @@ EOF
   } elsif ( "$res" eq "C1440" ) {  # Cubed-sphere
        $cubed = 1;
        $o_servers = 8;
-#      $ios_nds = 4;
+       $bckend_wrts = 36;
        $specres = "254";
        $jcap = "254";
        $agcm_grid_type = "Cubed-Sphere";
        $agcm_im  =  1440;
        $agcm_jm  =  $agcm_im * 6;
-       $nx = 6;
+       $nx = 48;
        $ny = $nx * 6;
        $km = $vres;
-       $dt = 450;
+       $dt = 150;
+       $long_dt  = 300;
        $pert_dt = 900;
        $chemdt = $dt;
-       $solardt = 3600;
-       $irraddt = 3600;
+       $solardt = 1800;
+       $irraddt = 1800;
        $ogcmrdt = $irraddt;
        $ana_im = 1152; #$agcm_im * 4;
        $ana_jm = 721; #$agcm_im * 2 + 1;
@@ -5611,10 +5592,13 @@ sub archiving_rules {
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_msu_tirosn_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_omi_aura_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpnc_npp_%c%c%c.%y4%m2%d2_%h2z.bin
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpnc_n21_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpuv_npp_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpvis_npp_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnm_npp_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnmeff_npp_%c%c%c.%y4%m2%d2_%h2z.bin
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnmeff_n20_%c%c%c.%y4%m2%d2_%h2z.bin
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnmeff_n21_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnp_npp_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnpnc_npp_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_pcp_tmi_%c%c%c%c_%c%c%c.%y4%m2%d2_%h2z.bin
@@ -5669,10 +5653,13 @@ sub archiving_rules {
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_msu_tirosn.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_omi_aura.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpnc_npp.%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpnc_n21.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpuv_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpvis_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnm_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnmeff_npp.%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnmeff_n20.%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnmeff_n21.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnp_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnpnc_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_pcp_ssmi_dmsp%c%c.%y4%m2%d2_%h2z.ods
@@ -5726,10 +5713,13 @@ sub archiving_rules {
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_msu_tirosn.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_omi_aura.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_ompslpnc_npp.%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_ompslpnc_n21.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_ompslpuv_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_ompslpvis_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_ompsnm_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_ompsnmeff_npp.%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_ompsnmeff_n20.%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_ompsnmeff_n21.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_ompsnp_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_ompsnpnc_npp.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_pcp_ssmi_%c%c%c%c.%y4%m2%d2_%h2z.ods
@@ -5767,6 +5757,7 @@ sub archiving_rules {
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_sbuv%c_%c%c%c_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_omi_aura_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpnc_npp_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpnc_n21_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpuv_npp_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompslpvis_npp_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ompsnm_npp_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
@@ -5804,6 +5795,7 @@ sub archiving_rules {
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_sbuv%c_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_omi_aura_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpnc_npp_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpnc_n21_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpuv_npp_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpvis_npp_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompsnm_npp_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
@@ -5842,6 +5834,7 @@ sub archiving_rules {
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_sbuv%c_%c%c%c_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_omi_aura_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpnc_npp_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpnc_n21_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpuv_npp_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpvis_npp_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompsnm_npp_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
@@ -7037,12 +7030,15 @@ sub arch_asens {
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_omi_aura.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_omieff_aura.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpnc_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpnc_n21.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpuv_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpvis_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpnm_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompslpnp_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompsnm_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompsnmeff_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompsnmeff_n20.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompsnmeff_n21.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompsnp_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_ompsnpnc_npp.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_o3lev_aura.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
@@ -7690,9 +7686,9 @@ sub build_lnbcs {
      $bcopt = "-geosit"; 
   }
   if ( $cubed ) {
-     $cmd = "$fvbin/gen_lnbcs.pl -fvhome $fvhome -o lnbcs $bcopt -cubed $agcm_im $agcm_jm $ogcm $landbcs";
+     $cmd = "$fvbin/gen_lnbcs.pl -fvhome $fvhome -o lnbcs $bcopt -cubed $agcm_im $agcm_jm ${ogcm}${ogcm_id} $landbcs";
   } else {
-     $cmd = "$fvbin/gen_lnbcs.pl -fvhome $fvhome -o lnbcs $bcopt        $agcm_im $agcm_jm $ogcm $landbcs";
+     $cmd = "$fvbin/gen_lnbcs.pl -fvhome $fvhome -o lnbcs $bcopt        $agcm_im $agcm_jm ${ogcm}${ogcm_id} $landbcs";
   }
   print "$cmd\n";
   system($cmd);
@@ -7748,8 +7744,6 @@ if ( $fvchem && $lm > 2 ) {
  }
  $pi = $i;       # p for PSAS
 
- my $xncpus = $ncpus + $o_servers * $ncpus_per_node;
-
 # Turn off some parallelization on discover
 #------------------------------------------
  if ( ($siteID eq "nccs") || ($siteID eq "nas") ) {
@@ -7757,6 +7751,16 @@ if ( $fvchem && $lm > 2 ) {
  } else {
      $paroff = 0;
  }
+
+# Allow for expanded memory usage when running GSI
+# ------------------------------------------------
+  if ($ncpus_per_node) {
+      $nodes_avail = int($ncpus / $ncpus_per_node  + 0.5);
+      $perhost_gsi = int($ncpus_gsi / $nodes_avail + 0.5);
+      if ($analat == 361 && $nodeflg == "mil") { $perhost_gsi = 42 };
+  } else {
+     die ">>> ERROR <<< ncpus_per_node must be declared.";
+  }
 
 # Batch wall-clock time setting
 #------------------------------
@@ -7792,6 +7796,7 @@ print  SCRIPT <<"EOF";
 #SBATCH --ntasks-per-node=$ncpus_per_node
 #SBATCH --constraint=$nodeflg
 #SBATCH --time=${daswallclk}:00
+#SBATCH --no-requeue
 EOF
 
 }else{
@@ -7814,17 +7819,7 @@ print SCRIPT <<"EOF";
 #SBATCH --job-name=$jobn
 #SBATCH --output=$jobn.log.o%j.txt
 #SBATCH --time=${daswallclk}:00
-#PBS -N $jobn
-#PBS -o $jobn.log.o%j.txt
-#PBS -l walltime=${daswallclk}:00
-##PBS -l mem=$mem
-#PBS -S /bin/csh
-#PBS -j eo
-#BSUB -J $jobn
-#BSUB -n $ncpus
-#BSUB -W $daswallclk
-#BSUB -o ${jobn}.log.o%J.txt
-#BSUB -e ${jobn}.log.o%J.txt
+#SBATCH --no-requeue
 }
 
 if ($dbqueue) {
@@ -7885,6 +7880,7 @@ print SCRIPT <<"EOF";
   setenv EXPID   $expid   # experiment ID
   setenv CASE    \$EXPID  # experiment ID (for LSM's sake)
   setenv FVROOT  $fvroot  # fvDAS installation root dir
+  setenv OSVERSION `basename \$FVROOT`
   setenv FVRUN   \$FVHOME/run
   if(`uname -s` == "OSF1" ) then
      cd \$TMPDIR_UBC
@@ -7902,7 +7898,11 @@ print SCRIPT <<"EOF";
       if( `uname -m` != "ia64" ) then
           setenv FORT90L -Wl,-T
       endif
+# NOTE: if user has access to TSE:
+#       (i) comment out line below
+#       (ii) uncomment and adjust following line
       setenv FVWORK $diren/fvwork.\$\$
+#     setenv FVWORK \$TSE_TMPDIR/$user/fvwork.\$\$
       if (\$?kidwork) then # this case, overwrite FVWORK with user-specific
          setenv FVWORK \$kidwork
       endif
@@ -8083,7 +8083,6 @@ print  SCRIPT <<"EOF";
 
   if (\$?I_MPI_ROOT) then
 #    The following as recommended by Scott and SI Team
-#    setenv I_MPI_USE_DYNAMIC_CONNECTIONS 0
      setenv I_MPI_SHM_HEAP_VSIZE   512
      setenv PSM2_MEMORY            large
      setenv I_MPI_ADJUST_GATHERV   3
@@ -8091,19 +8090,10 @@ print  SCRIPT <<"EOF";
      setenv I_MPI_EXTRA_FILESYSTEM 1
      setenv I_MPI_EXTRA_FILESYSTEM_LIST gpfs
      setenv I_MPI_DEBUG 6
-#    setenv ROMIO_FSTYPE_FORCE         "gpfs:"
-#    setenv I_MPI_FABRICS shm:ofi
-#    setenv I_MPI_FABRICS shm:dapl
-#    setenv I_MPI_FABRICS_LIST "dapl,ofa"
-#    setenv I_MPI_FALLBACK "enable"
-#    setenv I_MPI_MPD_RSH sshmpi
-#    setenv I_MPI_DAPL_CHECK_MAX_RDMA_SIZE 1
-#    setenv I_MPI_DAPL_UD_SEND_BUFFER_NUM 4096
-#    setenv I_MPI_DAPL_UD_RECV_BUFFER_NUM 4096
-#    setenv I_MPI_DAPL_UD_ACK_SEND_POOL_SIZE 4096
-#    setenv I_MPI_DAPL_UD_ACK_RECV_POOL_SIZE 4096
-#    setenv I_MPI_DAPL_UD_RNDV_EP_NUM 2
-#    setenv I_MPI_DAPL_UD_REQ_EVD_SIZE 2000
+     if ( \$OSVERSION == "install-SLES15" ) then
+       setenv I_MPI_FABRICS shm:ofi
+       setenv I_MPI_OFI_PROVIDER psm3
+     endif
   endif
   if (\$?MPT_VERSION) then
      setenv DAPL_UCM_CQ_SIZE 4096
@@ -8239,7 +8229,7 @@ print  SCRIPT <<"EOF";
 #-setenv MPIRUN_IAU    "PBS_NODEFILE=\$FVWORK/IAU_list; esma_mpirun -np \$NCPUS_IAU \$IAUX"
   setenv MPIRUN_IAU    "esma_mpirun -np \$NCPUS_IAU \$IAUX"
 #-setenv MPIRUN_UPRST  "esma_mpirun -np \$NCPUS_IAU \$RSTUPDX"
-  setenv MPIRUN_ANA    "PBS_NODEFILE=\$FVWORK/ANA_list; esma_mpirun -perhost 8 -np \$NCPUS_GSI \$ANAX"
+  setenv MPIRUN_ANA    "PBS_NODEFILE=\$FVWORK/ANA_list; esma_mpirun -perhost $perhost_gsi -np \$NCPUS_GSI \$ANAX"
   setenv MPIRUN_OBSVR  "esma_mpirun -np \$NCPUS_GSI \$ANAX"
   setenv MPIRUN_SAC    "esma_mpirun -np  1      \$SACX"
   setenv MPIRUN_OIQC   "PBS_NODEFILE=\$FVWORK/OIQC_list; esma_mpirun -np 4"
@@ -8952,8 +8942,6 @@ sub create_fscript {
  open(SCRIPT,">$fvhome/fcst/$jobf.j") or
  die ">>> ERROR <<< cannot write $fvhome/fcst/$jobf.j";
 
- my $xncpus = $ncpus + $o_servers * $ncpus_per_node;
-
  print  SCRIPT <<"EOF";
 #!/bin/csh -fx
 # ------------------------------------------
@@ -8976,6 +8964,7 @@ print  SCRIPT <<"EOF";
 #SBATCH --ntasks-per-node=$ncpus_per_node
 #SBATCH --constraint=$nodeflg
 #SBATCH --time=${fcswallclk}:00
+#SBATCH --no-requeue
 EOF
 
 }else{
@@ -8999,17 +8988,7 @@ print  SCRIPT <<"EOF";
 #SBATCH --job-name=fcst
 #SBATCH --output=fcst.log.o%j.txt
 #SBATCH --time=${fcswallclk}:00
-#PBS -N fcst
-#PBS -o fcst.log.o%j.txt
-#PBS -l walltime=${fcswallclk}:00
-##PBS -l mem=$mem
-#PBS -S /bin/csh
-#PBS -j eo
-#BSUB -J forecasting
-#BSUB -n $ncpus
-#BSUB -W $fcswallclk
-#BSUB -o fcst.log.o%J.txt
-#BSUB -e fcst.log.o%J.txt
+#SBATCH --no-requeue
 EOF
 }
 
@@ -9054,6 +9033,7 @@ print SCRIPT <<"EOF";
   setenv CASE    \$EXPID  # experiment ID (for LSM's sake)
   setenv FVHOME  $fvhome  # experiment home directory
   setenv FVROOT  `cat \$FVHOME/.FVROOT`
+  setenv OSVERSION `basename \$FVROOT`
   setenv FVFCST  \$FVHOME/fcst
   if(`uname -s` == "OSF1" ) then
     cd \$TMPDIR_UBC
@@ -9066,9 +9046,13 @@ print SCRIPT <<"EOF";
   endif
   if( (`uname -s` == "Linux") && ( (`uname -m` == "ia64") || (`uname -m` == "x86_64") ) ) then
       setenv FORT90L -Wl,-T
+# NOTE: if user has access to TSE: 
+#       (i) comment out three lines below
+#       (ii) uncomment and adjust following line
       setenv FVWORK $fvhome/../tmp.\$\$
       if(   -d \$FVWORK ) /bin/rm -r  \$FVWORK
       /bin/mkdir -p \$FVWORK
+#     setenv FVWORK \$TSE_TMPDIR/$user/tmp.\$\$
       if (-e /usr/bin/lfs) then
          /usr/bin/lfs setstripe -c 1 -s 1048576 -i -1 \$FVWORK
       endif
@@ -9161,22 +9145,6 @@ print  SCRIPT <<"EOF";
 # -----------------
   if (\$?I_MPI_ROOT) then
 #    setenv I_MPI_USE_DYNAMIC_CONNECTIONS 0
-     setenv I_MPI_FABRICS shm:ofi
-#    setenv I_MPI_FABRICS shm:dapl
-#    setenv I_MPI_FABRICS_LIST "dapl,ofa"
-#    setenv I_MPI_FALLBACK "enable"
-#    setenv I_MPI_MPD_RSH sshmpi
-#    setenv I_MPI_DAPL_CHECK_MAX_RDMA_SIZE 1
-##   setenv I_MPI_DAPL_UD on
-#    setenv I_MPI_DAPL_UD_SEND_BUFFER_NUM 4096
-#    setenv I_MPI_DAPL_UD_RECV_BUFFER_NUM 4096
-#    setenv I_MPI_DAPL_UD_ACK_SEND_POOL_SIZE 4096
-#    setenv I_MPI_DAPL_UD_ACK_RECV_POOL_SIZE 4096
-#    setenv I_MPI_DAPL_UD_RNDV_EP_NUM 2
-#    setenv I_MPI_DAPL_UD_REQ_EVD_SIZE 2000
-#    setenv I_MPI_JOB_STARTUP_TIMEOUT 10000
-#    setenv I_MPI_RDMA_RNDV_WRITE 1
-#    The following as recommended by Scott and SI Team
      setenv I_MPI_SHM_HEAP_VSIZE   512
      setenv PSM2_MEMORY            large
      setenv I_MPI_ADJUST_GATHERV   3
@@ -9184,7 +9152,10 @@ print  SCRIPT <<"EOF";
      setenv I_MPI_EXTRA_FILESYSTEM 1
      setenv I_MPI_EXTRA_FILESYSTEM_LIST gpfs
      setenv I_MPI_DEBUG 6
-#    setenv ROMIO_FSTYPE_FORCE         "gpfs:"
+     if ( \$OSVERSION == "install-SLES15" ) then
+       setenv I_MPI_FABRICS shm:ofi
+       setenv I_MPI_OFI_PROVIDER psm3
+     endif
   endif
   if (\$?MPT_VERSION) then
      setenv MPI_COLL_REPRODUCIBLE
@@ -9208,6 +9179,7 @@ print  SCRIPT <<"EOF";
      setenv DAPL_UCM_RETRY 10
      setenv DAPL_ACK_RETRY 10
   endif
+  setenv SLURM_DISTRIBUTION block
 
 # Needed for TLM/ADM
 # ------------------
@@ -9441,7 +9413,7 @@ print  SCRIPT <<"EOF";
   setenv OMP_NUM_THREADS $omp_num_threads
   setenv MPIRUN_IDF    "esma_mpirun -np \$NCPUS_IDF \$IDFX"
   setenv MPIRUN_IAU    "esma_mpirun -np \$NCPUS_IAU \$IAUX"
-  setenv MPIRUN_ANA    "PBS_NODEFILE=\$FVWORK/ANA_list; esma_mpirun -perhost 8 -np \$NCPUS_GSI \$ANAX"
+  setenv MPIRUN_ANA    "PBS_NODEFILE=\$FVWORK/ANA_list; esma_mpirun -perhost $perhost_gsi -np \$NCPUS_GSI \$ANAX"
   setenv MPIRUN_OBSVR  "PBS_NODEFILE=\$FVWORK/ANA_list; esma_mpirun -np \$NCPUS_GSI \$ANAX"
   setenv MPIRUN_SAC    "esma_mpirun -np  1      \$SACX"
   setenv MPIRUN_OIQC   "PBS_NODEFILE=\$FVWORK/OIQC_list; esma_mpirun -np 4"
@@ -9862,7 +9834,11 @@ sub init_agcm_rc {
     AGCM_label_subst("\@GRID_TYPE", $agcm_grid_type);
     AGCM_label_subst("\@CUBE_AGCM", $cube_agcm);
     AGCM_label_subst("\@LATLON_AGCM", $latlon_agcm);
-    AGCM_label_subst("\@NUM_OSERVER_NODES", $ios_nds);
+    if ( $o_servers > 0 ) {
+       AGCM_label_subst("\@NUM_OSERVER_NODES", $o_servers);
+    } else {
+       AGCM_label_subst("\@NUM_OSERVER_NODES", 1);
+    }
     AGCM_label_subst("\@NUM_BACKEND_PES", $bckend_wrts);
 
     AGCM_label_subst("\@AANA_IM", $ana_im);
@@ -9870,6 +9846,12 @@ sub init_agcm_rc {
 
     AGCM_label_subst("\@MP_MG1", "#");
     AGCM_label_subst("\@MP_GFDL", "#");
+
+    if ( $aero == "GOCART2G" ) {
+       AGCM_label_subst("\@HIST_GOCART", "");
+    } else {
+       AGCM_label_subst("\@HIST_GOCART", "#");
+    }
 
     AGCM_label_subst("\@NX", $nx);
     AGCM_label_subst("\@NY", $ny);
@@ -9888,6 +9870,7 @@ sub init_agcm_rc {
     AGCM_label_subst("\@CLDMICRO", $cldmicro);
 
     AGCM_label_subst("\@DT", $dt);
+    AGCM_label_subst("\@LONG_DT", $long_dt);
     AGCM_label_subst("\@CHEM_DT",  $chemdt);
     AGCM_label_subst("\@SOLAR_DT", $solardt);
     AGCM_label_subst("\@IRRAD_DT", $irraddt);
@@ -9895,6 +9878,12 @@ sub init_agcm_rc {
     AGCM_label_subst("\@OCEAN_DT", $ogcmrdt);
     AGCM_label_subst("\@OGCM_NX", $ogcm_nx);
     AGCM_label_subst("\@OGCM_NY", $ogcm_ny);
+
+    AGCM_label_subst("\@CONUS", "#");
+    AGCM_label_subst("\@FV_HWT", "#");
+    AGCM_label_subst("\@BACM_1M_", "" );  # Bacmeister microphysics (wired)
+    AGCM_label_subst("\@GFDL_1M_", "#"); # wired
+    AGCM_label_subst("\@MGB2_2M_", "#"); # wired
 
     AGCM_label_subst("\@DASTUNING", $dastuning);
 
@@ -9909,7 +9898,9 @@ sub init_agcm_rc {
 
     AGCM_label_subst("\@PCHEM_CLIM_YEARS", 1);
 
-    AGCM_label_subst("\@IS_FCST",        $is_fcst);
+    AGCM_label_subst("\@CONVPAR_OPTION", "GF");
+
+    AGCM_label_subst("\@OGCM_IS_FCST",   $is_fcst);
 
     AGCM_label_subst("\@DYCORE",         $dycore);
     AGCM_label_subst("\@AGCM_GRIDNAME",  $AGCM_GRIDNAME);
@@ -9927,6 +9918,12 @@ sub init_agcm_rc {
     AGCM_label_subst("\@DFLT_CHECKPOINT_TYPE" ,"pbinary") if $rstype eq "bin";
     AGCM_label_subst("\@DFLT_CHECKPOINT_TYPE" ,"pnc4")    if $rstype eq "nc4";
 
+    if ( "$myrun" eq "run" ) {
+       AGCM_label_subst("\@RESTART_BY_OSERVER" ,"YES");
+    } else {
+       AGCM_label_subst("\@RESTART_BY_OSERVER" ,"NO");
+    }
+
     AGCM_label_subst("\@USE_SKIN_LAYER" ,"1");
     AGCM_label_subst("\@ANALYZE_TS" ,"1");
 
@@ -9943,13 +9940,21 @@ sub init_agcm_rc {
     }
 
     #  Choice of Coupling
+    AGCM_label_subst("\@MOM6" , "#");
     if ( $coupled ) { 
        AGCM_label_subst("\@COUPLED"   , " ");
        AGCM_label_subst("\@DATAOCEAN" , "#");
+       AGCM_label_subst("\@CICE6" , "");
+       AGCM_label_subst("\@MOM6" , "");
     } else {
        AGCM_label_subst("\@COUPLED"   , "#");
        AGCM_label_subst("\@DATAOCEAN" , " ");
+       AGCM_label_subst("\@CICE6" , "#");
     }
+    # DAS will never run w/ MOM5/MIT and/or CICE4
+    AGCM_label_subst("\@MIT" , "#");
+    AGCM_label_subst("\@MOM5" , "#");
+    AGCM_label_subst("\@CICE4" , "#");
 
     # directory-specific values
     #--------------------------
@@ -10910,7 +10915,7 @@ sub expand_EnvVars {
 
     # look for ${var} format
     #-----------------------
-    while ($string =~ m/(\${(\w+)})/)   {
+    while ($string =~ m/(\$[{(\w+)}])/)   {
         $var = $1; $name = $2;
         $var =~ s/\$/\\\$/;
         $string =~ s/$var/$ENV{$name}/;

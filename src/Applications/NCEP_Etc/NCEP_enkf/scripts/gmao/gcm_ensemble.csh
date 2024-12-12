@@ -29,6 +29,7 @@
 #  21Feb2020  Todling   Allow for high freq bkg (up to 1mn)
 #  03May2020  Todling   Logic not to over-subscribe node
 #  22Jun2020  Todling   Add ability to run a control member (also cleaned up)
+#  26Oct2024  Todling   Implement slurm array distribution opt
 #-------------------------------------------------------------------------------------
 
 if ( !($?ATMENS_VERBOSE) ) then
@@ -98,6 +99,7 @@ if ( $#argv < 6 ) then
    echo "    ENSGCM_NCPUS   - when parallel ens on, this sets NCPUS for AGCM integration"
    echo "    ENSCTRLONLY    - allows running control member only"
    echo "    AENS_GCM_DSTJOB- distribute multiple works within smaller jobs"
+   echo "    AENS_GCM_ARRAY - let slurm array control job distribution"
    echo "    AGCM_WALLCLOCK - wall clock time to run agcm, default 1:00:00 "
    echo "    AGCM_QNAME     - name of queue (default: NULL, that is, let BATCH pick) "
    echo "    ATMENS_DO4DIAU - trigger to run 4DIAU "
@@ -122,7 +124,7 @@ if ( $#argv < 6 ) then
    echo " "
    echo " AUTHOR"
    echo "   Ricardo Todling (Ricardo.Todling@nasa.gov), NASA/GMAO "
-   echo "     Last modified: 20Apr2017      by: R. Todling"
+   echo "     Last modified: 29Oct2024      by: R. Todling"
    echo " \\end{verbatim} "
    echo " \\clearpage "
    exit(0)
@@ -149,10 +151,17 @@ if ( !($?NCSUFFIX)      ) setenv NCSUFFIX nc4
 if ( !($?ENSPARALLEL)   ) setenv ENSPARALLEL 0
 if ( !($?ENSCTRLONLY)   ) setenv ENSCTRLONLY 0
 if ( !($?AENS_GCM_DSTJOB) ) setenv AENS_GCM_DSTJOB 0
+if ( !($?AENS_GCM_ARRAY)  ) setenv AENS_GCM_ARRAY 0
 if ( !($?AGCM_WALLCLOCK)) setenv AGCM_WALLCLOCK 1:00:00
 if ( !($?AGCM_QNAME)    ) setenv AGCM_QNAME NULL
 if ( !($?ATMENS_DO4DIAU)) setenv ATMENS_DO4DIAU 0
 if ( !($?ATMENS_IGNORE_CHKPNT)) setenv ATMENS_IGNORE_CHKPNT 0
+
+if ( !($?JOBGEN_PFXNAME) ) then
+  set pfxname = ""
+else
+  set pfxname = ${JOBGEN_PFXNAME}_
+endif
 
 if ( $ENSPARALLEL ) then
    if ( !($?MPIRUN_ENSGCM) ) setenv FAILED 1
@@ -160,11 +169,8 @@ if ( $ENSPARALLEL ) then
      setenv FAILED 1
    else
      setenv JOBGEN_NCPUS $ENSGCM_NCPUS
+     setenv JOBGEN_NCPUS_PER_NODE -1
    endif
-   if ( !($?ENSGCM_NCPUS_PER_NODE) ) then
-     if ( $ENSGCM_NCPUS_PER_NODE > 0 ) then
-        setenv JOBGEN_NCPUS_PER_NODE $ENSGCM_NCPUS_PER_NODE
-     endif
 endif
 
 if ( $FAILED ) then
@@ -181,6 +187,11 @@ set nlons = $5
 set nlats = $6
 set hhb   = `echo $nhmsb | cut -c1-2`
 set yyyymmddhh = ${nymdb}${hhb}
+set yyyy     = `echo $nymd | cut -c1-4`
+set mm       = `echo $nymd | cut -c5-6`
+set dd       = `echo $nymd | cut -c7-8`
+set ddmmyyyy = ${dd}${mm}${yyyy}
+set hhzddmmyyyy = ${hhb}Z${ddmmyyyy} # used in jobname (easier to see cycle date/time)
 
 setenv ENSWORK $FVWORK
 if (-e $ENSWORK/.DONE_${MYNAME}.$yyyymmddhh ) then
@@ -435,6 +446,7 @@ if(! -e .DONE_ENSFCST ) then
 
         if( $ENSPARALLEL ) then
              @ fpoe++
+             set machfile = ""
              if ( $AENS_GCM_DSTJOB != 0 ) then # case of multiple jobs within few larger ones
                 # collect multiple gcm calls into jumbo file
                 if ( $ipoe < $AENS_GCM_DSTJOB ) then # nmem better devide by AENS_GCM_DSTJOB
@@ -443,9 +455,9 @@ if(! -e .DONE_ENSFCST ) then
                    echo $this_script_name >> $ENSWORK/agcm_poe.$npoe
                    chmod +x $ENSWORK/agcm_poe.$npoe
                 endif
-                set machfile = "-machfile $ENSWORK/agcm_machfile$npoe.$ipoe"
-             else
-                set machfile = ""
+                if ( $AENS_GCM_ARRAY == 0 ) then
+                   set machfile = "-machfile $ENSWORK/agcm_machfile$npoe.$ipoe"
+                endif
              endif
 
              jobgen.pl \
@@ -470,46 +482,62 @@ if(! -e .DONE_ENSFCST ) then
                    exit(1)
                 endif
 
-                if ( ($ipoe == $AENS_GCM_DSTJOB) || (($fpoe == $ntodo) && ($ipoe < $AENS_GCM_DSTJOB) ) ) then
-                   set this_ntasks_per_node = `facter processorcount`
-                   @ ncores_needed = $ENSGCM_NCPUS / $this_ntasks_per_node
-                   if ( $ncores_needed == 0 ) then
-                     @ myncpus = $this_ntasks_per_node
-                   else
-                     if ( $ENSGCM_NCPUS == $ncores_needed * $this_ntasks_per_node ) then
-                        @ myncpus = $ENSGCM_NCPUS
-                     else
-                        @ myncpus = $ENSGCM_NCPUS / $this_ntasks_per_node
-                        @ module = $myncpus * $this_ntasks_per_node - $ENSGSI_NCPUS
-                        if ( $module != 0 ) @ myncpus = $myncpus + 1
-                        @ myncpus = $myncpus * $this_ntasks_per_node
-                     endif
-                   endif
-                   @ myncpus = $ipoe * $myncpus
-                   #_ @ myncpus = $ipoe * $ENSGCM_NCPUS
-                   setenv JOBGEN_NCPUS $myncpus
-                   jobgen.pl \
-                        -q $AGCM_QNAME \
-                        agcm_dst${npoe}     \
-                        $GID                \
-                        $AGCM_WALLCLOCK    \
-                        "job_distributor.csh -machfile $ENSWORK/agcm_machfile$npoe -usrcmd $ENSWORK/agcm_poe.$npoe -usrntask $ENSGCM_NCPUS -njobs $ipoe" \
-                        $ENSWORK  \
-                        $MYNAME             \
-                        $ENSWORK/.DONE_POE${npoe}_${MYNAME}.$yyyymmddhh \
-                        "AGCM Failed for Member ${npoe}"
-                   if (! -e agcm_dst${npoe}.j ) then
-                      echo " ${MYNAME}: AGCM Failed to generate DST BATCH jobs for Member ${memtag}, Aborting ... "
-                      touch $ENSWORK/.FAILED
-                      exit(1)
-                   endif
-                   /bin/mv agcm_dst${npoe}.j $ENSWORK/
-                   # this job is really not monitored; the real work done by agcm_mem${memtag}.j is monitored
-                   $ATMENS_BATCHSUB $ENSWORK/agcm_dst${npoe}.j
-                   touch .SUBMITTED
-                   @ ipoe = 0 # reset counter
+                if ( $AENS_GCM_ARRAY ) then
+
                    @ npoe++
-                endif 
+                   if ( ($npoe == $nmem) || ($fpoe == $ntodo) ) then
+                      cd $ENSWORK
+                      jobgen.pl \
+                           -egress EGRESS -q $AGCM_QNAME \
+                           ${pfxname}agcm_array.$hhzddmmyyyy \
+                           $GID                   \
+                           -array "1-$nmem%${AENS_GCM_DSTJOB}" -ncc \
+                           $AGCM_WALLCLOCK        \
+                           agcm_mem\${memtag}.j   \
+                           $ENSWORK/mem\${memtag} \
+                           $MYNAME                \
+                           $ENSWORK/.DONE_ARRAY_${MYNAME}.$yyyymmddhh \
+                           "Atmos GCM Array Job Failed"
+
+                      if ( -e ${pfxname}agcm_array.$hhzddmmyyyy.j ) then
+                         $ATMENS_BATCHSUB ${pfxname}agcm_array.$hhzddmmyyyy.j
+                      else
+                         echo " ${MYNAME}: AGCM Failed to generate BATCH ARRAY jobs, Aborting ... "
+                         touch $ENSWORK/.FAILED
+                         exit(1)
+                      endif
+
+                   endif
+
+                else
+                   if ( ($ipoe == $AENS_GCM_DSTJOB) || (($fpoe == $ntodo) && ($ipoe < $AENS_GCM_DSTJOB) ) ) then
+                      set mydist = (`atmens_ntasks.pl $ENSGCM_NCPUS $ipoe`)
+                      setenv JOBGEN_NCPUS $mydist[1]
+                      setenv JOBGEN_NCPUS_PER_NODE $mydist[2]
+                      jobgen.pl \
+                           -q $AGCM_QNAME \
+                           agcm_dst${npoe}     \
+                           $GID                \
+                           $AGCM_WALLCLOCK    \
+                           "job_distributor.csh -machfile $ENSWORK/agcm_machfile$npoe -usrcmd $ENSWORK/agcm_poe.$npoe -usrntask $ENSGCM_NCPUS -njobs $ipoe" \
+                           $ENSWORK  \
+                           $MYNAME             \
+                           $ENSWORK/.DONE_POE${npoe}_${MYNAME}.$yyyymmddhh \
+                           "AGCM Failed for Member ${npoe}"
+                      if (! -e agcm_dst${npoe}.j ) then
+                         echo " ${MYNAME}: AGCM Failed to generate DST BATCH jobs for Member ${memtag}, Aborting ... "
+                         touch $ENSWORK/.FAILED
+                         exit(1)
+                      endif
+                      /bin/mv agcm_dst${npoe}.j $ENSWORK/
+                      # this job is really not monitored; the real work done by agcm_mem${memtag}.j is monitored
+                      $ATMENS_BATCHSUB $ENSWORK/agcm_dst${npoe}.j
+                      touch .SUBMITTED
+                      @ ipoe = 0 # reset counter
+                      @ npoe++
+                   endif # <poe>
+
+                endif # <ARRAY>
              else
                 if ( -e agcm_mem${memtag}.j ) then
                    $ATMENS_BATCHSUB agcm_mem${memtag}.j
@@ -544,6 +572,7 @@ if(! -e .DONE_ENSFCST ) then
      cd ../
 
   end # end loop over members
+  cd $ENSWORK
 
   # Monitor status of ongoing jobs
   # ------------------------------
@@ -627,6 +656,7 @@ endif # recycling of RSTs
 # --------
 /bin/rm agcm_dst*
 /bin/rm agcm_poe*
+/bin/rm *agcm_array*output*
 
 # made it down here, all done
 # ---------------------------

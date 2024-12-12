@@ -149,7 +149,7 @@ if ( $RECENTERBKG ) then
 
        # Now re-calculate statistics for ensemble (mean and rms)
        # -------------------------------------------------------
-       atmens_stats.csh $nmem bkg.eta $ensloc $this_nymd $this_nhms
+       atmens_stats.csh $nmem bkg.eta spread $ensloc $this_nymd $this_nhms
     end
   end
 
