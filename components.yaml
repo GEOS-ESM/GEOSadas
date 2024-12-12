@@ -35,7 +35,8 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  branch: g5.41.4-with-main-updates
+  branch: g5.41.5-with-main-updates
+  sparse: ./config/GMAO_Shared.sparse
   develop: main
 
 GMAOpyobs:
@@ -55,6 +56,12 @@ GEOS_Util:
   local: ./src/Shared/@GMAO_Shared/@GEOS_Util
   remote: ../GEOS_Util.git
   tag: v2.1.2
+  develop: main
+
+GMAO_perllib:
+  local: ./src/Shared/@GMAO_Shared/@GMAO_perllib
+  remote: ../GMAO_perllib.git
+  tag: g1.0.1
   develop: main
 
 MAPL:
