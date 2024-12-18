@@ -586,11 +586,11 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
 # ------------------------------------------------------------------------
     print "\n checkprintout  ldas_ana == 1 ($ldas_ana)\n";
     if ($ldas_ana == 1 ) {
-       $rc = system("$fvbin/ldas_setup setup $fvhome/lana $fvbin/det_exeinp.txt $fvbin/det_batinp.txt");
+       $rc = system("$fvbin/ldas_setup setup $fvhome/lana $ldassetup/det_exeinp.txt $ldassetup/det_batinp.txt");
        die "Failed to setup ldas for det, check ldas config input files $!" if ( $rc );
       
        if ($hyb_ens == 4 ) {
-          $rc = system("$fvbin/ldas_setup setup $fvhome/lana $fvbin/ens_exeinp.txt $fvbin/ens_batinp.txt");
+          $rc = system("$fvbin/ldas_setup setup $fvhome/lana $ldassetup4ens/ens_exeinp.txt $ldassetup4ens/ens_batinp.txt");
           die "Failed to setup ldas for ens, check ldas config input files $!" if ( $rc );
        }
 
@@ -3527,10 +3527,14 @@ sub set_ldasANA {
 
       $ans3 = query(" LDAS HOME?  [DEFAULT: $ldashome]");
       $ldashome = $ans3  unless blank($ans3); 
+      $ans31 = query(" LDAS SETUP input path?  [Example: /discover/nobackup/$user/ldasSaveInput/ ]");
+      $ldassetup = $ans31 ;
       
       if ($hyb_ens == 4 ) {
          $ans4 = query(" LDAS HOME for atmens? [DEFAULT: $ldashome4ens]");
          $ldashome4ens = $ans4  unless blank($ans4); 
+         $ans41 = query(" LDAS SETUP input path for ens?  [Example: /discover/nobackup/$user/ldasSaveInput4ens/ ]");
+         $ldassetup4ens = $ans41 ; 
       }
 
    } 
