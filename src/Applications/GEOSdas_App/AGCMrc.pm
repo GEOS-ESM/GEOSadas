@@ -31,7 +31,8 @@ our @EXPORT_OK = qw ( set_AGCM_envvars
 
 # global variables
 #-----------------
-my ($gocart_tracers, $carma_tracers, $iau, $pcp_forced, $lsmodel_flag);
+my ($gocart_tracers, $carma_tracers, $iau, $pcp_forced);
+my ($lsmodel_flag, $ldas_flag);
 my ($fvhome, $fvroot);
 my ($coupled);
 my ($envvars_set, $flags_set, %subst);
@@ -157,8 +158,9 @@ sub set_AGCM_flags {
     $flags_set = 0;
     $gocart_tracers = hashextract("gocart_tracers",%flags);
     $carma_tracers  = hashextract("carma_tracers", %flags);
-    $lsmodel_flag   = hashextract("lsmodel_flag",  %flags);
     $iau            = hashextract("iau",           %flags);
+    $ldas_flag      = hashextract("ldas_flag",     %flags);
+    $lsmodel_flag   = hashextract("lsmodel_flag",  %flags);
     $pcp_forced     = hashextract("pcp_forced",    %flags);
     $flags_set = 1;
 }
@@ -289,6 +291,10 @@ sub ed_g5agcm_rc {
     #----------------------------------------------------
     if ( $gocart_tracers ) { $comment{"GOCART.data_INTERNAL"} = 1 }
     else                   { $comment{"GOCART_INTERNAL"} = 1 }
+
+    # uncomment ldas increment flag
+    #------------------------------
+    if ($ldas_flag == 1) { $uncomment{"LDAS_INCR" }
 
     # comment unused catch or catchCN restart
     #----------------------------------------
