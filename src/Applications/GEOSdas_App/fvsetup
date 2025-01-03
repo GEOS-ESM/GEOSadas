@@ -9787,9 +9787,9 @@ sub init_agcm_rc {
     $flags{"gocart_tracers"} = $gocart_tracers;
     $flags{"carma_tracers"}  = $carma_tracers;
     $flags{"iau"}            = $doiau;
-    $flags{"pcp_forced"}     = $pcp_forced;
-    $flags{"lsmodel_flag"}   = $lsmodel_flag;
     $flags{"ldas_flag"}      = $ldas_flag;
+    $flags{"lsmodel_flag"}   = $lsmodel_flag;
+    $flags{"pcp_forced"}     = $pcp_forced;
     set_AGCM_flags(%flags);
 
     # $num_readers must divide evenly into $ny
