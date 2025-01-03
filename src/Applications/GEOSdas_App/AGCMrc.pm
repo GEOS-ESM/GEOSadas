@@ -294,8 +294,8 @@ sub ed_g5agcm_rc {
 
     # uncomment ldas increment flag
     #------------------------------
-    if ($ldas_flag == 1) { $uncomment{"LDAS_INCR" }
-
+    if ($ldas_flag == 1) { $uncomment{"LDAS_INCR"} }
+                           
     # comment unused catch or catchCN restart
     #----------------------------------------
     if ($lsmodel_flag == 1) { 
