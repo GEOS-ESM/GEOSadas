@@ -17,6 +17,7 @@ package AGCMrc;
 # 03May2010  Todling   Add reference to CARMA rst
 # 19Aug2010  Todling   turb_internal_rst is needed for reproduc/ble fcst
 # 09Oct2013  Todling   Add logics to handle precip-forcing option
+# 07Jan2024  Stassi    No longer need '#' in front of key in %uncomment hash
 #
 #########################################################################
 use strict;
@@ -416,6 +417,7 @@ sub outputAGCM {
         # uncomment specified lines if key is in first non-blank position
         #----------------------------------------------------------------
         foreach $key ( keys %uncomment ) {
+            $key =~ s/^\#//;  # no longer need '#' in front of key
             if ($rcd =~ /^(\s*)(\#*)\s*$key/) {
                 $space = $1;
                 $pound = $2;
