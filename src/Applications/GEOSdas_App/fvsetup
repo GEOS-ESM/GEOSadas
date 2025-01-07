@@ -5431,6 +5431,10 @@ sub mkdir_fvhome {  # create directories on FVHOME
       mkpath("$fvhome/run/$subdir")
           or die ">> Error << creating subdir, $fvhome/run/$subdir;";
   }
+  if ($ldas_flag) {
+      mkpath("$fvhome/recycle/holdpredout")
+          or die ">> Error << creating subdir, $fvhome/recycle/holdpredout;";
+  }
   unlink("$fvhome/fvInput") if ( -e "$fvhome/fvInput" ) ; 
   symlink("$fvbcs","$fvhome/fvInput"); 
 
@@ -10091,6 +10095,20 @@ sub copy_resources {
           system("$fvbin/vED -vv SHARE=$SHARE $ensFLG $source -o $target");
       }
       system("touch $fvhome/run/gaas/GAAS.BOOTSTRAP_");
+
+      if ($ldas_flag) {
+
+          $dflt = "/discover/nobackup/qzhang/INPexmp_ladas/LADAS5411/forc_init";
+          $source = query("Location of ldas holdpredout files?", $dflt);
+          $target = "$fvhome/recycle/holdpredout";
+          die ">>> Error <<< Cannot find directory, $source;" unless -d $source;
+          die ">>> Error <<< Cannot find directory, $target;" unless -d $target;
+          
+          foreach $fname ( <$source/*> ) {
+              cp($fname, $target);
+              print "cp $target\n";
+          }
+      }
   }
 
   # Model perturbation-related settings
