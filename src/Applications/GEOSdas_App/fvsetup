@@ -590,7 +590,7 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
        die "Failed to setup ldas for det, check ldas config input files $!" if ( $rc );
       
        if ($hyb_ens == 4 ) {
-          $rc = system("$fvbin/ldas_setup setup $fvhome/lana $ldassetup4ens/ens_exeinp.txt $ldassetup4ens/ens_batinp.txt");
+          $rc = system("$fvbin/ldas_setup setup $fvhome/lana $ldassetup/ens_exeinp.txt $ldassetup/ens_batinp.txt");
           die "Failed to setup ldas for ens, check ldas config input files $!" if ( $rc );
        }
 
@@ -3533,7 +3533,7 @@ sub set_ldasANA {
       if ($hyb_ens == 4 ) {
          $ans4 = query(" LDAS HOME for atmens? [DEFAULT: $ldashome4ens]");
          $ldashome4ens = $ans4  unless blank($ans4); 
-         $ans41 = query(" LDAS SETUP input path for ens?  [Example: /discover/nobackup/$user/ldasSaveInput4ens/ ]");
+         $ans41 = query(" LDAS SETUP input path for ens?  [Example: /discover/nobackup/$user/ldasSaveInput/ ]");
          $ldassetup4ens = $ans41 ; 
       }
 
