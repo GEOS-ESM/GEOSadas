@@ -31,8 +31,8 @@ our @EXPORT_OK = qw ( set_AGCM_envvars
 
 # global variables
 #-----------------
-my ($gocart_tracers, $carma_tracers, $iau, $pcp_forced);
-my ($lsmodel_flag, $ldas_flag);
+my ($carma_tracers, $gocart_tracers, $iau);
+my ($ldas_flag, $lsmodel_flag, $pcp_forced);
 my ($fvhome, $fvroot);
 my ($coupled);
 my ($envvars_set, $flags_set, %subst);
@@ -124,7 +124,6 @@ my %list = (rs5_core     => \@rs5_core,
                     stratchem_internal_rst 
                     stratchem_import_rst );
 
-
 #=======================================================================
 # name - set_AGCM_envvars
 # purpose - set global variables: $fvhome and $fvroot
@@ -145,7 +144,6 @@ sub set_AGCM_envvars {
       @rs5_notused = (@rs5_notused, @rs5_coupled);
       @rs5_files = (@rs5_core, @rs5_boot, @rs5_others);
     }
-
 }
 
 #=======================================================================
@@ -156,12 +154,14 @@ sub set_AGCM_flags {
     my %flags = @_;
 
     $flags_set = 0;
-    $gocart_tracers = hashextract("gocart_tracers",%flags);
+
     $carma_tracers  = hashextract("carma_tracers", %flags);
+    $gocart_tracers = hashextract("gocart_tracers",%flags);
     $iau            = hashextract("iau",           %flags);
     $ldas_flag      = hashextract("ldas_flag",     %flags);
     $lsmodel_flag   = hashextract("lsmodel_flag",  %flags);
     $pcp_forced     = hashextract("pcp_forced",    %flags);
+
     $flags_set = 1;
 }
 
@@ -294,8 +294,8 @@ sub ed_g5agcm_rc {
 
     # uncomment ldas increment flag
     #------------------------------
-    if ($ldas_flag == 1) { $uncomment{"LDAS_INCR"} }
-                           
+    if ($ldas_flag == 1) { $uncomment{"LDAS_INCR"} = 1 }
+
     # comment unused catch or catchCN restart
     #----------------------------------------
     if ($lsmodel_flag == 1) { 
@@ -316,8 +316,8 @@ sub ed_g5agcm_rc {
     # uncomment precipation force except when specified
     # -------------------------------------------------
     if ( $pcp_forced ) {
-        $uncomment{"#PRECIP_FILE"}  = 1;
-        $uncomment{"#USE_PP_TAPER"} = 1;
+        $uncomment{"PRECIP_FILE"}  = 1;
+        $uncomment{"USE_PP_TAPER"} = 1;
     }
 
     # edit and output AGCM.rc.tmpl
@@ -356,6 +356,7 @@ sub outputAGCM {
     my ($outfile, $ox_friendlies);
     my ($rcd, $label, $key, $rst);
     my (@DEFAULT_TYPE_FOUND);
+    my ($space, $pound);
 
     $tmpl  = shift @_;
     $outfl = shift @_;
@@ -415,8 +416,10 @@ sub outputAGCM {
         # uncomment specified lines if key is in first non-blank position
         #----------------------------------------------------------------
         foreach $key ( keys %uncomment ) {
-            if ($rcd =~ /^(\s*)$key/) {
-                if ( $uncomment{"$key"} ) {$rcd = substr $rcd, 1;};
+            if ($rcd =~ /^(\s*)(\#*)\s*$key/) {
+                $space = $1;
+                $pound = $2;
+                $rcd =~ s/^$space$pound/$space/;
             }
         }
         print(LUN2 "$rcd\n");
