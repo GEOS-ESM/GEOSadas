@@ -3499,46 +3499,52 @@ sub set_newradbc {
 }
 #=======================================================================
 sub set_ldasANA {
+    my($dflt, $ans1, $ans2);
 
     # initialize Land DAS processing flag
     #------------------------------------ 
-    my($dflt, $ans1, $ans2, $ans3, $ans4);
     $ldas_ana = 0;
     $ldasfdbk = 0;
     $ldas_flag = 0;
-    $dflt = "n";
-    $ldashome = "${fvhome}/lana/${expid}_LDAS" ;
-    $ldashome4ens = "${fvhome}/lana/${expid}_LDAS4ens" ;
 
     print "\n-------------\n";
     print   "LDAS Analysis\n";
     print   "-------------\n\n";
 
+    $dflt = "n";
     $ans1 = query("  Land DAS Analysis (y/n)?", $dflt) ;
-    $ldas_ana = 1 if yes($ans1);
+    if (yes($ans1)) {
+        $ldas_ana = 1;
+        $dflt = "n";
+        $ans2 = query("  Enable LDAS feedback to model y/n ? ", $dflt);
 
-   if ($ldas_ana == 1) {
-      $ans2 = query("  Enable LDAS feedback to model y/n ? ", $dflt);
-      $ldasfdbk = 1 if yes($ans2);
+        if (yes($ans2)) {
+            $ldasfdbk = 1;
+            $ldas_flag = 1;
 
-      if ($ldasfdbk == 1 ) {
-          $ldas_flag = 1;
-      }
-
-      $ans3 = query(" LDAS HOME?  [DEFAULT: $ldashome]");
-      $ldashome = $ans3  unless blank($ans3); 
-      $ans31 = query(" LDAS SETUP input path?  [Example: /discover/nobackup/$user/ldasSaveInput/ ]");
-      $ldassetup = $ans31 ;
+            $dflt = "/discover/nobackup/qzhang/INPexmp_ladas/LADAS5411/forc_init";
+            $ldashold = query("  Location of ldas holdpredout files?", $dflt);
+            die ">>> Error(1) <<< Cannot find directory, $ldashold;"
+                unless -d $ldashold;
+        }
+        $dflt = "${fvhome}/lana/${expid}_LDAS";
+        $ldashome = query("  LDAS HOME?", $dflt);
       
-      if ($hyb_ens == 4 ) {
-         $ans4 = query(" LDAS HOME for atmens? [DEFAULT: $ldashome4ens]");
-         $ldashome4ens = $ans4  unless blank($ans4); 
-         $ans41 = query(" LDAS SETUP input path for ens?  [Example: /discover/nobackup/$user/ldasSaveInput/ ]");
-         $ldassetup4ens = $ans41 ; 
-      }
+        $dflt = "/discover/nobackup/$user/ldasSaveInput";
+        $ldassetup = query("  LDAS SETUP input path?", $dflt);
+      
+        if ($hyb_ens == 4 ) {
+            $dflt = "${fvhome}/lana/${expid}_LDAS4ens";
+            $ldashome4ens = query("  LDAS HOME for atmens?", $dflt);
 
-   } 
-return 0;
+            $dflt = "/discover/nobackup/$user/ldasSaveInput";
+            $ldassetup4ens = query("  LDAS SETUP input path for ens?", $dflt);
+        }
+    }
+
+    if ($ldasfdbk) {
+    }
+    return 0;
 }
 
 #=======================================================================
@@ -10097,14 +10103,12 @@ sub copy_resources {
       system("touch $fvhome/run/gaas/GAAS.BOOTSTRAP_");
 
       if ($ldas_flag) {
-
-          $dflt = "/discover/nobackup/qzhang/INPexmp_ladas/LADAS5411/forc_init";
-          $source = query("Location of ldas holdpredout files?", $dflt);
           $target = "$fvhome/recycle/holdpredout";
-          die ">>> Error <<< Cannot find directory, $source;" unless -d $source;
           die ">>> Error <<< Cannot find directory, $target;" unless -d $target;
+          die ">>> Error(2) <<< Cannot find directory, $ldashold;"
+              unless -d $ldashold;
           
-          foreach $fname ( <$source/*> ) {
+          foreach $fname ( <$ldashold/*> ) {
               cp($fname, $target);
               print "cp $target\n";
           }
