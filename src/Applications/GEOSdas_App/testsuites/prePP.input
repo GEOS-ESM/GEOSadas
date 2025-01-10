@@ -3,7 +3,7 @@
 #------------
 
 codeID: 523f29e
-description: prePP__GEOSadas-5_30_0__agrid_C720__ogrid_C
+description: prePP__GEOSadas-5_41_2__agrid_C720__ogrid_C
 fvsetupID: f7aaa973c7
 
 ---ENDHEADERS---
@@ -29,7 +29,7 @@ EXPID? [u000_C720]
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [prePP__GEOSadas-5_30_0__agrid_C720__ogrid_C]
+EXPDSC? [prePP__GEOSadas-5_41_2__agrid_C720__ogrid_C]
 > 
 
 Land Boundary Conditions? [Icarus_Updated]
@@ -39,13 +39,13 @@ Catchment Model choice? [1]
 > 
 
 FVHOME? [/discover/nobackup/rtodling/prePP]
-> /discover/nobackup/projects/gmao/dadev/rtodling/$expid
+> /discover/nobackup/projects/gmao/dadev/rtodling/SLES15/$expid
 
 The directory /discover/nobackup/projects/gmao/dadev/rtodling/prePP does not exist. Create it now? [y]
 > 
 
-Processing nodes (1:Westmere, 2:SandyBridge, 3:Ivy Bridge, 4:Haswell, 5:Skylake, 6:Cascase)? [4]
-> 5
+Processing nodes (1:Haswell, 2:Skylake, 3:Cascase, 4:Milan)? [2]
+> 4
 
 Which case of variational analysis? [1]
 > 
@@ -81,7 +81,7 @@ AeroCom? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/AeroCom]
 > 
 
 FVICS? [/archive/u/jstassi/restarts/GEOSadas-5_24_0]
-> /nfs3m/archive/sfa_cache01/projects/dao_ops/GEOS-5.27/GEOSadas-5_27/f5271_fp/rs/Y2021/M09/f5271_fp.rst.20210919_21z.tar
+> /gpfsm/dnb05/projects/p139/rtodling/archive/Restarts/5_41/c720/c720.rst.20241122_21z.tar
 
 Run model-adjoint-related applications (0=no,1=yes)? [0]
 > 1
@@ -102,7 +102,7 @@ Verifying experiment id: [prePP]
 > 
 
 Ending year-month-day? [20210921]
-> 20211004
+> 20250131
 
 Length of FORECAST run segments (in hours)? [123]
 > 
@@ -146,11 +146,11 @@ Number of procs in the zonal direction (NX)? [16]
 Number of procs in the meridional direction (NY)? [42]
 > 
 
-Which main class of ObsSys (1: NRT; 2: MERRA; 3: MERRA-2)? [1]
+Which main class of ObsSys (1: NRT; 2: MERRA; 3: MERRA-2; 4: GEOS-IT; 5: R21C)? [1]
 > 1
 
 OBSERVING SYSTEM CLASSES?
-> disc_airs_bufr,disc_amsua_bufr,gmao_amsr2_bufr,gmao_gmi_bufr,mls_nrt_nc,ncep_1bamua_bufr,ncep_1bhrs4_bufr,ncep_acftpfl_bufr,ncep_atms_bufr,ncep_aura_omi_bufr,ncep_avcsam_bufr,ncep_avcspm_bufr,ncep_crisfsr_bufr,ncep_goesfv_bufr,ncep_gpsro_bufr,ncep_mhs_bufr,ncep_mtiasi_bufr,ncep_prep_bufr,ncep_satwnd_bufr,ncep_sevcsr_bufr,ncep_ssmis_bufr,ncep_tcvitals,npp_ompsnm_bufr,gmao_mlst_bufr
+> disc_airs_bufr,disc_amsua_bufr,gmao_amsr2_bufr,gmao_gmi_bufr,mls_nrt_nc,ncep_1bamua_bufr,ncep_acftpfl_bufr,ncep_atms_bufr,ncep_aura_omi_bufr,ncep_avcsam_bufr,ncep_avcspm_bufr,ncep_crisfsr_bufr,ncep_goesfv_bufr,ncep_gpsro_bufr,ncep_mhs_bufr,ncep_mtiasi_bufr,ncep_prep_bufr,ncep_satwnd_bufr,ncep_ssmis_bufr,ncep_tcvitals,npp_ompsnm_bufr,npp_ompslp_nc,gmao_mlst_bufr
 
 CHECKING OBSYSTEM? [2]
 > 1
@@ -207,7 +207,7 @@ Do Aerosol Analysis (y/n)? [y]
 > 
 
 AOD OBSERVING CLASSES [or type 'none']?
-> mod04_061_llk,myd04_061_llk,aeronet_obs_llk,mod04_061_flk,myd04_061_flk,aeronet_obs_flk
+> mod04_061_flk,myd04_061_flk,aeronet_obs_flk
 
 Enable GAAS feedback to model (y/n)? [y]
 > 
@@ -222,7 +222,7 @@ Output Restart TYPE (bin or nc4) [nc4]
 > 
 
 Select group: [g0613]
-> 
+> g0613
 
 Replayed Ensemble?  [yes]
 > no
@@ -237,7 +237,7 @@ Ensemble Vertical Levels?  [72]
 > 
 
 Experiment archive directory for ensemble restarts or 'later': [/archive/u/rtodling/prePP]
-> /nfs3m/archive/sfa_cache01/projects/dao_ops/GEOS-5.27/GEOSadas-5_27/f5271_fp
+> /gpfsm/dnb05/projects/p139/rtodling/archive/Restarts/5_41/c720
 
 Edit COLLECTIONS list in run/HISTORY.rc.tmpl (y/n)? [n]
 > 

@@ -9,6 +9,7 @@
 #  05Feb2012  Todling   Strip from original location
 #  07Mar2012  El Akkraoui Remove redundant stats calculation
 #  20Oct2012  Todling   Update API of stats script
+#  02Nov2024  Todling   Update API of stats script, and of self
 #------------------------------------------------------------------
 if ( !($?ATMENS_VERBOSE) ) then
     setenv ATMENS_VERBOSE 0
@@ -23,7 +24,7 @@ setenv skipTRANSF                 # no transform needed for ana-sensitivity exec
 setenv skipSOLVER                 # need to run the analysis sensitivity solver
 setenv skipSATBIAS "-skipSATBIAS" # no need to worry about running satellite bias correction
 
-if ( $#argv < 3 ) then
+if ( $#argv < 4 ) then
    echo " "
    echo " \\begin{verbatim} "
    echo " "
@@ -33,12 +34,13 @@ if ( $#argv < 3 ) then
    echo " "
    echo " SYNOPSIS "
    echo " "
-   echo "  $MYNAME  expid nymd nhms "
+   echo "  $MYNAME  expid nymd nhms xstat"
    echo " "
    echo " where"
    echo "   expid  -  usual experiment name, e.g., b541iau"
    echo "   nymd   -  date of analysis, as in YYYYMMDD"
    echo "   nhms   -  time of analysis, as in HHMMSS"
+   echo "   xstat  -  extra statistic (e.g., spread or variance)"
    echo " "
    echo " DESCRIPTION"
    echo " "
@@ -48,7 +50,7 @@ if ( $#argv < 3 ) then
    echo "   analysis is available."
    echo " "
    echo "  Example of valid command line:"
-   echo "  $MYNAME b541iau 20091019 000000 "
+   echo "  $MYNAME b541iau 20091019 000000 spread"
    echo " "
    echo " REQUIRED ENVIRONMENT VARIABLES"
    echo " "
@@ -71,7 +73,7 @@ if ( $#argv < 3 ) then
    echo " "
    echo " AUTHOR"
    echo "   Ricardo Todling (Ricardo.Todling@nasa.gov), NASA/GMAO "
-   echo "     Last modified: 08Apr2013      by: R. Todling"
+   echo "     Last modified: 02Nov2024      by: R. Todling"
    echo " \\end{verbatim} "
    echo " \\clearpage "
    exit(0)
@@ -112,6 +114,8 @@ endif
 set expid = $1
 set nymd  = $2
 set nhms  = $3
+set xstat = $4
+
 set hh     = `echo $nhms | cut -c1-2`
 set yyyymmddhh = ${nymd}${hh}
 
@@ -134,13 +138,13 @@ touch .no_archiving
 
 # Calculate analysis ensemble mean
 # --------------------------------
-  atmens_stats.csh $nmem ana.eta $ENSWORK/updated_ens $nymd $nhms
+  atmens_stats.csh $nmem ana.eta $xstat $ENSWORK/updated_ens $nymd $nhms
   if ( $status ) then
       echo " ${MYNAME}: error in calculating ensemble mean analysis, aborting ..."
       exit(1)
   endif
   if ( -e $ENSWORK/.FOUNDINC ) then
-     atmens_stats.csh $nmem inc.eta $ENSWORK/updated_ens $nymd $nhms
+     atmens_stats.csh $nmem inc.eta $xstat $ENSWORK/updated_ens $nymd $nhms
      if ( $status ) then
          echo " ${MYNAME}: error in calculating ensemble mean ana increment, aborting ..."
          exit(1)

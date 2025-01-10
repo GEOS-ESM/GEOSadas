@@ -530,6 +530,14 @@
          Call SplitExecGcmRun_( 1 )
                                                        zeit_co.x RunGcm
 
+#        Save predictor forcings for ldas coupling 
+#----------------------------------------------------
+         if ( $LDAS_ANA ) then
+                                                      zeit_ci.x MovePrecitorOutput
+            Call MovePredictorOutput_() 
+                                                      zeit_co.x MovePrecitorOutput
+         endif 
+
 #        Save desired restarts for future forecasts
 #        ------------------------------------------
                                                        zeit_ci.x SaveRstForFcst

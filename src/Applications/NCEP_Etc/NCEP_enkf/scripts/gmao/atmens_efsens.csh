@@ -11,6 +11,7 @@ setenv DRYRUN
 #
 #  23Apr2017  Todling   Initial script
 #  03May2020  Todling   Logic not to over-subscribe node
+#  03Nov2024  Todling   Revised job distribution
 #------------------------------------------------------------------
 
 if ( !($?ATMENS_VERBOSE) ) then
@@ -97,6 +98,7 @@ if ( $ENSPARALLEL ) then
      setenv FAILED 1
    else
      setenv JOBGEN_NCPUS $ENSGCMADJ_NCPUS
+     setenv JOBGEN_NCPUS_PER_NODE -1
    endif
 endif
 
@@ -289,23 +291,9 @@ set nmem = $members[1]
                 endif
 
                 if ( ($ipoe == $AENS_GCMADJ_DSTJOB) || (($fpoe == $ntodo) && ($ipoe < $AENS_GCMADJ_DSTJOB) ) ) then
-                   set this_ntasks_per_node = `facter processorcount`
-                   @ ncores_needed = $ENSGCMADJ_NCPUS / $this_ntasks_per_node
-                   if ( $ncores_needed == 0 ) then
-                    @ myncpus = $this_ntasks_per_node
-                   else
-                     if ( $ENSGCMADJ_NCPUS == $ncores_needed * $this_ntasks_per_node ) then
-                        @ myncpus = $ENSGCMADJ_NCPUS
-                     else
-                        @ myncpus = $ENSGCMADJ_NCPUS / $this_ntasks_per_node
-                        @ module = $myncpus * $this_ntasks_per_node - $ENSGCMADJ_NCPUS
-                        if ( $module != 0 ) @ myncpus = $myncpus + 1
-                        @ myncpus = $myncpus * $this_ntasks_per_node
-                     endif
-                   endif
-                   @ myncpus = $ipoe * $myncpus
-                   #_ @ myncpus = $ipoe * $ENSGCMADJ_NCPUS
-                   setenv JOBGEN_NCPUS $myncpus
+                   set mydist = (`atmens_ntasks.pl $ENSGCMADJ_NCPUS $ipoe`)
+                   setenv JOBGEN_NCPUS $mydist[1]
+                   setenv JOBGEN_NCPUS_PER_NODE $mydist[2]
                    jobgen.pl \
                         -egress AGCMADJ_DST_EGRESS -q $AGCMADJ_QNAME \
                         agcmadj_dst${npoe}     \
