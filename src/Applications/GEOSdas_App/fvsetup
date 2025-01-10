@@ -586,14 +586,27 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
 # ------------------------------------------------------------------------
     print "\n checkprintout  ldas_ana == 1 ($ldas_ana)\n";
     if ($ldas_ana == 1 ) {
-       $rc = system("$fvbin/ldas_setup setup $fvhome/lana $ldassetup/det_exeinp.txt $ldassetup/det_batinp.txt");
-       die "Failed to setup ldas for det, check ldas config input files $!" if ( $rc );
+        $cmd = "$fvbin/ldas_setup setup $fvhome/lana $ldassetup/det_exeinp.txt $ldassetup/det_batinp.txt";
+        print "$cmd\n";
+        $rc = system $cmd;
+        die "Failed to setup ldas for det, check ldas config input files $!" if ( $rc );
       
        if ($hyb_ens == 4 ) {
           $rc = system("$fvbin/ldas_setup setup $fvhome/lana $ldassetup/ens_exeinp.txt $ldassetup/ens_batinp.txt");
           die "Failed to setup ldas for ens, check ldas config input files $!" if ( $rc );
        }
-
+       $histfile = "$ldashome/run/HISTORY.rc";
+       #---------- This code will be skipped for now --------
+       if (-e $histfile and 0) {
+           $cmd = "$fvbin/edhist.pl $histfile -i"
+               .  " -I catch_progn_incr"
+               .  " -X SMAP_L4_SM_gph"
+               .  " -s1 'catch_progn_incr.ref_time:    000000'"
+               .  " -s2 'catch_progn_incr.ref_time:    013000'";
+           print "$cmd\n";
+           system $cmd;
+       }
+       #-----------------------------------------------------
      }
     
 # Monthly Setup
@@ -3504,8 +3517,10 @@ sub set_ldasANA {
     # initialize Land DAS processing flag
     #------------------------------------ 
     $ldas_ana = 0;
-    $ldasfdbk = 0;
     $ldas_flag = 0;
+    $ldasfdbk = 0;
+
+    $ldashome_dflt = "${fvhome}/lana/${expid}_LDAS";
 
     print "\n-------------\n";
     print   "LDAS Analysis\n";
@@ -3516,25 +3531,26 @@ sub set_ldasANA {
     if (yes($ans1)) {
         $ldas_ana = 1;
         $dflt = "n";
-        $ans2 = query("  Enable LDAS feedback to model y/n ? ", $dflt);
+        $ans2 = query("  Enable LDAS feedback to model y/n?", $dflt);
 
         if (yes($ans2)) {
-            $ldasfdbk = 1;
             $ldas_flag = 1;
+            $ldasfdbk = 1;
 
             $dflt = "/discover/nobackup/qzhang/INPexmp_ladas/LADAS5411/forc_init";
             $ldashold = query("  Location of ldas holdpredout files?", $dflt);
             die ">>> Error(1) <<< Cannot find directory, $ldashold;"
                 unless -d $ldashold;
         }
-        $dflt = "${fvhome}/lana/${expid}_LDAS";
+
+        $dflt = $ldashome_dflt;
         $ldashome = query("  LDAS HOME?", $dflt);
-      
+
         $dflt = "/discover/nobackup/$user/ldasSaveInput";
         $ldassetup = query("  LDAS SETUP input path?", $dflt);
       
         if ($hyb_ens == 4 ) {
-            $dflt = "${fvhome}/lana/${expid}_LDAS4ens";
+            $dflt = dirname($ldashome) ."/${expid}_LDAS4ens";
             $ldashome4ens = query("  LDAS HOME for atmens?", $dflt);
 
             $dflt = "/discover/nobackup/$user/ldasSaveInput";
@@ -3542,8 +3558,13 @@ sub set_ldasANA {
         }
     }
 
-    if ($ldasfdbk) {
+    unless ($ldashome) {
+        $ldashome = $ldashome_dflt;
     }
+    unless ($ldashome4ens) {
+        $ldashome4ens = dirname($ldashome) ."/${expid}_LDAS4ens";
+    }
+
     return 0;
 }
 
