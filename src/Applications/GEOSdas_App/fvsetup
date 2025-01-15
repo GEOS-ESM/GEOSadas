@@ -3538,9 +3538,12 @@ sub set_ldasANA {
             $ldasfdbk = 1;
 
             $dflt = "/discover/nobackup/qzhang/INPexmp_ladas/LADAS5411/forc_init";
-            $ldashold = query("  Location of ldas holdpredout files?", $dflt);
-            die ">>> Error(1) <<< Cannot find directory, $ldashold;"
-                unless -d $ldashold;
+            $prompt = "  Location of ldas holdpredout files or 'later'";
+            $ldashold = query($prompt, $dflt);
+            unless ($ldashold eq "later") {
+                die ">>> Error(1) <<< Cannot find directory, $ldashold;"
+                    unless -d $ldashold;
+            }
         }
 
         $dflt = $ldashome_dflt;
