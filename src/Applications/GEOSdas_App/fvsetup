@@ -3782,6 +3782,7 @@ EOF
   } 
   $flags = "-nlevs $aens_lev $setacftbc $rcorrarg $setradbc $aens_lsmodel -expdir $fvhome/.. $sppt_flag $bcopt";
   $flags .= " -fvhome $fvhome" if $checkFLG;
+  $flags .= " -ldasflg $ldas_flag";
   $params = " $aens_ana $expid $aens_im $aens_jm $aens_ocn $landbcs"; 
 
   $cmd = "$fvbin/setup_atmens.pl -nodename $nodeflg $flags $params";

@@ -43,6 +43,7 @@ my $scriptname = basename($0);
                "fvhome=s",
                "nlevs=s",
                "nodename=s",
+               "ldasflg=i",
                "lsmcm",
                "radbc",
                "vtxrlc",
@@ -545,7 +546,8 @@ sub ed_agcm_rc {
            if($rcd =~ /\@AENS_DOSPPT/) {$rcd=~ s/\@AENS_DOSPPT/0/g; }
         }
 
-        if($rcd =~ /\@LSM_CHOICE/) {$rcd=~ s/\@LSM_CHOICE/$lsmchoice/g; }
+        if ($rcd =~ /\@LSM_CHOICE/) {$rcd=~ s/\@LSM_CHOICE/$lsmchoice/g; }
+        if ($rcd =~ /\@LDAS_INCR/)  {$rcd=~ s/\@LDAS_INCR/$ldas_flag/g; }
         if ( "$lndbcs" eq "Icarus-NLv3" ) {
            if($rcd =~ /\@LSM_PARMS/) {$rcd=~ s/\@LSM_PARMS/ /g; }
         } else {
