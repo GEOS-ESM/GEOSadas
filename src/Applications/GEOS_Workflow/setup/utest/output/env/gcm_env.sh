@@ -1,4 +1,0 @@
-export MKRESRST=0
-export WCONSTRAINT=0
-export SHORTFCST=0
-export FCSTAGE=$FVHOME/fcst
