@@ -23,4 +23,4 @@ GMAO_Shared:
   local: ./src/GMAO_Shared
   remote: ../GMAO_Shared.git
   sparse: ./config/GMAO_Shared.sparse
-  branch: main
+  branch: feature/ygyu/test_GMAO_ncdiag
