@@ -22,5 +22,5 @@ ecbuild:
 GMAO_Shared:
   local: ./src/GMAO_Shared
   remote: ../GMAO_Shared.git
+  branch: feature/ygyu/submit_gcc_ncdiag
   sparse: ./config/GMAO_Shared.sparse
-  branch: feature/ygyu/test_GMAO_ncdiag
