@@ -10070,6 +10070,7 @@ sub init_agcm_pert_rc {
 sub copy_resources {
   my ($chemrc, $ensFLG);
   my ($flags, $label, $string, $vars, $cmd);
+  my ($fname, $fname_old, $expid_old, $target);
 
   cp("$fvroot/etc/VERSION","$fvhome/run/VERSION")
           || die "Cannot write file $fvhome/run/VERSION: $!";
@@ -10132,10 +10133,12 @@ sub copy_resources {
           die ">>> Error <<< Cannot find directory, $target;" unless -d $target;
           die ">>> Error(2) <<< Cannot find directory, $ldashold;"
               unless -d $ldashold;
-          
-          foreach $fname ( <$ldashold/*> ) {
-              cp($fname, $target);
-              print "cp $target\n";
+
+          $expid_old = find_expid($ldashold);
+          foreach $fname_old ( <$ldashold/*> ) {
+              ($fname = basename($fname_old)) =~ s/$expid_old/$expid/;
+              cp($fname_old, "$target/$fname");
+              print "cp $fname_old $target/$fname\n";
           }
       }
   }
@@ -10555,7 +10558,37 @@ sub copy_resources {
     }
   }
 }
- 
+
+#=======================================================================
+# name - find_expid
+# purpose - find expid in directory based on directory file names
+#
+# notes -
+#   This routine extracts the front portion of each file in the
+#   directory to find the expid of the file. It assumes that the most
+#   prevalent value extracted is the expid for the files.
+#=======================================================================
+sub find_expid {
+    my ($dir, $fname, $most, $front, %count);
+
+    $dir = shift @_;
+    die ">>> ERROR <<< $dir is not a directory;" unless -d $dir;
+
+    for $fname ( <$dir/*> ) {
+        $front = (split(/\./, basename($fname)))[0];
+        $count{$front}++;
+    }
+
+    $most = -1;
+    foreach $front (keys(%count)) {
+        if ($count{$front} > $most) {
+            $dir_expid = $front;
+            $most = $count{$front};
+        }
+    }
+    return $dir_expid;
+}    
+
 #=======================================================================
 sub edit_collections {
 
