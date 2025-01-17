@@ -1,9 +1,9 @@
 
-dir="./temp_tobe_deleted"
+dir="temp_tobe_deleted"
 
 if [ -d $dir ]; then
-  echo "Note:  $dir  exist !"
-  echo "remove  $dir"
+  echo "Note:  ./$dir  exist !"
+  echo "remove  ./$dir"
   exit
 fi
 
