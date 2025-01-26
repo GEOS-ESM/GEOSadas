@@ -22,9 +22,11 @@
 !    Apr2013  Sienkiewicz   Created module
 !    4Jun2013 Sienkiewicz   added prologue
 !    7Mar2014 Sienkiewicz   added YYYYMM (kym) to bias structure
+!   22Nov2024 Sienkiewicz   move definition of maxcft to namelist, using
+!                             allocatable arrays
 !
 !EOP
-!------------------------------------------------------------------------- 
+!-------------------------------------------------------------------------
 
       type :: cft_data_type
          real  :: xob             ! longitude
@@ -43,9 +45,8 @@
       end type cft_data_type
 
       integer, parameter :: maxobs=300000
-      integer, parameter :: maxcft=7000
 !
-! data type for bias file        
+! data type for bias file
       type :: bias_data_type
          character (len=8) :: sid
          real :: bias
@@ -79,7 +80,7 @@
 
 !
 ! !DESCRIPTION:  Reads in conventional diag file output from GSI and uses
-!                the observed-minus-forecast values for aircraft temperature 
+!                the observed-minus-forecast values for aircraft temperature
 !                data (KX=131,133) to update bias correction values for each
 !                aircraft tail number.
 !
@@ -101,14 +102,14 @@
 !                            to calculate bias correction.  Add constraint
 !                            for level-flight obs for use in bias calculation
 !   29May2013 Sienkiewicz  Namelist input to control parameters for screening
-!                            allow to run like original version (all good obs) 
+!                            allow to run like original version (all good obs)
 !                            or to screen for level flight obs
 !   30May2012 Sienkiewicz  Write elevation in optional output file in terms of kilo-ft
 !                            (i.e. ~aircraft flight levels)
 !    4Jun2013 Sienkiewicz  added prologue
 !   25Jun2013 Sienkiewicz  put additional fields in bias file (for testing)
 !                            to track current stats, number of updates to bias
-!                            and number of times since bias last updated   
+!                            and number of times since bias last updated
 !   26Jun2013 Sienkiewicz  try 'dfact' factor to scale down the bias corr with
 !                            time if it is not updated
 !   26Nov2013 Sienkiewicz  add restriction of minimum date = 1991040100 for bias corr.
@@ -122,8 +123,11 @@
 !                          printout to 'verbose2' and add 'verbose' condition for printing tail
 !                          numbers added or merged into the bias coefficient file.
 !   23Aug2018 Sienkiewicz  Try adding option to start bias calculation with zero bias (& large error)
+!   22Nov2024 Sienkiewicz  Add checks of tail counts to insure arrays do not overflow,
+!                          define maxcft in namelist and use allocatable arrays to
+!                          allow for future expansion without recompiling
 !EOP
-!------------------------------------------------------------------------- 
+!-------------------------------------------------------------------------
 
       integer,parameter :: nhdr=8
       integer,parameter :: ntime=8
@@ -143,10 +147,10 @@
       type (cft_data_type) :: adata(maxobs)
       integer isrt(maxobs),idex(maxobs),n,m,i1,i2
 
-      type (bias_data_type) :: bdata(maxcft)
-      type (bias_data_type) :: cdata(maxcft)
-      type (bias_data_type) :: ddata(maxcft)
-      integer jdex(maxcft), kdex(maxcft)
+      type (bias_data_type),allocatable, dimension(:) :: bdata
+      type (bias_data_type),allocatable, dimension(:) :: cdata
+      type (bias_data_type),allocatable, dimension(:) :: ddata
+      integer,allocatable, dimension(:) ::  jdex, kdex
 
       integer argc,iargc
       integer nchar, nreal, nobs, mype
@@ -169,22 +173,25 @@
       real adsclm                ! limiting asc/dsc rate to use in bias calc
       real dfact                 ! reduction factor for bias corr
       integer nobsmin            ! min nobs value used to toss old bias entry
-      real bvarmin               ! minimum value for bias error 
+      real bvarmin               ! minimum value for bias error
       integer nminb              ! min nobs value for using bias correction
       logical docount            ! keep tally of # of times tail number
                                  ! appears and count since last updated
       integer mindate            ! minimum date for aircraft bias to be active
       logical apply_bias         ! if .false. set bias (as read by GSI) to zero
                                  !   i.e. if prior to mindate
-      logical zerostart          ! initial value of bias is zero 
+      logical zerostart          ! initial value of bias is zero
       real    errstart           ! set initial error (use with zerostart) default 1.
 
       logical lprint, verbose, verbose2
+      integer maxcft             ! maximum number of tails to allocate in arrays
 
       namelist/acftbias/ plevlim, adsclm, dfact, nobsmin, bvarmin, nminb,
-     &   docount, mindate, zerostart, errstart
+     &   docount, mindate, zerostart, errstart, maxcft
       namelist/io_opt/ verbose, verbose2
-      integer ichk, jchk, kchk
+
+      integer ichk, jchk, kchk, istat
+
 
       data lui /10/,lub/11/
 
@@ -203,6 +210,7 @@
                                 !    (avoid eventual integer overflow)
       mindate = 1991040100      ! default minimum date to apply Apr 01, 1991 00z
       apply_bias= .true.        ! default is to apply the bias
+      maxcft = 15000            ! default value to allocate
       zerostart = .false.       ! default is start with first (bias,error) estimate
       errstart = 1.0
 
@@ -239,6 +247,15 @@
          open(unit=luo,file=outputfile,form='formatted')
       end if
 
+      allocate(bdata(maxcft),cdata(maxcft),ddata(maxcft),
+     &   jdex(maxcft),kdex(maxcft),stat=istat)
+
+      if (istat .ne. 0) then
+        print *, 'error allocating arrays for bias coeffs, ',
+     &    'exiting'
+        stop
+      end if
+
       cdata%sid = 'ZZZZZZZZ'
       bdata%sid = 'YZZZZZZZ'
       ddata%bias = 0.0
@@ -251,15 +268,20 @@
       nbflt = 0
 
 ! read in bias correction from file, apply reduction factor to
-! downweight prior bias 
+! downweight prior bias
 
       do while (ios .eq. 0)
-         read(lub,2010,iostat=ios) sid, idx, dum, dum, dum, 
-     &        nval, idum, idum, 
-     &        errr, dum, dum, 
+         read(lub,2010,iostat=ios) sid, idx, dum, dum, dum,
+     &        nval, idum, idum,
+     &        errr, dum, dum,
      &        iym, bias, dum, dum, idum, kount, kskip
          if (ios .eq. 0) then
             nbflt = nbflt + 1
+            if (nbflt .gt. maxcft) then
+              print *,'too many entries in input coeff file, ',
+     &           'need to increase maxcft'
+              call exit(10)
+            end if
             cdata(nbflt)%sid = trim(sid)
             cdata(nbflt)%bias = bias               ! don't rescale bias
             cdata(nbflt)%err = errr*errr/dfact
@@ -282,6 +304,7 @@
       open(unit=lui,file=diagfile,form='unformatted',status='old')
 
       read(lui) idate
+      print *,'idate from diag file is ',idate
 
       if (idate .lt. mindate) then
          print *,'Current date ',idate,' is less than minimum date'
@@ -332,7 +355,7 @@
       call IndexSort(ndat,idex,adata(1:ndat)%dmn,descend=.false.)
       call IndexSort(ndat,idex,adata(1:ndat)%sid,descend=.false.)
 
-!     
+!
 !  at this point the obs are sorted by kx, time, and tail number
 !  we can move along the index array and label flights and calculate
 !  ascent descent rates and mean values
@@ -355,6 +378,12 @@
      &           plevlim,adsclm)
             if (nval .gt. 1) then
                mflt = mflt + 1
+               if (mflt .gt. maxcft) then
+                  print *,'too many tail entries from diag file, ',
+     &               'need to increase maxcft'
+                  call exit(10)
+                  stop
+               endif
                bdata(mflt)%sid = adata(ipre)%sid
                bdata(mflt)%bias = bias
                bdata(mflt)%err = errr
@@ -376,6 +405,12 @@
      &           plevlim,adsclm)
       if (nval .gt. 1) then
          mflt = mflt + 1
+         if (mflt .gt. maxcft) then
+            print *,'too many tail entries from diag file, ',
+     &         'need to increase maxcft'
+            call exit(10)
+            stop
+         endif
          bdata(mflt)%sid = adata(ipre)%sid
          bdata(mflt)%bias = bias
          bdata(mflt)%err = errr
@@ -391,7 +426,7 @@
 
          do while(ichk .le. nbflt)
             if (cdata(jdex(ichk))%sid .ge. bdata(jchk)%sid) exit
-            if (verbose2) print *,cdata(jdex(ichk))%sid, ' lt ', 
+            if (verbose2) print *,cdata(jdex(ichk))%sid, ' lt ',
      &           bdata(jchk)%sid, ' so no match in new file'
             kchk = kchk + 1
             kdex(kchk) = jdex(ichk)
@@ -407,9 +442,9 @@
                i1 = jdex(ichk)
 !               enew =  bdata(jchk)%err*cdata(i1)%err/
 !     &              (bdata(jchk)%err+cdata(i1)%err)
-               enew = 1./(1./bdata(jchk)%err + 
+               enew = 1./(1./bdata(jchk)%err +
      &              1./cdata(i1)%err)
-               bnew = (cdata(i1)%bias/cdata(i1)%err + 
+               bnew = (cdata(i1)%bias/cdata(i1)%err +
      &              bdata(jchk)%bias/bdata(jchk)%err)*
      &              bdata(jchk)%err*cdata(i1)%err/
      &              (bdata(jchk)%err+cdata(i1)%err)
@@ -429,23 +464,28 @@
                kdex(kchk) = i1
                ichk = ichk + 1
 
-            else 
+            else
 
 !     add an entry at the end of the array and put the location
-!     in the (after merge) pointer array 
+!     in the (after merge) pointer array
 
                im1 = ichk - 1
                if (verbose) then
-                  if (im1 .gt. 0) then 
+                  if (im1 .gt. 0) then
                      print *,'insert ',bdata(jchk)%sid,' between ',
      &                cdata(jdex(im1))%sid,' and ',cdata(jdex(ichk))%sid
-                  else 
+                  else
                      print *,'insert ',bdata(jchk)%sid,
-     &                    ' at start before ', cdata(jdex(ichk))%sid 
+     &                    ' at start before ', cdata(jdex(ichk))%sid
                   end if
                end if
                kchk = kchk + 1
                nflt = nflt + 1
+               if (nflt .gt. maxcft) then
+                  print *,'too many tails when merging entries, ',
+     &               'need to increase maxcft'
+                  call exit(10)
+               endif
                kdex(kchk) = nflt
                if (zerostart) then
                   enew = 1./(1./bdata(jchk)%err + 1./errstart)
@@ -471,12 +511,17 @@
             end if
          else
 !     add an entry at the end of the array and put the location
-!     in the (after merge) pointer array 
+!     in the (after merge) pointer array
 
             if (verbose) print *,'insert ',bdata(jchk)%sid,
      &           ' at end of array'
             kchk = kchk + 1
             nflt = nflt + 1
+            if (nflt .gt. maxcft) then
+               print *,'too many tails when merging entries, ',
+     &            'need to increase maxcft'
+               call exit(10)
+            endif
             kdex(kchk) = nflt
             if (zerostart) then
                enew = 1./(1./bdata(jchk)%err + 1./errstart)
@@ -505,7 +550,7 @@
 
       if (ichk .le. nbflt) then
          do i1 = ichk,nbflt
-            if (verbose2) print *,cdata(jdex(i1))%sid, 
+            if (verbose2) print *,cdata(jdex(i1))%sid,
      &           ' no match in new file'
             kchk = kchk + 1
             kdex(kchk) = jdex(i1)
@@ -537,7 +582,7 @@
          if (cdata(i2)%nval .gt. nobsmin) then
 !  fill in bias value read by GSI
             if ( apply_bias .and. cdata(i2)%nval >= nminb ) then
-               bias = cdata(i2)%bias 
+               bias = cdata(i2)%bias
             else
                bias = zero
             end if
@@ -546,7 +591,7 @@
 !  columns being written  1-12 are read by GSI, 13-18 only in external program
 !  1 - tail number
 !  2 - index for tail ID
-!  3 - bias value to be used by GSI (zerored if too 
+!  3 - bias value to be used by GSI (zerored if too
 !      little data used or estimate is too old)
 !  4 - zero  (unused second predictor coefficient)
 !  5 - zero  (unused third  predictor coefficient)
@@ -556,7 +601,7 @@
 !  9 - error value for calculated bias
 ! 10 - zero  (unused slot for second predictor)
 ! 11 - zero  (unused slot for third  predictor)
-! 12 - YYYYMM time indicator 
+! 12 - YYYYMM time indicator
 ! 13 - actual bias value calculated
 ! 14 - mean OmF for tail number for current synoptic time
 ! 15 - std.dev OmF for tail number for current synoptic time
@@ -566,15 +611,15 @@
 ! 18 - count of days missing for tail number
             if (docount) then
                write(lub,2010) cdata(i2)%sid,idx,bias,zero,zero,
-     &              cdata(i2)%nval, izero, izero, 
-     &              sqrt(cdata(i2)%err), zero, zero, cdata(i2)%kym, 
-     &              cdata(i2)%bias, ddata(i2)%bias, sqrt(ddata(i2)%err), 
+     &              cdata(i2)%nval, izero, izero,
+     &              sqrt(cdata(i2)%err), zero, zero, cdata(i2)%kym,
+     &              cdata(i2)%bias, ddata(i2)%bias, sqrt(ddata(i2)%err),
      &              ddata(i2)%nval, cdata(i2)%kount, cdata(i2)%kskip
             else
                write(lub,2010) cdata(i2)%sid,idx,bias,zero,zero,
-     &              cdata(i2)%nval, izero, izero, 
-     &              sqrt(cdata(i2)%err), zero, zero, cdata(i2)%kym, 
-     &              cdata(i2)%bias, ddata(i2)%bias, sqrt(ddata(i2)%err), 
+     &              cdata(i2)%nval, izero, izero,
+     &              sqrt(cdata(i2)%err), zero, zero, cdata(i2)%kym,
+     &              cdata(i2)%bias, ddata(i2)%bias, sqrt(ddata(i2)%err),
      &              ddata(i2)%nval
             endif
 
@@ -582,6 +627,8 @@
             print *,'Removing old bias correction for ',cdata(i2)%sid
          end if
       end do
+
+      deallocate(bdata, cdata, ddata, jdex, kdex)
 
       stop
  2000 format(2x,a8,2x,f10.2,5(2x,f10.2),i4,3i6,f10.2)
@@ -615,7 +662,7 @@
       type (cft_data_type) :: adata(maxobs)  ! data structure with observations
 
 ! !DESCRIPTION:  process data with same tail number to calculate
-!                ascent/descent rates 
+!                ascent/descent rates
 !
 ! !REVISION HISTORY:
 !   24Oct2013 Sienkiewicz new wrapper to separate out 'flights' from
@@ -625,14 +672,14 @@
 !EOP
 !-------------------------------------------------------------------------
 !
-!  run through tail number array to see if delta-dhr is too large, 
+!  run through tail number array to see if delta-dhr is too large,
 !  split into new flight (no acid available in diag file)
 !
       integer i
       integer ip1, is1, iptr, iprev
       real, parameter ::  dtlim = 25.
       real dt
-      
+
       is1 = itstart
       ip1 = idex(is1)
       iprev = ip1
@@ -682,18 +729,18 @@
       type (cft_data_type) :: adata(maxobs)  ! data structure with observations
 
 ! !DESCRIPTION:  process data with same tail number to calculate
-!                ascent/descent rates 
+!                ascent/descent rates
 !
 ! !REVISION HISTORY:
 !   15May2013 Sienkiewicz Initial code
 !    4Jun2013 Sienkiewicz added prologue
 !   23Oct2013 Sienkiewicz trying centered difference calculation
-!   29Oct2013 Sienkiewicz add code to exclude 'bad' obs, rename to 
+!   29Oct2013 Sienkiewicz add code to exclude 'bad' obs, rename to
 !                          'process_flight' (changes from cft_prp_vv.f90;
 !                           note we are using dP/dt hPa/min not dZ/dt m/s)
 !   30Oct2013 Sienkiewicz pass in plevlim to limit "fill" values for isolated obs
 !EOP
-!------------------------------------------------------------------------- 
+!-------------------------------------------------------------------------
 
 
       real, allocatable :: utime(:), ulev(:),  alr(:)
@@ -744,10 +791,10 @@
             ulev(intm) = ((ulev(intm)*nattime(intm))+adata(iptr)%pob)/
      &           (nattime(intm)+1)
             nattime(intm) = nattime(intm) + 1
-         end if            
+         end if
       end do
 
-! 
+!
 !  add fill value for isolated reports - if below 'plevlim' use -9999.9, if above they
 !  may be isolated reports at cruise level so leave the 0.0 value
       if (intm .lt. 2) then
@@ -757,15 +804,15 @@
       else
 !
 !  we now have 'intm' unique time/level pairs so we can calculate ascent/descent
-!  rates for each of these times (with an "average" value for the obs with 
+!  rates for each of these times (with an "average" value for the obs with
 !  identical times)
 
          alr(1) = (ulev(2)-ulev(1))/(utime(2)-utime(1))
- 
+
          do i1 = 2,intm-1
             alr(i1) = (ulev(i1+1)-ulev(i1-1))/(utime(i1+1)-utime(i1-1))
          end do
-         
+
          alr(intm) = (ulev(intm)-ulev(intm-1))/(utime(intm)-utime(intm-1))
 
       end if
@@ -838,7 +885,7 @@
 !   15May2013 Sienkiewicz Initial code
 !    4Jun2013 Sienkiewicz added prologue
 !EOP
-!------------------------------------------------------------------------- 
+!-------------------------------------------------------------------------
 
 
 ! local variables
@@ -851,7 +898,7 @@
       nval = 0
       do i = itstart,itend
          ii = idex(i)
-         if (adata(ii)%itqm .ne. 1)  cycle       ! only data that passed qc    
+         if (adata(ii)%itqm .ne. 1)  cycle       ! only data that passed qc
          if (adata(ii)%pob .ge. plevlim) cycle   ! only data higher than plevlim
          if (abs(adata(ii)%alrt) .gt. adsclm) cycle  !only level(ish) flight
 
