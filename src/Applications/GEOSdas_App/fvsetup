@@ -595,18 +595,6 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
           $rc = system("$fvbin/ldas_setup setup $fvhome/lana $ldassetup/ens_exeinp.txt $ldassetup/ens_batinp.txt");
           die "Failed to setup ldas for ens, check ldas config input files $!" if ( $rc );
        }
-       $histfile = "$ldashome/run/HISTORY.rc";
-       #---------- This code will be skipped for now --------
-       if (-e $histfile and 0) {
-           $cmd = "$fvbin/edhist.pl $histfile -i"
-               .  " -I catch_progn_incr"
-               .  " -X SMAP_L4_SM_gph"
-               .  " -s1 'catch_progn_incr.ref_time:    000000'"
-               .  " -s2 'catch_progn_incr.ref_time:    013000'";
-           print "$cmd\n";
-           system $cmd;
-       }
-       #-----------------------------------------------------
      }
     
 # Monthly Setup
@@ -8939,6 +8927,7 @@ sub write_FVDAS_Run_Config {
     $ENV{"MONTHLY_MEANS"}   = $monthly_means;
     $ENV{"NEWRADBC"}        = $newradbc;
     $ENV{"NCEPINPUT"}       = $fvbcs;
+    $ENV{"NODEFLG"}         = $nodeflg;
     $ENV{"OBSCLASS"}        = $obClass;
     $ENV{"OMP_NUM_THREADS"} = $omp_num_threads;
     $ENV{"VTRACK"}          = $vtrack;
