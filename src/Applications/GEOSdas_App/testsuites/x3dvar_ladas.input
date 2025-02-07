@@ -44,7 +44,7 @@ FVHOME? [/discover/nobackup/qzhang/x3dvar_ladas]
 The directory /discover/nobackup/qzhang/x3dvar does not exist. Create it now? [y]
 > 
 
-Processing nodes (1:Haswell, 2:Skylake, 3:Cascase, 4:Milan)? [2]
+Processing nodes (3:Cascade, 4:Milan)? [3]
 > 4
 
 Which case of variational analysis? [1]
