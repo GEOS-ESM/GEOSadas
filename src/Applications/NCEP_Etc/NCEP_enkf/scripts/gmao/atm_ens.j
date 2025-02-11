@@ -5,6 +5,7 @@
 #SBATCH --ntasks=96
 #SBATCH --ntasks-per-node=>>>NCPUS_PER_NODE<<<
 #SBATCH --time=6:00:00
+#SBATCH --no-requeue 
 #
 #SBATCH --job-name=atm_ens
 #SBATCH --output=atm_ens.log.o%j
@@ -66,7 +67,11 @@
       if( `uname -m` != "ia64" ) then
          setenv FORT90L -Wl,-T
       endif
+# NOTE: if user has access to TSE:
+#       (i) comment out line below
+#       (ii) uncomment and adjust following line
       setenv FVWORK $FVHOME/../enswork.$BIGNAME
+#     setenv FVWORK /discover/nobackup/projects/gmao/dadev/TSE_staging/$user/enswork.$BIGNAME
       if ($?kidwork) then  # this case, overwrite FVWORK with user-specific
          setenv FVWORK $FVHOME/../$kidwork
       endif
@@ -78,6 +83,8 @@
   setenv EXTDATA $FVWORK/ExtData  # External data directory
   /bin/mkdir -p $EXTDATA
   /bin/touch $EXTDATA/.no_archiving
+  /bin/rm -f $EXTDATA/chemistry
+  /bin/ln -s /discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/chemistry $EXTDATA/
   /bin/rm -f $EXTDATA/g5chem
   /bin/ln -s /discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/g5chem $EXTDATA/
   /bin/rm -f $EXTDATA/g5gcm
@@ -142,7 +149,7 @@
   setenv NCSUFFIX nc4
   setenv NCEPINPUT $FVBCS
   setenv VAROFFSET 180    # abs value of time off from 1st synoptic hour of var window
-  setenv SPECRES    62    # should be able to revisit analyzer to avoid needing this
+  setenv SPECRES   254    # should be able to revisit analyzer to avoid needing this
 
   setenv GAAS_ANA 1
   setenv LDAS_ANA >>>LDAS_ANA<<<
@@ -509,7 +516,7 @@
 # -------------------------------------------
   if ( $RUN_PEANA || $DO_ATM_ENS ) then
       zeit_ci.x post_eana
-      post_eana.csh $EXPID $anymd $anhms |& tee -a atm_ens.log
+      post_eana.csh $EXPID $anymd $anhms spread |& tee -a atm_ens.log
       if( $status) then
          echo "post_eana failed"
          exit(1)
@@ -593,10 +600,21 @@
   set arch_nhms = $nhmsb
   if( $RUN_AENSFCST || $DO_ATM_ENS ) then
       zeit_ci.x post_egcm
-      post_egcm.csh $EXPID $nymdb $nhmsb $TIMEINC $FVHOME/atmens
+      set myrc = $ATMENSETC/post_egcm.rc
+      if ( -e $ATMENSETC/post_egcm_${hhb}.rc ) set myrc = $ATMENSETC/post_egcm_${hhb}.rc
+      post_egcm.csh $EXPID $nymdb $nhmsb $TIMEINC spread $myrc $FVHOME/atmens
       if ($status) then
-         echo "post_egcm failed"
+         echo "post_egcm (bkg) failed"
          exit(1)
+      endif  
+      set myrc = $ATMENSETC/post_egcm_diag.rc
+      if ( -e $ATMENSETC/post_egcm_diag_${hhb}.rc ) set myrc = $ATMENSETC/post_egcm_diag_${hhb}.rc
+      if ( -e $myrc ) then
+         post_egcm.csh $EXPID $nymdb $nhmsb 0 variance $myrc $FVHOME/atmens/ensdiag
+         if ($status) then
+            echo "post_egcm (diag) failed"
+            exit(1)
+         endif  
       endif
       zeit_co.x post_egcm
   endif

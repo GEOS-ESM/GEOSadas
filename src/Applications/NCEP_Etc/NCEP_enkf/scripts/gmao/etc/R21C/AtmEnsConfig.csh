@@ -5,6 +5,7 @@ setenv ATMENS_NODENAME @NODENAME
 
 #setenv REGRID_QOS advda
 #setenv ATMENS_IGNORE_CHKPNT 1
+#setenv ENSARCH_FIELDS "eana,ebkg,stat,ecbkg,eoi0,edia,ebaer,eaaer,eprg,eniana"
 setenv RSTEXT nc4
 
 setenv LOCAL_ACQUIRE 1
@@ -30,7 +31,8 @@ setenv ACFTBIAS @ACFTBIAS  # 0: no aircraft bias correction
 # archiving
 # ---------
 setenv ENSARCH_ALLBKG 1   # set this and ALL bkg files are saved in tar ball
-setenv ENSARCH_FIELDS "eana,ebkg,ecbkg,edia,ebaer,erst,eprg"
+setenv ENSARCH_FIELDS "eana,ebkg,stat,ecbkg,eoi0,edia,ebaer,erst,ebkgx,eprg,eniana"
+setenv ENSARCH_FIELDS "eana,ebkg,stat,ecbkg,eoi0,edia,ebaer,erst,edstat"
 setenv ENSARCH_WALLCLOCK 2:00:00
 setenv ARCHLOC $FVARCH
 
@@ -40,8 +42,8 @@ setenv JOBMONITOR_MAXSLEEP_MIN 180
 setenv ATMENS_DEBUG  1
 setenv ATMENS_VERBOSE 1               # this can be put instead around each script call in atm_ens.j
 setenv ATMENS4ARCH $FVHOME            # location where dir with files to arch is held before arch
-setenv ATMENSLOC   $FVHOME/atmose     # location of recycled files for atmospheric ensemble
-setenv ATMENSETC   $FVHOME/run/atmose # location of RC files
+setenv ATMENSLOC   $FVHOME/atmens     # location of recycled files for atmospheric ensemble
+setenv ATMENSETC   $FVHOME/run/atmens # location of RC files
 #etenv TIMEINC 360 # analysis frequency in minutes (script not general enough for this to be anything)
 #etenv ASYNBKG 180 # background frequency in minutes (script not general enough for this to be anything)
 #etenv VAROFFSET 180   # abs value of time off from 1st synoptic hour of var window
@@ -54,14 +56,27 @@ setenv ENSPARALLEL 2           # 0 - does serial ensemble
                                # 1 - bias estimates from current hybrid cycle 
                                # 2 - bias estimates from previous hybrid cycle
 setenv ATMENS_DO4DIAU 0
-setenv ENSOBSVR -1             # bias correction files expected to be available for each member and control
+
+# atmens_recenter.csh
+# -------------------
+setenv AENSADDINFLOC addperts  # path relative to FVWORK
+setenv AENS_ADDINFLATION 1     # apply additive inflation to each analysis member
+setenv AENS_DONORECENTER 0     # do not recenter ensemble
+setenv ADDINF_FACTOR 0.35      # additive inflation coeff (seems small after mass-div fix)
+setenv ADDINF_FACTOR_SPPT 0.2  # additive inflation for when SPPT is used
+
+setenv RECENTER_WALLCLOCK 0:30:00
+setenv ENSRECENTER_NCPUS 1
+setenv RECENTER_QNAME $ATMENS_QNAME
+setenv AENS_RECENTER_DSTJOB 16
+setenv AENS_RECENTER_ARRAY 1
 
 # ensemble GAAS and AERO EnKF
 # ---------------------------
 setenv MODIS_L2_HDF 1
 setenv NCPUS_AOD   8
 setenv MPIRUN_AOD  "$ATMENS_MPIRUN "
-setenv AENS_GAAS_OPT   2  # 1 members use central GAAS
+setenv AENS_GAAS_OPT   1  # 1 members use central GAAS
                           # 2 analyze each member with PSAS
                           # 3 do (2), add EnKF-based AOD analysis (off aod.or.concentrations)
                           # 4 EnKF-based AOD analysis (off aod.or.concentrations)
@@ -92,6 +107,7 @@ setenv AENS_GCM_DSTJOB 4
 setenv AGCM_QNAME $ATMENS_QNAME
 setenv AGCM_WALLCLOCK 1:00:00
 setenv ENSGCM_NCPUS @AGCM_CPUS
+setenv ENSGCM_NCPUS_PER_NODE @AGCM_NCPUS_PER_NODE
 setenv MPIRUN_ENSGCM  "$ATMENS_MPIRUN -np $ENSGCM_NCPUS GEOSgcm.x"   # esma_mpirun does not work in this context
 setenv RSTSTAGE4AENS  $ATMENSLOC/RST                                 # TBD: location of mean-fcst restarts
 
@@ -121,11 +137,11 @@ setenv MPIRUN_ENSANA  "$ATMENS_MPIRUN -np $ENSGSI_NCPUS GSIsa.x"     # esma_mpir
 
 # setup_perts.csh
 #----------------
-setenv AENS_PERTS_DSTJOB 8
+#setenv AENS_PERTS_DSTJOB 8
 setenv PERTS_QNAME $ATMENS_QNAME
 setenv PERTS_WALLCLOCK 1:00:00
 setenv PERTS_NCPUS 24 
-setenv PERTS_ENSTAT_MPIRUN "$ATMENS_MPIRUN -np $PERTS_NCPUS mp_stats.x"
+setenv PERTS_ENSTAT_MPIRUN "$ATMENS_MPIRUN -perhost 2 -np $PERTS_NCPUS mp_stats.x"
 
 # pert-energy calculation
 #------------------------
@@ -136,9 +152,14 @@ setenv AENSTAT_QNAME $ATMENS_QNAME
 
 # post-egcm calculations
 # ----------------------
+setenv PEGCM_ALLPARALLEL 1
+setenv PEGCM_ARRAY 1
 setenv PEGCM_WALLCLOCK 1:00:00
 setenv PEGCM_QNAME $ATMENS_QNAME
 
 
 # NOTES:
+setenv OBSCLASS1 "r21c_loon_bufr,r21c_gmao_mlst_bufr,r21c_prep_bufr,r21c_acftpfl_bufr,r21c_satwnd_bufr,r21c_avhrr_satwnd_bufr,r21c_ncep_tcvitals,r21c_tmi_bufr,r21c_gpsro_bufr,r21c_sevcsr_bufr,r21c_1bamua_bufr,r21c_1bamub_bufr,r21c_1bhrs2_bufr,r21c_1bhrs3_bufr,r21c_1bhrs4_bufr,r21c_1bmsu_bufr,r21c_1bmhs_bufr,r21c_1bssu_bufr,r21c_eosairs_bufr,r21c_eosamsua_bufr,r21c_mtiasi_bufr,r21c_atms_bufr,r21c_ssmit11_bufr,r21c_ssmit13_bufr,r21c_ssmit14_bufr,r21c_ssmit15_bufr,r21c_amsre_bufr,r21c_osbuv8_bufr,r21c_mls_nc,r21c_npp_ompslp_nc,r21c_aura_omieff_nc,r21c_npp_ompsnmeff_nc,r21c_avcsam_bufr,r21c_avcspm_bufr,r21c_amsr2_bufr,r21c_crisfsr_bufr,r21c_gmi_bufr,r21c_prep_bufr,r21c_acftpfl_bufr"
+
+setenv OBSCLASS "gmao_prep_bufr,gmao_acftpfl_bufr,$OBSCLASS1"
 

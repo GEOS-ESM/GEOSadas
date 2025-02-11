@@ -1,8 +1,8 @@
-# This file should contain on collections
-# name as this.that
+ 
 COLLECTIONS::
              'bkg.eta'
              'bkg.sfc'
              'cbkg.eta'
+             'abkg.eta'
              'gaas_bkg.sfc'
               ::
