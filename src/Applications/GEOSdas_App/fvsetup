@@ -578,22 +578,21 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
   $rc = system("$fvbin/fix_gocart_rc.csh $vres $fvhome/run/gocart");
   die "Failed to fix GOCART levels-referencing $!" if ( $rc );
 
-# LDAS Setup is done separately, follow instructions in GEOSldas/README.md
-# Provide ldas config input files: YOUR_det_exeinp.txt, YOUR_det_batinp.txt 
-# ln -s YOUR_det_exeinp.txt  $fvbin/det_exeinp.txt 
-# ln -s YOUR_det_batinp.txt  $fvbin/det_batinp.txt  
-# For Hyb-4dEnVar, do same for ens_exeinp.txt and ens_batinp.txt
+# Provide ldas config input files: det_exeinp.txt, det_batinp.txt 
+# For Hyb-4dEnVar, do same for ens_exeinp.txt and ens_batinp.txt 
+# Please follow instructions in GEOSldas/README.md for the config input files
 # ------------------------------------------------------------------------
     print "\n checkprintout  ldas_ana == 1 ($ldas_ana)\n";
     if ($ldas_ana == 1 ) {
-       $rc = system("$fvbin/ldas_setup setup $fvhome/lana $fvbin/det_exeinp.txt $fvbin/det_batinp.txt");
-       die "Failed to setup ldas for det, check ldas config input files $!" if ( $rc );
-      
-       if ($hyb_ens == 4 ) {
-          $rc = system("$fvbin/ldas_setup setup $fvhome/lana $fvbin/ens_exeinp.txt $fvbin/ens_batinp.txt");
+        $cmd = "$fvbin/ldas_setup setup $fvhome/lana --account $gid --nymdb $nymdb --nhmsb $nhmsb --lfotag bkg  $ldassetup/det_exeinp.txt $ldassetup/det_batinp.txt";
+        print "$cmd\n";
+        $rc = system $cmd;
+        die "Failed to setup ldas for det, check ldas config input files $!" if ( $rc );
+       chomp($aens_replay);
+       if (($hyb_ens == 4) && ($aens_replay eq "no")) { 
+          $rc = system("$fvbin/ldas_setup setup $fvhome/lana --account $gid --nymdb $nymdb --nhmsb $nhmsb --lfotag bkg  $ldassetup/ens_exeinp.txt $ldassetup/ens_batinp.txt");
           die "Failed to setup ldas for ens, check ldas config input files $!" if ( $rc );
        }
-
      }
     
 # Monthly Setup
@@ -3499,42 +3498,61 @@ sub set_newradbc {
 }
 #=======================================================================
 sub set_ldasANA {
+    my($dflt, $ans1, $ans2);
 
     # initialize Land DAS processing flag
     #------------------------------------ 
-    my($dflt, $ans1, $ans2, $ans3, $ans4);
     $ldas_ana = 0;
-    $ldasfdbk = 0;
     $ldas_flag = 0;
-    $dflt = "n";
-    $ldashome = "${fvhome}/lana/${expid}_LDAS" ;
-    $ldashome4ens = "${fvhome}/lana/${expid}_LDAS4ens" ;
+    $ldasfdbk = 0;
+
+    $ldashome_dflt = "${fvhome}/lana/${expid}_LDAS";
 
     print "\n-------------\n";
     print   "LDAS Analysis\n";
     print   "-------------\n\n";
 
+    $dflt = "n";
     $ans1 = query("  Land DAS Analysis (y/n)?", $dflt) ;
-    $ldas_ana = 1 if yes($ans1);
+    if (yes($ans1)) {
+        $ldas_ana = 1;
+        $ldas_flag = 1;
+        $dflt = "n";
+        $prompt = "  Location of ldas holdpredout files or 'later'";
+        $ldashold = query($prompt, $dflt);
+        unless ($ldashold eq "later") {
+            die ">>> Error(1) <<< Cannot find directory, $ldashold;"
+                unless -d $ldashold;
+        }
+       
+        $ans2 = query("  Enable LDAS feedback to model y/n?", $dflt);
+        if (yes($ans2)) {
+            $ldasfdbk = 1;
+        }
 
-   if ($ldas_ana == 1) {
-      $ans2 = query("  Enable LDAS feedback to model y/n ? ", $dflt);
-      $ldasfdbk = 1 if yes($ans2);
+        $ldashome = $ldashome_dflt;
+        #$ldashome = query("  LDAS HOME?", $dflt);
 
-      if ($ldasfdbk == 1 ) {
-          $ldas_flag = 1;
-      }
-
-      $ans3 = query(" LDAS HOME?  [DEFAULT: $ldashome]");
-      $ldashome = $ans3  unless blank($ans3); 
+        $dflt = "/discover/nobackup/$user/ldasSaveInput";
+        $ldassetup = query("  LDAS SETUP input path?", $dflt);
       
-      if ($hyb_ens == 4 ) {
-         $ans4 = query(" LDAS HOME for atmens? [DEFAULT: $ldashome4ens]");
-         $ldashome4ens = $ans4  unless blank($ans4); 
-      }
+        if (($hyb_ens == 4 )&&($aens_replay == "no")) {
+            $ldashome4ens = dirname($ldashome) ."/${expid}_LDAS4ens";
+            #$ldashome4ens = query("  LDAS HOME for atmens?", $dflt);
 
-   } 
-return 0;
+            $dflt = "/discover/nobackup/$user/ldasSaveInput";
+            $ldassetup4ens = query("  LDAS SETUP input path for ens?", $dflt);
+        }
+    }
+
+    unless ($ldashome) {
+        $ldashome = $ldashome_dflt;
+    }
+    unless ($ldashome4ens) {
+        $ldashome4ens = dirname($ldashome) ."/${expid}_LDAS4ens";
+    }
+
+    return 0;
 }
 
 #=======================================================================
@@ -3748,6 +3766,7 @@ EOF
   } 
   $flags = "-nlevs $aens_lev $setacftbc $rcorrarg $setradbc $aens_lsmodel -expdir $fvhome/.. $sppt_flag $bcopt";
   $flags .= " -fvhome $fvhome" if $checkFLG;
+  $flags .= " -ldasflg $ldas_flag";
   $params = " $aens_ana $expid $aens_im $aens_jm $aens_ocn $landbcs"; 
 
   $cmd = "$fvbin/setup_atmens.pl -nodename $nodeflg $flags $params";
@@ -3776,7 +3795,7 @@ EOF
       print JSCRPT $line;
   }
   close TILDE;
-  close JSCRPT;
+  close JSCRPT; 
 
 # Copy and rename ensemble restarts
 # ---------------------------------
@@ -5426,6 +5445,10 @@ sub mkdir_fvhome {  # create directories on FVHOME
   foreach $subdir (qw( gaas gocart )) {
       mkpath("$fvhome/run/$subdir")
           or die ">> Error << creating subdir, $fvhome/run/$subdir;";
+  }
+  if ($ldas_flag) {
+      mkpath("$fvhome/recycle/holdpredout")
+          or die ">> Error << creating subdir, $fvhome/recycle/holdpredout;";
   }
   unlink("$fvhome/fvInput") if ( -e "$fvhome/fvInput" ) ; 
   symlink("$fvbcs","$fvhome/fvInput"); 
@@ -9780,12 +9803,13 @@ sub init_agcm_rc {
     $envvars{"coupled"} = $coupled;
     set_AGCM_envvars(%envvars);
 
-    $flags{"gocart_tracers"} = $gocart_tracers;
     $flags{"carma_tracers"}  = $carma_tracers;
+    $flags{"gocart_tracers"} = $gocart_tracers;
     $flags{"iau"}            = $doiau;
-    $flags{"pcp_forced"}     = $pcp_forced;
-    $flags{"lsmodel_flag"}   = $lsmodel_flag;
     $flags{"ldas_flag"}      = $ldas_flag;
+    $flags{"lsmodel_flag"}   = $lsmodel_flag;
+    $flags{"pcp_forced"}     = $pcp_forced;
+
     set_AGCM_flags(%flags);
 
     # $num_readers must divide evenly into $ny
@@ -10030,6 +10054,7 @@ sub init_agcm_pert_rc {
 sub copy_resources {
   my ($chemrc, $ensFLG);
   my ($flags, $label, $string, $vars, $cmd);
+  my ($fname, $fname_old, $expid_old, $target);
 
   cp("$fvroot/etc/VERSION","$fvhome/run/VERSION")
           || die "Cannot write file $fvhome/run/VERSION: $!";
@@ -10086,6 +10111,21 @@ sub copy_resources {
           system("$fvbin/vED -vv SHARE=$SHARE $ensFLG $source -o $target");
       }
       system("touch $fvhome/run/gaas/GAAS.BOOTSTRAP_");
+
+      if ($ldas_flag) {
+          $target = "$fvhome/recycle/holdpredout";
+          die ">>> Error <<< Cannot find directory, $target;" unless -d $target;
+          die ">>> Error(2) <<< Cannot find directory, $ldashold;"
+              unless -d $ldashold;
+
+          $expid_old = find_expid($ldashold);
+          foreach $fname_old ( <$ldashold/*lfo*> ) {
+              ($fname = basename($fname_old)) =~ s/$expid_old/$expid/;
+              cp($fname_old, "$target/$fname");
+              print "cp $fname_old $target/$fname\n";
+          } 
+          
+      }
   }
 
   # Model perturbation-related settings
@@ -10503,6 +10543,33 @@ sub copy_resources {
     }
   }
 }
+
+#=======================================================================
+# name - find_expid
+# purpose - find expid in directory based on directory file names
+#
+# notes -
+#   This routine extracts the front portion of each file in the
+#   directory to find the expid of the file. It assumes that the most
+#   prevalent value extracted is the expid for the files.
+#=======================================================================
+sub find_expid {
+    my ($dir, $fname, $most, $front, %count);
+    $dir = shift @_;
+    die ">>> ERROR <<< $dir is not a directory;" unless -d $dir;
+    for $fname ( <$dir/*> ) {
+        $front = (split(/\./, basename($fname)))[0];
+        $count{$front}++;
+    }
+    $most = -1;
+    foreach $front (keys(%count)) {
+        if ($count{$front} > $most) {
+            $dir_expid = $front;
+            $most = $count{$front};
+        }
+    }
+    return $dir_expid;
+}    
  
 #=======================================================================
 sub edit_collections {
