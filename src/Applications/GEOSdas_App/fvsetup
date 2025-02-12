@@ -5201,7 +5201,7 @@ EOF
        $nx = 24;
        $ny = $nx * 6;
        $km = $vres;
-       $dt = 300;
+       $dt = 450;
        $long_dt  = $dt;
        $pert_dt = 900;
        $chemdt = $dt;

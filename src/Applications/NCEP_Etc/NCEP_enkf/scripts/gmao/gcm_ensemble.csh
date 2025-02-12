@@ -329,6 +329,7 @@ if ( -d $ENSWORK/ensctrl ) then
       gcm_ensset_rc.csh $expid $nymdb $nhmsb $tfcst $nlons $nlats ensctrl
     
       cd $ENSWORK/ensctrl
+      /bin/rm *_checkpoint*$NCSUFFIX
 
       if( -e cap_restart ) /bin/rm cap_restart
       echo $nymdb $nhmsb > cap_restart
@@ -438,6 +439,7 @@ if(! -e .DONE_ENSFCST ) then
      if(! -e $ENSWORK/.DONE_MEM${memtag}_${MYNAME}.$yyyymmddhh ) then
 
         gcm_ensset_rc.csh $expid $nymdb $nhmsb $tfcst $nlons $nlats mem$memtag
+        /bin/rm *_checkpoint*$NCSUFFIX
 
         # Run ensemble
         # ------------
