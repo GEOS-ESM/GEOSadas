@@ -584,13 +584,13 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
 # ------------------------------------------------------------------------
     print "\n checkprintout  ldas_ana == 1 ($ldas_ana)\n";
     if ($ldas_ana == 1 ) {
-        $cmd = "$fvbin/ldas_setup setup $fvhome/lana --account $gid --nymdb $nymdb $ldassetup/det_exeinp.txt $ldassetup/det_batinp.txt";
+        $cmd = "$fvbin/ldas_setup setup $fvhome/lana --account $gid --nymdb $nymdb --nhmsb $nhmsb $ldassetup/det_exeinp.txt $ldassetup/det_batinp.txt";
         print "$cmd\n";
         $rc = system $cmd;
         die "Failed to setup ldas for det, check ldas config input files $!" if ( $rc );
         chomp($aens_replay);
         if (($hyb_ens == 4) && ($aens_replay eq "no")) { 
-           $rc = system("$fvbin/ldas_setup setup $fvhome/lana --account $gid --nymdb $nymdb $ldassetup/ens_exeinp.txt $ldassetup/ens_batinp.txt");
+           $rc = system("$fvbin/ldas_setup setup $fvhome/lana --account $gid --nymdb $nymdb --nhmsb $nhmsb $ldassetup/ens_exeinp.txt $ldassetup/ens_batinp.txt");
            die "Failed to setup ldas for ens, check ldas config input files $!" if ( $rc );
        }
      }
