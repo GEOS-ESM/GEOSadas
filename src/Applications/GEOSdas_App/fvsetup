@@ -3498,7 +3498,8 @@ sub set_newradbc {
 }
 #=======================================================================
 sub set_ldasANA {
-    my($dflt, $ans1, $ans2);
+    my ($dflt, $ans1, $ans2);
+    my (@lfo_files);
 
     # initialize Land DAS processing flag
     #------------------------------------ 
@@ -3506,7 +3507,8 @@ sub set_ldasANA {
     $ldas_flag = 0;
     $ldasfdbk = 0;
 
-    $ldashome_dflt = "${fvhome}/lana/${expid}_LDAS";
+    $ldashome = "${fvhome}/lana/${expid}_LDAS";
+    $ldashome4ens = dirname($ldashome) ."/${expid}_LDAS4ens";
 
     print "\n-------------\n";
     print   "LDAS Analysis\n";
@@ -3517,41 +3519,33 @@ sub set_ldasANA {
     if (yes($ans1)) {
         $ldas_ana = 1;
         $ldas_flag = 1;
-        $dflt = "n";
+
         $prompt = "  Location of ldas holdpredout files or 'later'";
+        $dflt = $fvics;
+        $dflt = dirname($fvics) unless -d $fvics;
+
         $ldashold = query($prompt, $dflt);
         unless ($ldashold eq "later") {
-            die ">>> Error(1) <<< Cannot find directory, $ldashold;"
+            die ">>> Error <<< Cannot find directory, $ldashold;"
                 unless -d $ldashold;
         }
-       
+        @lfo_files = (<$ldashold/*bkg*lfo*${nymdb}_${hhb}*>);
+        die ">>> Error <<< Cannot find lfo files in $ldashold;"
+            unless scalar(@lfo_files);
+        
+        $dflt = "n";
         $ans2 = query("  Enable LDAS feedback to model y/n?", $dflt);
         if (yes($ans2)) {
             $ldasfdbk = 1;
         }
-
-        $ldashome = $ldashome_dflt;
-        #$ldashome = query("  LDAS HOME?", $dflt);
-
         $dflt = "/discover/nobackup/$user/ldasSaveInput";
         $ldassetup = query("  LDAS SETUP input path?", $dflt);
       
         if ($hyb_ens == 4 ) {
-            $ldashome4ens = dirname($ldashome) ."/${expid}_LDAS4ens";
-            #$ldashome4ens = query("  LDAS HOME for atmens?", $dflt);
-
             $dflt = "/discover/nobackup/$user/ldasSaveInput";
             $ldassetup4ens = query("  LDAS SETUP input path for ens?", $dflt);
         }
     }
-
-    unless ($ldashome) {
-        $ldashome = $ldashome_dflt;
-    }
-    unless ($ldashome4ens) {
-        $ldashome4ens = dirname($ldashome) ."/${expid}_LDAS4ens";
-    }
-
     return 0;
 }
 
@@ -3795,7 +3789,7 @@ EOF
       print JSCRPT $line;
   }
   close TILDE;
-  close JSCRPT; 
+  close JSCRPT;
 
 # Copy and rename ensemble restarts
 # ---------------------------------
@@ -8923,6 +8917,7 @@ sub write_FVDAS_Run_Config {
     $ENV{"MONTHLY_MEANS"}   = $monthly_means;
     $ENV{"NEWRADBC"}        = $newradbc;
     $ENV{"NCEPINPUT"}       = $fvbcs;
+    $ENV{"NODEFLG"}         = $nodeflg;
     $ENV{"OBSCLASS"}        = $obClass;
     $ENV{"OMP_NUM_THREADS"} = $omp_num_threads;
     $ENV{"VTRACK"}          = $vtrack;
@@ -10055,6 +10050,7 @@ sub copy_resources {
   my ($chemrc, $ensFLG);
   my ($flags, $label, $string, $vars, $cmd);
   my ($fname, $fname_old, $expid_old, $target);
+  my ($lfo_tarfile, @lfo_files, $target, $expid_old, $fname, $fname_old);
 
   cp("$fvroot/etc/VERSION","$fvhome/run/VERSION")
           || die "Cannot write file $fvhome/run/VERSION: $!";
@@ -10113,18 +10109,37 @@ sub copy_resources {
       system("touch $fvhome/run/gaas/GAAS.BOOTSTRAP_");
 
       if ($ldas_flag) {
-          $target = "$fvhome/recycle/holdpredout";
-          die ">>> Error <<< Cannot find directory, $target;" unless -d $target;
-          die ">>> Error(2) <<< Cannot find directory, $ldashold;"
+          die ">>> Error <<< Cannot find directory, $ldashold;"
               unless -d $ldashold;
 
-          $expid_old = find_expid($ldashold);
-          foreach $fname_old ( <$ldashold/*lfo*> ) {
-              ($fname = basename($fname_old)) =~ s/$expid_old/$expid/;
-              cp($fname_old, "$target/$fname");
-              print "cp $fname_old $target/$fname\n";
-          } 
-          
+          $target = "$fvhome/recycle/holdpredout";
+          die ">>> Error <<< Cannot find directory, $target;"
+              unless -d $target;
+
+          # extract lfo files from tarfile
+          #-------------------------------
+          $lfo_tarfile = (<$ldashold/*.bkglforst.${nymdb}_${hhb}z.tar>)[0];
+          if ($lfo_tarfile) {
+              $expid_old = find_expid($lfo_tarfile, 1);
+              chdir($target);
+              system("tar xf $lfo_tarfile");
+              system("rename $expid_old $expid *");
+          }
+
+          # or copy them from directory
+          #----------------------------
+          else {
+              $expid_old = find_expid($ldashold);
+              @lfo_files = (<$ldashold/$expid_old.bkg.*_lfo*.nc4>);
+              die ">>> Error <<< No $expid_old lfo files found in $ldasahold;"
+                  unless scalar(@lfo_files);
+              
+              foreach $fname_old ( @lfo_files ) {
+                  ($fname = basename($fname_old)) =~ s/$expid_old/$expid/;
+                  cp($fname_old, "$target/$fname");
+                  print "cp $fname_old $target/$fname\n";
+              }
+          }
       }
   }
 
@@ -10546,31 +10561,45 @@ sub copy_resources {
 
 #=======================================================================
 # name - find_expid
-# purpose - find expid in directory based on directory file names
+# purpose - find expid from single filename or from multiple files in a
+#           directory.
+#
+# input parameters
+# - $name: name of file or directory
+# - $flag: (optional) 1=filename, 2=directory [default = 2]
 #
 # notes -
-#   This routine extracts the front portion of each file in the
-#   directory to find the expid of the file. It assumes that the most
-#   prevalent value extracted is the expid for the files.
+#   1. If $name is a file, then this routine extracts expid from front
+#      portion of the filename.
+#   2. If $name is a directory, then this routine extracts expid from
+#      each file in the directory and returns the most prevalent value
+#      as the expid.
 #=======================================================================
 sub find_expid {
-    my ($dir, $fname, $most, $front, %count);
-    $dir = shift @_;
-    die ">>> ERROR <<< $dir is not a directory;" unless -d $dir;
-    for $fname ( <$dir/*> ) {
-        $front = (split(/\./, basename($fname)))[0];
-        $count{$front}++;
-    }
-    $most = -1;
-    foreach $front (keys(%count)) {
-        if ($count{$front} > $most) {
-            $dir_expid = $front;
-            $most = $count{$front};
+    my ($name, $expid_found, $flag, $fname, $most, $front, %count);
+    $name = shift @_;
+    $flag = shift @_;
+
+    if ($flag == 1) {
+        die ">>> ERROR <<< $name is not a file;" unless -f $name;
+        $expid_found = (split(/\./, basename($name)))[0];
+    } else {
+        die ">>> ERROR <<< $name is not a directory;" unless -d $name;
+        for $fname ( <$name/*> ) {
+            $front = (split(/\./, basename($fname)))[0];
+            $count{$front}++;
+        }
+        $most = -1;
+        foreach $front (keys(%count)) {
+            if ($count{$front} > $most) {
+                $expid_found = $front;
+                $most = $count{$front};
+            }
         }
     }
-    return $dir_expid;
+    return $expid_found;
 }    
- 
+
 #=======================================================================
 sub edit_collections {
 
