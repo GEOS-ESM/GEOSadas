@@ -41,6 +41,7 @@ ${PESTOROOT}%s/atmens/Y%y4/M%m2/%s.atmens_eana_brec.%y4%m2%d2_%h2z.tar
 ${PESTOROOT}%s/atmens/Y%y4/M%m2/%s.atmens_easm.%y4%m2%d2_21z.tar
 ${PESTOROOT}%s/atmens/Y%y4/M%m2/%s.atmens_ebkg.%y4%m2%d2_%h2z.tar
 ${PESTOROOT}%s/atmens/Y%y4/M%m2/%s.atmens_ecbkg.%y4%m2%d2_%h2z.tar
+${PESTOROOT}%s/atmens/Y%y4/M%m2/%s.atmens_ebkglfo.%y4%m2%d2_%h2z.tar
 ${PESTOROOT}%s/atmens/Y%y4/M%m2/%s.atmens_eana.%y4%m2%d2_%h2z.tar
 ${PESTOROOT}%s/atmens/Y%y4/M%m2/%s.atmens_eniana.%y4%m2%d2_%h2z.tar
 ${PESTOROOT}%s/atmens/Y%y4/M%m2/%s.atmens_eaaer.%y4%m2%d2_%h2z.tar
