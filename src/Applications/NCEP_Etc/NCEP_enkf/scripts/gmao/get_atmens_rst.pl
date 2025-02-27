@@ -24,11 +24,12 @@ my %vopts = ( "verbose" => 1 );
 # main program
 #-------------
 {
-    my ($atmens_date3_dir, $atmens_date_dir, $atmens_ebkg_dir);
+    my ($atmens_date3_dir, $atmens_date_dir, $atmens_ebkg_dir, $atmens_ebkglfo_dir);
     my ($atmens_ecbkg_dir, $atmens_erst_dir, $atmens_stat_dir);
     my ($dmlist, $ens, $hh3, $hms3, $label, $mem, $mfile, $mfile_new, $mm3);
     my ($pid, $pwd, $rdnperts_dates3_txt, $tarfile, $tarpath);
     my ($three_hr_sec, $ymd3, $yyyy3, @tarList, @tarListA);
+    my (@labels, $bkglfo_present, $elfo );
 
     my $fvbin = $FindBin::Bin;
     $fvroot = dirname($fvbin);
@@ -50,7 +51,14 @@ my %vopts = ( "verbose" => 1 );
     cp_("$atmens_date3_dir/$rdnperts_dates3_txt", $pwd);
     rename_new($rdnperts_dates3_txt);
 
-    foreach $label ("stat", "ebkg", "ecbkg", "erst") {
+    @labels = qw(stat ebkg ecbkg erst);
+    $bkglfo_present = "no";
+    $elfo = "$atmens_date_dir/$expid.atmens_ebkglfo.${yyyymmdd}_${hh}z.tar";
+    if ( -e $elfo ) { 
+        $bkglfo_present = "yes" ;
+        @labels = qw(stat ebkg ecbkg erst ebkglfo);
+        }
+    foreach $label (@labels) {
         $tarfile = "$expid.atmens_$label.${yyyymmdd}_${hh}z.tar";
         $tarpath = "$atmens_date_dir/$tarfile";
 
@@ -82,11 +90,19 @@ my %vopts = ( "verbose" => 1 );
     foreach $mem (<mem0*>) {
         next unless -d $mem;
         foreach $mfile (<$atmens_erst_dir/$mem/${expid}*>)  { mv_($mfile, $mem) }
-        foreach $mfile (<$atmens_ecbkg_dir/$mem/${expid}*>) { mv_($mfile, $mem) }
+        foreach $mfile (<$atmens_ecbkg_dir/$mem/${expid}*>) { mv_($mfile, $mem) } 
+        chomp($bkglfo_present);
+        if ( $bkglfo_present eq 'yes' ) { 
+           $atmens_ebkglfo_dir = "$expid.atmens_ebkglfo.${yyyymmdd}_${hh}z"; 
+           foreach $mfile (<$atmens_ebkglfo_dir/$mem/${expid}*>) { mv_($mfile, $mem) }
+  }
         rename_new($mem)
     }
     rmtree($atmens_erst_dir) or die "Error; rmtree $atmens_erst_dir;";
     rmtree($atmens_ecbkg_dir) or die "Error; rmtree $atmens_ecbkg_dir;";
+    if ( $bkglfo_present eq 'yes'  ) {
+       rmtree($atmens_ebkglfo_dir) or die "Error; rmtree $atmens_ebkglfo_dir;";
+      }
 }
 
 #=======================================================================

@@ -234,6 +234,18 @@ if ( $doall && (-d $myball) ) then
       endif
    end
 endif
+# store background lfo  members only ...
+set myball = $expid.atmens_ebkglfo.${nymdb}_${hhb}z
+set doall = 1
+if ( $doall && (-d $myball) ) then
+   @ ic = 0
+   while ( $ic < $nmem )
+      @ ic++
+      set memtag  = `echo $ic |awk '{printf "%03d", $1}'`
+      mkdir -p $myball/mem$memtag
+            /bin/mv mem$memtag/*.bkg*lfo*.$NCSUFFIX $myball/mem$memtag/
+   end
+endif
 # store aerosol background fields only ...
 set myball = $expid.atmens_ebaer.${nymdb}_${hhb}z
 set syndate = ( `tick $nymdb $nhmsb $offset_sec` )
