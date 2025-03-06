@@ -3459,7 +3459,7 @@ sub get_setgsi {
   if    ($hres eq "a")                   { $nxgsi =  4; $nygsi =  8 }  # (a)   32
   elsif ($hres eq "b" or $res eq "C48")  { $nxgsi =  4; $nygsi = 12 }  # (b)   48
   elsif ($hres eq "c" or $res eq "C90")  { $nxgsi =  4; $nygsi = 12 }  # (c)   48
-  elsif ($hres eq "d" or $res eq "C180") { $nxgsi =  6; $nygsi = 32 }  # (d)  192
+  elsif ($hres eq "d" or $res eq "C180") { $nxgsi = 16; $nygsi = 24 }  # (d)  192
   elsif ($hres eq "e" or $res eq "C360") { $nxgsi = 12; $nygsi = 20 }  # (e)  240
   else                                   { $nxgsi = 16; $nygsi = 42 }  # (f+) 672
 
@@ -7472,8 +7472,8 @@ if ((\$arch_type == "ADAS") && (\$\?yyyymm) && (\$\?dd)) then
       # defaults
       #---------
       if (! \$\?MONTHLY_MEANS )  set MONTHLY_MEANS  = 1
-      if (! \$\?MONTHLY_TAR )    set MONTHLY_TAR    = 1
-      if (! \$\?MONTHLY_PLOTS )  set MONTHLY_PLOTS  = 0
+      if (! \$\?MONTHLY_TAR )    set MONTHLY_TAR    = 0
+      if (! \$\?MONTHLY_PLOTS )  set MONTHLY_PLOTS  = 1
       if (! \$\?MONTHLY_RADMON ) set MONTHLY_RADMON = 0
 
       # create job script for monthly post processing
@@ -7879,6 +7879,12 @@ print  SCRIPT <<"EOF";
 
   setenv STAGE4FCST $frstage
   setenv ANASTAGE   $anastagedir
+
+# Set job to run in 6-hour segments
+#-----------------------------------
+   setenv NSEGS 1
+   setenv NSTEP 1
+   setenv RESUBMIT 0
 
 # SSI/GSI specifics
 # -----------------

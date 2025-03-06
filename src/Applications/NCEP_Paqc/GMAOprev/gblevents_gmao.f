@@ -2647,6 +2647,7 @@ C***********************************************************************
 ! !REVISION HISTORY:
 !
 ! 25Oct2016    M.Sienkiewicz   Initial version
+! 10Aug2023 M.Sienkiewicz Modify code to avoid divide by zero
 !
 !EOP
 !-----------------------------------------------------------------------
@@ -2662,7 +2663,7 @@ C***********************************************************************
 
       if (nlev.eq.1) then
          pob = obs_8(1,1)
-         if (pob .lt. 226.3) then
+         if (pob .lt. 226.3 .and. pob .gt. 0.0) then
             zob = hgtf_hi(pob)
             zev_8(1) = zob
             zev_8(2) = qms_8(4,1)
