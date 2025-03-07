@@ -32,7 +32,7 @@ def main(opddir, verbose):
     collections = [x.split('/')[-1].replace('.latest','') for x in latestfiles]
     assert len(collections)>0
     if verbose:
-        print collections
+        print (collections)
 
     # if a corresponding ctl file exists in the 'assim/'
     # dir, we need a seamless ctl file for this collection
@@ -51,7 +51,7 @@ def main(opddir, verbose):
             continue
 
         if verbose: 
-            print '\nSeamless collection:', ctl_assim.split('/')[-1]
+            print ('\nSeamless collection:', ctl_assim.split('/')[-1])
 
         # get assim dset and tdef
         tdef_assim = None
@@ -66,7 +66,7 @@ def main(opddir, verbose):
         assert dset_assim
         nsteps_assim = int(tdef_assim.split()[1])
         if verbose:
-            print tdef_assim
+            print (tdef_assim)
 
         # we want seamless ctls for all fcast ctls including latest
         ctl_fcast_all = glob.glob(fcast_dir + '/' + clctnid + '/*')
@@ -88,7 +88,7 @@ def main(opddir, verbose):
             assert tdef_fcast
             assert dset_fcast
             if verbose:
-                print tdef_fcast
+                print (tdef_fcast)
             nsteps_fcast = int(tdef_fcast.split()[1])
 
             # for both assim and fcast tdefs, we expect
@@ -106,7 +106,7 @@ def main(opddir, verbose):
             tdef_seamless_splt[1] = str(nsteps_total)
             tdef_seamless = ' '.join(tdef_seamless_splt) + '\n'
             if verbose:
-                print tdef_seamless.strip()
+                print (tdef_seamless.strip())
 
             # dset for seamless ctl
             dset_base = dset_fcast.split('/forecast/')[0] + '/%ch\n'
@@ -116,7 +116,7 @@ def main(opddir, verbose):
             chsub2 = 'CHSUB %d %d %s\n' % (nsteps_assim+1, nsteps_total, ch_fcast)
             dset_seamless = dset_base + chsub1 + chsub2
             if verbose:
-                print dset_seamless
+                print (dset_seamless)
 
             # write seamless ctl with necessary changes
             # to dset and tdef
