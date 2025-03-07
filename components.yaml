@@ -65,7 +65,7 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  branch: feature/rtodling/g5_29_5p6_sles15
+  branch: feature/rtodling/geosit_v1.5.4.7_plus
   develop: develop
 
 GEOSgcm_GridComp:
@@ -140,7 +140,7 @@ mom6:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  branch: feature/rtodling/g5_29_5p6_sles15
+  branch: bugfix/rtodling/geosit_donot_mergeWfp
   develop: develop
 
 UMD_Etc:
