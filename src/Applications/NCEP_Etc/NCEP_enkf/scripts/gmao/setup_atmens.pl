@@ -220,7 +220,7 @@ sub init {
 
   if ( $nodename eq "hasw" ) { $ncpus_per_node = 24; }
   if ( $nodename eq "sky"  ) { $ncpus_per_node = 36; }
-  if ( $nodename eq "cas"  ) { $ncpus_per_node = 46; }
+  if ( $nodename eq "cas"  ) { $ncpus_per_node = 40; }
   $agcm_ncpus_per_node = -1;
 
 # define layout depending on resolution
