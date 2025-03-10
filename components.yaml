@@ -5,13 +5,13 @@ GEOSadas:
 env:
   local: ./@env
   remote: ../ESMA_env.git
-  branch: feature/mathomp4/GEOSadas-5.29.5-SLES15
+  tag: v3.4.0.2
   develop: main
 
 cmake:
   local: ./@cmake
   remote: ../ESMA_cmake.git
-  branch: feature/mathomp4/GEOSadas-5.29.5-SLES15
+  tag: v3.5.2.1
   develop: develop
 
 ecbuild:
@@ -28,7 +28,7 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  branch: feature/rtodling/g5_29_5p6_sles15
+  tag: v1.4.10.5-GEOS-FP-6-SLES15
   develop: main
 
 GMAOpyobs:
@@ -65,7 +65,7 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  branch: feature/rtodling/g5_29_5p6_sles15
+  tag: v1.5.4.8-GEOS-FP-6-SLES15
   develop: develop
 
 GEOSgcm_GridComp:
@@ -140,7 +140,7 @@ mom6:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  branch: feature/rtodling/g5_29_5p6_sles15
+  tag: v1.5.6.4
   develop: develop
 
 UMD_Etc:
