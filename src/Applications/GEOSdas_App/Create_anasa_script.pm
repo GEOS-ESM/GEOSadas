@@ -77,6 +77,11 @@ sub anasa_script {
  open(SCRIPT,">$fvhome/anasa/$jobsa.j") or
  die ">>> ERROR <<< cannot write $fvhome/anasa/$jobsa.j";
 
+my $reservation = "";
+if ( $nodeflg eq "cas" ) {
+  $reservation = "SBATCH --reservation=sles15_cas";
+}
+
  print  SCRIPT <<"EOF";
 #!/bin/csh -fx
 #$group_list
@@ -87,6 +92,7 @@ sub anasa_script {
 #SBATCH --ntasks=$ncpus_gsi
 #SBATCH --ntasks-per-node=24
 #SBATCH --constraint=$nodeflg
+#$reservation
 #SBATCH --time=1:30:00
 #PBS -N anasa
 #PBS -o anasa.log.o%j
