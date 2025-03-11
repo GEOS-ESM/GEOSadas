@@ -156,6 +156,8 @@
 !                           and rkx_RS80_Marwin to module m_VaiUtil.
 !     20Mar2007  C. Redder  Initialized the components of all types to
 !                           0 or null.
+!     10Feb2025  Meta       Increase NLev_Def to accommodate increased
+!                           number of sounding levels
 !EOP
 !-----------------------------------------------------------------
       character (len=*), parameter :: MyModule = 'm_RadData'
@@ -170,7 +172,7 @@
      .   IMiss       = -10000,  ! ... and integer.
      .   nks_Def     =  1000,
      .   nkt_Def     =  10,
-     .   NLev_Def    =  255,
+     .   NLev_Def    =  512,
      .   NObs_Def    =  nks_Def * NLev_Def,
      .   LenID       =  8,
      .   NPresDigits =  5       ! Number of significant digits in pres obs
