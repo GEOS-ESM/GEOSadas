@@ -1,31 +1,31 @@
 Using init_coeffs.x to create initial bias coefficients
 
- Usage:  init_coeffs.x [ flags ] expid yyyymmddhh      
-  
+ Usage:  init_coeffs.x [ flags ] expid yyyymmddhh
+
   expid    - Experiment ID of input diag files
   yyyymmddhh - year-month-day-hour of input diag files
-  
- Flags:  
+
+ Flags:
    -h              print this usage information
-   -d template     diag file template (default _ges.%y4%m2%d2_%h2z.bin) 
+   -d template     diag file template (default _ges.%y4%m2%d2_%h2z.bin)
    -g filename     location of "gsi.rc.tmpl" used to build diag file names
    -m mode         bias correction mode (default: 1)
                                       -2  var=1e4 for initialized coefficients
                                       -1  zero bias coeff, var=1e4
-                                       0  zero bias coeff, var=0  
-                                       1  mean/scanangle fit      
+                                       0  zero bias coeff, var=0
+                                       1  mean/scanangle fit
    -nstep steps    number of cross-track positions (default: 90)
    -s filename     satinfo input file name (default=gmao_global_satinfo.rc)
-       -iuse       if satinfo file set, use "iuse" values from the file    
+       -iuse       if satinfo file set, use "iuse" values from the file
    -v              set verbose = .true.
-   -H directory    location of FVHOME 
+   -H directory    location of FVHOME
    -P prefix       prefix template for diag files (e.g. directory path)
-   -qc             use qc marks from diag file to screen obs 
- 
+   -qc             use qc marks from diag file to screen obs
+
  If adding entries for new instrument to prior satbias/satbias_pc file:
    -b filename     satbias_in input file name (optional)
    -p filename     satbias_pc input file name (optional)
- 
+
  ENVIRONMENT VARIABLES (if not specified on command line):
     FVHOME -  needed for satinfo, scaninfo, tlapmean resource files
 
@@ -41,14 +41,14 @@ for naming the diag files.  The program will fill in any missing tlapmean
 values using information from the gmao_global_tlapmean.rc if available.
 
 By default, the program attempts to read diag files from the current
-directory with names in the format 
+directory with names in the format
      %s.diag_(dtype)_(dplat)_ges.%y4%m2%d2_%h2z.bin
 where the %s is substituted with the expid specified on the command line
 
 Note: Since this program uses the "gsi.rc.tmpl" file to get values for 'dtype',
-'dplat', and 'dsis' for each satellite instrument being fitted, if you are 
-using the 'generic' value for these variables in your "gsi.rc.tmpl" to 
-configure your instrument you will need to supply another file with an 
+'dplat', and 'dsis' for each satellite instrument being fitted, if you are
+using the 'generic' value for these variables in your "gsi.rc.tmpl" to
+configure your instrument you will need to supply another file with an
 'OBS_INPUT::' table like in the "gsi.rc.tmpl" which specifies the actual
 'dtype', 'dplat' and 'dsis' values for your satellite(s).
 
@@ -63,7 +63,7 @@ Set -H to point to FVHOME location of current or former experiment
 
 We may want to use the qc decisions recorded in the diag file to screen
 out bad observations, if the diag file comes from a well spun-up experiment.
-(Especially for channels with possible cloud contamination...)  
+(Especially for channels with possible cloud contamination...)
 
 init_coeffs.x -qc -P  /archive/u/dao_it/%s/obs/Y%y4/M%m2/D%d2/H%h2/%s. \
   -H /discover/nobackup/projects/gmao/obsdev/dao_it/x0033 x0033 yyyymmddhh
@@ -101,10 +101,15 @@ If the instrument being fitted does not have an entry in the
 gmao_global_tlapmean.rc file or the tlapmean sample count is nonzero
 and less than 100 the program will also update the tlapmean value
 based on the lapse-rate values read in from the input diag file.
-This can be repeated for multiple dates/times to generate a 
-tlapmean value for a new instrument.  You would want to cycle the 
+This can be repeated for multiple dates/times to generate a
+tlapmean value for a new instrument.  You would want to cycle the
 satbias_out back in as the satbias_in for subsequent dates.
 
 init_coeffs.x -b satbias_in $expid yyyymmddhh
 mv satbias_out satbias_in
 ...
+IMPORTANT NOTE: The 'tlapmean' values in "gmao_global_tlapmean.rc" are
+divided by 100 because the table was written for use with the old
+radiance bias correction which scales the lapse rate predictor by 0.01.
+You will need to apply the 0.01 scaling factor to any values you copy
+into the "gmao_global_tlapmean.rc" table,
