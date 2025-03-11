@@ -100,6 +100,12 @@ GEOSgcm_GridComp:
   sparse: ./config/GEOSgcm_GridComp.sparse
   develop: develop
 
+GigaTraj: 
+  local: ./src/Components/@GEOSgcm_GridComp/GEOSgigatraj_GridComp/@GigaTraj
+  remote: ../gigatraj.git
+  tag: geos/v1.0.0
+  develop: develop-GSFC
+
 g5pert:
   local: ./src/Components/@g5pert
   remote: ../g5pert.git
