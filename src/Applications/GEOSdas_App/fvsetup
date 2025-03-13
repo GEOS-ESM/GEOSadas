@@ -1114,6 +1114,7 @@ sub defaults {
                         GMI_ExtData.yaml
                         HEMCOgmi_ExtData.yaml
                         HEMCOgocart2g_ExtData.yaml
+                        JRA55-DO_DataAtm_Forcings_ExtData.yaml
                         MAM7_ExtData.yaml
                         NI2G_GridComp_ExtData.yaml
                         O3_GridComp_ExtData.yaml

@@ -35,7 +35,7 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  branch: feature/rtodling/jediupd_same_res_handle
+  tag: g5.42.0
   sparse: ./config/GMAO_Shared.sparse
   develop: main
 
@@ -55,7 +55,7 @@ AeroML:
 GEOS_Util:
   local: ./src/Shared/@GMAO_Shared/@GEOS_Util
   remote: ../GEOS_Util.git
-  branch: bugfix/rtodling/table_end_esmf_fails
+  tag: g5.42.0
   develop: main
 
 GMAO_perllib:
@@ -86,19 +86,19 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  branch: feature/rtodling/FSI-1
+  tag: v5.42.0
   develop: develop
 
 mksi:
    local: ./src/Components/@GEOSana_GridComp/GEOSaana_GridComp/GSI_GridComp/@mksi
    remote: ../GEOS_mksi.git
-   branch: bugfix/rtodling/atm_n21_dates
+   tag: v5.42.0
    develop: develop
 
 GEOSgcm_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp
   remote: ../GEOSgcm_GridComp.git
-  tag: v2.7.0
+  tag: g2.7.0.1
   sparse: ./config/GEOSgcm_GridComp.sparse
   develop: develop
 
@@ -251,7 +251,7 @@ umwm:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  tag: v2.3.8
+  tag: g2.3.8.1
   develop: develop
 
 Ocean-LETKF:
