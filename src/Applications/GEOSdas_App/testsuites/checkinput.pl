@@ -518,8 +518,8 @@ sub envsubst {
 
         # substitute for format ${variable}
         #----------------------------------
-        if ($string =~ m/(\${$var})/) {
-            $string =~ s/\${$var}/$ENV{$var}/g if $ENV{$var};
+        if ($string =~ m/(\$\{$var})/) {
+            $string =~ s/\$\{$var}/$ENV{$var}/g if $ENV{$var};
         }
     }
     return $string;
@@ -939,7 +939,7 @@ sub expand_string {
     return $string unless $string =~ /\$/;
 
     foreach $var (keys %def1) {
-        $string =~ s/\${$var}/$def1{$var}/g;
+        $string =~ s/\$\{$var}/$def1{$var}/g;
         $string =~ s/\$$var/$def1{$var}/g;
     }
     return $string;
@@ -1233,7 +1233,7 @@ to be used by the runjob utility and fvsetup script.
 filename format: [name].input,
    where [name] defaults to expid
 
-usage: $script [options]
+usage: $script [options] [file1 [file2 [..]]]
 options
    -auto/-a           use defaults rather than prompting for responses
    -d inputDir        directory location of saved *.input files
@@ -1248,6 +1248,8 @@ options
    -stage             copy testsuites *.input files to input directory
    -v                 verbose mode; turns on more verbage
    -V                 superverbose mode; verbose + fvsetup session
+
+[file1 [file2 [..]]]  Specified *.input file(s) to check (see notes #2 and #3)
 
 Notes
 1. All input files must have the ".input" extension.

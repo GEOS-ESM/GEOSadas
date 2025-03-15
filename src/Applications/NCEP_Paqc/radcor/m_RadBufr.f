@@ -94,6 +94,9 @@
 !     28Dec2022  Meta       Add option to use environment variable to increase
 !                           the maximum BUFR record size
 !
+!     10Feb2025  Meta       Increase max level count to accommodate increased
+!                           number of sounding levels, increase maximum
+!                           BUFR record size
 !EOP
 !-----------------------------------------------------------------
 
@@ -105,7 +108,7 @@
      .   BKind        =  8,        ! Size of real
 c     .   ReasonCode   =  1,        ! Reason code for all corrected obs
      .   DeflReasonCode   =  100,      ! Reason code for all corrected obs
-     .   NLev_Max     =  255,      ! Max no. of levels in a buffer sounding
+     .   NLev_Max     =  512,      ! Max no. of levels in a buffer sounding
      .   Nks_Max      =  1000,     !        ... soundings (in first file scan)
      .   NPrepEvn_Max =  10        !        ... events in prep buffer file.
 

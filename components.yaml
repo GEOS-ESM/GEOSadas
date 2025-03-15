@@ -29,13 +29,13 @@ NCEP_Shared:
   local: ./src/Shared/@NCEP_Shared
   remote: ../NCEP_Shared.git
   tag: v1.3.0
-  develop: main
   sparse: ./config/NCEP_Shared.sparse
+  develop: main
 
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  branch: g5.41.5-with-main-updates
+  branch: g5.42.0-with-main-updates
   sparse: ./config/GMAO_Shared.sparse
   develop: main
 
@@ -55,7 +55,7 @@ AeroML:
 GEOS_Util:
   local: ./src/Shared/@GMAO_Shared/@GEOS_Util
   remote: ../GEOS_Util.git
-  tag: v2.1.3
+  tag: g5.42.0
   develop: main
 
 GMAO_perllib:
@@ -64,6 +64,8 @@ GMAO_perllib:
   tag: g1.0.1
   develop: main
 
+# When updating the MAPL version, also update the MAPL version in the
+# CMakeLists.txt file for non-Baselibs builds
 MAPL:
   local: ./src/Shared/@MAPL
   remote: ../MAPL.git
@@ -84,21 +86,27 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  tag: v5.41.6
+  tag: v5.42.0
   develop: develop
 
 mksi:
    local: ./src/Components/@GEOSana_GridComp/GEOSaana_GridComp/GSI_GridComp/@mksi
    remote: ../GEOS_mksi.git
-   tag: g5.41.3
+   tag: v5.42.0
    develop: develop
 
 GEOSgcm_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp
   remote: ../GEOSgcm_GridComp.git
-  tag: rt2.6.1.1
+  tag: g2.7.0.1
   sparse: ./config/GEOSgcm_GridComp.sparse
   develop: develop
+
+GigaTraj:
+  local: ./src/Components/@GEOSgcm_GridComp/GEOSgigatraj_GridComp/@GigaTraj
+  remote: ../gigatraj.git
+  tag: geos/v1.0.0
+  develop: develop-GSFC
 
 g5pert:
   local: ./src/Components/@g5pert
@@ -133,7 +141,7 @@ GEOSchem_GridComp:
 HEMCO:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSphysics_GridComp/@GEOSchem_GridComp/Shared/HEMCO/@HEMCO
   remote: ../HEMCO.git
-  tag: geos/v2.2.3
+  tag: geos/v2.3.0
   develop: geos/develop
 
 geos-chem:
@@ -243,7 +251,7 @@ umwm:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  tag: g5.41.0
+  tag: g2.3.8.1
   develop: develop
 
 Ocean-LETKF:
