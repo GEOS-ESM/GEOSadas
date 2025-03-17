@@ -5,13 +5,13 @@ GEOSadas:
 env:
   local: ./@env
   remote: ../ESMA_env.git
-  tag: g3.4.0.2
+  tag: v3.4.0.3
   develop: main
 
 cmake:
   local: ./@cmake
   remote: ../ESMA_cmake.git
-  tag: g3.5.2.1
+  tag: v3.5.2.1
   develop: develop
 
 ecbuild:
