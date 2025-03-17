@@ -58,11 +58,6 @@ sub fsens_script {
  open(SCRIPT,">$fvhome/run/$jobfs.j") or
  die ">>> ERROR <<< cannot write $fvhome/run/$jobfs.j";
 
-my $reservation = "";
-if ( $nodeflg eq "cas" ) {
-  $reservation = "SBATCH --reservation=sles15_cas";
-}
-
  print  SCRIPT <<"EOF";
 #!/bin/csh -fx
 #$group_list
@@ -73,7 +68,6 @@ if ( $nodeflg eq "cas" ) {
 #SBATCH --ntasks=$ncpus_gsi
 #SBATCH --ntasks-per-node=24
 #SBATCH --constraint=$nodeflg
-#$reservation
 #SBATCH --time=${fcswallclk}:00
 #PBS -N fsens
 #PBS -o fsens.log.o%j
