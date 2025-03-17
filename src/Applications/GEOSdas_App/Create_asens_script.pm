@@ -80,11 +80,6 @@ sub asens_script {
  open(SCRIPT,">$fvhome/asens/$joba.j") or
  die ">>> ERROR <<< cannot write $fvhome/asens/$joba.j";
 
-my $reservation = "";
-if ( $nodeflg eq "cas" ) {
-  $reservation = "SBATCH --reservation=sles15_cas";
-}
-
 
  print  SCRIPT <<"EOF";
 #!/bin/csh -fx
@@ -95,7 +90,6 @@ if ( $nodeflg eq "cas" ) {
 #SBATCH --ntasks=$ncpus_gsi
 #SBATCH --ntasks-per-node=24
 #SBATCH --constraint=$nodeflg
-#$reservation
 #SBATCH --time=2:00:00
 #PBS -N asens
 #PBS -o asens.log.o%j.txt
