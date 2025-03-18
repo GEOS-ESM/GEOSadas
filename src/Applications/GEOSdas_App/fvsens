@@ -283,12 +283,16 @@ while ( $ic < $ntp1 )
 
 #      First edit CAP
 #      --------------
+       set segnhrs = $nhrs
+       if( $nday > 0 && $segnhrs == 24 ) then
+         set segnhrs = "00"
+       endif
        rm -f sed_file
        echo "s/>>>NYMDB<<</$nymdb/1"          >> sed_file
        echo "s/>>>NHMSB<<</$nhmsb/1"          >> sed_file
        echo "s/>>>NYMDE<<</$nymde/1"          >> sed_file
        echo "s/>>>NHMSE<<</$nhmse/1"          >> sed_file
-       echo "s/>>>JOB_SGMT<<</$nday ${nhrs}0000/1" >> sed_file
+       echo "s/>>>JOB_SGMT<<</$nday ${segnhrs}0000/1" >> sed_file
        echo "s/>>>PDT<<</$rundt/1"            >> sed_file
 
        /bin/rm -f ./CAP_apert.rc
