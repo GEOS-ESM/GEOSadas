@@ -7629,11 +7629,6 @@ print  SCRIPT <<"EOF";
 #SBATCH --constraint=$nodeflg
 #SBATCH --time=${daswallclk}:00
 EOF
-if ( $nodeflg eq "cas" ) {
-print  SCRIPT <<"EOF";
-#SBATCH --reservation=sles15_cas
-EOF
-}
 
 }else{
 
@@ -8819,11 +8814,6 @@ print  SCRIPT <<"EOF";
 #SBATCH --constraint=$nodeflg
 #SBATCH --time=${fcswallclk}:00
 EOF
-if ( $nodeflg eq "cas" ) {
-print  SCRIPT <<"EOF";
-#SBATCH --reservation=sles15_cas
-EOF
-}
 
 }else{
 
