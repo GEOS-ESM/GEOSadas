@@ -29,7 +29,7 @@ my %vopts = ( "verbose" => 1 );
     my ($dmlist, $ens, $hh3, $hms3, $label, $mem, $mfile, $mfile_new, $mm3);
     my ($pid, $pwd, $rdnperts_dates3_txt, $tarfile, $tarpath);
     my ($three_hr_sec, $ymd3, $yyyy3, @tarList, @tarListA);
-    my (@labels, $bkglfo_present, $elfo );
+    my (@labels, $ebkglfo_present, $ebkglfo );
 
     my $fvbin = $FindBin::Bin;
     $fvroot = dirname($fvbin);
@@ -52,10 +52,10 @@ my %vopts = ( "verbose" => 1 );
     rename_new($rdnperts_dates3_txt);
 
     @labels = qw(stat ebkg ecbkg erst);
-    $bkglfo_present = "no";
-    $elfo = "$atmens_date_dir/$expid.atmens_ebkglfo.${yyyymmdd}_${hh}z.tar";
-    if ( -e $elfo ) { 
-        $bkglfo_present = "yes" ;
+    $ebkglfo_present = "no";
+    $ebkglfo = "$atmens_date_dir/$expid.atmens_ebkglfo.${yyyymmdd}_${hh}z.tar";
+    if ( -e $ebkglfo ) { 
+        $ebkglfo_present = "yes" ;
         @labels = qw(stat ebkg ecbkg erst ebkglfo);
         }
     foreach $label (@labels) {
@@ -91,8 +91,8 @@ my %vopts = ( "verbose" => 1 );
         next unless -d $mem;
         foreach $mfile (<$atmens_erst_dir/$mem/${expid}*>)  { mv_($mfile, $mem) }
         foreach $mfile (<$atmens_ecbkg_dir/$mem/${expid}*>) { mv_($mfile, $mem) } 
-        chomp($bkglfo_present);
-        if ( $bkglfo_present eq 'yes' ) { 
+        chomp($ebkglfo_present);
+        if ( $ebkglfo_present eq 'yes' ) { 
            $atmens_ebkglfo_dir = "$expid.atmens_ebkglfo.${yyyymmdd}_${hh}z"; 
            foreach $mfile (<$atmens_ebkglfo_dir/$mem/${expid}*>) { mv_($mfile, $mem) }
   }
@@ -100,7 +100,7 @@ my %vopts = ( "verbose" => 1 );
     }
     rmtree($atmens_erst_dir) or die "Error; rmtree $atmens_erst_dir;";
     rmtree($atmens_ecbkg_dir) or die "Error; rmtree $atmens_ecbkg_dir;";
-    if ( $bkglfo_present eq 'yes'  ) {
+    if ( $ebkglfo_present eq 'yes'  ) {
        rmtree($atmens_ebkglfo_dir) or die "Error; rmtree $atmens_ebkglfo_dir;";
       }
 }

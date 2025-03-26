@@ -3497,7 +3497,7 @@ sub set_newradbc {
 #=======================================================================
 sub set_ldasANA {
     my ($dflt, $ans1, $ans2);
-    my (@lfo_files);
+    my (@bkglfo_files);
 
     # initialize Land DAS processing flag
     #------------------------------------ 
@@ -3526,9 +3526,9 @@ sub set_ldasANA {
             die ">>> Error <<< Cannot find directory, $ldashold;"
                 unless -d $ldashold;
 
-        @lfo_files = (<$ldashold/*bkg*lfo*${nymdb}_${hhb}*>);
+        @bkglfo_files = (<$ldashold/*bkg*lfo*${nymdb}_${hhb}*>);
             die ">>> Error <<< Cannot find lfo files in $ldashold;"
-                unless scalar(@lfo_files);
+                unless scalar(@bkglfo_files);
         
         $dflt = "n";
         $ans2 = query("  Enable LDAS feedback to model y/n?", $dflt);
@@ -5211,7 +5211,7 @@ EOF
        $nx = 24;
        $ny = $nx * 6;
        $km = $vres;
-       $dt = 300;
+       $dt = 450;
        $long_dt  = $dt;
        $pert_dt = 900;
        $chemdt = $dt;
@@ -9795,13 +9795,12 @@ sub init_agcm_rc {
     $envvars{"coupled"} = $coupled;
     set_AGCM_envvars(%envvars);
 
-    $flags{"carma_tracers"}  = $carma_tracers;
     $flags{"gocart_tracers"} = $gocart_tracers;
+    $flags{"carma_tracers"}  = $carma_tracers;
     $flags{"iau"}            = $doiau;
-    $flags{"ldas_flag"}      = $ldas_flag;
-    $flags{"lsmodel_flag"}   = $lsmodel_flag;
     $flags{"pcp_forced"}     = $pcp_forced;
-
+    $flags{"lsmodel_flag"}   = $lsmodel_flag;
+    $flags{"ldas_flag"}      = $ldas_flag;
     set_AGCM_flags(%flags);
 
     # $num_readers must divide evenly into $ny
@@ -10047,7 +10046,7 @@ sub copy_resources {
   my ($chemrc, $ensFLG);
   my ($flags, $label, $string, $vars, $cmd);
   my ($fname, $fname_old, $expid_old, $target);
-  my ($lfo_tarfile, @lfo_files, $target, $expid_old, $fname, $fname_old);
+  my ($bkglfo_tarfile, @bkglfo_files, $target, $expid_old, $fname, $fname_old);
 
   cp("$fvroot/etc/VERSION","$fvhome/run/VERSION")
           || die "Cannot write file $fvhome/run/VERSION: $!";
@@ -10115,11 +10114,11 @@ sub copy_resources {
 
           # extract lfo files from tarfile
           #-------------------------------
-          $lfo_tarfile = (<$ldashold/*.bkglforst.${nymdb}_${hhb}z.tar>)[0];
-          if ($lfo_tarfile) {
-              $expid_old = find_expid($lfo_tarfile, 1);
+          $bkglfo_tarfile = (<$ldashold/*.bkglforst.${nymdb}_${hhb}z.tar>)[0];
+          if ($bkglfo_tarfile) {
+              $expid_old = find_expid($bkglfo_tarfile, 1);
               chdir($target);
-              system("tar xf $lfo_tarfile");
+              system("tar xf $bkglfo_tarfile");
               system("rename $expid_old $expid *");
           }
 
@@ -10127,11 +10126,11 @@ sub copy_resources {
           #----------------------------
           else {
               $expid_old = find_expid($ldashold);
-              @lfo_files = (<$ldashold/$expid_old.bkg.*_lfo*.nc4>);
+              @bkglfo_files = (<$ldashold/$expid_old.bkg.*_lfo*.nc4>);
               die ">>> Error <<< No $expid_old lfo files found in $ldasahold;"
-                  unless scalar(@lfo_files);
+                  unless scalar(@bkglfo_files);
               
-              foreach $fname_old ( @lfo_files ) {
+              foreach $fname_old ( @bkglfo_files ) {
                   ($fname = basename($fname_old)) =~ s/$expid_old/$expid/;
                   cp($fname_old, "$target/$fname");
                   print "cp $fname_old $target/$fname\n";
