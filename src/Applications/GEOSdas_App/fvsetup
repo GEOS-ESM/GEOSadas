@@ -3529,7 +3529,7 @@ sub set_ldasANA {
                 unless -d $ldashold;
 
         @bkglfo_files = (<$ldashold/*bkg*lfo*${nymdb}_${hhb}*>);
-            die ">>> Error <<< Cannot find lfo files in $ldashold;"
+            die ">>> Error <<< Cannot find bkglfo files in $ldashold;"
                 unless scalar(@bkglfo_files);
         
         $dflt = "n";
@@ -10129,7 +10129,7 @@ sub copy_resources {
           else {
               $expid_old = find_expid($ldashold);
               @bkglfo_files = (<$ldashold/$expid_old.bkg.*_lfo*.nc4>);
-              die ">>> Error <<< No $expid_old lfo files found in $ldasahold;"
+              die ">>> Error <<< No $expid_old lfo files found in $ldashold;"
                   unless scalar(@bkglfo_files);
               
               foreach $fname_old ( @bkglfo_files ) {
