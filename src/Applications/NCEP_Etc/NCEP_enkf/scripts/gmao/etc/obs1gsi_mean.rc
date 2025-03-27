@@ -16,7 +16,7 @@
    id_drifter=.true.,
    id_ship=.false.,
    tzr_qc=1,
-   ta2tb=.false.,
+   ta2tb=.true.,
    oneobtest=.false.,retrieval=.false.,
    biascor=-0.10,bcoption=0,diurnalbc=1.0,
    crtm_coeffs_path="CRTM_Coeffs/",
@@ -36,7 +36,7 @@
  &GRIDOPTS
    JCAP=@GSI_JCAP,NLAT=@GSI_JM,NLON=@GSI_IM,nsig=@GSI_LM,
    regional=.false.,
-   nvege_type=13,
+   nvege_type=20,
  /
  &BKGERR
    vs=0.6,

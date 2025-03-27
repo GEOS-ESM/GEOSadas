@@ -329,7 +329,19 @@ if ( -d $ENSWORK/ensctrl ) then
       gcm_ensset_rc.csh $expid $nymdb $nhmsb $tfcst $nlons $nlats ensctrl
     
       cd $ENSWORK/ensctrl
+
+      # handle existing checkpoint: remove to avoid MAPL complains
       /bin/rm *_checkpoint*$NCSUFFIX
+
+      # make sure possibly corrupt model output gets removed
+      foreach myncsfx ( `ls $expid.*.$NCSUFFIX` )
+        if ( ! -l $myncsfx ) then
+          getgfiodim.x $myncsfx 
+          if ($status) then
+             /bin/rm $myncsfx
+          endif
+        endif
+      end
 
       if( -e cap_restart ) /bin/rm cap_restart
       echo $nymdb $nhmsb > cap_restart
@@ -439,7 +451,19 @@ if(! -e .DONE_ENSFCST ) then
      if(! -e $ENSWORK/.DONE_MEM${memtag}_${MYNAME}.$yyyymmddhh ) then
 
         gcm_ensset_rc.csh $expid $nymdb $nhmsb $tfcst $nlons $nlats mem$memtag
+
+        # handle existing checkpoint: remove to avoid MAPL complains
         /bin/rm *_checkpoint*$NCSUFFIX
+
+        # make sure possibly corrupt model output gets removed
+        foreach myncsfx ( `ls $expid.*.$NCSUFFIX` )
+          if ( ! -l $myncsfx ) then
+            getgfiodim.x $myncsfx 
+            if ($status) then
+               /bin/rm $myncsfx
+            endif
+          endif
+        end
 
         # Run ensemble
         # ------------

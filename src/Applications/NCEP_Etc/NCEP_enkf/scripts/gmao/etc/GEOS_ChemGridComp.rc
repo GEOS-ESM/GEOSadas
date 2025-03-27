@@ -24,3 +24,7 @@
   ENABLE_TR:          .TRUE.
   ENABLE_DNA:         .FALSE.
   ENABLE_HEMCO:       .TRUE.
+
+# Use only for diagnostic timing tests:
+# --------------------------------------------------
+ strict_child_timing: .FALSE.
