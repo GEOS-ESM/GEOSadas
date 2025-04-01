@@ -1,6 +1,6 @@
 #!/bin/csh  -x
 #SBATCH --account=g0613
-#SBATCH --constraint=sky
+#SBATCH --constraint=mil
 #_SBATCH --ntasks=8
 #_SBATCH --ntasks=36
 #_SBATCH --ntasks=96
@@ -33,11 +33,16 @@
  setenv EXPID f525_fp
  setenv EXPID f525_p7_fp
  setenv EXPID f5271_fp
+ setenv EXPID x0049
+ setenv EXPID x0046d
+ setenv EXPID CYCLED_REPLAY_P10800_C21600_T21600
+ setenv EXPID e572p5_fp
+ setenv EXPID e5131_fp
 #setenv FVHOME /home/dao_ops/$EXPID
 #setenv ARCROOT /home/dao_ops/$EXPID/run/.../archive/prog
 #setenv FVHOME /discover/nobackup/projects/gmao/obsdev/rtodling/$EXPID
 #setenv FVHOME /discover/nobackup/projects/gmao/obsdev/rtodling/x0041
-setenv FVHOME /discover/nobackup/projects/gmao/dadev/rtodling/prePP
+setenv FVHOME /discover/nobackup/projects/gmao/dadev/rtodling/SLES15/prePP
 setenv FVROOT `cat $FVHOME/.FVROOT`
 setenv PLAINDIR 0
 setenv ARCROOT /archive/u/$user/$EXPID/prog
@@ -60,8 +65,8 @@ setenv GEN_NMCDIFFS 0
 setenv GET_BERROR    1
 setenv BERROR_NMODES 25
 
-set these_lats = ( 25 46 91 181 361 721 )
-#set these_lats = ( 721 )
+#set these_lats = ( 25 46 91 181 361 721 )
+set these_lats = ( 361 )
 
 # Basic settings (weak dependency on version of DAS)
 # --------------------------------------------------
@@ -73,7 +78,8 @@ setenv ATMENS_BATCHSUB sbatch
 setenv GID g0613
 setenv FCSTACQ_WALLCLOCK 2:00:00
 setenv FCSTWORK /discover/nobackup/projects/gmao/obsdev/$user/fcst4berrcov.$EXPID
-setenv FCSTWORK /discover/nobackup/projects/gmao/dadev/$user/fcst4berrcov.$EXPID
+setenv FCSTWORK /discover/nobackup/projects/gmao/dadev/$user/Berror/fcst4berrcov.$EXPID
+setenv FCSTWORK /discover/nobackup/projects/gmao/dadev/$user/Berror/fcst4berrcov.$EXPID
 
 if ($?I_MPI_ROOT ) then
   setenv MPIRUN_CALCSTATS "mpirun -np 864 calcstats.x"
@@ -102,8 +108,9 @@ set vnymd0 = 20200804
 set vnhms0 = 000000
 @ nsamples = 58
 #setenv FCSTWRK $FCSTWORK.$vnymd0.$vnhms0
-setenv FCSTWRK $FCSTWORK.all
-mkdir $FCSTWRK
+#setenv FCSTWRK $FCSTWORK.all
+setenv FCSTWRK $FCSTWORK
+if ( ! -d $FCSTWRK ) mkdir $FCSTWRK
 set diren = `dirname $FCSTWRK`
 set spool = "-s $diren/spool "
 
@@ -366,6 +373,9 @@ if ( $GET_BERROR ) then
 
    # wire for now
    set NSIG   = $fcst_res[3]
+   if ($NSIG == 181) then
+      setenv BERROR_NMODES 30
+   endif
 
    # Prepare resource files
    set this_param = $FVROOT/etc/berror_stats.nml.tmpl

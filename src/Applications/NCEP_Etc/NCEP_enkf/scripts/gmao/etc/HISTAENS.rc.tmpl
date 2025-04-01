@@ -5,6 +5,7 @@
 #VERSION: 1
 EXPID:  >>>EXPID<<<
 EXPDSC: ensemble_bkg
+Allow_Overwrite: .true.
  
 GRID_LABELS: PC@LHIS_IMx@LHIS_JM-DC
              PC@HHIS_IMx@HHIS_JM-DC
@@ -45,6 +46,7 @@ COLLECTIONS: 'bkg.eta'
 #            'tavg1_2d_slv_Nx'
 #            'inst1_2d_asm_Nx'
              'inst1_2d_ocn_Nx'
+             'asm_eta'
 # WxMaps and Meteograms
 #            'inst3_3d_wxmc_Cp'
 #            'inst3_3d_wxme_Np'
@@ -53,12 +55,10 @@ COLLECTIONS: 'bkg.eta'
 #            'tavg1_2d_lfo_Nx'
 #            'inst1_2d_lfo_Nx'
 #            'tavg1_2d_lnd_Nx' 
-#            'tavg1_2d_lfo_Nx+-'
-#            'inst1_2d_lfo_Nx+-' 
 # Vortex track/relocator
 #             'vtx.mix'
 # Cubed trajectory (background for JEDI)
-#             'bkg_clcv'
+              'bkg_clcv'
               ::
 
 #                      --------------------------
@@ -242,6 +242,37 @@ COLLECTIONS: 'bkg.eta'
                             'TOTEXTTAU'    , 'GOCART2G'  ,
                             ::
 
+  asm_eta.format:     'CFIO' ,
+  asm_eta.deflate:    2      ,
+  asm_eta.regrid_method:  'BILINEAR_MONOTONIC' ,
+  asm_eta.template:   '%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.>>>NCSUFFIX<<<',
+  asm_eta.end_date:  >>>IOBBKGD<<< ,
+  asm_eta.end_time:  >>>IOBBKGT<<< ,
+  asm_eta.frequency: 030000 ,
+  asm_eta.duration:  030000 ,
+  asm_eta.ref_time:  030000 ,
+  asm_eta.mode:       'instantaneous',
+  asm_eta.resolution:  @LHIS_IM @LHIS_JM ,
+  asm_eta.fields:     'PHIS'     , 'AGCM'          , 'phis'         ,
+                      'SGH'      , 'AGCM'          , 'hs_stdv'      ,
+                      'PS'       , 'DYN'           , 'ps'           ,
+                      'TS'       , 'SURFACE'       , 'ts'           ,
+                      'FRLAND'   , 'SURFACE'       , 'frland'       ,
+                      'FRLANDICE', 'SURFACE'       , 'frlandice'    ,
+                      'FRLAKE'   , 'SURFACE'       , 'frlake'       ,
+                      'FROCEAN'  , 'SURFACE'       , 'frocean'      ,
+                      'FRACI'    , 'SURFACE'       , 'frseaice'     ,
+                      'DELP'     , 'DYN'           , 'delp'         ,
+                      'U;V'      , 'DYN'           , 'u;v'          ,
+                      'TV'       , 'DYN'           , 'tv'           ,
+                      'Q'        , 'MOIST'         , 'sphu'         ,
+                      'O3PPMV'   , 'CHEMISTRY'     , 'ozone'        ,
+                      'QITOT'    , 'AGCM'          , 'qitot'        ,
+                      'QLTOT'    , 'AGCM'          , 'qltot'        ,
+                      'QRTOT'    , 'MOIST'         , 'qrtot'      ,
+                      'QSTOT'    , 'MOIST'         , 'qstot'      ,
+                      ::
+
 # Forecasting output ...
 # ----------------------
 
@@ -337,8 +368,9 @@ COLLECTIONS: 'bkg.eta'
   inst1_2d_asm_Nx.template:    '%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.>>>NCSUFFIX<<<' ,
   inst1_2d_asm_Nx.mode:        'instantaneous' ,
   inst1_2d_asm_Nx.resolution:  @DHIS_IM @DHIS_JM ,
-  inst1_2d_asm_Nx.frequency:   030000 ,
-  inst1_2d_asm_Nx.duration:    030000 ,
+  inst1_2d_asm_Nx.frequency:   060000 ,
+  inst1_2d_asm_Nx.duration:    060000 ,
+  inst1_2d_asm_Nx.ref_time:    030000 ,
   inst1_2d_asm_Nx.end_date:    >>>IOBBKGD<<< ,
   inst1_2d_asm_Nx.end_time:    >>>IOBBKGT<<< ,
   inst1_2d_asm_Nx.fields:      'SLP'            , 'DYN'      ,
@@ -377,8 +409,9 @@ COLLECTIONS: 'bkg.eta'
   tavg1_2d_slv_Nx.template:    '%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.>>>NCSUFFIX<<<' ,
   tavg1_2d_slv_Nx.mode:        'time-averaged' ,
   tavg1_2d_slv_Nx.resolution:  @DHIS_IM @DHIS_JM ,
-  tavg1_2d_slv_Nx.frequency:   030000 ,
-  tavg1_2d_slv_Nx.duration:    030000 ,
+  tavg1_2d_slv_Nx.frequency:   060000 ,
+  tavg1_2d_slv_Nx.duration:    060000 ,
+  tavg1_2d_slv_Nx.ref_time:    030000 ,
   tavg1_2d_slv_Nx.end_date:    >>>IOBBKGD<<< ,
   tavg1_2d_slv_Nx.end_time:    >>>IOBBKGT<<< ,
   tavg1_2d_slv_Nx.fields:      'SLP'            , 'DYN'      ,
@@ -431,6 +464,7 @@ COLLECTIONS: 'bkg.eta'
   inst3_3d_wxmc_Cp.resolution:  @DHIS_IM @DHIS_JM ,
   inst3_3d_wxmc_Cp.frequency:   060000 ,
   inst3_3d_wxmc_Cp.duration:    060000 ,
+  inst3_3d_wxmc_Cp.ref_time:    030000 ,
   inst3_3d_wxmc_Cp.end_date:    >>>IOBBKGD<<< ,
   inst3_3d_wxmc_Cp.end_time:    >>>IOBBKGT<<< ,
   inst3_3d_wxmc_Cp.vscale:    100.0,
@@ -453,6 +487,7 @@ COLLECTIONS: 'bkg.eta'
   inst3_3d_wxme_Np.resolution:   @DHIS_IM @DHIS_JM ,
   inst3_3d_wxme_Np.frequency:    060000 ,
   inst3_3d_wxme_Np.duration:     060000 ,
+  inst3_3d_wxme_Np.ref_time:     030000 ,
   inst3_3d_wxme_Np.end_date:     >>>IOBBKGD<<< ,
   inst3_3d_wxme_Np.end_time:     >>>IOBBKGT<<< ,
   inst3_3d_wxme_Np.vscale:      100.0 ,
@@ -490,8 +525,9 @@ COLLECTIONS: 'bkg.eta'
   tavg3_2d_wxme_Nx.template: '%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.>>>NCSUFFIX<<<',
   tavg3_2d_wxme_Nx.mode:     'time-averaged',
   tavg3_2d_wxme_Nx.resolution: @DHIS_IM @DHIS_JM ,
-  tavg3_2d_wxme_Nx.frequency: 030000 ,
-  tavg3_2d_wxme_Nx.duration:  030000 ,
+  tavg3_2d_wxme_Nx.frequency: 060000 ,
+  tavg3_2d_wxme_Nx.duration:  060000 ,
+  tavg3_2d_wxme_Nx.ref_time:  030000 ,
   tavg3_2d_wxme_Nx.end_date:  >>>IOBBKGD<<< ,
   tavg3_2d_wxme_Nx.end_time:  >>>IOBBKGT<<< ,
   tavg3_2d_wxme_Nx.fields:   'TPREC'     , 'MOIST'      ,  'PRECTOT'  ,
@@ -508,6 +544,7 @@ COLLECTIONS: 'bkg.eta'
   inst1_2d_ocn_Nx.resolution:  @DHIS_IM @DHIS_JM ,
   inst1_2d_ocn_Nx.frequency:   010000 ,
   inst1_2d_ocn_Nx.duration:    010000 ,
+  inst1_2d_ocn_Nx.ref_time:    010000 ,
   inst1_2d_ocn_Nx.end_date:    >>>IOBBKGD<<< ,
   inst1_2d_ocn_Nx.end_time:    >>>IOBBKGT<<< ,
   inst1_2d_ocn_Nx.fields:      'U10M;V10M'  , 'SURFACE'  ,
@@ -569,6 +606,7 @@ COLLECTIONS: 'bkg.eta'
   tavg1_2d_lfo_Nx.resolution:  @DHIS_IM @DHIS_JM ,
   tavg1_2d_lfo_Nx.frequency:   010000 ,
   tavg1_2d_lfo_Nx.duration:    010000 ,
+  tavg1_2d_lfo_Nx.ref_time:    010000 ,
   tavg1_2d_lfo_Nx.end_date:    >>>IOBBKGD<<< ,
   tavg1_2d_lfo_Nx.end_time:    >>>IOBBKGT<<< ,
   tavg1_2d_lfo_Nx.fields:      'SLRSF'   , 'SOLAR'    , 'SWGDN'    ,
@@ -591,6 +629,7 @@ COLLECTIONS: 'bkg.eta'
   inst1_2d_lfo_Nx.resolution:  @DHIS_IM @DHIS_JM ,
   inst1_2d_lfo_Nx.frequency:   010000 ,
   inst1_2d_lfo_Nx.duration:    010000 ,
+  inst1_2d_lfo_Nx.ref_time:    010000 ,
   inst1_2d_lfo_Nx.end_date:    >>>IOBBKGD<<< ,
   inst1_2d_lfo_Nx.end_time:    >>>IOBBKGT<<< ,
   inst1_2d_lfo_Nx.fields:      'DZ'     , 'DYN'  , 'HLML'      ,
@@ -610,6 +649,7 @@ COLLECTIONS: 'bkg.eta'
   tavg1_2d_lnd_Nx.resolution:  @DHIS_IM @DHIS_JM ,
   tavg1_2d_lnd_Nx.frequency:   010000 ,
   tavg1_2d_lnd_Nx.duration:    010000 ,
+  tavg1_2d_lnd_Nx.ref_time:    010000 ,
   tavg1_2d_lnd_Nx.end_date:    >>>IOBBKGD<<< ,
   tavg1_2d_lnd_Nx.end_time:    >>>IOBBKGT<<< ,
   tavg1_2d_lnd_Nx.fields:      'GRN'       , 'SURFACE'  ,
@@ -664,44 +704,6 @@ COLLECTIONS: 'bkg.eta'
                                'SPSNOW'    , 'SURFACE'  ,
                                ::
 
-  tavg1_2d_lfo_Nx+-.format:    'CFIO',
-  tavg1_2d_lfo_Nx+-.descr:     '2d,1-Hourly,Time-Averaged,Single-Level,Forecast,Land forcing' ,
-  tavg1_2d_lfo_Nx+-.template:  '%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.>>>NCSUFFIX<<<',
-  tavg1_2d_lfo_Nx+-.mode:      'time-averaged',
-  tavg1_2d_lfo_Nx+-.ref_date:   >>>IOBBKGD<<< ,
-  tavg1_2d_lfo_Nx+-.ref_time:   >>>IOBBKGT<<< ,
-  tavg1_2d_lfo_Nx+-.end_date:   >>>IOEBKGD<<< ,
-  tavg1_2d_lfo_Nx+-.end_time:   >>>IOEBKGT<<< ,
-  tavg1_2d_lfo_Nx+-.frequency:  010000,
-  tavg1_2d_lfo_Nx+-.duration:   010000 ,
-  tavg1_2d_lfo_Nx+-.fields:      'SLRSF'   , 'SOLAR'    , 'SWGDN'    ,
-                               'SWLAND'  , 'SURFACE'  ,
-                               'LWS'     , 'IRRAD'    , 'LWGAB'    ,
-                               'PCU'     , 'SURFACE'  , 'PRECCU'   ,
-                               'PLS'     , 'SURFACE'  , 'PRECLS'   ,
-                               'SNO'     , 'SURFACE'  , 'PRECSNO'  ,
-                               'DFPAR'   , 'SOLAR'    , 'PARDF'    ,
-                               'DRPAR'   , 'SOLAR'    , 'PARDR'    ,
-                               ::
-
-  inst1_2d_lfo_Nx+-.format:    'CFIO',
-  inst1_2d_lfo_Nx+-.descr:     '2d,1-Hourly,Instantaneous,Single-Level,Forecast,land forcing'
-  inst1_2d_lfo_Nx+-.template:  '%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.>>>NCSUFFIX<<<',
-  inst1_2d_lfo_Nx+-.mode:      'instantaneous' ,
-  inst1_2d_lfo_Nx+-.ref_date:   >>>IOBBKGD<<< ,
-  inst1_2d_lfo_Nx+-.ref_time:   >>>IOBBKGT<<< ,
-  inst1_2d_lfo_Nx+-.end_date:   >>>IOEBKGD<<< ,
-  inst1_2d_lfo_Nx+-.end_time:   >>>IOEBKGT<<< ,
-  inst1_2d_lfo_Nx+-.frequency:  010000,
-  inst1_2d_lfo_Nx+-.duration:   010000 ,
-  inst1_2d_lfo_Nx+-.fields:      'DZ'     , 'DYN'  , 'HLML'      ,
-                               'TA'     , 'DYN'  , 'TLML'      ,
-                               'QA'     , 'DYN'  , 'QLML'      ,
-                               'SPEED'  , 'DYN'  , 'SPEEDLML'  ,
-                               'PS'     , 'DYN'  ,
-                                ::
-
-
 # Caution: this stream does not follow convention of output from
 #          ensemble - file does not carry member information ...
 #          vtrack script too wired up and attached to filename
@@ -710,6 +712,7 @@ COLLECTIONS: 'bkg.eta'
   vtx.mix.template:    '%y4%m2%d2_%h2z.>>>NCSUFFIX<<<',
   vtx.mix.frequency:   060000 ,
   vtx.mix.duration:    060000 ,
+  vtx.mix.ref_time:    030000 ,
   vtx.mix.end_date:    >>>IOFDATE<<< ,
   vtx.mix.end_time:    >>>IOFTIME<<< ,
   vtx.mix.mode:        'instantaneous',

@@ -192,6 +192,12 @@ contains
         hcoeffs(104:118)=10.0  !upto about   1 mb
         hcoeffs(119:132)=360.0 !upto the top
     endif
+    if (nsig==181) then
+        hcoeffs(  1:100)=10.0  !upto about 100 mb
+        hcoeffs(101:142)=100   !upto about  10 mb
+        hcoeffs(143:162)=10.0  !upto about   1 mb
+        hcoeffs(163:181)=360.0 !upto the top
+    endif
 
     vcoeffs=0.0
     if ( nsig==72 ) then

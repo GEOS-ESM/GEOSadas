@@ -32,8 +32,8 @@ setenv ACFTBIAS @ACFTBIAS  # 0: no aircraft bias correction
 # ---------
 setenv ENSARCH_ALLBKG 1   # set this and ALL bkg files are saved in tar ball
 setenv ENSARCH_FIELDS "eana,ebkg,stat,ecbkg,eoi0,edia,ebaer,erst,ebkgx,eprg,eniana"
-setenv ENSARCH_FIELDS "eana,ebkg,stat,ecbkg,eoi0,edia,ebaer,erst,ebkgx"
 setenv ENSARCH_FIELDS "eana,ebkg,stat,ecbkg,eoi0,edia,ebaer,erst"
+setenv ENSARCH_FIELDS "eana,ebkg,stat,ecbkg,eoi0,edia,ebaer,erst,ebkgx,edstat"
 setenv ENSARCH_WALLCLOCK 2:00:00
 setenv ARCHLOC $FVARCH
 
@@ -66,10 +66,12 @@ setenv AENS_DONORECENTER 0     # do not recenter ensemble
 setenv ADDINF_FACTOR 0.35      # additive inflation coeff (seems small after mass-div fix)
 setenv ADDINF_FACTOR_SPPT 0.2  # additive inflation for when SPPT is used
 
-setenv RECENTER_WALLCLOCK 1:00:00
+setenv RECENTER_WALLCLOCK 0:30:00
 setenv ENSRECENTER_NCPUS 1
 setenv RECENTER_QNAME $ATMENS_QNAME
-setenv AENS_RECENTER_DSTJOB 4
+setenv AENS_RECENTER_DSTJOB 16
+setenv AENS_RECENTER_ARRAY  1
+#setenv AENS_RECENTER_PACKL  1
 
 # ensemble GAAS and AERO EnKF
 # ---------------------------
@@ -87,9 +89,9 @@ setenv MPIRUN_ATMENKFAERO "$ATMENS_MPIRUN -np $AENKFAERO_NCPUS enkf_aero.x"
 
 # atmos_ens2gcm.csh
 # -----------------
-setenv AENS_IAU_DSTJOB 8
+setenv AENS_IAU_DSTJOB 4
 setenv IAU_QNAME $ATMENS_QNAME
-setenv IAU_WALLCLOCK 1:00:00
+setenv IAU_WALLCLOCK 0:30:00
 setenv ENSIAU_NCPUS @MIAU_CPUS
 setenv MPIRUN_ENSIAU  "$ATMENS_MPIRUN -np $ENSIAU_NCPUS $IAUX"
 
@@ -137,7 +139,7 @@ setenv MPIRUN_ENSANA  "$ATMENS_MPIRUN -np $ENSGSI_NCPUS GSIsa.x"     # esma_mpir
 
 # setup_perts.csh
 #----------------
-setenv AENS_PERTS_DSTJOB 8
+# setenv AENS_PERTS_DSTJOB 8
 setenv PERTS_QNAME $ATMENS_QNAME
 setenv PERTS_WALLCLOCK 1:00:00
 setenv PERTS_NCPUS 24 
@@ -152,7 +154,8 @@ setenv AENSTAT_QNAME $ATMENS_QNAME
 
 # post-egcm calculations
 # ----------------------
-setenv PEGCM_NCPUS @STAT_CPUS
+setenv PEGCM_ALLPARALLEL 1
+#setenv PEGCM_ARRAY 1
 setenv PEGCM_WALLCLOCK 1:00:00
 setenv PEGCM_QNAME $ATMENS_QNAME
 

@@ -2,6 +2,8 @@ esma_add_subdirectories (
   @MAPL
   @GMAO_Shared
   @NCEP_Shared
+  @AeroML/src
+  JCSDA_crtm
   )
 
 # Special case - FMS is built twice with two

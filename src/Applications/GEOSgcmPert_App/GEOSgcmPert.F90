@@ -197,6 +197,12 @@ Program GEOS5_Main
    call ESMF_ConfigLoadFile   ( config, 'CAP_apert.rc', rc=STATUS )
    VERIFY_(STATUS)
 
+   call MAPL_GetNodeInfo(comm=mpi_comm_world,rc=status)
+   VERIFY_(status)
+   call MAPL_InitializeShmem(rc=status)
+   VERIFY_(status)
+
+
 !  CAP's MAPL MetaComp
 !---------------------
 

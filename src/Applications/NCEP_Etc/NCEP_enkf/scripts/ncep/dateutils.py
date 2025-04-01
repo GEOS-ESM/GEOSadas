@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import datetime, calendar
 
 """
@@ -20,7 +21,7 @@ def dateto_hrs_since_day1CE(curdate,mixedcal=True):
     if mixedcal:
         if curdate < gregstart:
             msg = 'date must be after start of gregorian calendar (15821015)!'
-            raise ValueError, msg
+            raise ValueError( msg )
         difftime = curdate-gregstart
         hrsdiff = 24*difftime.days + difftime.seconds/3600
         return hrsdiff+hrsgregstart
@@ -32,7 +33,7 @@ def hrs_since_day1CE_todate(hrs,mixedcal=True):
     """return datetime.datetime instance given hours since 1-Jan-0001"""
     if hrs < 0.0:
         msg = "hrs must be positive!"
-        raise ValueError, msg
+        raise ValueError( msg )
     delta = datetime.timedelta(hours=1)
     if mixedcal:
         hrs_sincegreg = hrs - hrsgregstart
@@ -124,9 +125,9 @@ def dayofyear(yyyy,mm,dd):
 def getyrmon(day_of_year,yyyy=2001):
     d1 = datetime.datetime(yyyy,1,1)
     if calendar.isleap(d1.year) and day_of_year > 366:
-        raise ValueError, 'not that many days in the year'
+        raise ValueError( 'not that many days in the year' )
     if not calendar.isleap(d1.year) and day_of_year > 365:
-        raise ValueError, 'not that many days in the year'
+        raise ValueError( 'not that many days in the year' )
     d2 = d1 + (day_of_year-1)*datetime.timedelta(days=1)
     return d2.month,d2.day
 
@@ -137,8 +138,8 @@ def daysinmonth(yyyy,mm):
     return calendar.monthrange(yyyy,mm)[1]
 
 if __name__ == "__main__":
-    print dayofyear(2000,2,29)
-    print daysinmonth(2000,2)
-    print datetohrs('0001010100',mixedcal=False)
-    print datetohrs('2001010100',mixedcal=False)
-    print datetohrs('2001010100',mixedcal=True)
+    print (dayofyear(2000,2,29))
+    print (daysinmonth(2000,2))
+    print (datetohrs('0001010100',mixedcal=False))
+    print (datetohrs('2001010100',mixedcal=False))
+    print (datetohrs('2001010100',mixedcal=True))
