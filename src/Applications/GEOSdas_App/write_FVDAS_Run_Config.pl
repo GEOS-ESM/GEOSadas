@@ -12,7 +12,7 @@ use strict;
 #-----------------
 my ($filename);
 my ($ARCH, $HOST);
-my ($FVHOME, $FVROOT, $RUNDIR);
+my ($FVHOME, $FVROOT, $NODEFLG, $RUNDIR);
 my ($AOD_OBSCLASS, $BERROR, $DO_ECS_OUT, $DO_REM_SYNC, $EXPID, $FVARCH,
     $FVBCS, $GID, $MONTHLY_MEANS, $MKSI_SIDB, $MKSIOZ_SIDB, $MKSICN_SIDB, $MP_SET_NUMTHREADS, $NCEPINPUT, $NOBACKUP,
     $OBSCLASS, $OBSCLASS_NOAIRS, $OMP_NUM_THREADS, $RUN_QUADS, $PYRADMON,
@@ -51,6 +51,7 @@ sub init {
                "fvhome=s"  => \$FVHOME,
                "fvroot=s"  => \$FVROOT,
                "expid=s"   => \$EXPID,
+               "nodeflg=s" => \$NODEFLG,
                "remNODE=s" => \$remNODE,
                "remID=s"   => \$remID );
 
@@ -69,9 +70,11 @@ sub init {
     $FVHOME = $ENV{"FVHOME"} unless $FVHOME;
     $FVROOT = $ENV{"FVROOT"} unless $FVROOT;
     $EXPID  = $ENV{"EXPID"}  unless $EXPID;
+    $NODEFLG = $ENV{"NODEFLG"} unless $NODEFLG;
     die ">> ERROR << FVHOME environment variable not defined" unless $FVHOME;
     die ">> ERROR << FVROOT environment variable not defined" unless $FVHOME;
     die ">> ERROR << EXPID environment variable not defined"  unless $EXPID;
+    die ">> ERROR << NODEFLG environment variable not defined"  unless $NODEFLG;
     $RUNDIR = "$FVHOME/run";
     die ">> ERROR << directory, $RUNDIR, not found"  unless (-d $RUNDIR);
 
@@ -100,6 +103,7 @@ sub init {
     $NEWRADBC          = $ENV{"NEWRADBC"};
     $MP_SET_NUMTHREADS = $ENV{"MP_SET_NUMTHREADS"};
     $NCEPINPUT         = $ENV{"NCEPINPUT"};
+    $NODEFLG           = $ENV{"NODEFLG"};
     $OBSCLASS          = $ENV{"OBSCLASS"};
     $OBSCLASS_NOAIRS   = $ENV{"OBSCLASS_NOAIRS"};
     $OMP_NUM_THREADS   = $ENV{"OMP_NUM_THREADS"};
@@ -270,6 +274,7 @@ sub writefile {
     print RUNCONF "setenv GID $GID\n" if $GID;
     print RUNCONF "setenv ARCH `uname -s`\n";
     print RUNCONF "setenv HOST `uname -n`\n";
+    print RUNCONF "setenv NODEFLG $NODEFLG\n";
     print RUNCONF "setenv GTAG $GTAG\n" if $GTAG;
     print RUNCONF "setenv RTAG $RTAG\n" if $RTAG;
     print RUNCONF "setenv EXPID $EXPID\n" if $EXPID;

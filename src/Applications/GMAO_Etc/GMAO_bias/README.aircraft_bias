@@ -1,0 +1,59 @@
+The GEOS DAS has used two different methods of calculating aircraft bias correction coefficients
+One method runs 'cft_update.f' after the analysis step to update bias coefficients offline.
+This method only calculates a single value based on a weighted mean of the temperature difference
+between the aircraft observations with a given tail ID and the forecast background value at a
+particular location.  This method was used in the MERRA-2 reanalysis.
+The second method uses the variational aircraft bias coefficient calculation developed at NCEP,
+and calculates three coefficients - a mean coefficient (constant predictor = 1), and two
+additional coefficients for the ascent rate and ascent rate squared predictors (Zhu, et al, 2015).
+
+The format of the original bias coefficient file as used in MERRA2 is
+1 - tail ID
+2 - aircraft bias correction (K) used by analysis
+3 - error estimate for bias coefficient
+4 - running count of obs used for bias calculation
+5 - calculated bias correction (K)
+6 - mean departure of temperature obs from background (K)
+7 - standard deviation of departure from background (K)
+8 - number of observations used to calculate (6)
+Optional fields
+9 - number of consecutive synoptic times tail number has appeared
+10 - count of synoptic times missing for tail number
+
+When the variational bias correction code was added to the GSI the format of the
+offline bias coefficient file was changed to be comaptible with the new bias format.
+1 - tail ID
+2 - index for tail ID
+3 - aircraft bias correction (K) used by analysis
+4 - zero  (unused second predictor coefficient)
+5 - zero  (unused third  predictor coefficient)
+6 - running count of obs used for bias calculation
+7 - zero  (unused count for second predictor)
+8 - zero  (unused count for third predictor)
+9 - error estimate for bias coefficient
+10 - zero  (unused slot for second predictor)
+11 - zero  (unused slot for third  predictor)
+12 - YYYYMM time indicator
+13 - actual bias value calculated
+14 - mean departure of temperature obs from background (K)
+15 - standard deviation of departure from background (K)
+16 - number of observations used to calculate (14)
+Optional fields
+17 - number of consecutive synoptic times tail number has appeared
+18 - count of synoptic times missing for tail number
+
+Format of NCEP method bias coefficient file
+1 - tail ID
+2 - index for tail ID
+3 - coefficient for mean predictor
+4 - coefficient for ascent rate predictor
+5 - coefficient for ascent rate squared predictor
+6 - number of observations used in predictor estimate
+7 - zero  (unused count for second predictor)
+8 - zero  (unused count for third predictor)
+9 - background error for mean coefficient
+10 - background error for ascent rate coefficient
+11 - background error for ascent rate squared coefficient
+12 - YYYYMM time indicator
+
+
