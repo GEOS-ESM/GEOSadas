@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -W ignore::DeprecationWarning
 
 """
@@ -11,7 +11,7 @@
 
 from os       import system
 from optparse import OptionParser
-from MAPL     import Config
+from MAPL.config     import Config
 
 if __name__ == "__main__":
     
@@ -53,10 +53,10 @@ if __name__ == "__main__":
     for ident in cf('MODIS_L2A_IDENTS').split(','):
         coll = Coll[i] 
         cmd = "mxd04_l2a.py %s --collection=%s %s %s "%(Options,Coll[i],ident,isotime)
-        print cmd
+        print(cmd)
         if not options.dryrun:
             if system(cmd):
-                raise ValueError, "mxd04_l2a.py failed for %s on %s "%(ident,isotime)
+                raise ValueError("mxd04_l2a.py failed for %s on %s "%(ident,isotime))
 
         i += 1
     

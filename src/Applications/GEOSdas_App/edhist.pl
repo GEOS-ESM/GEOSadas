@@ -355,7 +355,7 @@ sub parse_input {
 
         # (4) get collection fields
         #--------------------------
-        if ($look4fields and ($_ !~ m/\b(\S+)\.(\S+)\s*:(.*)$/)) {
+        if ($look4fields and (($_ !~ m/\b(\S+)\.(\S+)\s*:(.*)$/)| ($_ !~ m/\b(\S+)\.(\S+)(\S+)\.(\S+)\s*:(.*)$/)) ) {
             if ( (/[\'|\"]/) and (/\,/) ) {
                 $value = clean($_);
                 store($cname, $name, $traitN, $value);
@@ -1127,7 +1127,7 @@ sub plot_edit {
     foreach $name (@topList) {
         $name =~ s/_NCKS$//;
         next unless $name =~ m/Cp$/ or $name =~ m/Np$/ or $name =~ m/Nx$/
-            or $name =~ m/slv$/ or $name =~ m/p42$/;
+            or $name =~ m/slv$/ or $name =~ m/p42$/ or $name =~ m/v72$/ or $name =~ m/v73$/;
         push @new, $name;
     }
     @topList = @new;
@@ -1524,7 +1524,7 @@ sub write_collection_def {
         }
     }
     print $comments{"$name.end"} if $comments{"$name.end"};
-    print " "x$tmax ." ::\n";
+    print " "x$tmax ."::\n";
 }
 
 #=======================================================================
