@@ -388,7 +388,7 @@ sub get_info_from_SILO {
     #---------------------------------------------------------------
     open SILO, "< $siloarc" or die "Error during open $siloarc;";
     while (<SILO>) {
-        next unless /\$[{PESTOROOT}]/;
+        next unless /\$\{PESTOROOT\}/;
         next if /\+/;
 
         chomp($line = $_);
@@ -400,7 +400,7 @@ sub get_info_from_SILO {
 
             # modified line for $outRc file
             #------------------------------
-            ($mline1 = $mline) =~ s|\$[{PESTOROOT}]\%s/||;
+            ($mline1 = $mline) =~ s|\$\{PESTOROOT\}\%s/||;
             $mline1 =~ s|%s|\${EXPID}|;
             next if $mline1 eq $mline;
 
