@@ -7927,6 +7927,10 @@ print  SCRIPT <<"EOF";
      setenv I_MPI_EXTRA_FILESYSTEM 1
      setenv I_MPI_EXTRA_FILESYSTEM_LIST gpfs
      setenv I_MPI_DEBUG 6
+# needed for SLES15 (all are now SLES15)
+     setenv I_MPI_FABRICS shm:ofi
+     setenv I_MPI_OFI_PROVIDER psm3
+
 #    setenv ROMIO_FSTYPE_FORCE         "gpfs:"
 #    setenv I_MPI_FABRICS shm:ofi
 #    setenv I_MPI_FABRICS shm:dapl
@@ -9022,6 +9026,10 @@ print  SCRIPT <<"EOF";
      setenv I_MPI_EXTRA_FILESYSTEM_LIST gpfs
      setenv I_MPI_DEBUG 6
 #    setenv ROMIO_FSTYPE_FORCE         "gpfs:"
+
+# needed for SLES15 (all are now SLES15)
+     setenv I_MPI_FABRICS shm:ofi
+     setenv I_MPI_OFI_PROVIDER psm3
   endif
   if (\$?MPT_VERSION) then
      setenv MPI_COLL_REPRODUCIBLE
