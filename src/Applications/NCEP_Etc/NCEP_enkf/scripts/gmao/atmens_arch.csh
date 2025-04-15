@@ -243,7 +243,7 @@ if ( $doall && (-d $myball) ) then
       @ ic++
       set memtag  = `echo $ic |awk '{printf "%03d", $1}'`
       mkdir -p $myball/mem$memtag
-            /bin/mv mem$memtag/*.bkg*lfo*.$NCSUFFIX $myball/mem$memtag/
+            /bin/mv mem$memtag/*.bkg.lfo*.$NCSUFFIX $myball/mem$memtag/
    end
 endif
 # store aerosol background fields only ...

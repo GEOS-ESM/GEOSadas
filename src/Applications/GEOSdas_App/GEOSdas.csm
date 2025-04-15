@@ -6088,7 +6088,7 @@ endif
 
   if ( $LDAS_ANA ) then
     /bin/rm -f $FVHOME/recycle/holdpredout/*lfo*
-    /bin/cp  $FVWORK/*bkg*lfo*.nc4  $FVHOME/recycle/holdpredout/. 
+    /bin/cp  $FVWORK/*bkg.lfo*.nc4  $FVHOME/recycle/holdpredout/. 
   endif 
    
   exit 0                      
