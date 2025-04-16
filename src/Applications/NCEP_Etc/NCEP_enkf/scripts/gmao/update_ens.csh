@@ -88,6 +88,12 @@ endif
               /bin/mv $fn ../updated_ens/${member}/$newname.$ncsuffix
            end # fn
         end # fntype
+        foreach fntype ( bkg.lfo_inst bkg.lfo_tavg ) 
+            foreach fn ( `/bin/ls $expid.${fntype}.*.${member}.$ncsuffix` )
+               set newname = `echo $fn | cut -d. -f1-4 `
+               /bin/mv $fn ../updated_ens/${member}/$newname.$ncsuffix
+            end # fn
+       end # fntype
     endif
     if ( "$type" == "niana" ) then
         mkdir -p ../updated_ens/${member}
@@ -146,7 +152,7 @@ endif
     if ( "$type" == "diag" ) then
         mkdir -p ../updated_ens/ensdiag/${member}
         touch    ../updated_ens/ensdiag/.no_archiving
-        set fntype_all = (`edhist.pl -q 3 -list inc -X Bkg.eta,bkg.eta,bkg.sfc,abkg.eta,cbkg.eta,gaas_bkg.sfc -i $rcfile`)
+        set fntype_all = (`edhist.pl -q 3 -list inc -X Bkg.eta,bkg.eta,bkg.sfc,abkg.eta,cbkg.eta,gaas_bkg.sfc,bkg.lfo_inst,bkg.lfo_tavg -i $rcfile`)
         foreach fntype ( $fntype_all )
            if ( $fntype == "bkg_clcv" ) then
               if ( ! -d   ../updated_ens/ensbkgx/${member} ) then

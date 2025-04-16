@@ -290,6 +290,10 @@ sub ed_g5agcm_rc {
     if ( $gocart_tracers ) { $comment{"GOCART.data_INTERNAL"} = 1 }
     else                   { $comment{"GOCART_INTERNAL"} = 1 }
 
+    # uncomment ldas increment flag
+    #------------------------------
+    if ($ldas_flag == 1) { $uncomment{"LDAS_INCR"} = 1 }
+
     # comment unused catch or catchCN restart
     #----------------------------------------
     if ($lsmodel_flag == 1) { 
