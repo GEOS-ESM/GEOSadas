@@ -3528,7 +3528,7 @@ sub set_ldasANA {
             die ">>> Error <<< Cannot find directory, $ldashold;"
                 unless -d $ldashold;
 
-        @bkglfo_files = (<$ldashold/*bkg.lfo*${nymdb}_${hhb}*>);
+        @bkglfo_files = (<$ldashold/*bkg*lfo*${nymdb}_${hhb}*>);
             die ">>> Error <<< Cannot find bkglfo files in $ldashold;"
                 unless scalar(@bkglfo_files);
         
