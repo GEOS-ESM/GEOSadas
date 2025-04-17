@@ -6047,10 +6047,9 @@ endif
          /bin/mv $momoutdir/MOM.res_${fn}.nc $FVHOME/recycle/hold/$EXPID.mom${fn}_rst.${momtag}.nc4 
        end
     endif
-    set lstbkglfo = `ls $FVHOME/recycle/holdpredout/$EXPID.*lfo*.$NCSUFFIX`
+    set lstbkglfo = `ls $FVWORK/$EXPID.bkg.lfo*.$NCSUFFIX`
     if ( ${%lstbkglfo}  ) then
-       cd $FVHOME/recycle/holdpredout
-       tar cvf $FVWORK/$EXPID.bkglforst.${rtag}.tar $EXPID.*lfo*.$NCSUFFIX
+       tar cvf $FVWORK/$EXPID.bkglforst.${rtag}.tar $EXPID.bkg.lfo*.$NCSUFFIX
     endif 
     cd $FVHOME/recycle/hold
     tar cvf $FVWORK/$EXPID.rst.${rtag}.tar $EXPID.* 
