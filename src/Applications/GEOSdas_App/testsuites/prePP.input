@@ -3,7 +3,7 @@
 #------------
 
 codeID: 523f29e
-description: prePP__GEOSadas-5_41_2__agrid_C720__ogrid_C
+description: prePP__GEOSadas-5_42_1__agrid_C720__ogrid_C
 fvsetupID: f7aaa973c7
 
 ---ENDHEADERS---
@@ -39,7 +39,7 @@ Catchment Model choice? [1]
 > 
 
 FVHOME? [/discover/nobackup/rtodling/prePP]
-> /discover/nobackup/projects/gmao/dadev/rtodling/SLES15/$expid
+> /discover/nobackup/projects/gmao/dadev/TSE_staging/rtodling/$expid
 
 The directory /discover/nobackup/projects/gmao/dadev/rtodling/prePP does not exist. Create it now? [y]
 > 
@@ -81,7 +81,7 @@ AeroCom? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/AeroCom]
 > 
 
 FVICS? [/archive/u/jstassi/restarts/GEOSadas-5_24_0]
-> /gpfsm/dnb05/projects/p139/rtodling/archive/Restarts/5_41/c720/c720.rst.20241122_21z.tar
+> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_42/c720/rs/Y2025/M02/c720.rst.20250225_21z.tar
 
 Run model-adjoint-related applications (0=no,1=yes)? [0]
 > 1
@@ -102,7 +102,7 @@ Verifying experiment id: [prePP]
 > 
 
 Ending year-month-day? [20210921]
-> 20250131
+> 20251231
 
 Length of FORECAST run segments (in hours)? [123]
 > 
@@ -237,7 +237,7 @@ Ensemble Vertical Levels?  [72]
 > 
 
 Experiment archive directory for ensemble restarts or 'later': [/archive/u/rtodling/prePP]
-> /gpfsm/dnb05/projects/p139/rtodling/archive/Restarts/5_41/c720
+> /gpfsm/dnb05/projects/p139/rtodling/archive/Restarts/5_42/c720
 
 Edit COLLECTIONS list in run/HISTORY.rc.tmpl (y/n)? [n]
 > 
