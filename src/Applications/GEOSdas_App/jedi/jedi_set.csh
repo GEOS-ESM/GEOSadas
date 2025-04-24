@@ -116,7 +116,7 @@ setenv JEDIETC $FVHOME/run/jedi/Config
 touch $JEDIWRK/.no_archiving
 
 mkdir -p $JEDIWRK/Config
-mkdir -p $JEDIWRK/Data
+mkdir -p $JEDIWRK/fv3-jedi
 
 # CONFIG:
 # -------
@@ -134,17 +134,16 @@ foreach fn ( `ls $JEDIETC/*.tmpl` )
 end
 cd -
 
-# Get positined in Data ...
-cd $JEDIWRK/Data
+# Get positioned in fv3-jedi ...
+cd $JEDIWRK/fv3-jedi
 
-foreach dir ( ana bkg ensemble hofx iau obs osen inc vbc )
+foreach dir ( ana ensemble hofx iau obs osen inc vbc )
    if ( ! -d $dir ) mkdir -p $dir
 end
 
-# link directories (NOTE: CRTM coeffs will not live in FVHOME for long)
-#foreach dir ( crtm femps fieldmetadata fieldsets fv3files inputs )
-foreach dir (            fieldmetadata fieldsets fv3files inputs )
-  ln -sf $FVHOME/run/jedi/Data/$dir .
+# link directories
+foreach dir ( bkg fieldmetadata fieldsets fv3files gsibec rcov )
+  ln -sf $FVHOME/run/jedi/fv3-jedi/$dir .
 end
 
 # if adjoint analysis, retrieve IODA files

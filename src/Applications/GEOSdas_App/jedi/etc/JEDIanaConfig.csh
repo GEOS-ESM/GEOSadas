@@ -36,12 +36,13 @@ setenv JEDI_CNVINC_MPIRUN "mpirun -np 12"
 setenv JEDI_NCPUS 48
 setenv JEDI_NCPUS 216
 setenv JEDI_NCPUS 252
-setenv JEDI_FV3VAR_MPIRUN "mpirun -perhost 8 -np $JEDI_NCPUS"
 setenv JEDI_FV3VAR_MPIRUN "mpirun            -np $JEDI_NCPUS"
+setenv JEDI_FV3VAR_MPIRUN "mpirun -perhost 8 -np $JEDI_NCPUS"
 
 setenv JEDI_MKIAU_MPIRUN "mpirun "
 
-setenv JEDI_CRTM_COEFFS /discover/nobackup/projects/gmao/dadev/rtodling/JEDI/x49/j49rt00/fvInput/gsi/etc/r21c_ncep20221018/Little_Endian/
+setenv JEDI_STATIC_FILES /discover/nobackup/projects/gmao/advda/SwellStaticFiles
+setenv JEDI_CRTM_COEFFS  $JEDI_STATIC_FILES/jedi/crtm_coefficients/2.4.1
 
 # post
 setenv JEDI_CONCAT_IODA  0

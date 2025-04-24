@@ -36,6 +36,7 @@ my $scriptname = basename($0);
                "iodadir=s",
                "expdir=s",
                "fvhome=s",
+               "archive=s",
                "nodename=s",
                "h" );
 
@@ -67,7 +68,7 @@ my $scriptname = basename($0);
 
 sub init {
 
-   if ( $#ARGV  <  2 ) {
+   if ( $#ARGV  <  1 ) {
      print STDERR " Missing arguments; see usage:\n";
      usage();
    } else {              # required command line args
@@ -87,10 +88,16 @@ sub init {
         $expdir = "/discover/nobackup/$user";
    }
 
-   if ( $opt_jedidir ) {
-        $jedidir = $opt_jedidir;
+   if ( $opt_fvhome ) {
+        $FVHOME = $opt_fvhome;
    } else {
-        $jedidir = "$FVHOME/jedi";
+        $FVHOME = "$expdir/$expid";
+   }
+
+   if ( $opt_jedidir ) {
+        $JEDIDIR = $opt_jedidir;
+   } else {
+        $JEDIDIR = "$FVHOME/jedi";
    }
 
    if ( $opt_iodadir ) {
@@ -103,12 +110,6 @@ sub init {
         $jediroot = $opt_jediroot;
    } else {
         $jediroot = "/discover/nobackup/projects/gmao/advda/swell/JediBundles/fv3_soca_SLES15/build-intel-release";
-   }
-
-   if ( $opt_fvhome ) {
-        $FVHOME = $opt_fvhome;
-   } else {
-        $FVHOME = "$expdir/$expid";
    }
 
    if ( $opt_archive ) {
@@ -134,11 +135,7 @@ sub init {
    if ( $opt_jedihome ) {
         $JEDIHOME = $opt_jedihome;
    } else {
-        if ( $ENV{"FVHOME"} ) {
-           $JEDIHOME = "$FVHOME/run/jedi";
-        } else {
-           die "Env Var FVHOME or arg -fvhome needed \n";
-        }
+        $JEDIHOME = "$FVHOME/run/jedi";
    }
 
 # determined whether cubed or not
@@ -175,7 +172,7 @@ sub install {
 if ( ! -d $JEDIHOME ) {
    $rc = system("/bin/mkdir -p $JEDIHOME" );
 }
-if ( ! -d $JEDIHOME/Config ) {
+if ( ! -d "$JEDIHOME/Config" ) {
    $rc = system("/bin/mkdir -p $JEDIHOME/Config" );
 }
 # transfer resource files to proper location
@@ -183,20 +180,22 @@ if ( ! -d $JEDIHOME/Config ) {
 #      user must edit files as needed
 foreach $fn ( @rc2jedi ) {
   chomp($fn);
+  print "$FVROOT/etc/jedi/$fn \n";
   cp("$FVROOT/etc/jedi/$fn","$JEDIHOME/$fn");
 }
 
 # Copy scheme yaml to proper location
-cp("$FVROOT/etc/jedi/geos_$scheme.yaml","$JEDIHOME/Config/geosvar.yaml");
 foreach $fn ( @rc2conf ) {
   chomp($fn);
   cp("$FVROOT/etc/jedi/$fn","$JEDIHOME/Config/$fn");
 }
+cp("$FVROOT/etc/jedi/geos_$scheme.yaml","$JEDIHOME/Config/geosvar.yaml");
 
 # create JEDI work area and make sure .no_archiving exists in JEDI
 if ( ! -d "$JEDIDIR" ) {
    $rc = system("/bin/mkdir -p $JEDIDIR" );
 }
+print "$JEDIDIR \n";
 $cmd = "touch $JEDIDIR/.no_archiving";
 $rc = system($cmd);
 
@@ -204,9 +203,9 @@ $rc = system($cmd);
 ed_conf_rc ("$JEDIHOME","JEDIanaConfig.csh");
 
 # take care of satbias acq
-ed_jedibkg_acq ("$JEDIHOME");
-ed_jediioda_acq ("$JEDIHOME");
-ed_jedivbc_acq ("$JEDIHOME");
+ed_jedibkg_acq ("$JEDIHOME/Config");
+ed_jediioda_acq ("$JEDIHOME/Config");
+ed_jedivbc_acq ("$JEDIHOME/Config");
 
 }
 #......................................................................
@@ -280,7 +279,7 @@ sub ed_jedibkg_acq {
  open(SCRIPT,">$acq") or
  die ">>> ERROR <<< cannot write $acq";
  print  SCRIPT <<"EOF";
- $archive/$expid/rs/Y%y4/M%m2/$expid.bkgcrst.%y4%m2%d2_%h2z.tar
+$archive/$expid/rs/Y%y4/M%m2/$expid.bkgcrst.%y4%m2%d2_%h2z.tar
 EOF
 }
 #......................................................................
@@ -338,17 +337,18 @@ DESCRIPTION
 
 OPTIONS
 
+     -archive      location of archive (when bkg, others come from; default: /archive/u/\$user)
+     -expdir       experiment location (default: /discover/nobackup/\$user)
+     -fvhome       location of experiment home directory (default: \$expdir/\$expid)
      -jedihome     location of ensemble members (default: \$FVHOME/run/jedi)
      -jediroot     location of JEDI build directory
      -jedidir      location of workspace for JEDI (default: \$FVHOME/jedi)
      -iodadir      location of pre-existing IODA files (default: /dev/null, ie, run ncdiag2ioda)
-     -expdir       experiment location (default: /discover/nobackup/user)
-     -fvhome       location of experiment home directory (default: \$expdir/\$expid)
      -h            prints this usage notice
 
 EXAMPLE COMMAND LINE
 
-     setup_atmens.pl 3dfgat u000_C72
+     setup_aanajedi.pl 3dfgat u000_C72
 
 NECESSARY ENVIRONMENT
 
@@ -357,7 +357,7 @@ OPTIONAL ENVIRONMENT
 AUTHOR
 
      Ricardo Todling (Ricardo.Todling\@nasa.gov), NASA/GSFC/GMAO
-     Last modified: 23Apr2025      by: R. Todling
+     Last modified: 23Apr2025                     by: R. Todling
 
 
 EOF
