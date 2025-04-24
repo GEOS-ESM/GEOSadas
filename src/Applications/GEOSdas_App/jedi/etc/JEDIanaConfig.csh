@@ -41,8 +41,9 @@ setenv JEDI_FV3VAR_MPIRUN "mpirun -perhost 8 -np $JEDI_NCPUS"
 
 setenv JEDI_MKIAU_MPIRUN "mpirun "
 
-setenv JEDI_STATIC_FILES /discover/nobackup/projects/gmao/advda/SwellStaticFiles
+setenv JEDI_STATIC_FILES @JEDI_STATIC_FILES
 setenv JEDI_CRTM_COEFFS  $JEDI_STATIC_FILES/jedi/crtm_coefficients/2.4.1
+setenv JEDI_INPUT @JEDI_INPUT
 
 # post
 setenv JEDI_CONCAT_IODA  0

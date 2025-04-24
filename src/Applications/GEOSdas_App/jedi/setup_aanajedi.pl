@@ -32,7 +32,7 @@ my $scriptname = basename($0);
 
   GetOptions ( "jedihome=s",
                "jediroot=s",
-               "jedidir=s",
+               "jedistatic=s",
                "iodadir=s",
                "expdir=s",
                "fvhome=s",
@@ -56,10 +56,10 @@ my $scriptname = basename($0);
 # $rc_ignore = system('ls -lrt');
   if ($rc==0) {
      print "$0: sucessfully completed.\n\n";
-     print "$0: you now must edit files under $JEDIHOME\n\n";
+#    print "$0: you now must edit files under $JEDIHOME\n\n";
      exit(0);
   } else {
-     print "$0: failed to setup resources for atmos-ensemble\n\n";
+     print "$0: failed to setup resources for GEOS-JEDI\n\n";
      exit(1);
   }
 
@@ -68,12 +68,13 @@ my $scriptname = basename($0);
 
 sub init {
 
-   if ( $#ARGV  <  1 ) {
+   if ( $#ARGV  <  2 ) {
      print STDERR " Missing arguments; see usage:\n";
      usage();
    } else {              # required command line args
      $scheme      = $ARGV[0];
      $expid       = $ARGV[1];
+     $resolution  = $ARGV[2];
    }
 
 # process options
@@ -94,10 +95,11 @@ sub init {
         $FVHOME = "$expdir/$expid";
    }
 
-   if ( $opt_jedidir ) {
-        $JEDIDIR = $opt_jedidir;
+
+   if ( $opt_jedistatic ) {
+        $jedistatic = $opt_jedistatic;
    } else {
-        $JEDIDIR = "$FVHOME/jedi";
+        $jedistatic = "/discover/nobackup/projects/gmao/advda/SwellStaticFiles";
    }
 
    if ( $opt_iodadir ) {
@@ -137,6 +139,9 @@ sub init {
    } else {
         $JEDIHOME = "$FVHOME/run/jedi";
    }
+
+# other settings
+   $jediinput = "$FVHOME/jedi";
 
 # determined whether cubed or not
   $agcm_im = $aim;
@@ -180,7 +185,6 @@ if ( ! -d "$JEDIHOME/Config" ) {
 #      user must edit files as needed
 foreach $fn ( @rc2jedi ) {
   chomp($fn);
-  print "$FVROOT/etc/jedi/$fn \n";
   cp("$FVROOT/etc/jedi/$fn","$JEDIHOME/$fn");
 }
 
@@ -189,15 +193,7 @@ foreach $fn ( @rc2conf ) {
   chomp($fn);
   cp("$FVROOT/etc/jedi/$fn","$JEDIHOME/Config/$fn");
 }
-cp("$FVROOT/etc/jedi/geos_$scheme.yaml","$JEDIHOME/Config/geosvar.yaml");
-
-# create JEDI work area and make sure .no_archiving exists in JEDI
-if ( ! -d "$JEDIDIR" ) {
-   $rc = system("/bin/mkdir -p $JEDIDIR" );
-}
-print "$JEDIDIR \n";
-$cmd = "touch $JEDIDIR/.no_archiving";
-$rc = system($cmd);
+cp("$FVROOT/etc/jedi/geos_${scheme}_c${resolution}.yaml","$JEDIHOME/Config/geosvar.yaml");
 
 # take of resolution and layout
 ed_conf_rc ("$JEDIHOME","JEDIanaConfig.csh");
@@ -206,6 +202,58 @@ ed_conf_rc ("$JEDIHOME","JEDIanaConfig.csh");
 ed_jedibkg_acq ("$JEDIHOME/Config");
 ed_jediioda_acq ("$JEDIHOME/Config");
 ed_jedivbc_acq ("$JEDIHOME/Config");
+
+set_jedi_static("$jediroot","$jediinput",$resolution);
+
+}
+#......................................................................
+sub set_jedi_static{
+
+my($myroot,$mydir,$myres) = @_;
+
+# create JEDI work area and make sure .no_archiving exists in JEDI
+if ( ! -d "$mydir" ) {
+   $rc = system("/bin/mkdir -p $mydir" );
+}
+$cmd = "touch $mydir/.no_archiving";
+$rc = system($cmd);
+
+# create directory of static JEDI files to be seen by experiment
+@static_dirs = qw (bkg  fieldmetadata  fv3files  gsibec  rcov);
+foreach $dir ( @static_dirs ) {
+   $rc = system("/bin/mkdir -p $mydir/$dir" );
+}
+
+# bkg ...
+$res = $myres + 1;
+Assignfn("$jedistatic/jedi/interfaces/geos_atmosphere/GEOS_CRTM_Surface/geos.crtmsrf.$res.nc4","$mydir/bkg/geos.crtmsrf.$res.nc4");
+
+# gsibec ...
+# the following address a 3d-type scenario; needs extension for 4d
+Assignfn("$jedistatic/jedi/interfaces/geos_atmosphere/gsibec/cli_gsibec_configuration_c$res.nml","$mydir/gsibec/cli_gsibec_configuration_c$res.nml");
+Assignfn("$jedistatic/jedi/interfaces/geos_atmosphere/gsibec/gsibec_coefficients_c$res.nc4","$mydir/gsibec/gsibec_coefficients_c$res.nc4");
+
+# Rcov ...
+$files_tmp = `sh -c "ls $jedistatic/jedi/interfaces/geos_atmosphere/rcov/1.0.0/* 2>/dev/null"`;
+chomp($files_tmp);
+@files = split(/\n/,$files_tmp);
+foreach $fullpathfn ( @files ) {
+  my $fn = basename($fullpathfn);
+  Assignfn("$fullpathfn","$mydir/rcov/$fn");
+}
+
+# fieldmetadata & fieldset
+@build_dirs = qw (fieldmetadata fv3files);
+foreach $dir_in_build ( @build_dirs ) {
+  $files_tmp = `sh -c "ls $myroot/fv3-jedi/test/Data/$dir_in_build/* 2>/dev/null"`;
+  chomp($files_tmp);
+  @files = split(/\n/,$files_tmp);
+  foreach $fullpathfn ( @files ) {
+    my $fn = basename($fullpathfn);
+    Assignfn("$fullpathfn","$mydir/$dir_in_build/$fn");
+  }
+}
+
 
 }
 #......................................................................
@@ -257,6 +305,7 @@ sub ed_conf_rc {
      while( defined($rcd = <LUN>) ) {
         chomp($rcd);
         if($rcd =~ /\@JEDI_ROOT/)           {$rcd=~ s/\@JEDI_ROOT/$jediroot/g;  }
+        if($rcd =~ /\@JEDI_STATIC_FILES/)   {$rcd=~ s/\@JEDI_STATIC_FILES/$jedistatic/g;  }
         if($rcd =~ /\@OFFLIODADIR/)         {$rcd=~ s/\@OFFLIODADIR/$iodadir/g;  }
 
         if($rcd =~ /\@NODENAME/)            {$rcd=~ s/\@NODENAME/$nodename/g; }
@@ -313,6 +362,28 @@ $archive/$expid/obs/Y%y4/M%m2/$expid.jedi_vbc.%y4%m2%d2_%h2z.tar
 EOF
 }
 #......................................................................
+sub Assign {
+
+  my ( $fname, $lu ) = @_;
+
+  $f77name = "fort.$lu";
+  unlink($f77name) if ( -e $f77name ) ;
+  symlink("$fname","$f77name");
+
+}
+
+sub Assignfn {
+
+# Assignfn - assigns fn to given file name fname.
+# fname = old file
+# fn = new file (links to old)
+  my ( $fname, $fn ) = @_;
+  unlink($fn) if ( -e $fn ) ;
+  symlink("$fname","$fn");
+
+}
+
+#......................................................................
 
 sub usage {
 
@@ -341,14 +412,14 @@ OPTIONS
      -expdir       experiment location (default: /discover/nobackup/\$user)
      -fvhome       location of experiment home directory (default: \$expdir/\$expid)
      -jedihome     location of ensemble members (default: \$FVHOME/run/jedi)
-     -jediroot     location of JEDI build directory
-     -jedidir      location of workspace for JEDI (default: \$FVHOME/jedi)
+     -jediroot     location of JEDI build directory (default: /discover/nobackup/projects/gmao/advda/swell/JediBundles/fv3_soca_SLES15/build-intel-release)
+     -jedistatic   location of JEDI static files (default: /discover/nobackup/projects/gmao/advda/SwellStaticFiles)
      -iodadir      location of pre-existing IODA files (default: /dev/null, ie, run ncdiag2ioda)
      -h            prints this usage notice
 
 EXAMPLE COMMAND LINE
 
-     setup_aanajedi.pl 3dfgat u000_C72
+     setup_aanajedi.pl 3dfgat u000_C72 180
 
 NECESSARY ENVIRONMENT
 
