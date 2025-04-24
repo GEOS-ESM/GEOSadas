@@ -141,7 +141,7 @@ sub init {
    }
 
 # other settings
-   $jediinput = "$FVHOME/jedi";
+   $jediinput = "$FVHOME/fv3-jedi";
 
 # determined whether cubed or not
   $agcm_im = $aim;
