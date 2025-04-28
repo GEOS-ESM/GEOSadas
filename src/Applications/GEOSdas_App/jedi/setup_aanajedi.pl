@@ -390,18 +390,42 @@ sub ed_var_yaml {
   $thisrc = "$mydir/$conffn";
   my $cres = $resolution + 1;
   if ( $cres == 361 ) {
-     $varlayout = 10;
-     $gsixlayout = 10;
+     if ( $scheme eq "hyb4denvar" ) {
+     } else {
+       $varxlayout = 10;
+       $varylayout = 10;
+       $gsixlayout = 10;
+       $gsiylayout = 6 * $gsixlayout;
+     }
+     $gsibec_lat = 361;
+     $gsibec_lon = 576;
   } elsif ( $cres == 181 ) {
-     $varlayout = 8;
-     $gsixlayout = 8;
+     if ( $scheme eq "hyb4denvar" ) {
+       $varxlayout = 16;
+       $varylayout = 7;
+       $gsixlayout = 21;
+       $gsiylayout = 32;
+     } else {
+       $varxlayout = 8;
+       $varylayout = 8;
+       $gsixlayout = 8;
+       $gsiylayout = 6 * $gsixlayout;
+     }
+     $gsibec_lat = 181;
+     $gsibec_lon = 288;
   } elsif ( $cres == 91 ) {
-     $varlayout = 6;
-     $gsixlayout = 6;
+     if ( $scheme eq "hyb4denvar" ) {
+     } else {
+       $varxlayout = 6;
+       $varylayout = 6;
+       $gsixlayout = 6;
+       $gsiylayout = 6 * $gsixlayout;
+     }
+     $gsibec_lat =  91;
+     $gsibec_lon = 144;
   } else {
      die "Unknown resolutio settings, aborting \n";
   }
-  $gsiylayout = 6 * $gsixlayout;
   # the following will need ATTENTION:
   $obsop_mapdir = "$FVHOME/run/jedi/Config";
 
@@ -413,8 +437,11 @@ sub ed_var_yaml {
      while( defined($rcd = <LUN>) ) {
         chomp($rcd);
         if($rcd =~ /\@JEDI_BKG_RESOL/)      {$rcd=~ s/\@JEDI_BKG_RESOL/$cres/g;  }
+        if($rcd =~ /\@JEDI_GSIBEC_NLAT/)    {$rcd=~ s/\@JEDI_GSIBEC_NLAT/$gsibec_lat/g;  }
+        if($rcd =~ /\@JEDI_GSIBEC_NLON/)    {$rcd=~ s/\@JEDI_GSIBEC_NLON/$gsibec_lon/g;  }
         if($rcd =~ /\@JEDI_OBSOP_MAPDIR/)   {$rcd=~ s/\@JEDI_OBSOP_MAPDIR/$obsop_mapdir/g;  }
-        if($rcd =~ /\@JEDI_VAR_LAYOUT/)     {$rcd=~ s/\@JEDI_VAR_LAYOUT/$varlayout/g;  }
+        if($rcd =~ /\@JEDI_VAR_XLAYOUT/)    {$rcd=~ s/\@JEDI_VAR_XLAYOUT/$varxlayout/g;  }
+        if($rcd =~ /\@JEDI_VAR_YLAYOUT/)    {$rcd=~ s/\@JEDI_VAR_YLAYOUT/$varylayout/g;  }
         if($rcd =~ /\@JEDI_VAR_GSIXLAYOUT/) {$rcd=~ s/\@JEDI_VAR_GSIXLAYOUT/$gsixlayout/g;  }
         if($rcd =~ /\@JEDI_VAR_GSIYLAYOUT/) {$rcd=~ s/\@JEDI_VAR_GSIYLAYOUT/$gsiylayout/g;  }
 

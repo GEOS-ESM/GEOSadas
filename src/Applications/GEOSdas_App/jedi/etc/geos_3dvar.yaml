@@ -11,8 +11,8 @@ cost function:
       field table filename: ./fv3-jedi/fv3files/field_table_gmao
     akbk: ./fv3-jedi/fv3files/akbk72.nc4
     layout:
-    - @JEDI_VAR_LAYOUT
-    - @JEDI_VAR_LAYOUT
+    - @JEDI_VAR_XLAYOUT
+    - @JEDI_VAR_YLAYOUT
     npx: @JEDI_BKG_RESOL
     npy: @JEDI_BKG_RESOL
     npz: 72
@@ -35903,13 +35903,13 @@ variational:
         field table filename: ./fv3-jedi/fv3files/field_table_gmao
       akbk: ./fv3-jedi/fv3files/akbk72.nc4
       layout:
-      - @JEDI_VAR_LAYOUT
-      - @JEDI_VAR_LAYOUT
+      - @JEDI_VAR_XLAYOUT
+      - @JEDI_VAR_YLAYOUT
       npx: @JEDI_BKG_RESOL
       npy: @JEDI_BKG_RESOL
       npz: 72
       field metadata override: ./fv3-jedi/fieldmetadata/geos.yaml
-    gradient norm reduction: 10e-5
+    gradient norm reduction: 1e-3
     ninner: '100'
     diagnostics:
       departures: ombg
