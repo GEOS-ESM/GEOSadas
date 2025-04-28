@@ -203,14 +203,14 @@ cost function:
         name: Composite
         components:
         - name: VertInterp
-          observation alias file: @JEDI_ROOT/fv3-jedi/test/testinput/obsop_name_map.yaml/obsop_name_map.yaml
+          observation alias file: @JEDI_OBSOP_MAPDIR/obsop_name_map.yaml
           variables:
           - airTemperature
       linear obs operator:
         name: Composite
         components:
         - name: VertInterp
-          observation alias file: @JEDI_ROOT/fv3-jedi/test/testinput/obsop_name_map.yaml
+          observation alias file: @JEDI_OBSOP_MAPDIR/obsop_name_map.yaml
           variables:
           - airTemperature
       obs filters:
@@ -31293,7 +31293,7 @@ cost function:
       obs operator:
         name: VertInterp
         vertical coordinate: air_pressure
-        observation alias file: @JEDI_ROOT/fv3-jedi/test/testinput/obsop_name_map.yaml
+        observation alias file: @JEDI_OBSOP_MAPDIR/obsop_name_map.yaml
       obs filters:
       - filter: Bounds Check
         filter variables:
@@ -31328,7 +31328,7 @@ cost function:
         - 0.0078976797
         nlevels:
         - 1
-        observation alias file: @JEDI_ROOT/fv3-jedi/test/testinput/obsop_name_map.yaml
+        observation alias file: @JEDI_OBSOP_MAPDIR/obsop_name_map.yaml
       obs filters:
       - filter: Perform Action
         filter variables:
@@ -31437,7 +31437,7 @@ cost function:
         name: Composite
         components:
         - name: VertInterp
-          observation alias file: @JEDI_ROOT/fv3-jedi/test/testinput/obsop_name_map.yaml
+          observation alias file: @JEDI_OBSOP_MAPDIR/obsop_name_map.yaml
           vertical coordinate: geopotential_height
           observation vertical coordinate group: DerivedVariables
           observation vertical coordinate: adjustedHeight
@@ -31452,7 +31452,7 @@ cost function:
         name: Composite
         components:
         - name: VertInterp
-          observation alias file: @JEDI_ROOT/fv3-jedi/test/testinput/obsop_name_map.yaml
+          observation alias file: @JEDI_OBSOP_MAPDIR/obsop_name_map.yaml
           vertical coordinate: geopotential_height
           observation vertical coordinate group: DerivedVariables
           observation vertical coordinate: adjustedHeight
@@ -31760,12 +31760,12 @@ cost function:
         - windNorthward
       obs operator:
         name: VertInterp
-        observation alias file: @JEDI_ROOT/fv3-jedi/test/testinput/obsop_name_map.yaml
+        observation alias file: @JEDI_OBSOP_MAPDIR/obsop_name_map.yaml
         hofx scaling field: SurfaceWindScalingPressure
         hofx scaling field group: DerivedVariables
       linear obs operator:
         name: VertInterp
-        observation alias file: @JEDI_ROOT/fv3-jedi/test/testinput/obsop_name_map.yaml
+        observation alias file: @JEDI_OBSOP_MAPDIR/obsop_name_map.yaml
         hofx scaling field: SurfaceWindScalingPressure
         hofx scaling field group: DerivedVariables
       obs prior filters:
@@ -32694,7 +32694,7 @@ cost function:
         - windNorthward
       obs operator:
         name: VertInterp
-        observation alias file: @JEDI_ROOT/fv3-jedi/test/testinput/obsop_name_map.yaml
+        observation alias file: @JEDI_OBSOP_MAPDIR/obsop_name_map.yaml
         vertical coordinate: geopotential_height
         observation vertical coordinate group: DerivedVariables
         observation vertical coordinate: adjustedHeight
@@ -32703,7 +32703,7 @@ cost function:
         hofx scaling field group: DerivedVariables
       linear obs operator:
         name: VertInterp
-        observation alias file: @JEDI_ROOT/fv3-jedi/test/testinput/obsop_name_map.yaml
+        observation alias file: @JEDI_OBSOP_MAPDIR/obsop_name_map.yaml
         vertical coordinate: geopotential_height
         observation vertical coordinate group: DerivedVariables
         observation vertical coordinate: adjustedHeight
@@ -32945,7 +32945,7 @@ cost function:
           hofx scaling field: SurfaceWindScalingHeight
           hofx scaling field group: DerivedVariables
         - name: VertInterp
-          observation alias file: @JEDI_ROOT/fv3-jedi/test/testinput/obsop_name_map.yaml
+          observation alias file: @JEDI_OBSOP_MAPDIR/obsop_name_map.yaml
           variables:
           - name: airTemperature
           - name: virtualTemperature
@@ -32973,7 +32973,7 @@ cost function:
           hofx scaling field: SurfaceWindScalingHeight
           hofx scaling field group: DerivedVariables
         - name: VertInterp
-          observation alias file: @JEDI_ROOT/fv3-jedi/test/testinput/obsop_name_map.yaml
+          observation alias file: @JEDI_OBSOP_MAPDIR/obsop_name_map.yaml
           variables:
           - name: airTemperature
           - name: virtualTemperature
@@ -33880,7 +33880,7 @@ cost function:
           hofx scaling field: SurfaceWindScalingHeight
           hofx scaling field group: DerivedVariables
         - name: VertInterp
-          observation alias file: @JEDI_ROOT/fv3-jedi/test/testinput/obsop_name_map.yaml
+          observation alias file: @JEDI_OBSOP_MAPDIR/obsop_name_map.yaml
           variables:
           - name: airTemperature
           - name: virtualTemperature
@@ -33892,7 +33892,7 @@ cost function:
           geovar_sfc_geomz: height_above_mean_sea_level_at_surface
           station_altitude: height
         - name: Identity
-          observation alias file: @JEDI_ROOT/fv3-jedi/test/testinput/obsop_name_map.yaml
+          observation alias file: @JEDI_OBSOP_MAPDIR/obsop_name_map.yaml
           variables:
           - name: specificHumidity
       linear obs operator:
@@ -33909,12 +33909,12 @@ cost function:
           hofx scaling field: SurfaceWindScalingHeight
           hofx scaling field group: DerivedVariables
         - name: VertInterp
-          observation alias file: @JEDI_ROOT/fv3-jedi/test/testinput/obsop_name_map.yaml
+          observation alias file: @JEDI_OBSOP_MAPDIR/obsop_name_map.yaml
           variables:
           - name: airTemperature
           - name: virtualTemperature
         - name: Identity
-          observation alias file: @JEDI_ROOT/fv3-jedi/test/testinput/obsop_name_map.yaml
+          observation alias file: @JEDI_OBSOP_MAPDIR/obsop_name_map.yaml
           variables:
           - name: stationPressure
           - name: specificHumidity

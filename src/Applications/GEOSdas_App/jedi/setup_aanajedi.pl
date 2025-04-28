@@ -402,6 +402,8 @@ sub ed_var_yaml {
      die "Unknown resolutio settings, aborting \n";
   }
   $gsiylayout = 6 * $gsixlayout;
+  # the following will need ATTENTION:
+  $obsop_mapdir = "$FVHOME/run/jedi/Config";
 
      open(LUN,"$thisrc")  || die "Fail to open $thisrc $!\n";
      open(LUN2,">$tmprc") || die "Fail to open tmp.rc $!\n";
@@ -411,7 +413,7 @@ sub ed_var_yaml {
      while( defined($rcd = <LUN>) ) {
         chomp($rcd);
         if($rcd =~ /\@JEDI_BKG_RESOL/)      {$rcd=~ s/\@JEDI_BKG_RESOL/$cres/g;  }
-        if($rcd =~ /\@JEDI_ROOT/)           {$rcd=~ s/\@JEDI_ROOT/$jediroot/g;  }
+        if($rcd =~ /\@JEDI_OBSOP_MAPDIR/)   {$rcd=~ s/\@JEDI_OBSOP_MAPDIR/$obsop_mapdir/g;  }
         if($rcd =~ /\@JEDI_VAR_LAYOUT/)     {$rcd=~ s/\@JEDI_VAR_LAYOUT/$varlayout/g;  }
         if($rcd =~ /\@JEDI_VAR_GSIXLAYOUT/) {$rcd=~ s/\@JEDI_VAR_GSIXLAYOUT/$gsixlayout/g;  }
         if($rcd =~ /\@JEDI_VAR_GSIYLAYOUT/) {$rcd=~ s/\@JEDI_VAR_GSIYLAYOUT/$gsiylayout/g;  }
