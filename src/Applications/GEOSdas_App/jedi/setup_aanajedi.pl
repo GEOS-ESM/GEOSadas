@@ -168,7 +168,8 @@ sub init {
 
 # build internal variables
 
-  @rc2conf   = qw ( mkiau.rc.tenv );
+  @rc2conf   = qw ( mkiau.rc.tenv
+                    obsop_name_map.yaml );
 
   @rc2jedi   = qw ( JEDIanaConfig.csh
                     SWELLConfig.csh
