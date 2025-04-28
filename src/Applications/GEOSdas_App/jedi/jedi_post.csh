@@ -60,7 +60,7 @@ if ( $JEDI_CONCAT_IODA ) then
    module purge
    setenv PATH /home/jardizzo/.local/bin:$PATH
    setenv PYTHONUSERBASE /home/jardizzo/.local
-   if ( ! -d Data/$opt/Concat ) mkdir -p Data/$opt/Concat
+   if ( ! -d $opt/Concat ) mkdir -p $opt/Concat
    set this = `grep $opt Config/envarfgat.yaml | grep obsfile`
    if ( $opt == "osen" ) then
       set this = `grep $opt Config/adenvarfgat.yaml | grep obsfile`
@@ -69,13 +69,13 @@ if ( $JEDI_CONCAT_IODA ) then
        if ($fn != "obsfile:") then
            set pfx = `basename $fn | cut -d. -f1`
            echo "will concat type: $pfx ..."
-           netcdf-concat -o Data/$opt/Concat/$EXPID.$pfx.nc4 Data/$opt/${pfx}_*.nc4 &
-           if( -e Data/$opt/Concat/$pfx.nc4 ) echo "Concat: Data/$opt/Concat/$fn"
+           netcdf-concat -o $opt/Concat/$EXPID.$pfx.nc4 $opt/${pfx}_*.nc4 &
+           if( -e $opt/Concat/$pfx.nc4 ) echo "Concat: $opt/Concat/$fn"
        endif
    end
    wait
 endif
 
-cd Data/$opt/Concat
+cd $opt/Concat
 tar cvf $FVWORK/$EXPID.jedi_${opt}.${nymdb}_${hhb}z.tar  $EXPID.*_${opt}_*nc4
 cd -

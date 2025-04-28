@@ -145,7 +145,7 @@ endif
 # Generate localization coefficients (****run this only once****)
 # ---------------------------------------------------------------
 if ( $JEDI_RUN_BUMP ) then
-   mkdir -p $FVWORK/jana/Data/bump
+   mkdir -p $FVWORK/jana/bump
    $JEDI_BUMP_MPIRUN $JEDIBUILD/bin/fv3jedi_parameters.x Config/bump_parameters.yaml
    if ( $status ) then
        echo " ${MYNAME}: failed in BUMP, aborting ..."
@@ -164,11 +164,11 @@ if ( $JEDI_RUN_ANA ) then
    endif
    if ( $JEDI_RUN_ADANA_TEST ) then
       setenv MYCONF Config/envarfgat4adtest.yaml
-      if (! -d Data/inc ) mkdir Data/inc 
+      if (! -d inc ) mkdir inc 
    endif
    if ( $JEDI_RUN_ADANA ) then
       setenv MYCONF Config/adenvarfgat.yaml
-      if (! -d Data/inc ) mkdir Data/inc 
+      if (! -d inc ) mkdir inc 
    endif
 
    if ( -e $FVHOME/run/jedi/jedi_run_var.j ) then
@@ -176,13 +176,13 @@ if ( $JEDI_RUN_ANA ) then
       sbatch -W jedi_run_var.j
       sleep 2
    else
-#     $JEDI_FV3VAR_MPIRUN $JEDIBUILD/bin/fv3jedi_var.x.default $MYCONF |& tee -a $FVWORK/$JEDIVARLOG
-      $JEDI_FV3VAR_MPIRUN $JEDIBUILD/bin/fv3jedi_var.x         $MYCONF |& tee -a $FVWORK/$JEDIVARLOG
+      $JEDI_FV3VAR_MPIRUN $JEDIBUILD/bin/fv3jedi_var.x $MYCONF |& tee -a $FVWORK/$JEDIVARLOG
       if ( $status ) then
           echo " ${MYNAME}: failed in VAR, aborting ..."
           exit (1)
       endif
    endif
+   /bin/mv *inc*nc4 ./inc # somehow datapath setting in yaml is not effective at inc part
 
    # If testing Adjoint analysis ...
    # -------------------------------
@@ -201,20 +201,20 @@ if ( $JEDI_RUN_CNVANA ) then
 
    # Convert analysis to restart like fields
    # ---------------------------------------
-#  if ( -d Data/ana ) then
-#     $JEDI_CNVANA_MPIRUN $JEDIBUILD/bin/fv3jedi_convertstate.x Config/convertana_geos.yaml
+   if ( -d ana && -e Config/convertana_geos.yaml ) then
+      $JEDI_CNVANA_MPIRUN $JEDIBUILD/bin/fv3jedi_convertstate.x Config/convertana_geos.yaml
 #  else
 #     echo " ${MYNAME}: failed in convert ana, aborting ..."
 #     exit (1)
-#  endif
+   endif
 
    # Create restart increment from analysis and background
    # -----------------------------------------------------
-   if ( -d Data/inc ) then
+   if ( -d inc && -e Config/convertinc_geos.yaml ) then
       $JEDI_CNVINC_MPIRUN $JEDIBUILD/bin/fv3jedi_convertincrement.x  Config/convertinc_geos.yaml
-   else
-      echo " ${MYNAME}: failed in convert inc, aborting ..."
-      exit (1)
+#  else
+#     echo " ${MYNAME}: failed in convert inc, aborting ..."
+#     exit (1)
    endif
 
 endif # JEDI_CNVANA
@@ -223,22 +223,22 @@ if ( $JEDI_RUN_UPDRST ) then
 
    # Create restart increment from analysis and background
    # -----------------------------------------------------
-   if ( ! -d Data/restart ) mkdir -p Data/restart
-   /bin/cp Data/bkg/fvcore_internal_rst Data/restart/
-   /bin/cp Data/bkg/moist_internal_rst Data/restart/
+   if ( ! -d restart ) mkdir -p restart
+   /bin/cp bkg/fvcore_internal_rst restart/
+   /bin/cp bkg/moist_internal_rst restart/
    $JEDI_ADDINC_MPIRUN $JEDIBUILD/bin/fv3jedi_addincrement.x Config/create_new_restart.yaml
 
 endif # UPD_INIT_RST
 
 # archive hofx
 # ------------
-cd $JEDIWORK/Data/hofx
+cd $JEDIWORK/hofx
 tar cvf $FVWORK/$EXPID.jedi_hofx.${nymdb}_${hhb}z.tar *nc4
 cd -
 
 # archive varBC
 # -------------
-cd $JEDIWORK/Data/vbc
+cd $JEDIWORK/vbc
 tar cvf $FVWORK/$EXPID.jedi_vbc.${nymdb}_${hhb}z.tar *satbias*nc4 *aircraft*csv
 cd -
 

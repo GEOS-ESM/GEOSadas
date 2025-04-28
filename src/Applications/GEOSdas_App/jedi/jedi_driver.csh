@@ -35,6 +35,7 @@ setenv   HHA $hha
 setenv FAILED 0
 if ( !($?EXPID)   )  setenv FAILED   1
 if ( !($?FVWORK)  )  setenv FAILED   1
+if ( !($?JEDI_OBS_OPT)  ) setenv FAILED   1
 
 if ( $FAILED ) then
   env
@@ -65,7 +66,7 @@ if ( ! -d $JEDIWORK ) mkdir -p $JEDIWORK/swell
 
 # Setup SWELL & IODA Files
 # ========================
-if ( $JEDI_SWELLUSE ) then
+if ( $JEDI_SWELLUSE && $JEDI_OBS_OPT == 3 ) then
   jedi_swellset.csh $nymda $nhmsa $JEDIDIR $JEDIWORK
   if ($status) then
      echo "${MYNAME}: failed, aborting ..."

@@ -13,11 +13,11 @@ cost function:
   - frlake
   - frseaice
   background:
-    datapath: 'Data/bkg'
+    datapath: './bkg'
     datetime: $JEDI_ISO_DATE_001
     filenames:
     - bkg.%yyyy%mm%dd_%hh%MMz.nc4
-    - geos.crtmsrf.181.nc4
+    - geos.crtmsrf.@JEDI_BKG_RESOL.nc4
     filetype: cube sphere history
     provider: geos
     state variables:
@@ -95,18 +95,18 @@ cost function:
       read:
         debugging mode: false
         gsi akbk: Data/fv3files/akbk72.nc4
-        gsi berror namelist file: /discover/nobackup/rtodling/SwellExperiments/StaticFiles/jedi/interfaces/geos_atmosphere/gsibec/cli_gsibec_configuration_c181.nml
-        gsi error covariance file: /discover/nobackup/rtodling/SwellExperiments/StaticFiles/jedi/interfaces/geos_atmosphere/gsibec/gsibec_coefficients_c181.nc4
-        processor layout x direction: 14
-        processor layout y direction: 18
+        gsi berror namelist file: /discover/nobackup/rtodling/SwellExperiments/StaticFiles/jedi/interfaces/geos_atmosphere/gsibec/cli_gsibec_configuration_c@JEDI_BKG_RESOL.nml
+        gsi error covariance file: /discover/nobackup/rtodling/SwellExperiments/StaticFiles/jedi/interfaces/geos_atmosphere/gsibec/gsibec_coefficients_c@JEDI_BKG_RESOL.nc4
+        processor layout x direction: @JEDI_VAR_GSIXLAYOUT
+        processor layout y direction: @JEDI_VAR_GSIYLAYOUT
       saber block name: gsi hybrid covariance
     saber outer blocks:
     - debugging mode: false
       gsi akbk: Data/fv3files/akbk72.nc4
-      gsi berror namelist file: /discover/nobackup/rtodling/SwellExperiments/StaticFiles/jedi/interfaces/geos_atmosphere/gsibec/cli_gsibec_configuration_c181.nml
-      gsi error covariance file: /discover/nobackup/rtodling/SwellExperiments/StaticFiles/jedi/interfaces/geos_atmosphere/gsibec/gsibec_coefficients_c181.nc4
-      processor layout x direction: 14
-      processor layout y direction: 18
+      gsi berror namelist file: /discover/nobackup/rtodling/SwellExperiments/StaticFiles/jedi/interfaces/geos_atmosphere/gsibec/cli_gsibec_configuration_c@JEDI_BKG_RESOL.nml
+      gsi error covariance file: /discover/nobackup/rtodling/SwellExperiments/StaticFiles/jedi/interfaces/geos_atmosphere/gsibec/gsibec_coefficients_c@JEDI_BKG_RESOL.nc4
+      processor layout x direction: @JEDI_VAR_GSIXLAYOUT
+      processor layout y direction: @JEDI_VAR_GSIYLAYOUT
       saber block name: gsi interpolation to model grid
       state variables to inverse: *id001
   cost type: 4D-Var
@@ -120,15 +120,15 @@ cost function:
     layout:
     - 7
     - 6
-    npx: 181
-    npy: 181
+    npx: @JEDI_BKG_RESOL
+    npy: @JEDI_BKG_RESOL
     npz: 72
   jb evaluation: false
   model:
-    datapath: 'Data/bkg'
+    datapath: './bkg'
     filenames:
     - bkg.%yyyy%mm%dd_%hh%MMz.nc4
-    - geos.crtmsrf.181.nc4
+    - geos.crtmsrf.@JEDI_BKG_RESOL.nc4
     filetype: cube sphere history
     name: PSEUDO
     provider: geos
@@ -26487,7 +26487,7 @@ final:
   prints:
     frequency: PT3H
 output:
-  datapath: Data/ana
+  datapath: ./ana
   filename: $EXPID.jedi_ana.ceta.%yyyy%mm%dd_%hh%MMz.nc4
   filetype: cube sphere history
   first: PT0H
@@ -26504,10 +26504,10 @@ variational:
         field table filename: Data/fv3files/field_table_gmao
         namelist filename: Data/fv3files/fmsmpp.nml
       layout:
-      - 7
-      - 6
-      npx: 181
-      npy: 181
+      - @JEDI_VAR_LAYOUT
+      - @JEDI_VAR_LAYOUT
+      npx: @JEDI_BKG_RESOL
+      npy: @JEDI_BKG_RESOL
       npz: 72
     gradient norm reduction: 1e-3
     linear model:
@@ -26531,8 +26531,8 @@ variational:
     online diagnostics:
       increment:
         state component:
-#         datapath: Data/inc
-          filename: Data/inc/$EXPID.jedi_inc1.eta.
+#         datapath: ./inc
+          filename: ./inc/$EXPID.jedi_inc1.eta.
           filetype: auxgrid
           gridtype: latlon
       write increment: true

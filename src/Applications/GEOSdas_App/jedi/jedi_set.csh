@@ -25,7 +25,7 @@ if ( $#argv < 2 ) then
    echo " AUTHOR"
    echo "   Ricardo Todling (Ricardo.Todling@nasa.gov), NASA/GMAO "
    echo "     Initial version: 18Oct2020    by: R. Todling"
-   echo "     Last   modified: 18Oct2020    by: R. Todling"
+   echo "     Last   modified: 25Oct2025    by: R. Todling"
    echo " \\end{verbatim} "
    echo " \\clearpage "
    exit(0)
@@ -53,6 +53,7 @@ endif
 if ( !($?JEDI_ANAFREQ))    setenv JEDI_ANAFREQ   21600
 if ( !($?JEDI_RUN_ADANA) ) setenv JEDI_RUN_ADANA 0
 if ( !($?JEDI_VAROFFSET))  setenv JEDI_VAROFFSET 10800
+if ( !($?JEDI_VARWINDOW))  setenv JEDI_VARWINDOW 21600
 if ( !($?MAPLFIX)       )  setenv MAPLFIX  0
 
 # Command line arguments
@@ -91,7 +92,17 @@ set mma      = `echo $nymda | cut -c5-6`
 set dda      = `echo $nymda | cut -c7-8`
 set hha      = `echo $nhmsa | cut -c1-2`
 
+set enddate  = `tick $nymdb $nhmsb $JEDI_VARWINDOW`
+set nymde    = $enddate[1]
+set nhmse    = $enddate[2]
+set yyyye    = `echo $nymde | cut -c1-4`
+set mme      = `echo $nymde | cut -c5-6`
+set dde      = `echo $nymde | cut -c7-8`
+set hhe      = `echo $nhmse | cut -c1-2`
+
+setenv JEDI_ISO_DATE_BEG  "${yyyyb}-${mmb}-${ddb}T${hhb}:00:00Z"
 setenv JEDI_ISO_DATE_ANA  "${yyyya}-${mma}-${dda}T${hha}:00:00Z"
+setenv JEDI_ISO_DATE_END  "${yyyye}-${mme}-${dde}T${hhe}:00:00Z"
 setenv AYYYYMMDDHH         ${yyyya}${mma}${dda}${hha}
 setenv AYYYYMMDD_HH        ${yyyya}${mma}${dda}_${hha}
 setenv BYYYYYMMDDTHH0000Z  ${nymdb}T${hhb}0000Z
@@ -116,7 +127,11 @@ setenv JEDIETC $FVHOME/run/jedi/Config
 touch $JEDIWRK/.no_archiving
 
 mkdir -p $JEDIWRK/Config
-mkdir -p $JEDIWRK/fv3-jedi
+
+# Take care of static files needed by JEDI
+# ----------------------------------------
+cd $JEDIWRK
+ln -sf $FVHOME/fv3-jedi .
 
 # CONFIG:
 # -------
@@ -134,16 +149,11 @@ foreach fn ( `ls $JEDIETC/*.tmpl` )
 end
 cd -
 
-# Get positioned in fv3-jedi ...
-cd $JEDIWRK/fv3-jedi
+# Get positioned in JEDI work dir
+cd $JEDIWRK
 
-foreach dir ( ana ensemble hofx iau obs osen inc vbc )
+foreach dir ( ana bkg ensemble hofx iau obs osen inc vbc )
    if ( ! -d $dir ) mkdir -p $dir
-end
-
-# link directories
-foreach dir ( bkg fieldmetadata fieldsets fv3files gsibec rcov )
-  ln -sf $FVHOME/run/jedi/fv3-jedi/$dir .
 end
 
 # if adjoint analysis, retrieve IODA files
@@ -170,9 +180,9 @@ if ( $JEDI_RUN_ADANA || $JEDI_OBS_OPT == 1 ) then
 
 # Also link forecast sensitivity at this time
 # -------------------------------------------
-  if ( ! -d $JEDIWRK/Data/inc ) mkdir -p $JEDIWRK/Data/inc
+  if ( ! -d $JEDIWRK/inc ) mkdir -p $JEDIWRK/inc
   if ( -e $FVWORK/jedi.fsens.eta.nc4 ) then
-    cd $JEDIWRK/Data/inc
+    cd $JEDIWRK/inc
     ln -sf $FVWORK/jedi.fsens.eta.nc4 .
     cd -
   endif
@@ -214,7 +224,7 @@ if ( ! -e $FVHOME/run/AGCM.BOOTSTRAP.rc.tmpl ) then # do not do this in the 1st 
   # get tar-ball of varBC files from previous cycle
   setenv NYMDP  $nymdp
   setenv NHMSP  $nhmsp
-  setenv ACQWORK $JEDIWRK/Data/obs
+  setenv ACQWORK $JEDIWRK/obs
   vED -env $FVHOME/run/jedi/jedi_acquire_vbc.j -o jedi_acquire_vbc.j
   if ( $BATCH_SUBCMD == "sbatch" ) then
      sbatch -W -o jedi_vbc.log jedi_acquire_vbc.j
@@ -248,6 +258,32 @@ if ( $status ) then
   end
 endif
 cd -
+# The following accommodates for the case when the satbias coeff and cov are in the same
+cd obs
+if ( -e aircraft.$BYYYYYMMDDTHH0000Z.nc4 ) then 
+  ln -s aircraft.$BYYYYYMMDDTHH0000Z.nc4 aircraft_temperature.$BYYYYYMMDDTHH0000Z.nc4
+  ln -s aircraft.$BYYYYYMMDDTHH0000Z.nc4        aircraft_wind.$BYYYYYMMDDTHH0000Z.nc4
+  set acftbias = `ls *.acftbias`
+  if ( $status ) then
+    set acftbias_in = `ls aircraft_abias_air.*.nc4`
+    if (! $status ) then
+      set ttag = `echo $acftbias_in | cut -d. -f2`
+      ln -sf $acftbias_in aircraft_temperature.$ttag.acftbias
+      if ( ! -e aircraft_temperature.$ttag.acftbias_cov ) then
+        ln -sf aircraft_temperature.$ttag.acftbias aircraft_temperature.$ttag.acftbias_cov
+      endif
+    else
+      echo "WARNING: No aircraft bias files where found ..."
+      echo "WARNING: No aircraft bias files where found ..."
+      echo "WARNING: No aircraft bias files where found ..."
+    endif
+  endif
+else
+  echo "WARNING: No aircraft obs files where found ..."
+  echo "WARNING: No aircraft obs files where found ..."
+  echo "WARNING: No aircraft obs files where found ..."
+endif
+cd -
 
 # ensemble & background files
 setenv JEDI_GET_ENSBKG 0
@@ -267,7 +303,7 @@ setenv NYMD  $nymdb # initial date of current cycle
 setenv NHMS  $nhmsb # initial time of current cycle
 setenv NYMDP $nymdp # initial date of previous cycle
 setenv NHMSP $nhmsp # initial time of previous cycle
-setenv ACQWORK $JEDIWRK/Data/bkg
+setenv ACQWORK $JEDIWRK/bkg
 vED -env $FVHOME/run/jedi/jedi_acquire_bkg.j -o jedi_acquire_bkg.j
 if ( $BATCH_SUBCMD == "sbatch" ) then
    sbatch -W -o jedi_acq.log jedi_acquire_bkg.j
@@ -287,20 +323,23 @@ if ( $#lst == 1 ) then
       end
    endif
    foreach fn ( `ls *.bkg_clcv_rst*nc4` )
-      set sfx = `echo $fn | cut -d. -f3-`
+      set ttag = `echo $fn | cut -d. -f3-`
+      set ymd = `echo $ttag | cut -c1-8`
+      set hm  = `echo $ttag | cut -c10-13`
+      set sfx = ${ymd}T${hm}00Z.nc4 # cope swell reinvented notation
       ln -sf $fn bkg.$sfx
    end
-   # this is a hack
-   if ( $JEDI_SWELLUSE ) then
-      ln -sf $JEDIWRK/swell/swell-geosadas/configuration/jedi/interfaces/geos_atmosphere/*crtmsrf*nc4 .
-   else
-      ln -sf $FVHOME/run/jedi/Config/*crtmsrf*nc4 .
-      if ($status) then
-         echo "${MYNAME}: expecting crtmsrf in jedi/Config"
-         exit 1
-      endif
+   cd $JEDIWRK
+   ln -sf $JEDIWRK/bkg/bkg.*.nc4 .
+   if ( -e $JEDIETC/convertinc_geos.yaml ) then
+      set lst = (`ls bkg.*.nc4`)
+      set cres  = `getgfiodim.x $lst[1]`
+      @ jcres = $cres[1] + 1
+      setenv JEDI_BKG_RESOL $jcres
+      vED -env $JEDIETC/convertinc_geos.yaml -o $JEDIWRK/Config/convertinc_geos.yaml
    endif
-   # the following is a nedeed hack due inconsistencies in MAPL
+   cd -
+   # the following is a nedeed hack due to inconsistencies in MAPL
    if ( $MAPLFIX ) then
       mkdir Ori
       foreach fn ( `ls *.bkg_clcv_rst*nc4` )
@@ -317,10 +356,10 @@ if( $JEDI_GET_ENSBKG ) then
    if ( $#lst == 1 ) then
       tar xvf $lst
       set vexpid = `ls -d *.atmens_etrj*z | cut -d. -f1`
-      /bin/mv $vexpid.atmens_etrj*z/enstraj/mem* $JEDIWRK/Data/ensemble
+      /bin/mv $vexpid.atmens_etrj*z/enstraj/mem* $JEDIWRK/ensemble
       /bin/rm -r $vexpid.atmens_etrj*z $vexpid.atmens_etrj*z.tar
       if ( $vexpid != $EXPID ) then # care for tarball from another exp
-         cd $JEDIWRK/Data/ensemble
+         cd $JEDIWRK/ensemble
          foreach dir (`ls -d mem*`)
              cd $dir
              foreach fn (`ls *.nc4`)
@@ -329,7 +368,7 @@ if( $JEDI_GET_ENSBKG ) then
              end
              cd -
          end
-         cd $JEDIWRK/Data
+         cd $JEDIWRK
       endif
    else
       echo " ${MYNAME}: failed to retrieve ensemble tar ball, aborting ..."

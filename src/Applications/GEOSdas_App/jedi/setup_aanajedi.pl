@@ -2,7 +2,7 @@
 # 
 # setup_aanajedi - setup for an atmospheric JEDI analysis
 #
-#  25Nov2011 Todling  Initial code
+#  20Apr2015 Todling  Initial code
 #
 #-----------------------------------------------------------------------------------------------------
 
@@ -30,13 +30,14 @@ my $scriptname = basename($0);
 
 # Command line options
 
-  GetOptions ( "jedihome=s",
+  GetOptions ( "archive=s",
+               "expdir=s",
+               "fvbc=s",
+               "fvhome=s",
+               "iodadir=s",
+               "jedihome=s",
                "jediroot=s",
                "jedistatic=s",
-               "iodadir=s",
-               "expdir=s",
-               "fvhome=s",
-               "archive=s",
                "nodename=s",
                "h" );
 
@@ -104,8 +105,17 @@ sub init {
 
    if ( $opt_iodadir ) {
         $iodadir = $opt_iodadir;
+        $jedi_obs_opt = 2; # ioda files provided by user
    } else {
         $iodadir = "/dev/null";
+        $jedi_obs_opt = 3; # convert ncdiag-to-ioda on the fly
+   }
+
+   if ( $opt_fvbc ) {
+        $fvbc = $opt_fvbc;  # =1 cycle varbc 
+        if ($fvbc > 1) {die "invalid entry, fvbc 0/1 only.\n"};
+   } else {
+        $fvbc = 0; # use varbc available from ncdiag converter (whether from offline or on-the-fly converted)
    }
 
    if ( $opt_jediroot ) {
@@ -165,7 +175,7 @@ sub init {
                     jedi_acquire_bkg.j
                     jedi_acquire_ioda.j
                     jedi_acquire_vbc.j
-                    _jedi_run_var.j
+                    jedi_run_var.j
                     ut_jedi.j
                   );
 
@@ -185,7 +195,11 @@ if ( ! -d "$JEDIHOME/Config" ) {
 #      user must edit files as needed
 foreach $fn ( @rc2jedi ) {
   chomp($fn);
-  cp("$FVROOT/etc/jedi/$fn","$JEDIHOME/$fn");
+  if ( $fn eq "jedi_run_var.j" ) {
+    cp("$FVROOT/etc/jedi/$fn","$JEDIHOME/_${fn}"); # this is placed in JEDIHOME for convenience (when debug needed)
+  } else {
+    cp("$FVROOT/etc/jedi/$fn","$JEDIHOME/$fn");
+  }
 }
 
 # Copy scheme yaml to proper location
@@ -193,10 +207,11 @@ foreach $fn ( @rc2conf ) {
   chomp($fn);
   cp("$FVROOT/etc/jedi/$fn","$JEDIHOME/Config/$fn");
 }
-cp("$FVROOT/etc/jedi/geos_${scheme}_c${resolution}.yaml","$JEDIHOME/Config/geosvar.yaml");
+cp("$FVROOT/etc/jedi/geos_${scheme}.yaml","$JEDIHOME/Config/geosvar.yaml");
 
 # take of resolution and layout
 ed_conf_rc ("$JEDIHOME","JEDIanaConfig.csh");
+ed_var_yaml ("$JEDIHOME/Config","geosvar.yaml");
 
 # take care of satbias acq
 ed_jedibkg_acq ("$JEDIHOME/Config");
@@ -307,6 +322,8 @@ sub ed_conf_rc {
         if($rcd =~ /\@JEDI_ROOT/)           {$rcd=~ s/\@JEDI_ROOT/$jediroot/g;  }
         if($rcd =~ /\@JEDI_STATIC_FILES/)   {$rcd=~ s/\@JEDI_STATIC_FILES/$jedistatic/g;  }
         if($rcd =~ /\@OFFLIODADIR/)         {$rcd=~ s/\@OFFLIODADIR/$iodadir/g;  }
+        if($rcd =~ /\@JEDI_OBS_OPT/)        {$rcd=~ s/\@JEDI_OBS_OPT/$jedi_obs_opt/g;  }
+        if($rcd =~ /\@JEDI_FEEDBACK_VARBC/) {$rcd=~ s/\@JEDI_FEEDBACK_VARBC/$fvbc/g;  }
 
         if($rcd =~ /\@NODENAME/)            {$rcd=~ s/\@NODENAME/$nodename/g; }
         print(LUN2 "$rcd\n");
@@ -360,6 +377,52 @@ sub ed_jedivbc_acq {
  print  SCRIPT <<"EOF";
 $archive/$expid/obs/Y%y4/M%m2/$expid.jedi_vbc.%y4%m2%d2_%h2z.tar
 EOF
+}
+#......................................................................
+sub ed_var_yaml {
+
+  my($mydir,$conffn) = @_;
+
+  my($acq);
+
+  $tmprc  = "$mydir/tmp.rc";
+  $thisrc = "$mydir/$conffn";
+  my $cres = $resolution + 1;
+  if ( $cres == 361 ) {
+     $varlayout = 10;
+     $gsixlayout = 10;
+  } elsif ( $cres == 181 ) {
+     $varlayout = 8;
+     $gsixlayout = 8;
+  } elsif ( $cres == 91 ) {
+     $varlayout = 6;
+     $gsixlayout = 6;
+  } else {
+     die "Unknown resolutio settings, aborting \n";
+  }
+  $gsiylayout = 6 * $gsixlayout;
+
+     open(LUN,"$thisrc")  || die "Fail to open $thisrc $!\n";
+     open(LUN2,">$tmprc") || die "Fail to open tmp.rc $!\n";
+
+     # Change variables to the correct inputs
+     #---------------------------------------
+     while( defined($rcd = <LUN>) ) {
+        chomp($rcd);
+        if($rcd =~ /\@JEDI_BKG_RESOL/)      {$rcd=~ s/\@JEDI_BKG_RESOL/$cres/g;  }
+        if($rcd =~ /\@JEDI_ROOT/)           {$rcd=~ s/\@JEDI_ROOT/$jediroot/g;  }
+        if($rcd =~ /\@JEDI_VAR_LAYOUT/)     {$rcd=~ s/\@JEDI_VAR_LAYOUT/$varlayout/g;  }
+        if($rcd =~ /\@JEDI_VAR_GSIXLAYOUT/) {$rcd=~ s/\@JEDI_VAR_GSIXLAYOUT/$gsixlayout/g;  }
+        if($rcd =~ /\@JEDI_VAR_GSIYLAYOUT/) {$rcd=~ s/\@JEDI_VAR_GSIYLAYOUT/$gsiylayout/g;  }
+
+        print(LUN2 "$rcd\n");
+     }
+
+     close(LUN);
+     close(LUN2);
+     cp($tmprc, $thisrc);
+     unlink $tmprc;
+
 }
 #......................................................................
 sub Assign {
@@ -428,7 +491,7 @@ OPTIONAL ENVIRONMENT
 AUTHOR
 
      Ricardo Todling (Ricardo.Todling\@nasa.gov), NASA/GSFC/GMAO
-     Last modified: 23Apr2025                     by: R. Todling
+     Last modified: 25Apr2025                     by: R. Todling
 
 
 EOF

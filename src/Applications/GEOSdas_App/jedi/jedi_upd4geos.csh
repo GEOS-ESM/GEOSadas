@@ -38,21 +38,21 @@ setenv JEDIWORK $FVWORK/jedi.$nymda.${nhmsa}
 # Defaults
 if ( !($?JEDI_IAU_OVERWRITE)   )  setenv JEDI_IAU_OVERWRITE   0
 
-if ( -d $JEDIWORK/Data/iau ) then
+if ( -d $JEDIWORK/iau ) then
    cd $FVWORK
    if ( $JEDI_HYBRID ) then
-     foreach fn ( `ls $JEDIWORK/Data/iau/*.agcm_import_rst.*nc4` )
+     foreach fn ( `ls $JEDIWORK/iau/*.agcm_import_rst.*nc4` )
        set bname   = `basename $fn`
        set noexpid = `echo $bname | cut -d. -f2-`
        echo /bin/ln -sf $fn $noexpid
             /bin/ln -sf $fn $noexpid
      end
-     /bin/ln -sf $JEDIWORK/Data/iau/$EXPID.agcm_import_rst.${nymdb}_${hhb}00z.nc4 agcm_import_rst
+     /bin/ln -sf $JEDIWORK/iau/$EXPID.agcm_import_rst.${nymdb}_${hhb}00z.nc4 agcm_import_rst
      echo " ${MYNAME}: overwrote GSI IAU increments with JEDI IAU increments. "
      ls -lrt  *agcm_import_rst*
    else
      @ nc = 0
-     foreach fn ( `ls $JEDIWORK/Data/iau/*.agcm_import_rst.*nc4` )
+     foreach fn ( `ls $JEDIWORK/iau/*.agcm_import_rst.*nc4` )
         @ nc++
         if ( $nc == 1 ) then
           /bin/ln -sf $fn agcm_import_rst

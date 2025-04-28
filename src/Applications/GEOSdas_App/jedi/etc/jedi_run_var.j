@@ -5,13 +5,12 @@
 #SBATCH --partition=preops
 #SBATCH --job-name=jedivar
 #SBATCH --output=jedivar.log.o%j.txt
-#_SBATCH --ntasks=96
-#_SBATCH --ntasks-per-node=16
-#SBATCH --ntasks=240
-#SBATCH --constraint=sky
+#_SBATCH --ntasks=240
+#SBATCH --nodes=10
+#SBATCH --constraint=mil
 #SBATCH --time=2:00:00
 
-source $JEDIBUILD/modules
+source $JEDI_ROOT/modules
 
 cd $JEDIWORK
 

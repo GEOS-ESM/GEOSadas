@@ -34,6 +34,8 @@ endif
 setenv FAILED 0
 if ( !($?EXPID)   )  setenv FAILED   1
 if ( !($?FVWORK)  )  setenv FAILED   1
+if ( !($?JEDI_OBS_OPT) )  setenv FAILED   1
+if ( !($?JEDI_ROOT) )  setenv FAILED   1
 
 if ( $FAILED ) then
   env
@@ -44,14 +46,14 @@ endif
 if ( !($?JEDI_RUN_ADANA)  )  setenv JEDI_RUN_ADANA  0
 
 # Defaults
-if ( $JEDI_RUN_ADANA ) then
-  source  $FVHOME/run/jedi/JEDIadanaConfig.csh
-else
-  source  $FVHOME/run/jedi/JEDIanaConfig.csh
-endif
+#if ( $JEDI_RUN_ADANA ) then
+#  source  $FVHOME/run/jedi/JEDIadanaConfig.csh
+#else
+#  source  $FVHOME/run/jedi/JEDIanaConfig.csh
+#endif
 
+source $JEDI_ROOT/modules
 # This needs care: TBD wired for now
-source /discover/nobackup/projects/gmao/advda/rtodling/JEDI1/Jun23/jedi12/build-intel-release/modules
 module unload py-pycodestyle/2.8.0
 
 # Setup SWELL

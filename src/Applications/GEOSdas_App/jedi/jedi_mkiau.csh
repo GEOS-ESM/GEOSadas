@@ -53,7 +53,7 @@ setenv JEDIETC $FVHOME/run/jedi/Config
 setenv JEDIWORK $FVWORK/jedi.$nymda.${nhmsa}
 
 # Create analysis from increment
-cd $JEDIWORK/Data/inc
+cd $JEDIWORK/inc
 set these_incs = (`ls *.jedi_inc1.eta.*`)
 if ( $#these_incs == 1 ) then
    # In case of running FGAT, JEDI puts out a single increment - the solution - a the start
@@ -77,15 +77,15 @@ foreach fn ( $these_incs )
   set   hh = `echo $ttag | cut -c10-11` 
   set nhms = ${hh}0000
   dyn_jediupd.x $nymd $nhms -o $EXPID.jedi_inc.eta.${nymd}_${hh}00z.nc4 \
-               $FVWORK/$EXPID.bkg.eta.${nymd}_${hh}00z.nc4 $fn $JEDIWORK/Data/ana/$EXPID.jedi_ana.eta.${nymd}_${hh}00z.nc4
-  if ( ! -e $JEDIWORK/Data/ana/$EXPID.jedi_ana.eta.${nymd}_${hh}00z.nc4 ) then
+               $FVWORK/$EXPID.bkg.eta.${nymd}_${hh}00z.nc4 $fn $JEDIWORK/ana/$EXPID.jedi_ana.eta.${nymd}_${hh}00z.nc4
+  if ( ! -e $JEDIWORK/ana/$EXPID.jedi_ana.eta.${nymd}_${hh}00z.nc4 ) then
      echo "${MYNAME}: failed to create: $EXPID.jedi_ana.eta.${nymd}_${hh}00z.nc4"
      exit (1)
   endif
 end
 cd -
 
-cd $JEDIWORK/Data/ana
+cd $JEDIWORK/ana
 set analst = `ls $EXPID.jedi_ana.eta.*`
 
 cd $JEDIWORK
@@ -96,9 +96,9 @@ if ( ! -e IAU_EGRESS ) then
     set nymd = `echo $ttag | cut -c1-8`
     set hhmm = `echo $ttag | cut -c10-13`
     set nhms = ${hhmm}00
-    set anafn = Data/ana/$anafn
+    set anafn = ana/$anafn
     set bkgfn = $FVWORK/$EXPID.bkg.eta.${nymd}_${hhmm}z.nc4
-    set iaufn = Data/iau/$EXPID.agcm_import_rst.${nymd}_${hhmm}z.nc4
+    set iaufn = iau/$EXPID.agcm_import_rst.${nymd}_${hhmm}z.nc4
     echo " Input  Analysis   file: $anafn"
     echo " Input  Background file: $bkgfn"
     echo " Output IAU file: $iaufn"
@@ -124,8 +124,8 @@ if ( ! -e IAU_EGRESS ) then
 endif
 
 # if so, fake 4d
-if ( ! -d Data/iau ) mkdir Data/iau
-cd Data/iau/
+if ( ! -d iau ) mkdir iau
+cd iau/
 if ( $JEDI_HYBRID ) then
   set lst = `ls *agcm_import_rst.*nc4`
   if ( $#lst == 1 ) then
@@ -160,14 +160,14 @@ cd -
 
 # arquive analysis
 # ----------------
-cd $JEDIWORK/Data/ana
+cd $JEDIWORK/ana
 tar cvf $FVWORK/$EXPID.jedi_ana.${nymd0}_${hh0}z.tar $EXPID.jedi_ana*.nc*
 cd -
 
 # arquive increments
 # ------------------
-if ( -d $JEDIWORK/Data/inc ) then
-  cd $JEDIWORK/Data/inc
+if ( -d $JEDIWORK/inc ) then
+  cd $JEDIWORK/inc
   tar cvf $FVWORK/$EXPID.jedi_inc.${nymd0}_${hh0}z.tar $EXPID.jedi_*.nc*
   cd -
 endif

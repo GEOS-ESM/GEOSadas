@@ -53,13 +53,21 @@ else
   source  $FVHOME/run/jedi/JEDIanaConfig.csh
 endif
 
+if ( !($?JEDI_ROOT)  )  setenv FAILED   1
+
+if ( $FAILED ) then
+  env
+  echo " ${MYNAME}: not all required env vars defined"
+  exit (1)
+endif
+
 if ( ! $JEDI_GSI2IODA ) then
    echo "${MYNAME}: skipping GSI2IODA ..."
    exit(0)
 endif 
 
 # This needs care: TBD wired for now
-source /discover/nobackup/projects/gmao/advda/rtodling/JEDI1/Jun23/jedi12/build-intel-release/modules
+source $JEDI_ROOT/modules
 module unload py-pycodestyle/2.8.0
 setenv JEDIWORK $jediwk
 
