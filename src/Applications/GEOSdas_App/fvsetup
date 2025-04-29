@@ -543,6 +543,10 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
 # -------------------
   set_atmens();
 
+# If so, setup GEOS-JEDI
+# ----------------------
+  set_geosjedi();
+
 # Copy files
 # ----------
   copy_resources();
@@ -819,7 +823,6 @@ sub defaults {
                    gmao_global_satinfo.rc
                    gmao_global_scaninfo.rc
                    gmao_global_tlapmean.rc
-                   gsi_sens.rc.tmpl
                    noreplay.acq
                    odsmatch.rc
                    prepobs_cqc_statbge
@@ -835,9 +838,17 @@ sub defaults {
                    vtrack.rc
                    vtx.ctl.tmpl );
 
-  @a3dvr_files = qw ( Chem_Registry_apert.rc
-                      GSI_GridComp.rc.tmpl
-                      gsi.rc.tmpl );
+  if ( $ENV{"GEOSJEDI"} ) {
+     @a3dvr_files = qw ( Chem_Registry_apert.rc
+                         GSI_GridComp.rc.tmpl
+                         jedi_gsi.rc.tmpl
+                         jedi_gsi_sens.rc.tmpl );
+  } else {
+     @a3dvr_files = qw ( Chem_Registry_apert.rc
+                         GSI_GridComp.rc.tmpl
+                         gsi.rc.tmpl
+                         gsi_sens.rc.tmpl );
+  }
 
   @afgat_files = qw ( Chem_Registry_apert.rc
                       GSI_GridComp_1.rc.tmpl
@@ -3658,6 +3669,21 @@ EOF
 
 }
 
+#=======================================================================
+sub set_geosjedi {
+
+  if ( ! $ENV{GEOSJEDI} ) { return 0 };
+  if ( ! $ENV{OFFLINE_IODA_DIR} ) { return 0 };
+
+  $iodadir = $ENV{OFFLINE_IODA_DIR};
+  $jediopts = "-expdir $fvhome/../ -iodadir $iodadir -archive $ARCHIVE";
+
+  $cmd = "$fvbin/setup_aanajedi.pl 3dfgat $expid $bjedi_im $jediopts";
+  print "$cmd\n";
+  system($cmd); 
+
+  return 0 ;
+}
 #=======================================================================
 sub set_atmens {
   my ($radbc, $src_arcdir, $prompt, $dflt);
@@ -8001,6 +8027,12 @@ print  SCRIPT <<"EOF";
   setenv STAGE4HYBGSI  /dev/null
   setenv RSTSTAGE4AENS /dev/null
 EOF
+  if ( $ENV{GEOSJEDI} ) {
+print  SCRIPT <<"EOF";
+  setenv NSEGS 1
+  setenv NSTEP 1
+EOF
+  }
 } else {
   if ( $hyb_ens == 3 ) {
 print  SCRIPT <<"EOF";
@@ -10278,8 +10310,16 @@ sub copy_resources {
       foreach $fname ( @arc_files ) {
 
           if ( -e "$fvroot/etc/$fname" ) {
-              cp("$fvroot/etc/$fname","$fvhome/run/$fname")
-                  || die "Cannot write file $fvhome/run/$fname: $!";
+              if ( $fname eq "jedi_gsi.rc.tmpl" ) {
+                cp("$fvroot/etc/$fname","$fvhome/run/gsi.rc.tmpl")
+                    || die "Cannot write file $fvhome/run/$fname: $!";
+              } elsif ( $fname eq "jedi_gsi_sens.rc.tmpl" ) {
+                cp("$fvroot/etc/$fname","$fvhome/run/gsi_sens.rc.tmpl")
+                    || die "Cannot write file $fvhome/run/$fname: $!";
+              } else {
+                cp("$fvroot/etc/$fname","$fvhome/run/$fname")
+                    || die "Cannot write file $fvhome/run/$fname: $!";
+              }
           }
           else {
               print "$0: Cannot find resource file $fvroot/etc/$fname\n";

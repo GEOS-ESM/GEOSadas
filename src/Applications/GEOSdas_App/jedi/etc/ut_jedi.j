@@ -6,13 +6,14 @@ setenv BATCH_SUBCMD "sbatch"
 setenv EXPID j51rt00
 setenv FVHOME /discover/nobackup/projects/gmao/dadev/rtodling/JEDI/x51/$EXPID
 setenv FVROOT `cat $FVHOME/.FVROOT`
+setenv FVWORK `cat $FVHOME/.FVWORK`
 setenv JEDIDIR $FVHOME/run/jedi
 setenv VAROFFSET 180
 
 source $FVROOT/bin/g5_modules
+source $FVHOME/run/jedi/JEDIanaConfig.csh
 set path = ( . $FVHOME/run $JEDIDIR $FVROOT/bin $SHARE/dasilva/opengrads/Contents $BASEDIR/$ARCH/bin $path )
 
-setenv FVWORK `cat $FVHOME/.FVWORK`
 set this   = `ls -d $FVWORK/ana.*00`
 set lstana = `basename $this`
 set nymd = `echo $lstana | cut -d. -f2`
