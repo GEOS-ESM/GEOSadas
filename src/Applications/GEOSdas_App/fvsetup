@@ -3676,7 +3676,7 @@ sub set_geosjedi {
   if ( ! $ENV{OFFLINE_IODA_DIR} ) { return 0 };
 
   $iodadir = $ENV{OFFLINE_IODA_DIR};
-  $jediopts = "-expdir $fvhome/../ -iodadir $iodadir -archive $ARCHIVE";
+  $jediopts = "-fvhome $fvhome -iodadir $iodadir -archive $acqloc";
 
   $cmd = "$fvbin/setup_aanajedi.pl 3dfgat $expid $bjedi_im $jediopts";
   print "$cmd\n";

@@ -3264,7 +3264,7 @@ endif
 #
 
   if ( ! -d $FVHOME/run/jedi )  exit (0)
-  if ( ! -e $FVHOME/run/AGCM.BOOTSTRAP.rc.tmpl )  exit (0) # only run from second cycle of experiment onwards
+  if (   -e $FVHOME/run/AGCM.BOOTSTRAP.rc.tmpl )  exit (0) # only run from second cycle of experiment onwards
 
   @ idummy = $VAROFFSET * 60
   set ana_datetime = ( `tick $gcm_nymd0 $gcm_nhms0 $idummy` )

@@ -35,7 +35,6 @@ setenv   HHA $hha
 setenv FAILED 0
 if ( !($?EXPID)   )  setenv FAILED   1
 if ( !($?FVWORK)  )  setenv FAILED   1
-if ( !($?JEDI_OBS_OPT)  ) setenv FAILED   1
 
 if ( $FAILED ) then
   env

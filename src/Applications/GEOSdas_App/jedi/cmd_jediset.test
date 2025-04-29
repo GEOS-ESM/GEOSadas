@@ -1,6 +1,6 @@
 #!/bin/csh
 setenv FVROOT  `pwd`/../../../../install-SLES15
-$FVROOT/bin/setup_aanajedi.pl 3dfgat j51rt00 180 \
-     -expdir       /discover/nobackup/projects/gmao/dadev/rtodling/JEDI/x51/ \
+$FVROOT/bin/setup_aanajedi.pl 3dfgat j3dfgat 180 \
+     -fvhome       /discover/nobackup/projects/gmao/dadev/rtodling/JEDI/x51/j3dfgat \
      -iodadir      /discover/nobackup/rtodling/SwellExperiments/x50-convert_ncdiags/run \
      -archive      /discover/nobackup/projects/gmao/dadev/rtodling/archive/JEDI/x51

@@ -31,7 +31,6 @@ my $scriptname = basename($0);
 # Command line options
 
   GetOptions ( "archive=s",
-               "expdir=s",
                "fvbc=s",
                "fvhome=s",
                "iodadir=s",
@@ -84,18 +83,13 @@ sub init {
 
 # allow for extra command line
 
-   if ( $opt_expdir ) {
-        $expdir = $opt_expdir;
-   } else {
-        $expdir = "/discover/nobackup/$user";
+   if ( ! $ENV{"FVHOME"} ) {
+      if ( $opt_fvhome ) {
+        $fvhome = $opt_fvhome;
+      } else {
+        die "Env Var FVHOME or arg -fvhome needed \n";
+      }
    }
-
-   if ( $opt_fvhome ) {
-        $FVHOME = $opt_fvhome;
-   } else {
-        $FVHOME = "$expdir/$expid";
-   }
-
 
    if ( $opt_jedistatic ) {
         $jedistatic = $opt_jedistatic;
@@ -147,11 +141,11 @@ sub init {
    if ( $opt_jedihome ) {
         $JEDIHOME = $opt_jedihome;
    } else {
-        $JEDIHOME = "$FVHOME/run/jedi";
+        $JEDIHOME = "$fvhome/run/jedi";
    }
 
 # other settings
-   $jediinput = "$FVHOME/fv3-jedi";
+   $jediinput = "$fvhome/fv3-jedi";
 
 # determined whether cubed or not
   $agcm_im = $aim;
@@ -320,11 +314,12 @@ sub ed_conf_rc {
      #---------------------------------------
      while( defined($rcd = <LUN>) ) {
         chomp($rcd);
+        if($rcd =~ /\@JEDI_FEEDBACK_VARBC/) {$rcd=~ s/\@JEDI_FEEDBACK_VARBC/$fvbc/g;  }
+        if($rcd =~ /\@JEDI_INPUT/)          {$rcd=~ s/\@JEDI_INPUT/$jediinput/g;  }
+        if($rcd =~ /\@JEDI_OBS_OPT/)        {$rcd=~ s/\@JEDI_OBS_OPT/$jedi_obs_opt/g;  }
         if($rcd =~ /\@JEDI_ROOT/)           {$rcd=~ s/\@JEDI_ROOT/$jediroot/g;  }
         if($rcd =~ /\@JEDI_STATIC_FILES/)   {$rcd=~ s/\@JEDI_STATIC_FILES/$jedistatic/g;  }
         if($rcd =~ /\@OFFLIODADIR/)         {$rcd=~ s/\@OFFLIODADIR/$iodadir/g;  }
-        if($rcd =~ /\@JEDI_OBS_OPT/)        {$rcd=~ s/\@JEDI_OBS_OPT/$jedi_obs_opt/g;  }
-        if($rcd =~ /\@JEDI_FEEDBACK_VARBC/) {$rcd=~ s/\@JEDI_FEEDBACK_VARBC/$fvbc/g;  }
 
         if($rcd =~ /\@NODENAME/)            {$rcd=~ s/\@NODENAME/$nodename/g; }
         print(LUN2 "$rcd\n");
@@ -427,7 +422,7 @@ sub ed_var_yaml {
      die "Unknown resolutio settings, aborting \n";
   }
   # the following will need ATTENTION:
-  $obsop_mapdir = "$FVHOME/run/jedi/Config";
+  $obsop_mapdir = "$fvhome/run/jedi/Config";
 
      open(LUN,"$thisrc")  || die "Fail to open $thisrc $!\n";
      open(LUN2,">$tmprc") || die "Fail to open tmp.rc $!\n";
@@ -502,7 +497,6 @@ DESCRIPTION
 OPTIONS
 
      -archive      location of archive (when bkg, others come from; default: /archive/u/\$user)
-     -expdir       experiment location (default: /discover/nobackup/\$user)
      -fvhome       location of experiment home directory (default: \$expdir/\$expid)
      -jedihome     location of ensemble members (default: \$FVHOME/run/jedi)
      -jediroot     location of JEDI build directory (default: /discover/nobackup/projects/gmao/advda/swell/JediBundles/fv3_soca_SLES15/build-intel-release)
