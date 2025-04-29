@@ -175,6 +175,7 @@ cost function:
           engine:
             type: H5File
             obsfile: ./obs/aircraft_temperature.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
           obsgrouping:
             group variables:
             - stationIdentification
@@ -569,6 +570,7 @@ cost function:
           engine:
             type: H5File
             obsfile: ./obs/aircraft_wind.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
           obsgrouping:
             group variables:
             - stationIdentification
@@ -946,6 +948,7 @@ cost function:
           engine:
             type: H5File
             obsfile: ./obs/airs_aqua.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
         obsdataout:
           engine:
             type: H5File
@@ -4056,6 +4059,7 @@ cost function:
           engine:
             type: H5File
             obsfile: ./obs/amsr2_gcom-w1.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
         obsdataout:
           engine:
             type: H5File
@@ -4434,6 +4438,7 @@ cost function:
           engine:
             type: H5File
             obsfile: ./obs/amsua_aqua.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
         obsdataout:
           engine:
             type: H5File
@@ -4730,6 +4735,7 @@ cost function:
           engine:
             type: H5File
             obsfile: ./obs/amsua_metop-b.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
         obsdataout:
           engine:
             type: H5File
@@ -5026,6 +5032,7 @@ cost function:
           engine:
             type: H5File
             obsfile: ./obs/amsua_metop-c.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
         obsdataout:
           engine:
             type: H5File
@@ -5322,6 +5329,7 @@ cost function:
           engine:
             type: H5File
             obsfile: ./obs/amsua_n15.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
         obsdataout:
           engine:
             type: H5File
@@ -5618,6 +5626,7 @@ cost function:
           engine:
             type: H5File
             obsfile: ./obs/amsua_n19.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
         obsdataout:
           engine:
             type: H5File
@@ -5914,6 +5923,7 @@ cost function:
           engine:
             type: H5File
             obsfile: ./obs/atms_n20.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
         obsdataout:
           engine:
             type: H5File
@@ -6245,6 +6255,7 @@ cost function:
           engine:
             type: H5File
             obsfile: ./obs/atms_npp.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
         obsdataout:
           engine:
             type: H5File
@@ -6576,6 +6587,7 @@ cost function:
           engine:
             type: H5File
             obsfile: ./obs/avhrr3_metop-b.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
         obsdataout:
           engine:
             type: H5File
@@ -6840,6 +6852,7 @@ cost function:
           engine:
             type: H5File
             obsfile: ./obs/avhrr3_n19.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
         obsdataout:
           engine:
             type: H5File
@@ -7104,6 +7117,7 @@ cost function:
           engine:
             type: H5File
             obsfile: ./obs/cris-fsr_n20.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
         obsdataout:
           engine:
             type: H5File
@@ -11405,6 +11419,7 @@ cost function:
           engine:
             type: H5File
             obsfile: ./obs/cris-fsr_npp.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
         obsdataout:
           engine:
             type: H5File
@@ -15706,6 +15721,7 @@ cost function:
           engine:
             type: H5File
             obsfile: ./obs/gmi_gpm.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
         obsdataout:
           engine:
             type: H5File
@@ -16185,6 +16201,7 @@ cost function:
           engine:
             type: H5File
             obsfile: ./obs/gps.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
           obsgrouping:
             group variables:
             - sequenceNumber
@@ -16400,6 +16417,7 @@ cost function:
           engine:
             type: H5File
             obsfile: ./obs/iasi_metop-b.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
         obsdataout:
           engine:
             type: H5File
@@ -23182,6 +23200,7 @@ cost function:
           engine:
             type: H5File
             obsfile: ./obs/iasi_metop-c.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
         obsdataout:
           engine:
             type: H5File
@@ -29964,6 +29983,7 @@ cost function:
           engine:
             type: H5File
             obsfile: ./obs/mhs_metop-b.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
         obsdataout:
           engine:
             type: H5File
@@ -30408,6 +30428,7 @@ cost function:
           engine:
             type: H5File
             obsfile: ./obs/mhs_metop-c.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
         obsdataout:
           engine:
             type: H5File
@@ -30852,6 +30873,7 @@ cost function:
           engine:
             type: H5File
             obsfile: ./obs/mhs_n19.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
         obsdataout:
           engine:
             type: H5File
@@ -31296,6 +31318,7 @@ cost function:
           engine:
             type: H5File
             obsfile: ./obs/mls55_aura.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
         obsdataout:
           engine:
             type: H5File
@@ -31326,6 +31349,7 @@ cost function:
           engine:
             type: H5File
             obsfile: ./obs/omi_aura.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
         obsdataout:
           engine:
             type: H5File
@@ -31384,6 +31408,7 @@ cost function:
           engine:
             type: H5File
             obsfile: ./obs/ompsnm_npp.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
         obsdataout:
           engine:
             type: H5File
@@ -31432,6 +31457,7 @@ cost function:
           engine:
             type: H5File
             obsfile: ./obs/pibal.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
           obsgrouping:
             group variables:
             - stationIdentification
@@ -31763,6 +31789,7 @@ cost function:
           engine:
             type: H5File
             obsfile: ./obs/satwind.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
         obsdataout:
           engine:
             type: H5File
@@ -32697,6 +32724,7 @@ cost function:
           engine:
             type: H5File
             obsfile: ./obs/scatwind.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
         obsdataout:
           engine:
             type: H5File
@@ -32932,6 +32960,7 @@ cost function:
           engine:
             type: H5File
             obsfile: ./obs/sfcship.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
         obsdataout:
           engine:
             type: H5File
@@ -33867,6 +33896,7 @@ cost function:
           engine:
             type: H5File
             obsfile: ./obs/sfc.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
         obsdataout:
           engine:
             type: H5File
@@ -34191,6 +34221,7 @@ cost function:
           engine:
             type: H5File
             obsfile: ./obs/sondes.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: error
           obsgrouping:
             group variables:
             - stationIdentification
@@ -35117,6 +35148,7 @@ cost function:
           engine:
             type: H5File
             obsfile: ./obs/ssmis_f17.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
         obsdataout:
           engine:
             type: H5File
@@ -35922,7 +35954,7 @@ variational:
       npz: 72
       field metadata override: ./fv3-jedi/fieldmetadata/geos.yaml
     gradient norm reduction: 1e-3
-    ninner: '10'
+    ninner: '100'
     linear model:
       name: Identity
       increment variables:
