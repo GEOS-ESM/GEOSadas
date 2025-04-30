@@ -144,10 +144,17 @@ if ( $JEDI_POST ) then
 endif
 
 # Overwrite IAU increments if desired
+if ( $?SKIPGSI ) then
+   if ( $SKIPGSI ) then
+     setenv JEDI_IAU_OVERWRITE 1
+     echo " ${MYNAME}: WARNING, No GSI analysis detected."
+     echo " ${MYNAME}: WARNING, JEDI-related IAU will be used in model integration. "
+   endif
+endif
 if ( $JEDI_IAU_OVERWRITE ) then
   jedi_upd4geos.csh $nymdb $nhmsb |& tee -a $FVWORK/$EXPID.jedi_upd.log.${nymdb}_${hhb}z.txt
   if ( $status ) then
-     echo "JEDI update failed, aborting ..."
+     echo " ${MYNAME}: JEDI update failed, aborting ..."
      exit (1)
   endif
 endif
