@@ -83,7 +83,9 @@ sub init {
 
 # allow for extra command line
 
-   if ( ! $ENV{"FVHOME"} ) {
+   if ( $ENV{"FVHOME"} ) {
+       $fvhome = $ENV{"FVHOME"};
+   } else {
       if ( $opt_fvhome ) {
         $fvhome = $opt_fvhome;
       } else {
@@ -118,14 +120,14 @@ sub init {
         $jediroot = "/discover/nobackup/projects/gmao/advda/swell/JediBundles/fv3_soca_SLES15_02062025/build-intel-release";
    }
 
-   if ( $opt_archive ) {
-        $archive = $opt_archive;
+   if ( $ENV{"ARCHIVE"} ) {
+      $archive = $ENV{"ARCHIVE"};
    } else {
-        if ( $ENV{"ARCHIVE"} ) {
-          $archive = "$ARCHIVE";
-        } else {
-           die "Env Var ARCHIVE or arg -archive needed \n";
-        }
+      if ( $opt_archive ) {
+         $archive = $opt_archive;
+      } else {
+         die "Env Var ARCHIVE or arg -archive needed \n";
+      }
    }
 
    $nlevs = 72;
@@ -356,7 +358,7 @@ sub ed_jediioda_acq {
  open(SCRIPT,">$acq") or
  die ">>> ERROR <<< cannot write $acq";
  print  SCRIPT <<"EOF";
-$archive/$expid/obs/Y%y4/M%m2/$expid.jedi_ioda.%y4%m2%d2_%h2z.tar
+$archive/$expid/jedi/obs/Y%y4/M%m2/$expid.jedi_ioda.%y4%m2%d2_%h2z.tar
 EOF
 }
 #......................................................................
@@ -371,7 +373,7 @@ sub ed_jedivbc_acq {
  open(SCRIPT,">$acq") or
  die ">>> ERROR <<< cannot write $acq";
  print  SCRIPT <<"EOF";
-$archive/$expid/obs/Y%y4/M%m2/$expid.jedi_vbc.%y4%m2%d2_%h2z.tar
+$archive/$expid/jedi/obs/Y%y4/M%m2/$expid.jedi_vbc.%y4%m2%d2_%h2z.tar
 EOF
 }
 #......................................................................
@@ -511,6 +513,9 @@ EXAMPLE COMMAND LINE
 NECESSARY ENVIRONMENT
 
 OPTIONAL ENVIRONMENT
+
+      ARCHIVE      can be define in env or arg list
+      FVHOME       can be define in env or arg list
 
 AUTHOR
 
