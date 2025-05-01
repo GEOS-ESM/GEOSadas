@@ -579,19 +579,20 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
   die "Failed to fix GOCART levels-referencing $!" if ( $rc );
 
 # Call LDAS setup script.
-#  Provide LDAS config input files in $ldassetup/: det_exeinp.txt, det_batinp.txt. 
-#  For Hyb-4dEnVar, do same for ens_exeinp.txt, ens_batinp.txt. 
+#  Provide LDAS config input files in $ldassetup/: ldas_exeinp.txt, ldas_batinp.txt. 
 #  See GEOSldas/README.md for generating sample config input files.
 # ------------------------------------------------------------------------
     print "\n checkprintout  ldas_ana == 1 ($ldas_ana)\n";
     if ($ldas_ana == 1 ) {
-        $cmd = "$fvbin/ldas_setup setup $fvhome/lana --account $gid --nymdb $nymdb --nhmsb $nhmsb $ldassetup/det_exeinp.txt $ldassetup/det_batinp.txt";
+        $detres = $res ; 
+        $cmd = "$fvbin/ldas_setup setup $fvhome/lana --account $gid --nymdb $nymdb --nhmsb $nhmsb --acoup 1 --adomain $detres --ldasrs $ldasics $ldassetup/ldas_exeinp.txt $ldassetup/ldas_batinp.txt";
         print "$cmd\n";
         $rc = system $cmd;
         die "Failed to setup LDAS for det, check LDAS config input files $!" if ( $rc );
         chomp($aens_replay);
         if (($hyb_ens == 4) && ($aens_replay eq "no")) { 
-           $rc = system("$fvbin/ldas_setup setup $fvhome/lana --account $gid --nymdb $nymdb --nhmsb $nhmsb $ldassetup/ens_exeinp.txt $ldassetup/ens_batinp.txt");
+           $ensres = $aens_res;
+           $rc = system("$fvbin/ldas_setup setup $fvhome/lana --account $gid --nymdb $nymdb --nhmsb $nhmsb --acoup 2 --adomain $ensres --ldasrs $ldasics4ens $ldassetup/ldas_exeinp.txt $ldassetup/ldas_batinp.txt");
            die "Failed to setup LDAS for ens, check LDAS config input files $!" if ( $rc );
        }
      }
@@ -3521,8 +3522,8 @@ sub set_ldasANA {
         $ldas_flag = 1;
 
         $prompt = "  Location of LDAS initial forcing ";
-        $dflt = $fvics;
-        $dflt = dirname($fvics) unless -d $fvics;
+        $dflt = $drstloc;
+        $dflt = dirname($drstloc) unless -d $drstloc;
 
         $ldashold = query($prompt, $dflt);
             die ">>> Error <<< Cannot find directory, $ldashold;"
@@ -3539,10 +3540,19 @@ sub set_ldasANA {
         }
         $dflt = "/discover/nobackup/$user/ldasSaveInput";
         $ldassetup = query("  LDAS setup input path?", $dflt);
+
+        $dflt = "/discover/nobackup/$user/ldas_exp_C360/";
+        $prompt = "  Location of LDAS ICS for det? (full_path/ldas_exp) ";
+        $ldasics = query($prompt, $dflt);
+           die ">>> Error <<< Cannot find directory, $ldasics;"
+                unless -d $ldasics;
       
         if ($hyb_ens == 4 ) {
-            $dflt = "/discover/nobackup/$user/ldasSaveInput";
-            $ldassetup4ens = query("  LDAS setup input path for ens?", $dflt);
+            $dflt = "/discover/nobackup/$user/ldas_exp_C90/";
+            $prompt = "  Location of LDAS ICS for ens? (full_path/ldas_exp) ";
+            $ldasics4ens = query($prompt);
+            die ">>> Error <<< Cannot find directory, $ldasics4ens;"
+                unless -d $ldasics4ens;
         }
     }
     return 0;
