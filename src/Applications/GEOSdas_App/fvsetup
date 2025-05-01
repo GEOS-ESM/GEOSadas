@@ -3691,7 +3691,13 @@ sub set_geosjedi {
   }
   $jediopts = "-fvhome $fvhome -iodadir $iodadir -archive $acqloc $nogsi";
 
-  $cmd = "$fvbin/setup_aanajedi.pl 3dfgat $expid $bjedi_im $jediopts";
+  if ( $hyb_ens < 3 ) { 
+    $jedivar = "3dfgat";
+  } else {
+    $jedivar = "hyb4denvar";
+  }
+
+  $cmd = "$fvbin/setup_aanajedi.pl $jedivar $expid $bjedi_im $jediopts";
   print "$cmd\n";
   system($cmd); 
 
