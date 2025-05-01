@@ -18,7 +18,7 @@ cost function:
   background:
     states:
     - datapath: './'
-      datetime: '2023-10-09T21:00:00Z'
+      datetime: $JEDI_ISO_DATE_BEG
       filenames:
       - bkg.%yyyy%mm%ddT%hh%MM%ssZ.nc4
       - fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKG_RESOL.nc4
@@ -65,7 +65,7 @@ cost function:
       - u10m
       - v10m
     - datapath: './'
-      datetime: '2023-10-09T22:00:00Z'
+      datetime: $JEDI_ISO_DATE_002
       filenames:
       - bkg.%yyyy%mm%ddT%hh%MM%ssZ.nc4
       - fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKG_RESOL.nc4
@@ -112,7 +112,7 @@ cost function:
       - u10m
       - v10m
     - datapath: './'
-      datetime: '2023-10-09T23:00:00Z'
+      datetime: $JEDI_ISO_DATE_003
       filenames:
       - bkg.%yyyy%mm%ddT%hh%MM%ssZ.nc4
       - fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKG_RESOL.nc4
@@ -159,7 +159,7 @@ cost function:
       - u10m
       - v10m
     - datapath: './'
-      datetime: '2023-10-10T00:00:00Z'
+      datetime: JEDI_ISO_DATE_004
       filenames:
       - bkg.%yyyy%mm%ddT%hh%MM%ssZ.nc4
       - fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKG_RESOL.nc4
@@ -206,7 +206,7 @@ cost function:
       - u10m
       - v10m
     - datapath: './'
-      datetime: '2023-10-10T01:00:00Z'
+      datetime: $JEDI_ISO_DATE_005
       filenames:
       - bkg.%yyyy%mm%ddT%hh%MM%ssZ.nc4
       - fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKG_RESOL.nc4
@@ -253,7 +253,7 @@ cost function:
       - u10m
       - v10m
     - datapath: './'
-      datetime: '2023-10-10T02:00:00Z'
+      datetime: $JEDI_ISO_DATE_006
       filenames:
       - bkg.%yyyy%mm%ddT%hh%MM%ssZ.nc4
       - fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKG_RESOL.nc4
@@ -300,7 +300,7 @@ cost function:
       - u10m
       - v10m
     - datapath: './'
-      datetime: '2023-10-10T03:00:00Z'
+      datetime: $JEDI_ISO_DATE_END
       filenames:
       - bkg.%yyyy%mm%ddT%hh%MM%ssZ.nc4
       - fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKG_RESOL.nc4
@@ -36223,7 +36223,7 @@ final:
     frequency: PT1H
 #output:
 #  datapath: ./
-#  filename: hyb4denvar.analysis.%yyyy%mm%dd_%hh%MM%ssz.nc4
+#  filename: $EXPID.ana.ceta.%yyyy%mm%dd_%hh%MM%ssz.nc4
 #  filetype: cube sphere history
 #  first: PT0H
 #  frequency: PT1H
@@ -36270,39 +36270,39 @@ variational:
       increment:
         state component:
           states:
-          - date: 2023-10-09T21:00:00Z
+          - date: $JEDI_ISO_DATE_001
             datapath: ./
-            filename: hyb4denvar.increment-iter1.
+            filename: $EXPID.jedi_inc1.eta.
             filetype: auxgrid
             gridtype: latlon
-          - date: 2023-10-09T22:00:00Z
+          - date: $JEDI_ISO_DATE_002
             datapath: ./
-            filename: hyb4denvar.increment-iter1.
+            filename: $EXPID.jedi_inc1.eta.
             filetype: auxgrid
             gridtype: latlon
-          - date: 2023-10-09T23:00:00Z
+          - date: $JEDI_ISO_DATE_003
             datapath: ./
-            filename: hyb4denvar.increment-iter1.
+            filename: $EXPID.jedi_inc1.eta.
             filetype: auxgrid
             gridtype: latlon
-          - date: 2023-10-10T00:00:00Z
+          - date: $JEDI_ISO_DATE_004
             datapath: ./
-            filename: hyb4denvar.increment-iter1.
+            filename: $EXPID.jedi_inc1.eta.
             filetype: auxgrid
             gridtype: latlon
-          - date: 2023-10-10T01:00:00Z
+          - date: $JEDI_ISO_DATE_005
             datapath: ./
-            filename: hyb4denvar.increment-iter1.
+            filename: $EXPID.jedi_inc1.eta.
             filetype: auxgrid
             gridtype: latlon
-          - date: 2023-10-10T02:00:00Z
+          - date: $JEDI_ISO_DATE_006
             datapath: ./
-            filename: hyb4denvar.increment-iter1.
+            filename: $EXPID.jedi_inc1.eta.
             filetype: auxgrid
             gridtype: latlon
-          - date: 2023-10-10T03:00:00Z
+          - date: $JEDI_ISO_DATE_007
             datapath: ./
-            filename: hyb4denvar.increment-iter1.
+            filename: $EXPID.jedi_inc1.eta.
             filetype: auxgrid
             gridtype: latlon
       write increment: true
@@ -36340,39 +36340,39 @@ variational:
 #     increment:
 #       state component:
 #         states:
-#         - date: 2023-07-24T21:00:00Z
+#         - date: $JEDI_ISO_DATE_001
 #           datapath: ./
 #           filename: jedi.increment-iter2.
 #           filetype: auxgrid
 #           gridtype: latlon
-#         - date: 2023-07-24T22:00:00Z
+#         - date: $JEDI_ISO_DATE_002
 #           datapath: ./
-#           filename: jedi.increment-iter2.
+#           filename: $EXPID.jedi_inc2.eta.
 #           filetype: auxgrid
 #           gridtype: latlon
-#         - date: 2023-07-24T23:00:00Z
+#         - date: $JEDI_ISO_DATE_003
 #           datapath: ./
-#           filename: jedi.increment-iter2.
+#           filename: $EXPID.jedi_inc2.eta.
 #           filetype: auxgrid
 #           gridtype: latlon
-#         - date: 2023-07-25T00:00:00Z
+#         - date: $JEDI_ISO_DATE_004
 #           datapath: ./
-#           filename: jedi.increment-iter2.
+#           filename: $EXPID.jedi_inc2.eta.
 #           filetype: auxgrid
 #           gridtype: latlon
-#         - date: 2023-07-25T01:00:00Z
+#         - date: $JEDI_ISO_DATE_005
 #           datapath: ./
-#           filename: jedi.increment-iter2.
+#           filename: $EXPID.jedi_inc2.eta.
 #           filetype: auxgrid
 #           gridtype: latlon
-#         - date: 2023-07-25T02:00:00Z
+#         - date: $JEDI_ISO_DATE_006
 #           datapath: ./
-#           filename: jedi.increment-iter2.
+#           filename: $EXPID.jedi_inc2.eta.
 #           filetype: auxgrid
 #           gridtype: latlon
-#         - date: 2023-07-25T03:00:00Z
+#         - date: $JEDI_ISO_DATE_007
 #           datapath: ./
-#           filename: jedi.increment-iter2.
+#           filename: $EXPID.jedi_inc2.eta.
 #           filetype: auxgrid
 #           gridtype: latlon
 #     write increment: true

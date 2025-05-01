@@ -34,7 +34,7 @@ setenv JEDI_CNVANA_MPIRUN "mpirun -np 12"
 setenv JEDI_CNVENS_MPIRUN "mpirun -np 12"
 setenv JEDI_CNVINC_MPIRUN "mpirun -np 12"
 setenv JEDI_NCPUS 384
-setenv JEDI_FV3VAR_MPIRUN "mpirun -perhost 16 -np $JEDI_NCPUS"
+setenv JEDI_FV3VAR_MPIRUN "mpirun -perhost @JEDI_VAR_PERHOST -np $JEDI_NCPUS"
 
 setenv JEDI_MKIAU_MPIRUN "mpirun "
 

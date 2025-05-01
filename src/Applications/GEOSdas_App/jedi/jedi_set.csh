@@ -217,32 +217,32 @@ endif
 
 # If so, feedback VarBC (from previous cycle)
 # -------------------------------------------
-if ( ! -e $FVHOME/run/AGCM.BOOTSTRAP.rc.tmpl ) then # do not do this in the 1st cycle for now
-                                                    # TBD: better mechanism to control initial VarBC
- if ( $JEDI_FEEDBACK_VARBC ) then
-  cd obs
-  # get tar-ball of varBC files from previous cycle
-  setenv NYMDP  $nymdp
-  setenv NHMSP  $nhmsp
-  setenv ACQWORK $JEDIWRK/obs
-  vED -env $FVHOME/run/jedi/jedi_acquire_vbc.j -o jedi_acquire_vbc.j
-  if ( $BATCH_SUBCMD == "sbatch" ) then
-     sbatch -W -o jedi_vbc.log jedi_acquire_vbc.j
-  else
-     qsub -W block=true -o jedi_vbc.log jedi_acquire_vbc.j
-  endif
-  set lstvbc = `ls *vbc*tar`
-  if ($status) then
-    echo "${MYNAME}: failed to retrieve vbc tar-ball"
-    exit 1
-  endif
- #/bin/rm *satbias*.nc4 *aircraft*csv - NOTE: there is no fully functional aircraft VarBC TBD
-  /bin/rm *satbias*.nc4
-  # unfold tar-ball and overwrite all bias correction files
-  tar xvf *vbc*tar
-  cd -
- endif
+if ( $JEDI_FEEDBACK_VARBC ) then
+  if ( -e $JEDIETC/VBC.BOOTSTRAP.DONE ) then # only when at least one JEDI cycle has completed
 
+   cd obs
+   # get tar-ball of varBC files from previous cycle
+   setenv NYMDP  $nymdp
+   setenv NHMSP  $nhmsp
+   setenv ACQWORK $JEDIWRK/obs
+   vED -env $FVHOME/run/jedi/jedi_acquire_vbc.j -o jedi_acquire_vbc.j
+   if ( $BATCH_SUBCMD == "sbatch" ) then
+      sbatch -W -o jedi_vbc.log jedi_acquire_vbc.j
+   else
+      qsub -W block=true -o jedi_vbc.log jedi_acquire_vbc.j
+   endif
+   set lstvbc = `ls *vbc*tar`
+   if ($status) then
+     echo "${MYNAME}: failed to retrieve vbc tar-ball"
+     exit 1
+   endif
+  #/bin/rm *satbias*.nc4 *aircraft*csv - NOTE: there is no fully functional aircraft VarBC TBD
+   /bin/rm *satbias*.nc4
+   # unfold tar-ball and overwrite all bias correction files
+   tar xvf *vbc*tar
+   cd -
+
+ endif
 endif
 
 # The following accommodates for the case when the satbias coeff and cov are in the same
@@ -288,12 +288,33 @@ cd -
 # ensemble & background files
 setenv JEDI_GET_ENSBKG 0
 if ( $JEDI_HYBRID ) then
-  set efn = `echo $EXPID.traj_lcv.${nymdb}_${hhb}00z.nc4` # wired template name for now
-  if ( -e $FVHOME/atmens/enstraj/mem001/$efn ) then
-     cd ensemble
-     ln -sf $FVHOME/atmens/enstraj/mem* . 
-     cd -
-  else
+  if ( $JEDI_HYBRID == 1 ) then # lat-lon ensemble
+     set ensdir = $FVHOME/atmens
+     set bkgtyp = "bkg.eta"
+     set nwords = 4
+  else                          # cubed ensemble
+     set ensdir = $FVHOME/atmens/ensbkgx
+     set bkgtyp = "bkg_clcv"
+     set nwords = 3
+  endif
+  if ( -d $ensdir ) then  # ensemble is present in FVHOME
+     set this = `ls -1d $ensdir/mem*`
+     @ nmem = $this[1] 
+     cd $JEDIWRK
+     @ nc = 0
+     while ( $nc < $nmem[1] )
+        @ nc = $nc + 1
+        set memtag = `echo $nc | awk '{printf "%03d", $1}'`
+        mkdir mem$memtag
+        cd mem$memtag
+        ln -sf $ensdir/mem$memtag/*.$bkgtyp.*nc4 . 
+        foreach fn ( `ls *.$bkgtyp*.nc4`)
+          set sfx = `echo $fn | cut -d. -f${nwords}-`
+          ln -sf $fn geos.$bkgtyp.$sfx
+        end
+        cd -
+     end
+  else  # ensemble is NOT present in FVHOME (likely a replay run)
      setenv JEDI_GET_ENSBKG 1
   endif
 endif
@@ -340,36 +361,50 @@ if ( $#lst == 1 ) then
    endif
    cd -
    # the following is a nedeed hack due to inconsistencies in MAPL
-   if ( $MAPLFIX ) then
-      mkdir Ori
-      foreach fn ( `ls *.bkg_clcv_rst*nc4` )
-         /bin/mv $fn Ori/
-         $FVHOME/run/jedi/convert_xdimydim_2_latlon.py -i Ori/$fn -o $fn 
-      end
-   endif
+#  if ( $MAPLFIX ) then
+#     mkdir Ori
+#     foreach fn ( `ls *.bkg_clcv_rst*nc4` )
+#        /bin/mv $fn Ori/
+#        $FVHOME/run/jedi/convert_xdimydim_2_latlon.py -i Ori/$fn -o $fn 
+#     end
+#  endif
 else
    echo " ${MYNAME}: failed to retrieve bkg tar ball, aborting ..."
    exit(3)
 endif
 if( $JEDI_GET_ENSBKG ) then
-   set lst = `ls *.atmens_etrj.*.tar `
+   cd $JEDIWRK
+   if ( $JEDI_HYBRID == 1 ) then # lat-lon ensemble
+      set tarbal = "atmens_ebkg"
+      set inball = ""
+      set bkgtyp = "bkg.eta"
+      set nwords = 4
+   else                          # cubed ensemble
+      set tarbal = "atmens_ebkgx"
+      set inball = "ensbkgx"
+      set bkgtyp = "bkg_clcv"
+      set nwords = 3
+   else                          # cubed ensemble
+   endif
+   set lst = `ls *.$tarbal.*.tar `
    if ( $#lst == 1 ) then
       tar xvf $lst
-      set vexpid = `ls -d *.atmens_etrj*z | cut -d. -f1`
-      /bin/mv $vexpid.atmens_etrj*z/enstraj/mem* $JEDIWRK/ensemble
-      /bin/rm -r $vexpid.atmens_etrj*z $vexpid.atmens_etrj*z.tar
-      if ( $vexpid != $EXPID ) then # care for tarball from another exp
-         cd $JEDIWRK/ensemble
-         foreach dir (`ls -d mem*`)
-             cd $dir
-             foreach fn (`ls *.nc4`)
-                set sfx = `echo $fn | cut -d. -f2-`
-                /bin/mv $fn $EXPID.$sfx
-             end
-             cd -
-         end
-         cd $JEDIWRK
-      endif
+      set this = `ls -1d *${tarbal}z/$inball/mem*`
+      @ nmem = $this[1] 
+      @ nc = 0
+      while ( $nc < $nmem[1] )
+        @ nc = $nc + 1
+        set memtag = `echo $nc | awk '{printf "%03d", $1}'`
+        mkdir mem$memtag
+        cd $mem$memtag
+        ln -sf *${tarbal}z/$inball/mem$memtag/*.$bkgtyp.*nc4 . 
+        foreach fn ( `ls *.$bkgtyp*.nc4`)
+          set sfx = `echo $fn | cut -d. -f${nwords}-`
+          ln -sf $fn geos.$bkgtyp.$sfx
+       end
+       cd -
+     end
+     cd $JEDIWRK
    else
       echo " ${MYNAME}: failed to retrieve ensemble tar ball, aborting ..."
       exit(4)

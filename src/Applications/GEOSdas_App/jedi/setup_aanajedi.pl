@@ -217,9 +217,11 @@ ed_conf_rc ("$JEDIHOME","JEDIanaConfig.csh");
 ed_var_yaml ("$JEDIHOME/Config","geosvar.yaml");
 
 # take care of satbias acq
-ed_jedibkg_acq ("$JEDIHOME/Config");
-ed_jediioda_acq ("$JEDIHOME/Config");
-ed_jedivbc_acq ("$JEDIHOME/Config");
+ed_jedibkg_acq   ("$JEDIHOME/Config");
+ed_jediebkg_acq  ("$JEDIHOME/Config");
+ed_jediebkgx_acq ("$JEDIHOME/Config");
+ed_jediioda_acq  ("$JEDIHOME/Config");
+ed_jedivbc_acq   ("$JEDIHOME/Config");
 
 set_jedi_static("$jediroot","$jediinput",$resolution);
 
@@ -251,8 +253,11 @@ $res = $myres + 1;
 Assignfn("$jedistatic/jedi/interfaces/geos_atmosphere/GEOS_CRTM_Surface/geos.crtmsrf.$res.nc4","$mydir/bkg/geos.crtmsrf.$res.nc4");
 
 # gsibec ...
-# the following address a 3d-type scenario; needs extension for 4d
-Assignfn("$jedistatic/jedi/interfaces/geos_atmosphere/gsibec/cli_gsibec_configuration_c$res.nml","$mydir/gsibec/cli_gsibec_configuration_c$res.nml");
+if ( $scheme == "hyb4denvar" ) {
+  Assignfn("$jedistatic/jedi/interfaces/geos_atmosphere/gsibec/hyb_gsibec_configuration_c$res.nml","$mydir/gsibec/hyb_gsibec_configuration_c$res.nml");
+} else {
+  Assignfn("$jedistatic/jedi/interfaces/geos_atmosphere/gsibec/cli_gsibec_configuration_c$res.nml","$mydir/gsibec/cli_gsibec_configuration_c$res.nml");
+}
 Assignfn("$jedistatic/jedi/interfaces/geos_atmosphere/gsibec/gsibec_coefficients_c$res.nc4","$mydir/gsibec/gsibec_coefficients_c$res.nc4");
 
 # Rcov ...
@@ -331,6 +336,7 @@ sub ed_conf_rc {
         if($rcd =~ /\@JEDI_OBS_OPT/)        {$rcd=~ s/\@JEDI_OBS_OPT/$jedi_obs_opt/g;  }
         if($rcd =~ /\@JEDI_ROOT/)           {$rcd=~ s/\@JEDI_ROOT/$jediroot/g;  }
         if($rcd =~ /\@JEDI_STATIC_FILES/)   {$rcd=~ s/\@JEDI_STATIC_FILES/$jedistatic/g;  }
+        if($rcd =~ /\@JEDI_VAR_PERHOST/)    {$rcd=~ s/\@JEDI_VAR_PERHOST/$perhost_var/g;  }
         if($rcd =~ /\@OFFLIODADIR/)         {$rcd=~ s/\@OFFLIODADIR/$iodadir/g;  }
 
         if($rcd =~ /\@NODENAME/)            {$rcd=~ s/\@NODENAME/$nodename/g; }
@@ -354,6 +360,32 @@ sub ed_jedibkg_acq {
  die ">>> ERROR <<< cannot write $acq";
  print  SCRIPT <<"EOF";
 $archive/$expid/rs/Y%y4/M%m2/$expid.bkgcrst.%y4%m2%d2_%h2z.tar
+EOF
+}
+#......................................................................
+sub ed_jediebkg_acq {
+
+ my($mydir) = @_;
+ my($acq);
+
+ $acq = "$mydir/jedi_ebkg.acq";
+ open(SCRIPT,">$acq") or
+ die ">>> ERROR <<< cannot write $acq";
+ print  SCRIPT <<"EOF";
+$archive/$expid/atmens/Y%y4/M%m2/$expid.atmens_ebkg.%y4%m2%d2_%h2z.tar
+EOF
+}
+#......................................................................
+sub ed_jediebkgx_acq {
+
+ my($mydir) = @_;
+ my($acq);
+
+ $acq = "$mydir/jedi_ebkgx.acq";
+ open(SCRIPT,">$acq") or
+ die ">>> ERROR <<< cannot write $acq";
+ print  SCRIPT <<"EOF";
+$archive/$expid/atmens/Y%y4/M%m2/$expid.atmens_ebkgx.%y4%m2%d2_%h2z.tar
 EOF
 }
 #......................................................................
@@ -403,6 +435,7 @@ sub ed_var_yaml {
        $varylayout = 10;
        $gsixlayout = 10;
        $gsiylayout = 6 * $gsixlayout;
+       $perhost_var = 16;
      }
      $gsibec_lat = 361;
      $gsibec_lon = 576;
@@ -412,11 +445,13 @@ sub ed_var_yaml {
        $varylayout = 7;
        $gsixlayout = 21;
        $gsiylayout = 32;
+       $perhost_var = 12;
      } else {
        $varxlayout = 8;
        $varylayout = 8;
        $gsixlayout = 8;
        $gsiylayout = 6 * $gsixlayout;
+       $perhost_var = 16;
      }
      $gsibec_lat = 181;
      $gsibec_lon = 288;
@@ -430,6 +465,7 @@ sub ed_var_yaml {
      }
      $gsibec_lat =  91;
      $gsibec_lon = 144;
+     $perhost_var = 16;
   } else {
      die "Unknown resolutio settings, aborting \n";
   }

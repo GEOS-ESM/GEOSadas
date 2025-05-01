@@ -122,6 +122,7 @@ else
     exit(1)
   endif
 endif
+setenv JEDIETC $FVHOME/run/jedi/Config
 
 cd $FVWORK/jedi.$nymda.${hha}0000
 pwd
@@ -243,6 +244,7 @@ cd -
 
 # archive varBC
 # -------------
+touch $JEDIETC/VBC.BOOTSTRAP.DONE
 cd $JEDIWORK/vbc
 tar cvf $FVWORK/$EXPID.jedi_vbc.${nymdb}_${hhb}z.tar *satbias*nc4 *aircraft*csv
 cd -
