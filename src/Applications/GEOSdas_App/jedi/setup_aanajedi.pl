@@ -572,6 +572,7 @@ SYNOPSIS
 
      setup_aanajedi.pl [...options...] scheme
                                        expid
+                                       cres
           
 DESCRIPTION
 
@@ -580,6 +581,7 @@ DESCRIPTION
 
      scheme   3dvar, 3dfgat, or hyb4denvar
      expid    experiment name, e.g., u000_c72
+     cre      var resolution, e.g., 90
 
 
 OPTIONS
@@ -595,7 +597,7 @@ OPTIONS
 
 EXAMPLE COMMAND LINE
 
-     setup_aanajedi.pl 3dfgat u000_C72 180
+     setup_aanajedi.pl 3dfgat u000_C72 90
 
 NECESSARY ENVIRONMENT
 
