@@ -148,14 +148,26 @@ else
   if ( -e $EXPID.agcm_import_rst.${nymd}_${hh}00z.nc4 ) then
      /bin/mv $EXPID.agcm_import_rst.${nymd}_${hh}00z.nc4 $EXPID.agcm_import_rst.${nymd0}_${hh0}00z.nc4
   else
-     echo "cannot find: $EXPID.agcm_import_rst.${nymd}_${hh}00z.nc4, aborting ..."
+     echo " ${MYNAME}: cannot find: $EXPID.agcm_import_rst.${nymd}_${hh}00z.nc4, aborting ..."
      exit (1) 
   endif
 endif
 
-# arquive IAU increments
+# arquive IAU increments: in 3D agcm_import stored as single file, in 4D as tar ball
 # ----------------------
-tar cvf $FVWORK/$EXPID.jedi_agcmrst.${nymd0}_${hh0}z.tar $EXPID.agcm_import_rst*
+set cost = `grep "cost type" $JEDIWORK/Config/geosvar.yaml | cut -d: -f2 | cut -d- -f1`
+if ( $cost == "3D" ) then
+  set lstiau = `ls $EXPID.agcm_import_rst*`
+  if ( $#lstiau == 1 ) then 
+     set sfx = `echo $lstiau[1] | cut -d. -f2-`
+     /bin/cp $lstiau[1] $FVWORK/$EXPID.jedi_agcm_import_rst.$sfx
+  else
+     echo " ${MYNAME}: too many agcm_import_rst in 3D settings, aborting ..."
+     exit (1) 
+  endif
+else
+  tar cvf $FVWORK/$EXPID.jedi_agcmrst.${nymd0}_${hh0}z.tar $EXPID.agcm_import_rst*
+endif
 cd -
 
 # arquive analysis

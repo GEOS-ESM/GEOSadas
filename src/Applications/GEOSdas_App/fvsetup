@@ -390,6 +390,7 @@ my ($fcstimes,$fcswait_hrs,$asnwait_hrs);
 my ($landbcs);
 my ($coupled, $ores, $mometc);
 my ($o_servers,$bckend_wrts, $xncpus, $ncpus_per_node);
+my ($skipgsi);
 
 my ($sysfile, $nodeflg);
 my (@rmTilde);
@@ -473,6 +474,12 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
       }
   }
 
+# Check if bypassing GSI
+  $skipgsi = 0;
+  if ( $ENV{"SKIPGSI"} ) {
+     $skipgsi = 1;
+  }
+
 # Assorted defaults
 # -----------------
   $siteID = get_siteID();
@@ -543,15 +550,15 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
 # -------------------
   set_atmens();
 
-# If so, setup GEOS-JEDI
-# ----------------------
-  set_geosjedi();
-
 # Copy files
 # ----------
   copy_resources();
   if ($doiau) { copy_restarts_iau() }
   else        { copy_restarts() }
+
+# If so, setup GEOS-JEDI
+# ----------------------
+  set_geosjedi();
 
 # Create the JOB script - DAS run
 # -------------------------------
@@ -3673,14 +3680,16 @@ EOF
 sub set_geosjedi {
 
   if ( ! $ENV{GEOSJEDI} ) { return 0 };
-  if ( ! $ENV{OFFLINE_IODA_DIR} ) { return 0 };
+
+  $nogsi = " ";
+  if ( $skipgsi ) { $nogsi = "-nogsi" };
 
   if( $ENV{OFFLINE_IODA_DIR} ) {
      $iodadir = $ENV{OFFLINE_IODA_DIR};
   } else {
      $iodadir = "/discover/nobackup/projects/gmao/dadev/rtodling/archive/541/Milan/x0050/ioda/";
   }
-  $jediopts = "-fvhome $fvhome -iodadir $iodadir -archive $acqloc";
+  $jediopts = "-fvhome $fvhome -iodadir $iodadir -archive $acqloc $nogsi";
 
   $cmd = "$fvbin/setup_aanajedi.pl 3dfgat $expid $bjedi_im $jediopts";
   print "$cmd\n";
@@ -9131,6 +9140,7 @@ sub write_FVDAS_Run_Config {
     $ENV{"NODEFLG"}         = $nodeflg;
     $ENV{"OBSCLASS"}        = $obClass;
     $ENV{"OMP_NUM_THREADS"} = $omp_num_threads;
+    $ENV{"SKIPGSI"}         = $skipgsi;
     $ENV{"VTRACK"}          = $vtrack;
     $ENV{"VTXLEVS"}         = $vtxlevs;
     $ENV{"VTXRELOC"}        = $vtxreloc;

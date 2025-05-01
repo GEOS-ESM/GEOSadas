@@ -1611,7 +1611,7 @@ exit 1
   Sub CreateIAUincrement4Fcst_()
 # -------------------------------------
   if ( $?ECHO___ ) set echo
-  if ( $SKIPGSI  ) exit 0
+  if ( $SKIPGSI && ! -e $FVHOME/run/AGCM.BOOTSTRAP.rc.tmpl ) exit 0
 
      if ( ! $DO4DIAU ) then
         if ( -e agcm_import_rst ) exit 0  # no need to regenerate IAU increment if already available
@@ -2528,7 +2528,7 @@ exit 1
   if ( $?ECHO___ ) set echo
   set qsub_acquire = 0
 
-# if ( $SKIPGSI  ) exit 0
+# if ( $SKIPGSI && ! -e $FVHOME/run/AGCM.BOOTSTRAP.rc.tmpl ) exit 0
 
   set ecode = 0
   set acq_status = 0
@@ -2883,7 +2883,7 @@ exit 1
 # -------------------------
   if ( $?ECHO___ ) set echo
 
-  if ( $SKIPGSI  ) exit 0
+  if ( $SKIPGSI && ! -e $FVHOME/run/AGCM.BOOTSTRAP.rc.tmpl ) exit 0
 
 # Get info about pre-qc files to be combined for QC
 # ------------------------------------------------------
@@ -2980,7 +2980,7 @@ endif
 
    if ( ! $PREPQC ) exit 0
    if (  $SKIPANA ) exit 0
-   if (  $SKIPGSI ) exit 0
+   if (  $SKIPGSI && ! -e $FVHOME/run/AGCM.BOOTSTRAP.rc.tmpl ) exit 0
 
 # Combine pre-qc files...
 #  ------------------------
@@ -3146,7 +3146,7 @@ endif
   Sub AnalysisRun_( Viter_, Final_ ) 
 # ----------------------------------
   if ( $?ECHO___ ) set echo
-  if ( $SKIPGSI  ) exit 0
+  if ( $SKIPGSI && ! -e $FVHOME/run/AGCM.BOOTSTRAP.rc.tmpl ) exit 0
 
     if ( $DO4DVAR && $Final_ ) exit 0
 
@@ -3280,7 +3280,7 @@ endif
   set this_hh0 = `echo $gcm_nhms0 | cut -c1-2`
   set this_hha = `echo $ana_datetime[2] | cut -c1-2`
 
-  if ( ! $SKIPGSI ) then
+  if ( ! $SKIPGSI && ! -e $FVHOME/run/AGCM.BOOTSTRAP.rc.tmpl ) then
      set this_log = $EXPID.ana_jo.log.${ana_datetime[1]}_${this_hha}z.txt
      obimp_summary.pl -rc $FVROOT/etc/odsstats4jedi.rc -type diag -josummary -o $this_log $ana_datetime[1] $ana_datetime[2]
   endif

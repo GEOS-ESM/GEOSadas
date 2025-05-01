@@ -31,13 +31,14 @@ my $scriptname = basename($0);
 # Command line options
 
   GetOptions ( "archive=s",
-               "fvbc=s",
+               "cvbc=s",
                "fvhome=s",
                "iodadir=s",
                "jedihome=s",
                "jediroot=s",
                "jedistatic=s",
                "nodename=s",
+               "nogsi",
                "h" );
 
   usage() if $opt_h;
@@ -107,11 +108,11 @@ sub init {
         $jedi_obs_opt = 3; # convert ncdiag-to-ioda on the fly
    }
 
-   if ( $opt_fvbc ) {
-        $fvbc = $opt_fvbc;  # =1 cycle varbc 
-        if ($fvbc > 1) {die "invalid entry, fvbc 0/1 only.\n"};
+   if ( $opt_cvbc ) {
+        $cvbc = $opt_cvbc;  # =1 cycle varbc 
+        if ($cvbc > 1) {die "invalid entry, cvbc 0/1 only.\n"};
    } else {
-        $fvbc = 0; # use varbc available from ncdiag converter (whether from offline or on-the-fly converted)
+        $cvbc = 1; # cycle JEDI varBC (after an initial BOOTSTRAP cycle)
    }
 
    if ( $opt_jediroot ) {
@@ -144,6 +145,11 @@ sub init {
         $JEDIHOME = $opt_jedihome;
    } else {
         $JEDIHOME = "$fvhome/run/jedi";
+   }
+
+   $nogsi = 0;
+   if ( $opt_nogsi ) {
+      $nogsi = 1;
    }
 
 # other settings
@@ -216,6 +222,10 @@ ed_jediioda_acq ("$JEDIHOME/Config");
 ed_jedivbc_acq ("$JEDIHOME/Config");
 
 set_jedi_static("$jediroot","$jediinput",$resolution);
+
+# edit main DAS existing settings when GSI is bypassed
+ed_rst4fcst_acq("$FVHOME/fcst/","$scheme");
+ed_4dfcst03_acq("$FVHOME/fcst/","$scheme");
 
 }
 #......................................................................
@@ -316,7 +326,7 @@ sub ed_conf_rc {
      #---------------------------------------
      while( defined($rcd = <LUN>) ) {
         chomp($rcd);
-        if($rcd =~ /\@JEDI_FEEDBACK_VARBC/) {$rcd=~ s/\@JEDI_FEEDBACK_VARBC/$fvbc/g;  }
+        if($rcd =~ /\@JEDI_FEEDBACK_VARBC/) {$rcd=~ s/\@JEDI_FEEDBACK_VARBC/$cvbc/g;  }
         if($rcd =~ /\@JEDI_INPUT/)          {$rcd=~ s/\@JEDI_INPUT/$jediinput/g;  }
         if($rcd =~ /\@JEDI_OBS_OPT/)        {$rcd=~ s/\@JEDI_OBS_OPT/$jedi_obs_opt/g;  }
         if($rcd =~ /\@JEDI_ROOT/)           {$rcd=~ s/\@JEDI_ROOT/$jediroot/g;  }
@@ -452,6 +462,46 @@ sub ed_var_yaml {
 
 }
 #......................................................................
+sub ed_rst4fcst_acq {
+
+  return 0 unless ( $nogsi );
+
+  my($mydir,$scheme) = @_;
+
+  my($frun, $ft, $acq);
+
+  $acq = "$fvhome/$mydir/rst4fcst.acq";
+
+  open(SCRIPT,">$acq") or
+  die ">>> ERROR <<< cannot write $acq";
+  print  SCRIPT <<"EOF";
+$archive/$expid/rs/Y%y4/M%m2/$expid.rst.%y4%m2%d2_%h2z.tar
+EOF
+if ( $scheme ne "hyb4denvar" ) {
+ print  SCRIPT <<"EOF";
+$archive/$expid/jedi/rs/Y%y4/M%m2/$expid.jedi_agcm_import_rst.%y4%m2%d2_%h2%n2z.$ncsuffix => $expid.agcm_import_rst.%y4%m2%d2_%h2%n2z.nc4
+EOF
+}
+}
+#......................................................................
+sub ed_4dfcst03_acq {
+
+  return 0 unless ( $nogsi );
+
+  my($mydir,$scheme) = @_;
+
+  if ( $scheme ne "hyb4denvar" ) { return 0 };
+
+  my($frun, $ft, $acq);
+
+  $acq = "$fvhome/$mydir/fcst03.acq";
+  open(SCRIPT,">$acq") or
+  die ">>> ERROR <<< cannot write $acq";
+  print  SCRIPT <<"EOF";
+$archive/$expid/jedi/rs/Y%y4/M%m2/$expid.jedi_agcmrst.%y4%m2%d2_%h2z.tar => $expid.agcmrst.%y4%m2%d2_%h2z.tar
+EOF
+}
+#......................................................................
 sub Assign {
 
   my ( $fname, $lu ) = @_;
@@ -499,6 +549,7 @@ DESCRIPTION
 OPTIONS
 
      -archive      location of archive (when bkg, others come from; default: /archive/u/\$user)
+     -cvbc         cycle JEDI varBC, 0/1 (default: 1, i.e., cycle)
      -fvhome       location of experiment home directory (default: \$expdir/\$expid)
      -jedihome     location of ensemble members (default: \$FVHOME/run/jedi)
      -jediroot     location of JEDI build directory (default: /discover/nobackup/projects/gmao/advda/swell/JediBundles/fv3_soca_SLES15/build-intel-release)
