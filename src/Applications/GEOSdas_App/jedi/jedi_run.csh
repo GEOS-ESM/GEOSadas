@@ -183,6 +183,11 @@ if ( $JEDI_RUN_ANA ) then
       endif
    endif
    /bin/mv *inc*nc4 ./inc # somehow datapath setting in yaml is not effective at inc part
+   
+   # Converged in these many iterations
+   # ----------------------------------
+   set convniter = `grep JoJc $FVWORK/$JEDIVARLOG | wc`
+   echo "${MYNAME}:  JEDI var converged in $convniter[1] iterations"
 
    # If testing Adjoint analysis ...
    # -------------------------------

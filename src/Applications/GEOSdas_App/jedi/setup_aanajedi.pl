@@ -120,11 +120,11 @@ sub init {
         $jediroot = "/discover/nobackup/projects/gmao/advda/swell/JediBundles/fv3_soca_SLES15_02062025/build-intel-release";
    }
 
-   if ( $ENV{"ARCHIVE"} ) {
-      $archive = $ENV{"ARCHIVE"};
+   if ( $opt_archive ) {
+      $archive = $opt_archive;
    } else {
-      if ( $opt_archive ) {
-         $archive = $opt_archive;
+      if ( $ENV{"ARCHIVE"} ) {
+        $archive = $ENV{"ARCHIVE"};
       } else {
          die "Env Var ARCHIVE or arg -archive needed \n";
       }
