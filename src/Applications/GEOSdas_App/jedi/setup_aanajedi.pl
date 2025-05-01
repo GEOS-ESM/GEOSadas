@@ -112,7 +112,7 @@ sub init {
         $cvbc = $opt_cvbc;  # =1 cycle varbc 
         if ($cvbc > 1) {die "invalid entry, cvbc 0/1 only.\n"};
    } else {
-        $cvbc = 1; # cycle JEDI varBC (after an initial BOOTSTRAP cycle)
+        $cvbc = 0; # do not cycle JEDI varBC yet (JEDI not handling aircraft Variances on output yet)
    }
 
    if ( $opt_jediroot ) {
