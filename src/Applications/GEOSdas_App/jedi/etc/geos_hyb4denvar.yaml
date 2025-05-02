@@ -18,7 +18,7 @@ cost function:
   background:
     states:
     - datapath: './'
-      datetime: $JEDI_ISO_DATE_BEG
+      datetime: $JEDI_ISO_DATE_001
       filenames:
       - bkg.%yyyy%mm%ddT%hh%MM%ssZ.nc4
       - fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKG_RESOL.nc4
@@ -159,7 +159,7 @@ cost function:
       - u10m
       - v10m
     - datapath: './'
-      datetime: JEDI_ISO_DATE_004
+      datetime: $JEDI_ISO_DATE_004
       filenames:
       - bkg.%yyyy%mm%ddT%hh%MM%ssZ.nc4
       - fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKG_RESOL.nc4
@@ -300,7 +300,7 @@ cost function:
       - u10m
       - v10m
     - datapath: './'
-      datetime: $JEDI_ISO_DATE_END
+      datetime: $JEDI_ISO_DATE_007
       filenames:
       - bkg.%yyyy%mm%ddT%hh%MM%ssZ.nc4
       - fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKG_RESOL.nc4
@@ -36211,7 +36211,7 @@ cost function:
   parallel subwindows: false
   subwindow: PT1H
   time window:
-    begin: '2023-10-09T21:00:00Z'
+    begin: $JEDI_ISO_DATE_BEG
     bound to include: begin
     length: PT6H
   variable change:

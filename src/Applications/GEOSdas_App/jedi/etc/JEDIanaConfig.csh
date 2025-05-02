@@ -2,7 +2,7 @@
 # Top options
 setenv JEDI_SET    1           # bring bkg/obs/ens
 setenv JEDI_RUN    1           # run JEDI var executable
-setenv JEDI_HYBRID 0           # control opts for hyb JEDI
+setenv JEDI_HYBRID @JEDI_HYBRID           # control opts for hyb JEDI
 setenv JEDI_MKIAU  1           # calculates IAU output
 setenv JEDI_POST   0           # process results (move files, etc)
 setenv JEDI_IAU_OVERWRITE  0   # overwrite GSI-IAU with JEDI-IAU (when cycling)
@@ -33,7 +33,7 @@ setenv JEDI_ADDINC_MPIRUN "mpirun -np 12"
 setenv JEDI_CNVANA_MPIRUN "mpirun -np 12"
 setenv JEDI_CNVENS_MPIRUN "mpirun -np 12"
 setenv JEDI_CNVINC_MPIRUN "mpirun -np 12"
-setenv JEDI_NCPUS 384
+setenv JEDI_NCPUS @JEDI_VAR_NCPUS
 setenv JEDI_FV3VAR_MPIRUN "mpirun -perhost @JEDI_VAR_PERHOST -np $JEDI_NCPUS"
 
 setenv JEDI_MKIAU_MPIRUN "mpirun "
