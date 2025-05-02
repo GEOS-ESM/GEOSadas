@@ -3,6 +3,7 @@
 # setup_aanajedi - setup for an atmospheric JEDI analysis
 #
 #  20Apr2015 Todling  Initial code
+#  01May2015 Todling  Add 4d-capability
 #
 #-----------------------------------------------------------------------------------------------------
 
@@ -167,6 +168,50 @@ sub init {
   if ( $nodename eq "cas"  ) { $ncpus_per_node = 46; }
   if ( $nodename eq "mil"  ) { $ncpus_per_node = 126; }
 
+# Var run configuration parameters
+  $cres = $resolution + 1;
+  if ( $cres == 361 ) {
+     if ( $scheme eq "hyb4denvar" ) {
+     } else {
+       $varxlayout = 10;
+       $varylayout = 10;
+       $gsixlayout = 10;
+       $gsiylayout = 6 * $gsixlayout;
+       $perhost_var = 16;
+     }
+     $gsibec_lat = 361;
+     $gsibec_lon = 576;
+  } elsif ( $cres == 181 ) {
+     if ( $scheme eq "hyb4denvar" ) {
+       $varxlayout = 16;
+       $varylayout = 7;
+       $gsixlayout = 21;
+       $gsiylayout = 32;
+       $perhost_var = 12;
+     } else {
+       $varxlayout = 8;
+       $varylayout = 8;
+       $gsixlayout = 8;
+       $gsiylayout = 6 * $gsixlayout;
+       $perhost_var = 16;
+     }
+     $gsibec_lat = 181;
+     $gsibec_lon = 288;
+  } elsif ( $cres == 91 ) {
+     if ( $scheme eq "hyb4denvar" ) {
+     } else {
+       $varxlayout = 6;
+       $varylayout = 6;
+       $gsixlayout = 6;
+       $gsiylayout = 6 * $gsixlayout;
+     }
+     $gsibec_lat =  91;
+     $gsibec_lon = 144;
+     $perhost_var = 16;
+  } else {
+     die "Unknown resolutio settings, aborting \n";
+  }
+  $ncpus_var = $gsixlayout * $gsiylayout;
 
 # build internal variables
 
@@ -176,6 +221,7 @@ sub init {
   @rc2jedi   = qw ( JEDIanaConfig.csh
                     SWELLConfig.csh
                     jedi_acquire_bkg.j
+                    jedi_acquire_ebkg.j
                     jedi_acquire_ioda.j
                     jedi_acquire_vbc.j
                     jedi_run_var.j
@@ -321,6 +367,9 @@ sub ed_conf_rc {
 
   my($acq);
 
+  $jedihyb = 0;
+  if ( $scheme == "hyb4denvar" ) { $jedihyb = 1 };
+
   $tmprc  = "$mydir/tmp.rc";
   $thisrc = "$mydir/$conffn";
 
@@ -332,10 +381,12 @@ sub ed_conf_rc {
      while( defined($rcd = <LUN>) ) {
         chomp($rcd);
         if($rcd =~ /\@JEDI_FEEDBACK_VARBC/) {$rcd=~ s/\@JEDI_FEEDBACK_VARBC/$cvbc/g;  }
+        if($rcd =~ /\@JEDI_HYBRID/)         {$rcd=~ s/\@JEDI_HYBRID/$jedihyb/g;  }
         if($rcd =~ /\@JEDI_INPUT/)          {$rcd=~ s/\@JEDI_INPUT/$jediinput/g;  }
         if($rcd =~ /\@JEDI_OBS_OPT/)        {$rcd=~ s/\@JEDI_OBS_OPT/$jedi_obs_opt/g;  }
         if($rcd =~ /\@JEDI_ROOT/)           {$rcd=~ s/\@JEDI_ROOT/$jediroot/g;  }
         if($rcd =~ /\@JEDI_STATIC_FILES/)   {$rcd=~ s/\@JEDI_STATIC_FILES/$jedistatic/g;  }
+        if($rcd =~ /\@JEDI_VAR_NCPUS/)      {$rcd=~ s/\@JEDI_VAR_NCPUS/$ncpus_var/g;  }
         if($rcd =~ /\@JEDI_VAR_PERHOST/)    {$rcd=~ s/\@JEDI_VAR_PERHOST/$perhost_var/g;  }
         if($rcd =~ /\@OFFLIODADIR/)         {$rcd=~ s/\@OFFLIODADIR/$iodadir/g;  }
 
@@ -427,48 +478,7 @@ sub ed_var_yaml {
 
   $tmprc  = "$mydir/tmp.rc";
   $thisrc = "$mydir/$conffn";
-  my $cres = $resolution + 1;
-  if ( $cres == 361 ) {
-     if ( $scheme eq "hyb4denvar" ) {
-     } else {
-       $varxlayout = 10;
-       $varylayout = 10;
-       $gsixlayout = 10;
-       $gsiylayout = 6 * $gsixlayout;
-       $perhost_var = 16;
-     }
-     $gsibec_lat = 361;
-     $gsibec_lon = 576;
-  } elsif ( $cres == 181 ) {
-     if ( $scheme eq "hyb4denvar" ) {
-       $varxlayout = 16;
-       $varylayout = 7;
-       $gsixlayout = 21;
-       $gsiylayout = 32;
-       $perhost_var = 12;
-     } else {
-       $varxlayout = 8;
-       $varylayout = 8;
-       $gsixlayout = 8;
-       $gsiylayout = 6 * $gsixlayout;
-       $perhost_var = 16;
-     }
-     $gsibec_lat = 181;
-     $gsibec_lon = 288;
-  } elsif ( $cres == 91 ) {
-     if ( $scheme eq "hyb4denvar" ) {
-     } else {
-       $varxlayout = 6;
-       $varylayout = 6;
-       $gsixlayout = 6;
-       $gsiylayout = 6 * $gsixlayout;
-     }
-     $gsibec_lat =  91;
-     $gsibec_lon = 144;
-     $perhost_var = 16;
-  } else {
-     die "Unknown resolutio settings, aborting \n";
-  }
+
   # the following will need ATTENTION:
   $obsop_mapdir = "$fvhome/run/jedi/Config";
 

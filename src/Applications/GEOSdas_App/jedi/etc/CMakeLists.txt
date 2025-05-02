@@ -5,6 +5,7 @@ set (ALLETC
    geos_3dfgat.yaml
    geos_hyb4denvar.yaml
    jedi_acquire_bkg.j
+   jedi_acquire_ebkg.j
    jedi_acquire_ioda.j
    jedi_acquire_vbc.j
    jedi_run_var.j

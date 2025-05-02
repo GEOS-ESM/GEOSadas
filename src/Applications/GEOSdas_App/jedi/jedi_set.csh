@@ -25,7 +25,7 @@ if ( $#argv < 2 ) then
    echo " AUTHOR"
    echo "   Ricardo Todling (Ricardo.Todling@nasa.gov), NASA/GMAO "
    echo "     Initial version: 18Oct2020    by: R. Todling"
-   echo "     Last   modified: 25Oct2025    by: R. Todling"
+   echo "     Last   modified: 01May2025    by: R. Todling"
    echo " \\end{verbatim} "
    echo " \\clearpage "
    exit(0)
@@ -152,7 +152,7 @@ cd -
 # Get positioned in JEDI work dir
 cd $JEDIWRK
 
-foreach dir ( ana bkg ensemble hofx iau obs osen inc vbc )
+foreach dir ( ana atmens bkg hofx iau obs osen inc vbc )
    if ( ! -d $dir ) mkdir -p $dir
 end
 
@@ -373,7 +373,18 @@ else
    exit(3)
 endif
 if( $JEDI_GET_ENSBKG ) then
-   cd $JEDIWRK
+   cd $JEDIWRK/atmens
+   setenv NYMD  $nymdb # initial date of current cycle
+   setenv NHMS  $nhmsb # initial time of current cycle
+   setenv NYMDP $nymdp # initial date of previous cycle
+   setenv NHMSP $nhmsp # initial time of previous cycle
+   setenv ACQWORK $JEDIWRK/atmens
+   vED -env $FVHOME/run/jedi/jedi_acquire_ebkg.j -o jedi_acquire_ebkg.j
+   if ( $BATCH_SUBCMD == "sbatch" ) then
+      sbatch -W -o jedi_acq.log jedi_acquire_ebkg.j
+   else
+      qsub -W block=true -o jedi_acq.log jedi_acquire_ebkg.j
+   endif
    if ( $JEDI_HYBRID == 1 ) then # lat-lon ensemble
       set tarbal = "atmens_ebkg"
       set inball = ""
@@ -389,22 +400,17 @@ if( $JEDI_GET_ENSBKG ) then
    set lst = `ls *.$tarbal.*.tar `
    if ( $#lst == 1 ) then
       tar xvf $lst
-      set this = `ls -1d *${tarbal}z/$inball/mem*`
-      @ nmem = $this[1] 
-      @ nc = 0
-      while ( $nc < $nmem[1] )
-        @ nc = $nc + 1
-        set memtag = `echo $nc | awk '{printf "%03d", $1}'`
-        mkdir mem$memtag
-        cd $mem$memtag
-        ln -sf *${tarbal}z/$inball/mem$memtag/*.$bkgtyp.*nc4 . 
-        foreach fn ( `ls *.$bkgtyp*.nc4`)
+      /bin/mv *${tarbal}*z/$inball/mem* .
+      foreach dir ( `ls -d mem*` ) 
+        cd $dir
+        foreach fn ( `ls *.$bkgtyp*.nc4` )
           set sfx = `echo $fn | cut -d. -f${nwords}-`
           ln -sf $fn geos.$bkgtyp.$sfx
        end
        cd -
      end
      cd $JEDIWRK
+     ln -sf atmens/mem* .
    else
       echo " ${MYNAME}: failed to retrieve ensemble tar ball, aborting ..."
       exit(4)
