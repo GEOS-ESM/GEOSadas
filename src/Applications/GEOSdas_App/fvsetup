@@ -584,17 +584,17 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
 # ------------------------------------------------------------------------
     print "\n checkprintout  ldas_ana == 1 ($ldas_ana)\n";
     if ($ldas_ana == 1 ) {
-        $detres = $res ; 
-        $cmd = "$fvbin/ldas_setup setup $fvhome/lana --account $gid --nymdb $nymdb --nhmsb $nhmsb --acoup 1 --adomain $detres --ldasrs $ldasics $ldassetup/ldas_exeinp.txt $ldassetup/ldas_batinp.txt";
+        $cmd = "$fvbin/ldas_setup setup $fvhome/lana --account $gid --nymdb $nymdb --nhmsb $nhmsb --ladas_cpl 1 --agcm_res $res --rstdir $ldasics $ldassetup/ldas_exeinp.txt $ldassetup/ldas_batinp.txt";
         print "$cmd\n";
         $rc = system $cmd;
         die "Failed to setup LDAS for det, check LDAS config input files $!" if ( $rc );
         chomp($aens_replay);
         if (($hyb_ens == 4) && ($aens_replay eq "no")) { 
-           $ensres = $aens_res;
-           $rc = system("$fvbin/ldas_setup setup $fvhome/lana --account $gid --nymdb $nymdb --nhmsb $nhmsb --acoup 2 --adomain $ensres --ldasrs $ldasics4ens $ldassetup/ldas_exeinp.txt $ldassetup/ldas_batinp.txt");
-           die "Failed to setup LDAS for ens, check LDAS config input files $!" if ( $rc );
-       }
+	    $cmd = "$fvbin/ldas_setup setup $fvhome/lana --account $gid --nymdb $nymdb --nhmsb $nhmsb --ladas_cpl 2 --agcm_res $aens_res --rstdir $ldasics4ens $ldassetup/ldas_exeinp.txt $ldassetup/ldas_batinp.txt";
+	    print "$cmd\n";
+	    $rc = system $cmd;
+	    die "Failed to setup LDAS for ens, check LDAS config input files $!" if ( $rc );
+	}
      }
     
 # Monthly Setup
