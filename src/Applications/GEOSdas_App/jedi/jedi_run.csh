@@ -209,8 +209,9 @@ if ( $JEDI_RUN_GETINC ) then
   #            2. mkiau has been enabled to handled cubed states, so this
   #               can be bypassed at some point.
   # ---------------------------------------------------------------
-  foreach cana (`ls *ana.ceta*` )
-     set  ttag = `echo $cana | cut -d. -f3`
+  foreach cana (`ls ana/*ana.ceta*` )
+     set this = `basename $cana`
+     set  ttag = `echo $this | cut -d. -f3`
      set yyyys = `echo $ttag | cut -c1-4`
      set   mms = `echo $ttag | cut -c5-6`
      set   dds = `echo $ttag | cut -c7-8`
