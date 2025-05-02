@@ -1,0 +1,6 @@
+#!/bin/csh
+setenv FVROOT  `pwd`/../../../../install-SLES15
+$FVROOT/bin/setup_aanajedi.pl 3dfgat j3dfgat 180 \
+     -archive      /discover/nobackup/projects/gmao/dadev/rtodling/archive/JEDI/x51 \
+     -fvhome       /discover/nobackup/projects/gmao/dadev/rtodling/JEDI/x51/j3dfgat \
+     -iodadir      /discover/nobackup/projects/gmao/dadev/rtodling/archive/541/Milan/x0050/ioda   
