@@ -261,6 +261,9 @@ cp("$FVROOT/etc/jedi/geos_${scheme}.yaml","$JEDIHOME/Config/geosvar.yaml");
 # take of resolution and layout
 ed_conf_rc ("$JEDIHOME","JEDIanaConfig.csh");
 ed_var_yaml ("$JEDIHOME/Config","geosvar.yaml");
+if ( $scheme eq "hyb4denvar" ) {
+  ed_var_yaml ("$JEDIHOME/Config","diffstates_geos.yaml");
+}
 
 # take care of satbias acq
 ed_jedibkg_acq   ("$JEDIHOME/Config");
@@ -368,7 +371,11 @@ sub ed_conf_rc {
   my($acq);
 
   $jedihyb = 0;
-  if ( $scheme == "hyb4denvar" ) { $jedihyb = 1 };
+  $jediinc = 0;
+  if ( $scheme == "hyb4denvar" ) { 
+     $jedihyb = 1;
+     $jediinc = 1;
+  }
 
   $tmprc  = "$mydir/tmp.rc";
   $thisrc = "$mydir/$conffn";
@@ -385,6 +392,7 @@ sub ed_conf_rc {
         if($rcd =~ /\@JEDI_INPUT/)          {$rcd=~ s/\@JEDI_INPUT/$jediinput/g;  }
         if($rcd =~ /\@JEDI_OBS_OPT/)        {$rcd=~ s/\@JEDI_OBS_OPT/$jedi_obs_opt/g;  }
         if($rcd =~ /\@JEDI_ROOT/)           {$rcd=~ s/\@JEDI_ROOT/$jediroot/g;  }
+        if($rcd =~ /\@JEDI_RUN_GETINC/)     {$rcd=~ s/\@JEDI_RUN_GETINC/$jediinc/g;  }
         if($rcd =~ /\@JEDI_STATIC_FILES/)   {$rcd=~ s/\@JEDI_STATIC_FILES/$jedistatic/g;  }
         if($rcd =~ /\@JEDI_VAR_NCPUS/)      {$rcd=~ s/\@JEDI_VAR_NCPUS/$ncpus_var/g;  }
         if($rcd =~ /\@JEDI_VAR_PERHOST/)    {$rcd=~ s/\@JEDI_VAR_PERHOST/$perhost_var/g;  }

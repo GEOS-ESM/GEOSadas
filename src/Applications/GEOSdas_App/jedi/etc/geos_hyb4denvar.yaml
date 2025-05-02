@@ -36221,13 +36221,13 @@ final:
     departures: oman
   prints:
     frequency: PT1H
-#output:
-#  datapath: ./
-#  filename: $EXPID.ana.ceta.%yyyy%mm%dd_%hh%MM%ssz.nc4
-#  filetype: cube sphere history
-#  first: PT0H
-#  frequency: PT1H
-#  provider: geos
+output:
+  datapath: ./
+  filename: $EXPID.ana.ceta.%yyyy%mm%dd_%hh%MMz.nc4
+  filetype: cube sphere history
+  first: PT0H
+  frequency: PT1H
+  provider: geos
 variational:
   iterations:
   - ninner: '50'
@@ -36266,46 +36266,46 @@ variational:
       name: Identity
       tstep: PT1H
       variable change: Identity
-    online diagnostics:
-      increment:
-        state component:
-          states:
-          - date: $JEDI_ISO_DATE_001
-            datapath: ./
-            filename: $EXPID.jedi_inc1.eta.
-            filetype: auxgrid
-            gridtype: latlon
-          - date: $JEDI_ISO_DATE_002
-            datapath: ./
-            filename: $EXPID.jedi_inc1.eta.
-            filetype: auxgrid
-            gridtype: latlon
-          - date: $JEDI_ISO_DATE_003
-            datapath: ./
-            filename: $EXPID.jedi_inc1.eta.
-            filetype: auxgrid
-            gridtype: latlon
-          - date: $JEDI_ISO_DATE_004
-            datapath: ./
-            filename: $EXPID.jedi_inc1.eta.
-            filetype: auxgrid
-            gridtype: latlon
-          - date: $JEDI_ISO_DATE_005
-            datapath: ./
-            filename: $EXPID.jedi_inc1.eta.
-            filetype: auxgrid
-            gridtype: latlon
-          - date: $JEDI_ISO_DATE_006
-            datapath: ./
-            filename: $EXPID.jedi_inc1.eta.
-            filetype: auxgrid
-            gridtype: latlon
-          - date: $JEDI_ISO_DATE_007
-            datapath: ./
-            filename: $EXPID.jedi_inc1.eta.
-            filetype: auxgrid
-            gridtype: latlon
-      write increment: true
+#   online diagnostics:
+#     increment:
+#       state component:
+#         states:
+#         - date: $JEDI_ISO_DATE_001
+#           datapath: ./
+#           filename: $EXPID.jedi_inc1.eta.
+#           filetype: auxgrid
+#           gridtype: latlon
+#         - date: $JEDI_ISO_DATE_002
+#           datapath: ./
+#           filename: $EXPID.jedi_inc1.eta.
+#           filetype: auxgrid
+#           gridtype: latlon
+#         - date: $JEDI_ISO_DATE_003
+#           datapath: ./
+#           filename: $EXPID.jedi_inc1.eta.
+#           filetype: auxgrid
+#           gridtype: latlon
+#         - date: $JEDI_ISO_DATE_004
+#           datapath: ./
+#           filename: $EXPID.jedi_inc1.eta.
+#           filetype: auxgrid
+#           gridtype: latlon
+#         - date: $JEDI_ISO_DATE_005
+#           datapath: ./
+#           filename: $EXPID.jedi_inc1.eta.
+#           filetype: auxgrid
+#           gridtype: latlon
+#         - date: $JEDI_ISO_DATE_006
+#           datapath: ./
+#           filename: $EXPID.jedi_inc1.eta.
+#           filetype: auxgrid
+#           gridtype: latlon
+#         - date: $JEDI_ISO_DATE_007
+#           datapath: ./
+#           filename: $EXPID.jedi_inc1.eta.
+#           filetype: auxgrid
+#           gridtype: latlon
+#     write increment: true
 # - ninner: '25'
 #   diagnostics:
 #     departures: ombg
