@@ -17,7 +17,7 @@ state1:
   datetime: $ISO_STATES_DATE
   filetype: cube sphere history
   provider: geos
-  datapath: ./
+  datapath: ./ana
   filename: $JEDI_CUBED_ANA
   state variables:
   - ua
@@ -37,7 +37,7 @@ state2:
   datetime: $ISO_STATES_DATE
   filetype: cube sphere history
   provider: geos
-  datapath: ./
+  datapath: ./bkg
   filename: $JEDI_CUBED_BKG
   state variables:
   - ua
@@ -56,5 +56,5 @@ state2:
 output:
   filetype: auxgrid
   gridtype: latlon
-  datapath: ./
+  datapath: ./inc
   filename: $EXPID.jedi_inc1.eta.

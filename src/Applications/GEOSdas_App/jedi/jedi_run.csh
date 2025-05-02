@@ -174,8 +174,7 @@ if ( $JEDI_RUN_ANA ) then
    endif
 
    if ( -e $FVHOME/run/jedi/jedi_run_var.j ) then
-      vED -env $FVHOME/run/jedi/jedi_run_var.j -o jedi_run_var.j
-      sbatch -W jedi_run_var.j
+      sbatch -W $FVHOME/run/jedi/jedi_run_var.j
       sleep 2
    else
       $JEDI_FV3VAR_MPIRUN $JEDIBUILD/bin/fv3jedi_var.x $MYCONF |& tee -a $FVWORK/$JEDIVARLOG
@@ -205,11 +204,6 @@ endif
 
 if ( $JEDI_RUN_GETINC ) then
 
-  if ( ! -e Config/diffstates_geos.yaml ) then
-    echo " ${MYNAME}: missing diffstates_geos.yaml file, aborting ... "
-    exit 1
-  endif
-
   # Calculate increment on the cubed offline from cubed ana and bkg
   # ATTENTION: 1. This should be parallelized.
   #            2. mkiau has been enabled to handled cubed states, so this
@@ -221,12 +215,12 @@ if ( $JEDI_RUN_GETINC ) then
      set   mms = `echo $ttag | cut -c5-6`
      set   dds = `echo $ttag | cut -c7-8`
      set   hhs = `echo $ttag | cut -c10-11`
-     set  cbkg = `ls bkg.${yyyys}${mms}${dds}_${hhs}*nc4`
-     setenv JEDI_CUBED_ANA $cana
-     setenv JEDI_CUBED_BKG $cbkg
-     setenv ISO_STATES_DATE "${yyyys}-${mms}-${dds}T${hhs}:00:00Z"
-     vED -env $FVHOME/run/jedi/Config/diffinc_geos.yaml -o diffstates_geos.yaml
-     $JEDI_GETINC_MPIRUN $JEDIBUILD/bin/fv3jedi_diffstates.x Config/diffstates_geos.yaml
+     if ( -e Config/diffstates_geos_${yyyys}${mms}${dds}_${hhs}z.yaml ) then
+        $JEDI_GETINC_MPIRUN $JEDIBUILD/bin/fv3jedi_diffstates.x Config/diffstates_geos_${yyyys}${mms}${dds}_${hhs}z.yaml
+     else
+        echo " ${MYNAME}: missing Config/diffstates_geos_${yyyys}${mms}${dds}_${hhs}z.yaml file, aborting ... "
+        exit 1
+     endif
   end
 
 endif

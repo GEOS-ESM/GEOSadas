@@ -36222,7 +36222,7 @@ final:
   prints:
     frequency: PT1H
 output:
-  datapath: ./
+  datapath: ./ana
   filename: $EXPID.ana.ceta.%yyyy%mm%dd_%hh%MMz.nc4
   filetype: cube sphere history
   first: PT0H
