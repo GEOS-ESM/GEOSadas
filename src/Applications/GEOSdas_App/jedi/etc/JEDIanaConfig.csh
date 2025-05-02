@@ -5,7 +5,7 @@ setenv JEDI_RUN    1           # run JEDI var executable
 setenv JEDI_HYBRID @JEDI_HYBRID           # control opts for hyb JEDI
 setenv JEDI_MKIAU  1           # calculates IAU output
 setenv JEDI_POST   0           # process results (move files, etc)
-setenv JEDI_IAU_OVERWRITE  0   # overwrite GSI-IAU with JEDI-IAU (when cycling)
+setenv JEDI_IAU_OVERWRITE  @JEDI_IAU_OVERWRITE   # overwrite GSI-IAU with JEDI-IAU (when cycling)
 setenv JEDI_RUN_ADANA_TEST 0   # run adjoint JEDI-Var
 setenv JEDI_VAROFFSET 10800    # background time offset
 setenv JEDI_FEEDBACK_VARBC @JEDI_FEEDBACK_VARBC   # controls whether or not to feedback biases
