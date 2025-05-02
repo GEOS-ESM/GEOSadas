@@ -16,7 +16,7 @@ my ($FVHOME, $FVROOT, $NODEFLG, $RUNDIR);
 my ($AOD_OBSCLASS, $BERROR, $DO_ECS_OUT, $DO_REM_SYNC, $EXPID, $FVARCH,
     $FVBCS, $GID, $MONTHLY_MEANS, $MKSI_SIDB, $MKSIOZ_SIDB, $MKSICN_SIDB, $MP_SET_NUMTHREADS, $NCEPINPUT, $NOBACKUP,
     $OBSCLASS, $OBSCLASS_NOAIRS, $OMP_NUM_THREADS, $RUN_QUADS, $PYRADMON,
-    $VTRACK, $VTXLEVS, $VTXRELOC);
+    $SKIPGSI, $VTRACK, $VTXLEVS, $VTXRELOC);
 my ($BASEDIR, $FCSTID, $FVDMGET, $G5MODULES, $PLOTS_LOC, $GEOSUTIL, $GTAG);
 my ($qalter, $PBS_BIN, $DISCOVERSHARE);
 my ($FVSHARE, $SHARE, $REM_GRADS_CONFIG, $G5MGRAM, $LATS4DLOC, $FVBIN,
@@ -109,6 +109,7 @@ sub init {
     $OMP_NUM_THREADS   = $ENV{"OMP_NUM_THREADS"};
     $PYRADMON          = $ENV{"PYRADMON"};
     $RUN_QUADS         = $ENV{"RUN_QUADS"};
+    $SKIPGSI           = $ENV{"SKIPGSI"};
     $VTRACK            = $ENV{"VTRACK"};
     $VTXLEVS           = $ENV{"VTXLEVS"};
     $VTXRELOC          = $ENV{"VTXRELOC"};
@@ -349,6 +350,7 @@ sub writefile {
     print RUNCONF "setenv ACFTBIAS \"$ACFTBIAS\"\n";
     print RUNCONF "setenv NEWRADBC \"$NEWRADBC\"\n";
     print RUNCONF "setenv ANGLEBC \"$NEWRADBC\"\n";
+    print RUNCONF "setenv SKIPGSI $SKIPGSI\n" if $SKIPGSI;
 
     print RUNCONF "\numask 022\n";
     print RUNCONF "limit stacksize unlimited\n";
