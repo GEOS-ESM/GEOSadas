@@ -223,6 +223,7 @@ if ( $JEDI_RUN_GETINC ) then
         exit 1
      endif
   end
+  /bin/mv $EXPID.*inc*nc4 ./inc  # apparently diffstate does not listen to datapath on output
 
 endif
 
