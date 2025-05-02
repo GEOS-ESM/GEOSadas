@@ -211,7 +211,7 @@ if ( $JEDI_RUN_GETINC ) then
   # ---------------------------------------------------------------
   foreach cana (`ls ana/*ana.ceta*` )
      set this = `basename $cana`
-     set  ttag = `echo $this | cut -d. -f3`
+     set  ttag = `echo $this | cut -d. -f4`
      set yyyys = `echo $ttag | cut -c1-4`
      set   mms = `echo $ttag | cut -c5-6`
      set   dds = `echo $ttag | cut -c7-8`
