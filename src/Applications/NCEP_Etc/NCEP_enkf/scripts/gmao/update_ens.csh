@@ -93,7 +93,7 @@ endif
                set newname = `echo $fn | cut -d. -f1-4 `
                /bin/mv $fn ../updated_ens/${member}/$newname.$ncsuffix
             end # fn
-       end # fntype
+        end # fntype
     endif
     if ( "$type" == "niana" ) then
         mkdir -p ../updated_ens/${member}
