@@ -59,6 +59,7 @@ if ( !($?FVWORK)           )  setenv FAILED   1
 if ( !($?JEDI_ROOT)        )  setenv FAILED   1
 if ( !($?JEDI_RUN_ANA)     )  setenv FAILED   1
 if ( !($?JEDI_RUN_CNVANA)  )  setenv FAILED   1
+if ( !($?JEDI_RUN_GETINC)  )  setenv FAILED   1
 if ( !($?JEDI_RUN_UPDRST)  )  setenv FAILED   1
 if ( !($?JEDI_VAROFFSET)   )  setenv FAILED   1
 if ( !($?JEDI_ADDINC_MPIRUN) )  setenv FAILED   1
@@ -173,8 +174,7 @@ if ( $JEDI_RUN_ANA ) then
    endif
 
    if ( -e $FVHOME/run/jedi/jedi_run_var.j ) then
-      vED -env $FVHOME/run/jedi/jedi_run_var.j -o jedi_run_var.j
-      sbatch -W jedi_run_var.j
+      sbatch -W $FVHOME/run/jedi/jedi_run_var.j
       sleep 2
    else
       $JEDI_FV3VAR_MPIRUN $JEDIBUILD/bin/fv3jedi_var.x $MYCONF |& tee -a $FVWORK/$JEDIVARLOG
@@ -202,6 +202,30 @@ if ( $JEDI_RUN_ANA ) then
    endif
 endif
 
+if ( $JEDI_RUN_GETINC ) then
+
+  # Calculate increment on the cubed offline from cubed ana and bkg
+  # ATTENTION: 1. This should be parallelized.
+  #            2. mkiau has been enabled to handled cubed states, so this
+  #               can be bypassed at some point.
+  # ---------------------------------------------------------------
+  foreach cana (`ls ana/*ana.ceta*` )
+     set this = `basename $cana`
+     set  ttag = `echo $this | cut -d. -f4`
+     set yyyys = `echo $ttag | cut -c1-4`
+     set   mms = `echo $ttag | cut -c5-6`
+     set   dds = `echo $ttag | cut -c7-8`
+     set   hhs = `echo $ttag | cut -c10-11`
+     if ( -e Config/diffstates_geos_${yyyys}${mms}${dds}_${hhs}z.yaml ) then
+        $JEDI_GETINC_MPIRUN $JEDIBUILD/bin/fv3jedi_diffstates.x Config/diffstates_geos_${yyyys}${mms}${dds}_${hhs}z.yaml
+     else
+        echo " ${MYNAME}: missing Config/diffstates_geos_${yyyys}${mms}${dds}_${hhs}z.yaml file, aborting ... "
+        exit 1
+     endif
+  end
+  /bin/mv $EXPID.*inc*nc4 ./inc  # apparently diffstate does not listen to datapath on output
+
+endif
 
 if ( $JEDI_RUN_CNVANA ) then
 
