@@ -1,7 +1,15 @@
 #!/usr/bin/env perl
 #=======================================================================
 # name - checkinput.pl
-# purpose - make a .input file for fvsetup which is readable by runjob
+# purpose - check that the inputs in a *.input file match the prompts
+#           from fvsetup
+# Notes:
+# 1. This script will create a new input file which can be compared to
+#    the original to verify that the prompt/input matches are correct.
+# 2. The input files use the following name format: expid.input
+# 3. If no input files are specified, then this script will find all
+#    possible input files and query the user to identify which to check.
+# 4. The checkinput script must be run from the build's bin directory
 #
 # revision history
 # 18Jun2010  Stassi   Initial version
@@ -63,8 +71,8 @@ sub init {
     #----------------------------------
     $codeID = "@GIT_TAG_OR_REV@";
     $fvsetupID = "@fvID@";
-    $ESMABIN = "@ESMABIN@";
-    $ESMATST = "@ESMATST@";
+    $ESMABIN = "$FindBin::Bin";
+    $ESMATST = "$FindBin::Bin/../etc/testsuites";
     die ">> Error << $ESMABIN is not a directory;" unless -d $ESMABIN;
 
     # get runtime options
