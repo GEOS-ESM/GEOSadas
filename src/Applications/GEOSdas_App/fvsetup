@@ -589,22 +589,22 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
   $rc = system("$fvbin/fix_gocart_rc.csh $vres $fvhome/run/gocart");
   die "Failed to fix GOCART levels-referencing $!" if ( $rc );
 
-# LDAS Setup is done separately, follow instructions in GEOSldas/README.md
-# Provide ldas config input files: YOUR_det_exeinp.txt, YOUR_det_batinp.txt 
-# ln -s YOUR_det_exeinp.txt  $fvbin/det_exeinp.txt 
-# ln -s YOUR_det_batinp.txt  $fvbin/det_batinp.txt  
-# For Hyb-4dEnVar, do same for ens_exeinp.txt and ens_batinp.txt
+# Call LDAS setup script.
+#  Provide LDAS config input files in $ldassetup/: det_exeinp.txt, det_batinp.txt. 
+#  For Hyb-4dEnVar, do same for ens_exeinp.txt, ens_batinp.txt. 
+#  See GEOSldas/README.md for generating sample config input files.
 # ------------------------------------------------------------------------
     print "\n checkprintout  ldas_ana == 1 ($ldas_ana)\n";
     if ($ldas_ana == 1 ) {
-       $rc = system("$fvbin/ldas_setup setup $fvhome/lana $fvbin/det_exeinp.txt $fvbin/det_batinp.txt");
-       die "Failed to setup ldas for det, check ldas config input files $!" if ( $rc );
-      
-       if ($hyb_ens == 4 ) {
-          $rc = system("$fvbin/ldas_setup setup $fvhome/lana $fvbin/ens_exeinp.txt $fvbin/ens_batinp.txt");
-          die "Failed to setup ldas for ens, check ldas config input files $!" if ( $rc );
+        $cmd = "$fvbin/ldas_setup setup $fvhome/lana --account $gid --nymdb $nymdb --nhmsb $nhmsb $ldassetup/det_exeinp.txt $ldassetup/det_batinp.txt";
+        print "$cmd\n";
+        $rc = system $cmd;
+        die "Failed to setup LDAS for det, check LDAS config input files $!" if ( $rc );
+        chomp($aens_replay);
+        if (($hyb_ens == 4) && ($aens_replay eq "no")) { 
+           $rc = system("$fvbin/ldas_setup setup $fvhome/lana --account $gid --nymdb $nymdb --nhmsb $nhmsb $ldassetup/ens_exeinp.txt $ldassetup/ens_batinp.txt");
+           die "Failed to setup LDAS for ens, check LDAS config input files $!" if ( $rc );
        }
-
      }
     
 # Monthly Setup
@@ -3177,7 +3177,7 @@ sub get_nodeflg {
   $proc = "";
   # reset default if applicable
 
-  $ans = query(" Processing nodes (1:Haswell, 2:Skylake, 3:Cascase, 4:Milan)?", "2");
+  $ans = query(" Processing nodes (1:Haswell, 2:Skylake, 3:Cascade, 4:Milan)?", "4");
 
   if    ($ans == 1) { $nodeflg = "hasw"; $ncpus_per_node = 24 }
   elsif ($ans == 2) { $nodeflg = "sky";  $ncpus_per_node = 36 }
@@ -3518,42 +3518,54 @@ sub set_newradbc {
 }
 #=======================================================================
 sub set_ldasANA {
+    my ($dflt, $ans1, $ans2);
+    my (@bkglfo_files);
 
     # initialize Land DAS processing flag
     #------------------------------------ 
-    my($dflt, $ans1, $ans2, $ans3, $ans4);
     $ldas_ana = 0;
-    $ldasfdbk = 0;
     $ldas_flag = 0;
-    $dflt = "n";
-    $ldashome = "${fvhome}/lana/${expid}_LDAS" ;
-    $ldashome4ens = "${fvhome}/lana/${expid}_LDAS4ens" ;
+    $ldasfdbk = 0;
+
+    $ldashome = "${fvhome}/lana/${expid}_LDAS";
+    $ldashome4ens = dirname($ldashome) ."/${expid}_LDAS4ens";
 
     print "\n-------------\n";
     print   "LDAS Analysis\n";
     print   "-------------\n\n";
 
+    $dflt = "n";
     $ans1 = query("  Land DAS Analysis (y/n)?", $dflt) ;
-    $ldas_ana = 1 if yes($ans1);
+    if (yes($ans1)) {
+        $ldas_ana = 1;
+        $ldas_flag = 1;
 
-   if ($ldas_ana == 1) {
-      $ans2 = query("  Enable LDAS feedback to model y/n ? ", $dflt);
-      $ldasfdbk = 1 if yes($ans2);
+        $prompt = "  Location of LDAS initial forcing ";
+        $dflt = $fvics;
+        $dflt = dirname($fvics) unless -d $fvics;
 
-      if ($ldasfdbk == 1 ) {
-          $ldas_flag = 1;
-      }
+        $ldashold = query($prompt, $dflt);
+            die ">>> Error <<< Cannot find directory, $ldashold;"
+                unless -d $ldashold;
 
-      $ans3 = query(" LDAS HOME?  [DEFAULT: $ldashome]");
-      $ldashome = $ans3  unless blank($ans3); 
+        @bkglfo_files = (<$ldashold/*bkg*lfo*${nymdb}_${hhb}*>);
+            die ">>> Error <<< Cannot find bkglfo files in $ldashold;"
+                unless scalar(@bkglfo_files);
+        
+        $dflt = "n";
+        $ans2 = query("  Enable LDAS feedback to model y/n?", $dflt);
+        if (yes($ans2)) {
+            $ldasfdbk = 1;
+        }
+        $dflt = "/discover/nobackup/$user/ldasSaveInput";
+        $ldassetup = query("  LDAS setup input path?", $dflt);
       
-      if ($hyb_ens == 4 ) {
-         $ans4 = query(" LDAS HOME for atmens? [DEFAULT: $ldashome4ens]");
-         $ldashome4ens = $ans4  unless blank($ans4); 
-      }
-
-   } 
-return 0;
+        if ($hyb_ens == 4 ) {
+            $dflt = "/discover/nobackup/$user/ldasSaveInput";
+            $ldassetup4ens = query("  LDAS setup input path for ens?", $dflt);
+        }
+    }
+    return 0;
 }
 
 #=======================================================================
@@ -3794,6 +3806,7 @@ EOF
   } 
   $flags = "-nlevs $aens_lev $setacftbc $rcorrarg $setradbc $aens_lsmodel -expdir $fvhome/.. $sppt_flag $bcopt";
   $flags .= " -fvhome $fvhome" if $checkFLG;
+  $flags .= " -ldasflg $ldas_flag";
   $params = " $aens_ana $expid $aens_im $aens_jm $aens_ocn $landbcs"; 
 
   $cmd = "$fvbin/setup_atmens.pl -nodename $nodeflg $flags $params";
@@ -5472,6 +5485,10 @@ sub mkdir_fvhome {  # create directories on FVHOME
   foreach $subdir (qw( gaas gocart )) {
       mkpath("$fvhome/run/$subdir")
           or die ">> Error << creating subdir, $fvhome/run/$subdir;";
+  }
+  if ($ldas_flag) {
+      mkpath("$fvhome/recycle/holdpredout")
+          or die ">> Error << creating subdir, $fvhome/recycle/holdpredout;";
   }
   unlink("$fvhome/fvInput") if ( -e "$fvhome/fvInput" ) ; 
   symlink("$fvbcs","$fvhome/fvInput"); 
@@ -10275,6 +10292,8 @@ sub init_agcm_pert_rc {
 sub copy_resources {
   my ($chemrc, $ensFLG);
   my ($flags, $label, $string, $vars, $cmd);
+  my ($fname, $fname_old, $expid_old, $target);
+  my ($bkglfo_tarfile, @bkglfo_files, $target, $expid_old, $fname, $fname_old);
 
   cp("$fvroot/etc/VERSION","$fvhome/run/VERSION")
           || die "Cannot write file $fvhome/run/VERSION: $!";
@@ -10331,6 +10350,40 @@ sub copy_resources {
           system("$fvbin/vED -vv SHARE=$SHARE $ensFLG $source -o $target");
       }
       system("touch $fvhome/run/gaas/GAAS.BOOTSTRAP_");
+
+      if ($ldas_flag) {
+          die ">>> Error <<< Cannot find directory, $ldashold;"
+              unless -d $ldashold;
+
+          $target = "$fvhome/recycle/holdpredout";
+          die ">>> Error <<< Cannot find directory, $target;"
+              unless -d $target;
+
+          # extract lfo files from tarfile
+          #-------------------------------
+          $bkglfo_tarfile = (<$ldashold/*.bkglforst.${nymdb}_${hhb}z.tar>)[0];
+          if ($bkglfo_tarfile) {
+              $expid_old = find_expid($bkglfo_tarfile, 1);
+              chdir($target);
+              system("tar xf $bkglfo_tarfile");
+              system("rename $expid_old $expid *");
+          }
+
+          # or copy them from directory
+          #----------------------------
+          else {
+              $expid_old = find_expid($ldashold);
+              @bkglfo_files = (<$ldashold/$expid_old.bkg.lfo*.nc4>);
+              die ">>> Error <<< No $expid_old lfo files found in $ldashold;"
+                  unless scalar(@bkglfo_files);
+              
+              foreach $fname_old ( @bkglfo_files ) {
+                  ($fname = basename($fname_old)) =~ s/$expid_old/$expid/;
+                  cp($fname_old, "$target/$fname");
+                  print "cp $fname_old $target/$fname\n";
+              }
+          }
+      }
   }
 
   # Model perturbation-related settings
@@ -10756,7 +10809,48 @@ sub copy_resources {
     }
   }
 }
- 
+
+#=======================================================================
+# name - find_expid
+# purpose - find expid from single filename or from multiple files in a
+#           directory.
+#
+# input parameters
+# - $name: name of file or directory
+# - $flag: (optional) 1=filename, 2=directory [default = 2]
+#
+# notes -
+#   1. If $name is a file, then this routine extracts expid from front
+#      portion of the filename.
+#   2. If $name is a directory, then this routine extracts expid from
+#      each file in the directory and returns the most prevalent value
+#      as the expid.
+#=======================================================================
+sub find_expid {
+    my ($name, $expid_found, $flag, $fname, $most, $front, %count);
+    $name = shift @_;
+    $flag = shift @_;
+
+    if ($flag == 1) {
+        die ">>> ERROR <<< $name is not a file;" unless -f $name;
+        $expid_found = (split(/\./, basename($name)))[0];
+    } else {
+        die ">>> ERROR <<< $name is not a directory;" unless -d $name;
+        for $fname ( <$name/*> ) {
+            $front = (split(/\./, basename($fname)))[0];
+            $count{$front}++;
+        }
+        $most = -1;
+        foreach $front (keys(%count)) {
+            if ($count{$front} > $most) {
+                $expid_found = $front;
+                $most = $count{$front};
+            }
+        }
+    }
+    return $expid_found;
+}    
+
 #=======================================================================
 sub edit_collections {
 
