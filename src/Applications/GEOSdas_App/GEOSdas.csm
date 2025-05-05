@@ -1618,12 +1618,15 @@ exit 1
      endif
 
      # check for presence of jedi tarball holding IAU term
+     set fnymdb = $GcmBegDate
+     set fnhmsb = $GcmBegTime
+     set fhhb = `echo $fnhmsb | cut -c1-2`
      set iamhere = `pwd`
-     set arstlst = `ls $FVHOME/fcst/*.jedi_agcmrst.*z.tar`
+     set arstlst = `ls $FVHOME/fcst/*.jedi_agcmrst.${fnymdb}_${fhhb}z.tar`
      if ( ! $status ) then
         cd $FVWORK
         /bin/mv $arstlst .
-        set rstlst = `ls *.jedi_agcmrst.*z.tar`
+        set rstlst = `ls *.jedi_agcmrst.${fnymdb}_${fhhb}z.tar`
         set vexpid = `echo $rstlst | cut -d. -f1`
         set this   = `echo $rstlst | cut -d. -f3`
         if (! -d agcmRSTinput_${this} ) mkdir agcmRSTinput_$this
@@ -1638,10 +1641,10 @@ exit 1
         # keep only (bin) restart files
         /bin/mv *agcm_import_rst* $fcstage/stage/
         cd -
-#       /bin/rm -r agcmRSTinput_${this}
-#       /bin/rm $rstlst
+        /bin/rm -r agcmRSTinput_${this}
+        /bin/rm $rstlst
         cd $iamhere
-        ln -sf $fcstage/stage/*agcm_import_rst* agcm_import_rst
+        ln -sf $fcstage/stage/*agcm_import_rst.${fnymdb}_${fhhb}* agcm_import_rst
      endif
 
      set agcmfn = `echorc.x -template $EXPID $dtg iau_tendency_filename`
