@@ -5,7 +5,7 @@ setenv JEDI_RUN    1           # run JEDI var executable
 setenv JEDI_HYBRID @JEDI_HYBRID           # control opts for hyb JEDI
 setenv JEDI_MKIAU  1           # calculates IAU output
 setenv JEDI_POST   0           # process results (move files, etc)
-setenv JEDI_IAU_OVERWRITE  0   # overwrite GSI-IAU with JEDI-IAU (when cycling)
+setenv JEDI_IAU_OVERWRITE  @JEDI_IAU_OVERWRITE   # overwrite GSI-IAU with JEDI-IAU (when cycling)
 setenv JEDI_RUN_ADANA_TEST 0   # run adjoint JEDI-Var
 setenv JEDI_VAROFFSET 10800    # background time offset
 setenv JEDI_FEEDBACK_VARBC @JEDI_FEEDBACK_VARBC   # controls whether or not to feedback biases
@@ -27,12 +27,14 @@ setenv JEDI_ROOT @JEDI_ROOT
 # Specific to run procedure
 setenv JEDI_RUN_ANA      1
 setenv JEDI_RUN_CNVANA   0   # convert cc ana and/or inc output to ll
+setenv JEDI_RUN_GETINC   @JEDI_RUN_GETINC   # calc cubed inc from diff of cubed ana and bkg
 setenv JEDI_RUN_UPDRST   0   # not desirable
 
 setenv JEDI_ADDINC_MPIRUN "mpirun -np 12"
 setenv JEDI_CNVANA_MPIRUN "mpirun -np 12"
 setenv JEDI_CNVENS_MPIRUN "mpirun -np 12"
 setenv JEDI_CNVINC_MPIRUN "mpirun -np 12"
+setenv JEDI_GETINC_MPIRUN "mpirun -np 6"
 setenv JEDI_NCPUS @JEDI_VAR_NCPUS
 setenv JEDI_FV3VAR_MPIRUN "mpirun -perhost @JEDI_VAR_PERHOST -np $JEDI_NCPUS"
 
