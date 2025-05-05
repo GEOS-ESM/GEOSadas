@@ -155,19 +155,8 @@ endif
 
 # arquive IAU increments: in 3D agcm_import stored as single file, in 4D as tar ball
 # ----------------------
-set cost = `grep "cost type" $JEDIWORK/Config/geosvar.yaml | cut -d: -f2 | cut -d- -f1`
-if ( $cost == "3D" ) then
-  set lstiau = `ls $EXPID.agcm_import_rst*`
-  if ( $#lstiau == 1 ) then 
-     set sfx = `echo $lstiau[1] | cut -d. -f2-`
-     /bin/cp $lstiau[1] $FVWORK/$EXPID.jedi_agcm_import_rst.$sfx
-  else
-     echo " ${MYNAME}: too many agcm_import_rst in 3D settings, aborting ..."
-     exit (1) 
-  endif
-else
-  tar cvf $FVWORK/$EXPID.jedi_agcmrst.${nymd0}_${hh0}z.tar $EXPID.agcm_import_rst*
-endif
+cd $JEDIWORK/iau
+tar cvf $FVWORK/$EXPID.jedi_agcmrst.${nymd0}_${hh0}z.tar $EXPID.agcm_import_rst*
 cd -
 
 # arquive analysis

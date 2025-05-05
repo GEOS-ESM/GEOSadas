@@ -355,7 +355,7 @@ if ( ! -e $JEDIWRK/.DONE_JEDI_GET_BKG_${nymdb}_${nhmsb} ) then
      ln -sf $JEDIWRK/bkg/bkg.*.nc4 .
      if ( -e $JEDIETC/convertinc_geos.yaml ) then
         set lst = (`ls bkg.*.nc4`)
-        set cres  = `getgfiodim.x $lst[1]`
+        set cres  = `getgfiodim.x $lst[1] | grep -v GFIO`
         @ jcres = $cres[1] + 1
         setenv JEDI_BKG_RESOL $jcres
         vED -env $JEDIETC/convertinc_geos.yaml -o $JEDIWRK/Config/convertinc_geos.yaml
@@ -445,6 +445,19 @@ if ( $JEDI_HYBRID ) then
      setenv ISO_STATES_DATE "${yyyys}-${mms}-${dds}T${hhs}:00:00Z"
      vED -env Config/diffstates_geos.yaml -o Config/diffstates_geos_${yyyys}${mms}${dds}_${hhs}z.yaml
    end
+
+#  Also set localization scales and beta terms
+   set lst = (`ls bkg.*.nc4`)
+   set cres  = `getgfiodim.x $lst[1] | grep -v GFIO`
+   @ jcres = $cres[1] + 1
+   set rcname = ./fv3-jedi/gsibec/hyb_gsibec_configuration_c$jcres.nml
+   set nlat = `nmlread.py $rcname GRIDOPTS nlat`
+   set nlon = `nmlread.py $rcname GRIDOPTS nlon`
+   set nlev = `nmlread.py $rcname GRIDOPTS nsig`
+   ln -sf $FVHOME/run/gmao_global_hybens_info.x${nlon}y${nlat}l${nlev}.rc hybens_info
+   if (! -e hybens_info ) then
+      echo " ${MYNAME}: cannot find gmao_global_hybens_info.x${nlon}y${nlat}l${nlev}.rc , aborting ..."
+   endif
 endif
 
 # If here, likely successful

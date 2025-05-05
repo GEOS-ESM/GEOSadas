@@ -655,7 +655,6 @@ sub append_other_info {
 \${PESTOROOT}%s/jedi/obs/Y%y4/M%m2/%s.jedi_osen.%y4%m2%d2_%h2z.tar
 \${PESTOROOT}%s/jedi/obs/Y%y4/M%m2/%s.jedi_ioda.%y4%m2%d2_%h2z.tar
 \${PESTOROOT}%s/jedi/obs/Y%y4/M%m2/%s.jedi_vbc.%y4%m2%d2_%h2z.tar
-\${PESTOROOT}%s/jedi/rs/Y%y4/M%m2/%s.jedi_agcm_import_rst.%y4%m2%d2_%h2%n2z.%c%c%c
 #
 #               -------------------------
 #                    LSM FILES

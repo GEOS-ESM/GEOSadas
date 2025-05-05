@@ -4,6 +4,7 @@ set (ALLETC
    diffstates_geos.yaml
    geos_3dvar.yaml
    geos_3dfgat.yaml
+   geos_hyb4dcenvar.yaml
    geos_hyb4denvar.yaml
    jedi_acquire_bkg.j
    jedi_acquire_ebkg.j
