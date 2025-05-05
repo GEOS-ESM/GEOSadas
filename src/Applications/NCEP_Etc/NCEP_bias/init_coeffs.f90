@@ -8,7 +8,7 @@ program init_coeffs
 !
 ! !INTERFACE:
 !
-!     Usage:  init_coeffs.x [option-flags] expid yyyymmddhh 
+!     Usage:  init_coeffs.x [option-flags] expid yyyymmddhh
 !
 ! !USES:
 !
@@ -26,21 +26,21 @@ program init_coeffs
 
 !
 ! !DESCRIPTION:  Read radiance diag files to create initial set of
-!                polynomial cross-track bias coefficients for 
+!                polynomial cross-track bias coefficients for
 !                radiance bias correction.  Based on Yanqiu Zhu's
 !                code in GSI - but run offline before initial analysis.
-!                
+!
 !
 ! !REVISION HISTORY:
 !
-!     12Mar2015    Meta   Initial version of offline code loosely 
+!     12Mar2015    Meta   Initial version of offline code loosely
 !                          based on 'sac.x'
 !     summer2015   Meta   various updates and bug fixes
 !     30Jan2017    Meta   spawn from original offline program.  Get
 !                          tlapmean from gmao_global_tlapmean.rc
 !     24Mar2017    Meta   remove namelist dependence, add command
-!                         line switches. 
-!      5Apr2017    Meta   clean old (commented-out) vestiges of MPI  
+!                         line switches.
+!      5Apr2017    Meta   clean old (commented-out) vestiges of MPI
 !      5May2017    Meta   modify for changes in satinfo (airs and iasi
 !                          names and seviri channel numbering)
 !      6Oct2017    Meta   initialize cbiasx to zero for each entry;
@@ -52,12 +52,12 @@ program init_coeffs
 !     13Oct2017    Meta   read dtype/dplat from gsi.rc.tmpl instead of using
 !                         the file name components from gsidiags.rc.tmpl
 !     16Nov2017    Meta   Changes to use gsi.rc.tmpl in place of gsidiags.rc
-!                         to get info for diag file names (dtype/dplat).  
+!                         to get info for diag file names (dtype/dplat).
 !                         Restructuring to avoid opening every diag file.
 !     21Nov2017    Meta   Modified to skip channels from the input diag file
-!                         missing from satinfo (instead of error exit) 
+!                         missing from satinfo (instead of error exit)
 !     20Apr2018    Meta   Modified to write changes out only for channels
-!                         that have modified coefficients 
+!                         that have modified coefficients
 !     25Apr2018    Meta   Modify to write updated tlapmean values even
 !                         when coefficients are not changed.
 !     27Apr2018    Meta   Added mode '-2', read in satbias coefficient
@@ -68,7 +68,7 @@ program init_coeffs
 !     30Apr2018    Meta   only process 'coeff' files from satellite/insts
 !                         that have been marked as updated.  (Avoids using
 !                         any stray 'coeff' files left in work area.)
-!      9May2018    Meta   Add '-qc' flag to use the QC decisions from the 
+!      9May2018    Meta   Add '-qc' flag to use the QC decisions from the
 !                         input diag file in choosing which obs to use
 !                         when fitting the coefficents.  Using errinv<1e-6
 !                         because data_chan(j)%qcmark may not always be set
@@ -77,6 +77,7 @@ program init_coeffs
 !      6Jun2018    Meta   Extra check for '999' in ntl field for tlapmean
 !                         with tlapmean value == 0.0.  Set these 999 to 0
 !                         so that tlapmean can be initialized.
+!     30Apr2024    Meta   add option to adjust range for gross check
 !EOP
 !-----------------------------------------------------------------------
 
@@ -87,7 +88,7 @@ program init_coeffs
    real(r_kind),allocatable,dimension(:):: radstart    ! starting scan angle
    real(r_kind),allocatable,dimension(:):: radstep     ! step of scan angle
    integer(i_kind),allocatable,dimension(:):: radnstep    ! nstep of scan angle
-   
+
    integer(i_kind),allocatable,dimension(:):: radedge1    ! cut-off of edge removal
    integer(i_kind),allocatable,dimension(:):: radedge2    ! cut-off of edge removal
    character(len=20),allocatable,dimension(:):: radsis    ! satellite/instrument/sensor
@@ -123,7 +124,7 @@ program init_coeffs
   integer(i_kind),parameter:: lncoef = 14
   integer(i_kind),parameter:: lnberr = 16
   integer(i_kind),parameter:: lndiag = 21
-  integer(i_kind),parameter:: lntemp = 51 
+  integer(i_kind),parameter:: lntemp = 51
   integer(i_kind),parameter:: lnupdt = 52
   integer(i_kind),parameter:: lngtbl = 53
 
@@ -195,7 +196,7 @@ program init_coeffs
      character(len=10) ::  dtype    ! instrument type
      character(len=10) ::  dplat    ! platform
      integer(i_kind)   ::  sisptr   ! pointer to sis in the sislist
-     logical           ::  update   ! indicates type is updated 
+     logical           ::  update   ! indicates type is updated
   end type gsi_diag_type
 
   type (gsi_diag_type), allocatable, dimension(:) :: gsi_files
@@ -239,6 +240,8 @@ program init_coeffs
 
   integer(i_kind) :: max_pos
 
+  real(r_kind):: omgmax
+
 !************************************************************************
 
   retrieval=.false.     ! .true. if bisst present
@@ -249,7 +252,7 @@ program init_coeffs
   mode = 1
 
   angord = 4
-  npred = 8 + angord    
+  npred = 8 + angord
 
   ntlapthresh = 100
 
@@ -307,8 +310,8 @@ program init_coeffs
   allocate(inew_rad(jpch))
 
   inew_rad = .true.
-  
-  
+
+
   rewind(lninfo)
   j=0
   nsis = 0
@@ -339,11 +342,11 @@ program init_coeffs
   print *, 'build and verify satinfo table'
   call sischnTable_build(satinfo_table,satsensor0(:jpch),jchanum0(:jpch))
   call sischnTable_verify(satinfo_table)
-  
+
   allocate(sischn(nsis),sisind(nsis),sislist(nsis))
   allocate(dtype(nsis), dplat(nsis))
   allocate(rankarray(jpch))
- 
+
 ! now get the index array for ranked sis/chn and find the unique sis & nchan
 ! sisind = index in 'rankarray' of start of sis
 ! sischn = number of channels of sis
@@ -367,7 +370,7 @@ program init_coeffs
      else
         jj = jj + 1        ! increment nchannel count
      end if
-        
+
   end do
   sischn(lsis) = jj
   if (jj > mxchn) mxchn = jj
@@ -386,9 +389,9 @@ program init_coeffs
   tlbe     = 0.0
   ntl      = 0
   update_tlapmean = .true.
-  
+
   var3       = 0.0
-  
+
   close(lninfo)
 
   inquire(file=tlapfile,exist=lexist)
@@ -398,13 +401,13 @@ program init_coeffs
 !!$     call mpi_abort(mpi_comm_world,ierror_code,ierror)
      stop 95
   end if
-     
+
   open(lninfo,file=tlapfile,form='formatted')
 
 !  read the tlapmean table
 !  locate the sis/chn pair in the satinfo table
 !  if not found, skip.  If found, store the tlapmean
-  do 
+  do
      read(lninfo,'(1x,a20,1x,i5,e15.7)',iostat=istatus) satsensor0_j,  &
           jchanum0_j, tlap0_j
      if (istatus /= 0) exit
@@ -435,7 +438,7 @@ program init_coeffs
         do while ( istatus == 0 )
            read(lncoef,110,iostat=istatus) ich, satsensor0_j,jchanum0_j,  &
                 tlap0_j, tlbe_j, ntl_j, (predr(i),i=1,npred)
-           
+
            if (istatus /= 0) exit
 
 !  special check for coeffs from x0029_bc and prePP_rt wrong ntl value
@@ -446,8 +449,8 @@ program init_coeffs
            iiii = sischnTable_locate(satinfo_table,satsensor0_j,jchanum0_j)
            if (iiii <=0 .or.  iiii > jpch) cycle     ! entry not in satinfo list
            predx(:,iiii) = predr(:)
-           if (ntl_j /= zero) then   ! if nonzero ntl, use tlapmean,ntl from satbias_in 
-              ntl(iiii) = ntl_j         
+           if (ntl_j /= zero) then   ! if nonzero ntl, use tlapmean,ntl from satbias_in
+              ntl(iiii) = ntl_j
               tlapmean(iiii) = tlap0_j
               tlbe(iiii) = tlbe_j
               if (ntl_j <= ntlapthresh) update_tlapmean(iiii) = .true.
@@ -455,7 +458,7 @@ program init_coeffs
 
            if (any(predr/=zero)) inew_rad(iiii) = .false.
         end do
-        
+
         close(lncoef)
 
         if (trim(satbias_pc) /= '') then
@@ -550,7 +553,7 @@ program init_coeffs
   allocate(radedge1(maxdat),radedge2(maxdat))
   allocate(radsis(maxdat),ones(maxdat))
 
-  
+
 ! Read gsi.rc.tmpl for file names
 
   print *,'read gsi.rc.tmpl obs table'
@@ -575,7 +578,7 @@ program init_coeffs
   allocate(satsensor3(jpch),jchanum3(jpch))
   allocate(satsensor2(jpch),jchanum2(jpch))
   allocate(lnew(jpch),lupdt(jpch))
-  
+
 
 !!!!!!!!!!!!!!
 ! Initialize arrays used for computation, save copies of values read in from files
@@ -625,12 +628,12 @@ program init_coeffs
      update_file = .false.
 
 ! since we have the sis name for this file (read from gsi.rc.tmpl) we can check all
-! the inew_rad values to see if it needs updating.  
+! the inew_rad values to see if it needs updating.
 !
      iptr_ch_start = sisind(gsi_files(iii)%sisptr)
      nchans = sischn(gsi_files(iii)%sisptr)
      chan_ptr(1:nchans) = rankarray(iptr_ch_start:iptr_ch_start+nchans-1)
-     if (any(inew_rad(chan_ptr(1:nchans))) .or. any(update_tlapmean(chan_ptr(1:nchans)))) then      
+     if (any(inew_rad(chan_ptr(1:nchans))) .or. any(update_tlapmean(chan_ptr(1:nchans)))) then
 
      ftemplate= trim(prefix) // trim(fstring) // trim(dtemplate)
      call FileResolv(expid,nymd,nhms,ftemplate,diag_rad,stat=istatus)
@@ -652,7 +655,7 @@ program init_coeffs
            write(lntemp,*) satsensor0(jj),jchanum0(jj),inew_rad(jj)
         end do
      end if
-     
+
 !    Open file and read header
 
      open(lndiag,file=diag_rad,form='unformatted',status='old',iostat=istatus)
@@ -662,7 +665,7 @@ program init_coeffs
         close(lndiag)
         cycle taskloop
      endif
-     
+
      call read_radiag_header(lndiag,0,retrieval,header_fix,header_chan,data_name,istatus)
      if (istatus/=0) then
         write(6,'('' Problem reading header for file '',a,'' iostat='',i4)') &
@@ -670,7 +673,7 @@ program init_coeffs
         close(lndiag)
         cycle taskloop
      endif
-     
+
 !       Process file
      satsens = header_fix%isis
      n_chan  = header_fix%nchan
@@ -693,7 +696,7 @@ program init_coeffs
            if (index(satsens,'metop-b') /= 0) satsens='iasi_metop-b'
            if (index(satsens,'metop-c') /= 0) satsens='iasi_metop-c'
         end select
-     
+
 !  check that the sis from the file matches the one that we expect
 
         if (trim(satsens) /= trim(gsi_files(iii)%sis)) then
@@ -702,13 +705,13 @@ program init_coeffs
            print *,'Found (from diag file) ',trim(satsens)
            stop
         end if
-        
+
 !       Extract satinfo relative index
 
 !!$!  we use the satinfo_table since we have aligned everything as in the satinfo
 !!$!  file
      do j=1,n_chan
-        io_chan(j) = sischnTable_locate(satinfo_table,satsens,header_chan(j)%nuchan)   
+        io_chan(j) = sischnTable_locate(satinfo_table,satsens,header_chan(j)%nuchan)
            if (verbose) then
               write(lntemp,'(4i5)') j,header_chan(j)%nuchan,io_chan(j),chan_ptr(j)
            end if
@@ -722,7 +725,7 @@ program init_coeffs
 !!!! start of checks to determine if pre-processing needed for un/under-initialized coefficients
      allocate(inew(n_chan))
      inew = 0
-     
+
 
 !  check if any tlapmean needs to be updated
      ntlupd = .false.
@@ -732,7 +735,7 @@ program init_coeffs
         update_tlapmean(jj)  = (ntl(jj) <= ntlapthresh)
         ntlupd = update_tlapmean(jj) .or. ntlupd
      end do
-        
+
 ! Check for uninitialized bias coefficients as in radinfo - we want to try to fit the
 ! angle coeffs using only the gross check QC and the errinv=exp(-(data_chan(j)%omgnbc/3.0_r_kind)**2)
      update_coeff = .false.
@@ -764,7 +767,7 @@ program init_coeffs
      end if
 
      if ( update_coeff .or. ntlupd ) then
-        
+
         radedge_min = 0
         radedge_max = 1000
         irdind = sischnTable_locate(scantable,satsens,1)
@@ -776,18 +779,18 @@ program init_coeffs
            radedge_min = radedge1(irdind)
            radedge_max = radedge2(irdind)
         end if
-        
+
         write(6,'('' Initial angle processing for '',a,'' np='',i3)') &
              trim(diag_rad),np
 
 ! Loop to read diagnostic file to fill in values for un-/under-initialized coeffs.
         istatus = 0
         loopd1:  do while (istatus == 0)
-           
+
 ! Read a record.  If read flag, istatus does not equal zero, exit loopd
            call read_radiag_data( lndiag, header_fix, retrieval, data_fix, data_chan, data_extra, istatus )
            if( istatus /= 0 ) exit loopd1
-           
+
 ! Extract scan angle, lat, lon
            scan   = data_fix%senscn_pos
            ispot  = nint(scan)
@@ -799,12 +802,12 @@ program init_coeffs
 ! Channel loop
            nc = 0
            loopc1:  do j = 1,n_chan
-              
+
               jj = io_chan(j)
               if (jj <=0 .or. jj > jpch) cycle
 
               if(lnew(jj)) nc = nc + 1
-              
+
               if (.not. update_tlapmean(jj) .and. .not. lnew(jj)) cycle
 
 !     Check for reasonable obs-ges and observed Tb.
@@ -824,7 +827,8 @@ program init_coeffs
 !     do not use this observation in computing the update to the
 !     angle dependent bias.
               else
-                 if( ( abs(data_chan(j)%omgnbc) > 200. .or. &
+!                if( ( abs(data_chan(j)%omgnbc) > 200. .or. &
+                 if( ( abs(data_chan(j)%omgnbc) > omgmax .or. &
                       data_chan(j)%tbobs < 50. .or. &
                       data_chan(j)%tbobs > 500. ) ) then
                     cycle loopc1
@@ -833,7 +837,7 @@ program init_coeffs
 
               errinv=exp(-(data_chan(j)%omgnbc/3.0_r_kind)**2)
               if (errinv < atiny) cycle loopc1
-              
+
               if (ntlupd .and.update_tlapmean(jj)) then
                  tlaptmp=data_chan(j)%tlap
                  if (header_fix%inewpc==0) tlaptmp=100.0_r_kind*tlaptmp
@@ -927,7 +931,7 @@ program init_coeffs
                     write(lntemp,*) AA
                  end if
                  call linmm(AA,be,np,1,np,np)
-                 
+
                  predx(1,inew(i)) = be(1)
                  if (.not. mean_only) then
                     do j = 1,angord
@@ -945,11 +949,11 @@ program init_coeffs
            end if
 
            update_file = .true.
-           
+
            deallocate(A,b)
            deallocate(iobs,pred)
         end if
-        
+
      end if    ! if ( update_coeff .or. ntlupd)
 
      if (verbose) close(lntemp)
@@ -1002,7 +1006,7 @@ program init_coeffs
 
 !    Loop over the satellite/sensors.  Read in each update
 !    scratch file and load into proper location in output
-!    arrays. 
+!    arrays.
 !
   do iii=1,ngsircf
      if (.not. gsi_files(iii)%update ) cycle
@@ -1012,7 +1016,7 @@ program init_coeffs
         write(6,*) 'processing update file i=',iii,' with fname=', &
              trim(fname),' ',lexist,' ',gsi_files(iii)%update
      end if
-     
+
 !   Process the scratch update file
 !
      if (lexist) then
@@ -1023,7 +1027,7 @@ program init_coeffs
         tsum2=zero
         coef2=zero
         ntl2=0
-        
+
 !  Read data from scratch file
         open(lntemp,file=fname,form='formatted')
         done=.false.
@@ -1040,7 +1044,7 @@ program init_coeffs
         end do
         n_chan=j-1
         close(lntemp)
-        
+
 ! Transfer to output arrays
 
         do j=1,n_chan
@@ -1054,12 +1058,12 @@ program init_coeffs
            endif
            if (update_coeff) then
               coef3(:,jj) = coef2(:,j)
-              var3(:,jj) = 1.e4     ! newly fitted coeffs get large bkg err 
+              var3(:,jj) = 1.e4     ! newly fitted coeffs get large bkg err
               ostats3(jj) = zero    !   and zero value for ostats
            endif
         end do
-        
-           
+
+
 !  End of lexist block
 
      endif
@@ -1088,7 +1092,7 @@ program init_coeffs
 110 format(I5,1x,A20,1x,I5,2e15.6,1x,I5/2(4x,10f12.6/))
 111 format(I5,1x,A20,1x,I5,e15.7/2(4x,10e15.7/))
 112 format(I5,2L2,1x,A20,1x,I5,2e15.6,1x,I5/2(4x,10f12.6/))
-  
+
   allocate(cbiasx(nstep))
   open(lnupdt,file='satbias_ang.out',form='formatted')
   if (nstep /= 90) write(lnupdt,'(''nscan='',I8)') nstep
@@ -1102,9 +1106,9 @@ program init_coeffs
           j,satsensor3(j),jchanum3(j),tlap3(j),(cbiasx(i),i=1,nstep)
   end do
   close(lnupdt)
-  
+
   deallocate(cbiasx)
-  
+
   print *,'Finalizing program, deallocate arrays'
 
   call sischnTable_clean(scantable)
@@ -1203,7 +1207,7 @@ CONTAINS
        print *,'maxdat = ',maxdat,' ndat = ',ndat
        stop
     end if
-    
+
     ones = 1
     radstart=zero
     radstep =one
@@ -1217,7 +1221,7 @@ CONTAINS
        if (istat /= 0) exit
        if (cflg == '!') cycle
        j = j + 1
-       
+
        radstart(j)=start
        radstep(j)=step
        radnstep(j)=nstep
@@ -1229,10 +1233,10 @@ CONTAINS
 1000 format(a1,a20,2f11.3,i10,2i6)
 1222 continue
     close(lunin)
-    
+
   end subroutine read_scaninfo2
-  
-  
+
+
   real(r_kind) function rnad_pos(isis,iscan,jch)
 !$$$  subprogram documentation block
 !                .      .    .
@@ -1257,18 +1261,18 @@ CONTAINS
 
     character(len=20),intent(in):: isis
     integer(i_kind),intent(in):: iscan,jch
-    
+
     integer(i_kind) ifov
     real(r_kind) piece
-    
+
     if (index(isis,'iasi')/=0) then
-       
+
        piece=-0.625_r_kind
        if (mod(iscan,2) == 1) piece = 0.625_r_kind
        rnad_pos=radstart(jch)+radstep(jch)*float((iscan-1)/2)+piece
-       
+
     else
-       
+
        if (index(isis,'hirs')/=0 .and. (index(isis,'n16')/=0 .or. &
             index(isis,'n17')/=0)) then
           ifov=iscan+1
@@ -1278,12 +1282,12 @@ CONTAINS
           ifov=iscan
        end if
        rnad_pos=radstart(jch)+radstep(jch)*float(ifov-1)
-       
+
     end if
-    
+
     return
   end function rnad_pos
-  
+
   subroutine angle_cbias1(isis,jspot,coefs,cbiasj)
 !$$$  subprogram documentation block
 !                .      .    .
@@ -1305,15 +1309,15 @@ CONTAINS
 
 ! !USES:
     implicit none
-    
+
     character(len=20),intent(in):: isis     ! satellite/instrument/sensor
     integer(i_kind),intent(in):: jspot      ! index for radstart/radstep array
     real(r_kind),intent(in):: coefs(:)
     real(r_kind),dimension(maxscan),intent(inout):: cbiasj
-    
+
     integer(i_kind) i,k
     real(r_kind),dimension(npred):: pred
-    
+
     pred=zero
     do i=1,min(radnstep(jspot),maxscan)
        pred(npred)=rnad_pos(isis,i,jspot)*deg2rad
@@ -1324,11 +1328,11 @@ CONTAINS
        do k=1,angord
           cbiasj(i) = cbiasj(i)+ coefs(npred-k+1)*pred(npred-k+1)
        end do
-       
+
     end do
     return
   end subroutine angle_cbias1
-  
+
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 !      NASA/GSFC, Global Modeling and Assimilation Office, Code 610.1   !
 !-----------------------------------------------------------------------
@@ -1339,18 +1343,18 @@ CONTAINS
 ! !INTERFACE:
 !
   subroutine read_gsirctbl(ier)
-    
+
 ! USES:
     use mpeu_util, only: gettablesize
     use mpeu_util, only: gettable
     implicit none
-    
+
 ! !INPUT PARAMETERS:
 !
     integer ier
-    
+
 ! !DESCRIPTION:  Reads dtype, dplat, and dsis values from gsi.rc.tmpl
-!                
+!
 !
 ! !REVISION HISTORY:
 !   14Nov2017 Sienkiewicz  Original routine
@@ -1359,14 +1363,14 @@ CONTAINS
 !
 !EOP
 !-------------------------------------------------------------------------
-    
+
     character(len=256),allocatable,dimension(:):: utable
     character(20) :: sfile, ssis
     character(10) :: stype, splat
     integer nrows, ii,i, j
     integer ntot
-    
-    
+
+
     ier = 0
 
 ! Read dtype and dplat from gsi.rc and construct strings for diag file names
@@ -1377,19 +1381,19 @@ CONTAINS
        close (30)
        return
     end if
-    
+
     allocate(utable(nrows),gsi_files(nrows))
     call gettable('OBS_INPUT::',30,ntot, nrows, utable)
-    
+
     close (30)
-    
+
     j=0
     do ii = 1,nrows
        read(utable(ii),*)  sfile,&
             stype    ,& ! character string identifying type of observatio
             splat    ,& ! currently contains satellite id (no meaning for non-sat data)
             ssis        ! sensor/instrument/satellite identifier for info files
-    
+
        select case (ssis(1:4))
        case ('airs')
           ssis='airs_aqua'
@@ -1412,7 +1416,7 @@ CONTAINS
        end do
     end do
 
-    ngsircf = j  
+    ngsircf = j
 
     deallocate(utable)
     return
@@ -1433,17 +1437,17 @@ CONTAINS
 !   Spring2017 Sienkiewicz Initial version of init subroutine
 !   04May2017  Sienkiewicz Fix missing initialization of FVROOT from
 !                             environment variable
-!   16Nov2017  Sienkiewicz Replaced 'gsidiags.rc' with 'gsi.rc.template' 
+!   16Nov2017  Sienkiewicz Replaced 'gsidiags.rc' with 'gsi.rc.template'
 !                          Add '-s' to specify satinfo file input
 !    9May2018  Sienkiewicz Add '-qc' flag to use the QC decisions from the
 !                          input diag file in choosing which obs to use
-!                          when fitting the coefficents. 
+!                          when fitting the coefficents.
 !
 !-------------------------------------------------------------------------
 
     integer nargs, iargc, iarg
     character(len=120) argv, argv2
-    
+
     nstep = 90
     satbias_in = ''
     satbias_pc = ''
@@ -1457,6 +1461,8 @@ CONTAINS
     wrinit = .false.       ! flag to write Yanqiu 'init' style file for testing
     use_iuse = .false.
     use_qc = .false.
+
+    omgmax = 200.     ! original gross check limit (200 K)
 
     nargs = iargc()
 
@@ -1504,7 +1510,7 @@ CONTAINS
           case ('-iuse')                          ! use 'iuse' from satinfo
              use_iuse = .true.
           case ('-m')                             ! set mode - fit coeffs or write uninitialized file
-             iarg = iarg + 1                      ! (use to write inflated satbias_pc to use with 
+             iarg = iarg + 1                      ! (use to write inflated satbias_pc to use with
              if (iarg > nargs-2) then             ! satbias from prior experiment)
                 print *,'Error in -m argument'
                 call usage
@@ -1554,6 +1560,14 @@ CONTAINS
                 call usage
              end if
              call getarg(iarg,prefix)
+          case ('-L')
+             iarg = iarg + 1
+             if (iarg > nargs-2) then
+                print *,'Error in -L limit argument'
+                call usage
+             end if
+             call getarg(iarg,argv)
+             read(argv,*) omgmax
           case default
              print *,'undefined argument ',trim(argv),'; skipping'
              iarg = iarg + 1
@@ -1568,7 +1582,7 @@ CONTAINS
        print *,'satbias_in not specifed, not reading preconditioner file'
        satbias_pc = ''
     end if
-    
+
     if (fvhome == '') then
        call getenv('FVHOME',fvhome)
        if (fvhome == '') then
@@ -1584,13 +1598,13 @@ CONTAINS
        use_iuse = .false.
        satinfo  = trim(fvhome) // '/run/gmao_global_satinfo.rc'
     end if
-    
+
     if (use_iuse)   print *,'use_iuse = .true.'
 
     if ( gsirc == '') then
        gsirc = trim(fvhome) // '/run/gsi.rc.tmpl'
     end if
-    
+
   end subroutine init
 
 !-------------------------------------------------------------------------
@@ -1619,6 +1633,7 @@ subroutine usage()
   print *,'      -iuse       if satinfo file set, use "iuse" values from the file    '
   print *,'  -v              set verbose = .true.'
   print *,'  -H directory    location of FVHOME '
+  print *,'  -L limit        gross check limit for coefficient fitting'
   print *,'  -P prefix       prefix template for diag files (e.g. directory path)'
   print *,'  -qc             use qc marks as in diag file to screen obs'
   print *,''
@@ -1628,7 +1643,7 @@ subroutine usage()
   print *,''
   print *,'ENVIRONMENT VARIABLES (if not specified on command line):'
   print *,'   FVHOME -  needed for satinfo, scaninfo, tlapmean resource files'
-  
+
   stop
 end subroutine usage
 !-------------------------------------------------------------------------
@@ -1647,7 +1662,7 @@ end subroutine usage
 !
 !  sislist lists the unique sis combinations in the satinfo file.
 !  gsi_files contains information for eligble diag files for fitting
-!   
+!
 !
 
 end program init_coeffs
