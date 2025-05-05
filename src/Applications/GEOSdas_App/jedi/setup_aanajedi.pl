@@ -565,7 +565,7 @@ $archive/$expid/rs/Y%y4/M%m2/$expid.rst.%y4%m2%d2_%h2z.tar
 EOF
 if ( ! $hybridvar ) {
  print  SCRIPT <<"EOF";
-$archive/$expid/jedi/rs/Y%y4/M%m2/$expid.jedi_agcmrst.%y4%m2%d2_%h2z.tar => $expid.agcmrst.%y4%m2%d2_%h2z.tar
+$archive/$expid/jedi/rs/Y%y4/M%m2/$expid.jedi_agcmrst.%y4%m2%d2_%h2z.tar
 EOF
 }
 }
