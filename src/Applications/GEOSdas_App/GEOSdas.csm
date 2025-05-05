@@ -6089,6 +6089,10 @@ endif
          /bin/mv $momoutdir/MOM.res_${fn}.nc $FVHOME/recycle/hold/$EXPID.mom${fn}_rst.${momtag}.nc4 
        end
     endif
+    set lstbkglfo = `ls $FVWORK/$EXPID.bkg.lfo*.$NCSUFFIX`
+    if ( ${%lstbkglfo}  ) then
+       tar cvf $FVWORK/$EXPID.bkglforst.${rtag}.tar $EXPID.bkg.lfo*.$NCSUFFIX
+    endif 
     cd $FVHOME/recycle/hold
     tar cvf $FVWORK/$EXPID.rst.${rtag}.tar $EXPID.* 
     /bin/mv $FVWORK/$EXPID.xinc*$NCSUFFIX .
@@ -6124,9 +6128,8 @@ endif
 #------------------------------------ 
 
   if ( $LDAS_ANA ) then
-    mkdir -p               $FVHOME/recycle/holdpredout 
-    /bin/mv -f $FVWORK/*lfo_Nx+-* $FVHOME/recycle/holdpredout/. 
-    /bin/cp $FVHOME/recycle/holdpredout/*lfo_Nx+-*  $LDHOME/input/met_forcing/. 
+    /bin/rm -f $FVHOME/recycle/holdpredout/*lfo*
+    /bin/cp  $FVWORK/*bkg.lfo*.nc4  $FVHOME/recycle/holdpredout/. 
   endif 
    
   exit 0                      
