@@ -1617,6 +1617,36 @@ exit 1
         if ( -e agcm_import_rst ) exit 0  # no need to regenerate IAU increment if already available
      endif
 
+     # check for presence of jedi tarball holding IAU term
+     set fnymdb = $GcmBegDate
+     set fnhmsb = $GcmBegTime
+     set fhhb = `echo $fnhmsb | cut -c1-2`
+     set iamhere = `pwd`
+     set arstlst = `ls $FVHOME/fcst/*.jedi_agcmrst.${fnymdb}_${fhhb}z.tar`
+     if ( ! $status ) then
+        cd $FVWORK
+        /bin/mv $arstlst .
+        set rstlst = `ls *.jedi_agcmrst.${fnymdb}_${fhhb}z.tar`
+        set vexpid = `echo $rstlst | cut -d. -f1`
+        set this   = `echo $rstlst | cut -d. -f3`
+        if (! -d agcmRSTinput_${this} ) mkdir agcmRSTinput_$this
+        cd agcmRSTinput_$this
+        tar xvf ../$rstlst
+        if ( "$EXPID" != "$vexpid" ) then
+           foreach fn ( `ls *agcm_internal_rst*` ) 
+               set sfx = `echo $fn | cut -d. -f2-`
+               /bin/mv $vexpid.$sfx $EXPID.$sfx
+           end
+        endif
+        # keep only (bin) restart files
+        /bin/mv *agcm_import_rst* $fcstage/stage/
+        cd -
+        /bin/rm -r agcmRSTinput_${this}
+        /bin/rm $rstlst
+        cd $iamhere
+        ln -sf $fcstage/stage/*agcm_import_rst.${fnymdb}_${fhhb}* agcm_import_rst
+     endif
+
      set agcmfn = `echorc.x -template $EXPID $dtg iau_tendency_filename`
      if ( -e $fcstage/stage/$agcmfn ) then
         ln -sf $fcstage/stage/$agcmfn agcm_import_rst
@@ -3435,6 +3465,7 @@ endif
   Sub CoupleAnaToGcm_( Viter_, Final_ )
 # ------------------------------
   if ( $?ECHO___ ) set echo
+  if ( $SKIPGSI  && ! -e $FVHOME/run/AGCM.BOOTSTRAP.rc.tmpl ) exit 0
 
         set updrst0 =
         if ( "$MPIRUN_UPRST" != "/dev/null" ) then
