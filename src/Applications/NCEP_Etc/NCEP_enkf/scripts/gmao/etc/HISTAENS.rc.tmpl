@@ -39,6 +39,8 @@ COLLECTIONS: 'bkg.eta'
              'cbkg.eta'
 #            'abkg.eta'
              'gaas_bkg.sfc'
+             'bkg.lfo_tavg'
+             'bkg.lfo_inst'
 #	     'skeb_eta'
 @AENS_DOSPPT 'sppt_eta'
 #            'sppt_diag_eta'
@@ -610,7 +612,6 @@ COLLECTIONS: 'bkg.eta'
   tavg1_2d_lfo_Nx.end_date:    >>>IOBBKGD<<< ,
   tavg1_2d_lfo_Nx.end_time:    >>>IOBBKGT<<< ,
   tavg1_2d_lfo_Nx.fields:      'SLRSF'   , 'SOLAR'    , 'SWGDN'    ,
-                               'SWLAND'  , 'SURFACE'  ,
                                'LWS'     , 'IRRAD'    , 'LWGAB'    ,
                                'PCU'     , 'SURFACE'  , 'PRECCU'   ,
                                'PLS'     , 'SURFACE'  , 'PRECLS'   ,
@@ -863,3 +864,46 @@ COLLECTIONS: 'bkg.eta'
                         'TDEL'             , 'SURFACE'     , 'tdel'       ,
                         'Z0'               , 'SURFACE'     , 'z0m'        ,
                         ::
+
+#######################################################################
+#                predictor forcing files for land da coupling 
+#######################################################################
+
+  bkg.lfo_tavg.format:     'CFIO' ,
+  bkg.lfo_tavg.descr:      '2d,1-Hourly,Time-Averaged,Single-Level,Land Surface Forcings' ,
+# bkg.lfo_tavg.nbits:      10 ,
+  bkg.lfo_tavg.template:   '%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.>>>NCSUFFIX<<<' ,
+  bkg.lfo_tavg.mode:       'time-averaged' ,
+  bkg.lfo_tavg.frequency:  010000 ,
+  bkg.lfo_tavg.duration:   010000 ,
+  bkg.lfo_tavg.ref_date:   >>>IOBBKGD<<< ,
+  bkg.lfo_tavg.ref_time:   >>>IOBBKGT<<< ,
+  bkg.lfo_tavg.end_date:   >>>IOEDATE<<< ,
+  bkg.lfo_tavg.end_time:   >>>IOETIME<<< ,
+  bkg.lfo_tavg.fields:     'SLRSF'   , 'SOLAR'    , 'SWGDN'    ,
+                                'LWS'     , 'IRRAD'    , 'LWGAB'    ,
+                                'PCU'     , 'SURFACE'  , 'PRECCU'   ,
+                                'PLS'     , 'SURFACE'  , 'PRECLS'   ,
+                                'SNO'     , 'SURFACE'  , 'PRECSNO'  ,
+                                'DFPAR'   , 'SOLAR'    , 'PARDF'    ,
+                                'DRPAR'   , 'SOLAR'    , 'PARDR'    ,
+                               ::
+
+  bkg.lfo_inst.format:     'CFIO' ,
+  bkg.lfo_inst.descr:      '2d,1-Hourly,Instantaneous,Single-Level,Land Surface Forcings' ,
+# bkg.lfo_inst.nbits:      10 ,
+  bkg.lfo_inst.template:   '%y4%m2%d2_%h2%n2z.>>>MEMBER<<<.>>>NCSUFFIX<<<' ,
+  bkg.lfo_inst.mode:       'instantaneous' ,
+  bkg.lfo_inst.frequency:  010000 ,
+  bkg.lfo_inst.duration:   010000 ,
+  bkg.lfo_inst.ref_date:   >>>IOBBKGD<<< ,
+  bkg.lfo_inst.ref_time:   >>>IOBBKGT<<< ,
+  bkg.lfo_inst.end_date:   >>>IOEDATE<<< ,
+  bkg.lfo_inst.end_time:   >>>IOETIME<<< ,
+  bkg.lfo_inst.fields:     'DZ'     , 'DYN'  , 'HLML'      ,
+                                'TA'     , 'DYN'  , 'TLML'      ,
+                                'QA'     , 'DYN'  , 'QLML'      ,
+                                'SPEED'  , 'DYN'  , 'SPEEDLML'  ,
+                                'PS'     , 'DYN'  ,
+                               ::
+

@@ -17,6 +17,7 @@ package AGCMrc;
 # 03May2010  Todling   Add reference to CARMA rst
 # 19Aug2010  Todling   turb_internal_rst is needed for reproduc/ble fcst
 # 09Oct2013  Todling   Add logics to handle precip-forcing option
+# 07Jan2024  Stassi    No longer need '#' in front of key in %uncomment hash
 #
 #########################################################################
 use strict;
@@ -35,6 +36,7 @@ my ($gocart_tracers, $carma_tracers, $iau, $pcp_forced, $lsmodel_flag);
 my ($fvhome, $fvroot);
 my ($coupled);
 my ($envvars_set, $flags_set, %subst);
+my ($ldas_flag);
 
 #----------------------------------
 # GCM Restart files
@@ -123,7 +125,6 @@ my %list = (rs5_core     => \@rs5_core,
                     stratchem_internal_rst 
                     stratchem_import_rst );
 
-
 #=======================================================================
 # name - set_AGCM_envvars
 # purpose - set global variables: $fvhome and $fvroot
@@ -144,7 +145,6 @@ sub set_AGCM_envvars {
       @rs5_notused = (@rs5_notused, @rs5_coupled);
       @rs5_files = (@rs5_core, @rs5_boot, @rs5_others);
     }
-
 }
 
 #=======================================================================
@@ -160,6 +160,7 @@ sub set_AGCM_flags {
     $lsmodel_flag   = hashextract("lsmodel_flag",  %flags);
     $iau            = hashextract("iau",           %flags);
     $pcp_forced     = hashextract("pcp_forced",    %flags);
+    $ldas_flag      = hashextract("ldas_flag",     %flags);
     $flags_set = 1;
 }
 
@@ -290,6 +291,10 @@ sub ed_g5agcm_rc {
     if ( $gocart_tracers ) { $comment{"GOCART.data_INTERNAL"} = 1 }
     else                   { $comment{"GOCART_INTERNAL"} = 1 }
 
+    # uncomment ldas increment flag
+    #------------------------------
+    if ($ldas_flag == 1) { $uncomment{"LDAS_INCR"} = 1 }
+
     # comment unused catch or catchCN restart
     #----------------------------------------
     if ($lsmodel_flag == 1) { 
@@ -310,8 +315,8 @@ sub ed_g5agcm_rc {
     # uncomment precipation force except when specified
     # -------------------------------------------------
     if ( $pcp_forced ) {
-        $uncomment{"#PRECIP_FILE"}  = 1;
-        $uncomment{"#USE_PP_TAPER"} = 1;
+        $uncomment{"PRECIP_FILE"}  = 1;
+        $uncomment{"USE_PP_TAPER"} = 1;
     }
 
     # edit and output AGCM.rc.tmpl
@@ -350,6 +355,7 @@ sub outputAGCM {
     my ($outfile, $ox_friendlies);
     my ($rcd, $label, $key, $rst);
     my (@DEFAULT_TYPE_FOUND);
+    my ($space, $pound);
 
     $tmpl  = shift @_;
     $outfl = shift @_;
@@ -409,8 +415,11 @@ sub outputAGCM {
         # uncomment specified lines if key is in first non-blank position
         #----------------------------------------------------------------
         foreach $key ( keys %uncomment ) {
-            if ($rcd =~ /^(\s*)$key/) {
-                if ( $uncomment{"$key"} ) {$rcd = substr $rcd, 1;};
+            $key =~ s/^\#//;  # no longer need '#' in front of key
+            if ($rcd =~ /^(\s*)(\#*)\s*$key/) {
+                $space = $1;
+                $pound = $2;
+                $rcd =~ s/^$space$pound/$space/;
             }
         }
         print(LUN2 "$rcd\n");

@@ -17,7 +17,7 @@ ecbuild_add_executable (
   TARGET GSIsa.x
   SOURCES GSIsa.F90
   LIBS GEOSaana_GridComp GSI_GridComp GEOSgsi_Coupler NCEP_sigio fvgcm crtm
-       GMAO_transf GMAO_hermes GMAO_gfio_r8 GEOSagcmPert_GridComp
+       GMAO_hermes GMAO_gfio_r8 GEOSagcmPert_GridComp
        GEOS_PertShared GEOSphysicsPert_GridComp GEOSradiationPert_GridComp GEOSgwdPert_GridComp
        GEOSmoistPert_GridComp GEOSturbulencePert_GridComp GEOSsurfacePert_GridComp GEOSchemPert_GridComp
        GEOSpchemPert_GridComp fvdycorepert Tapenade GEOSdynamicsPert_GridComp Chem_Base MAPL

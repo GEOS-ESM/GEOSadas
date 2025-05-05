@@ -28,14 +28,14 @@ crtm:
 NCEP_Shared:
   local: ./src/Shared/@NCEP_Shared
   remote: ../NCEP_Shared.git
-  tag: v1.3.0
+  tag: v5.42.3
   sparse: ./config/NCEP_Shared.sparse
   develop: main
 
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  tag: g5.42.0
+  tag: v5.42.2
   sparse: ./config/GMAO_Shared.sparse
   develop: main
 
@@ -61,7 +61,7 @@ GEOS_Util:
 GMAO_perllib:
   local: ./src/Shared/@GMAO_Shared/@GMAO_perllib
   remote: ../GMAO_perllib.git
-  tag: g1.0.1
+  tag: v1.1.0
   develop: main
 
 # When updating the MAPL version, also update the MAPL version in the
@@ -75,7 +75,7 @@ MAPL:
 GEOSldas_GridComp:
   local: ./src/Components/@GEOSldas_GridComp
   remote: ../GEOSldas_GridComp.git
-  tag: v1.0.2
+  tag: v2.0.0
 
 FMS:
   local: ./src/Shared/@FMS
@@ -86,13 +86,13 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  tag: v5.42.0
+  tag: v5.42.4
   develop: develop
 
 mksi:
    local: ./src/Components/@GEOSana_GridComp/GEOSaana_GridComp/GSI_GridComp/@mksi
    remote: ../GEOS_mksi.git
-   tag: v5.42.0
+   tag: v5.42.3
    develop: develop
 
 GEOSgcm_GridComp:
@@ -251,7 +251,7 @@ umwm:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  tag: g2.3.8.1
+  tag: g2.3.8.2
   develop: develop
 
 Ocean-LETKF:

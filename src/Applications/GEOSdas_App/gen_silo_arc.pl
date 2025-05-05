@@ -221,6 +221,8 @@ sub restart_info {
     printarc("$lineTAR\n");
     $lineTAR = '${PESTOROOT}%s/rs/Y%y4/M%m2/%s.bkgcrst.%y4%m2%d2_%h2z.tar';
     printarc("$lineTAR\n");
+    $lineTAR = '${PESTOROOT}%s/rs/Y%y4/M%m2/%s.bkglforst.%y4%m2%d2_%h2z.tar';
+    printarc("$lineTAR\n");
     $lineTAR = '${PESTOROOT}%s/jedi/rs/Y%y4/M%m2/%s.jedi_agcmrst.%y4%m2%d2_%h2z.tar';
     printarc("$lineTAR\n");
 

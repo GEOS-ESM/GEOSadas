@@ -154,6 +154,7 @@
   if ( !($?RADCOR) )              setenv RADCOR        0
   if ( !($?SHORTFCST) )           setenv SHORTFCST     0
   if ( !($?SKIPANA)  )            setenv SKIPANA       0
+  if ( !($?SKIPGSI)  )            setenv SKIPGSI       0
   if ( !($?SKIP_PSAS)  )          setenv SKIP_PSAS     0
   if ( !($?SPLITEXE) )            setenv SPLITEXE      0
   if ( !($?STRICT) )              setenv STRICT        0
@@ -1610,9 +1611,40 @@ exit 1
   Sub CreateIAUincrement4Fcst_()
 # -------------------------------------
   if ( $?ECHO___ ) set echo
+  if ( $SKIPGSI && ! -e $FVHOME/run/AGCM.BOOTSTRAP.rc.tmpl ) exit 0
 
      if ( ! $DO4DIAU ) then
         if ( -e agcm_import_rst ) exit 0  # no need to regenerate IAU increment if already available
+     endif
+
+     # check for presence of jedi tarball holding IAU term
+     set fnymdb = $GcmBegDate
+     set fnhmsb = $GcmBegTime
+     set fhhb = `echo $fnhmsb | cut -c1-2`
+     set iamhere = `pwd`
+     set arstlst = `ls $FVHOME/fcst/*.jedi_agcmrst.${fnymdb}_${fhhb}z.tar`
+     if ( ! $status ) then
+        cd $FVWORK
+        /bin/mv $arstlst .
+        set rstlst = `ls *.jedi_agcmrst.${fnymdb}_${fhhb}z.tar`
+        set vexpid = `echo $rstlst | cut -d. -f1`
+        set this   = `echo $rstlst | cut -d. -f3`
+        if (! -d agcmRSTinput_${this} ) mkdir agcmRSTinput_$this
+        cd agcmRSTinput_$this
+        tar xvf ../$rstlst
+        if ( "$EXPID" != "$vexpid" ) then
+           foreach fn ( `ls *agcm_internal_rst*` ) 
+               set sfx = `echo $fn | cut -d. -f2-`
+               /bin/mv $vexpid.$sfx $EXPID.$sfx
+           end
+        endif
+        # keep only (bin) restart files
+        /bin/mv *agcm_import_rst* $fcstage/stage/
+        cd -
+        /bin/rm -r agcmRSTinput_${this}
+        /bin/rm $rstlst
+        cd $iamhere
+        ln -sf $fcstage/stage/*agcm_import_rst.${fnymdb}_${fhhb}* agcm_import_rst
      endif
 
      set agcmfn = `echorc.x -template $EXPID $dtg iau_tendency_filename`
@@ -2526,6 +2558,8 @@ exit 1
   if ( $?ECHO___ ) set echo
   set qsub_acquire = 0
 
+# if ( $SKIPGSI && ! -e $FVHOME/run/AGCM.BOOTSTRAP.rc.tmpl ) exit 0
+
   set ecode = 0
   set acq_status = 0
   set acq_status2 = 0
@@ -2879,6 +2913,8 @@ exit 1
 # -------------------------
   if ( $?ECHO___ ) set echo
 
+  if ( $SKIPGSI && ! -e $FVHOME/run/AGCM.BOOTSTRAP.rc.tmpl ) exit 0
+
 # Get info about pre-qc files to be combined for QC
 # ------------------------------------------------------
  
@@ -2974,6 +3010,7 @@ endif
 
    if ( ! $PREPQC ) exit 0
    if (  $SKIPANA ) exit 0
+   if (  $SKIPGSI && ! -e $FVHOME/run/AGCM.BOOTSTRAP.rc.tmpl ) exit 0
 
 # Combine pre-qc files...
 #  ------------------------
@@ -3139,6 +3176,7 @@ endif
   Sub AnalysisRun_( Viter_, Final_ ) 
 # ----------------------------------
   if ( $?ECHO___ ) set echo
+  if ( $SKIPGSI && ! -e $FVHOME/run/AGCM.BOOTSTRAP.rc.tmpl ) exit 0
 
     if ( $DO4DVAR && $Final_ ) exit 0
 
@@ -3264,6 +3302,7 @@ endif
 #
 
   if ( ! -d $FVHOME/run/jedi )  exit (0)
+  if (   -e $FVHOME/run/AGCM.BOOTSTRAP.rc.tmpl )  exit (0) # only run from second cycle of experiment onwards
 
   @ idummy = $VAROFFSET * 60
   set ana_datetime = ( `tick $gcm_nymd0 $gcm_nhms0 $idummy` )
@@ -3271,8 +3310,10 @@ endif
   set this_hh0 = `echo $gcm_nhms0 | cut -c1-2`
   set this_hha = `echo $ana_datetime[2] | cut -c1-2`
 
-  set this_log = $EXPID.ana_jo.log.${ana_datetime[1]}_${this_hha}z.txt
-  obimp_summary.pl -rc $FVROOT/etc/odsstats4jedi.rc -type diag -josummary -o $this_log $ana_datetime[1] $ana_datetime[2]
+  if ( ! $SKIPGSI && ! -e $FVHOME/run/AGCM.BOOTSTRAP.rc.tmpl ) then
+     set this_log = $EXPID.ana_jo.log.${ana_datetime[1]}_${this_hha}z.txt
+     obimp_summary.pl -rc $FVROOT/etc/odsstats4jedi.rc -type diag -josummary -o $this_log $ana_datetime[1] $ana_datetime[2]
+  endif
 
 
   jedi_driver.csh $gcm_nymd0 $gcm_nhms0 $ana_datetime[1] $ana_datetime[2] |& tee -a $FVWORK/$EXPID.jedi_drv.log.${gcm_nymd0}_${this_hh0}z.txt
@@ -3424,6 +3465,7 @@ endif
   Sub CoupleAnaToGcm_( Viter_, Final_ )
 # ------------------------------
   if ( $?ECHO___ ) set echo
+  if ( $SKIPGSI  && ! -e $FVHOME/run/AGCM.BOOTSTRAP.rc.tmpl ) exit 0
 
         set updrst0 =
         if ( "$MPIRUN_UPRST" != "/dev/null" ) then
@@ -6047,6 +6089,10 @@ endif
          /bin/mv $momoutdir/MOM.res_${fn}.nc $FVHOME/recycle/hold/$EXPID.mom${fn}_rst.${momtag}.nc4 
        end
     endif
+    set lstbkglfo = `ls $FVWORK/$EXPID.bkg.lfo*.$NCSUFFIX`
+    if ( ${%lstbkglfo}  ) then
+       tar cvf $FVWORK/$EXPID.bkglforst.${rtag}.tar $EXPID.bkg.lfo*.$NCSUFFIX
+    endif 
     cd $FVHOME/recycle/hold
     tar cvf $FVWORK/$EXPID.rst.${rtag}.tar $EXPID.* 
     /bin/mv $FVWORK/$EXPID.xinc*$NCSUFFIX .
@@ -6082,9 +6128,8 @@ endif
 #------------------------------------ 
 
   if ( $LDAS_ANA ) then
-    mkdir -p               $FVHOME/recycle/holdpredout 
-    /bin/mv -f $FVWORK/*lfo_Nx+-* $FVHOME/recycle/holdpredout/. 
-    /bin/cp $FVHOME/recycle/holdpredout/*lfo_Nx+-*  $LDHOME/input/met_forcing/. 
+    /bin/rm -f $FVHOME/recycle/holdpredout/*lfo*
+    /bin/cp  $FVWORK/*bkg.lfo*.nc4  $FVHOME/recycle/holdpredout/. 
   endif 
    
   exit 0                      
