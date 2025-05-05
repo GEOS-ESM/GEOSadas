@@ -319,60 +319,66 @@ if ( $JEDI_HYBRID ) then
   endif
 endif
 
-cd bkg
-setenv NYMD  $nymdb # initial date of current cycle
-setenv NHMS  $nhmsb # initial time of current cycle
-setenv NYMDP $nymdp # initial date of previous cycle
-setenv NHMSP $nhmsp # initial time of previous cycle
-setenv ACQWORK $JEDIWRK/bkg
-vED -env $FVHOME/run/jedi/jedi_acquire_bkg.j -o jedi_acquire_bkg.j
-if ( $BATCH_SUBCMD == "sbatch" ) then
-   sbatch -W -o jedi_acq.log jedi_acquire_bkg.j
-else
-   qsub -W block=true -o jedi_acq.log jedi_acquire_bkg.j
+if ( ! -e $JEDIWRK/.DONE_JEDI_GET_BKG_${nymdb}_${nhmsb} ) then
+  cd bkg
+  setenv NYMD  $nymdb # initial date of current cycle
+  setenv NHMS  $nhmsb # initial time of current cycle
+  setenv NYMDP $nymdp # initial date of previous cycle
+  setenv NHMSP $nhmsp # initial time of previous cycle
+  setenv ACQWORK $JEDIWRK/bkg
+  vED -env $FVHOME/run/jedi/jedi_acquire_bkg.j -o jedi_acquire_bkg.j
+  if ( $BATCH_SUBCMD == "sbatch" ) then
+     sbatch -W -o jedi_acq.log jedi_acquire_bkg.j
+  else
+     qsub -W block=true -o jedi_acq.log jedi_acquire_bkg.j
+  endif
+  set lst = `ls $EXPID.bkgcrst.*.tar`
+  if ( $#lst == 1 ) then
+     tar xvf $lst
+     /bin/rm $EXPID.bkgcrst.*.tar
+     set lst = ( `ls *.bkg_clcv_rst*nc4` )
+     set vexpid = `echo $lst[1] | cut -d. -f1`
+     if ( $vexpid != $EXPID ) then # care for when tarball from another exp
+        foreach fn ( `ls *.bkg_clcv_rst*nc4` )
+           set sfx = `echo $fn | cut -d. -f2-`
+           /bin/mv $fn $EXPID.$sfx
+        end
+     endif
+     foreach fn ( `ls *.bkg_clcv_rst*nc4` )
+        set ttag = `echo $fn | cut -d. -f3-`
+        set ymd = `echo $ttag | cut -c1-8`
+        set hm  = `echo $ttag | cut -c10-13`
+        set sfx = ${ymd}T${hm}00Z.nc4 # cope swell reinvented notation
+        ln -sf $fn bkg.$sfx
+     end
+     cd $JEDIWRK
+     ln -sf $JEDIWRK/bkg/bkg.*.nc4 .
+     if ( -e $JEDIETC/convertinc_geos.yaml ) then
+        set lst = (`ls bkg.*.nc4`)
+        set cres  = `getgfiodim.x $lst[1] | grep -v GFIO`
+        @ jcres = $cres[1] + 1
+        setenv JEDI_BKG_RESOL $jcres
+        vED -env $JEDIETC/convertinc_geos.yaml -o $JEDIWRK/Config/convertinc_geos.yaml
+     endif
+     cd -
+     # the following is a nedeed hack due to inconsistencies in MAPL
+#    if ( $MAPLFIX ) then
+#       mkdir Ori
+#       foreach fn ( `ls *.bkg_clcv_rst*nc4` )
+#          /bin/mv $fn Ori/
+#          $FVHOME/run/jedi/convert_xdimydim_2_latlon.py -i Ori/$fn -o $fn 
+#       end
+#    endif
+  else
+     echo " ${MYNAME}: failed to retrieve bkg tar ball, aborting ..."
+     exit(3)
+  endif
+  touch $JEDIWRK/.DONE_JEDI_GET_BKG_${nymdb}_${nhmsb}
 endif
-set lst = `ls $EXPID.bkgcrst.*.tar`
-if ( $#lst == 1 ) then
-   tar xvf $lst
-   /bin/rm $EXPID.bkgcrst.*.tar
-   set lst = ( `ls *.bkg_clcv_rst*nc4` )
-   set vexpid = `echo $lst[1] | cut -d. -f1`
-   if ( $vexpid != $EXPID ) then # care for when tarball from another exp
-      foreach fn ( `ls *.bkg_clcv_rst*nc4` )
-         set sfx = `echo $fn | cut -d. -f2-`
-         /bin/mv $fn $EXPID.$sfx
-      end
-   endif
-   foreach fn ( `ls *.bkg_clcv_rst*nc4` )
-      set ttag = `echo $fn | cut -d. -f3-`
-      set ymd = `echo $ttag | cut -c1-8`
-      set hm  = `echo $ttag | cut -c10-13`
-      set sfx = ${ymd}T${hm}00Z.nc4 # cope swell reinvented notation
-      ln -sf $fn bkg.$sfx
-   end
-   cd $JEDIWRK
-   ln -sf $JEDIWRK/bkg/bkg.*.nc4 .
-   if ( -e $JEDIETC/convertinc_geos.yaml ) then
-      set lst = (`ls bkg.*.nc4`)
-      set cres  = `getgfiodim.x $lst[1]`
-      @ jcres = $cres[1] + 1
-      setenv JEDI_BKG_RESOL $jcres
-      vED -env $JEDIETC/convertinc_geos.yaml -o $JEDIWRK/Config/convertinc_geos.yaml
-   endif
-   cd -
-   # the following is a nedeed hack due to inconsistencies in MAPL
-#  if ( $MAPLFIX ) then
-#     mkdir Ori
-#     foreach fn ( `ls *.bkg_clcv_rst*nc4` )
-#        /bin/mv $fn Ori/
-#        $FVHOME/run/jedi/convert_xdimydim_2_latlon.py -i Ori/$fn -o $fn 
-#     end
-#  endif
-else
-   echo " ${MYNAME}: failed to retrieve bkg tar ball, aborting ..."
-   exit(3)
-endif
+
+# When applicable, retrieve ensemble background
 if( $JEDI_GET_ENSBKG ) then
+ if ( ! -e $JEDIWRK/.DONE_JEDI_GET_ENSBKG_${nymdb}_${nhmsb} ) then
    cd $JEDIWRK/atmens
    setenv NYMD  $nymdb # initial date of current cycle
    setenv NHMS  $nhmsb # initial time of current cycle
@@ -414,6 +420,43 @@ if( $JEDI_GET_ENSBKG ) then
    else
       echo " ${MYNAME}: failed to retrieve ensemble tar ball, aborting ..."
       exit(4)
+   endif
+   touch $JEDIWRK/.DONE_JEDI_GET_ENSBKG_${NYMD}_${NHMS}
+ endif
+endif
+
+# In case running 4D hybrid, create yamls needed for offline inc gen
+# ------------------------------------------------------------------
+if ( $JEDI_HYBRID ) then
+  cd $JEDIWRK
+  if ( ! -e Config/diffstates_geos.yaml ) then
+     echo " ${MYNAME}: missing Config/diffstates_geos.yaml file, aborting ... "
+    exit 1
+  endif
+  foreach cbkg (`ls bkg.*.nc4` )
+     set  ttag = `echo $cbkg | cut -d. -f2`
+     set yyyys = `echo $ttag | cut -c1-4`
+     set   mms = `echo $ttag | cut -c5-6`
+     set   dds = `echo $ttag | cut -c7-8`
+     set   hhs = `echo $ttag | cut -c10-11`
+     set  cana = $EXPID.ana.ceta.${yyyys}${mms}${dds}_${hhs}00z.nc4 # wired for now
+     setenv JEDI_CUBED_BKG $cbkg
+     setenv JEDI_CUBED_ANA $cana
+     setenv ISO_STATES_DATE "${yyyys}-${mms}-${dds}T${hhs}:00:00Z"
+     vED -env Config/diffstates_geos.yaml -o Config/diffstates_geos_${yyyys}${mms}${dds}_${hhs}z.yaml
+   end
+
+#  Also set localization scales and beta terms
+   set lst = (`ls bkg.*.nc4`)
+   set cres  = `getgfiodim.x $lst[1] | grep -v GFIO`
+   @ jcres = $cres[1] + 1
+   set rcname = ./fv3-jedi/gsibec/hyb_gsibec_configuration_c$jcres.nml
+   set nlat = `nmlread.py $rcname GRIDOPTS nlat`
+   set nlon = `nmlread.py $rcname GRIDOPTS nlon`
+   set nlev = `nmlread.py $rcname GRIDOPTS nsig`
+   ln -sf $FVHOME/run/gmao_global_hybens_info.x${nlon}y${nlat}l${nlev}.rc hybens_info
+   if (! -e hybens_info ) then
+      echo " ${MYNAME}: cannot find gmao_global_hybens_info.x${nlon}y${nlat}l${nlev}.rc , aborting ..."
    endif
 endif
 

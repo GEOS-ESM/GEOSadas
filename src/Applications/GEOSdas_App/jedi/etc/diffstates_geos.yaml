@@ -1,0 +1,60 @@
+state geometry:
+  fms initialization:
+    namelist filename: fv3-jedi/fv3files/fmsmpp.nml
+    field table filename: fv3-jedi/fv3files/field_table_gmao
+  akbk: fv3-jedi/fv3files/akbk72.nc4
+  npx: @JEDI_BKG_RESOL
+  npy: @JEDI_BKG_RESOL
+  npz: 72
+  field metadata override: fv3-jedi/fieldmetadata/geos.yaml
+increment geometry:
+  akbk: fv3-jedi/fv3files/akbk72.nc4
+  npx: @JEDI_BKG_RESOL
+  npy: @JEDI_BKG_RESOL
+  npz: 72
+  field metadata override: fv3-jedi/fieldmetadata/geos.yaml
+state1:
+  datetime: $ISO_STATES_DATE
+  filetype: cube sphere history
+  provider: geos
+  datapath: ./ana
+  filename: $JEDI_CUBED_ANA
+  state variables:
+  - ua
+  - va
+  - t
+  - q
+  - qi
+  - ql
+  - qr
+  - qs
+  - o3ppmv
+  - ps
+  - phis
+  - ts
+# - delp
+state2:
+  datetime: $ISO_STATES_DATE
+  filetype: cube sphere history
+  provider: geos
+  datapath: ./bkg
+  filename: $JEDI_CUBED_BKG
+  state variables:
+  - ua
+  - va
+  - t
+  - q
+  - qi
+  - ql
+  - qr
+  - qs
+  - o3ppmv
+  - ps
+  - phis
+  - ts
+# - delp
+output:
+  filetype: auxgrid
+  gridtype: latlon
+  datapath: ./inc
+  filename: $EXPID.jedi_inc1.eta.

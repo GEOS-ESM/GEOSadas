@@ -168,10 +168,20 @@ sub init {
   if ( $nodename eq "cas"  ) { $ncpus_per_node = 46; }
   if ( $nodename eq "mil"  ) { $ncpus_per_node = 126; }
 
+# identify 3D vs ens-4D schemes
+  if ( $scheme eq "hyb4denvar" or $scheme eq "hyb4dcenvar" ) {
+    $hybridvar = 1;
+  } else {
+    $hybridvar = 0; 
+  }
+
 # Var run configuration parameters
   $cres = $resolution + 1;
   if ( $cres == 361 ) {
-     if ( $scheme eq "hyb4denvar" ) {
+     if ( $hyb4denvar ) {
+       die "Not yet ready for c90 hyb4denvar, aborting ... \n";
+     } elsif ( $hyb4dcenvar ) {
+       die "Not yet ready for c90 hyb4dcenvar, aborting ... \n";
      } else {
        $varxlayout = 10;
        $varylayout = 10;
@@ -182,11 +192,17 @@ sub init {
      $gsibec_lat = 361;
      $gsibec_lon = 576;
   } elsif ( $cres == 181 ) {
-     if ( $scheme eq "hyb4denvar" ) {
+     if ( $hyb4denvar ) {
        $varxlayout = 16;
        $varylayout = 7;
        $gsixlayout = 21;
        $gsiylayout = 32;
+       $perhost_var = 12;
+     } elsif ( $hyb4dcenvar ) {
+       $varxlayout = 16;
+       $varylayout = 7;
+       $gsixlayout = 8;
+       $gsiylayout = 12;
        $perhost_var = 12;
      } else {
        $varxlayout = 8;
@@ -198,7 +214,18 @@ sub init {
      $gsibec_lat = 181;
      $gsibec_lon = 288;
   } elsif ( $cres == 91 ) {
-     if ( $scheme eq "hyb4denvar" ) {
+     if ( $hyb4denvar ) {
+       $varxlayout = 8;
+       $varylayout = 8;
+       $gsixlayout = 16;
+       $gsiylayout = 24;
+       $perhost_var = 16;
+     } elsif ( $hyb4dcenvar ) {
+       $varxlayout = 12;
+       $varylayout = 7;
+       $gsixlayout = 8;
+       $gsiylayout = 9;
+       $perhost_var = 16;
      } else {
        $varxlayout = 6;
        $varylayout = 6;
@@ -209,7 +236,7 @@ sub init {
      $gsibec_lon = 144;
      $perhost_var = 16;
   } else {
-     die "Unknown resolutio settings, aborting \n";
+     die "Unknown resolution settings, aborting ... \n";
   }
   $ncpus_var = $gsixlayout * $gsiylayout;
 
@@ -261,6 +288,9 @@ cp("$FVROOT/etc/jedi/geos_${scheme}.yaml","$JEDIHOME/Config/geosvar.yaml");
 # take of resolution and layout
 ed_conf_rc ("$JEDIHOME","JEDIanaConfig.csh");
 ed_var_yaml ("$JEDIHOME/Config","geosvar.yaml");
+if ( $shybridvar ) {
+  ed_var_yaml ("$JEDIHOME/Config","diffstates_geos.yaml");
+}
 
 # take care of satbias acq
 ed_jedibkg_acq   ("$JEDIHOME/Config");
@@ -368,7 +398,15 @@ sub ed_conf_rc {
   my($acq);
 
   $jedihyb = 0;
-  if ( $scheme == "hyb4denvar" ) { $jedihyb = 1 };
+  $jediinc = 0;
+  if ( $scheme == "hyb4denvar" ) { 
+     $jedihyb = 1;
+     $jediinc = 1;
+  }
+  if ( $scheme == "hyb4dcenvar" ) { 
+     $jedihyb = 2;
+     $jediinc = 1;
+  }
 
   $tmprc  = "$mydir/tmp.rc";
   $thisrc = "$mydir/$conffn";
@@ -384,7 +422,9 @@ sub ed_conf_rc {
         if($rcd =~ /\@JEDI_HYBRID/)         {$rcd=~ s/\@JEDI_HYBRID/$jedihyb/g;  }
         if($rcd =~ /\@JEDI_INPUT/)          {$rcd=~ s/\@JEDI_INPUT/$jediinput/g;  }
         if($rcd =~ /\@JEDI_OBS_OPT/)        {$rcd=~ s/\@JEDI_OBS_OPT/$jedi_obs_opt/g;  }
+        if($rcd =~ /\@JEDI_IAU_OVERWRITE/)  {$rcd=~ s/\@JEDI_IAU_OVERWRITE/$nogsi/g;  }
         if($rcd =~ /\@JEDI_ROOT/)           {$rcd=~ s/\@JEDI_ROOT/$jediroot/g;  }
+        if($rcd =~ /\@JEDI_RUN_GETINC/)     {$rcd=~ s/\@JEDI_RUN_GETINC/$jediinc/g;  }
         if($rcd =~ /\@JEDI_STATIC_FILES/)   {$rcd=~ s/\@JEDI_STATIC_FILES/$jedistatic/g;  }
         if($rcd =~ /\@JEDI_VAR_NCPUS/)      {$rcd=~ s/\@JEDI_VAR_NCPUS/$ncpus_var/g;  }
         if($rcd =~ /\@JEDI_VAR_PERHOST/)    {$rcd=~ s/\@JEDI_VAR_PERHOST/$perhost_var/g;  }
@@ -523,9 +563,9 @@ sub ed_rst4fcst_acq {
   print  SCRIPT <<"EOF";
 $archive/$expid/rs/Y%y4/M%m2/$expid.rst.%y4%m2%d2_%h2z.tar
 EOF
-if ( $scheme ne "hyb4denvar" ) {
+if ( ! $hybridvar ) {
  print  SCRIPT <<"EOF";
-$archive/$expid/jedi/rs/Y%y4/M%m2/$expid.jedi_agcm_import_rst.%y4%m2%d2_%h2%n2z.$ncsuffix => $expid.agcm_import_rst.%y4%m2%d2_%h2%n2z.nc4
+$archive/$expid/jedi/rs/Y%y4/M%m2/$expid.jedi_agcmrst.%y4%m2%d2_%h2z.tar
 EOF
 }
 }
@@ -536,7 +576,7 @@ sub ed_4dfcst03_acq {
 
   my($mydir,$scheme) = @_;
 
-  if ( $scheme ne "hyb4denvar" ) { return 0 };
+  if ( ! $hybridvar ) { return 0 };
 
   my($frun, $ft, $acq);
 
@@ -589,7 +629,7 @@ DESCRIPTION
 
      The following parameters are required 
 
-     scheme   3dvar, 3dfgat, or hyb4denvar
+     scheme   3dvar, 3dfgat, hyb4denvar, or hyb4dcenvar
      expid    experiment name, e.g., u000_c72
      cre      var resolution, e.g., 90
 

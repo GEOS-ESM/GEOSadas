@@ -251,7 +251,7 @@ umwm:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  tag: forladas-g2.3.8.1
+  tag: g2.3.8.2
   develop: develop
 
 Ocean-LETKF:

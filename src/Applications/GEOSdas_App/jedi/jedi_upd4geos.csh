@@ -40,8 +40,8 @@ if ( !($?JEDI_IAU_OVERWRITE)   )  setenv JEDI_IAU_OVERWRITE   0
 
 if ( -d $JEDIWORK/iau ) then
    cd $FVWORK
-   set cost = `grep "cost type" $JEDIWORK/Config/geosvar.yaml | cut -d: -f2 | cut -d- -f1`
-   if ( $cost == "3D" ) then
+#  set cost = `grep "cost type" $JEDIWORK/Config/geosvar.yaml | cut -d: -f2 | cut -d- -f1`
+#  if ( $cost == "3D" ) then
      foreach fn ( `ls $JEDIWORK/iau/*.agcm_import_rst.*nc4` )
        set bname   = `basename $fn`
        set noexpid = `echo $bname | cut -d. -f2-`
@@ -51,18 +51,18 @@ if ( -d $JEDIWORK/iau ) then
      /bin/ln -sf $JEDIWORK/iau/$EXPID.agcm_import_rst.${nymdb}_${hhb}00z.nc4 agcm_import_rst
      echo " ${MYNAME}: overwrote GSI IAU increments with JEDI IAU increments. "
      ls -lrt  *agcm_import_rst*
-   else
-     @ nc = 0
-     foreach fn ( `ls $JEDIWORK/iau/*.jedi_agcm_import_rst.*nc4` )
-        @ nc++
-        if ( $nc == 1 ) then
-          /bin/ln -sf $fn agcm_import_rst
-        else
-          echo " ${MYNAME}:  too many IAU tendencies found ..."
-          exit (1)
-        endif
-     end
-   endif
+#  else
+#    @ nc = 0
+#    foreach fn ( `ls $JEDIWORK/iau/*.jedi_agcm_import_rst.*nc4` )
+#       @ nc++
+#       if ( $nc == 1 ) then
+#         /bin/ln -sf $fn agcm_import_rst
+#       else
+#         echo " ${MYNAME}:  too many IAU tendencies found ..."
+#         exit (1)
+#       endif
+#    end
+#  endif
 else
    echo " ${MYNAME}: JEDI IAU increments not found, no overwrite taken place. "
    if ( $JEDI_IAU_OVERWRITE ) then
