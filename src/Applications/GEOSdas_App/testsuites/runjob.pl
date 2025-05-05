@@ -4,9 +4,11 @@
 # purpose - setup and submit jobs using pre-defined sets of inputs
 #           to the fvsetup script
 # Notes:
-# 1. Each job should have an input file with the name format: expid.input
-# 2. This script finds all possible input files, and queries the user to
-#    identify which job to run.
+# 1. This script runs a DAS job using an input file.
+# 2. The input files use the following name format: expid.input
+# 3. If no input files are specified, then this script will find all
+#    possible input files, and query the user to identify which job to run.
+# 4. The runjob script must be run from the build's bin directory
 #
 # global hashes (keys are integers associated with each input file):
 # - %inFile ...... names of *.input files
@@ -38,10 +40,10 @@ use warnings;
 # global variables
 #-----------------
 my ($ESMABIN, $ESMATST, $TRYAGAIN);
-my ($auto, $autox, $codeID, $dbqueue, $debug);
+my ($auto, $autox, $checkinput, $codeID, $dbqueue, $debug);
 my ($fvroot, $fvsetupID, $fvsetupScript);
 my ($ignoreOSdiff, $inputDir, $jobn, $nocheck, $nofilter, $noloop);
-my ($sel, $siteID, $specified, $stage, $verbose);
+my ($params, $sel, $siteID, $specified, $stage, $verbose);
 my (%descript, %edits, %expid, %flags, %fvhome, %fvics, %fvid);
 my (%inFile, %rawInFile, %rem_acct);
 my (@default, @inputFiles, @nondefault);
@@ -50,6 +52,10 @@ my (@default, @inputFiles, @nondefault);
 #-------------
 {
     init();
+    if ($checkinput) {
+        call_checkinput();
+        exit;
+    }
     intro();
     checkOS();
     getInputDir();
@@ -62,11 +68,8 @@ my (@default, @inputFiles, @nondefault);
 # purpose - initialize global hashes
 #
 # Notes on where to find fvsetup -
-# 1. The variable, $ESMABIN, contains the directory location for the
-#    fvsetup script. This value is hard-coded during the build.
-# 2. This script is fvsetupID-dependent; it may not work properly for different
-#    versions of fvsetup which have differences in the prompts.
-# 3. $ESMABIN can be overwritten by using the -D flag to supply an alternate
+# 1. This script should be in the same directory as the fvsetup script.
+# 2. $ESMABIN can be overwritten by using the -D flag to supply an alternate
 #    location for fvsetup. This should be done with great care.
 #=======================================================================
 sub init {
@@ -76,7 +79,7 @@ sub init {
     use Getopt::Long;
     use GMAO_utils ("get_siteID");
 
-    my ($BINDIR, $localdir, $help);
+    my ($BINDIR, $localdir, $help, $pp);
 
     $TRYAGAIN = 9999;
     $siteID = get_siteID();
@@ -86,26 +89,35 @@ sub init {
     #--------------------------------------------------------
     $codeID = "@GIT_TAG_OR_REV@";
     $fvsetupID = "@fvID@";
-    $ESMABIN = "@ESMABIN@";
-    $ESMATST = "@ESMATST@";
+    $ESMABIN = "$FindBin::Bin";
+    $ESMATST = "$FindBin::Bin/../etc/testsuites";
     die ">> Error << $ESMABIN is not a directory;" unless -d $ESMABIN;
+
+    # capture parameters to pass to checkinput
+    #-----------------------------------------
+    $params = "";
+    foreach $pp (@ARGV) {
+        $params .= "$pp " unless $pp eq "-ci" or $pp eq "-checkinput";
+    }
+    $params =~ s/ $//;
 
     # get runtime options
     #--------------------
     Getopt::Long::Configure("no_ignore_case");
-    GetOptions( "a|auto"      => \$auto,
-                "ax|autox"    => \$autox,
-                "nc|nocheck"  => \$nocheck,
-                "nf|nofilter" => \$nofilter,
-                "d=s"         => \$inputDir,
-                "l|local"     => \$localdir,
-                "OSx"         => \$ignoreOSdiff,
-                "db|debug"    => \$debug,
-                "dbq|dbqueue" => \$dbqueue,
-                "f=s"         => \$fvsetupScript,
-                "h|help"      => \$help,
-                "stage"       => \$stage,
-                "v"           => \$verbose );
+    GetOptions( "a|auto"        => \$auto,
+                "ax|autox"      => \$autox,
+                "ci|checkinput" => \$checkinput,
+                "nc|nocheck"    => \$nocheck,
+                "nf|nofilter"   => \$nofilter,
+                "d=s"           => \$inputDir,
+                "l|local"       => \$localdir,
+                "OSx"           => \$ignoreOSdiff,
+                "db|debug"      => \$debug,
+                "dbq|dbqueue"   => \$dbqueue,
+                "f=s"           => \$fvsetupScript,
+                "h|help"        => \$help,
+                "stage"         => \$stage,
+                "v"             => \$verbose );
     usage() if $help;
     $auto = 1 if $autox;
     $verbose = 0 unless $verbose;
@@ -121,6 +133,18 @@ sub init {
     $fvroot = dirname($ESMABIN);
     $fvsetupScript = "$ESMABIN/fvsetup" unless $fvsetupScript;
     die ">> Error << cannot find $fvsetupScript;\n" unless -e $fvsetupScript;
+}
+
+#=======================================================================
+# name - call_checkinput
+# purpose - call the checkinput script
+#=======================================================================
+sub call_checkinput {
+    my ($checkinput);
+    $checkinput = "$ESMABIN/checkinput";
+    die ">> Error << Cannot find script, $checkinput;" unless -x $checkinput;
+    print "\nCalling: $checkinput $params\n"; pause();
+    system("$checkinput $params");
 }
 
 #=======================================================================
@@ -1357,6 +1381,7 @@ usage: $script [options] [file1 [file2 [..]]]
 options
    -auto/-a           use dflt responses for queries; automatically submit job(s)
    -autox/-ax         use dflt responses for queries; do not submit job(s)
+   -checkinput/-ci    check the input file (calls checkinput script)
    -nocheck/-nc       do not check for previous use of expid
    -nofilter/-nf      do not exclude *.input files if fvsetupID does not match
    -d inputDir        directory location of saved *.input files
