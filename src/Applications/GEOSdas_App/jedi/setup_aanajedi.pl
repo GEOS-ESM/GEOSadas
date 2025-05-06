@@ -78,7 +78,8 @@ sub init {
    } else {              # required command line args
      $scheme      = $ARGV[0];
      $expid       = $ARGV[1];
-     $resolution  = $ARGV[2];
+     $hres        = $ARGV[2];
+     $vres        = $ARGV[2];
    }
 
 # process options
@@ -178,7 +179,7 @@ sub init {
   }
 
 # Var run configuration parameters
-  $cres = $resolution + 1;
+  $cres = $hres + 1;
   $covres = $cres; # in most cases background fields and covariance at same resolution
   if ( $cres == 721 ) {
      if ( $scheme eq "hyb4denvar" ) {
@@ -247,12 +248,14 @@ sub init {
        $gsiylayout = 24;
        $perhost_var = 16;
      } elsif ( $scheme eq "hyb4dcenvar" ) {
+       die "Only available for 72 levels, aborting ... \n" unless ( $vres == 72 );
        $varxlayout = 12;
        $varylayout = 2;
        $gsixlayout = 8;
        $gsiylayout = 18;
        $perhost_var = 12;
      } elsif ( $scheme eq "hyb3dcenvar" ) {
+       die "Only available for 72 levels, aborting ... \n" unless ( $vres == 72 );
        $varxlayout = 6;
        $varylayout = 6;
        $gsixlayout = 6;
@@ -573,10 +576,12 @@ sub ed_var_yaml {
      #---------------------------------------
      while( defined($rcd = <LUN>) ) {
         chomp($rcd);
-        if($rcd =~ /\@JEDI_BKG_RESOL/)      {$rcd=~ s/\@JEDI_BKG_RESOL/$cres/g;  }
+        if($rcd =~ /\@JEDI_BKG_HRES/)       {$rcd=~ s/\@JEDI_BKG_HRES/$cres/g;  }
+        if($rcd =~ /\@JEDI_BKG_VRES/)       {$rcd=~ s/\@JEDI_BKG_VRES/$vres/g;  }
         if($rcd =~ /\@JEDI_BKGCOV_RESOL/)   {$rcd=~ s/\@JEDI_BKGCOV_RESOL/$covres/g;  }
         if($rcd =~ /\@JEDI_GSIBEC_NLAT/)    {$rcd=~ s/\@JEDI_GSIBEC_NLAT/$gsibec_lat/g;  }
         if($rcd =~ /\@JEDI_GSIBEC_NLON/)    {$rcd=~ s/\@JEDI_GSIBEC_NLON/$gsibec_lon/g;  }
+        if($rcd =~ /\@JEDI_GSIBEC_NLEV/)    {$rcd=~ s/\@JEDI_GSIBEC_NLEV/$vres/g;  }
         if($rcd =~ /\@JEDI_OBSOP_MAPDIR/)   {$rcd=~ s/\@JEDI_OBSOP_MAPDIR/$obsop_mapdir/g;  }
         if($rcd =~ /\@JEDI_VAR_XLAYOUT/)    {$rcd=~ s/\@JEDI_VAR_XLAYOUT/$varxlayout/g;  }
         if($rcd =~ /\@JEDI_VAR_YLAYOUT/)    {$rcd=~ s/\@JEDI_VAR_YLAYOUT/$varylayout/g;  }
@@ -667,7 +672,8 @@ SYNOPSIS
 
      setup_aanajedi.pl [...options...] scheme
                                        expid
-                                       cres
+                                       hres
+                                       vres
           
 DESCRIPTION
 
@@ -680,7 +686,8 @@ DESCRIPTION
               hyb4dcenvar - hybrid 4d-En-Var using cubed ensemble (BUMP)
               hyb4denvar  - hybrid 4d-En-Var using lat-lon ensemble (GSIBEC)
      expid    experiment name, e.g., u000_c72
-     cre      var resolution, e.g., 90
+     hres     cubed horizontal var resolution, e.g., 90
+     vres     vertical resolution, e.g., 72 (default)
 
 
 OPTIONS
@@ -696,7 +703,7 @@ OPTIONS
 
 EXAMPLE COMMAND LINE
 
-     setup_aanajedi.pl 3dfgat u000_C72 90
+     setup_aanajedi.pl 3dfgat u000_C72 90 72
 
 NECESSARY ENVIRONMENT
 
@@ -708,7 +715,7 @@ OPTIONAL ENVIRONMENT
 AUTHOR
 
      Ricardo Todling (Ricardo.Todling\@nasa.gov), NASA/GSFC/GMAO
-     Last modified: 25Apr2025                     by: R. Todling
+     Last modified: 06May2025                     by: R. Todling
 
 
 EOF
