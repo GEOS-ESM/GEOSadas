@@ -25,8 +25,10 @@ $FVROOT =~ s|/u/.realmounts/share|/share|;   # for portability across
                                              #     $user = getpwuid($<) unless ($user = $ENV{"USER"});
 $user = getpwuid($<) unless ($user = $ENV{"USER"});
 
-use lib ( "$FindBin::Bin", "$FVROOT/bin" );
+#use lib ( "$FindBin::Bin", "$FVROOT/bin" );
+use lib ( "$FindBin::Bin" );
 
+$fvbin = $FindBin::Bin;  # absolute path of fvbin
 my $scriptname = basename($0);
 
 # Command line options
@@ -316,6 +318,14 @@ foreach $fn ( @rc2conf ) {
   cp("$FVROOT/etc/jedi/$fn","$JEDIHOME/Config/$fn");
 }
 cp("$FVROOT/etc/jedi/geos_${scheme}.yaml","$JEDIHOME/Config/geosvar.yaml");
+if ( ! -e "$JEDIHOME/Config/geosvar.yaml" ) {
+   die "File $JEDIHOME/Config/geosvar.yaml not found \n";
+}
+
+# Add observation chunk to for full var yaml file
+$cmd = `$fvbin/insert_file_atstr.pl $FVROOT/etc/jedi/geos_jediobs.yaml $JEDIHOME/Config/geosvar.yaml OBSYAML_END`;
+print "$cmd\n";
+system($cmd); 
 
 # take of resolution and layout
 ed_conf_rc ("$JEDIHOME","JEDIanaConfig.csh");
