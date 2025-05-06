@@ -87,8 +87,8 @@ cost function:
       saber block name: gsi hybrid covariance
       read:
         gsi akbk: ./fv3-jedi/fv3files/akbk72.nc4
-        gsi error covariance file: ./fv3-jedi/gsibec/gsibec_coefficients_c@JEDI_BKG_RESOL.nc4
-        gsi berror namelist file: ./fv3-jedi/gsibec/cli_gsibec_configuration_c@JEDI_BKG_RESOL.nml
+        gsi error covariance file: ./fv3-jedi/gsibec/gsibec_coefficients_c@JEDI_BKGCOV_RESOL.nc4
+        gsi berror namelist file: ./fv3-jedi/gsibec/cli_gsibec_configuration_c@JEDI_BKGCOV_RESOL.nml
         processor layout x direction: @JEDI_VAR_GSIXLAYOUT
         processor layout y direction: @JEDI_VAR_GSIYLAYOUT
         debugging mode: false
@@ -111,8 +111,8 @@ cost function:
       - geopotential_height_times_gravity_at_surface
       - skin_temperature_at_surface
       gsi akbk: ./fv3-jedi/fv3files/akbk72.nc4
-      gsi error covariance file: ./fv3-jedi/gsibec/gsibec_coefficients_c@JEDI_BKG_RESOL.nc4
-      gsi berror namelist file: ./fv3-jedi/gsibec/cli_gsibec_configuration_c@JEDI_BKG_RESOL.nml
+      gsi error covariance file: ./fv3-jedi/gsibec/gsibec_coefficients_c@JEDI_BKGCOV_RESOL.nc4
+      gsi berror namelist file: ./fv3-jedi/gsibec/cli_gsibec_configuration_c@JEDI_BKGCOV_RESOL.nml
       processor layout x direction: @JEDI_VAR_GSIXLAYOUT
       processor layout y direction: @JEDI_VAR_GSIYLAYOUT
       debugging mode: false

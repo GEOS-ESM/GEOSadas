@@ -374,19 +374,19 @@ cost function:
           read:
             debugging mode: false
             gsi akbk: ./fv3-jedi/fv3files/akbk72.nc4
-            gsi berror namelist file: ./fv3-jedi/gsibec/cli_gsibec_configuration_c@JEDI_BKG_RESOL.nml
-            gsi error covariance file: ./fv3-jedi/gsibec/gsibec_coefficients_c@JEDI_BKG_RESOL.nc4
-            processor layout x direction: 8 
-            processor layout y direction: 12
+            gsi berror namelist file: ./fv3-jedi/gsibec/cli_gsibec_configuration_c@JEDI_BKGCOV_RESOL.nml
+            gsi error covariance file: ./fv3-jedi/gsibec/gsibec_coefficients_c@JEDI_BKGCOV_RESOL.nc4
+            processor layout x direction: @JEDI_VAR_GSIXLAYOUT 
+            processor layout y direction: @JEDI_VAR_GSIYLAYOUT
 #         saber block name: gsi covariance
           saber block name: gsi static covariance
         saber outer blocks:
         - debugging mode: false
           gsi akbk: ./fv3-jedi/fv3files/akbk72.nc4
-          gsi berror namelist file: ./fv3-jedi/gsibec/cli_gsibec_configuration_c@JEDI_BKG_RESOL.nml
-          gsi error covariance file: ./fv3-jedi/gsibec/gsibec_coefficients_c@JEDI_BKG_RESOL.nc4
-          processor layout x direction: 8
-          processor layout y direction: 12
+          gsi berror namelist file: ./fv3-jedi/gsibec/cli_gsibec_configuration_c@JEDI_BKGCOV_RESOL.nml
+          gsi error covariance file: ./fv3-jedi/gsibec/gsibec_coefficients_c@JEDI_BKGCOV_RESOL.nc4
+          processor layout x direction: @JEDI_VAR_GSIXLAYOUT
+          processor layout y direction: @JEDI_VAR_GSIYLAYOUT
           saber block name: gsi interpolation to model grid
           state variables to inverse: *id001
       weight:
@@ -405,44 +405,44 @@ cost function:
               filetype: cube sphere history
               provider: geos
               state variables: *id001
-              datapath: c@JEDI_BKG_RESOL
-              filenames: [mem%mem%/geos.bkg_clcv.%yyyy%mm%ddT%hh%MM%z.nc4, fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKG_RESOL.nc4]
+              datapath: ./
+              filenames: [mem%mem%/geos.bkg_clcv.%yyyy%mm%dd_%hh%MMz.nc4, fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKGCOV_RESOL.nc4]
             - datetime: $JEDI_ISO_DATE_002
               filetype: cube sphere history
               provider: geos
               state variables: *id001
-              datapath: c@JEDI_BKG_RESOL
-              filenames: [mem%mem%/geos.bkg_clcv.%yyyy%mm%ddT%hh%MM%z.nc4, fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKG_RESOL.nc4]
+              datapath: ./
+              filenames: [mem%mem%/geos.bkg_clcv.%yyyy%mm%dd_%hh%MMz.nc4, fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKGCOV_RESOL.nc4]
             - datetime: $JEDI_ISO_DATE_003
               filetype: cube sphere history
               provider: geos
               state variables: *id001
-              datapath: c@JEDI_BKG_RESOL
-              filenames: [mem%mem%/geos.bkg_clcv.%yyyy%mm%ddT%hh%MM%z.nc4, fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKG_RESOL.nc4]
+              datapath: ./
+              filenames: [mem%mem%/geos.bkg_clcv.%yyyy%mm%dd_%hh%MMz.nc4, fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKGCOV_RESOL.nc4]
             - datetime: $JEDI_ISO_DATE_004
               filetype: cube sphere history
               provider: geos
               state variables: *id001
-              datapath: c@JEDI_BKG_RESOL
-              filenames: [mem%mem%/geos.bkg_clcv.%yyyy%mm%ddT%hh%MM%z.nc4, fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKG_RESOL.nc4]
+              datapath: ./
+              filenames: [mem%mem%/geos.bkg_clcv.%yyyy%mm%dd_%hh%MMz.nc4, fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKGCOV_RESOL.nc4]
             - datetime: $JEDI_ISO_DATE_005
               filetype: cube sphere history
               provider: geos
               state variables: *id001
-              datapath: c@JEDI_BKG_RESOL
-              filenames: [mem%mem%/geos.bkg_clcv.%yyyy%mm%ddT%hh%MM%z.nc4, fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKG_RESOL.nc4]
+              datapath: ./
+              filenames: [mem%mem%/geos.bkg_clcv.%yyyy%mm%dd_%hh%MMz.nc4, fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKGCOV_RESOL.nc4]
             - datetime: $JEDI_ISO_DATE_006
               filetype: cube sphere history
               provider: geos
               state variables: *id001
-              datapath: c@JEDI_BKG_RESOL
-              filenames: [mem%mem%/geos.bkg_clcv.%yyyy%mm%ddT%hh%MM%z.nc4, fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKG_RESOL.nc4]
+              datapath: ./
+              filenames: [mem%mem%/geos.bkg_clcv.%yyyy%mm%dd_%hh%MMz.nc4, fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKGCOV_RESOL.nc4]
             - datetime: $JEDI_ISO_DATE_007
               filetype: cube sphere history
               provider: geos
               state variables: *id001
-              datapath: c@JEDI_BKG_RESOL
-              filenames: [mem%mem%/geos.bkg_clcv.%yyyy%mm%ddT%hh%MM%z.nc4, fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKG_RESOL.nc4]
+              datapath: ./
+              filenames: [mem%mem%/geos.bkg_clcv.%yyyy%mm%dd_%hh%MMz.nc4, fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKGCOV_RESOL.nc4]
           pattern: '%mem%'
           nmembers: 32
           zero padding: 3

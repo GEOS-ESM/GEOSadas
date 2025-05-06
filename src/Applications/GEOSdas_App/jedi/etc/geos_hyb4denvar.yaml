@@ -386,8 +386,8 @@ cost function:
       read:
         debugging mode: false
         gsi akbk: ./fv3-jedi/fv3files/akbk72.nc4
-        gsi berror namelist file: ./fv3-jedi/gsibec/hyb_gsibec_configuration_c@JEDI_BKG_RESOL.nml
-        gsi error covariance file: ./fv3-jedi/gsibec/gsibec_coefficients_c@JEDI_BKG_RESOL.nc4
+        gsi berror namelist file: ./fv3-jedi/gsibec/hyb_gsibec_configuration_c@JEDI_BKGCOV_RESOL.nml
+        gsi error covariance file: ./fv3-jedi/gsibec/gsibec_coefficients_c@JEDI_BKGCOV_RESOL.nc4
         processor layout x direction: @JEDI_VAR_GSIXLAYOUT
         processor layout y direction: @JEDI_VAR_GSIYLAYOUT
 #     saber block name: gsi covariance
@@ -412,8 +412,8 @@ cost function:
 #   saber outer blocks:
 #   - debugging mode: false
 #     gsi akbk: ./fv3-jedi/fv3files/akbk72.nc4
-#     gsi berror namelist file: ./fv3-jedi/gsibec/hyb_gsibec_configuration_c@JEDI_BKG_RESOL.nml
-#     gsi error covariance file: ./fv3-jedi/gsibec/gsibec_coefficients_c@JEDI_BKG_RESOL.nc4
+#     gsi berror namelist file: ./fv3-jedi/gsibec/hyb_gsibec_configuration_c@JEDI_BKGCOV_RESOL.nml
+#     gsi error covariance file: ./fv3-jedi/gsibec/gsibec_coefficients_c@JEDI_BKGCOV_RESOL.nc4
 #     processor layout x direction: @JEDI_VAR_GSIXLAYOUT
 #     processor layout y direction: @JEDI_VAR_GSIYLAYOUT
 #     saber block name: gsi interpolation to model grid
