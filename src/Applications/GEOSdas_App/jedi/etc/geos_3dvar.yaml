@@ -9,13 +9,13 @@ cost function:
     fms initialization:
       namelist filename: ./fv3-jedi/fv3files/fmsmpp.nml
       field table filename: ./fv3-jedi/fv3files/field_table_gmao
-    akbk: ./fv3-jedi/fv3files/akbk72.nc4
+    akbk: ./fv3-jedi/fv3files/akbk@JEDI_BKG_VRES.nc4
     layout:
     - @JEDI_VAR_XLAYOUT
     - @JEDI_VAR_YLAYOUT
-    npx: @JEDI_BKG_RESOL
-    npy: @JEDI_BKG_RESOL
-    npz: 72
+    npx: @JEDI_BKG_HRES
+    npy: @JEDI_BKG_HRES
+    npz: @JEDI_BKG_VRES
     field metadata override: ./fv3-jedi/fieldmetadata/geos.yaml
   analysis variables:
   - ua
@@ -40,7 +40,7 @@ cost function:
     datapath: ./
     filenames:
     - bkg.%yyyy%mm%ddT%hh%MM%ssZ.nc4
-    - fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKG_RESOL.nc4
+    - fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKG_HRES.nc4
     state variables:
     - ua
     - va
@@ -86,7 +86,7 @@ cost function:
     saber central block:
       saber block name: gsi hybrid covariance
       read:
-        gsi akbk: ./fv3-jedi/fv3files/akbk72.nc4
+        gsi akbk: ./fv3-jedi/fv3files/akbk@JEDI_BKG_VRES.nc4
         gsi error covariance file: ./fv3-jedi/gsibec/gsibec_coefficients_c@JEDI_BKGCOV_RESOL.nc4
         gsi berror namelist file: ./fv3-jedi/gsibec/cli_gsibec_configuration_c@JEDI_BKGCOV_RESOL.nml
         processor layout x direction: @JEDI_VAR_GSIXLAYOUT
@@ -110,7 +110,7 @@ cost function:
       - fraction_of_ice
       - geopotential_height_times_gravity_at_surface
       - skin_temperature_at_surface
-      gsi akbk: ./fv3-jedi/fv3files/akbk72.nc4
+      gsi akbk: ./fv3-jedi/fv3files/akbk@JEDI_BKG_VRES.nc4
       gsi error covariance file: ./fv3-jedi/gsibec/gsibec_coefficients_c@JEDI_BKGCOV_RESOL.nc4
       gsi berror namelist file: ./fv3-jedi/gsibec/cli_gsibec_configuration_c@JEDI_BKGCOV_RESOL.nml
       processor layout x direction: @JEDI_VAR_GSIXLAYOUT
@@ -160,13 +160,13 @@ variational:
       fms initialization:
         namelist filename: ./fv3-jedi/fv3files/fmsmpp.nml
         field table filename: ./fv3-jedi/fv3files/field_table_gmao
-      akbk: ./fv3-jedi/fv3files/akbk72.nc4
+      akbk: ./fv3-jedi/fv3files/akbk@JEDI_BKG_VRES.nc4
       layout:
       - @JEDI_VAR_XLAYOUT
       - @JEDI_VAR_YLAYOUT
-      npx: @JEDI_BKG_RESOL
-      npy: @JEDI_BKG_RESOL
-      npz: 72
+      npx: @JEDI_BKG_HRES
+      npy: @JEDI_BKG_HRES
+      npz: @JEDI_BKG_VRES
       field metadata override: ./fv3-jedi/fieldmetadata/geos.yaml
     gradient norm reduction: 1e-3
     ninner: '100'

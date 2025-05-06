@@ -21,7 +21,7 @@ cost function:
       datetime: $JEDI_ISO_DATE_ANA
       filenames:
       - bkg.%yyyy%mm%ddT%hh%MM%ssZ.nc4
-      - fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKG_RESOL.nc4
+      - fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKG_HRES.nc4
       filetype: cube sphere history
       provider: geos
       state variables:
@@ -91,7 +91,7 @@ cost function:
         saber central block:
           read:
             debugging mode: false
-            gsi akbk: ./fv3-jedi/fv3files/akbk72.nc4
+            gsi akbk: ./fv3-jedi/fv3files/akbk@JEDI_BKG_VRES.nc4
             gsi berror namelist file: ./fv3-jedi/gsibec/cli_gsibec_configuration_c@JEDI_BKGCOV_RESOL.nml
             gsi error covariance file: ./fv3-jedi/gsibec/gsibec_coefficients_c@JEDI_BKGCOV_RESOL.nc4
             processor layout x direction: @JEDI_VAR_GSIXLAYOUT 
@@ -100,7 +100,7 @@ cost function:
           saber block name: gsi static covariance
         saber outer blocks:
         - debugging mode: false
-          gsi akbk: ./fv3-jedi/fv3files/akbk72.nc4
+          gsi akbk: ./fv3-jedi/fv3files/akbk@JEDI_BKG_VRES.nc4
           gsi berror namelist file: ./fv3-jedi/gsibec/cli_gsibec_configuration_c@JEDI_BKGCOV_RESOL.nml
           gsi error covariance file: ./fv3-jedi/gsibec/gsibec_coefficients_c@JEDI_BKGCOV_RESOL.nc4
           processor layout x direction: @JEDI_VAR_GSIXLAYOUT
@@ -239,7 +239,7 @@ cost function:
         value: 0.50
   cost type: 3D-Var
   geometry:
-    akbk: ./fv3-jedi/fv3files/akbk72.nc4
+    akbk: ./fv3-jedi/fv3files/akbk@JEDI_BKG_VRES.nc4
     field metadata override: ./fv3-jedi/fieldmetadata/geos.yaml
     fms initialization:
       field table filename: ./fv3-jedi/fv3files/field_table_gmao
@@ -247,9 +247,9 @@ cost function:
     layout:
     - @JEDI_VAR_XLAYOUT
     - @JEDI_VAR_YLAYOUT
-    npx: @JEDI_BKG_RESOL
-    npy: @JEDI_BKG_RESOL
-    npz: 72
+    npx: @JEDI_BKG_HRES
+    npy: @JEDI_BKG_HRES
+    npz: @JEDI_BKG_VRES
   jb evaluation: false
 # OBSYAML_BEG
 # OBSYAML_END
@@ -277,7 +277,7 @@ variational:
     diagnostics:
       departures: ombg
     geometry:
-      akbk: ./fv3-jedi/fv3files/akbk72.nc4
+      akbk: ./fv3-jedi/fv3files/akbk@JEDI_BKG_VRES.nc4
       field metadata override: ./fv3-jedi/fieldmetadata/geos.yaml
       fms initialization:
         field table filename: ./fv3-jedi/fv3files/field_table_gmao
@@ -285,9 +285,9 @@ variational:
       layout:
       - @JEDI_VAR_XLAYOUT
       - @JEDI_VAR_YLAYOUT
-      npx: @JEDI_BKG_RESOL
-      npy: @JEDI_BKG_RESOL
-      npz: 72
+      npx: @JEDI_BKG_HRES
+      npy: @JEDI_BKG_HRES
+      npz: @JEDI_BKG_VRES
     gradient norm reduction: 1e-3
     linear model:
       increment variables:
@@ -323,7 +323,7 @@ variational:
 #   diagnostics:
 #     departures: ombg
 #   geometry:
-#     akbk: ./fv3-jedi/fv3files/akbk72.nc4
+#     akbk: ./fv3-jedi/fv3files/akbk@JEDI_BKG_VRES.nc4
 #     field metadata override: ./fv3-jedi/fieldmetadata/geos.yaml
 #     fms initialization:
 #       field table filename: ./fv3-jedi/fv3files/field_table_gmao
@@ -331,9 +331,9 @@ variational:
 #     layout:
 #     - @JEDI_VAR_XLAYOUT
 #     - @JEDI_VAR_YLAYOUT
-#     npx: @JEDI_BKG_RESOL
-#     npy: @JEDI_BKG_RESOL
-#     npz: 72
+#     npx: @JEDI_BKG_HRES
+#     npy: @JEDI_BKG_HRES
+#     npz: @JEDI_BKG_VRES
 #   gradient norm reduction: 1e-3
 #   linear model:
 #     increment variables:

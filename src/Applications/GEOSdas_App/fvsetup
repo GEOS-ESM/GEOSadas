@@ -3713,7 +3713,7 @@ sub set_geosjedi {
     }
   }
 
-  $cmd = "$fvbin/setup_aanajedi.pl $jedivar $expid $bjedi_im $jediopts";
+  $cmd = "$fvbin/setup_aanajedi.pl $jedivar $expid $bjedi_im $vres $jediopts";
   print "$cmd\n";
   system($cmd); 
 
