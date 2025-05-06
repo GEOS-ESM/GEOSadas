@@ -595,14 +595,14 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
 # ------------------------------------------------------------------------
     print "\n checkprintout  ldas_ana == 1 ($ldas_ana)\n";
     if ($ldas_ana == 1 ) {
-        $cmd     = "$fvbin/ldas_setup setup $fvhome/lana $ldassetup/ldas_exeinp.txt $ldassetup/ldas_batinp.txt --account $gid --nymdb $nymdb --nhmsb $nhmsb --ladas_cpl 1 --agcm_res $agcm_im4 --rstdir $ldasics";
+        $cmd     = "$fvbin/ldas_setup setup $fvhome/lana $ldassetup/ldas_exeinp.txt $ldassetup/ldas_batinp.txt -v --account $gid --nymdb $nymdb --nhmsb $nhmsb --ladas_cpl 1 --agcm_res $agcm_im4 --rstdir $ldasics";
         print "$cmd\n";
         $rc = system $cmd;
         die "Failed to setup LDAS for det, check LDAS config input files $!" if ( $rc );
         chomp($aens_replay);
         if (($hyb_ens == 4) && ($aens_replay eq "no")) { 
             $aens_im4 = sprintf "%04i", $aens_im ;
-	    $cmd = "$fvbin/ldas_setup setup $fvhome/lana $ldassetup/ldas_exeinp.txt $ldassetup/ldas_batinp.txt --account $gid --nymdb $nymdb --nhmsb $nhmsb --ladas_cpl 2 --agcm_res $aens_im4 --rstdir $ldasics4ens";
+	    $cmd = "$fvbin/ldas_setup setup $fvhome/lana $ldassetup/ldas_exeinp.txt $ldassetup/ldas_batinp.txt -v --account $gid --nymdb $nymdb --nhmsb $nhmsb --ladas_cpl 2 --agcm_res $aens_im4 --rstdir $ldasics4ens";
 	    print "$cmd\n";
 	    $rc = system $cmd;
 	    die "Failed to setup LDAS for ens, check LDAS config input files $!" if ( $rc );
