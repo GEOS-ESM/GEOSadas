@@ -246,16 +246,22 @@ sub init {
        $perhost_var = 16;
      } elsif ( $scheme eq "hyb4dcenvar" ) {
        $varxlayout = 12;
-       $varylayout = 1;
-       $gsixlayout = 9;
-       $gsiylayout = 8;
+       $varylayout = 2;
+       $gsixlayout = 8;
+       $gsiylayout = 18;
+       $perhost_var = 12;
+     } elsif ( $scheme eq "hyb3dcenvar" ) {
+       $varxlayout = 6;
+       $varylayout = 6;
+       $gsixlayout = 6;
+       $gsiylayout = 6 * $gsixlayout;
        $perhost_var = 12;
      } else {
        $varxlayout = 6;
        $varylayout = 6;
        $gsixlayout = 6;
        $gsiylayout = 6 * $gsixlayout;
-       $perhost_var = 16;
+       $perhost_var = 12;
      }
      $gsibec_lat =  91;
      $gsibec_lon = 144;
@@ -425,12 +431,15 @@ sub ed_conf_rc {
   $jedihyb = 0;
   $jediinc = 0;
   if ( $scheme eq "hyb4denvar" ) { 
-     $jedihyb = 1;
+     $jedihyb = 1;  # handle lat-lon ensemble
      $jediinc = 1;
   }
   if ( $scheme eq "hyb4dcenvar" ) { 
-     $jedihyb = 2;
+     $jedihyb = 2;  # handle cubed ensemble
      $jediinc = 1;
+  }
+  if ( $scheme eq "hyb3dcenvar" ) { 
+     $jedihyb = 2;  # handle cubed ensemble
   }
 
   $tmprc  = "$mydir/tmp.rc";
@@ -655,7 +664,11 @@ DESCRIPTION
 
      The following parameters are required 
 
-     scheme   3dvar, 3dfgat, hyb4denvar, or hyb4dcenvar
+     scheme   3dvar       - 3D variational analysis
+              3dfgat      - 3D first guess at appropriate time
+              hyb3dcenvar - hybrid 3d-VAR using cubed ensemble (BUMP)
+              hyb4dcenvar - hybrid 4d-En-Var using cubed ensemble (BUMP)
+              hyb4denvar  - hybrid 4d-En-Var using lat-lon ensemble (GSIBEC)
      expid    experiment name, e.g., u000_c72
      cre      var resolution, e.g., 90
 
