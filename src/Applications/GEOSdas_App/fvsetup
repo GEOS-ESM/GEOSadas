@@ -3703,10 +3703,14 @@ sub set_geosjedi {
   }
   $jediopts = "-fvhome $fvhome -iodadir $iodadir -archive $acqloc $nogsi";
 
-  if ( $hyb_ens < 3 ) { 
-    $jedivar = "3dfgat";
+  if ( $ENV{JEDI_ATMVAR_SCHEME} ) {
+      $jedivar = $ENV{JEDI_ATMVAR_SCHEME};
   } else {
-    $jedivar = "hyb4denvar";
+    if ( $hyb_ens < 3 ) { 
+      $jedivar = "3dfgat";
+    } else {
+      $jedivar = "hyb4denvar";
+    }
   }
 
   $cmd = "$fvbin/setup_aanajedi.pl $jedivar $expid $bjedi_im $jediopts";
