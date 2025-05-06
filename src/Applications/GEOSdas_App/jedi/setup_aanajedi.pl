@@ -79,7 +79,7 @@ sub init {
      $scheme      = $ARGV[0];
      $expid       = $ARGV[1];
      $hres        = $ARGV[2];
-     $vres        = $ARGV[2];
+     $vres        = $ARGV[3];
    }
 
 # process options
