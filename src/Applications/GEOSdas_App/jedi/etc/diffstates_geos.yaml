@@ -2,16 +2,16 @@ state geometry:
   fms initialization:
     namelist filename: fv3-jedi/fv3files/fmsmpp.nml
     field table filename: fv3-jedi/fv3files/field_table_gmao
-  akbk: fv3-jedi/fv3files/akbk72.nc4
-  npx: @JEDI_BKG_RESOL
-  npy: @JEDI_BKG_RESOL
-  npz: 72
+  akbk: fv3-jedi/fv3files/akbk@JEDI_BKG_VRES.nc4
+  npx: @JEDI_BKG_HRES
+  npy: @JEDI_BKG_HRES
+  npz: @JEDI_BKG_VRES
   field metadata override: fv3-jedi/fieldmetadata/geos.yaml
 increment geometry:
-  akbk: fv3-jedi/fv3files/akbk72.nc4
-  npx: @JEDI_BKG_RESOL
-  npy: @JEDI_BKG_RESOL
-  npz: 72
+  akbk: fv3-jedi/fv3files/akbk@JEDI_BKG_VRES.nc4
+  npx: @JEDI_BKG_HRES
+  npy: @JEDI_BKG_HRES
+  npz: @JEDI_BKG_VRES
   field metadata override: fv3-jedi/fieldmetadata/geos.yaml
 state1:
   datetime: $ISO_STATES_DATE
