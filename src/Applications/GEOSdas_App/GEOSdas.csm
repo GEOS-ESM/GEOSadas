@@ -1611,7 +1611,7 @@ exit 1
   Sub CreateIAUincrement4Fcst_()
 # -------------------------------------
   if ( $?ECHO___ ) set echo
-  if ( $SKIPGSI && ! -e $FVHOME/run/AGCM.BOOTSTRAP.rc.tmpl ) exit 0
+  if ( $SKIPGSI && -e $FVHOME/run/AGCM.BOOTSTRAP.rc.tmpl ) exit 0
 
      if ( ! $DO4DIAU ) then
         if ( -e agcm_import_rst ) exit 0  # no need to regenerate IAU increment if already available
