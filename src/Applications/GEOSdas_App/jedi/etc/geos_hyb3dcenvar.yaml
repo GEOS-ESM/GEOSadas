@@ -18,289 +18,7 @@ cost function:
   background:
     states:
     - datapath: './'
-      datetime: $JEDI_ISO_DATE_001
-      filenames:
-      - bkg.%yyyy%mm%ddT%hh%MM%ssZ.nc4
-      - fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKG_HRES.nc4
-      filetype: cube sphere history
-      provider: geos
-      state variables:
-      - ua
-      - va
-      - t
-      - delp
-      - ps
-      - q
-      - qi
-      - ql
-      - qr
-      - qs
-      - o3ppmv
-      - phis
-      - qls
-      - qcn
-      - cfcn
-      - frocean
-      - frland
-      - varflt
-      - ustar
-      - bstar
-      - zpbl
-      - cm
-      - ct
-      - cq
-      - kcbl
-      - tsm
-      - khl
-      - khu
-      - frlake
-      - frseaice
-      - vtype
-      - stype
-      - vfrac
-      - sheleg
-      - ts
-      - soilt
-      - soilm
-      - u10m
-      - v10m
-    - datapath: './'
-      datetime: $JEDI_ISO_DATE_002
-      filenames:
-      - bkg.%yyyy%mm%ddT%hh%MM%ssZ.nc4
-      - fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKG_HRES.nc4
-      filetype: cube sphere history
-      provider: geos
-      state variables:
-      - ua
-      - va
-      - t
-      - delp
-      - ps
-      - q
-      - qi
-      - ql
-      - qr
-      - qs
-      - o3ppmv
-      - phis
-      - qls
-      - qcn
-      - cfcn
-      - frocean
-      - frland
-      - varflt
-      - ustar
-      - bstar
-      - zpbl
-      - cm
-      - ct
-      - cq
-      - kcbl
-      - tsm
-      - khl
-      - khu
-      - frlake
-      - frseaice
-      - vtype
-      - stype
-      - vfrac
-      - sheleg
-      - ts
-      - soilt
-      - soilm
-      - u10m
-      - v10m
-    - datapath: './'
-      datetime: $JEDI_ISO_DATE_003
-      filenames:
-      - bkg.%yyyy%mm%ddT%hh%MM%ssZ.nc4
-      - fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKG_HRES.nc4
-      filetype: cube sphere history
-      provider: geos
-      state variables:
-      - ua
-      - va
-      - t
-      - delp
-      - ps
-      - q
-      - qi
-      - ql
-      - qr
-      - qs
-      - o3ppmv
-      - phis
-      - qls
-      - qcn
-      - cfcn
-      - frocean
-      - frland
-      - varflt
-      - ustar
-      - bstar
-      - zpbl
-      - cm
-      - ct
-      - cq
-      - kcbl
-      - tsm
-      - khl
-      - khu
-      - frlake
-      - frseaice
-      - vtype
-      - stype
-      - vfrac
-      - sheleg
-      - ts
-      - soilt
-      - soilm
-      - u10m
-      - v10m
-    - datapath: './'
-      datetime: $JEDI_ISO_DATE_004
-      filenames:
-      - bkg.%yyyy%mm%ddT%hh%MM%ssZ.nc4
-      - fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKG_HRES.nc4
-      filetype: cube sphere history
-      provider: geos
-      state variables:
-      - ua
-      - va
-      - t
-      - delp
-      - ps
-      - q
-      - qi
-      - ql
-      - qr
-      - qs
-      - o3ppmv
-      - phis
-      - qls
-      - qcn
-      - cfcn
-      - frocean
-      - frland
-      - varflt
-      - ustar
-      - bstar
-      - zpbl
-      - cm
-      - ct
-      - cq
-      - kcbl
-      - tsm
-      - khl
-      - khu
-      - frlake
-      - frseaice
-      - vtype
-      - stype
-      - vfrac
-      - sheleg
-      - ts
-      - soilt
-      - soilm
-      - u10m
-      - v10m
-    - datapath: './'
-      datetime: $JEDI_ISO_DATE_005
-      filenames:
-      - bkg.%yyyy%mm%ddT%hh%MM%ssZ.nc4
-      - fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKG_HRES.nc4
-      filetype: cube sphere history
-      provider: geos
-      state variables:
-      - ua
-      - va
-      - t
-      - delp
-      - ps
-      - q
-      - qi
-      - ql
-      - qr
-      - qs
-      - o3ppmv
-      - phis
-      - qls
-      - qcn
-      - cfcn
-      - frocean
-      - frland
-      - varflt
-      - ustar
-      - bstar
-      - zpbl
-      - cm
-      - ct
-      - cq
-      - kcbl
-      - tsm
-      - khl
-      - khu
-      - frlake
-      - frseaice
-      - vtype
-      - stype
-      - vfrac
-      - sheleg
-      - ts
-      - soilt
-      - soilm
-      - u10m
-      - v10m
-    - datapath: './'
-      datetime: $JEDI_ISO_DATE_006
-      filenames:
-      - bkg.%yyyy%mm%ddT%hh%MM%ssZ.nc4
-      - fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKG_HRES.nc4
-      filetype: cube sphere history
-      provider: geos
-      state variables:
-      - ua
-      - va
-      - t
-      - delp
-      - ps
-      - q
-      - qi
-      - ql
-      - qr
-      - qs
-      - o3ppmv
-      - phis
-      - qls
-      - qcn
-      - cfcn
-      - frocean
-      - frland
-      - varflt
-      - ustar
-      - bstar
-      - zpbl
-      - cm
-      - ct
-      - cq
-      - kcbl
-      - tsm
-      - khl
-      - khu
-      - frlake
-      - frseaice
-      - vtype
-      - stype
-      - vfrac
-      - sheleg
-      - ts
-      - soilt
-      - soilm
-      - u10m
-      - v10m
-    - datapath: './'
-      datetime: $JEDI_ISO_DATE_007
+      datetime: $JEDI_ISO_DATE_ANA
       filenames:
       - bkg.%yyyy%mm%ddT%hh%MM%ssZ.nc4
       - fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKG_HRES.nc4
@@ -401,43 +119,7 @@ cost function:
         members from template:
           template:
             states:
-            - datetime: $JEDI_ISO_DATE_001
-              filetype: cube sphere history
-              provider: geos
-              state variables: *id001
-              datapath: ./
-              filenames: [mem%mem%/geos.bkg_clcv.%yyyy%mm%dd_%hh%MMz.nc4, fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKGCOV_RESOL.nc4]
-            - datetime: $JEDI_ISO_DATE_002
-              filetype: cube sphere history
-              provider: geos
-              state variables: *id001
-              datapath: ./
-              filenames: [mem%mem%/geos.bkg_clcv.%yyyy%mm%dd_%hh%MMz.nc4, fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKGCOV_RESOL.nc4]
-            - datetime: $JEDI_ISO_DATE_003
-              filetype: cube sphere history
-              provider: geos
-              state variables: *id001
-              datapath: ./
-              filenames: [mem%mem%/geos.bkg_clcv.%yyyy%mm%dd_%hh%MMz.nc4, fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKGCOV_RESOL.nc4]
-            - datetime: $JEDI_ISO_DATE_004
-              filetype: cube sphere history
-              provider: geos
-              state variables: *id001
-              datapath: ./
-              filenames: [mem%mem%/geos.bkg_clcv.%yyyy%mm%dd_%hh%MMz.nc4, fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKGCOV_RESOL.nc4]
-            - datetime: $JEDI_ISO_DATE_005
-              filetype: cube sphere history
-              provider: geos
-              state variables: *id001
-              datapath: ./
-              filenames: [mem%mem%/geos.bkg_clcv.%yyyy%mm%dd_%hh%MMz.nc4, fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKGCOV_RESOL.nc4]
-            - datetime: $JEDI_ISO_DATE_006
-              filetype: cube sphere history
-              provider: geos
-              state variables: *id001
-              datapath: ./
-              filenames: [mem%mem%/geos.bkg_clcv.%yyyy%mm%dd_%hh%MMz.nc4, fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKGCOV_RESOL.nc4]
-            - datetime: $JEDI_ISO_DATE_007
+            - datetime: $JEDI_ISO_DATE_ANA
               filetype: cube sphere history
               provider: geos
               state variables: *id001
@@ -555,7 +237,7 @@ cost function:
 #       filename: Data/inputs/geos_c90/tropo6.nc4
 #       filename: Data/inputs/geos_c90/ens6.nc4
         value: 0.50
-  cost type: 4D-Ens-Var
+  cost type: 3D-Var
   geometry:
     akbk: ./fv3-jedi/fv3files/akbk@JEDI_BKG_VRES.nc4
     field metadata override: ./fv3-jedi/fieldmetadata/geos.yaml
@@ -571,19 +253,17 @@ cost function:
   jb evaluation: false
 # OBSYAML_BEG
 # OBSYAML_END
-# parallel subwindows: false
-  subwindow: PT1H
   time window:
     begin: $JEDI_ISO_DATE_BEG
+    end: $JEDI_ISO_DATE_END
     bound to include: begin
-    length: PT6H
   variable change:
     variable change name: Analysis2Model
 final:
   diagnostics:
     departures: oman
   prints:
-    frequency: PT1H
+    frequency: PT3H
 output:
   datapath: ./ana
   filename: $EXPID.ana.ceta.%yyyy%mm%dd_%hh%MMz.nc4
@@ -593,7 +273,7 @@ output:
   provider: geos
 variational:
   iterations:
-  - ninner: '50'
+  - ninner: '100'
     diagnostics:
       departures: ombg
     geometry:
@@ -629,47 +309,17 @@ variational:
       name: Identity
       tstep: PT1H
       variable change: Identity
-#   online diagnostics:
-#     increment:
-#       state component:
-#         states:
-#         - date: $JEDI_ISO_DATE_001
-#           datapath: ./
-#           filename: $EXPID.jedi_inc1.eta.
-#           filetype: auxgrid
-#           gridtype: latlon
-#         - date: $JEDI_ISO_DATE_002
-#           datapath: ./
-#           filename: $EXPID.jedi_inc1.eta.
-#           filetype: auxgrid
-#           gridtype: latlon
-#         - date: $JEDI_ISO_DATE_003
-#           datapath: ./
-#           filename: $EXPID.jedi_inc1.eta.
-#           filetype: auxgrid
-#           gridtype: latlon
-#         - date: $JEDI_ISO_DATE_004
-#           datapath: ./
-#           filename: $EXPID.jedi_inc1.eta.
-#           filetype: auxgrid
-#           gridtype: latlon
-#         - date: $JEDI_ISO_DATE_005
-#           datapath: ./
-#           filename: $EXPID.jedi_inc1.eta.
-#           filetype: auxgrid
-#           gridtype: latlon
-#         - date: $JEDI_ISO_DATE_006
-#           datapath: ./
-#           filename: $EXPID.jedi_inc1.eta.
-#           filetype: auxgrid
-#           gridtype: latlon
-#         - date: $JEDI_ISO_DATE_007
-#           datapath: ./
-#           filename: $EXPID.jedi_inc1.eta.
-#           filetype: auxgrid
-#           gridtype: latlon
-#     write increment: true
-# - ninner: '25'
+    online diagnostics:
+      increment:
+        state component:
+          states:
+          - date: $JEDI_ISO_DATE_ANA
+            datapath: ./
+            filename: $EXPID.jedi_inc1.eta.
+            filetype: auxgrid
+            gridtype: latlon
+      write increment: true
+# - ninner: '100'
 #   diagnostics:
 #     departures: ombg
 #   geometry:
@@ -703,39 +353,9 @@ variational:
 #     increment:
 #       state component:
 #         states:
-#         - date: $JEDI_ISO_DATE_001
+#         - date: $JEDI_ISO_DATE_ANA
 #           datapath: ./
 #           filename: jedi.increment-iter2.
-#           filetype: auxgrid
-#           gridtype: latlon
-#         - date: $JEDI_ISO_DATE_002
-#           datapath: ./
-#           filename: $EXPID.jedi_inc2.eta.
-#           filetype: auxgrid
-#           gridtype: latlon
-#         - date: $JEDI_ISO_DATE_003
-#           datapath: ./
-#           filename: $EXPID.jedi_inc2.eta.
-#           filetype: auxgrid
-#           gridtype: latlon
-#         - date: $JEDI_ISO_DATE_004
-#           datapath: ./
-#           filename: $EXPID.jedi_inc2.eta.
-#           filetype: auxgrid
-#           gridtype: latlon
-#         - date: $JEDI_ISO_DATE_005
-#           datapath: ./
-#           filename: $EXPID.jedi_inc2.eta.
-#           filetype: auxgrid
-#           gridtype: latlon
-#         - date: $JEDI_ISO_DATE_006
-#           datapath: ./
-#           filename: $EXPID.jedi_inc2.eta.
-#           filetype: auxgrid
-#           gridtype: latlon
-#         - date: $JEDI_ISO_DATE_007
-#           datapath: ./
-#           filename: $EXPID.jedi_inc2.eta.
 #           filetype: auxgrid
 #           gridtype: latlon
 #     write increment: true

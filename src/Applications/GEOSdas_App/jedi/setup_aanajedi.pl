@@ -25,8 +25,10 @@ $FVROOT =~ s|/u/.realmounts/share|/share|;   # for portability across
                                              #     $user = getpwuid($<) unless ($user = $ENV{"USER"});
 $user = getpwuid($<) unless ($user = $ENV{"USER"});
 
-use lib ( "$FindBin::Bin", "$FVROOT/bin" );
+#use lib ( "$FindBin::Bin", "$FVROOT/bin" );
+use lib ( "$FindBin::Bin" );
 
+$fvbin = $FindBin::Bin;  # absolute path of fvbin
 my $scriptname = basename($0);
 
 # Command line options
@@ -76,7 +78,8 @@ sub init {
    } else {              # required command line args
      $scheme      = $ARGV[0];
      $expid       = $ARGV[1];
-     $resolution  = $ARGV[2];
+     $hres        = $ARGV[2];
+     $vres        = $ARGV[3];
    }
 
 # process options
@@ -176,12 +179,35 @@ sub init {
   }
 
 # Var run configuration parameters
-  $cres = $resolution + 1;
-  if ( $cres == 361 ) {
-     if ( $hyb4denvar ) {
-       die "Not yet ready for c90 hyb4denvar, aborting ... \n";
-     } elsif ( $hyb4dcenvar ) {
-       die "Not yet ready for c90 hyb4dcenvar, aborting ... \n";
+  $cres = $hres + 1;
+  $covres = $cres; # in most cases background fields and covariance at same resolution
+  if ( $cres == 721 ) {
+     if ( $scheme eq "hyb4denvar" ) {
+       $varxlayout = 16;
+       $varylayout = 7;
+       $gsixlayout = 21;
+       $gsiylayout = 32;
+       $perhost_var = 12;
+       $covres = 181;
+     } elsif ( $scheme eq "hyb4dcenvar" ) {
+       die "You are pushing the envelop, not settings for this yet, aborting ... \n";
+     } else {
+       die "You are pushing the envelop, not settings for this yet, aborting ... \n";
+     }
+  } elsif ( $cres == 361 ) {
+     if ( $scheme eq "hyb4denvar" ) {
+       $varxlayout = 16;
+       $varylayout = 7;
+       $gsixlayout = 21;
+       $gsiylayout = 32;
+       $perhost_var = 12;
+     } elsif ( $scheme eq "hyb4dcenvar" ) {
+       $varxlayout = 16;
+       $varylayout = 7;
+       $gsixlayout = 21;
+       $gsiylayout = 32;
+       $perhost_var = 12;
+       $covres = 181;
      } else {
        $varxlayout = 10;
        $varylayout = 10;
@@ -192,18 +218,19 @@ sub init {
      $gsibec_lat = 361;
      $gsibec_lon = 576;
   } elsif ( $cres == 181 ) {
-     if ( $hyb4denvar ) {
+     if ( $scheme eq "hyb4denvar" ) {
        $varxlayout = 16;
        $varylayout = 7;
        $gsixlayout = 21;
        $gsiylayout = 32;
        $perhost_var = 12;
-     } elsif ( $hyb4dcenvar ) {
+     } elsif ( $scheme eq "hyb4dcenvar" ) {
        $varxlayout = 16;
        $varylayout = 7;
        $gsixlayout = 8;
        $gsiylayout = 12;
        $perhost_var = 12;
+       $covres = 91;
      } else {
        $varxlayout = 8;
        $varylayout = 8;
@@ -214,35 +241,45 @@ sub init {
      $gsibec_lat = 181;
      $gsibec_lon = 288;
   } elsif ( $cres == 91 ) {
-     if ( $hyb4denvar ) {
+     if ( $scheme eq "hyb4denvar" ) {
        $varxlayout = 8;
        $varylayout = 8;
        $gsixlayout = 16;
        $gsiylayout = 24;
        $perhost_var = 16;
-     } elsif ( $hyb4dcenvar ) {
+     } elsif ( $scheme eq "hyb4dcenvar" ) {
+       die "Only available for 72 levels, aborting ... \n" unless ( $vres == 72 );
        $varxlayout = 12;
-       $varylayout = 7;
+       $varylayout = 2;
        $gsixlayout = 8;
-       $gsiylayout = 9;
-       $perhost_var = 16;
+       $gsiylayout = 18;
+       $perhost_var = 12;
+     } elsif ( $scheme eq "hyb3dcenvar" ) {
+       die "Only available for 72 levels, aborting ... \n" unless ( $vres == 72 );
+       $varxlayout = 6;
+       $varylayout = 6;
+       $gsixlayout = 6;
+       $gsiylayout = 6 * $gsixlayout;
+       $perhost_var = 12;
      } else {
        $varxlayout = 6;
        $varylayout = 6;
        $gsixlayout = 6;
        $gsiylayout = 6 * $gsixlayout;
+       $perhost_var = 12;
      }
      $gsibec_lat =  91;
      $gsibec_lon = 144;
-     $perhost_var = 16;
   } else {
      die "Unknown resolution settings, aborting ... \n";
   }
-  $ncpus_var = $gsixlayout * $gsiylayout;
+  $ncpus_var = $varxlayout * $varylayout * 6;
+  if ( $scheme eq "hyb4dcenvar" ) {$ncpus_var = $ncpus_var * 7}; # wired to hourly background
 
 # build internal variables
 
-  @rc2conf   = qw ( mkiau.rc.tenv
+  @rc2conf   = qw ( diffstates_geos.yaml
+                    mkiau.rc.tenv
                     obsop_name_map.yaml );
 
   @rc2jedi   = qw ( JEDIanaConfig.csh
@@ -284,11 +321,19 @@ foreach $fn ( @rc2conf ) {
   cp("$FVROOT/etc/jedi/$fn","$JEDIHOME/Config/$fn");
 }
 cp("$FVROOT/etc/jedi/geos_${scheme}.yaml","$JEDIHOME/Config/geosvar.yaml");
+if ( ! -e "$JEDIHOME/Config/geosvar.yaml" ) {
+   die "File $JEDIHOME/Config/geosvar.yaml not found \n";
+}
+
+# Add observation chunk to for full var yaml file
+$cmd = `$fvbin/insert_file_atstr.pl $FVROOT/etc/jedi/geos_jediobs.yaml $JEDIHOME/Config/geosvar.yaml OBSYAML_END`;
+print "$cmd\n";
+system($cmd); 
 
 # take of resolution and layout
 ed_conf_rc ("$JEDIHOME","JEDIanaConfig.csh");
 ed_var_yaml ("$JEDIHOME/Config","geosvar.yaml");
-if ( $shybridvar ) {
+if ( $hybridvar ) {
   ed_var_yaml ("$JEDIHOME/Config","diffstates_geos.yaml");
 }
 
@@ -299,7 +344,7 @@ ed_jediebkgx_acq ("$JEDIHOME/Config");
 ed_jediioda_acq  ("$JEDIHOME/Config");
 ed_jedivbc_acq   ("$JEDIHOME/Config");
 
-set_jedi_static("$jediroot","$jediinput",$resolution);
+set_jedi_static("$jediroot","$jediinput",$covres);
 
 # edit main DAS existing settings when GSI is bypassed
 ed_rst4fcst_acq("$FVHOME/fcst/","$scheme");
@@ -325,16 +370,15 @@ foreach $dir ( @static_dirs ) {
 }
 
 # bkg ...
-$res = $myres + 1;
-Assignfn("$jedistatic/jedi/interfaces/geos_atmosphere/GEOS_CRTM_Surface/geos.crtmsrf.$res.nc4","$mydir/bkg/geos.crtmsrf.$res.nc4");
+Assignfn("$jedistatic/jedi/interfaces/geos_atmosphere/GEOS_CRTM_Surface/geos.crtmsrf.$myres.nc4","$mydir/bkg/geos.crtmsrf.$myres.nc4");
 
 # gsibec ...
-if ( $scheme == "hyb4denvar" ) {
-  Assignfn("$jedistatic/jedi/interfaces/geos_atmosphere/gsibec/hyb_gsibec_configuration_c$res.nml","$mydir/gsibec/hyb_gsibec_configuration_c$res.nml");
+if ( $scheme eq "hyb4denvar" ) {
+  Assignfn("$jedistatic/jedi/interfaces/geos_atmosphere/gsibec/hyb_gsibec_configuration_c$myres.nml","$mydir/gsibec/hyb_gsibec_configuration_c$myres.nml");
 } else {
-  Assignfn("$jedistatic/jedi/interfaces/geos_atmosphere/gsibec/cli_gsibec_configuration_c$res.nml","$mydir/gsibec/cli_gsibec_configuration_c$res.nml");
+  Assignfn("$jedistatic/jedi/interfaces/geos_atmosphere/gsibec/cli_gsibec_configuration_c$myres.nml","$mydir/gsibec/cli_gsibec_configuration_c$myres.nml");
 }
-Assignfn("$jedistatic/jedi/interfaces/geos_atmosphere/gsibec/gsibec_coefficients_c$res.nc4","$mydir/gsibec/gsibec_coefficients_c$res.nc4");
+Assignfn("$jedistatic/jedi/interfaces/geos_atmosphere/gsibec/gsibec_coefficients_c$myres.nc4","$mydir/gsibec/gsibec_coefficients_c$myres.nc4");
 
 # Rcov ...
 $files_tmp = `sh -c "ls $jedistatic/jedi/interfaces/geos_atmosphere/rcov/1.0.0/* 2>/dev/null"`;
@@ -399,13 +443,16 @@ sub ed_conf_rc {
 
   $jedihyb = 0;
   $jediinc = 0;
-  if ( $scheme == "hyb4denvar" ) { 
-     $jedihyb = 1;
+  if ( $scheme eq "hyb4denvar" ) { 
+     $jedihyb = 1;  # handle lat-lon ensemble
      $jediinc = 1;
   }
-  if ( $scheme == "hyb4dcenvar" ) { 
-     $jedihyb = 2;
+  if ( $scheme eq "hyb4dcenvar" ) { 
+     $jedihyb = 2;  # handle cubed ensemble
      $jediinc = 1;
+  }
+  if ( $scheme eq "hyb3dcenvar" ) { 
+     $jedihyb = 2;  # handle cubed ensemble
   }
 
   $tmprc  = "$mydir/tmp.rc";
@@ -529,9 +576,12 @@ sub ed_var_yaml {
      #---------------------------------------
      while( defined($rcd = <LUN>) ) {
         chomp($rcd);
-        if($rcd =~ /\@JEDI_BKG_RESOL/)      {$rcd=~ s/\@JEDI_BKG_RESOL/$cres/g;  }
+        if($rcd =~ /\@JEDI_BKG_HRES/)       {$rcd=~ s/\@JEDI_BKG_HRES/$cres/g;  }
+        if($rcd =~ /\@JEDI_BKG_VRES/)       {$rcd=~ s/\@JEDI_BKG_VRES/$vres/g;  }
+        if($rcd =~ /\@JEDI_BKGCOV_RESOL/)   {$rcd=~ s/\@JEDI_BKGCOV_RESOL/$covres/g;  }
         if($rcd =~ /\@JEDI_GSIBEC_NLAT/)    {$rcd=~ s/\@JEDI_GSIBEC_NLAT/$gsibec_lat/g;  }
         if($rcd =~ /\@JEDI_GSIBEC_NLON/)    {$rcd=~ s/\@JEDI_GSIBEC_NLON/$gsibec_lon/g;  }
+        if($rcd =~ /\@JEDI_GSIBEC_NLEV/)    {$rcd=~ s/\@JEDI_GSIBEC_NLEV/$vres/g;  }
         if($rcd =~ /\@JEDI_OBSOP_MAPDIR/)   {$rcd=~ s/\@JEDI_OBSOP_MAPDIR/$obsop_mapdir/g;  }
         if($rcd =~ /\@JEDI_VAR_XLAYOUT/)    {$rcd=~ s/\@JEDI_VAR_XLAYOUT/$varxlayout/g;  }
         if($rcd =~ /\@JEDI_VAR_YLAYOUT/)    {$rcd=~ s/\@JEDI_VAR_YLAYOUT/$varylayout/g;  }
@@ -622,16 +672,22 @@ SYNOPSIS
 
      setup_aanajedi.pl [...options...] scheme
                                        expid
-                                       cres
+                                       hres
+                                       vres
           
 DESCRIPTION
 
 
      The following parameters are required 
 
-     scheme   3dvar, 3dfgat, hyb4denvar, or hyb4dcenvar
+     scheme   3dvar       - 3D variational analysis
+              3dfgat      - 3D first guess at appropriate time
+              hyb3dcenvar - hybrid 3d-VAR using cubed ensemble (BUMP)
+              hyb4dcenvar - hybrid 4d-En-Var using cubed ensemble (BUMP)
+              hyb4denvar  - hybrid 4d-En-Var using lat-lon ensemble (GSIBEC)
      expid    experiment name, e.g., u000_c72
-     cre      var resolution, e.g., 90
+     hres     cubed horizontal var resolution, e.g., 90
+     vres     vertical resolution, e.g., 72 (default)
 
 
 OPTIONS
@@ -647,7 +703,7 @@ OPTIONS
 
 EXAMPLE COMMAND LINE
 
-     setup_aanajedi.pl 3dfgat u000_C72 90
+     setup_aanajedi.pl 3dfgat u000_C72 90 72
 
 NECESSARY ENVIRONMENT
 
@@ -659,7 +715,7 @@ OPTIONAL ENVIRONMENT
 AUTHOR
 
      Ricardo Todling (Ricardo.Todling\@nasa.gov), NASA/GSFC/GMAO
-     Last modified: 25Apr2025                     by: R. Todling
+     Last modified: 06May2025                     by: R. Todling
 
 
 EOF
