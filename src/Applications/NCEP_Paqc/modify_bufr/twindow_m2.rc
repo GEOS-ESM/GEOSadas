@@ -37,10 +37,10 @@ NC005019       -1             0           0                         #   GOES SWI
 NC005024       -1             0           0                         #   India INSAT IR
 NC005025       -1             0           0                         #   India INSAT VIS
 NC005026       -1             0           0                         #   India INSAT WV
-NC005030        2           -60           0     NC005010  270 272   #   GOES-16+ IR LW(245)
-NC005031        2           -60           0     NC005011  270 272   #   GOES-16+ WV clear sky/deep layer(247)
-NC005032        2           -60           0     NC005012  270 272   #   GOES-16+ VIS(251)
-NC005034        2           -60           0     NC005011  270 272   #   GOES-16+ WV cloud-top(246)
+NC005030        2           -60           0     NC005010            #   GOES-16+ IR LW(245)
+NC005031        2           -60           0     NC005011            #   GOES-16+ WV clear sky/deep layer(247)
+NC005032        2           -60           0     NC005012            #   GOES-16+ VIS(251)
+NC005034        2           -60           0     NC005011            #   GOES-16+ WV cloud-top(246)
 #C005039       -1             0           0     NC005019  270 272   #   GOES-16+ SWIR(240)
 NC005039       -1             0           0                         #   GOES-16+ SWIR(240)
 NC005044        0             0           0                         #   JMA IR
