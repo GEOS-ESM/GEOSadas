@@ -7,12 +7,18 @@ state geometry:
   npy: @JEDI_BKG_HRES
   npz: @JEDI_BKG_VRES
   field metadata override: fv3-jedi/fieldmetadata/geos.yaml
+  layout:
+  - 4
+  - 2
 increment geometry:
   akbk: fv3-jedi/fv3files/akbk@JEDI_BKG_VRES.nc4
   npx: @JEDI_BKG_HRES
   npy: @JEDI_BKG_HRES
   npz: @JEDI_BKG_VRES
   field metadata override: fv3-jedi/fieldmetadata/geos.yaml
+  layout:
+  - 4
+  - 2
 state1:
   datetime: $ISO_STATES_DATE
   filetype: cube sphere history
