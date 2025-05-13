@@ -13,13 +13,13 @@ README for NCEPQC
 		  * cqcht96	 complex quality control of rawinsonde
 			            height/temperature
 			(oiqc not included in this program set)
-			             
+
 
 		These programs have been run on the Cray J90 'charney'
 		using either ON29 or BUFR input to 'prepdata'
 
 11 Mar 1999
-	Current snapshot of NCEPQC code used to run (ultimately) CQCHT.  
+	Current snapshot of NCEPQC code used to run (ultimately) CQCHT.
 This is not the final version for the operational system.  Routines
 in the 'w3lib' and 'bufrlib' that are not used by PREPDATA, PREVENTS,
 or CQCHT are not included here.
@@ -34,7 +34,7 @@ following routines from the GFIO library are used:
 GFIO_Open, GFIO_DimInquire, GFIO_Inquire, GFIO_GetVar, GFIO_Close
 	Note that (in general) the NCEP programs need to be compiled
 -i8 -r8 - with long integers.  The calls to GFIO routines *are* being
-performed with integer*4 variables, however.  This has been tested with 
+performed with integer*4 variables, however.  This has been tested with
 the GFIO libraries in /ford1/local/IRIX64/pkg/gfio (which were compiled
 as 'i4') and it works OK.
 
@@ -56,7 +56,7 @@ except for 'oiqc' and 'ssprev'
  1 Jul 2008
 
 Added new GMAO version of 'prevents' in GMAOprev directory.  This version
-reads the 'g5eta' format background fields directly.  The new code is 
+reads the 'g5eta' format background fields directly.  The new code is
 adapted from the latest NCEP 'gblevents' code.
 
 Current directories:
@@ -82,20 +82,20 @@ Current directories:
 
 21 Mar 2013
 
-Adding new directory modify_bufr with programs to modify BUFR files - 
+Adding new directory modify_bufr with programs to modify BUFR files -
 typically to change quality marks to undo blacklisting of observations.
 
 24 Sep 2013
 
-The code in directory prepobs_prepacqc.fd was updated with the new 
+The code in directory prepobs_prepacqc.fd was updated with the new
 NRL aircraft QC adopted at NCEP in July 2012.  When/if the new code
 is adopted, it will handle aircraft and ACARS qc and the acarsqc
 program will be obsolete.  Meanwhile, changes to the old prepacqc
-(to work around a problem with TAMDAR data) are being written to 
+(to work around a problem with TAMDAR data) are being written to
 an OPS branch.  (GEOSadas-5_9_1_p10_OPS_branch)
 
 Some routines updated with code merged from NCEP WCOSS versions.
-The new versions require use of the new BUFR library (to use 
+The new versions require use of the new BUFR library (to use
 setbmiss/getbmiss).
 
  19 Nov 2015
@@ -105,21 +105,23 @@ Changes relative to prior tag GEOSadas-5_13_1:
 
 Routines have been updated with the NCEP versions from WCOSS transition
 or later - except for aircraft QC still using older code.  (Not transitioned
-to NRLqc for aircraft partly because BUFR table problems with older 
+to NRLqc for aircraft partly because BUFR table problems with older
 prepbufr in the archive.)
 There were a few problems found in the prepQC used in MERRA2 up to Nov 2015.
 *There was a limit of 120000 observations (wind+mass combined) for ACARS with
 observations beyond that limit being discarded.  Array sizes were updated.
-*The OIQC was failing to check upperair temperature and wind data - the 
-new WCOSS version no longer uses OpenMP (it is MPI only) and appears to 
+*The OIQC was failing to check upperair temperature and wind data - the
+new WCOSS version no longer uses OpenMP (it is MPI only) and appears to
 not have the problem.
-*The old prepacqc (AMDAR/AIREP QC) routine was dropping some observations 
+*The old prepacqc (AMDAR/AIREP QC) routine was dropping some observations
 for a 'receipt time check' - added a 'SAVE' statement so receipt times
 would not be retained for the read of the second part of a report and
 not zeroed out.  (Change is on GEOSadas-5_9_1_p10_OPS_branch.)
-Other routines have changes for WCOSS including adjustment of the 
+Other routines have changes for WCOSS including adjustment of the
 prepbufr missing value to a smaller number that does not cause an overflow
 when cast to integer on Linux.  'cqcvad.x' increased array sizes.  The
 'prevents' code added a check to reject calm SFCSHP winds when the background
 wind speed is > 5m/s.
 
+Spring 2025
+Added and then removed restrictions on GOES AMVs in the twindow.rc files
