@@ -595,14 +595,16 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
 # ------------------------------------------------------------------------
     print "\n checkprintout  ldas_ana == 1 ($ldas_ana)\n";
     if ($ldas_ana == 1 ) {
-        $cmd     = "$fvbin/ldas_setup setup $fvhome/lana $ldassetup/ldas_exeinp.txt $ldassetup/ldas_batinp.txt -v --account $gid --nymdb $nymdb --nhmsb $nhmsb --ladas_cpl 1 --agcm_res $agcm_im4 --bcs_version $landbcs --rstloc $ldasics";
+        $varwndnhms = ($varwindow / 60)*10000; 
+        $varwnd_im6 = sprintf "%06i", $varwndnhms ;
+        $cmd     = "$fvbin/ldas_setup setup $fvhome/lana $ldassetup/ldas_exeinp.txt $ldassetup/ldas_batinp.txt -v --account $gid --nymdb $nymdb --nhmsb $nhmsb --ladas_cpl 1 --agcm_res $agcm_im4 --adas_cyc $varwnd_im6 --bcs_version $landbcs --rstloc $ldasics --specnml_path $ldasnml_path --mwrtm_path $ldasrtm_path";
         print "$cmd\n";
         $rc = system $cmd;
         die "Failed to setup LDAS for det, check LDAS config input files $!" if ( $rc );
         chomp($aens_replay);
         if (($hyb_ens == 4) && ($aens_replay eq "no")) { 
             $aens_im4 = sprintf "%04i", $aens_im ;
-	    $cmd = "$fvbin/ldas_setup setup $fvhome/lana $ldassetup/ldas_exeinp.txt $ldassetup/ldas_batinp.txt -v --account $gid --nymdb $nymdb --nhmsb $nhmsb --ladas_cpl 2 --agcm_res $aens_im4 --bcs_version $landbcs --rstloc $ldasics4ens";
+	    $cmd = "$fvbin/ldas_setup setup $fvhome/lana $ldassetup/ldas_exeinp.txt $ldassetup/ldas_batinp.txt -v --account $gid --nymdb $nymdb --nhmsb $nhmsb --ladas_cpl 2 --agcm_res $aens_im4 --adas_cyc $varwnd_im6 --bcs_version $landbcs --rstloc $ldasics4ens --specnml_path $ldasnml_path --mwrtm_path $ldasrtm_path";
 	    print "$cmd\n";
 	    $rc = system $cmd;
 	    die "Failed to setup LDAS for ens, check LDAS config input files $!" if ( $rc );
@@ -3562,12 +3564,20 @@ sub set_ldasANA {
         $dflt = "/discover/nobackup/$user/ldasSaveInput";
         $ldassetup = query("  LDAS setup input path?", $dflt);
 
+        $dflt = "/discover/nobackup/qzhang/LDAS_INPUTS/SPECnml/";
+        $prompt = " LDAS SPEC nml path? ";
+        $ldasnml_path = query($prompt, $dflt);
+
+        $dflt = "/discover/nobackup/qzhang/LDAS_INPUTS/MWRTM/";
+        $prompt = " LDAS mwrtm parameters  path? ";
+        $ldasrtm_path = query($prompt, $dflt);
+
         $dflt = "/discover/nobackup/$user/ldas_exp_C360/";
         $prompt = "  Location of LDAS initial conditions for det? (full_path/ldas_exp) ";
         $ldasics = query($prompt, $dflt);
            die ">>> Error <<< Cannot find directory, $ldasics;"
                 unless -d $ldasics;
-      
+
         if ($hyb_ens == 4 ) {
             $dflt = "/discover/nobackup/$user/ldas_exp_C90/";
             $prompt = "  Location of LDAS initial conditions for ens? (full_path/ldas_exp) ";
