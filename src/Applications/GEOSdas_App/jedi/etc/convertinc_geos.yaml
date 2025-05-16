@@ -3,17 +3,17 @@ input geometry:
     namelist filename: ./fv3files/input_geos_c90.nml
     field table filename: ./fv3files/field_table_gmao
   layout: [2,1]
-  akbk: ./fv3files/akbk72.nc4
-  npx: $JEDI_BKG_RESOL
-  npy: $JEDI_BKG_RESOL
-  npz: 72
+  akbk: ./fv3files/akbk@JEDI_BKG_VRES.nc4
+  npx: $JEDI_BKG_HRES
+  npy: $JEDI_BKG_HRES
+  npz: @JEDI_BKG_VRES
   field metadata override: ./fieldmetadata/geos.yaml
 output geometry:
   layout: [2,1]
-  akbk: ./fv3files/akbk72.nc4
-  npx: $JEDI_BKG_RESOL
-  npy: $JEDI_BKG_RESOL
-  npz: 72
+  akbk: ./fv3files/akbk@JEDI_BKG_VRES.nc4
+  npx: $JEDI_BKG_HRES
+  npy: $JEDI_BKG_HRES
+  npz: @JEDI_BKG_VRES
   field metadata override: ./fieldmetadata/geos.yaml
 
 linear variable change:

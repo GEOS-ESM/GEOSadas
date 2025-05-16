@@ -33,7 +33,8 @@ my $scriptname = basename($0);
 
 # Command line options
 
-  GetOptions ( "archive=s",
+  GetOptions ( "gcmres=s",
+               "archive=s",
                "cvbc=s",
                "fvhome=s",
                "iodadir=s",
@@ -160,8 +161,6 @@ sub init {
    $jediinput = "$fvhome/fv3-jedi";
 
 # determined whether cubed or not
-  $agcm_im = $aim;
-  $agcm_jm = $ajm;
   $agcm_lm = $nlevs;
 
 # define layout depending on resolution
@@ -179,6 +178,10 @@ sub init {
   }
 
 # Var run configuration parameters
+  $agcm_im = $hres;
+  if ( $opt_gcm ) { $agcm_im = $gcmres };
+  $agcm_jm = 6 * $agcm_im;
+  $agcm_lm = $vres;
   $cres = $hres + 1;
   $covres = $cres; # in most cases background fields and covariance at same resolution
   if ( $cres == 721 ) {
@@ -336,6 +339,7 @@ ed_var_yaml ("$JEDIHOME/Config","geosvar.yaml");
 if ( $hybridvar ) {
   ed_var_yaml ("$JEDIHOME/Config","diffstates_geos.yaml");
 }
+ed_mkiau ("$JEDIHOME/Config","mkiau.rc.env");
 
 # take care of satbias acq
 ed_jedibkg_acq   ("$JEDIHOME/Config");
@@ -406,12 +410,12 @@ foreach $dir_in_build ( @build_dirs ) {
 #......................................................................
 sub ed_miau_rc {
 
-  my($mydir) = @_;
+  my($mydir,$config) = @_;
 
   my($acq);
 
   $tmprc  = "$mydir/tmp.rc";
-  $thisrc = "$mydir/mkiau.rc.tmpl";
+  $thisrc = "$mydir/$config";
 
      open(LUN,"$thisrc")  || die "Fail to open $thisrc $!\n";
      open(LUN2,">$tmprc") || die "Fail to open tmp.rc $!\n";
@@ -576,6 +580,7 @@ sub ed_var_yaml {
      #---------------------------------------
      while( defined($rcd = <LUN>) ) {
         chomp($rcd);
+        if($rcd =~ /\@AGCM_IM/)             {$rcd=~ s/\@AGCM_IM/$agcm_im/g;  }
         if($rcd =~ /\@JEDI_BKG_HRES/)       {$rcd=~ s/\@JEDI_BKG_HRES/$cres/g;  }
         if($rcd =~ /\@JEDI_BKG_VRES/)       {$rcd=~ s/\@JEDI_BKG_VRES/$vres/g;  }
         if($rcd =~ /\@JEDI_BKGCOV_RESOL/)   {$rcd=~ s/\@JEDI_BKGCOV_RESOL/$covres/g;  }
@@ -694,6 +699,7 @@ OPTIONS
 
      -archive      location of archive (when bkg, others come from; default: /archive/u/\$user)
      -cvbc         cycle JEDI varBC, 0/1 (default: 1, i.e., cycle)
+     -gcmres       specify resolution of underying AGCM (default: hres in arg list)
      -fvhome       location of experiment home directory (default: \$expdir/\$expid)
      -jedihome     location of ensemble members (default: \$FVHOME/run/jedi)
      -jediroot     location of JEDI build directory (default: /discover/nobackup/projects/gmao/advda/swell/JediBundles/fv3_soca_SLES15/build-intel-release)
