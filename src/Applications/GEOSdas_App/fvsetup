@@ -3701,7 +3701,7 @@ sub set_geosjedi {
   } else {
      $iodadir = "/discover/nobackup/projects/gmao/dadev/rtodling/archive/541/Milan/x0050/ioda/";
   }
-  $jediopts = "-fvhome $fvhome -iodadir $iodadir -archive $acqloc $nogsi";
+  $jediopts = "-fvhome $fvhome -iodadir $iodadir -archive $acqloc -gcmres $agcm_im $nogsi";
 
   if ( $ENV{JEDI_ATMVAR_SCHEME} ) {
       $jedivar = $ENV{JEDI_ATMVAR_SCHEME};

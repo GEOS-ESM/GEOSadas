@@ -357,7 +357,7 @@ if ( ! -e $JEDIWRK/.DONE_JEDI_GET_BKG_${nymdb}_${nhmsb} ) then
         set lst = (`ls bkg.*.nc4`)
         set cres  = `getgfiodim.x $lst[1] | grep -v GFIO`
         @ jcres = $cres[1] + 1
-        setenv JEDI_BKG_RESOL $jcres
+        setenv JEDI_BKG_HRES $jcres
         vED -env $JEDIETC/convertinc_geos.yaml -o $JEDIWRK/Config/convertinc_geos.yaml
      endif
      cd -
