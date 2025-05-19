@@ -2,17 +2,17 @@ input geometry:
   fms initialization:
     namelist filename: fv3-jedi/fv3files/fmsmpp.nml
     field table filename: fv3-jedi/fv3files/field_table_gmao
-  akbk: fv3-jedi/fv3files/akbk72.nc4
-  npx: @JEDI_BKG_RESOL
-  npy: @JEDI_BKG_RESOL
-  npz: 72
+  akbk: fv3-jedi/fv3files/akbk@JEDI_BKG_VRES.nc4
+  npx: @JEDI_BKG_HRES
+  npy: @JEDI_BKG_HRES
+  npz: @JEDI_BKG_VRES
   field metadata override: fv3-jedi/fieldmetadata/geos.yaml
 output geometry:
-  akbk: fv3-jedi/fv3files/akbk72.nc4
+  akbk: fv3-jedi/fv3files/akbk@JEDI_BKG_VRES.nc4
 # interpolation method: bump
-  npx: @JEDI_BKG_RESOL_OUT
-  npy: @JEDI_BKG_RESOL_OUT
-  npz: 72
+  npx: @JEDI_BKG_HRES_OUT
+  npy: @JEDI_BKG_HRES_OUT
+  npz: @JEDI_BKG_VRES
   field metadata override: fv3-jedi/fieldmetadata/geos.yaml
 states:
 - input:
