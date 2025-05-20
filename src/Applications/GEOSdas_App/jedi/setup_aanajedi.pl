@@ -179,7 +179,7 @@ sub init {
 
 # Var run configuration parameters
   $agcm_im = $hres;
-  if ( $opt_gcm ) { $agcm_im = $gcmres };
+  if ( $opt_gcmres ) { $agcm_im = $gcmres };
   $agcm_jm = 6 * $agcm_im;
   $agcm_lm = $vres;
   $cres = $hres + 1;
@@ -279,6 +279,14 @@ sub init {
   $ncpus_var = $varxlayout * $varylayout * 6;
   if ( $scheme eq "hyb4dcenvar" ) {$ncpus_var = $ncpus_var * 7}; # wired to hourly background
 
+# mkiau pe-settings
+  $mkiau_nx = 2;
+  $mkiau_ny = 12;
+  if ( $agcm_im == 720 ) {
+     $mkiau_nx = 4;
+     $mkiau_ny = 24;
+  }
+
 # build internal variables
 
   @rc2conf   = qw ( diffstates_geos.yaml
@@ -339,7 +347,7 @@ ed_var_yaml ("$JEDIHOME/Config","geosvar.yaml");
 if ( $hybridvar ) {
   ed_var_yaml ("$JEDIHOME/Config","diffstates_geos.yaml");
 }
-ed_mkiau ("$JEDIHOME/Config","mkiau.rc.env");
+ed_mkiau_rc ("$JEDIHOME/Config","mkiau.rc.tenv");
 
 # take care of satbias acq
 ed_jedibkg_acq   ("$JEDIHOME/Config");
@@ -408,7 +416,7 @@ foreach $dir_in_build ( @build_dirs ) {
 
 }
 #......................................................................
-sub ed_miau_rc {
+sub ed_mkiau_rc {
 
   my($mydir,$config) = @_;
 
@@ -424,8 +432,8 @@ sub ed_miau_rc {
      #---------------------------------------
      while( defined($rcd = <LUN>) ) {
         chomp($rcd);
-        if($rcd =~ /\@NX/) {$rcd=~ s/\@NX/$miau_nx/g; }
-        if($rcd =~ /\@NY/) {$rcd=~ s/\@NY/$miau_ny/g; }
+        if($rcd =~ /\@NX/) {$rcd=~ s/\@NX/$mkiau_nx/g; }
+        if($rcd =~ /\@NY/) {$rcd=~ s/\@NY/$mkiau_ny/g; }
         if($rcd =~ /\@AGCM_IM/) {$rcd=~ s/\@AGCM_IM/$agcm_im/g; }
         if($rcd =~ /\@AGCM_JM/) {$rcd=~ s/\@AGCM_JM/$agcm_jm/g; }
         if($rcd =~ /\@AGCM_LM/) {$rcd=~ s/\@AGCM_LM/$agcm_lm/g; }
