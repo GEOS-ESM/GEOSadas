@@ -18,14 +18,37 @@ output geometry:
 
 linear variable change:
   variable change name: Model2GeoVaLs
-  input variables: &inputvars [ua,va,t,ps,q,o3ppmv,ts]
-  output variables: [ua,va,t,ps,q,o3ppmv,ts]
+  input variables: &myvars
+  - eastward_wind
+  - northward_wind
+  - air_temperature
+  - water_vapor_mixing_ratio_wrt_moist_air
+  - cloud_liquid_ice
+  - cloud_liquid_water
+  - rain_water
+  - snow_water
+  - mole_fraction_of_ozone_in_air
+  - air_pressure_at_surface
+  - skin_temperature_at_surface
+  field io names: &field_io_names
+    eastward_wind: ua
+    northward_wind: va
+    air_temperature: t
+    water_vapor_mixing_ratio_wrt_moist_air: q
+    cloud_liquid_ice: qi
+    cloud_liquid_water: ql
+    rain_water: qr
+    snow_water: qs
+    mole_fraction_of_ozone_in_air: o3ppmv
+    air_pressure_at_surface: ps
+    skin_temperature_at_surface: ts
+  output variables: *myvars
 increments:
 - date: "$JEDI_ISO_DATE_ANA"
-  input variables: *inputvars
+  input variables: *myvars
   trajectory:
     datetime: "$JEDI_ISO_DATE_ANA"
-    state variables: *inputvars
+    state variables: *myvars
     filetype: cube sphere history
     provider: geos
     datapath: ./bkg

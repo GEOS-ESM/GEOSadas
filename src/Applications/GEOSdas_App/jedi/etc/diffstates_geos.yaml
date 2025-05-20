@@ -25,19 +25,32 @@ state1:
   provider: geos
   datapath: ./ana
   filename: $JEDI_CUBED_ANA
-  state variables:
-  - ua
-  - va
-  - t
-  - q
-  - qi
-  - ql
-  - qr
-  - qs
-  - o3ppmv
-  - ps
-  - phis
-  - ts
+  state variables: &statevars
+  - eastward_wind
+  - northward_wind
+  - air_temperature
+  - water_vapor_mixing_ratio_wrt_moist_air
+  - cloud_liquid_ice
+  - cloud_liquid_water
+  - rain_water
+  - snow_water
+  - mole_fraction_of_ozone_in_air
+  - geopotential_height_times_gravity_at_surface
+  - air_pressure_at_surface
+  - skin_temperature_at_surface
+  field io names: &field_io_names
+    eastward_wind: ua
+    northward_wind: va
+    air_temperature: t
+    water_vapor_mixing_ratio_wrt_moist_air: q
+    cloud_liquid_ice: qi
+    cloud_liquid_water: ql
+    rain_water: qr
+    snow_water: qs
+    mole_fraction_of_ozone_in_air: o3ppmv
+    geopotential_height_times_gravity_at_surface: phis
+    air_pressure_at_surface: ps
+    skin_temperature_at_surface: ts
 # - delp
 state2:
   datetime: $ISO_STATES_DATE
@@ -45,22 +58,11 @@ state2:
   provider: geos
   datapath: ./bkg
   filename: $JEDI_CUBED_BKG
-  state variables:
-  - ua
-  - va
-  - t
-  - q
-  - qi
-  - ql
-  - qr
-  - qs
-  - o3ppmv
-  - ps
-  - phis
-  - ts
-# - delp
+  state variables: *statevars
+  field io names: *field_io_names
 output:
   filetype: auxgrid
   gridtype: latlon
   datapath: ./inc
   filename: $EXPID.jedi_inc1.eta.
+  field io names: *field_io_names
