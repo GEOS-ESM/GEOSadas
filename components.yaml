@@ -251,7 +251,7 @@ umwm:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  tag: g2.3.8.2
+  tag: g2.3.8.3
   develop: develop
 
 Ocean-LETKF:
