@@ -1946,6 +1946,17 @@ exit 1
 
      endif
 
+#    A bit of a hack to cope with latest handing of GAAS settings
+#    ------------------------------------------------------------
+     foreach fn (`ls $EXPID.aod*.$NCSUFFIX`)
+       set sfx = `echo $fn | cut -d. -f2-`
+       if ( -e das.$sfx ) then
+          /bin/rm das.$sfx
+       else
+          ln -sf $fn das.$sfx 
+       endif
+     end
+
                               # Last line of GetAODinfo4Fcst_()
 \end
 #.............................................................................
@@ -4125,8 +4136,13 @@ endif
            cat WSUB_ExtData.tmp | sed -e '/^WSUB_NATURE/ s#ExtData.*#/dev/null#' > WSUB_ExtData.rc
            /bin/rm WSUB_ExtData.tmp
 
-         #  Run bundleParser.py
+         #  Run bundleParser.py (note: needed since ADAS does not set pythonpath)
          #  -------------------
+         set this = `which bundleParser.py`
+         if ($status) then
+            Call AbnormalExit_( 99 )
+         endif
+         /bin/cp $this .
          python bundleParser.py
          construct_extdata_yaml_list.py $FVWORK/GEOS_ChemGridComp.rc
 
@@ -4797,8 +4813,13 @@ endif
 
    cd -
 
-  # Run bundleParser.py
-  #---------------------
+  # Run bundleParser.py (note: needed since ADAS does not set pythonpath)
+  #--------------------
+  set this = `which bundleParser.py`
+  if ($status) then
+     Call AbnormalExit_( 99 )
+  endif
+  /bin/cp $this .
   python bundleParser.py
   construct_extdata_yaml_list.py $FVWORK/GEOS_ChemGridComp.rc
 
