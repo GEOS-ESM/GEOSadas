@@ -179,7 +179,7 @@ sub init {
 
 # Var run configuration parameters
   $agcm_im = $hres;
-  if ( $opt_gcmres ) { $agcm_im = $gcmres };
+  if ( $opt_gcmres ) { $agcm_im = $opt_gcmres };
   $agcm_jm = 6 * $agcm_im;
   $agcm_lm = $vres;
   $cres = $hres + 1;
