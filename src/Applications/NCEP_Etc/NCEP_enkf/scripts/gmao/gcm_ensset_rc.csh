@@ -380,8 +380,14 @@ cd $ENSWORK/$member
          endif
          sed -f sed_file  $this_hist  > ./HISTORY.rc
 
-        #  Run bundleParser.py
+        #  Run bundleParser.py (note: needed since ensADAS does not set pythonpath)
         #  -------------------
+        set this = `which bundleParser.py`
+        if ($status) then
+           echo " ${MYNAME}: cannot find bundleParser.py, aborting ..."
+           exit 2 
+        endif
+        /bin/cp $this .
         python bundleParser.py
         construct_extdata_yaml_list.py ./GEOS_ChemGridComp.rc
 
