@@ -593,14 +593,14 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
 # ------------------------------------------------------------------------
     print "\n checkprintout  ldas_ana == 1 ($ldas_ana)\n";
     if ($ldas_ana == 1 ) {
-        $cmd     = "$fvbin/ldas_setup setup $fvhome/lana $ldassetup/ldas_exeinp.txt $ldassetup/ldas_batinp.txt -v --account $gid --nymdb $nymdb --nhmsb $nhmsb --ladas_cpl 1 --agcm_res $agcm_im4 --varwindow $varwindow --bcs_version $landbcs --rstloc $ldasics --LDAS_nml_path $ldasnml_path --mwrtm_path $ldasrtm_path";
+        $cmd     = "$fvbin/ldas_setup setup $fvhome/lana exeinp batinp -v --account $gid --nymdb $nymdb --nhmsb $nhmsb --ladas_cpl 1 --agcm_res $agcm_im4 --varwindow $varwindow --bcs_version $landbcs --rstloc $ldasics --LDAS_nml_path $ldasnml_path --mwrtm_path $ldasrtm_path";
         print "$cmd\n";
         $rc = system $cmd;
         die "Failed to setup LDAS for det, check LDAS config input files $!" if ( $rc );
         chomp($aens_replay);
         if (($hyb_ens == 4) && ($aens_replay eq "no")) { 
             $aens_im4 = sprintf "%04i", $aens_im ;
-	    $cmd = "$fvbin/ldas_setup setup $fvhome/lana $ldassetup/ldas_exeinp.txt $ldassetup/ldas_batinp.txt -v --account $gid --nymdb $nymdb --nhmsb $nhmsb --ladas_cpl 2 --agcm_res $aens_im4 --varwindow $varwindow --bcs_version $landbcs --rstloc $ldasics4ens --LDAS_nml_path $ldasnml_path --mwrtm_path $ldasrtm_path";
+	    $cmd = "$fvbin/ldas_setup setup $fvhome/lana exeinp batinp -v --account $gid --nymdb $nymdb --nhmsb $nhmsb --ladas_cpl 2 --agcm_res $aens_im4 --varwindow $varwindow --bcs_version $landbcs --rstloc $ldasics4ens --LDAS_nml_path $ldasnml_path --mwrtm_path $ldasrtm_path";
 	    print "$cmd\n";
 	    $rc = system $cmd;
 	    die "Failed to setup LDAS for ens, check LDAS config input files $!" if ( $rc );
@@ -3557,8 +3557,6 @@ sub set_ldasANA {
         if (yes($ans2)) {
             $ldasfdbk = 1;
         }
-        $dflt = "/discover/nobackup/$user/ldasSaveInput";
-        $ldassetup = query("  Location of LDAS setup sample input files (exeinp, batinp)?", $dflt);
 
         $dflt = "/discover/nobackup/qzhang/LDAS_INPUTS/SPECnml/";
         $prompt = "  Location of LDAS (special) nml input files? ";
