@@ -600,7 +600,7 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
         chomp($aens_replay);
         if (($hyb_ens == 4) && ($aens_replay eq "no")) { 
             $aens_im4 = sprintf "%04i", $aens_im ;
-	    $cmd = "$fvbin/ldas_setup setup $fvhome/lana exeinp batinp -v --account $gid --nymdb $nymdb --nhmsb $nhmsb --ladas_cpl 2 --agcm_res $aens_im4 --varwindow $varwindow --bcs_version $landbcs --rstloc $ldasics4ens --LDAS_nml_path $ldasnml_path --mwrtm_path $ldasrtm_path";
+	    $cmd = "$fvbin/ldas_setup setup $fvhome/lana dummy_exeinp dummy_batinp -v --account $gid --nymdb $nymdb --nhmsb $nhmsb --ladas_cpl 2 --agcm_res $aens_im4 --varwindow $varwindow --bcs_version $landbcs --rstloc $ldasics4ens --LDAS_nml_path $ldasnml_path --mwrtm_path $ldasrtm_path";
 	    print "$cmd\n";
 	    $rc = system $cmd;
 	    die "Failed to setup LDAS for ens, check LDAS config input files $!" if ( $rc );
