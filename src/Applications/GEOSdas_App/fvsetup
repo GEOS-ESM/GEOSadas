@@ -3540,7 +3540,7 @@ sub set_ldasANA {
         $ldas_ana = 1;
         $ldas_flag = 1;
 
-        $prompt = "  Location of LDAS initial forcing ";
+        $prompt = "  Location of LDAS initial surface met forcing (bkg.lfo) ";
         $dflt = $drstloc;
         $dflt = dirname($drstloc) unless -d $drstloc;
 
@@ -3548,18 +3548,18 @@ sub set_ldasANA {
             die ">>> Error <<< Cannot find directory, $ldashold;"
                 unless -d $ldashold;
 
-        @bkglfo_files = (<$ldashold/*bkg*lfo*${nymdb}_${hhb}*>);
-            die ">>> Error <<< Cannot find bkglfo files in $ldashold;"
+        @bkglfo_files = (<$ldashold/*bkg.lfo*${nymdb}_${hhb}*>);
+            die ">>> Error <<< Cannot find bkg.lfo files in $ldashold;"
                 unless scalar(@bkglfo_files);
         
         $dflt = "n";
-        $ans2 = query("  Enable LDAS feedback to model y/n?", $dflt);
+        $ans2 = query("  Enable LDAS feedback to atm model y/n?", $dflt);
         if (yes($ans2)) {
             $ldasfdbk = 1;
         }
 
         $dflt = "/discover/nobackup/qzhang/LDAS_INPUTS/SPECnml/";
-        $prompt = "  Location of LDAS (special) nml input files? ";
+        $prompt = "  Location of LDAS ('special') nml input files? ";
         $ldasnml_path = query($prompt, $dflt);
 
         $dflt = "/discover/nobackup/qzhang/LDAS_INPUTS/MWRTM/";
