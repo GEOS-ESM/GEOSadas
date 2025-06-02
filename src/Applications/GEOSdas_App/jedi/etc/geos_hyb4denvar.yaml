@@ -200,7 +200,6 @@ cost function:
   cost type: 4D-Ens-Var
   geometry:
     akbk: ./fv3-jedi/fv3files/akbk@JEDI_BKG_VRES.nc4
-    field metadata override: ./fv3-jedi/fieldmetadata/geos.yaml
     fms initialization:
       field table filename: ./fv3-jedi/fv3files/field_table_gmao
       namelist filename: ./fv3-jedi/fv3files/fmsmpp.nml
@@ -241,7 +240,6 @@ variational:
       departures: ombg
     geometry:
       akbk: ./fv3-jedi/fv3files/akbk@JEDI_BKG_VRES.nc4
-      field metadata override: ./fv3-jedi/fieldmetadata/geos.yaml
       fms initialization:
         field table filename: ./fv3-jedi/fv3files/field_table_gmao
         namelist filename: ./fv3-jedi/fv3files/fmsmpp.nml
@@ -309,7 +307,6 @@ variational:
 #     departures: ombg
 #   geometry:
 #     akbk: ./fv3-jedi/fv3files/akbk@JEDI_BKG_VRES.nc4
-#     field metadata override: ./fv3-jedi/fieldmetadata/geos.yaml
 #     fms initialization:
 #       field table filename: ./fv3-jedi/fv3files/field_table_gmao
 #       namelist filename: ./fv3-jedi/fv3files/fmsmpp.nml

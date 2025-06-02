@@ -7,14 +7,12 @@ input geometry:
   npx: $JEDI_BKG_HRES
   npy: $JEDI_BKG_HRES
   npz: @JEDI_BKG_VRES
-  field metadata override: ./fieldmetadata/geos.yaml
 output geometry:
   layout: [2,1]
   akbk: ./fv3files/akbk@JEDI_BKG_VRES.nc4
   npx: $JEDI_BKG_HRES
   npy: $JEDI_BKG_HRES
   npz: @JEDI_BKG_VRES
-  field metadata override: ./fieldmetadata/geos.yaml
 
 linear variable change:
   variable change name: Model2GeoVaLs

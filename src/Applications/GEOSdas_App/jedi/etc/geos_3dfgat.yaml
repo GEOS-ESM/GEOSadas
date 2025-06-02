@@ -130,40 +130,10 @@ cost function:
       inverse interpolator:
         local interpolator type: oops unstructured grid interpolator
 
-      state variables to inverse:
-      - eastward_wind
-      - northward_wind
-      - air_temperature
-      - air_pressure_at_surface
-      - water_vapor_mixing_ratio_wrt_moist_air
-      - cloud_liquid_ice
-      - cloud_liquid_water
-      - rain_water
-      - snow_water
-      - mole_fraction_of_ozone_in_air
-      - fraction_of_ocean
-      - fraction_of_lake
-      - fraction_of_ice
-      - geopotential_height_times_gravity_at_surface
-      - skin_temperature_at_surface
+      state variables to inverse: *anavars
     linear variable change:
       linear variable change name: Control2Analysis
-      input variables:
-      - eastward_wind
-      - northward_wind
-      - air_temperature
-      - air_pressure_at_surface
-      - water_vapor_mixing_ratio_wrt_moist_air
-      - cloud_liquid_ice
-      - cloud_liquid_water
-      - rain_water
-      - snow_water
-      - mole_fraction_of_ozone_in_air
-      - fraction_of_ocean
-      - fraction_of_lake
-      - fraction_of_ice
-      - geopotential_height_times_gravity_at_surface
-      - skin_temperature_at_surface
+      input variables: *anavars
       output variables: *anavars
 # OBSYAML_BEG
 # OBSYAML_END

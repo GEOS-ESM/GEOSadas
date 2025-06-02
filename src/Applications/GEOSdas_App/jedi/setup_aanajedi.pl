@@ -99,6 +99,16 @@ sub init {
       }
    }
 
+   $jediqos = "#"; 
+   if ( $ENV{"GEOSJEDI_QOS"} ) {
+      $jediqos = "#SBATCH --qos=$GEOSJEDI_QOS";
+   }
+
+   $jedipartition = "#"; 
+   if ( $ENV{"GEOSJEDI_PARTITION"} ) {
+      $jediqos = "#SBATCH --qos=$GEOSJEDI_PARTITION";
+   }
+
    if ( $opt_jedistatic ) {
         $jedistatic = $opt_jedistatic;
    } else {
@@ -123,7 +133,7 @@ sub init {
    if ( $opt_jediroot ) {
         $jediroot = $opt_jediroot;
    } else {
-        $jediroot = "/discover/nobackup/projects/gmao/advda/swell/JediBundles/fv3_soca_SLES15_02062025/build-intel-release";
+        $jediroot = "/discover/nobackup/projects/gmao/advda/swell/JediBundles/fv3_soca_SLES15_05292025/build-intel-release";
    }
 
    if ( $opt_archive ) {
@@ -179,6 +189,8 @@ sub init {
 
 # Var run configuration parameters
   $agcm_im = $hres;
+  $difxlayout = 4;
+  $difylayout = 2;
   if ( $opt_gcmres ) { $agcm_im = $opt_gcmres };
   $agcm_jm = 6 * $agcm_im;
   $agcm_lm = $vres;
@@ -188,6 +200,8 @@ sub init {
      if ( $scheme eq "hyb4denvar" ) {
        $varxlayout = 16;
        $varylayout = 7;
+       $difxlayout = 4;
+       $difylayout = 4;
        $gsixlayout = 21;
        $gsiylayout = 32;
        $perhost_var = 12;
@@ -278,6 +292,7 @@ sub init {
   }
   $ncpus_var = $varxlayout * $varylayout * 6;
   if ( $scheme eq "hyb4dcenvar" ) {$ncpus_var = $ncpus_var * 7}; # wired to hourly background
+  $diffntasks = $difxlayout * $difylayout * 6;
 
 # mkiau pe-settings
   $mkiau_nx = 2;
@@ -299,6 +314,7 @@ sub init {
                     jedi_acquire_ebkg.j
                     jedi_acquire_ioda.j
                     jedi_acquire_vbc.j
+                    jedi_diffstates.j
                     jedi_run_var.j
                     ut_jedi.j
                   );
@@ -477,6 +493,9 @@ sub ed_conf_rc {
      #---------------------------------------
      while( defined($rcd = <LUN>) ) {
         chomp($rcd);
+        if($rcd =~ /\@GEOSJEDI_QOS/) {$rcd=~ s/\@GEOSJEDI_QOS/$jediqos/g;  }
+        if($rcd =~ /\@GEOSJEDI_PARTITION/) {$rcd=~ s/\@GEOSJEDI_PARTITION/$jedipartition/g;  }
+
         if($rcd =~ /\@JEDI_FEEDBACK_VARBC/) {$rcd=~ s/\@JEDI_FEEDBACK_VARBC/$cvbc/g;  }
         if($rcd =~ /\@JEDI_HYBRID/)         {$rcd=~ s/\@JEDI_HYBRID/$jedihyb/g;  }
         if($rcd =~ /\@JEDI_INPUT/)          {$rcd=~ s/\@JEDI_INPUT/$jediinput/g;  }
@@ -485,6 +504,7 @@ sub ed_conf_rc {
         if($rcd =~ /\@JEDI_ROOT/)           {$rcd=~ s/\@JEDI_ROOT/$jediroot/g;  }
         if($rcd =~ /\@JEDI_RUN_GETINC/)     {$rcd=~ s/\@JEDI_RUN_GETINC/$jediinc/g;  }
         if($rcd =~ /\@JEDI_STATIC_FILES/)   {$rcd=~ s/\@JEDI_STATIC_FILES/$jedistatic/g;  }
+        if($rcd =~ /\@JEDI_DIF_NTASKS/)     {$rcd=~ s/\@JEDI_DIF_NTASKS/$diffntasks/g;  }
         if($rcd =~ /\@JEDI_VAR_NCPUS/)      {$rcd=~ s/\@JEDI_VAR_NCPUS/$ncpus_var/g;  }
         if($rcd =~ /\@JEDI_VAR_PERHOST/)    {$rcd=~ s/\@JEDI_VAR_PERHOST/$perhost_var/g;  }
         if($rcd =~ /\@OFFLIODADIR/)         {$rcd=~ s/\@OFFLIODADIR/$iodadir/g;  }
@@ -596,6 +616,9 @@ sub ed_var_yaml {
         if($rcd =~ /\@JEDI_GSIBEC_NLON/)    {$rcd=~ s/\@JEDI_GSIBEC_NLON/$gsibec_lon/g;  }
         if($rcd =~ /\@JEDI_GSIBEC_NLEV/)    {$rcd=~ s/\@JEDI_GSIBEC_NLEV/$vres/g;  }
         if($rcd =~ /\@JEDI_OBSOP_MAPDIR/)   {$rcd=~ s/\@JEDI_OBSOP_MAPDIR/$obsop_mapdir/g;  }
+        if($rcd =~ /\@JEDI_DIF_NTASKS/)     {$rcd=~ s/\@JEDI_DIF_NTASKS/$diffntasks/g;  }
+        if($rcd =~ /\@JEDI_DIF_XLAYOUT/)    {$rcd=~ s/\@JEDI_DIF_XLAYOUT/$difxlayout/g;  }
+        if($rcd =~ /\@JEDI_DIF_YLAYOUT/)    {$rcd=~ s/\@JEDI_DIF_YLAYOUT/$difylayout/g;  }
         if($rcd =~ /\@JEDI_VAR_XLAYOUT/)    {$rcd=~ s/\@JEDI_VAR_XLAYOUT/$varxlayout/g;  }
         if($rcd =~ /\@JEDI_VAR_YLAYOUT/)    {$rcd=~ s/\@JEDI_VAR_YLAYOUT/$varylayout/g;  }
         if($rcd =~ /\@JEDI_VAR_GSIXLAYOUT/) {$rcd=~ s/\@JEDI_VAR_GSIXLAYOUT/$gsixlayout/g;  }
@@ -723,13 +746,15 @@ NECESSARY ENVIRONMENT
 
 OPTIONAL ENVIRONMENT
 
-      ARCHIVE      can be define in env or arg list
-      FVHOME       can be define in env or arg list
+      ARCHIVE            can be define in env or arg list
+      FVHOME             can be define in env or arg list
+      GEOSJEDI_QOS       can be used to defined slurm qos
+      GEOSJEDI_PARTITION can be used to defined slurm partition
 
 AUTHOR
 
      Ricardo Todling (Ricardo.Todling\@nasa.gov), NASA/GSFC/GMAO
-     Last modified: 06May2025                     by: R. Todling
+     Last modified: 31May2025                     by: R. Todling
 
 
 EOF
