@@ -593,14 +593,14 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
 # ------------------------------------------------------------------------
     print "\n checkprintout  ldas_ana == 1 ($ldas_ana)\n";
     if ($ldas_ana == 1 ) {
-        $cmd     = "$fvbin/ldas_setup setup $fvhome/lana dummy_exeinp dummy_batinp -v --account $gid --nymdb $nymdb --nhmsb $nhmsb --ladas_cpl 1 --agcm_res $agcm_im4 --varwindow $varwindow --bcs_version $landbcs --rstloc $ldasics --LDAS_nml_path $ldasnml_path --mwrtm_path $ldasrtm_path";
+        $cmd     = "$fvbin/ldas_setup setup $fvhome/lana dummy_exeinp dummy_batinp -v --account $gid --nymdb $nymdb --nhmsb $nhmsb --ladas_cpl 1 --agcm_res $agcm_im4 --varwindow $varwindow --bcs_version $landbcs --rstloc $ldasics4det --LDAS_nens $ldas_nens_det";
         print "$cmd\n";
         $rc = system $cmd;
         die "Failed to setup LDAS for det, check LDAS config input files $!" if ( $rc );
         chomp($aens_replay);
         if (($hyb_ens == 4) && ($aens_replay eq "no")) { 
             $aens_im4 = sprintf "%04i", $aens_im ;
-	    $cmd = "$fvbin/ldas_setup setup $fvhome/lana dummy_exeinp dummy_batinp -v --account $gid --nymdb $nymdb --nhmsb $nhmsb --ladas_cpl 2 --agcm_res $aens_im4 --varwindow $varwindow --bcs_version $landbcs --rstloc $ldasics4ens --LDAS_nml_path $ldasnml_path --mwrtm_path $ldasrtm_path";
+	    $cmd = "$fvbin/ldas_setup setup $fvhome/lana dummy_exeinp dummy_batinp -v --account $gid --nymdb $nymdb --nhmsb $nhmsb --ladas_cpl 2 --agcm_res $aens_im4 --varwindow $varwindow --bcs_version $landbcs --rstloc $ldasics4ens --LDAS_nens $ldas_nens_atmens";
 	    print "$cmd\n";
 	    $rc = system $cmd;
 	    die "Failed to setup LDAS for ens, check LDAS config input files $!" if ( $rc );
@@ -3557,28 +3557,33 @@ sub set_ldasANA {
         if (yes($ans2)) {
             $ldasfdbk = 1;
         }
+ 
+        $dflt        = "/discover/nobackup/$user/ldas_exp_C360/";
+        $prompt      = "  Location of LDAS initial conditions for deterministic component? (full_path/ldas_exp) ";
+        $ldasics4det = query($prompt, $dflt);
+           die ">>> Error <<< Cannot find directory, $ldasics4det;"
+                unless -d $ldasics4det;
 
-        $dflt = "/discover/nobackup/qzhang/LDAS_INPUTS/SPECnml/";
-        $prompt = "  Location of LDAS ('special') nml input files? ";
-        $ldasnml_path = query($prompt, $dflt);
-
-        $dflt = "/discover/nobackup/qzhang/LDAS_INPUTS/MWRTM/";
-        $prompt = "  Location of LDAS L-band microwave radiative transfer model (mwrtm) parameters? ";
-        $ldasrtm_path = query($prompt, $dflt);
-
-        $dflt = "/discover/nobackup/$user/ldas_exp_C360/";
-        $prompt = "  Location of LDAS initial conditions for det? (full_path/ldas_exp) ";
-        $ldasics = query($prompt, $dflt);
-           die ">>> Error <<< Cannot find directory, $ldasics;"
-                unless -d $ldasics;
+	# FOR NOW, ASK USER FOR NUMBER OF ENS MEMBERS; COULD DETERMINE FROM ICS DIR
+	$dflt          = 24;
+	$prompt        = "  Number of LDAS ens members for ADAS deterministic component";
+	$ldas_nens_det = query($prompt, $dflt);
 
         if ($hyb_ens == 4 ) {
-            $dflt = "/discover/nobackup/$user/ldas_exp_C90/";
-            $prompt = "  Location of LDAS initial conditions for ens? (full_path/ldas_exp) ";
+            $dflt        = "/discover/nobackup/$user/ldas_exp_C90/";
+            $prompt      = "  Location of LDAS initial conditions for ens? (full_path/ldas_exp) ";
             $ldasics4ens = query($prompt);
             die ">>> Error <<< Cannot find directory, $ldasics4ens;"
                 unless -d $ldasics4ens;
-        }
+
+	    # FOR NOW, ask user for number of members in *atm* ensemble b/c setup of atm ens requires I/O
+	    # (and in any case users may specify "later" setup of atm ens)
+	    # COULD CHANGE TO DETERMINING NUMBER OF ENS MEMBERS FROM ldasics4ens AND THEN VERIFY LATER
+	    # AGAINST NUMBER OF ATM ENS MEMBERS
+	    $dflt             = 32;
+	    $prompt           = "  Number of atm ensemble members (for LDAS coupled with ADAS ens component)";
+	    $ldas_nens_atmens = query($prompt, $dflt);
+	}
     }
     return 0;
 }
