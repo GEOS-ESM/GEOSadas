@@ -593,14 +593,15 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
 # ------------------------------------------------------------------------
     print "\n checkprintout  ldas_ana == 1 ($ldas_ana)\n";
     if ($ldas_ana == 1 ) {
-        $cmd     = "$fvbin/ldas_setup setup $fvhome/lana dummy_exeinp dummy_batinp -v --account $gid --nymdb $nymdb --nhmsb $nhmsb --ladas_cpl 1 --agcm_res $agcm_im4 --varwindow $varwindow --bcs_version $landbcs --rstloc $ldasics4det --LDAS_nens $ldas_nens_det";
+        get_nens();
+        $cmd     = "$fvbin/ldas_setup setup $fvhome/lana dummy_exeinp dummy_batinp -v --account $gid --nymdb $nymdb --nhmsb $nhmsb --ladas_cpl 1 --agcm_res $agcm_im4 --varwindow $varwindow --bcs_version $landbcs --rstloc $ldasics4det --nens $ldas_nens_det";
         print "$cmd\n";
         $rc = system $cmd;
         die "Failed to setup LDAS for det, check LDAS config input files $!" if ( $rc );
         chomp($aens_replay);
         if (($hyb_ens == 4) && ($aens_replay eq "no")) { 
             $aens_im4 = sprintf "%04i", $aens_im ;
-	    $cmd = "$fvbin/ldas_setup setup $fvhome/lana dummy_exeinp dummy_batinp -v --account $gid --nymdb $nymdb --nhmsb $nhmsb --ladas_cpl 2 --agcm_res $aens_im4 --varwindow $varwindow --bcs_version $landbcs --rstloc $ldasics4ens --LDAS_nens $ldas_nens_atmens";
+	    $cmd = "$fvbin/ldas_setup setup $fvhome/lana dummy_exeinp dummy_batinp -v --account $gid --nymdb $nymdb --nhmsb $nhmsb --ladas_cpl 2 --agcm_res $aens_im4 --varwindow $varwindow --bcs_version $landbcs --rstloc $ldasics4ens --nens $ldas_nens_atmens";
 	    print "$cmd\n";
 	    $rc = system $cmd;
 	    die "Failed to setup LDAS for ens, check LDAS config input files $!" if ( $rc );
@@ -3548,7 +3549,7 @@ sub set_ldasANA {
             die ">>> Error <<< Cannot find directory, $ldashold;"
                 unless -d $ldashold;
 
-        @bkglfo_files = (<$ldashold/*bkg.lfo*${nymdb}_${hhb}*>);
+        @bkglfo_files = (<$ldashold/*bkg*lfo*${nymdb}_${hhb}*>);
             die ">>> Error <<< Cannot find bkg.lfo files in $ldashold;"
                 unless scalar(@bkglfo_files);
         
@@ -3564,25 +3565,12 @@ sub set_ldasANA {
            die ">>> Error <<< Cannot find directory, $ldasics4det;"
                 unless -d $ldasics4det;
 
-	# FOR NOW, ASK USER FOR NUMBER OF ENS MEMBERS; COULD DETERMINE FROM ICS DIR
-	$dflt          = 24;
-	$prompt        = "  Number of LDAS ens members for ADAS deterministic component";
-	$ldas_nens_det = query($prompt, $dflt);
-
         if ($hyb_ens == 4 ) {
             $dflt        = "/discover/nobackup/$user/ldas_exp_C90/";
             $prompt      = "  Location of LDAS initial conditions for ens? (full_path/ldas_exp) ";
             $ldasics4ens = query($prompt);
             die ">>> Error <<< Cannot find directory, $ldasics4ens;"
                 unless -d $ldasics4ens;
-
-	    # FOR NOW, ask user for number of members in *atm* ensemble b/c setup of atm ens requires I/O
-	    # (and in any case users may specify "later" setup of atm ens)
-	    # COULD CHANGE TO DETERMINING NUMBER OF ENS MEMBERS FROM ldasics4ens AND THEN VERIFY LATER
-	    # AGAINST NUMBER OF ATM ENS MEMBERS
-	    $dflt             = 32;
-	    $prompt           = "  Number of atm ensemble members (for LDAS coupled with ADAS ens component)";
-	    $ldas_nens_atmens = query($prompt, $dflt);
 	}
     }
     return 0;
@@ -3872,6 +3860,37 @@ EOF
       print("$cmd\n");
       system($cmd);
   }
+}
+
+#======================================================================
+sub get_nens { 
+    #default 
+    $atm_nens = 32;
+    $ldas_nens_det = 24;
+    $ldas_nens_atmens = $atm_nens; 
+    
+    @enslist = (<$fvhome/atmens/mem???>);
+    if ( scalar(@enslist) > 1 ) {
+       $atm_nens = scalar(@enslist);
+    }
+    $ldasdomain ="CF$agcm_im4x6C_GLOBAL";
+    $ldasics_det = "$ldasics/output/$ldasdomain";
+    @enslist = (<$ldasics_det/rs/ens????>);
+    if ( scalar(@enslist) > 1 ) {
+        $ldas_nens_det = scalar(@enslist);
+    }
+    $aens_im4 = sprintf "%04i", $aens_im ; 
+    $ldasdomain ="CF$aens_im4x6C_GLOBAL";
+    $ldasics_ens = "$ldasics4ens/output/$ldasdomain";
+    @enslist = (<$ldasics4ens/rs/ens????>);
+    if ( scalar(@enslist) > 1 ) {
+       $ldas_nens_atmens = scalar(@enslist);
+    }
+    if ( $atm_nens ne  $ldas_nens_atmens ) {
+       print "WARNING: ldas IC nens  is not equal to atm nens \n";
+       print "WARNING: set ldas IC nens equal to atm nens \n";
+       $ldas_nens_atmens = $atm_nens;
+    } 
 }
 
 #=======================================================================
