@@ -593,7 +593,7 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
 # ------------------------------------------------------------------------
     print "\n checkprintout  ldas_ana == 1 ($ldas_ana)\n";
     if ($ldas_ana == 1 ) {
-        get_nens();
+        get_nens4ldas();
         $cmd     = "$fvbin/ldas_setup setup $fvhome/lana dummy_exeinp dummy_batinp -v --account $gid --nymdb $nymdb --nhmsb $nhmsb --ladas_cpl 1 --agcm_res $agcm_im4 --varwindow $varwindow --bcs_version $landbcs --rstloc $ldasics4det --nens $ldas_nens_det";
         print "$cmd\n";
         $rc = system $cmd;
@@ -3863,34 +3863,23 @@ EOF
 }
 
 #======================================================================
-sub get_nens { 
-    #default 
-    $atm_nens = 32;
-    $ldas_nens_det = 24;
-    $ldas_nens_atmens = $atm_nens; 
+sub get_nens4ldas { 
+    $atm_nens = -9999;
+    $ldas_nens_det = -9999;
+    $ldas_nens_atmens = -9999; 
     
     @enslist = (<$fvhome/atmens/mem???>);
     if ( scalar(@enslist) > 1 ) {
        $atm_nens = scalar(@enslist);
-    }
-    $ldasdomain ="CF$agcm_im4x6C_GLOBAL";
-    $ldasics_det = "$ldasics/output/$ldasdomain";
+    } 
+    
+    $ldasics_det = "$ldasics4det/output/CF${agcm_im4}x6C_GLOBAL";
     @enslist = (<$ldasics_det/rs/ens????>);
     if ( scalar(@enslist) > 1 ) {
         $ldas_nens_det = scalar(@enslist);
     }
-    $aens_im4 = sprintf "%04i", $aens_im ; 
-    $ldasdomain ="CF$aens_im4x6C_GLOBAL";
-    $ldasics_ens = "$ldasics4ens/output/$ldasdomain";
-    @enslist = (<$ldasics4ens/rs/ens????>);
-    if ( scalar(@enslist) > 1 ) {
-       $ldas_nens_atmens = scalar(@enslist);
-    }
-    if ( $atm_nens ne  $ldas_nens_atmens ) {
-       print "WARNING: ldas IC nens  is not equal to atm nens \n";
-       print "WARNING: set ldas IC nens equal to atm nens \n";
-       $ldas_nens_atmens = $atm_nens;
-    } 
+
+    $ldas_nens_atmens = $atm_nens;
 }
 
 #=======================================================================
