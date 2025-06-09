@@ -3859,6 +3859,12 @@ EOF
       $cmd = "get_atmens_rst.pl $flags $src_arcdir $expid $nymdb $hhb";
       print("$cmd\n");
       system($cmd);
+  } else { 
+      #$src_arcdir == 'later' 
+      $dflt = 32 ;
+      $prompt = "  ensemble number in anticipated ensemble restarts: ";
+      $atm_nens_input = query($prompt, $dflt);
+      $atm_nens_install = 'None';
   }
 }
 
@@ -3867,10 +3873,14 @@ sub get_nens4ldas {
     $atm_nens = -9999;
     $ldas_nens_det = -9999;
     $ldas_nens_atmens = -9999; 
-    
-    @enslist = (<$fvhome/atmens/mem???>);
-    if ( scalar(@enslist) > 1 ) {
-       $atm_nens = scalar(@enslist);
+   
+    if ($atmens_nstall == 'None' ){
+       $atm_nens = $atm_nens_input;
+    } else { 
+       @enslist = (<$fvhome/atmens/mem???>);
+       if ( scalar(@enslist) > 1 ) {
+           $atm_nens = scalar(@enslist);
+       }
     } 
     
     $ldasics_det = "$ldasics4det/output/CF${agcm_im4}x6C_GLOBAL";
