@@ -3860,9 +3860,9 @@ EOF
       print("$cmd\n");
       system($cmd);
   } else { 
-      #$src_arcdir == 'later' 
+      # $src_arcdir == 'later' (user wants to provide atm ens restarts later) 
       $dflt = 32 ;
-      $prompt = "  ensemble number in anticipated ensemble restarts: ";
+      $prompt = "  anticipated number of ensemble members to be installed 'later': ";
       $atm_nens_input = query($prompt, $dflt);
       $atm_nens_install = 'None';
   }
@@ -3870,11 +3870,11 @@ EOF
 
 #======================================================================
 sub get_nens4ldas { 
-    $atm_nens = -9999;
-    $ldas_nens_det = -9999;
+    $atm_nens         = -9999;
+    $ldas_nens_det    = -9999;
     $ldas_nens_atmens = -9999; 
    
-    if ($atmens_nstall == 'None' ){
+    if ($atm_nens_install == 'None' ){
        $atm_nens = $atm_nens_input;
     } else { 
        @enslist = (<$fvhome/atmens/mem???>);
