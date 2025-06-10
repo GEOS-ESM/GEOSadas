@@ -280,8 +280,8 @@ cd $ENSWORK/$member
         # A bit of a hack to cope with latest handing of GAAS settings
         # ------------------------------------------------------------
         foreach fn (`ls $EXPID.aod*.$NCSUFFIX`)
-          set sfx = `echo $fn | cut -d. -f2-`
-          ln -sf $fn das.$sfx 
+          set sfx = `echo $fn | cut -d. -f2-4`
+          ln -sf $fn das.$sfx.nc4 
         end
  
         # FV-core layout file
