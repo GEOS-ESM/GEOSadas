@@ -12,6 +12,7 @@ set (ALLETC
    jedi_acquire_ebkg.j
    jedi_acquire_ioda.j
    jedi_acquire_vbc.j
+   jedi_diffstates.j
    jedi_run_var.j
    mkiau.rc.tenv
    obsop_name_map.yaml

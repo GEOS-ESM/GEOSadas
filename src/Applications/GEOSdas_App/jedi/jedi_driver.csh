@@ -102,44 +102,54 @@ endif
 # Prepare env for analysis
 # ------------------------
 if ( $JEDI_SET ) then
+   zeit_ci.x jedi_set
    jedi_set.csh $nymdb $nhmsb |& tee -a $FVWORK/$EXPID.jedi_set.log.${nymdb}_${hhb}z.txt
    if ( $status ) then
       echo " ${MYNAME}: jedi_set.csh signal failure, aborting ..."
       exit (1)
    endif
+   zeit_co.x jedi_set
 endif
 
 # Run JEDI analysis
 if ( $JEDI_RUN ) then
+   zeit_ci.x jedi_run
    jedi_run.csh $nymdb $nhmsb |& tee -a $FVWORK/$EXPID.jedi_run.log.${nymdb}_${hhb}z.txt
    if ( $status ) then
       echo " ${MYNAME}: jedi_run.csh signal failure, aborting ..."
       exit (1)
    endif
+   zeit_co.x jedi_run
    if ( $JEDI_MKIAU ) then
+       zeit_ci.x jedi_mkiau
        jedi_mkiau.csh $nymdb $nhmsb |& tee -a $FVWORK/$EXPID.jedi_mkiau.log.${nymdb}_${hhb}z.txt
        if ( $status ) then
           echo " ${MYNAME}: jedi_mkiau.csh signal failure, aborting ..."
           exit (1)
        endif
+       zeit_co.x jedi_mkiau
    endif
 endif
 
 # Wrap up
 if ( $JEDI_POST ) then
    if ( ! $JEDI_RUN_ADANA ) then
+      zeit_ci.x jedi_post
       jedi_post.csh $nymdb $nhmsb hofx |& tee -a $FVWORK/$EXPID.jedi_post.log.${nymdb}_${hhb}z.txt
       if ( $status ) then
          echo " ${MYNAME}: jedi_post.csh (hofx) signal failure, aborting ..."
          exit (1)
       endif
+      zeit_co.x jedi_post
    endif
    if ( $JEDI_RUN_ADANA_TEST || $JEDI_RUN_ADANA ) then
+      zeit_ci.x jedi_post
       jedi_post.csh $nymdb $nhmsb osen |& tee -a $FVWORK/$EXPID.jedi_post.log.${nymdb}_${hhb}z.txt
       if ( $status ) then
          echo " ${MYNAME}: jedi_post.csh (osen) signal failure, aborting ..."
          exit (1)
       endif
+      zeit_co.x jedi_post
    endif
 endif
 
@@ -152,11 +162,13 @@ if ( $?SKIPGSI ) then
    endif
 endif
 if ( $JEDI_IAU_OVERWRITE ) then
+  zeit_ci.x jedi_up4geos
   jedi_upd4geos.csh $nymdb $nhmsb |& tee -a $FVWORK/$EXPID.jedi_upd.log.${nymdb}_${hhb}z.txt
   if ( $status ) then
      echo " ${MYNAME}: JEDI update failed, aborting ..."
      exit (1)
   endif
+  zeit_co.x jedi_up4geos
 endif
 
 exit(0)

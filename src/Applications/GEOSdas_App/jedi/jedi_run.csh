@@ -34,28 +34,11 @@ if ( $#argv < 2 ) then
 endif
 
 
-# Slurm
-# -----
-#_SBATCH -A g0613
-#_SBATCH --qos=advda
-#_SBATCH --job-name=geos_jedi
-#_SBATCH --output=geos_jedi.o%j
-#_SBATCH --nodes=9
-#_SBATCH --ntasks-per-node=24
-#_SBATCH --time=01:00:00
-#_#SBATCH --constraint=sky
-
-# orig from: /gpfsm/dnb31/drholdaw/JediWork/GeosRun4Ricardo
-
-#setenv CNVENS       0
-#setenv RUN_BUMP     1
-#setenv RUN_ANA      0
-#setenv UPD_INIT_RST 0
-
 setenv FAILED 0
 if ( !($?EXPID)            )  setenv FAILED   1
 if ( !($?FVHOME)           )  setenv FAILED   1
 if ( !($?FVWORK)           )  setenv FAILED   1
+if ( !($?JEDI_HYBRID)      )  setenv FAILED   1
 if ( !($?JEDI_ROOT)        )  setenv FAILED   1
 if ( !($?JEDI_RUN_ANA)     )  setenv FAILED   1
 if ( !($?JEDI_RUN_CNVANA)  )  setenv FAILED   1
@@ -79,6 +62,7 @@ endif
 if ( !($?JEDI_RUN_ADANA_TEST) ) setenv JEDI_RUN_ADANA_TEST  0
 if ( !($?JEDI_RUN_BUMP)  )      setenv JEDI_RUN_BUMP        0
 if ( !($?JEDI_RUN_CNVENS)  )    setenv JEDI_RUN_CNVENS      0
+if ( !($?BATCH_SUBCMD)  )       setenv BATCH_SUBCMD      sbatch
 
 set nymdb = $1   # initial date of var window
 set nhmsb = $2   # initial time of var window
@@ -125,13 +109,20 @@ else
 endif
 setenv JEDIETC $FVHOME/run/jedi/Config
 
-cd $FVWORK/jedi.$nymda.${hha}0000
+setenv JEDIWRK $FVWORK/jedi.$nymda.${hha}0000
+cd $JEDIWRK
 pwd
 
 # OOPS trace and debug logging (0 or 1)
 # -------------------------------------
 #export OOPS_TRACE=1
 #export OOPS_DEBUG=1
+
+if ( $BATCH_SUBCMD == "sbatch" ) then
+    setenv BLOCKFLAG "-W"
+else
+    setenv BLOCKFLAG "-W block=true"
+endif
 
 # Convert ensemble restarts to analysis variables
 # -----------------------------------------------
@@ -147,18 +138,23 @@ endif
 # Generate localization coefficients (****run this only once****)
 # ---------------------------------------------------------------
 if ( $JEDI_RUN_BUMP ) then
+   zeit_ci.x jedi_bump
    mkdir -p $FVWORK/jana/bump
    $JEDI_BUMP_MPIRUN $JEDIBUILD/bin/fv3jedi_parameters.x Config/bump_parameters.yaml
    if ( $status ) then
        echo " ${MYNAME}: failed in BUMP, aborting ..."
        exit (1)
    endif
+   zeit_co.x jedi_bump
 endif
 
 
 # Run 3DVar/En3/4DVar FGAT
 # ----------------------
-if ( $JEDI_RUN_ANA ) then
+if ( ! -e $FVWORK/.DONE_jedi_run_ana.csh.$yyyymmddhh) then
+ if ( $JEDI_RUN_ANA ) then
+   zeit_ci.x jedi_var
+
    if ( -e Config/geosvar.${nymda}_${hha}z.yaml ) then
       setenv MYCONF Config/geosvar.${nymda}_${hha}z.yaml
    else
@@ -184,6 +180,7 @@ if ( $JEDI_RUN_ANA ) then
       endif
    endif
    /bin/mv *inc*nc4 ./inc # somehow datapath setting in yaml is not effective at inc part
+   zeit_co.x jedi_var
    
    # Converged in these many iterations
    # ----------------------------------
@@ -193,41 +190,74 @@ if ( $JEDI_RUN_ANA ) then
    # If testing Adjoint analysis ...
    # -------------------------------
    if ( $JEDI_RUN_ADANA_TEST ) then
+      zeit_ci.x jedi_advar
       setenv MYCONF Config/adtest_envarfgat.yaml
       $JEDI_FV3VAR_MPIRUN $JEDIBUILD/bin/fv3jedi_var.x $MYCONF
       if ( $status ) then
           echo " ${MYNAME}: failed in test for AD VAR, aborting ..."
           exit (1)
       endif
+      zeit_co.x jedi_advar
    endif
+ endif
+ touch $FVWORK/.DONE_jedi_run_ana.csh.$yyyymmddhh
 endif
 
 if ( $JEDI_RUN_GETINC ) then
+  zeit_ci.x jedi_getinc
 
   # Calculate increment on the cubed offline from cubed ana and bkg
   # ATTENTION: 1. This should be parallelized.
   #            2. mkiau has been enabled to handled cubed states, so this
   #               can be bypassed at some point.
   # ---------------------------------------------------------------
-  foreach cana (`ls ana/*ana.ceta*` )
-     set this = `basename $cana`
-     set  ttag = `echo $this | cut -d. -f4`
-     set yyyys = `echo $ttag | cut -c1-4`
-     set   mms = `echo $ttag | cut -c5-6`
-     set   dds = `echo $ttag | cut -c7-8`
-     set   hhs = `echo $ttag | cut -c10-11`
-     if ( -e Config/diffstates_geos_${yyyys}${mms}${dds}_${hhs}z.yaml ) then
-        $JEDI_GETINC_MPIRUN $JEDIBUILD/bin/fv3jedi_diffstates.x Config/diffstates_geos_${yyyys}${mms}${dds}_${hhs}z.yaml
+  if ( $JEDI_HYBRID ) then
+     setenv GETINCWORK incwork
+     @ ii = 0
+     foreach fn (`ls Config/diffstates_geos_*.yaml`)
+        mkdir -p incwork.${ii}
+        cd $GETINCWORK.${ii}
+        ln -sf ../bkg .
+        ln -sf ../ana .
+        ln -sf $FVHOME/fv3-jedi .
+        ln -sf ../$fn my.yaml
+        cd -
+        @ ii = $ii + 2
+     end
+
+     if ( -e $FVHOME/run/jedi/jedi_diffstates.j ) then
+        vED -env $FVHOME/run/jedi/jedi_diffstates.j -o jedi_diffstates.j
      else
-        echo " ${MYNAME}: missing Config/diffstates_geos_${yyyys}${mms}${dds}_${hhs}z.yaml file, aborting ... "
-        exit 1
+        echo " ${MYNAME}: missing run/jedi/jedi_diffstates.j file, aborting ... "
+        exit 1        
      endif
-  end
+     $BATCH_SUBCMD $BLOCKFLAG -o diffstates.log  jedi_diffstates.j
+
+  else
+
+     foreach cana (`ls ana/*ana.ceta*` )
+        set this = `basename $cana`
+        set  ttag = `echo $this | cut -d. -f4`
+        set yyyys = `echo $ttag | cut -c1-4`
+        set   mms = `echo $ttag | cut -c5-6`
+        set   dds = `echo $ttag | cut -c7-8`
+        set   hhs = `echo $ttag | cut -c10-11`
+        if ( -e Config/diffstates_geos_${yyyys}${mms}${dds}_${hhs}z.yaml ) then
+           $JEDI_GETINC_MPIRUN $JEDIBUILD/bin/fv3jedi_diffstates.x Config/diffstates_geos_${yyyys}${mms}${dds}_${hhs}z.yaml
+        else
+           echo " ${MYNAME}: missing Config/diffstates_geos_${yyyys}${mms}${dds}_${hhs}z.yaml file, aborting ... "
+           exit 1
+        endif
+     end
+
+  endif
   /bin/mv $EXPID.*inc*nc4 ./inc  # apparently diffstate does not listen to datapath on output
 
+  zeit_co.x jedi_getinc
 endif
 
 if ( $JEDI_RUN_CNVANA ) then
+   zeit_ci.x jedi_cvana
 
    # Convert analysis to restart like fields
    # ---------------------------------------
@@ -247,9 +277,11 @@ if ( $JEDI_RUN_CNVANA ) then
 #     exit (1)
    endif
 
+   zeit_co.x jedi_cvana
 endif # JEDI_CNVANA
 
 if ( $JEDI_RUN_UPDRST ) then
+   zeit_ci.x jedi_uprst
 
    # Create restart increment from analysis and background
    # -----------------------------------------------------
@@ -258,6 +290,7 @@ if ( $JEDI_RUN_UPDRST ) then
    /bin/cp bkg/moist_internal_rst restart/
    $JEDI_ADDINC_MPIRUN $JEDIBUILD/bin/fv3jedi_addincrement.x Config/create_new_restart.yaml
 
+   zeit_co.x jedi_uprst
 endif # UPD_INIT_RST
 
 # archive hofx
