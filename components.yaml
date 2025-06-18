@@ -65,11 +65,11 @@ GMAO_perllib:
   develop: main
 
 # When updating the MAPL version, also update the MAPL version in the
-# CMakeLists.txt file for non-Baselibs builds
+# CMakeLists.txt file for non-Baselibs builds (if included in CMakeLists.txt)
 MAPL:
   local: ./src/Shared/@MAPL
   remote: ../MAPL.git
-  tag: v2.56.1
+  tag: v2.57.0
   develop: develop
 
 GEOSldas_GridComp:
