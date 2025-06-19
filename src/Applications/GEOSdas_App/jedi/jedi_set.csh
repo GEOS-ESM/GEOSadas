@@ -439,7 +439,7 @@ if ( $JEDI_HYBRID ) then
      set   mms = `echo $ttag | cut -c5-6`
      set   dds = `echo $ttag | cut -c7-8`
      set   hhs = `echo $ttag | cut -c10-11`
-     set  cana = $EXPID.ana.ceta.${yyyys}${mms}${dds}_${hhs}00z.nc4 # wired for now
+     set  cana = $EXPID.jedi_ana.ceta.${yyyys}${mms}${dds}_${hhs}00z.nc4 # wired for now
      setenv JEDI_CUBED_BKG $cbkg
      setenv JEDI_CUBED_ANA $cana
      setenv ISO_STATES_DATE "${yyyys}-${mms}-${dds}T${hhs}:00:00Z"
