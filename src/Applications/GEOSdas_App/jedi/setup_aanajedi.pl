@@ -598,9 +598,6 @@ sub ed_var_yaml {
   $tmprc  = "$mydir/tmp.rc";
   $thisrc = "$mydir/$conffn";
 
-  # the following will need ATTENTION:
-  $obsop_mapdir = "$fvhome/run/jedi/Config";
-
      open(LUN,"$thisrc")  || die "Fail to open $thisrc $!\n";
      open(LUN2,">$tmprc") || die "Fail to open tmp.rc $!\n";
 
@@ -615,7 +612,6 @@ sub ed_var_yaml {
         if($rcd =~ /\@JEDI_GSIBEC_NLAT/)    {$rcd=~ s/\@JEDI_GSIBEC_NLAT/$gsibec_lat/g;  }
         if($rcd =~ /\@JEDI_GSIBEC_NLON/)    {$rcd=~ s/\@JEDI_GSIBEC_NLON/$gsibec_lon/g;  }
         if($rcd =~ /\@JEDI_GSIBEC_NLEV/)    {$rcd=~ s/\@JEDI_GSIBEC_NLEV/$vres/g;  }
-        if($rcd =~ /\@JEDI_OBSOP_MAPDIR/)   {$rcd=~ s/\@JEDI_OBSOP_MAPDIR/$obsop_mapdir/g;  }
         if($rcd =~ /\@JEDI_DIF_NTASKS/)     {$rcd=~ s/\@JEDI_DIF_NTASKS/$diffntasks/g;  }
         if($rcd =~ /\@JEDI_DIF_XLAYOUT/)    {$rcd=~ s/\@JEDI_DIF_XLAYOUT/$difxlayout/g;  }
         if($rcd =~ /\@JEDI_DIF_YLAYOUT/)    {$rcd=~ s/\@JEDI_DIF_YLAYOUT/$difylayout/g;  }

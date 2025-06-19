@@ -396,7 +396,7 @@ final:
     frequency: PT1H
 output:
   datapath: ./ana
-  filename: $EXPID.ana.ceta.%yyyy%mm%dd_%hh%MMz.nc4
+  filename: $EXPID.jedi_ana.ceta.%yyyy%mm%dd_%hh%MMz.nc4
   filetype: cube sphere history
   first: PT0H
   frequency: PT1H

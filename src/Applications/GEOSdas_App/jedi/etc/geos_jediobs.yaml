@@ -22,6 +22,8 @@
           engine:
             type: H5File
             obsfile: ./hofx/aircraft_temperature.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
         simulated variables:
         - airTemperature
       obs bias:
@@ -52,14 +54,14 @@
         name: Composite
         components:
         - name: VertInterp
-          observation alias file: @JEDI_OBSOP_MAPDIR/obsop_name_map.yaml
+          observation alias file: $FVHOME/run/jedi/Config/obsop_name_map.yaml
           variables:
           - airTemperature
       linear obs operator:
         name: Composite
         components:
         - name: VertInterp
-          observation alias file: @JEDI_OBSOP_MAPDIR/obsop_name_map.yaml
+          observation alias file: $FVHOME/run/jedi/Config/obsop_name_map.yaml
           variables:
           - airTemperature
       obs filters:
@@ -789,6 +791,8 @@
           engine:
             type: H5File
             obsfile: ./hofx/airs_aqua.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
         simulated variables:
         - brightnessTemperature
         channels: 1, 6-7, 10-11, 15-17, 20-22, 24, 27-28, 30, 36, 39-40, 42, 51-52,
@@ -3900,6 +3904,8 @@
           engine:
             type: H5File
             obsfile: ./hofx/amsr2_gcom-w1.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
         simulated variables:
         - brightnessTemperature
         channels: 1-14
@@ -4279,6 +4285,8 @@
           engine:
             type: H5File
             obsfile: ./hofx/amsua_aqua.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
         simulated variables:
         - brightnessTemperature
         channels: 1-15
@@ -4304,9 +4312,9 @@
       obs bias:
         input file: ./obs/amsua_aqua.$PYYYYYMMDDTHH0000Z.satbias.nc4
         output file: ./vbc/amsua_aqua.$BYYYYYMMDDTHH0000Z.satbias.nc4
-        variables without bc:
-        - brightnessTemperature
-        channels: 14
+#       variables without bc:
+#       - brightnessTemperature
+#       channels: 14
         variational bc:
           predictors:
           - name: constant
@@ -4576,6 +4584,8 @@
           engine:
             type: H5File
             obsfile: ./hofx/amsua_metop-b.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
         simulated variables:
         - brightnessTemperature
         channels: 1-15
@@ -4601,9 +4611,9 @@
       obs bias:
         input file: ./obs/amsua_metop-b.$PYYYYYMMDDTHH0000Z.satbias.nc4
         output file: ./vbc/amsua_metop-b.$BYYYYYMMDDTHH0000Z.satbias.nc4
-        variables without bc:
-        - brightnessTemperature
-        channels: 14
+#       variables without bc:
+#       - brightnessTemperature
+#       channels: 14
         variational bc:
           predictors:
           - name: constant
@@ -4873,6 +4883,8 @@
           engine:
             type: H5File
             obsfile: ./hofx/amsua_metop-c.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
         simulated variables:
         - brightnessTemperature
         channels: 1-15
@@ -4898,9 +4910,9 @@
       obs bias:
         input file: ./obs/amsua_metop-c.$PYYYYYMMDDTHH0000Z.satbias.nc4
         output file: ./vbc/amsua_metop-c.$BYYYYYMMDDTHH0000Z.satbias.nc4
-        variables without bc:
-        - brightnessTemperature
-        channels: 14
+#       variables without bc:
+#       - brightnessTemperature
+#       channels: 14
         variational bc:
           predictors:
           - name: constant
@@ -5170,6 +5182,8 @@
           engine:
             type: H5File
             obsfile: ./hofx/amsua_n15.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
         simulated variables:
         - brightnessTemperature
         channels: 1-15
@@ -5195,9 +5209,9 @@
       obs bias:
         input file: ./obs/amsua_n15.$PYYYYYMMDDTHH0000Z.satbias.nc4
         output file: ./vbc/amsua_n15.$BYYYYYMMDDTHH0000Z.satbias.nc4
-        variables without bc:
-        - brightnessTemperature
-        channels: 14
+#       variables without bc:
+#       - brightnessTemperature
+#       channels: 14
         variational bc:
           predictors:
           - name: constant
@@ -5457,6 +5471,305 @@
         action:
           name: reject
     - obs space:
+        name: AMSU-A NOAA-18
+        obsdatain:
+          engine:
+            type: H5File
+            obsfile: ./obs/amsua_n18.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
+        obsdataout:
+          engine:
+            type: H5File
+            obsfile: ./hofx/amsua_n18.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
+        simulated variables:
+        - brightnessTemperature
+        channels: 1-15
+      obs operator:
+        name: CRTM
+        Absorbers:
+        - H2O
+        - O3
+        - CO2
+        obs options:
+          Sensor_ID: amsua_n18
+          EndianType: little_endian
+          CoefficientPath: $JEDI_CRTM_COEFFS
+        linear obs operator:
+          Absorbers:
+          - H2O
+          - O3
+          Surfaces:
+          - Water_Temperature
+          - Land_Temperature
+          - Ice_Temperature
+          - Snow_Temperature
+      obs bias:
+        input file: ./obs/amsua_n18.$PYYYYYMMDDTHH0000Z.satbias.nc4
+        output file: ./vbc/amsua_n18.$BYYYYYMMDDTHH0000Z.satbias.nc4
+#       variables without bc:
+#       - brightnessTemperature
+#       channels: 14
+        variational bc:
+          predictors:
+          - name: constant
+          - name: cloudWaterContent
+            sensor: AMSUA
+            clwdif_ch238: 1
+            clwdif_ch314: 2
+          - name: lapseRate
+            order: 2
+            tlapse: ./obs/amsua_n18.$PYYYYYMMDDTHH0000Z.tlapse.txt
+          - name: lapseRate
+            tlapse: ./obs/amsua_n18.$PYYYYYMMDDTHH0000Z.tlapse.txt
+          - name: emissivityJacobian
+          - name: sensorScanAngle
+            order: 4
+          - name: sensorScanAngle
+            order: 3
+          - name: sensorScanAngle
+            order: 2
+          - name: sensorScanAngle
+        covariance:
+          minimal required obs number: 20
+          variance range:
+          - 1.0e-06
+          - 10.0
+          step size: 0.0001
+          largest analysis variance: 10000.0
+          prior:
+            input file: ./obs/amsua_n18.$PYYYYYMMDDTHH0000Z.satbias_cov.nc4
+            inflation:
+              ratio: 1.1
+              ratio for small dataset: 2.0
+          output file: ./vbc/amsua_n18.$BYYYYYMMDDTHH0000Z.satbias_cov.nc4
+      obs prior filters:
+      - filter: Perform Action
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-15
+        action:
+          name: assign error
+          error parameter vector:
+          - 2.5
+          - 2.0
+          - 2.0
+          - 0.55
+          - 0.3
+          - 0.23
+          - 0.23
+          - 0.25
+          - 0.25
+          - 0.35
+          - 0.4
+          - 0.55
+          - 0.8
+          - 5.0
+          - 2.5
+      obs post filters:
+      - filter: Bounds Check
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-6,15
+        test variables:
+        - name: ObsValue/brightnessTemperature
+          channels: 1-6,15
+        treat missing as out of bounds: true
+        minvalue: 100.0
+        maxvalue: 500.0
+        flag all filter variables if any test variable is out of bounds: true
+      - filter: Bounds Check
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-15
+        minvalue: 100.0
+        maxvalue: 500.0
+      - filter: Bounds Check
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-15
+        test variables:
+        - name: ObsFunction/HydrometeorCheckAMSUAclr
+          channels: 1-15
+          options:
+            sensor: amsua_n18
+            channels: 1-15
+            test_biaspredictor: cloudWaterContentPredictor
+        maxvalue: 0.0
+        action:
+          name: reject
+      - filter: BlackList
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-15
+        action:
+          name: inflate error
+          inflation variable:
+            name: ObsFunction/ObsErrorFactorTopoRad
+            channels: 1-15
+            options:
+              sensor: amsua_n18
+              channels: 1-15
+      - filter: BlackList
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-15
+        action:
+          name: inflate error
+          inflation variable:
+            name: ObsFunction/ObsErrorFactorTransmitTopRad
+            channels: 1-15
+            options:
+              channels: 1-15
+      - filter: BlackList
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-15
+        action:
+          name: inflate error
+          inflation variable:
+            name: ObsFunction/ObsErrorFactorSurfJacobianRad
+            channels: 1-15
+            options:
+              channels: 1-15
+              sensor: amsua_n18
+              use_biasterm: true
+              test_biasterm: ObsBiasTerm
+              obserr_demisf:
+              - 0.01
+              - 0.02
+              - 0.015
+              - 0.02
+              - 0.2
+              obserr_dtempf:
+              - 0.5
+              - 2.0
+              - 1.0
+              - 2.0
+              - 4.5
+      - filter: Background Check
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-15
+        function absolute threshold:
+        - name: ObsFunction/ObsErrorBoundMW
+          channels: 1-15
+          options:
+            sensor: amsua_n18
+            channels: 1-15
+            obserr_bound_latitude:
+              name: ObsFunction/ObsErrorFactorLatRad
+              options:
+                latitude_parameters:
+                - 25.0
+                - 0.25
+                - 0.04
+                - 3.0
+            obserr_bound_transmittop:
+              name: ObsFunction/ObsErrorFactorTransmitTopRad
+              channels: 1-15
+              options:
+                channels: 1-15
+            obserr_bound_topo:
+              name: ObsFunction/ObsErrorFactorTopoRad
+              channels: 1-15
+              options:
+                channels: 1-15
+                sensor: amsua_n18
+            error parameter vector:
+            - 2.5
+            - 2.0
+            - 2.0
+            - 0.55
+            - 0.3
+            - 0.23
+            - 0.23
+            - 0.25
+            - 0.25
+            - 0.35
+            - 0.4
+            - 0.55
+            - 0.8
+            - 5.0
+            - 2.5
+            obserr_bound_max:
+            - 4.5
+            - 4.5
+            - 4.5
+            - 2.5
+            - 2.0
+            - 2.0
+            - 2.0
+            - 2.0
+            - 2.0
+            - 2.0
+            - 2.5
+            - 3.5
+            - 4.5
+            - 4.5
+            - 4.5
+        action:
+          name: reject
+      - filter: Bounds Check
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-15
+        test variables:
+        - name: ObsFunction/InterChannelConsistencyCheck
+          channels: 1-15
+          options:
+            channels: 1-15
+            use passive_bc: true
+            sensor: amsua_n18
+            use_flag:
+            - -1
+            - -1
+            - -1
+            - 1
+            - -1
+            - 1
+            - 1
+            - -1
+            - -1
+            - 1
+            - 1
+            - 1
+            - 1
+            - 1
+            - -1
+        maxvalue: 1.0e-12
+        action:
+          name: reject
+      - filter: Bounds Check
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-15
+        test variables:
+        - name: ObsFunction/ChannelUseflagCheckRad
+          channels: 1-15
+          options:
+            channels: 1-15
+            use_flag:
+            - -1
+            - -1
+            - -1
+            - 1
+            - 1
+            - 1
+            - -1
+            - -1
+            - 1
+            - 1
+            - 1
+            - 1
+            - 1
+            - 1
+            - -1
+        minvalue: 1.0e-12
+        action:
+          name: reject
+    - obs space:
         name: AMSU-A NOAA-19
         obsdatain:
           engine:
@@ -5467,6 +5780,8 @@
           engine:
             type: H5File
             obsfile: ./hofx/amsua_n19.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
         simulated variables:
         - brightnessTemperature
         channels: 1-15
@@ -5492,9 +5807,9 @@
       obs bias:
         input file: ./obs/amsua_n19.$PYYYYYMMDDTHH0000Z.satbias.nc4
         output file: ./vbc/amsua_n19.$BYYYYYMMDDTHH0000Z.satbias.nc4
-        variables without bc:
-        - brightnessTemperature
-        channels: 14
+#       variables without bc:
+#       - brightnessTemperature
+#       channels: 14
         variational bc:
           predictors:
           - name: constant
@@ -5764,6 +6079,8 @@
           engine:
             type: H5File
             obsfile: ./hofx/atms_n20.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
         simulated variables:
         - brightnessTemperature
         channels: 1-22
@@ -5789,9 +6106,9 @@
       obs bias:
         input file: ./obs/atms_n20.$PYYYYYMMDDTHH0000Z.satbias.nc4
         output file: ./vbc/atms_n20.$BYYYYYMMDDTHH0000Z.satbias.nc4
-        variables without bc:
-        - brightnessTemperature
-        channels: 15
+#       variables without bc:
+#       - brightnessTemperature
+#       channels: 15
         variational bc:
           predictors:
           - name: constant
@@ -6086,6 +6403,340 @@
         action:
           name: reject
     - obs space:
+        name: ATMS NOAA-21
+        obsdatain:
+          engine:
+            type: H5File
+            obsfile: ./obs/atms_n21.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
+        obsdataout:
+          engine:
+            type: H5File
+            obsfile: ./hofx/atms_n21.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
+        simulated variables:
+        - brightnessTemperature
+        channels: 1-22
+      obs operator:
+        name: CRTM
+        Absorbers:
+        - H2O
+        - O3
+        - CO2
+        obs options:
+          Sensor_ID: atms_n21
+          EndianType: little_endian
+          CoefficientPath: $JEDI_CRTM_COEFFS
+        linear obs operator:
+          Absorbers:
+          - H2O
+          - O3
+          Surfaces:
+          - Water_Temperature
+          - Land_Temperature
+          - Ice_Temperature
+          - Snow_Temperature
+      obs bias:
+        input file: ./obs/atms_n21.$PYYYYYMMDDTHH0000Z.satbias.nc4
+        output file: ./vbc/atms_n21.$BYYYYYMMDDTHH0000Z.satbias.nc4
+#       variables without bc:
+#       - brightnessTemperature
+#       channels: 15
+        variational bc:
+          predictors:
+          - name: constant
+          - name: cloudWaterContent
+            sensor: ATMS
+            clwdif_ch238: 1
+            clwdif_ch314: 2
+          - name: lapseRate
+            order: 2
+            tlapse: ./obs/atms_n21.$PYYYYYMMDDTHH0000Z.tlapse.txt
+          - name: lapseRate
+            tlapse: ./obs/atms_n21.$PYYYYYMMDDTHH0000Z.tlapse.txt
+          - name: emissivityJacobian
+          - name: sensorScanAngle
+            order: 4
+          - name: sensorScanAngle
+            order: 3
+          - name: sensorScanAngle
+            order: 2
+          - name: sensorScanAngle
+        covariance:
+          minimal required obs number: 20
+          variance range:
+          - 1.0e-06
+          - 10.0
+          step size: 0.0001
+          largest analysis variance: 10000.0
+          prior:
+            input file: ./obs/atms_n21.$PYYYYYMMDDTHH0000Z.satbias_cov.nc4
+            inflation:
+              ratio: 1.1
+              ratio for small dataset: 2.0
+          output file: ./vbc/atms_n21.$BYYYYYMMDDTHH0000Z.satbias_cov.nc4
+      obs prior filters:
+      - filter: Perform Action
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-22
+        action:
+          name: assign error
+          error parameter vector:
+          - 5.0
+          - 5.0
+          - 5.0
+          - 3.0
+          - 0.55
+          - 0.3
+          - 0.3
+          - 0.3
+          - 0.3
+          - 0.3
+          - 0.35
+          - 0.4
+          - 0.55
+          - 0.8
+          - 5.0
+          - 5.0
+          - 2.5
+          - 2.5
+          - 2.5
+          - 2.5
+          - 2.5
+          - 2.5
+      obs post filters:
+      - filter: Bounds Check
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-7,16-22
+        test variables:
+        - name: ObsValue/brightnessTemperature
+          channels: 1-7,16
+        treat missing as out of bounds: true
+        minvalue: 100.0
+        maxvalue: 500.0
+        flag all filter variables if any test variable is out of bounds: true
+      - filter: Bounds Check
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-22
+        minvalue: 100.0
+        maxvalue: 500.0
+      - filter: Bounds Check
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-22
+        test variables:
+        - name: ObsFunction/HydrometeorCheckAMSUAclr
+          channels: 1-22
+          options:
+            sensor: atms_n21
+            channels: 1-22
+            test_biaspredictor: cloudWaterContentPredictor
+        maxvalue: 0.0
+        action:
+          name: reject
+      - filter: BlackList
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-22
+        action:
+          name: inflate error
+          inflation variable:
+            name: ObsFunction/ObsErrorFactorTopoRad
+            channels: 1-22
+            options:
+              sensor: atms_n21
+              channels: 1-22
+      - filter: BlackList
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-22
+        action:
+          name: inflate error
+          inflation variable:
+            name: ObsFunction/ObsErrorFactorTransmitTopRad
+            channels: 1-22
+            options:
+              channels: 1-22
+      - filter: BlackList
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-22
+        action:
+          name: inflate error
+          inflation variable:
+            name: ObsFunction/ObsErrorFactorSurfJacobianRad
+            channels: 1-22
+            options:
+              channels: 1-22
+              use_biasterm: true
+              test_biasterm: ObsBiasTerm
+              sensor: atms_n21
+              obserr_demisf:
+              - 0.01
+              - 0.02
+              - 0.015
+              - 0.02
+              - 0.2
+              obserr_dtempf:
+              - 0.5
+              - 2.0
+              - 1.0
+              - 2.0
+              - 4.5
+      - filter: Background Check
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-22
+        function absolute threshold:
+        - name: ObsFunction/ObsErrorBoundMW
+          channels: 1-22
+          options:
+            sensor: atms_n21
+            channels: 1-22
+            obserr_bound_latitude:
+              name: ObsFunction/ObsErrorFactorLatRad
+              options:
+                latitude_parameters:
+                - 25.0
+                - 0.25
+                - 0.04
+                - 3.0
+            obserr_bound_transmittop:
+              name: ObsFunction/ObsErrorFactorTransmitTopRad
+              channels: 1-22
+              options:
+                channels: 1-22
+            obserr_bound_topo:
+              name: ObsFunction/ObsErrorFactorTopoRad
+              channels: 1-22
+              options:
+                channels: 1-22
+                sensor: atms_n21
+            error parameter vector:
+            - 5.0
+            - 5.0
+            - 5.0
+            - 3.0
+            - 0.55
+            - 0.3
+            - 0.3
+            - 0.3
+            - 0.3
+            - 0.3
+            - 0.35
+            - 0.4
+            - 0.55
+            - 0.8
+            - 5.0
+            - 5.0
+            - 2.5
+            - 2.5
+            - 2.5
+            - 2.5
+            - 2.5
+            - 2.5
+            obserr_bound_max:
+            - 4.5
+            - 4.5
+            - 3.0
+            - 3.0
+            - 1.0
+            - 1.0
+            - 1.0
+            - 1.0
+            - 1.0
+            - 1.0
+            - 1.0
+            - 1.0
+            - 1.0
+            - 2.0
+            - 4.5
+            - 4.5
+            - 2.0
+            - 2.0
+            - 2.0
+            - 2.0
+            - 2.0
+            - 2.0
+        action:
+          name: reject
+      - filter: Bounds Check
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-22
+        test variables:
+        - name: ObsFunction/InterChannelConsistencyCheck
+          channels: 1-22
+          options:
+            channels: 1-22
+            use passive_bc: true
+            sensor: atms_n21
+            use_flag:
+            - -1
+            - -1
+            - -1
+            - -1
+            - 1
+            - 1
+            - 1
+            - 1
+            - 1
+            - 1
+            - 1
+            - 1
+            - 1
+            - 1
+            - 1
+            - -1
+            - 1
+            - 1
+            - 1
+            - 1
+            - 1
+            - 1
+        maxvalue: 1.0e-12
+        action:
+          name: reject
+      - filter: Bounds Check
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-22
+        test variables:
+        - name: ObsFunction/ChannelUseflagCheckRad
+          channels: 1-22
+          options:
+            channels: 1-22
+            use_flag:
+            - -1
+            - -1
+            - -1
+            - -1
+            - 1
+            - 1
+            - 1
+            - 1
+            - 1
+            - 1
+            - 1
+            - 1
+            - 1
+            - 1
+            - 1
+            - -1
+            - 1
+            - 1
+            - 1
+            - 1
+            - 1
+            - 1
+        minvalue: 1.0e-12
+        action:
+          name: reject
+    - obs space:
         name: ATMS NPP
         obsdatain:
           engine:
@@ -6096,6 +6747,8 @@
           engine:
             type: H5File
             obsfile: ./hofx/atms_npp.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
         simulated variables:
         - brightnessTemperature
         channels: 1-22
@@ -6121,9 +6774,9 @@
       obs bias:
         input file: ./obs/atms_npp.$PYYYYYMMDDTHH0000Z.satbias.nc4
         output file: ./vbc/atms_npp.$BYYYYYMMDDTHH0000Z.satbias.nc4
-        variables without bc:
-        - brightnessTemperature
-        channels: 15
+#       variables without bc:
+#       - brightnessTemperature
+#       channels: 15
         variational bc:
           predictors:
           - name: constant
@@ -6371,7 +7024,7 @@
             - 1
             - 1
             - 1
-            - 1
+            - -1
             - -1
             - 1
             - 1
@@ -6428,6 +7081,8 @@
           engine:
             type: H5File
             obsfile: ./hofx/avhrr3_metop-b.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
         simulated variables:
         - brightnessTemperature
         channels: 3-5
@@ -6683,6 +7338,273 @@
         action:
           name: reject
     - obs space:
+        name: AVHRR-3 METOP-C
+        obsdatain:
+          engine:
+            type: H5File
+            obsfile: ./obs/avhrr3_metop-c.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
+        obsdataout:
+          engine:
+            type: H5File
+            obsfile: ./hofx/avhrr3_metop-c.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
+        simulated variables:
+        - brightnessTemperature
+        channels: 3-5
+      obs operator:
+        name: CRTM
+        Absorbers:
+        - H2O
+        - O3
+        - CO2
+        obs options:
+          Sensor_ID: avhrr3_metop-c
+          EndianType: little_endian
+          CoefficientPath: $JEDI_CRTM_COEFFS
+        linear obs operator:
+          Absorbers:
+          - H2O
+          - O3
+          Surfaces:
+          - Water_Temperature
+          - Land_Temperature
+          - Ice_Temperature
+          - Snow_Temperature
+      obs bias:
+        input file: ./obs/avhrr3_metop-c.$PYYYYYMMDDTHH0000Z.satbias.nc4
+        output file: ./vbc/avhrr3_metop-c.$BYYYYYMMDDTHH0000Z.satbias.nc4
+        variational bc:
+          predictors:
+          - name: constant
+          - name: lapseRate
+            order: 2
+            tlapse: ./obs/avhrr3_metop-c.$PYYYYYMMDDTHH0000Z.tlapse.txt
+          - name: lapseRate
+            tlapse: ./obs/avhrr3_metop-c.$PYYYYYMMDDTHH0000Z.tlapse.txt
+          - name: emissivityJacobian
+          - name: sensorScanAngle
+            order: 4
+          - name: sensorScanAngle
+            order: 3
+          - name: sensorScanAngle
+            order: 2
+          - name: sensorScanAngle
+        covariance:
+          minimal required obs number: 20
+          variance range:
+          - 1.0e-06
+          - 10.0
+          step size: 0.0001
+          largest analysis variance: 10000.0
+          prior:
+            input file: ./obs/avhrr3_metop-c.$PYYYYYMMDDTHH0000Z.satbias_cov.nc4
+            inflation:
+              ratio: 1.1
+              ratio for small dataset: 2.0
+          output file: ./vbc/avhrr3_metop-c.$BYYYYYMMDDTHH0000Z.satbias_cov.nc4
+      obs prior filters:
+      - filter: Perform Action
+        filter variables:
+        - name: brightnessTemperature
+          channels: 3-5
+        action:
+          name: assign error
+          error parameter vector:
+          - 0.6
+          - 0.68
+          - 0.72
+      - filter: Variable Assignment
+        assignments:
+        - name: ObsError/brightnessTemperature
+          channels: 3-5
+          type: float
+          function:
+            name: ObsFunction/Arithmetic
+            options:
+              variables:
+              - name: ObsErrorData/brightnessTemperature
+                channels: 3-5
+      obs post filters:
+      - filter: BlackList
+        filter variables:
+        - name: brightnessTemperature
+          channels: 3
+        where:
+        - variable:
+            name: MetaData/solarZenithAngle
+          maxvalue: 88.9999
+        - variable:
+            name: GeoVaLs/water_area_fraction
+          minvalue: 1.0e-12
+        action:
+          name: reject
+      - filter: BlackList
+        filter variables:
+        - name: brightnessTemperature
+          channels: 3-5
+        action:
+          name: inflate error
+          inflation variable:
+            name: ObsFunction/ObsErrorFactorWavenumIR
+            channels: 3-5
+            options:
+              channels: 3-5
+      - filter: Bounds Check
+        filter variables:
+        - name: brightnessTemperature
+          channels: 3-5
+        minvalue: 1.0e-05
+        maxvalue: 1000.0
+        action:
+          name: reject
+      - filter: BlackList
+        filter variables:
+        - name: brightnessTemperature
+          channels: 3-5
+        action:
+          name: inflate error
+          inflation variable:
+            name: ObsFunction/ObsErrorFactorTopoRad
+            channels: 3-5
+            options:
+              channels: 3-5
+              sensor: avhrr3_metop-c
+      - filter: BlackList
+        filter variables:
+        - name: brightnessTemperature
+          channels: 3-5
+        action:
+          name: inflate error
+          inflation variable:
+            name: ObsFunction/ObsErrorFactorTransmitTopRad
+            channels: 3-5
+            options:
+              channels: 3-5
+      - filter: Bounds Check
+        filter variables:
+        - name: brightnessTemperature
+          channels: 3-5
+        test variables:
+        - name: ObsFunction/CloudDetectMinResidualAVHRR
+          channels: 3-5
+          options:
+            channels: 3-5
+            use_flag:
+            - -1
+            - 1
+            - 1
+            use_flag_clddet:
+            - 1
+            - 1
+            - 1
+            obserr_dtempf:
+            - 0.5
+            - 2.0
+            - 4.0
+            - 2.0
+            - 4.0
+        maxvalue: 1.0e-12
+        action:
+          name: reject
+      - filter: Bounds Check
+        filter variables:
+        - name: brightnessTemperature
+          channels: 3-5
+        test variables:
+        - name: ObsFunction/NearSSTRetCheckIR
+          channels: 3-5
+          options:
+            channels: 3-5
+            use_flag:
+            - -1
+            - 1
+            - 1
+            obserr_demisf:
+            - 0.01
+            - 0.02
+            - 0.03
+            - 0.02
+            - 0.03
+            obserr_dtempf:
+            - 0.5
+            - 2.0
+            - 4.0
+            - 2.0
+            - 4.0
+        maxvalue: 1.0e-12
+        action:
+          name: reject
+      - filter: BlackList
+        filter variables:
+        - name: brightnessTemperature
+          channels: 3-5
+        action:
+          name: inflate error
+          inflation variable:
+            name: ObsFunction/ObsErrorFactorSurfJacobianRad
+            channels: 3-5
+            options:
+              channels: 3-5
+              sensor: avhrr3_metop-c
+              obserr_demisf:
+              - 0.01
+              - 0.02
+              - 0.03
+              - 0.02
+              - 0.03
+              obserr_dtempf:
+              - 0.5
+              - 2.0
+              - 4.0
+              - 2.0
+              - 4.0
+      - filter: Background Check
+        filter variables:
+        - name: brightnessTemperature
+          channels: 3-5
+        function absolute threshold:
+        - name: ObsFunction/ObsErrorBoundIR
+          channels: 3-5
+          options:
+            channels: 3-5
+            obserr_bound_latitude:
+              name: ObsFunction/ObsErrorFactorLatRad
+              options:
+                latitude_parameters:
+                - 25.0
+                - 0.5
+                - 0.04
+                - 1.0
+            obserr_bound_transmittop:
+              name: ObsFunction/ObsErrorFactorTransmitTopRad
+              channels: 3-5
+              options:
+                channels: 3-5
+            obserr_bound_max:
+            - 3.0
+            - 3.0
+            - 3.0
+        action:
+          name: reject
+      - filter: Bounds Check
+        filter variables:
+        - name: brightnessTemperature
+          channels: 3-5
+        test variables:
+        - name: ObsFunction/ChannelUseflagCheckRad
+          channels: 3-5
+          options:
+            channels: 3-5
+            use_flag:
+            - -1
+            - 1
+            - 1
+        minvalue: 1.0e-12
+        action:
+          name: reject
+    - obs space:
         name: AVHRR-3 NOAA-19
         obsdatain:
           engine:
@@ -6693,6 +7615,8 @@
           engine:
             type: H5File
             obsfile: ./hofx/avhrr3_n19.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
         simulated variables:
         - brightnessTemperature
         channels: 3-5
@@ -6958,6 +7882,8 @@
           engine:
             type: H5File
             obsfile: ./hofx/cris-fsr_n20.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
         simulated variables:
         - brightnessTemperature
         channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211, 216,
@@ -11260,6 +12186,8 @@
           engine:
             type: H5File
             obsfile: ./hofx/cris-fsr_npp.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
         simulated variables:
         - brightnessTemperature
         channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211, 216,
@@ -15562,6 +16490,8 @@
           engine:
             type: H5File
             obsfile: ./hofx/gmi_gpm.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
         simulated variables:
         - brightnessTemperature
         channels: 1-13
@@ -16047,22 +16977,25 @@
           engine:
             type: H5File
             obsfile: ./hofx/gps.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
         simulated variables:
         - bendingAngle
       obs operator:
         name: GnssroBndNBAM
         obs options:
           use_compress: 1
-          vertlayer: mass
+#         vertlayer: mass
+          vertlayer: full
           sr_steps: 2
           super_ref_qc: NBAM
-          GSI_version: GEOS
+#         GSI_version: GEOS
       obs filters:
       - filter: BlackList
         where:
         - variable:
             name: MetaData/satelliteIdentifier
-          is_in: 41,265,266,267,268,421,440,724,725,726,727,728,729
+          is_in: 41,265,266,421,440,724,725,726,727,728,729
       - filter: Perform Action
         filter variables:
         - name: bendingAngle
@@ -16111,7 +17044,7 @@
         where:
         - variable:
             name: MetaData/satelliteIdentifier
-          is_in: 269
+          is_in: 267,268,269
         - variable:
             name: MetaData/satelliteConstellationRO
           is_in: 401
@@ -16126,7 +17059,7 @@
         where:
         - variable:
             name: MetaData/satelliteIdentifier
-          is_in: 269
+          is_in: 267,268,269
         - variable:
             name: MetaData/satelliteConstellationRO
           is_in: 402-999
@@ -16177,7 +17110,7 @@
           inflation factor: 2.0
         where:
         - variable: MetaData/satelliteIdentifier
-          is_in: 269
+          is_in: 267,268,269
       - filter: Variable Assignment
         assignments:
         - name: JediAdjustObsError/bendingAngle
@@ -16203,7 +17136,8 @@
           value: is_valid
         - variable:
             name: MetaData/satelliteIdentifier
-          is_in: 41,44,269,440,421,724,725,726,727,728,729, 750,751,752,753,754,755,821,825
+          is_in: 3,5,41,42,43,44,267,268,269,440,421,724,725,726,727,728,729,
+                 750,751,752,753,754,755,821,825
         defer to post: true
       - filter: Perform Action
         filter variables:
@@ -16258,6 +17192,8 @@
           engine:
             type: H5File
             obsfile: ./hofx/iasi_metop-b.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
         simulated variables:
         - brightnessTemperature
         channels: 16, 29, 32, 35, 38, 41, 44, 47, 49-51, 53, 55-57, 59, 61-63, 66,
@@ -23041,6 +23977,8 @@
           engine:
             type: H5File
             obsfile: ./hofx/iasi_metop-c.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
         simulated variables:
         - brightnessTemperature
         channels: 16, 29, 32, 35, 38, 41, 44, 47, 49-51, 53, 55-57, 59, 61-63, 66,
@@ -29824,6 +30762,8 @@
           engine:
             type: H5File
             obsfile: ./hofx/mhs_metop-b.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
         simulated variables:
         - brightnessTemperature
         channels: 1-5
@@ -30269,6 +31209,8 @@
           engine:
             type: H5File
             obsfile: ./hofx/mhs_metop-c.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
         simulated variables:
         - brightnessTemperature
         channels: 1-5
@@ -30714,6 +31656,8 @@
           engine:
             type: H5File
             obsfile: ./hofx/mhs_n19.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
         simulated variables:
         - brightnessTemperature
         channels: 1-5
@@ -31159,12 +32103,14 @@
           engine:
             type: H5File
             obsfile: ./hofx/mls55_aura.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
         simulated variables:
         - ozoneProfile
       obs operator:
         name: VertInterp
         vertical coordinate: air_pressure
-        observation alias file: @JEDI_OBSOP_MAPDIR/obsop_name_map.yaml
+        observation alias file: $FVHOME/run/jedi/Config/obsop_name_map.yaml
       obs filters:
       - filter: Bounds Check
         filter variables:
@@ -31190,6 +32136,8 @@
           engine:
             type: H5File
             obsfile: ./hofx/omi_aura.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
         simulated variables:
         - ozoneTotal
       obs operator:
@@ -31200,7 +32148,7 @@
         - 0.0078976797
         nlevels:
         - 1
-        observation alias file: @JEDI_OBSOP_MAPDIR/obsop_name_map.yaml
+        observation alias file: $FVHOME/run/jedi/Config/obsop_name_map.yaml
       obs filters:
       - filter: Perform Action
         filter variables:
@@ -31239,6 +32187,76 @@
         action:
           name: reject
     - obs space:
+        name: OMPSLPNC N21
+        obsdatain:
+          engine:
+            type: H5File
+            obsfile: ./obs/ompslpnc_n21.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
+        obsdataout:
+          engine:
+            type: H5File
+            obsfile: ./hofx/ompslpnc_n21.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
+        simulated variables:
+        - ozoneProfile
+      obs operator:
+        name: VertInterp
+        vertical coordinate: air_pressure
+        observation alias file: /discover/nobackup/projects/gmao/dadev/rtodling/JEDI/x51/jprePP/run/jedi/Config/obsop_name_map.yaml
+      obs filters:
+      # range sanity check
+      - filter: Bounds Check
+        filter variables:
+        - name: ozoneProfile
+        minvalue: 0
+        maxvalue: 10000
+        action:
+          name: reject
+      # threshold is really threshold*observation error (threshold= relative threshold)
+      - filter: Background Check
+        filter variables:
+        - name: ozoneProfile
+        threshold: 5.0
+        action:
+          name: reject
+    - obs space:
+        name: OMPSLPNC NPP
+        obsdatain:
+          engine:
+            type: H5File
+            obsfile: ./obs/ompslpnc_npp.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
+        obsdataout:
+          engine:
+            type: H5File
+            obsfile: ./hofx/ompslpnc_npp.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
+        simulated variables: 
+        - ozoneProfile
+      obs operator:
+        name: VertInterp
+        vertical coordinate: air_pressure
+        observation alias file: /discover/nobackup/projects/gmao/dadev/rtodling/JEDI/x51/jprePP/run/jedi/Config/obsop_name_map.yaml
+      obs filters:
+      # range sanity check
+      - filter: Bounds Check
+        filter variables:
+        - name: ozoneProfile
+        minvalue: 0
+        maxvalue: 10000
+        action:
+          name: reject
+      # threshold is really threshold*observation error (threshold= relative threshold)
+      - filter: Background Check
+        filter variables:
+        - name: ozoneProfile
+        threshold: 5.0
+        action:
+          name: reject
+    - obs space:
         name: OMPSNM NPP
         obsdatain:
           engine:
@@ -31249,6 +32267,8 @@
           engine:
             type: H5File
             obsfile: ./hofx/ompsnm_npp.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
         simulated variables:
         - ozoneTotal
       obs operator:
@@ -31304,6 +32324,8 @@
           engine:
             type: H5File
             obsfile: ./hofx/pibal.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
         simulated variables:
         - windEastward
         - windNorthward
@@ -31311,7 +32333,7 @@
         name: Composite
         components:
         - name: VertInterp
-          observation alias file: @JEDI_OBSOP_MAPDIR/obsop_name_map.yaml
+          observation alias file: $FVHOME/run/jedi/Config/obsop_name_map.yaml
           vertical coordinate: geopotential_height
           observation vertical coordinate group: DerivedVariables
           observation vertical coordinate: adjustedHeight
@@ -31326,7 +32348,7 @@
         name: Composite
         components:
         - name: VertInterp
-          observation alias file: @JEDI_OBSOP_MAPDIR/obsop_name_map.yaml
+          observation alias file: $FVHOME/run/jedi/Config/obsop_name_map.yaml
           vertical coordinate: geopotential_height
           observation vertical coordinate group: DerivedVariables
           observation vertical coordinate: adjustedHeight
@@ -31630,17 +32652,19 @@
           engine:
             type: H5File
             obsfile: ./hofx/satwind.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
         simulated variables:
         - windEastward
         - windNorthward
       obs operator:
         name: VertInterp
-        observation alias file: @JEDI_OBSOP_MAPDIR/obsop_name_map.yaml
+        observation alias file: $FVHOME/run/jedi/Config/obsop_name_map.yaml
         hofx scaling field: SurfaceWindScalingPressure
         hofx scaling field group: DerivedVariables
       linear obs operator:
         name: VertInterp
-        observation alias file: @JEDI_OBSOP_MAPDIR/obsop_name_map.yaml
+        observation alias file: $FVHOME/run/jedi/Config/obsop_name_map.yaml
         hofx scaling field: SurfaceWindScalingPressure
         hofx scaling field group: DerivedVariables
       obs prior filters:
@@ -32565,12 +33589,14 @@
           engine:
             type: H5File
             obsfile: ./hofx/scatwind.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
         simulated variables:
         - windEastward
         - windNorthward
       obs operator:
         name: VertInterp
-        observation alias file: @JEDI_OBSOP_MAPDIR/obsop_name_map.yaml
+        observation alias file: $FVHOME/run/jedi/Config/obsop_name_map.yaml
         vertical coordinate: geopotential_height
         observation vertical coordinate group: DerivedVariables
         observation vertical coordinate: adjustedHeight
@@ -32579,7 +33605,7 @@
         hofx scaling field group: DerivedVariables
       linear obs operator:
         name: VertInterp
-        observation alias file: @JEDI_OBSOP_MAPDIR/obsop_name_map.yaml
+        observation alias file: $FVHOME/run/jedi/Config/obsop_name_map.yaml
         vertical coordinate: geopotential_height
         observation vertical coordinate group: DerivedVariables
         observation vertical coordinate: adjustedHeight
@@ -32801,6 +33827,8 @@
           engine:
             type: H5File
             obsfile: ./hofx/sfcship.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
         simulated variables:
         - windEastward
         - windNorthward
@@ -32822,7 +33850,7 @@
           hofx scaling field: SurfaceWindScalingHeight
           hofx scaling field group: DerivedVariables
         - name: VertInterp
-          observation alias file: @JEDI_OBSOP_MAPDIR/obsop_name_map.yaml
+          observation alias file: $FVHOME/run/jedi/Config/obsop_name_map.yaml
           variables:
           - name: airTemperature
           - name: virtualTemperature
@@ -32850,7 +33878,7 @@
           hofx scaling field: SurfaceWindScalingHeight
           hofx scaling field group: DerivedVariables
         - name: VertInterp
-          observation alias file: @JEDI_OBSOP_MAPDIR/obsop_name_map.yaml
+          observation alias file: $FVHOME/run/jedi/Config/obsop_name_map.yaml
           variables:
           - name: airTemperature
           - name: virtualTemperature
@@ -33737,6 +34765,8 @@
           engine:
             type: H5File
             obsfile: ./hofx/sfc.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
         simulated variables:
         - windEastward
         - windNorthward
@@ -33758,7 +34788,7 @@
           hofx scaling field: SurfaceWindScalingHeight
           hofx scaling field group: DerivedVariables
         - name: VertInterp
-          observation alias file: @JEDI_OBSOP_MAPDIR/obsop_name_map.yaml
+          observation alias file: $FVHOME/run/jedi/Config/obsop_name_map.yaml
           variables:
           - name: airTemperature
           - name: virtualTemperature
@@ -33770,7 +34800,7 @@
           geovar_sfc_geomz: height_above_mean_sea_level_at_surface
           station_altitude: height
         - name: Identity
-          observation alias file: @JEDI_OBSOP_MAPDIR/obsop_name_map.yaml
+          observation alias file: $FVHOME/run/jedi/Config/obsop_name_map.yaml
           variables:
           - name: specificHumidity
       linear obs operator:
@@ -33787,12 +34817,12 @@
           hofx scaling field: SurfaceWindScalingHeight
           hofx scaling field group: DerivedVariables
         - name: VertInterp
-          observation alias file: @JEDI_OBSOP_MAPDIR/obsop_name_map.yaml
+          observation alias file: $FVHOME/run/jedi/Config/obsop_name_map.yaml
           variables:
           - name: airTemperature
           - name: virtualTemperature
         - name: Identity
-          observation alias file: @JEDI_OBSOP_MAPDIR/obsop_name_map.yaml
+          observation alias file: $FVHOME/run/jedi/Config/obsop_name_map.yaml
           variables:
           - name: stationPressure
           - name: specificHumidity
@@ -34068,6 +35098,8 @@
           engine:
             type: H5File
             obsfile: ./hofx/sondes.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
         simulated variables:
         - windEastward
         - windNorthward
@@ -34989,6 +36021,8 @@
           engine:
             type: H5File
             obsfile: ./hofx/ssmis_f17.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
         simulated variables:
         - brightnessTemperature
         channels: 1-24
