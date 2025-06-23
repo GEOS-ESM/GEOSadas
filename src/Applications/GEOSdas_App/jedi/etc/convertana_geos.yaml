@@ -17,13 +17,15 @@ states:
     datetime: $ISO_STATES_DATE
     filetype: cube sphere history
     provider: geos
+    compute edge pressure from surface pressure: true
+    max allowable geometry difference: 1e-3
     filename: &mybkg $JEDI_CUBED_BKG
     datapath: ./
     state variables: 
     - eastward_wind
     - northward_wind
     - air_temperature
-    - air_pressure_thickness
+    - air_pressure_levels
     - air_pressure_at_surface
     - water_vapor_mixing_ratio_wrt_moist_air
     - cloud_liquid_ice
@@ -64,7 +66,6 @@ states:
       eastward_wind: ua
       northward_wind: va
       air_temperature: t
-      air_pressure_thickness: delp
       water_vapor_mixing_ratio_wrt_moist_air: q
       cloud_liquid_ice: qi
       cloud_liquid_water: ql
@@ -93,6 +94,7 @@ states:
       skin_temperature_at_surface: ts
       eastward_wind_at_surface: u10m
       northward_wind_at_surface: v10m
+      air_pressure_levels: pe
       air_pressure_at_surface: ps
       sea_surface_temperature: ts_found
 #vtype, stype,vfrac,
