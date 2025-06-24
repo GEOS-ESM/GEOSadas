@@ -133,7 +133,7 @@ sub init {
    if ( $opt_jediroot ) {
         $jediroot = $opt_jediroot;
    } else {
-        $jediroot = "/discover/nobackup/projects/gmao/advda/swell/JediBundles/fv3_soca_SLES15_05292025/build-intel-release";
+        $jediroot = "/discover/nobackup/projects/gmao/advda/swell/JediBundles/fv3_soca_SLES15_06182025/build-intel-release";
    }
 
    if ( $opt_archive ) {
