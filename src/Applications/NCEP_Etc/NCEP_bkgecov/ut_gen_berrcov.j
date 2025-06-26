@@ -413,9 +413,11 @@ if ( $GET_BERROR ) then
              /bin/mv $fn.grd $EXPID.gsi.$fn.clim.grd
           endif
       end
+      /bin/cp stats.parm $EXPID.stats.parm.nml
       if ( -e $FCSTWRK/$EXPID.gsi.berror_stats.clim.y$NLAT.tar ) /bin/rm $FCSTWRK/$EXPID.gsi.berror_stats.clim.y$NLAT.tar
       tar cvf $FCSTWRK/$EXPID.gsi.berror_stats.clim.y$NLAT.tar  $EXPID.gsi.berror_stats.clim.bin \
-                                                                $EXPID.gsi.*clim.grd
+                                                                $EXPID.gsi.*clim.grd \
+                                                                $EXPID.stats.parm.nml
       
       echo " ${MYNAME}: done creating B-error file"
 

@@ -227,6 +227,17 @@
          setenv  RUN_AENSFCST   0
          setenv  RUN_AENSVTRACK 0
          setenv  RUN_ARCHATMENS 0
+         if ( -d $FVHOME/run/atmens/jedi ) then
+            setenv  JEDI_ATMENS  1
+            setenv  RUN_OBVSR    0
+            setenv  RUN_EAANA    0
+            if ( -e $FVHOME/run/atmens/jedi/JEDIensanaConfig.csh ) then
+              source $FVHOME/run/atmens/jedi/JEDIensanaConfig.csh
+            else
+              echo "atm_ens.j: missing anaConfig, aborting"
+              exit (1)
+            endif
+         endif
   # To trigger ensemble-only set following dates to anything but 0 (as yyyymmddhh)
   #setenv ENSONLY_BEG 2011111221
   #setenv ENSONLY_END 2011120321
@@ -378,7 +389,7 @@
 
 # In case central analysis located elsewhere (other than FVHOME/atmens/central)
 # ------------------------------------------
-  if ( -e $ATMENSETC/central_ana.rc ) then
+  if ( -e $ATMENSETC/central_ana.acq ) then
      if ( ! -e $FVWORK/.DONE_MEM001_GETCENTRAL.$yyyymmddhh) then 
       if(! -d $STAGE4HYBGSI ) mkdir -p $STAGE4HYBGSI
       set spool = "-s $FVWORK/spool"        
@@ -387,7 +398,7 @@
              getcentral          \
              $GID                \
              $OBSVR_WALLCLOCK    \
-             "acquire -v -strict -rc $ATMENSETC/central_ana.rc  -d $STAGE4HYBGSI $spool -ssh $anymd $anhms 060000 1" \
+             "acquire -v -strict -rc $ATMENSETC/central_ana.acq  -d $STAGE4HYBGSI $spool -ssh $anymd $anhms 060000 1" \
              $STAGE4HYBGSI       \
              $myname             \
              $FVWORK/.DONE_MEM001_GETCENTRAL.$yyyymmddhh \
@@ -406,6 +417,16 @@
                 exit(1)
              endif
      endif
+     cd $STAGE4HYBGSI
+     if ( -e *jedi_ana*tar ) then
+        tar xvf *jedi_ana*.tar --wildcards --no-anchored  "*jedi_ana.eta*"
+        foreach fn (`ls *.jedi_ana.eta.*`)
+          set sfx = `echo $fn | cut -d. -f3-`
+          /bin/mv $fn $EXPID.ana.$sfx
+        end
+        /bin/rm *jedi_ana*tar
+     endif
+     cd -
   endif
 
 

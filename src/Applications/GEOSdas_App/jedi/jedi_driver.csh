@@ -44,6 +44,7 @@ endif
 
 # Defaults
 if ( !($?JEDI_SET)  )  setenv JEDI_SET   1
+if ( !($?JEDI_AENS_RUN) )  setenv JEDI_AENS_RUN 0
 if ( !($?JEDI_RUN)  )  setenv JEDI_RUN   1
 if ( !($?JEDI_MKIAU))  setenv JEDI_MKIAU 0
 if ( !($?JEDI_POST) )  setenv JEDI_POST  0
@@ -111,7 +112,7 @@ if ( $JEDI_SET ) then
    zeit_co.x jedi_set
 endif
 
-# Run JEDI analysis
+# Run JEDI deterministic analysis
 if ( $JEDI_RUN ) then
    zeit_ci.x jedi_run
    jedi_run.csh $nymdb $nhmsb |& tee -a $FVWORK/$EXPID.jedi_run.log.${nymdb}_${hhb}z.txt
@@ -120,6 +121,21 @@ if ( $JEDI_RUN ) then
       exit (1)
    endif
    zeit_co.x jedi_run
+endif
+
+# Run JEDI ensemble analysis
+if ( $JEDI_AENS_RUN ) then
+   zeit_ci.x jedi_aens
+   jedi_asen_run.csh $nymdb $nhmsb |& tee -a $FVWORK/$EXPID.jedi_asen_run.log.${nymdb}_${hhb}z.txt
+   if ( $status ) then
+      echo " ${MYNAME}: jedi_aens_run.csh signal failure, aborting ..."
+      exit (1)
+   endif
+   zeit_co.x jedi_aens
+endif
+
+# Run MKIAU
+if ( $JEDI_RUN || $JEDI_AENS_RUN ) then
    if ( $JEDI_MKIAU ) then
        zeit_ci.x jedi_mkiau
        jedi_mkiau.csh $nymdb $nhmsb |& tee -a $FVWORK/$EXPID.jedi_mkiau.log.${nymdb}_${hhb}z.txt

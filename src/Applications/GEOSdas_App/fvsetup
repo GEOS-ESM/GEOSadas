@@ -3736,7 +3736,11 @@ sub set_atmens {
   $aens_sppt = "yes";
   $aens_res =  "C90";
   $aens_lev =  "72";
-  $aens_ana = "enkf";
+  if ( $skipgsi ) {
+    $aens_ana = "easy";
+  } else {
+    $aens_ana = "enkf";
+  }
 
   print <<EOF;
 
