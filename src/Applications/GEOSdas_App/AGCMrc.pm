@@ -92,6 +92,8 @@ my %list = (rs5_core     => \@rs5_core,
 @rs5_others = qw ( ana_satbang_rst
                    ana_satbias_rst
                    ana_satbiaspc_rst
+                   bkg.lfo_inst
+                   bkg.lfo_tavg
                    bkg03_eta_rst
                    bkg03_sfc_rst
                    bkg06_eta_rst
@@ -412,7 +414,7 @@ sub outputAGCM {
                 if ( $comment{"$key"} ) {$rcd = "\#".$rcd};
             }
         }
-        # uncomment specified lines if key is in first non-blank position
+        # uncomment specified lines if '#' is in first non-blank position
         #----------------------------------------------------------------
         foreach $key ( keys %uncomment ) {
             $key =~ s/^\#//;  # no longer need '#' in front of key
