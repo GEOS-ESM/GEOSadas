@@ -5,6 +5,7 @@ cost function:
   - air_temperature
   - water_vapor_mixing_ratio_wrt_moist_air
   - air_pressure_at_surface
+  - air_pressure_levels
   - cloud_liquid_ice
   - cloud_liquid_water
   - rain_water
@@ -24,11 +25,13 @@ cost function:
       - fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKG_HRES.nc4
       filetype: cube sphere history
       provider: geos
+      compute edge pressure from surface pressure: true
+      max allowable geometry difference: 1e-3
       state variables: &statevars
       - eastward_wind
       - northward_wind
       - air_temperature
-      - air_pressure_thickness
+      - air_pressure_levels
       - air_pressure_at_surface
       - water_vapor_mixing_ratio_wrt_moist_air
       - cloud_liquid_ice
@@ -69,7 +72,6 @@ cost function:
         eastward_wind: ua
         northward_wind: va
         air_temperature: t
-        air_pressure_thickness: delp
         water_vapor_mixing_ratio_wrt_moist_air: q
         cloud_liquid_ice: qi
         cloud_liquid_water: ql
@@ -98,6 +100,7 @@ cost function:
         skin_temperature_at_surface: ts
         eastward_wind_at_surface: u10m
         northward_wind_at_surface: v10m
+        air_pressure_levels: pe
         air_pressure_at_surface: ps
         sea_surface_temperature: ts_found
     - datapath: './'
@@ -107,6 +110,8 @@ cost function:
       - fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKG_HRES.nc4
       filetype: cube sphere history
       provider: geos
+      compute edge pressure from surface pressure: true
+      max allowable geometry difference: 1e-3
       state variables: *statevars
       field io names: *field_io_names
     - datapath: './'
@@ -116,6 +121,8 @@ cost function:
       - fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKG_HRES.nc4
       filetype: cube sphere history
       provider: geos
+      compute edge pressure from surface pressure: true
+      max allowable geometry difference: 1e-3
       state variables: *statevars
       field io names: *field_io_names
     - datapath: './'
@@ -125,6 +132,8 @@ cost function:
       - fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKG_HRES.nc4
       filetype: cube sphere history
       provider: geos
+      compute edge pressure from surface pressure: true
+      max allowable geometry difference: 1e-3
       state variables: *statevars
       field io names: *field_io_names
     - datapath: './'
@@ -134,6 +143,8 @@ cost function:
       - fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKG_HRES.nc4
       filetype: cube sphere history
       provider: geos
+      compute edge pressure from surface pressure: true
+      max allowable geometry difference: 1e-3
       state variables: *statevars
       field io names: *field_io_names
     - datapath: './'
@@ -143,6 +154,8 @@ cost function:
       - fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKG_HRES.nc4
       filetype: cube sphere history
       provider: geos
+      compute edge pressure from surface pressure: true
+      max allowable geometry difference: 1e-3
       state variables: *statevars
       field io names: *field_io_names
     - datapath: './'
@@ -152,6 +165,8 @@ cost function:
       - fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKG_HRES.nc4
       filetype: cube sphere history
       provider: geos
+      compute edge pressure from surface pressure: true
+      max allowable geometry difference: 1e-3
       state variables: *statevars
       field io names: *field_io_names
   background error:
@@ -227,7 +242,7 @@ final:
     frequency: PT1H
 output:
   datapath: ./ana
-  filename: $EXPID.ana.ceta.%yyyy%mm%dd_%hh%MMz.nc4
+  filename: $EXPID.jedi_ana.ceta.%yyyy%mm%dd_%hh%MMz.nc4
   filetype: cube sphere history
   first: PT0H
   frequency: PT1H
