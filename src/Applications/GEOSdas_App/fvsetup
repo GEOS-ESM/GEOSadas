@@ -3859,6 +3859,7 @@ EOF
       $cmd = "get_atmens_rst.pl $flags $src_arcdir $expid $nymdb $hhb";
       print("$cmd\n");
       system($cmd);
+      $atm_nens_install = 'yes' ;
   } else { 
       # $src_arcdir == 'later' (user wants to provide atm ens restarts later) 
       $dflt = 32 ;
@@ -3876,11 +3877,12 @@ sub get_nens4ldas {
    
     if ($atm_nens_install == 'None' ){
        $atm_nens = $atm_nens_input;
-    } else { 
+    } 
+    if ($atm_nens_install == 'yes' ){
        @enslist = (<$fvhome/atmens/mem???>);
        if ( scalar(@enslist) > 1 ) {
            $atm_nens = scalar(@enslist);
-       }
+       } 
     } 
     
     $ldasics_det = "$ldasics4det/output/CF${agcm_im4}x6C_GLOBAL";
