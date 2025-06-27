@@ -324,21 +324,6 @@
        grdin(:,nvars*nlevs+nsfc,nb) = reshape(x_b%ts,(/npts/))
     endif
   endif
-  ! pblh is next ...
-  if(nsfcvars>2) then
-    nsfc=nsfc-1
-    grdin(:,nvars*nlevs+nsfc,nb) = reshape(x_b%pblri,(/npts/))
-  endif
-
-  if(nsfcvars>3) then
-    nsfc=nsfc-1
-    grdin(:,nvars*nlevs+nsfc,nb) = reshape(x_b%pblrf,(/npts/))
-  endif
-
-  if(nsfcvars>4) then
-    nsfc=nsfc-1
-    grdin(:,nvars*nlevs+nsfc,nb) = reshape(x_b%pblkh,(/npts/))
-  endif
 
   if (scaleit) then
      !==> pressure at interfaces.
@@ -459,18 +444,6 @@
   if(nsfcvars>1) then
      nsfc=nsfc-1 
      x_a%ts = x_a%ts + reshape(grdin(:,nvars*nlevs+nsfc,nb),(/im,jm/))
-  endif
-  if(nsfcvars>2) then
-     nsfc=nsfc-1
-     x_a%pblri = x_a%pblri + reshape(grdin(:,nvars*nlevs+nsfc,nb),(/im,jm/))
-  endif
-  if(nsfcvars>3) then
-     nsfc=nsfc-1
-     x_a%pblrf = x_a%pblrf + reshape(grdin(:,nvars*nlevs+nsfc,nb),(/im,jm/))
-  endif
-  if(nsfcvars>4) then
-     nsfc=nsfc-1
-     x_a%pblkh = x_a%pblkh + reshape(grdin(:,nvars*nlevs+nsfc,nb),(/im,jm/))
   endif
 
 ! convert analysis to GMAO units
