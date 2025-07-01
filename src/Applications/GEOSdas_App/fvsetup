@@ -341,6 +341,7 @@
 # 25Jul2017 Holdaway   Added resource files associated with NGGPS FV3 tlm/adjoint, sens and svec
 # 19Jul2018 Wargan     Additions for OMPS
 # 2022,2024 sqz        Additions for LADAS 
+# 2025      sqz        integrated setup for LADAS 
 #-------------------------------------------------------------------------
 use Cwd qw(abs_path cwd);
 use English;
