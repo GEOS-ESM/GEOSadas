@@ -48,7 +48,8 @@ GMAOpyobs:
 AeroML:
   local: ./src/Shared/@AeroML
   remote: ../AeroML.git
-  tag: rt1.0.0-cak_tag0
+  #  tag: rt1.0.0-cak_tag0
+  branch: feature/pcastell/add_gass_app
   develop: develop
   sparse: ./config/AeroML.sparse
 
