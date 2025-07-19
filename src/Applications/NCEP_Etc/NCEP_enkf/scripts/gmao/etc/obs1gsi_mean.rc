@@ -65,11 +65,11 @@
    >>>AIRCFT_BIAS<<<
  /
  &OBS_INPUT
-   dmesh(1)=145.0,dmesh(2)=150.0,dmesh(3)=180.0,time_window_max=3.0, 
+   dmesh(1)=145.0,dmesh(2)=150.0,dmesh(3)=180.0,time_window_max=3.0,
  /
 OBS_INPUT::
 !  dfile          dtype       dplat       dsis                  dval    dthin  dsfcalc  obsclass
-   prepbufr       ps          null        ps                    0.0     0      0        ncep_prep_bufr 
+   prepbufr       ps          null        ps                    0.0     0      0        ncep_prep_bufr
    prepbufr       t           null        t                     0.0     0      0        ncep_prep_bufr
    prepbufr_profl t           prof        t                     0.0     0      0        ncep_acftpfl_bufr
    prepbufr       q           null        q                     0.0     0      0        ncep_prep_bufr
@@ -174,7 +174,7 @@ OBS_INPUT::
    atmsbufr       atms        n21         atms_n21              0.0     1      0        ncep_atms_bufr
    crisfsrbufr    cris-fsr    npp         cris-fsr_npp          0.0     3      0        ncep_crisfsr_bufr
    crisfsrbufr    cris-fsr    n20         cris-fsr_n20          0.0     3      0        ncep_crisfsr_bufr
-!  crisfsrbufr    cris-fsr    n21         cris-fsr_n21          0.0     3      0        ncep_crisfsr_bufr
+   crisfsrbufr    cris-fsr    n21         cris-fsr_n21          0.0     3      0        ncep_crisfsr_bufr
    satwndbufr     uv          null        uv                    0.0     0      0        ncep_satwnd_bufr
    avcspmbufr     avhrr       n18         avhrr3_n18            0.0     1      0        ncep_avcspm_bufr
    avcspmbufr     avhrr       n19         avhrr3_n19            0.0     1      0        ncep_avcspm_bufr
