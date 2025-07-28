@@ -850,8 +850,7 @@ sub run_fvsetup {
 
     # check for previous use of expid
     #--------------------------------
-    if ($nocheck) { $dflt = "n" }
-    else          { $dflt = "y" }
+    $dflt = "n";
     $ans = query("\nCheck for previous use of expid (y/n)?", $dflt);
     unless (neg($ans)) {
         print "\n" ."="x65 ."\n";

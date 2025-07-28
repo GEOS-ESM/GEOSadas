@@ -29,13 +29,58 @@ endif
 set echo
 set filestring   = __FILESTRING__
 set fileTemplate = "__FILETEMPLATE__"
+set htype        = __HOURTYPE__
 set yyyymm       = __YYYYMM__
+set fetchFLG     = __FETCHFLG__
 set rundir       = __RUNDIR__
 set workdir      = __WORKDIR__
+set do_dmput     = __DO_DMPUT__
 set do_tar       = __DO_TAR__
 set lastFLG      = __LASTFLG__
 unset echo
 echo
+
+# command to fetch inputs, if necessary
+#--------------------------------------
+if ($fetchFLG) then
+
+    set ignoreFLG = ""
+    if ($do_tar) set ignoreFLG = "-i"
+
+    set hourtypeFLG = ""
+    if ("H$htype" != "H") set hourtypeFLG = "-T $htype"
+
+    set dmputFLG = ""
+    if ($do_dmput) set dmputFLG = "-p"
+
+    set tarFLG = ""
+    if ($do_tar) set tarFLG = "-t"
+
+    # set job environment variables
+    #------------------------------
+    source $rundir/FVDAS_Run_Config
+    set path = ( $rundir $FVROOT/bin $BASEDIR/$ARCH/bin $path )
+
+    set echo
+    chdir $workdir
+
+    # prefetch inputs
+    #----------------
+    monthly_means.pl -l -prefetch -v $dmputFLG $tarFLG $ignoreFLG \
+       -H $FVHOME \
+       -R $FVROOT \
+       -D $yyyymm \
+       -f $filestring $hourtypeFLG \
+       -w $workdir
+    @ exit_status = $status
+
+    # check status
+    #-------------
+    if ( $exit_status ) then
+        $ERR -E 5 -D "$EXPID FATAL ERROR: Monthly Means fetch job has FAILED for $yyyymm"
+        exit 1
+    endif
+endif
 
 # set job environment variables
 #------------------------------
@@ -170,7 +215,7 @@ if ($do_tar) then
 
     # tar workdir inputs
     #-------------------
-    tar cf $output_tarfile $workdir_inputs
+    tar cfh $output_tarfile $workdir_inputs
     if ($status) then
         echo " Error while creating tarfile, $output_tarfile"
         exit 96
@@ -178,7 +223,7 @@ if ($do_tar) then
 
     # check output tarfile
     #---------------------
-    tar df $output_tarfile
+    tar dfh $output_tarfile
     if ($status) then
         echo " Error. tarfile check failed for $output_tarfile"
         exit 97
@@ -208,7 +253,7 @@ endif
 #-----------------------------------------------
 if ($lastFLG) then
     cd $rundir
-    \rm -r $workdir
+    \rm -rf $workdir
 endif
 
 # rename output file for successful run
