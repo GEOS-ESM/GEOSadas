@@ -260,28 +260,13 @@ endif
 cd -
 # The following accommodates for the case when the satbias coeff and cov are in the same
 cd obs
-if ( -e aircraft.$BYYYYYMMDDTHH0000Z.nc4 ) then 
-  ln -s aircraft.$BYYYYYMMDDTHH0000Z.nc4 aircraft_temperature.$BYYYYYMMDDTHH0000Z.nc4
-  ln -s aircraft.$BYYYYYMMDDTHH0000Z.nc4        aircraft_wind.$BYYYYYMMDDTHH0000Z.nc4
-  set acftbias = `ls *.acftbias`
-  if ( $status ) then
-    set acftbias_in = `ls aircraft_abias_air.*.nc4`
-    if (! $status ) then
-      set ttag = `echo $acftbias_in | cut -d. -f2`
-      ln -sf $acftbias_in aircraft_temperature.$ttag.acftbias
-      if ( ! -e aircraft_temperature.$ttag.acftbias_cov ) then
-        ln -sf aircraft_temperature.$ttag.acftbias aircraft_temperature.$ttag.acftbias_cov
-      endif
-    else
-      echo "WARNING: No aircraft bias files where found ..."
-      echo "WARNING: No aircraft bias files where found ..."
-      echo "WARNING: No aircraft bias files where found ..."
-    endif
-  endif
+if ( -e aircraft_abias_air.$PYYYYYMMDDTHH0000Z.nc4 ) then 
+  ln -sf aircraft_abias_air.$PYYYYYMMDDTHH0000Z.nc4  aircraft_temperature.$PYYYYYMMDDTHH0000Z.acftbias
+  ln -sf aircraft_abias_air.$PYYYYYMMDDTHH0000Z.nc4  aircraft_temperature.$PYYYYYMMDDTHH0000Z.acftbias_cov
 else
-  echo "WARNING: No aircraft obs files where found ..."
-  echo "WARNING: No aircraft obs files where found ..."
-  echo "WARNING: No aircraft obs files where found ..."
+  echo "WARNING: No aircraft bias files where found ..."
+  echo "WARNING: No aircraft bias files where found ..."
+  echo "WARNING: No aircraft bias files where found ..."
 endif
 cd -
 

@@ -62,6 +62,7 @@ endif
 if ( !($?JEDI_RUN_ADANA_TEST) ) setenv JEDI_RUN_ADANA_TEST  0
 if ( !($?JEDI_RUN_BUMP)  )      setenv JEDI_RUN_BUMP        0
 if ( !($?JEDI_RUN_CNVENS)  )    setenv JEDI_RUN_CNVENS      0
+if ( !($?JEDI_VAR_OMP_NUM_THREADS) ) setenv JEDI_VAR_OMP_NUM_THREADS 1
 if ( !($?BATCH_SUBCMD)  )       setenv BATCH_SUBCMD      sbatch
 
 set nymdb = $1   # initial date of var window
@@ -169,6 +170,8 @@ if ( ! -e $FVWORK/.DONE_jedi_run_ana.csh.$yyyymmddhh) then
       if (! -d inc ) mkdir inc 
    endif
 
+   setenv OMP_NUM_THREADS $JEDI_VAR_OMP_NUM_THREADS
+   echo "${MYNAME}: var using ${OMP_NUM_THREADS} OMP tasks"
    if ( -e $FVHOME/run/jedi/jedi_run_var.j ) then
       sbatch -W $FVHOME/run/jedi/jedi_run_var.j
       sleep 2
@@ -303,7 +306,7 @@ cd -
 # -------------
 touch $JEDIETC/VBC.BOOTSTRAP.DONE
 cd $JEDIWORK/vbc
-tar cvf $FVWORK/$EXPID.jedi_vbc.${nymdb}_${hhb}z.tar *satbias*nc4 *aircraft*csv
+tar cvf $FVWORK/$EXPID.jedi_vbc.${nymdb}_${hhb}z.tar *satbias*nc4 *abias_air*nc4
 cd -
 
 # If here, likely successful

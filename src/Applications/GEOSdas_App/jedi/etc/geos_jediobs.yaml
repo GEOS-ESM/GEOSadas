@@ -10,7 +10,7 @@
         obsdatain:
           engine:
             type: H5File
-            obsfile: ./obs/aircraft_temperature.$BYYYYYMMDDTHH0000Z.nc4
+            obsfile: ./obs/aircraft_tsen_obs.$BYYYYYMMDDTHH0000Z.nc4
             missing file action: warn
           obsgrouping:
             group variables:
@@ -21,7 +21,7 @@
         obsdataout:
           engine:
             type: H5File
-            obsfile: ./hofx/aircraft_temperature.$BYYYYYMMDDTHH0000Z.nc4
+            obsfile: ./hofx/aircraft_tsen_obs.$BYYYYYMMDDTHH0000Z.nc4
         io pool:
           max pool size: 6
         simulated variables:
@@ -50,6 +50,7 @@
             inflation:
               ratio: 1.005
               ratio for small dataset: 2.0
+          output file: ./vbc/aircraft_temperature.$BYYYYYMMDDTHH0000Z.acftbias_cov
       obs operator:
         name: Composite
         components:
@@ -407,7 +408,7 @@
         obsdatain:
           engine:
             type: H5File
-            obsfile: ./obs/aircraft_wind.$BYYYYYMMDDTHH0000Z.nc4
+            obsfile: ./obs/aircraft_uv_obs.$BYYYYYMMDDTHH0000Z.nc4
             missing file action: warn
           obsgrouping:
             group variables:
@@ -418,7 +419,7 @@
         obsdataout:
           engine:
             type: H5File
-            obsfile: ./hofx/aircraft_wind.$BYYYYYMMDDTHH0000Z.nc4
+            obsfile: ./hofx/aircraft_uv_obs.$BYYYYYMMDDTHH0000Z.nc4
         simulated variables:
         - windEastward
         - windNorthward
@@ -5132,7 +5133,7 @@
             - -1
             - -1
             - 1
-            - 1
+            - -1
             - 1
             - 1
             - 1
@@ -5160,7 +5161,7 @@
             - -1
             - -1
             - 1
-            - 1
+            - -1
             - 1
             - 1
             - 1
@@ -5722,7 +5723,7 @@
             channels: 1-15
             use passive_bc: true
             sensor: amsua_n18
-            use_flag:
+            use_flag: &amsua_n18_use_flag
             - -1
             - -1
             - -1
@@ -5750,22 +5751,22 @@
           channels: 1-15
           options:
             channels: 1-15
-            use_flag:
-            - -1
-            - -1
-            - -1
-            - 1
-            - 1
-            - 1
-            - -1
-            - -1
-            - 1
-            - 1
-            - 1
-            - 1
-            - 1
-            - 1
-            - -1
+            use_flag: *amsua_n18_use_flag
+#           - -1
+#           - -1
+#           - -1
+#           - 1
+#           - 1
+#           - 1
+#           - -1
+#           - -1
+#           - 1
+#           - 1
+#           - 1
+#           - 1
+#           - 1
+#           - 1
+#           - -1
         minvalue: 1.0e-12
         action:
           name: reject
@@ -7024,7 +7025,7 @@
             - 1
             - 1
             - 1
-            - -1
+            - 1
             - -1
             - 1
             - 1
@@ -7548,6 +7549,273 @@
             options:
               channels: 3-5
               sensor: avhrr3_metop-c
+              obserr_demisf:
+              - 0.01
+              - 0.02
+              - 0.03
+              - 0.02
+              - 0.03
+              obserr_dtempf:
+              - 0.5
+              - 2.0
+              - 4.0
+              - 2.0
+              - 4.0
+      - filter: Background Check
+        filter variables:
+        - name: brightnessTemperature
+          channels: 3-5
+        function absolute threshold:
+        - name: ObsFunction/ObsErrorBoundIR
+          channels: 3-5
+          options:
+            channels: 3-5
+            obserr_bound_latitude:
+              name: ObsFunction/ObsErrorFactorLatRad
+              options:
+                latitude_parameters:
+                - 25.0
+                - 0.5
+                - 0.04
+                - 1.0
+            obserr_bound_transmittop:
+              name: ObsFunction/ObsErrorFactorTransmitTopRad
+              channels: 3-5
+              options:
+                channels: 3-5
+            obserr_bound_max:
+            - 3.0
+            - 3.0
+            - 3.0
+        action:
+          name: reject
+      - filter: Bounds Check
+        filter variables:
+        - name: brightnessTemperature
+          channels: 3-5
+        test variables:
+        - name: ObsFunction/ChannelUseflagCheckRad
+          channels: 3-5
+          options:
+            channels: 3-5
+            use_flag:
+            - -1
+            - 1
+            - 1
+        minvalue: 1.0e-12
+        action:
+          name: reject
+    - obs space:
+        name: AVHRR-3 NOAA-18
+        obsdatain:
+          engine:
+            type: H5File
+            obsfile: ./obs/avhrr3_n18.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
+        obsdataout:
+          engine:
+            type: H5File
+            obsfile: ./hofx/avhrr3_n18.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
+        simulated variables:
+        - brightnessTemperature
+        channels: 3-5
+      obs operator:
+        name: CRTM
+        Absorbers:
+        - H2O
+        - O3
+        - CO2
+        obs options:
+          Sensor_ID: avhrr3_n18
+          EndianType: little_endian
+          CoefficientPath: $JEDI_CRTM_COEFFS
+        linear obs operator:
+          Absorbers:
+          - H2O
+          - O3
+          Surfaces:
+          - Water_Temperature
+          - Land_Temperature
+          - Ice_Temperature
+          - Snow_Temperature
+      obs bias:
+        input file: ./obs/avhrr3_n18.$PYYYYYMMDDTHH0000Z.satbias.nc4
+        output file: ./vbc/avhrr3_n18.$BYYYYYMMDDTHH0000Z.satbias.nc4
+        variational bc:
+          predictors:
+          - name: constant
+          - name: lapseRate
+            order: 2
+            tlapse: ./obs/avhrr3_n18.$PYYYYYMMDDTHH0000Z.tlapse.txt
+          - name: lapseRate
+            tlapse: ./obs/avhrr3_n18.$PYYYYYMMDDTHH0000Z.tlapse.txt
+          - name: emissivityJacobian
+          - name: sensorScanAngle
+            order: 4
+          - name: sensorScanAngle
+            order: 3
+          - name: sensorScanAngle
+            order: 2
+          - name: sensorScanAngle
+        covariance:
+          minimal required obs number: 20
+          variance range:
+          - 1.0e-06
+          - 10.0
+          step size: 0.0001
+          largest analysis variance: 10000.0
+          prior:
+            input file: ./obs/avhrr3_n18.$PYYYYYMMDDTHH0000Z.satbias_cov.nc4
+            inflation:
+              ratio: 1.1
+              ratio for small dataset: 2.0
+          output file: ./vbc/avhrr3_n18.$BYYYYYMMDDTHH0000Z.satbias_cov.nc4
+      obs prior filters:
+      - filter: Perform Action
+        filter variables:
+        - name: brightnessTemperature
+          channels: 3-5
+        action:
+          name: assign error
+          error parameter vector:
+          - 0.6
+          - 0.68
+          - 0.72
+      - filter: Variable Assignment
+        assignments:
+        - name: ObsError/brightnessTemperature
+          channels: 3-5
+          type: float
+          function:
+            name: ObsFunction/Arithmetic
+            options:
+              variables:
+              - name: ObsErrorData/brightnessTemperature
+                channels: 3-5
+      obs post filters:
+      - filter: BlackList
+        filter variables:
+        - name: brightnessTemperature
+          channels: 3
+        where:
+        - variable:
+            name: MetaData/solarZenithAngle
+          maxvalue: 88.9999
+        - variable:
+            name: GeoVaLs/water_area_fraction
+          minvalue: 1.0e-12
+        action:
+          name: reject
+      - filter: BlackList
+        filter variables:
+        - name: brightnessTemperature
+          channels: 3-5
+        action:
+          name: inflate error
+          inflation variable:
+            name: ObsFunction/ObsErrorFactorWavenumIR
+            channels: 3-5
+            options:
+              channels: 3-5
+      - filter: Bounds Check
+        filter variables:
+        - name: brightnessTemperature
+          channels: 3-5
+        minvalue: 1.0e-05
+        maxvalue: 1000.0
+        action:
+          name: reject
+      - filter: BlackList
+        filter variables:
+        - name: brightnessTemperature
+          channels: 3-5
+        action:
+          name: inflate error
+          inflation variable:
+            name: ObsFunction/ObsErrorFactorTopoRad
+            channels: 3-5
+            options:
+              channels: 3-5
+              sensor: avhrr3_n18
+      - filter: BlackList
+        filter variables:
+        - name: brightnessTemperature
+          channels: 3-5
+        action:
+          name: inflate error
+          inflation variable:
+            name: ObsFunction/ObsErrorFactorTransmitTopRad
+            channels: 3-5
+            options:
+              channels: 3-5
+      - filter: Bounds Check
+        filter variables:
+        - name: brightnessTemperature
+          channels: 3-5
+        test variables:
+        - name: ObsFunction/CloudDetectMinResidualAVHRR
+          channels: 3-5
+          options:
+            channels: 3-5
+            use_flag:
+            - -1
+            - 1
+            - 1
+            use_flag_clddet:
+            - 1
+            - 1
+            - 1
+            obserr_dtempf:
+            - 0.5
+            - 2.0
+            - 4.0
+            - 2.0
+            - 4.0
+        maxvalue: 1.0e-12
+        action:
+          name: reject
+      - filter: Bounds Check
+        filter variables:
+        - name: brightnessTemperature
+          channels: 3-5
+        test variables:
+        - name: ObsFunction/NearSSTRetCheckIR
+          channels: 3-5
+          options:
+            channels: 3-5
+            use_flag:
+            - -1
+            - 1
+            - 1
+            obserr_demisf:
+            - 0.01
+            - 0.02
+            - 0.03
+            - 0.02
+            - 0.03
+            obserr_dtempf:
+            - 0.5
+            - 2.0
+            - 4.0
+            - 2.0
+            - 4.0
+        maxvalue: 1.0e-12
+        action:
+          name: reject
+      - filter: BlackList
+        filter variables:
+        - name: brightnessTemperature
+          channels: 3-5
+        action:
+          name: inflate error
+          inflation variable:
+            name: ObsFunction/ObsErrorFactorSurfJacobianRad
+            channels: 3-5
+            options:
+              channels: 3-5
+              sensor: avhrr3_n18
               obserr_demisf:
               - 0.01
               - 0.02
@@ -12176,4309 +12444,225 @@
         action:
           name: reject
     - obs space:
-        name: CRIS-FSR NPP
+        name: gnssrobndnbam
         obsdatain:
           engine:
             type: H5File
-            obsfile: ./obs/cris-fsr_npp.$BYYYYYMMDDTHH0000Z.nc4
+            obsfile: ./obs/gps.$BYYYYYMMDDTHH0000Z.nc4
             missing file action: warn
+          obsgrouping:
+            group variables:
+            - sequenceNumber
+            sort variable: impactHeightRO
+            sort order: ascending
         obsdataout:
           engine:
             type: H5File
-            obsfile: ./hofx/cris-fsr_npp.$BYYYYYMMDDTHH0000Z.nc4
+            obsfile: ./hofx/gps.$BYYYYYMMDDTHH0000Z.nc4
         io pool:
           max pool size: 6
         simulated variables:
-        - brightnessTemperature
-        channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211, 216,
-          224, 234, 236, 238-239, 242, 246, 248, 255, 264, 266, 268, 275, 279, 283,
-          285, 291, 295, 301, 305, 311, 332, 342, 389, 400, 402, 404, 406, 410, 427,
-          439-441, 445, 449, 455, 458, 461, 464, 467, 470, 473, 475, 482, 486-487,
-          490, 493, 496, 499, 501, 503, 505, 511, 513-514, 518-520, 522, 529, 534,
-          563, 568, 575, 592, 594, 596, 598, 600, 602, 604, 611, 614, 616, 618, 620,
-          622, 626, 631, 638, 646, 648, 652, 659, 673, 675, 678, 684, 688, 694, 700,
-          707, 710, 713-714, 718, 720, 722, 725, 728, 735, 742, 748, 753, 762, 780,
-          784, 798, 849, 860, 862, 866, 874, 882, 890, 898, 906-908, 914, 937, 972-973,
-          978, 980-981, 988, 995, 998, 1000, 1003, 1008-1010, 1014, 1017-1018, 1020,
-          1022, 1024, 1026, 1029-1030, 1032, 1034, 1037-1038, 1041-1042, 1044, 1046,
-          1049-1050, 1053-1054, 1058, 1060, 1062, 1064, 1066, 1069, 1076-1077, 1080,
-          1086, 1091, 1095, 1101, 1109, 1112, 1121, 1128, 1133, 1163, 1172, 1187,
-          1189, 1205, 1211, 1219, 1231, 1245, 1271, 1289, 1300, 1313, 1316, 1325,
-          1329, 1346-1347, 1473-1474, 1491, 1499, 1553, 1570, 1596, 1602, 1619, 1624,
-          1635, 1939-1987, 2119, 2140, 2143, 2147, 2153, 2158, 2161, 2168, 2171, 2175,
-          2182
+        - bendingAngle
       obs operator:
-        name: CRTM
-        Absorbers:
-        - H2O
-        - O3
-        - CO2
+        name: GnssroBndNBAM
         obs options:
-          Sensor_ID: cris-fsr_npp
-          EndianType: little_endian
-          CoefficientPath: $JEDI_CRTM_COEFFS
-        linear obs operator:
-          Absorbers:
-          - H2O
-          - O3
-          Surfaces:
-          - Water_Temperature
-          - Land_Temperature
-          - Ice_Temperature
-          - Snow_Temperature
-      obs bias:
-        input file: ./obs/cris-fsr_npp.$PYYYYYMMDDTHH0000Z.satbias.nc4
-        output file: ./vbc/cris-fsr_npp.$BYYYYYMMDDTHH0000Z.satbias.nc4
-        variational bc:
-          predictors:
-          - name: constant
-          - name: lapseRate
-            order: 2
-            tlapse: ./obs/cris-fsr_npp.$PYYYYYMMDDTHH0000Z.tlapse.txt
-          - name: lapseRate
-            tlapse: ./obs/cris-fsr_npp.$PYYYYYMMDDTHH0000Z.tlapse.txt
-          - name: emissivityJacobian
-          - name: sensorScanAngle
-            order: 4
-          - name: sensorScanAngle
-            order: 3
-          - name: sensorScanAngle
-            order: 2
-          - name: sensorScanAngle
-        covariance:
-          minimal required obs number: 20
-          variance range:
-          - 1.0e-06
-          - 10.0
-          step size: 0.0001
-          largest analysis variance: 10000.0
-          prior:
-            input file: ./obs/cris-fsr_npp.$PYYYYYMMDDTHH0000Z.satbias_cov.nc4
-            inflation:
-              ratio: 1.1
-              ratio for small dataset: 2.0
-          output file: ./vbc/cris-fsr_npp.$BYYYYYMMDDTHH0000Z.satbias_cov.nc4
-      obs error:
-        covariance model: cross variable covariances
-        input file: fv3-jedi/rcov/cris-fsr_108_jedi_rcov.nc4
-      obs prior filters:
+          use_compress: 1
+#         vertlayer: mass
+          vertlayer: full
+          sr_steps: 2
+          super_ref_qc: NBAM
+          GSI_version: GEOS
+      obs filters:
+      - filter: BlackList
+        where:
+        - variable:
+            name: MetaData/satelliteIdentifier
+          is_in: 41,265,266,421,440,724,725,726,727,728,729
       - filter: Perform Action
         filter variables:
-        - name: brightnessTemperature
-          channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211, 216,
-            224, 234, 236, 238-239, 242, 246, 248, 255, 264, 266, 268, 275, 279, 283,
-            285, 291, 295, 301, 305, 311, 332, 342, 389, 400, 402, 404, 406, 410,
-            427, 439-441, 445, 449, 455, 458, 461, 464, 467, 470, 473, 475, 482, 486-487,
-            490, 493, 496, 499, 501, 503, 505, 511, 513-514, 518-520, 522, 529, 534,
-            563, 568, 575, 592, 594, 596, 598, 600, 602, 604, 611, 614, 616, 618,
-            620, 622, 626, 631, 638, 646, 648, 652, 659, 673, 675, 678, 684, 688,
-            694, 700, 707, 710, 713-714, 718, 720, 722, 725, 728, 735, 742, 748, 753,
-            762, 780, 784, 798, 849, 860, 862, 866, 874, 882, 890, 898, 906-908, 914,
-            937, 972-973, 978, 980-981, 988, 995, 998, 1000, 1003, 1008-1010, 1014,
-            1017-1018, 1020, 1022, 1024, 1026, 1029-1030, 1032, 1034, 1037-1038, 1041-1042,
-            1044, 1046, 1049-1050, 1053-1054, 1058, 1060, 1062, 1064, 1066, 1069,
-            1076-1077, 1080, 1086, 1091, 1095, 1101, 1109, 1112, 1121, 1128, 1133,
-            1163, 1172, 1187, 1189, 1205, 1211, 1219, 1231, 1245, 1271, 1289, 1300,
-            1313, 1316, 1325, 1329, 1346-1347, 1473-1474, 1491, 1499, 1553, 1570,
-            1596, 1602, 1619, 1624, 1635, 1939-1987, 2119, 2140, 2143, 2147, 2153,
-            2158, 2161, 2168, 2171, 2175, 2182
+        - name: bendingAngle
+        where:
+        - variable: PreUseFlag/bendingAngle
+          minvalue: 1
         action:
-          name: assign error
-          error parameter vector:
-          - 0.823
-          - 0.76
-          - 0.736
-          - 0.743
-          - 0.856
-          - 1.079
-          - 0.888
-          - 0.778
-          - 0.671
-          - 0.65
-          - 0.643
-          - 0.629
-          - 0.629
-          - 0.618
-          - 0.638
-          - 0.619
-          - 0.61
-          - 0.627
-          - 0.601
-          - 0.617
-          - 0.608
-          - 0.498
-          - 0.5112
-          - 0.4922
-          - 0.4959
-          - 0.4954
-          - 0.4836
-          - 0.514
-          - 0.5005
-          - 0.4917
-          - 0.4881
-          - 0.4656
-          - 0.4793
-          - 0.4638
-          - 0.4557
-          - 0.4666
-          - 0.4468
-          - 0.4534
-          - 0.4471
-          - 0.4448
-          - 0.4469
-          - 0.536
-          - 0.4426
-          - 0.4388
-          - 0.534
-          - 0.4368
-          - 0.438
-          - 0.531
-          - 0.4379
-          - 0.535
-          - 0.4404
-          - 0.4405
-          - 0.4409
-          - 0.4472
-          - 0.4555
-          - 0.4433
-          - 0.4437
-          - 0.4454
-          - 0.4448
-          - 0.4465
-          - 0.4499
-          - 0.4488
-          - 0.54
-          - 0.4534
-          - 0.4472
-          - 0.455
-          - 0.4562
-          - 0.452
-          - 0.4639
-          - 0.538
-          - 0.4573
-          - 0.4604
-          - 0.4533
-          - 0.4692
-          - 0.566
-          - 0.4457
-          - 0.4457
-          - 0.5154
-          - 0.5084
-          - 0.528
-          - 0.552
-          - 0.56
-          - 0.567
-          - 0.546
-          - 0.495
-          - 0.4809
-          - 0.4732
-          - 0.4861
-          - 0.4632
-          - 0.529
-          - 0.4748
-          - 0.5007
-          - 0.5711
-          - 0.595
-          - 0.5469
-          - 0.626
-          - 0.541
-          - 0.543
-          - 0.533
-          - 0.541
-          - 0.4695
-          - 0.53
-          - 0.539
-          - 0.529
-          - 0.542
-          - 0.4681
-          - 0.536
-          - 0.542
-          - 0.535
-          - 0.563
-          - 0.4805
-          - 0.647
-          - 0.609
-          - 0.553
-          - 0.583
-          - 0.576
-          - 0.6294
-          - 0.5885
-          - 0.556
-          - 0.578
-          - 0.566
-          - 0.601
-          - 0.5627
-          - 0.5675
-          - 0.592
-          - 0.5166
-          - 0.589
-          - 0.5291
-          - 0.5892
-          - 0.5976
-          - 0.5834
-          - 0.6512
-          - 0.6748
-          - 0.6615
-          - 0.6003
-          - 0.5669
-          - 0.5587
-          - 0.5507
-          - 0.5871
-          - 0.616
-          - 0.637
-          - 0.633
-          - 0.639
-          - 0.655
-          - 0.641
-          - 0.664
-          - 0.648
-          - 0.656
-          - 0.663
-          - 0.652
-          - 0.681
-          - 0.662
-          - 0.673
-          - 0.672
-          - 0.68
-          - 0.735
-          - 0.732
-          - 0.715
-          - 0.674
-          - 0.687
-          - 0.702
-          - 0.705
-          - 0.715
-          - 0.725
-          - 0.707
-          - 0.74
-          - 0.74
-          - 0.874
-          - 0.737
-          - 0.819
-          - 0.76
-          - 0.869
-          - 0.9
-          - 0.698
-          - 0.823
-          - 0.676
-          - 0.682
-          - 0.766
-          - 0.68
-          - 0.685
-          - 0.694
-          - 0.695
-          - 0.689
-          - 0.727
-          - 0.695
-          - 0.688
-          - 0.677
-          - 0.736
-          - 0.651
-          - 0.661
-          - 0.6199
-          - 0.6223
-          - 0.6036
-          - 0.6003
-          - 0.5991
-          - 0.598
-          - 0.591
-          - 0.5764
-          - 0.577
-          - 0.5593
-          - 0.597
-          - 0.576
-          - 0.574
-          - 0.578
-          - 0.579
-          - 0.575
-          - 0.576
-          - 0.568
-          - 0.575
-          - 0.569
-          - 0.559
-          - 0.568
-          - 0.5401
-          - 0.55
-          - 0.5575
-          - 0.578
-          - 0.5635
-          - 0.5786
-          - 0.5807
-          - 0.581
-          - 0.573
-          - 0.569
-          - 0.567
-          - 0.552
-          - 0.55
-          - 0.558
-          - 0.552
-          - 0.562
-          - 0.574
-          - 0.575
-          - 0.629
-          - 0.682
-          - 0.756
-          - 1.05
-          - 1.122
-          - 1.1402
-          - 1.154
-          - 1.131
-          - 1.123
-          - 1.159
-          - 1.106
-          - 1.116
-          - 1.069
-          - 1.077
-          - 1.155
-          - 1.162
-          - 1.1402
-          - 0.644
-          - 1.208
-          - 1.1402
-          - 1.295
-          - 1.258
-          - 1.1402
-          - 0.606
-          - 0.603
-          - 0.563
-          - 0.592
-          - 0.607
-          - 0.611
-          - 0.612
-          - 0.618
-          - 0.626
-          - 0.629
-          - 0.583
-          - 0.8646
-          - 0.626
-          - 0.639
-          - 0.559
-          - 0.827
-          - 0.612
-          - 0.576
-          - 0.58
-          - 0.575
-          - 0.688
-          - 0.697
-          - 0.743
-          - 0.681
-          - 0.832
-          - 0.719
-          - 0.785
-          - 0.878
-          - 0.9402
-          - 1.0054
-          - 1.073
-          - 1.129
-          - 1.035
-          - 1.027
-          - 0.9703
-          - 1.195
-          - 0.9153
-          - 1.266
-          - 1.153
-          - 1.348
-          - 1.18
-          - 1.269
-          - 1.311
-          - 0.9914
-          - 1.359
-          - 1.166
-          - 1.139
-          - 1.2817
-          - 1.398
-          - 1.542
-          - 1.229
-          - 1.377
-          - 1.28
-          - 1.245
-          - 1.1188
-          - 1.193
-          - 1.293
-          - 1.275
-          - 1.331
-          - 1.34
-          - 1.099
-          - 1.048
-          - 1.124
-          - 1.225
-          - 1.183
-          - 1.196
-          - 1.4
-          - 1.333
-          - 1.417
-          - 1.326
-          - 1.305
-          - 1.0638
-          - 1.268
-          - 1.217
-          - 1.289
-          - 1.395
-          - 1.232
-          - 1.435
-          - 1.298
-          - 1.328
-          - 1.262
-          - 1.199
-          - 1.391
-          - 1.233
-          - 1.329
-          - 1.664
-          - 1.509
-          - 1.349
-          - 1.481
-          - 1.595
-          - 1.485
-          - 1.532
-          - 1.504
-          - 1.584
-          - 1.609
-          - 1.516
-          - 1.489
-          - 1.502
-          - 1.544
-          - 1.611
-          - 1.539
-          - 1.296
-          - 1.288
-          - 1.241
-          - 1.32
-          - 1.313
-          - 1.301
-          - 1.843
-          - 1.747
-          - 1.711
-          - 1.771
-          - 1.937
-          - 1.575
-          - 1.573
-          - 1.5
-          - 1.459
-          - 1.402
-          - 1.363
-          - 2.201
-          - 2.127
-          - 2.177
-          - 2.157
-          - 2.192
-          - 2.146
-          - 2.151
-          - 2.071
-          - 1.986
-          - 1.845
-          - 1.687
-          - 1.505
-          - 1.373
-          - 1.229
-          - 1.113
-          - 1.004
-          - 0.936
-          - 0.895
-          - 0.871
-          - 0.841
-          - 0.821
-          - 0.805
-          - 0.8
-          - 0.792
-          - 0.797
-          - 0.791
-          - 0.783
-          - 0.777
-          - 0.785
-          - 0.787
-          - 0.789
-          - 0.793
-          - 0.794
-          - 0.745
-          - 0.75
-          - 0.748
-          - 0.749
-          - 0.744
-          - 0.733
-          - 0.733
-          - 0.741
-          - 0.746
-          - 0.746
-          - 0.738
-          - 0.743
-          - 0.745
-          - 0.749
-          - 0.75
-          - 0.75
-          - 0.884
-          - 0.906
-          - 0.917
-          - 0.924
-          - 0.922
-          - 0.928
-          - 0.921
-          - 0.938
-          - 0.931
-          - 0.943
-          - 0.946
+          name: reject
+      - filter: Domain Check
+        filter variables:
+        - name: bendingAngle
+        where:
+        - variable:
+            name: MetaData/impactHeightRO
+          minvalue: 0
+          maxvalue: 55000.1
+        action:
+          name: reject
+      - filter: Bounds Check
+        filter variables:
+        - name: bendingAngle
+        where:
+        - variable:
+            name: MetaData/satelliteIdentifier
+          is_in: 265,266,267,268,269
+        test variables:
+        - name: MetaData/impactHeightRO
+        maxvalue: 45000.1
+        action:
+          name: reject
+      - filter: Bounds Check
+        filter variables:
+        - name: bendingAngle
+        where:
+        - variable:
+            name: MetaData/satelliteIdentifier
+          is_in: 3-5
+        test variables:
+        - name: MetaData/impactHeightRO
+        minvalue: 8000.1
+        action:
+          name: reject
+      - filter: Bounds Check
+        filter variables:
+        - name: bendingAngle
+        where:
+        - variable:
+            name: MetaData/satelliteIdentifier
+          is_in: 267,268,269
+        - variable:
+            name: MetaData/satelliteConstellationRO
+          is_in: 401
+        test variables:
+        - name: MetaData/impactHeightRO
+        minvalue: 5000.1
+        action:
+          name: reject
+      - filter: Bounds Check
+        filter variables:
+        - name: bendingAngle
+        where:
+        - variable:
+            name: MetaData/satelliteIdentifier
+          is_in: 267,268,269
+        - variable:
+            name: MetaData/satelliteConstellationRO
+          is_in: 402-999
+        test variables:
+        - name: MetaData/impactHeightRO
+        minvalue: 9000.1
+        action:
+          name: reject
+      - filter: Bounds Check
+        filter variables:
+        - name: bendingAngle
+        where:
+        - variable:
+            name: MetaData/satelliteIdentifier
+          is_in: 265,266
+        - variable:
+            name: MetaData/satelliteConstellationRO
+          is_in: 401
+        test variables:
+        - name: MetaData/impactHeightRO
+        minvalue: 5000.1
+        action:
+          name: reject
+      - filter: Bounds Check
+        filter variables:
+        - name: bendingAngle
+        where:
+        - variable:
+            name: MetaData/satelliteIdentifier
+          is_in: 265,266
+        - variable:
+            name: MetaData/satelliteConstellationRO
+          is_in: 402-999
+        test variables:
+        - name: MetaData/impactHeightRO
+        minvalue: 8000.1
+        action:
+          name: reject
+      - filter: ROobserror
+        filter variables:
+        - name: bendingAngle
+        errmodel: NBAM
+      - filter: Perform Action
+        filter variables:
+        - name: bendingAngle
+        action:
+          name: inflate error
+          inflation factor: 2.0
+        where:
+        - variable: MetaData/satelliteIdentifier
+          is_in: 267,268,269
       - filter: Variable Assignment
         assignments:
-        - name: ObsError/brightnessTemperature
-          channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211, 216,
-            224, 234, 236, 238-239, 242, 246, 248, 255, 264, 266, 268, 275, 279, 283,
-            285, 291, 295, 301, 305, 311, 332, 342, 389, 400, 402, 404, 406, 410,
-            427, 439-441, 445, 449, 455, 458, 461, 464, 467, 470, 473, 475, 482, 486-487,
-            490, 493, 496, 499, 501, 503, 505, 511, 513-514, 518-520, 522, 529, 534,
-            563, 568, 575, 592, 594, 596, 598, 600, 602, 604, 611, 614, 616, 618,
-            620, 622, 626, 631, 638, 646, 648, 652, 659, 673, 675, 678, 684, 688,
-            694, 700, 707, 710, 713-714, 718, 720, 722, 725, 728, 735, 742, 748, 753,
-            762, 780, 784, 798, 849, 860, 862, 866, 874, 882, 890, 898, 906-908, 914,
-            937, 972-973, 978, 980-981, 988, 995, 998, 1000, 1003, 1008-1010, 1014,
-            1017-1018, 1020, 1022, 1024, 1026, 1029-1030, 1032, 1034, 1037-1038, 1041-1042,
-            1044, 1046, 1049-1050, 1053-1054, 1058, 1060, 1062, 1064, 1066, 1069,
-            1076-1077, 1080, 1086, 1091, 1095, 1101, 1109, 1112, 1121, 1128, 1133,
-            1163, 1172, 1187, 1189, 1205, 1211, 1219, 1231, 1245, 1271, 1289, 1300,
-            1313, 1316, 1325, 1329, 1346-1347, 1473-1474, 1491, 1499, 1553, 1570,
-            1596, 1602, 1619, 1624, 1635, 1939-1987, 2119, 2140, 2143, 2147, 2153,
-            2158, 2161, 2168, 2171, 2175, 2182
+        - name: JediAdjustObsError/bendingAngle
           type: float
           function:
             name: ObsFunction/Arithmetic
             options:
               variables:
-              - name: ObsErrorData/brightnessTemperature
-                channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211,
-                  216, 224, 234, 236, 238-239, 242, 246, 248, 255, 264, 266, 268,
-                  275, 279, 283, 285, 291, 295, 301, 305, 311, 332, 342, 389, 400,
-                  402, 404, 406, 410, 427, 439-441, 445, 449, 455, 458, 461, 464,
-                  467, 470, 473, 475, 482, 486-487, 490, 493, 496, 499, 501, 503,
-                  505, 511, 513-514, 518-520, 522, 529, 534, 563, 568, 575, 592, 594,
-                  596, 598, 600, 602, 604, 611, 614, 616, 618, 620, 622, 626, 631,
-                  638, 646, 648, 652, 659, 673, 675, 678, 684, 688, 694, 700, 707,
-                  710, 713-714, 718, 720, 722, 725, 728, 735, 742, 748, 753, 762,
-                  780, 784, 798, 849, 860, 862, 866, 874, 882, 890, 898, 906-908,
-                  914, 937, 972-973, 978, 980-981, 988, 995, 998, 1000, 1003, 1008-1010,
-                  1014, 1017-1018, 1020, 1022, 1024, 1026, 1029-1030, 1032, 1034,
-                  1037-1038, 1041-1042, 1044, 1046, 1049-1050, 1053-1054, 1058, 1060,
-                  1062, 1064, 1066, 1069, 1076-1077, 1080, 1086, 1091, 1095, 1101,
-                  1109, 1112, 1121, 1128, 1133, 1163, 1172, 1187, 1189, 1205, 1211,
-                  1219, 1231, 1245, 1271, 1289, 1300, 1313, 1316, 1325, 1329, 1346-1347,
-                  1473-1474, 1491, 1499, 1553, 1570, 1596, 1602, 1619, 1624, 1635,
-                  1939-1987, 2119, 2140, 2143, 2147, 2153, 2158, 2161, 2168, 2171,
-                  2175, 2182
-      obs post filters:
-      - filter: BlackList
+              - name: ObsErrorData/bendingAngle
+        defer to post: true
+      - filter: Perform Action
         filter variables:
-        - name: brightnessTemperature
-          channels: 1972, 1973, 1974, 1975, 1976, 1977, 1978, 1979, 1980, 1981, 1982,
-            1983, 1984, 1985, 1986, 1987, 2119, 2140, 2143, 2147, 2153, 2158, 2161,
-            2168, 2171, 2175, 2182
+        - name: bendingAngle
+        action:
+          name: assign error
+          error parameter: 1.0
         where:
         - variable:
-            name: MetaData/solarZenithAngle
-          maxvalue: 88.9999
+            name: JediAdjustObsError/bendingAngle
+          maxvalue: 1.0
         - variable:
-            name: GeoVaLs/water_area_fraction
-          minvalue: 1.0e-12
-        action:
-          name: reject
-      - filter: BlackList
+            name: JediAdjustObsError/bendingAngle
+          value: is_valid
+        - variable:
+            name: MetaData/satelliteIdentifier
+          is_in: 3,5,41,42,43,44,267,268,269,440,421,724,725,726,727,728,729,
+                 750,751,752,753,754,755,821,825
+        defer to post: true
+      - filter: Perform Action
         filter variables:
-        - name: brightnessTemperature
-          channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211, 216,
-            224, 234, 236, 238-239, 242, 246, 248, 255, 264, 266, 268, 275, 279, 283,
-            285, 291, 295, 301, 305, 311, 332, 342, 389, 400, 402, 404, 406, 410,
-            427, 439-441, 445, 449, 455, 458, 461, 464, 467, 470, 473, 475, 482, 486-487,
-            490, 493, 496, 499, 501, 503, 505, 511, 513-514, 518-520, 522, 529, 534,
-            563, 568, 575, 592, 594, 596, 598, 600, 602, 604, 611, 614, 616, 618,
-            620, 622, 626, 631, 638, 646, 648, 652, 659, 673, 675, 678, 684, 688,
-            694, 700, 707, 710, 713-714, 718, 720, 722, 725, 728, 735, 742, 748, 753,
-            762, 780, 784, 798, 849, 860, 862, 866, 874, 882, 890, 898, 906-908, 914,
-            937, 972-973, 978, 980-981, 988, 995, 998, 1000, 1003, 1008-1010, 1014,
-            1017-1018, 1020, 1022, 1024, 1026, 1029-1030, 1032, 1034, 1037-1038, 1041-1042,
-            1044, 1046, 1049-1050, 1053-1054, 1058, 1060, 1062, 1064, 1066, 1069,
-            1076-1077, 1080, 1086, 1091, 1095, 1101, 1109, 1112, 1121, 1128, 1133,
-            1163, 1172, 1187, 1189, 1205, 1211, 1219, 1231, 1245, 1271, 1289, 1300,
-            1313, 1316, 1325, 1329, 1346-1347, 1473-1474, 1491, 1499, 1553, 1570,
-            1596, 1602, 1619, 1624, 1635, 1939-1987, 2119, 2140, 2143, 2147, 2153,
-            2158, 2161, 2168, 2171, 2175, 2182
+        - name: bendingAngle
         action:
-          name: inflate error
-          inflation variable:
-            name: ObsFunction/ObsErrorFactorWavenumIR
-            channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211,
-              216, 224, 234, 236, 238-239, 242, 246, 248, 255, 264, 266, 268, 275,
-              279, 283, 285, 291, 295, 301, 305, 311, 332, 342, 389, 400, 402, 404,
-              406, 410, 427, 439-441, 445, 449, 455, 458, 461, 464, 467, 470, 473,
-              475, 482, 486-487, 490, 493, 496, 499, 501, 503, 505, 511, 513-514,
-              518-520, 522, 529, 534, 563, 568, 575, 592, 594, 596, 598, 600, 602,
-              604, 611, 614, 616, 618, 620, 622, 626, 631, 638, 646, 648, 652, 659,
-              673, 675, 678, 684, 688, 694, 700, 707, 710, 713-714, 718, 720, 722,
-              725, 728, 735, 742, 748, 753, 762, 780, 784, 798, 849, 860, 862, 866,
-              874, 882, 890, 898, 906-908, 914, 937, 972-973, 978, 980-981, 988, 995,
-              998, 1000, 1003, 1008-1010, 1014, 1017-1018, 1020, 1022, 1024, 1026,
-              1029-1030, 1032, 1034, 1037-1038, 1041-1042, 1044, 1046, 1049-1050,
-              1053-1054, 1058, 1060, 1062, 1064, 1066, 1069, 1076-1077, 1080, 1086,
-              1091, 1095, 1101, 1109, 1112, 1121, 1128, 1133, 1163, 1172, 1187, 1189,
-              1205, 1211, 1219, 1231, 1245, 1271, 1289, 1300, 1313, 1316, 1325, 1329,
-              1346-1347, 1473-1474, 1491, 1499, 1553, 1570, 1596, 1602, 1619, 1624,
-              1635, 1939-1987, 2119, 2140, 2143, 2147, 2153, 2158, 2161, 2168, 2171,
-              2175, 2182
-            options:
-              channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211,
-                216, 224, 234, 236, 238-239, 242, 246, 248, 255, 264, 266, 268, 275,
-                279, 283, 285, 291, 295, 301, 305, 311, 332, 342, 389, 400, 402, 404,
-                406, 410, 427, 439-441, 445, 449, 455, 458, 461, 464, 467, 470, 473,
-                475, 482, 486-487, 490, 493, 496, 499, 501, 503, 505, 511, 513-514,
-                518-520, 522, 529, 534, 563, 568, 575, 592, 594, 596, 598, 600, 602,
-                604, 611, 614, 616, 618, 620, 622, 626, 631, 638, 646, 648, 652, 659,
-                673, 675, 678, 684, 688, 694, 700, 707, 710, 713-714, 718, 720, 722,
-                725, 728, 735, 742, 748, 753, 762, 780, 784, 798, 849, 860, 862, 866,
-                874, 882, 890, 898, 906-908, 914, 937, 972-973, 978, 980-981, 988,
-                995, 998, 1000, 1003, 1008-1010, 1014, 1017-1018, 1020, 1022, 1024,
-                1026, 1029-1030, 1032, 1034, 1037-1038, 1041-1042, 1044, 1046, 1049-1050,
-                1053-1054, 1058, 1060, 1062, 1064, 1066, 1069, 1076-1077, 1080, 1086,
-                1091, 1095, 1101, 1109, 1112, 1121, 1128, 1133, 1163, 1172, 1187,
-                1189, 1205, 1211, 1219, 1231, 1245, 1271, 1289, 1300, 1313, 1316,
-                1325, 1329, 1346-1347, 1473-1474, 1491, 1499, 1553, 1570, 1596, 1602,
-                1619, 1624, 1635, 1939-1987, 2119, 2140, 2143, 2147, 2153, 2158, 2161,
-                2168, 2171, 2175, 2182
-      - filter: Bounds Check
-        filter variables:
-        - name: brightnessTemperature
-          channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211, 216,
-            224, 234, 236, 238-239, 242, 246, 248, 255, 264, 266, 268, 275, 279, 283,
-            285, 291, 295, 301, 305, 311, 332, 342, 389, 400, 402, 404, 406, 410,
-            427, 439-441, 445, 449, 455, 458, 461, 464, 467, 470, 473, 475, 482, 486-487,
-            490, 493, 496, 499, 501, 503, 505, 511, 513-514, 518-520, 522, 529, 534,
-            563, 568, 575, 592, 594, 596, 598, 600, 602, 604, 611, 614, 616, 618,
-            620, 622, 626, 631, 638, 646, 648, 652, 659, 673, 675, 678, 684, 688,
-            694, 700, 707, 710, 713-714, 718, 720, 722, 725, 728, 735, 742, 748, 753,
-            762, 780, 784, 798, 849, 860, 862, 866, 874, 882, 890, 898, 906-908, 914,
-            937, 972-973, 978, 980-981, 988, 995, 998, 1000, 1003, 1008-1010, 1014,
-            1017-1018, 1020, 1022, 1024, 1026, 1029-1030, 1032, 1034, 1037-1038, 1041-1042,
-            1044, 1046, 1049-1050, 1053-1054, 1058, 1060, 1062, 1064, 1066, 1069,
-            1076-1077, 1080, 1086, 1091, 1095, 1101, 1109, 1112, 1121, 1128, 1133,
-            1163, 1172, 1187, 1189, 1205, 1211, 1219, 1231, 1245, 1271, 1289, 1300,
-            1313, 1316, 1325, 1329, 1346-1347, 1473-1474, 1491, 1499, 1553, 1570,
-            1596, 1602, 1619, 1624, 1635, 1939-1987, 2119, 2140, 2143, 2147, 2153,
-            2158, 2161, 2168, 2171, 2175, 2182
-        minvalue: 50.00001
-        maxvalue: 549.99999
-        action:
-          name: reject
-      - filter: BlackList
-        filter variables:
-        - name: brightnessTemperature
-          channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211, 216,
-            224, 234, 236, 238-239, 242, 246, 248, 255, 264, 266, 268, 275, 279, 283,
-            285, 291, 295, 301, 305, 311, 332, 342, 389, 400, 402, 404, 406, 410,
-            427, 439-441, 445, 449, 455, 458, 461, 464, 467, 470, 473, 475, 482, 486-487,
-            490, 493, 496, 499, 501, 503, 505, 511, 513-514, 518-520, 522, 529, 534,
-            563, 568, 575, 592, 594, 596, 598, 600, 602, 604, 611, 614, 616, 618,
-            620, 622, 626, 631, 638, 646, 648, 652, 659, 673, 675, 678, 684, 688,
-            694, 700, 707, 710, 713-714, 718, 720, 722, 725, 728, 735, 742, 748, 753,
-            762, 780, 784, 798, 849, 860, 862, 866, 874, 882, 890, 898, 906-908, 914,
-            937, 972-973, 978, 980-981, 988, 995, 998, 1000, 1003, 1008-1010, 1014,
-            1017-1018, 1020, 1022, 1024, 1026, 1029-1030, 1032, 1034, 1037-1038, 1041-1042,
-            1044, 1046, 1049-1050, 1053-1054, 1058, 1060, 1062, 1064, 1066, 1069,
-            1076-1077, 1080, 1086, 1091, 1095, 1101, 1109, 1112, 1121, 1128, 1133,
-            1163, 1172, 1187, 1189, 1205, 1211, 1219, 1231, 1245, 1271, 1289, 1300,
-            1313, 1316, 1325, 1329, 1346-1347, 1473-1474, 1491, 1499, 1553, 1570,
-            1596, 1602, 1619, 1624, 1635, 1939-1987, 2119, 2140, 2143, 2147, 2153,
-            2158, 2161, 2168, 2171, 2175, 2182
-        action:
-          name: inflate error
-          inflation variable:
-            name: ObsFunction/ObsErrorFactorTopoRad
-            channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211,
-              216, 224, 234, 236, 238-239, 242, 246, 248, 255, 264, 266, 268, 275,
-              279, 283, 285, 291, 295, 301, 305, 311, 332, 342, 389, 400, 402, 404,
-              406, 410, 427, 439-441, 445, 449, 455, 458, 461, 464, 467, 470, 473,
-              475, 482, 486-487, 490, 493, 496, 499, 501, 503, 505, 511, 513-514,
-              518-520, 522, 529, 534, 563, 568, 575, 592, 594, 596, 598, 600, 602,
-              604, 611, 614, 616, 618, 620, 622, 626, 631, 638, 646, 648, 652, 659,
-              673, 675, 678, 684, 688, 694, 700, 707, 710, 713-714, 718, 720, 722,
-              725, 728, 735, 742, 748, 753, 762, 780, 784, 798, 849, 860, 862, 866,
-              874, 882, 890, 898, 906-908, 914, 937, 972-973, 978, 980-981, 988, 995,
-              998, 1000, 1003, 1008-1010, 1014, 1017-1018, 1020, 1022, 1024, 1026,
-              1029-1030, 1032, 1034, 1037-1038, 1041-1042, 1044, 1046, 1049-1050,
-              1053-1054, 1058, 1060, 1062, 1064, 1066, 1069, 1076-1077, 1080, 1086,
-              1091, 1095, 1101, 1109, 1112, 1121, 1128, 1133, 1163, 1172, 1187, 1189,
-              1205, 1211, 1219, 1231, 1245, 1271, 1289, 1300, 1313, 1316, 1325, 1329,
-              1346-1347, 1473-1474, 1491, 1499, 1553, 1570, 1596, 1602, 1619, 1624,
-              1635, 1939-1987, 2119, 2140, 2143, 2147, 2153, 2158, 2161, 2168, 2171,
-              2175, 2182
-            options:
-              channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211,
-                216, 224, 234, 236, 238-239, 242, 246, 248, 255, 264, 266, 268, 275,
-                279, 283, 285, 291, 295, 301, 305, 311, 332, 342, 389, 400, 402, 404,
-                406, 410, 427, 439-441, 445, 449, 455, 458, 461, 464, 467, 470, 473,
-                475, 482, 486-487, 490, 493, 496, 499, 501, 503, 505, 511, 513-514,
-                518-520, 522, 529, 534, 563, 568, 575, 592, 594, 596, 598, 600, 602,
-                604, 611, 614, 616, 618, 620, 622, 626, 631, 638, 646, 648, 652, 659,
-                673, 675, 678, 684, 688, 694, 700, 707, 710, 713-714, 718, 720, 722,
-                725, 728, 735, 742, 748, 753, 762, 780, 784, 798, 849, 860, 862, 866,
-                874, 882, 890, 898, 906-908, 914, 937, 972-973, 978, 980-981, 988,
-                995, 998, 1000, 1003, 1008-1010, 1014, 1017-1018, 1020, 1022, 1024,
-                1026, 1029-1030, 1032, 1034, 1037-1038, 1041-1042, 1044, 1046, 1049-1050,
-                1053-1054, 1058, 1060, 1062, 1064, 1066, 1069, 1076-1077, 1080, 1086,
-                1091, 1095, 1101, 1109, 1112, 1121, 1128, 1133, 1163, 1172, 1187,
-                1189, 1205, 1211, 1219, 1231, 1245, 1271, 1289, 1300, 1313, 1316,
-                1325, 1329, 1346-1347, 1473-1474, 1491, 1499, 1553, 1570, 1596, 1602,
-                1619, 1624, 1635, 1939-1987, 2119, 2140, 2143, 2147, 2153, 2158, 2161,
-                2168, 2171, 2175, 2182
-              sensor: cris-fsr_npp
-      - filter: BlackList
-        filter variables:
-        - name: brightnessTemperature
-          channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211, 216,
-            224, 234, 236, 238-239, 242, 246, 248, 255, 264, 266, 268, 275, 279, 283,
-            285, 291, 295, 301, 305, 311, 332, 342, 389, 400, 402, 404, 406, 410,
-            427, 439-441, 445, 449, 455, 458, 461, 464, 467, 470, 473, 475, 482, 486-487,
-            490, 493, 496, 499, 501, 503, 505, 511, 513-514, 518-520, 522, 529, 534,
-            563, 568, 575, 592, 594, 596, 598, 600, 602, 604, 611, 614, 616, 618,
-            620, 622, 626, 631, 638, 646, 648, 652, 659, 673, 675, 678, 684, 688,
-            694, 700, 707, 710, 713-714, 718, 720, 722, 725, 728, 735, 742, 748, 753,
-            762, 780, 784, 798, 849, 860, 862, 866, 874, 882, 890, 898, 906-908, 914,
-            937, 972-973, 978, 980-981, 988, 995, 998, 1000, 1003, 1008-1010, 1014,
-            1017-1018, 1020, 1022, 1024, 1026, 1029-1030, 1032, 1034, 1037-1038, 1041-1042,
-            1044, 1046, 1049-1050, 1053-1054, 1058, 1060, 1062, 1064, 1066, 1069,
-            1076-1077, 1080, 1086, 1091, 1095, 1101, 1109, 1112, 1121, 1128, 1133,
-            1163, 1172, 1187, 1189, 1205, 1211, 1219, 1231, 1245, 1271, 1289, 1300,
-            1313, 1316, 1325, 1329, 1346-1347, 1473-1474, 1491, 1499, 1553, 1570,
-            1596, 1602, 1619, 1624, 1635, 1939-1987, 2119, 2140, 2143, 2147, 2153,
-            2158, 2161, 2168, 2171, 2175, 2182
-        action:
-          name: inflate error
-          inflation variable:
-            name: ObsFunction/ObsErrorFactorTransmitTopRad
-            channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211,
-              216, 224, 234, 236, 238-239, 242, 246, 248, 255, 264, 266, 268, 275,
-              279, 283, 285, 291, 295, 301, 305, 311, 332, 342, 389, 400, 402, 404,
-              406, 410, 427, 439-441, 445, 449, 455, 458, 461, 464, 467, 470, 473,
-              475, 482, 486-487, 490, 493, 496, 499, 501, 503, 505, 511, 513-514,
-              518-520, 522, 529, 534, 563, 568, 575, 592, 594, 596, 598, 600, 602,
-              604, 611, 614, 616, 618, 620, 622, 626, 631, 638, 646, 648, 652, 659,
-              673, 675, 678, 684, 688, 694, 700, 707, 710, 713-714, 718, 720, 722,
-              725, 728, 735, 742, 748, 753, 762, 780, 784, 798, 849, 860, 862, 866,
-              874, 882, 890, 898, 906-908, 914, 937, 972-973, 978, 980-981, 988, 995,
-              998, 1000, 1003, 1008-1010, 1014, 1017-1018, 1020, 1022, 1024, 1026,
-              1029-1030, 1032, 1034, 1037-1038, 1041-1042, 1044, 1046, 1049-1050,
-              1053-1054, 1058, 1060, 1062, 1064, 1066, 1069, 1076-1077, 1080, 1086,
-              1091, 1095, 1101, 1109, 1112, 1121, 1128, 1133, 1163, 1172, 1187, 1189,
-              1205, 1211, 1219, 1231, 1245, 1271, 1289, 1300, 1313, 1316, 1325, 1329,
-              1346-1347, 1473-1474, 1491, 1499, 1553, 1570, 1596, 1602, 1619, 1624,
-              1635, 1939-1987, 2119, 2140, 2143, 2147, 2153, 2158, 2161, 2168, 2171,
-              2175, 2182
-            options:
-              channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211,
-                216, 224, 234, 236, 238-239, 242, 246, 248, 255, 264, 266, 268, 275,
-                279, 283, 285, 291, 295, 301, 305, 311, 332, 342, 389, 400, 402, 404,
-                406, 410, 427, 439-441, 445, 449, 455, 458, 461, 464, 467, 470, 473,
-                475, 482, 486-487, 490, 493, 496, 499, 501, 503, 505, 511, 513-514,
-                518-520, 522, 529, 534, 563, 568, 575, 592, 594, 596, 598, 600, 602,
-                604, 611, 614, 616, 618, 620, 622, 626, 631, 638, 646, 648, 652, 659,
-                673, 675, 678, 684, 688, 694, 700, 707, 710, 713-714, 718, 720, 722,
-                725, 728, 735, 742, 748, 753, 762, 780, 784, 798, 849, 860, 862, 866,
-                874, 882, 890, 898, 906-908, 914, 937, 972-973, 978, 980-981, 988,
-                995, 998, 1000, 1003, 1008-1010, 1014, 1017-1018, 1020, 1022, 1024,
-                1026, 1029-1030, 1032, 1034, 1037-1038, 1041-1042, 1044, 1046, 1049-1050,
-                1053-1054, 1058, 1060, 1062, 1064, 1066, 1069, 1076-1077, 1080, 1086,
-                1091, 1095, 1101, 1109, 1112, 1121, 1128, 1133, 1163, 1172, 1187,
-                1189, 1205, 1211, 1219, 1231, 1245, 1271, 1289, 1300, 1313, 1316,
-                1325, 1329, 1346-1347, 1473-1474, 1491, 1499, 1553, 1570, 1596, 1602,
-                1619, 1624, 1635, 1939-1987, 2119, 2140, 2143, 2147, 2153, 2158, 2161,
-                2168, 2171, 2175, 2182
-      - filter: Bounds Check
-        filter variables:
-        - name: brightnessTemperature
-          channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211, 216,
-            224, 234, 236, 238-239, 242, 246, 248, 255, 264, 266, 268, 275, 279, 283,
-            285, 291, 295, 301, 305, 311, 332, 342, 389, 400, 402, 404, 406, 410,
-            427, 439-441, 445, 449, 455, 458, 461, 464, 467, 470, 473, 475, 482, 486-487,
-            490, 493, 496, 499, 501, 503, 505, 511, 513-514, 518-520, 522, 529, 534,
-            563, 568, 575, 592, 594, 596, 598, 600, 602, 604, 611, 614, 616, 618,
-            620, 622, 626, 631, 638, 646, 648, 652, 659, 673, 675, 678, 684, 688,
-            694, 700, 707, 710, 713-714, 718, 720, 722, 725, 728, 735, 742, 748, 753,
-            762, 780, 784, 798, 849, 860, 862, 866, 874, 882, 890, 898, 906-908, 914,
-            937, 972-973, 978, 980-981, 988, 995, 998, 1000, 1003, 1008-1010, 1014,
-            1017-1018, 1020, 1022, 1024, 1026, 1029-1030, 1032, 1034, 1037-1038, 1041-1042,
-            1044, 1046, 1049-1050, 1053-1054, 1058, 1060, 1062, 1064, 1066, 1069,
-            1076-1077, 1080, 1086, 1091, 1095, 1101, 1109, 1112, 1121, 1128, 1133,
-            1163, 1172, 1187, 1189, 1205, 1211, 1219, 1231, 1245, 1271, 1289, 1300,
-            1313, 1316, 1325, 1329, 1346-1347, 1473-1474, 1491, 1499, 1553, 1570,
-            1596, 1602, 1619, 1624, 1635, 1939-1987, 2119, 2140, 2143, 2147, 2153,
-            2158, 2161, 2168, 2171, 2175, 2182
-        test variables:
-        - name: ObsFunction/CloudDetectMinResidualIR
-          channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211, 216,
-            224, 234, 236, 238-239, 242, 246, 248, 255, 264, 266, 268, 275, 279, 283,
-            285, 291, 295, 301, 305, 311, 332, 342, 389, 400, 402, 404, 406, 410,
-            427, 439-441, 445, 449, 455, 458, 461, 464, 467, 470, 473, 475, 482, 486-487,
-            490, 493, 496, 499, 501, 503, 505, 511, 513-514, 518-520, 522, 529, 534,
-            563, 568, 575, 592, 594, 596, 598, 600, 602, 604, 611, 614, 616, 618,
-            620, 622, 626, 631, 638, 646, 648, 652, 659, 673, 675, 678, 684, 688,
-            694, 700, 707, 710, 713-714, 718, 720, 722, 725, 728, 735, 742, 748, 753,
-            762, 780, 784, 798, 849, 860, 862, 866, 874, 882, 890, 898, 906-908, 914,
-            937, 972-973, 978, 980-981, 988, 995, 998, 1000, 1003, 1008-1010, 1014,
-            1017-1018, 1020, 1022, 1024, 1026, 1029-1030, 1032, 1034, 1037-1038, 1041-1042,
-            1044, 1046, 1049-1050, 1053-1054, 1058, 1060, 1062, 1064, 1066, 1069,
-            1076-1077, 1080, 1086, 1091, 1095, 1101, 1109, 1112, 1121, 1128, 1133,
-            1163, 1172, 1187, 1189, 1205, 1211, 1219, 1231, 1245, 1271, 1289, 1300,
-            1313, 1316, 1325, 1329, 1346-1347, 1473-1474, 1491, 1499, 1553, 1570,
-            1596, 1602, 1619, 1624, 1635, 1939-1987, 2119, 2140, 2143, 2147, 2153,
-            2158, 2161, 2168, 2171, 2175, 2182
-          options:
-            channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211,
-              216, 224, 234, 236, 238-239, 242, 246, 248, 255, 264, 266, 268, 275,
-              279, 283, 285, 291, 295, 301, 305, 311, 332, 342, 389, 400, 402, 404,
-              406, 410, 427, 439-441, 445, 449, 455, 458, 461, 464, 467, 470, 473,
-              475, 482, 486-487, 490, 493, 496, 499, 501, 503, 505, 511, 513-514,
-              518-520, 522, 529, 534, 563, 568, 575, 592, 594, 596, 598, 600, 602,
-              604, 611, 614, 616, 618, 620, 622, 626, 631, 638, 646, 648, 652, 659,
-              673, 675, 678, 684, 688, 694, 700, 707, 710, 713-714, 718, 720, 722,
-              725, 728, 735, 742, 748, 753, 762, 780, 784, 798, 849, 860, 862, 866,
-              874, 882, 890, 898, 906-908, 914, 937, 972-973, 978, 980-981, 988, 995,
-              998, 1000, 1003, 1008-1010, 1014, 1017-1018, 1020, 1022, 1024, 1026,
-              1029-1030, 1032, 1034, 1037-1038, 1041-1042, 1044, 1046, 1049-1050,
-              1053-1054, 1058, 1060, 1062, 1064, 1066, 1069, 1076-1077, 1080, 1086,
-              1091, 1095, 1101, 1109, 1112, 1121, 1128, 1133, 1163, 1172, 1187, 1189,
-              1205, 1211, 1219, 1231, 1245, 1271, 1289, 1300, 1313, 1316, 1325, 1329,
-              1346-1347, 1473-1474, 1491, 1499, 1553, 1570, 1596, 1602, 1619, 1624,
-              1635, 1939-1987, 2119, 2140, 2143, 2147, 2153, 2158, 2161, 2168, 2171,
-              2175, 2182
-            use_flag:
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            use_flag_clddet:
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 30
-            - 30
-            - 30
-            - 31
-            - 31
-            - 30
-            - 31
-            - 30
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 31
-            - 31
-            - 31
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 31
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 31
-            - 30
-            - 30
-            - 31
-            - 30
-            - 30
-            - 31
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 31
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 31
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 31
-            - 30
-            - 30
-            - 30
-            - 31
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 31
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 31
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            obserr_dtempf:
-            - 0.5
-            - 2.0
-            - 4.0
-            - 2.0
-            - 4.0
-        maxvalue: 1.0e-12
-        action:
-          name: reject
-      - filter: Bounds Check
-        filter variables:
-        - name: brightnessTemperature
-          channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211, 216,
-            224, 234, 236, 238-239, 242, 246, 248, 255, 264, 266, 268, 275, 279, 283,
-            285, 291, 295, 301, 305, 311, 332, 342, 389, 400, 402, 404, 406, 410,
-            427, 439-441, 445, 449, 455, 458, 461, 464, 467, 470, 473, 475, 482, 486-487,
-            490, 493, 496, 499, 501, 503, 505, 511, 513-514, 518-520, 522, 529, 534,
-            563, 568, 575, 592, 594, 596, 598, 600, 602, 604, 611, 614, 616, 618,
-            620, 622, 626, 631, 638, 646, 648, 652, 659, 673, 675, 678, 684, 688,
-            694, 700, 707, 710, 713-714, 718, 720, 722, 725, 728, 735, 742, 748, 753,
-            762, 780, 784, 798, 849, 860, 862, 866, 874, 882, 890, 898, 906-908, 914,
-            937, 972-973, 978, 980-981, 988, 995, 998, 1000, 1003, 1008-1010, 1014,
-            1017-1018, 1020, 1022, 1024, 1026, 1029-1030, 1032, 1034, 1037-1038, 1041-1042,
-            1044, 1046, 1049-1050, 1053-1054, 1058, 1060, 1062, 1064, 1066, 1069,
-            1076-1077, 1080, 1086, 1091, 1095, 1101, 1109, 1112, 1121, 1128, 1133,
-            1163, 1172, 1187, 1189, 1205, 1211, 1219, 1231, 1245, 1271, 1289, 1300,
-            1313, 1316, 1325, 1329, 1346-1347, 1473-1474, 1491, 1499, 1553, 1570,
-            1596, 1602, 1619, 1624, 1635, 1939-1987, 2119, 2140, 2143, 2147, 2153,
-            2158, 2161, 2168, 2171, 2175, 2182
+          name: assign error
+          error parameter: 10.0
         where:
         - variable:
-            name: GeoVaLs/water_area_fraction
-          maxvalue: 0.99
-        maxvalue: 0.2
-      - filter: Bounds Check
-        filter variables:
-        - name: brightnessTemperature
-          channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211, 216,
-            224, 234, 236, 238-239, 242, 246, 248, 255, 264, 266, 268, 275, 279, 283,
-            285, 291, 295, 301, 305, 311, 332, 342, 389, 400, 402, 404, 406, 410,
-            427, 439-441, 445, 449, 455, 458, 461, 464, 467, 470, 473, 475, 482, 486-487,
-            490, 493, 496, 499, 501, 503, 505, 511, 513-514, 518-520, 522, 529, 534,
-            563, 568, 575, 592, 594, 596, 598, 600, 602, 604, 611, 614, 616, 618,
-            620, 622, 626, 631, 638, 646, 648, 652, 659, 673, 675, 678, 684, 688,
-            694, 700, 707, 710, 713-714, 718, 720, 722, 725, 728, 735, 742, 748, 753,
-            762, 780, 784, 798, 849, 860, 862, 866, 874, 882, 890, 898, 906-908, 914,
-            937, 972-973, 978, 980-981, 988, 995, 998, 1000, 1003, 1008-1010, 1014,
-            1017-1018, 1020, 1022, 1024, 1026, 1029-1030, 1032, 1034, 1037-1038, 1041-1042,
-            1044, 1046, 1049-1050, 1053-1054, 1058, 1060, 1062, 1064, 1066, 1069,
-            1076-1077, 1080, 1086, 1091, 1095, 1101, 1109, 1112, 1121, 1128, 1133,
-            1163, 1172, 1187, 1189, 1205, 1211, 1219, 1231, 1245, 1271, 1289, 1300,
-            1313, 1316, 1325, 1329, 1346-1347, 1473-1474, 1491, 1499, 1553, 1570,
-            1596, 1602, 1619, 1624, 1635, 1939-1987, 2119, 2140, 2143, 2147, 2153,
-            2158, 2161, 2168, 2171, 2175, 2182
-        test variables:
-        - name: ObsFunction/NearSSTRetCheckIR
-          channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211, 216,
-            224, 234, 236, 238-239, 242, 246, 248, 255, 264, 266, 268, 275, 279, 283,
-            285, 291, 295, 301, 305, 311, 332, 342, 389, 400, 402, 404, 406, 410,
-            427, 439-441, 445, 449, 455, 458, 461, 464, 467, 470, 473, 475, 482, 486-487,
-            490, 493, 496, 499, 501, 503, 505, 511, 513-514, 518-520, 522, 529, 534,
-            563, 568, 575, 592, 594, 596, 598, 600, 602, 604, 611, 614, 616, 618,
-            620, 622, 626, 631, 638, 646, 648, 652, 659, 673, 675, 678, 684, 688,
-            694, 700, 707, 710, 713-714, 718, 720, 722, 725, 728, 735, 742, 748, 753,
-            762, 780, 784, 798, 849, 860, 862, 866, 874, 882, 890, 898, 906-908, 914,
-            937, 972-973, 978, 980-981, 988, 995, 998, 1000, 1003, 1008-1010, 1014,
-            1017-1018, 1020, 1022, 1024, 1026, 1029-1030, 1032, 1034, 1037-1038, 1041-1042,
-            1044, 1046, 1049-1050, 1053-1054, 1058, 1060, 1062, 1064, 1066, 1069,
-            1076-1077, 1080, 1086, 1091, 1095, 1101, 1109, 1112, 1121, 1128, 1133,
-            1163, 1172, 1187, 1189, 1205, 1211, 1219, 1231, 1245, 1271, 1289, 1300,
-            1313, 1316, 1325, 1329, 1346-1347, 1473-1474, 1491, 1499, 1553, 1570,
-            1596, 1602, 1619, 1624, 1635, 1939-1987, 2119, 2140, 2143, 2147, 2153,
-            2158, 2161, 2168, 2171, 2175, 2182
-          options:
-            channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211,
-              216, 224, 234, 236, 238-239, 242, 246, 248, 255, 264, 266, 268, 275,
-              279, 283, 285, 291, 295, 301, 305, 311, 332, 342, 389, 400, 402, 404,
-              406, 410, 427, 439-441, 445, 449, 455, 458, 461, 464, 467, 470, 473,
-              475, 482, 486-487, 490, 493, 496, 499, 501, 503, 505, 511, 513-514,
-              518-520, 522, 529, 534, 563, 568, 575, 592, 594, 596, 598, 600, 602,
-              604, 611, 614, 616, 618, 620, 622, 626, 631, 638, 646, 648, 652, 659,
-              673, 675, 678, 684, 688, 694, 700, 707, 710, 713-714, 718, 720, 722,
-              725, 728, 735, 742, 748, 753, 762, 780, 784, 798, 849, 860, 862, 866,
-              874, 882, 890, 898, 906-908, 914, 937, 972-973, 978, 980-981, 988, 995,
-              998, 1000, 1003, 1008-1010, 1014, 1017-1018, 1020, 1022, 1024, 1026,
-              1029-1030, 1032, 1034, 1037-1038, 1041-1042, 1044, 1046, 1049-1050,
-              1053-1054, 1058, 1060, 1062, 1064, 1066, 1069, 1076-1077, 1080, 1086,
-              1091, 1095, 1101, 1109, 1112, 1121, 1128, 1133, 1163, 1172, 1187, 1189,
-              1205, 1211, 1219, 1231, 1245, 1271, 1289, 1300, 1313, 1316, 1325, 1329,
-              1346-1347, 1473-1474, 1491, 1499, 1553, 1570, 1596, 1602, 1619, 1624,
-              1635, 1939-1987, 2119, 2140, 2143, 2147, 2153, 2158, 2161, 2168, 2171,
-              2175, 2182
-            use_flag:
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            obserr_demisf:
-            - 0.01
-            - 0.02
-            - 0.03
-            - 0.02
-            - 0.03
-            obserr_dtempf:
-            - 0.5
-            - 2.0
-            - 4.0
-            - 2.0
-            - 4.0
-        maxvalue: 1.0e-12
-        action:
-          name: reject
-      - filter: BlackList
-        filter variables:
-        - name: brightnessTemperature
-          channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211, 216,
-            224, 234, 236, 238-239, 242, 246, 248, 255, 264, 266, 268, 275, 279, 283,
-            285, 291, 295, 301, 305, 311, 332, 342, 389, 400, 402, 404, 406, 410,
-            427, 439-441, 445, 449, 455, 458, 461, 464, 467, 470, 473, 475, 482, 486-487,
-            490, 493, 496, 499, 501, 503, 505, 511, 513-514, 518-520, 522, 529, 534,
-            563, 568, 575, 592, 594, 596, 598, 600, 602, 604, 611, 614, 616, 618,
-            620, 622, 626, 631, 638, 646, 648, 652, 659, 673, 675, 678, 684, 688,
-            694, 700, 707, 710, 713-714, 718, 720, 722, 725, 728, 735, 742, 748, 753,
-            762, 780, 784, 798, 849, 860, 862, 866, 874, 882, 890, 898, 906-908, 914,
-            937, 972-973, 978, 980-981, 988, 995, 998, 1000, 1003, 1008-1010, 1014,
-            1017-1018, 1020, 1022, 1024, 1026, 1029-1030, 1032, 1034, 1037-1038, 1041-1042,
-            1044, 1046, 1049-1050, 1053-1054, 1058, 1060, 1062, 1064, 1066, 1069,
-            1076-1077, 1080, 1086, 1091, 1095, 1101, 1109, 1112, 1121, 1128, 1133,
-            1163, 1172, 1187, 1189, 1205, 1211, 1219, 1231, 1245, 1271, 1289, 1300,
-            1313, 1316, 1325, 1329, 1346-1347, 1473-1474, 1491, 1499, 1553, 1570,
-            1596, 1602, 1619, 1624, 1635, 1939-1987, 2119, 2140, 2143, 2147, 2153,
-            2158, 2161, 2168, 2171, 2175, 2182
-        action:
-          name: inflate error
-          inflation variable:
-            name: ObsFunction/ObsErrorFactorSurfJacobianRad
-            channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211,
-              216, 224, 234, 236, 238-239, 242, 246, 248, 255, 264, 266, 268, 275,
-              279, 283, 285, 291, 295, 301, 305, 311, 332, 342, 389, 400, 402, 404,
-              406, 410, 427, 439-441, 445, 449, 455, 458, 461, 464, 467, 470, 473,
-              475, 482, 486-487, 490, 493, 496, 499, 501, 503, 505, 511, 513-514,
-              518-520, 522, 529, 534, 563, 568, 575, 592, 594, 596, 598, 600, 602,
-              604, 611, 614, 616, 618, 620, 622, 626, 631, 638, 646, 648, 652, 659,
-              673, 675, 678, 684, 688, 694, 700, 707, 710, 713-714, 718, 720, 722,
-              725, 728, 735, 742, 748, 753, 762, 780, 784, 798, 849, 860, 862, 866,
-              874, 882, 890, 898, 906-908, 914, 937, 972-973, 978, 980-981, 988, 995,
-              998, 1000, 1003, 1008-1010, 1014, 1017-1018, 1020, 1022, 1024, 1026,
-              1029-1030, 1032, 1034, 1037-1038, 1041-1042, 1044, 1046, 1049-1050,
-              1053-1054, 1058, 1060, 1062, 1064, 1066, 1069, 1076-1077, 1080, 1086,
-              1091, 1095, 1101, 1109, 1112, 1121, 1128, 1133, 1163, 1172, 1187, 1189,
-              1205, 1211, 1219, 1231, 1245, 1271, 1289, 1300, 1313, 1316, 1325, 1329,
-              1346-1347, 1473-1474, 1491, 1499, 1553, 1570, 1596, 1602, 1619, 1624,
-              1635, 1939-1987, 2119, 2140, 2143, 2147, 2153, 2158, 2161, 2168, 2171,
-              2175, 2182
-            options:
-              channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211,
-                216, 224, 234, 236, 238-239, 242, 246, 248, 255, 264, 266, 268, 275,
-                279, 283, 285, 291, 295, 301, 305, 311, 332, 342, 389, 400, 402, 404,
-                406, 410, 427, 439-441, 445, 449, 455, 458, 461, 464, 467, 470, 473,
-                475, 482, 486-487, 490, 493, 496, 499, 501, 503, 505, 511, 513-514,
-                518-520, 522, 529, 534, 563, 568, 575, 592, 594, 596, 598, 600, 602,
-                604, 611, 614, 616, 618, 620, 622, 626, 631, 638, 646, 648, 652, 659,
-                673, 675, 678, 684, 688, 694, 700, 707, 710, 713-714, 718, 720, 722,
-                725, 728, 735, 742, 748, 753, 762, 780, 784, 798, 849, 860, 862, 866,
-                874, 882, 890, 898, 906-908, 914, 937, 972-973, 978, 980-981, 988,
-                995, 998, 1000, 1003, 1008-1010, 1014, 1017-1018, 1020, 1022, 1024,
-                1026, 1029-1030, 1032, 1034, 1037-1038, 1041-1042, 1044, 1046, 1049-1050,
-                1053-1054, 1058, 1060, 1062, 1064, 1066, 1069, 1076-1077, 1080, 1086,
-                1091, 1095, 1101, 1109, 1112, 1121, 1128, 1133, 1163, 1172, 1187,
-                1189, 1205, 1211, 1219, 1231, 1245, 1271, 1289, 1300, 1313, 1316,
-                1325, 1329, 1346-1347, 1473-1474, 1491, 1499, 1553, 1570, 1596, 1602,
-                1619, 1624, 1635, 1939-1987, 2119, 2140, 2143, 2147, 2153, 2158, 2161,
-                2168, 2171, 2175, 2182
-              sensor: cris-fsr_npp
-              obserr_demisf:
-              - 0.01
-              - 0.02
-              - 0.03
-              - 0.02
-              - 0.03
-              obserr_dtempf:
-              - 0.5
-              - 2.0
-              - 4.0
-              - 2.0
-              - 4.0
+            name: JediAdjustObsError/bendingAngle
+          minvalue: 10.0
+        - variable:
+            name: JediAdjustObsError/bendingAngle
+          value: is_valid
+        defer to post: true
       - filter: Background Check
         filter variables:
-        - name: brightnessTemperature
-          channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211, 216,
-            224, 234, 236, 238-239, 242, 246, 248, 255, 264, 266, 268, 275, 279, 283,
-            285, 291, 295, 301, 305, 311, 332, 342, 389, 400, 402, 404, 406, 410,
-            427, 439-441, 445, 449, 455, 458, 461, 464, 467, 470, 473, 475, 482, 486-487,
-            490, 493, 496, 499, 501, 503, 505, 511, 513-514, 518-520, 522, 529, 534,
-            563, 568, 575, 592, 594, 596, 598, 600, 602, 604, 611, 614, 616, 618,
-            620, 622, 626, 631, 638, 646, 648, 652, 659, 673, 675, 678, 684, 688,
-            694, 700, 707, 710, 713-714, 718, 720, 722, 725, 728, 735, 742, 748, 753,
-            762, 780, 784, 798, 849, 860, 862, 866, 874, 882, 890, 898, 906-908, 914,
-            937, 972-973, 978, 980-981, 988, 995, 998, 1000, 1003, 1008-1010, 1014,
-            1017-1018, 1020, 1022, 1024, 1026, 1029-1030, 1032, 1034, 1037-1038, 1041-1042,
-            1044, 1046, 1049-1050, 1053-1054, 1058, 1060, 1062, 1064, 1066, 1069,
-            1076-1077, 1080, 1086, 1091, 1095, 1101, 1109, 1112, 1121, 1128, 1133,
-            1163, 1172, 1187, 1189, 1205, 1211, 1219, 1231, 1245, 1271, 1289, 1300,
-            1313, 1316, 1325, 1329, 1346-1347, 1473-1474, 1491, 1499, 1553, 1570,
-            1596, 1602, 1619, 1624, 1635, 1939-1987, 2119, 2140, 2143, 2147, 2153,
-            2158, 2161, 2168, 2171, 2175, 2182
-        function absolute threshold:
-        - name: ObsFunction/ObsErrorBoundIR
-          channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211, 216,
-            224, 234, 236, 238-239, 242, 246, 248, 255, 264, 266, 268, 275, 279, 283,
-            285, 291, 295, 301, 305, 311, 332, 342, 389, 400, 402, 404, 406, 410,
-            427, 439-441, 445, 449, 455, 458, 461, 464, 467, 470, 473, 475, 482, 486-487,
-            490, 493, 496, 499, 501, 503, 505, 511, 513-514, 518-520, 522, 529, 534,
-            563, 568, 575, 592, 594, 596, 598, 600, 602, 604, 611, 614, 616, 618,
-            620, 622, 626, 631, 638, 646, 648, 652, 659, 673, 675, 678, 684, 688,
-            694, 700, 707, 710, 713-714, 718, 720, 722, 725, 728, 735, 742, 748, 753,
-            762, 780, 784, 798, 849, 860, 862, 866, 874, 882, 890, 898, 906-908, 914,
-            937, 972-973, 978, 980-981, 988, 995, 998, 1000, 1003, 1008-1010, 1014,
-            1017-1018, 1020, 1022, 1024, 1026, 1029-1030, 1032, 1034, 1037-1038, 1041-1042,
-            1044, 1046, 1049-1050, 1053-1054, 1058, 1060, 1062, 1064, 1066, 1069,
-            1076-1077, 1080, 1086, 1091, 1095, 1101, 1109, 1112, 1121, 1128, 1133,
-            1163, 1172, 1187, 1189, 1205, 1211, 1219, 1231, 1245, 1271, 1289, 1300,
-            1313, 1316, 1325, 1329, 1346-1347, 1473-1474, 1491, 1499, 1553, 1570,
-            1596, 1602, 1619, 1624, 1635, 1939-1987, 2119, 2140, 2143, 2147, 2153,
-            2158, 2161, 2168, 2171, 2175, 2182
-          options:
-            channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211,
-              216, 224, 234, 236, 238-239, 242, 246, 248, 255, 264, 266, 268, 275,
-              279, 283, 285, 291, 295, 301, 305, 311, 332, 342, 389, 400, 402, 404,
-              406, 410, 427, 439-441, 445, 449, 455, 458, 461, 464, 467, 470, 473,
-              475, 482, 486-487, 490, 493, 496, 499, 501, 503, 505, 511, 513-514,
-              518-520, 522, 529, 534, 563, 568, 575, 592, 594, 596, 598, 600, 602,
-              604, 611, 614, 616, 618, 620, 622, 626, 631, 638, 646, 648, 652, 659,
-              673, 675, 678, 684, 688, 694, 700, 707, 710, 713-714, 718, 720, 722,
-              725, 728, 735, 742, 748, 753, 762, 780, 784, 798, 849, 860, 862, 866,
-              874, 882, 890, 898, 906-908, 914, 937, 972-973, 978, 980-981, 988, 995,
-              998, 1000, 1003, 1008-1010, 1014, 1017-1018, 1020, 1022, 1024, 1026,
-              1029-1030, 1032, 1034, 1037-1038, 1041-1042, 1044, 1046, 1049-1050,
-              1053-1054, 1058, 1060, 1062, 1064, 1066, 1069, 1076-1077, 1080, 1086,
-              1091, 1095, 1101, 1109, 1112, 1121, 1128, 1133, 1163, 1172, 1187, 1189,
-              1205, 1211, 1219, 1231, 1245, 1271, 1289, 1300, 1313, 1316, 1325, 1329,
-              1346-1347, 1473-1474, 1491, 1499, 1553, 1570, 1596, 1602, 1619, 1624,
-              1635, 1939-1987, 2119, 2140, 2143, 2147, 2153, 2158, 2161, 2168, 2171,
-              2175, 2182
-            obserr_bound_latitude:
-              name: ObsFunction/ObsErrorFactorLatRad
-              options:
-                latitude_parameters:
-                - 25.0
-                - 0.5
-                - 0.04
-                - 1.0
-            obserr_bound_transmittop:
-              name: ObsFunction/ObsErrorFactorTransmitTopRad
-              channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211,
-                216, 224, 234, 236, 238-239, 242, 246, 248, 255, 264, 266, 268, 275,
-                279, 283, 285, 291, 295, 301, 305, 311, 332, 342, 389, 400, 402, 404,
-                406, 410, 427, 439-441, 445, 449, 455, 458, 461, 464, 467, 470, 473,
-                475, 482, 486-487, 490, 493, 496, 499, 501, 503, 505, 511, 513-514,
-                518-520, 522, 529, 534, 563, 568, 575, 592, 594, 596, 598, 600, 602,
-                604, 611, 614, 616, 618, 620, 622, 626, 631, 638, 646, 648, 652, 659,
-                673, 675, 678, 684, 688, 694, 700, 707, 710, 713-714, 718, 720, 722,
-                725, 728, 735, 742, 748, 753, 762, 780, 784, 798, 849, 860, 862, 866,
-                874, 882, 890, 898, 906-908, 914, 937, 972-973, 978, 980-981, 988,
-                995, 998, 1000, 1003, 1008-1010, 1014, 1017-1018, 1020, 1022, 1024,
-                1026, 1029-1030, 1032, 1034, 1037-1038, 1041-1042, 1044, 1046, 1049-1050,
-                1053-1054, 1058, 1060, 1062, 1064, 1066, 1069, 1076-1077, 1080, 1086,
-                1091, 1095, 1101, 1109, 1112, 1121, 1128, 1133, 1163, 1172, 1187,
-                1189, 1205, 1211, 1219, 1231, 1245, 1271, 1289, 1300, 1313, 1316,
-                1325, 1329, 1346-1347, 1473-1474, 1491, 1499, 1553, 1570, 1596, 1602,
-                1619, 1624, 1635, 1939-1987, 2119, 2140, 2143, 2147, 2153, 2158, 2161,
-                2168, 2171, 2175, 2182
-              options:
-                channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211,
-                  216, 224, 234, 236, 238-239, 242, 246, 248, 255, 264, 266, 268,
-                  275, 279, 283, 285, 291, 295, 301, 305, 311, 332, 342, 389, 400,
-                  402, 404, 406, 410, 427, 439-441, 445, 449, 455, 458, 461, 464,
-                  467, 470, 473, 475, 482, 486-487, 490, 493, 496, 499, 501, 503,
-                  505, 511, 513-514, 518-520, 522, 529, 534, 563, 568, 575, 592, 594,
-                  596, 598, 600, 602, 604, 611, 614, 616, 618, 620, 622, 626, 631,
-                  638, 646, 648, 652, 659, 673, 675, 678, 684, 688, 694, 700, 707,
-                  710, 713-714, 718, 720, 722, 725, 728, 735, 742, 748, 753, 762,
-                  780, 784, 798, 849, 860, 862, 866, 874, 882, 890, 898, 906-908,
-                  914, 937, 972-973, 978, 980-981, 988, 995, 998, 1000, 1003, 1008-1010,
-                  1014, 1017-1018, 1020, 1022, 1024, 1026, 1029-1030, 1032, 1034,
-                  1037-1038, 1041-1042, 1044, 1046, 1049-1050, 1053-1054, 1058, 1060,
-                  1062, 1064, 1066, 1069, 1076-1077, 1080, 1086, 1091, 1095, 1101,
-                  1109, 1112, 1121, 1128, 1133, 1163, 1172, 1187, 1189, 1205, 1211,
-                  1219, 1231, 1245, 1271, 1289, 1300, 1313, 1316, 1325, 1329, 1346-1347,
-                  1473-1474, 1491, 1499, 1553, 1570, 1596, 1602, 1619, 1624, 1635,
-                  1939-1987, 2119, 2140, 2143, 2147, 2153, 2158, 2161, 2168, 2171,
-                  2175, 2182
-            obserr_bound_max:
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 0.4
-            - 0.4
-            - 0.4
-            - 0.4
-            - 0.4
-            - 0.4
-            - 0.4
-            - 0.4
-            - 2.0
-            - 0.4
-            - 0.4
-            - 2.0
-            - 0.4
-            - 0.4
-            - 2.0
-            - 0.4
-            - 2.0
-            - 0.4
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 0.4
-            - 0.4
-            - 0.4
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 1.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 1.0
-            - 2.0
-            - 2.0
-            - 1.0
-            - 2.0
-            - 2.0
-            - 1.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
-            - 2.0
+        - name: bendingAngle
+        threshold: 5
         action:
           name: reject
-      - filter: Bounds Check
-        filter variables:
-        - name: brightnessTemperature
-          channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211, 216,
-            224, 234, 236, 238-239, 242, 246, 248, 255, 264, 266, 268, 275, 279, 283,
-            285, 291, 295, 301, 305, 311, 332, 342, 389, 400, 402, 404, 406, 410,
-            427, 439-441, 445, 449, 455, 458, 461, 464, 467, 470, 473, 475, 482, 486-487,
-            490, 493, 496, 499, 501, 503, 505, 511, 513-514, 518-520, 522, 529, 534,
-            563, 568, 575, 592, 594, 596, 598, 600, 602, 604, 611, 614, 616, 618,
-            620, 622, 626, 631, 638, 646, 648, 652, 659, 673, 675, 678, 684, 688,
-            694, 700, 707, 710, 713-714, 718, 720, 722, 725, 728, 735, 742, 748, 753,
-            762, 780, 784, 798, 849, 860, 862, 866, 874, 882, 890, 898, 906-908, 914,
-            937, 972-973, 978, 980-981, 988, 995, 998, 1000, 1003, 1008-1010, 1014,
-            1017-1018, 1020, 1022, 1024, 1026, 1029-1030, 1032, 1034, 1037-1038, 1041-1042,
-            1044, 1046, 1049-1050, 1053-1054, 1058, 1060, 1062, 1064, 1066, 1069,
-            1076-1077, 1080, 1086, 1091, 1095, 1101, 1109, 1112, 1121, 1128, 1133,
-            1163, 1172, 1187, 1189, 1205, 1211, 1219, 1231, 1245, 1271, 1289, 1300,
-            1313, 1316, 1325, 1329, 1346-1347, 1473-1474, 1491, 1499, 1553, 1570,
-            1596, 1602, 1619, 1624, 1635, 1939-1987, 2119, 2140, 2143, 2147, 2153,
-            2158, 2161, 2168, 2171, 2175, 2182
-        test variables:
-        - name: ObsFunction/SurfTypeCheckRad
-          channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211, 216,
-            224, 234, 236, 238-239, 242, 246, 248, 255, 264, 266, 268, 275, 279, 283,
-            285, 291, 295, 301, 305, 311, 332, 342, 389, 400, 402, 404, 406, 410,
-            427, 439-441, 445, 449, 455, 458, 461, 464, 467, 470, 473, 475, 482, 486-487,
-            490, 493, 496, 499, 501, 503, 505, 511, 513-514, 518-520, 522, 529, 534,
-            563, 568, 575, 592, 594, 596, 598, 600, 602, 604, 611, 614, 616, 618,
-            620, 622, 626, 631, 638, 646, 648, 652, 659, 673, 675, 678, 684, 688,
-            694, 700, 707, 710, 713-714, 718, 720, 722, 725, 728, 735, 742, 748, 753,
-            762, 780, 784, 798, 849, 860, 862, 866, 874, 882, 890, 898, 906-908, 914,
-            937, 972-973, 978, 980-981, 988, 995, 998, 1000, 1003, 1008-1010, 1014,
-            1017-1018, 1020, 1022, 1024, 1026, 1029-1030, 1032, 1034, 1037-1038, 1041-1042,
-            1044, 1046, 1049-1050, 1053-1054, 1058, 1060, 1062, 1064, 1066, 1069,
-            1076-1077, 1080, 1086, 1091, 1095, 1101, 1109, 1112, 1121, 1128, 1133,
-            1163, 1172, 1187, 1189, 1205, 1211, 1219, 1231, 1245, 1271, 1289, 1300,
-            1313, 1316, 1325, 1329, 1346-1347, 1473-1474, 1491, 1499, 1553, 1570,
-            1596, 1602, 1619, 1624, 1635, 1939-1987, 2119, 2140, 2143, 2147, 2153,
-            2158, 2161, 2168, 2171, 2175, 2182
-          options:
-            channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211,
-              216, 224, 234, 236, 238-239, 242, 246, 248, 255, 264, 266, 268, 275,
-              279, 283, 285, 291, 295, 301, 305, 311, 332, 342, 389, 400, 402, 404,
-              406, 410, 427, 439-441, 445, 449, 455, 458, 461, 464, 467, 470, 473,
-              475, 482, 486-487, 490, 493, 496, 499, 501, 503, 505, 511, 513-514,
-              518-520, 522, 529, 534, 563, 568, 575, 592, 594, 596, 598, 600, 602,
-              604, 611, 614, 616, 618, 620, 622, 626, 631, 638, 646, 648, 652, 659,
-              673, 675, 678, 684, 688, 694, 700, 707, 710, 713-714, 718, 720, 722,
-              725, 728, 735, 742, 748, 753, 762, 780, 784, 798, 849, 860, 862, 866,
-              874, 882, 890, 898, 906-908, 914, 937, 972-973, 978, 980-981, 988, 995,
-              998, 1000, 1003, 1008-1010, 1014, 1017-1018, 1020, 1022, 1024, 1026,
-              1029-1030, 1032, 1034, 1037-1038, 1041-1042, 1044, 1046, 1049-1050,
-              1053-1054, 1058, 1060, 1062, 1064, 1066, 1069, 1076-1077, 1080, 1086,
-              1091, 1095, 1101, 1109, 1112, 1121, 1128, 1133, 1163, 1172, 1187, 1189,
-              1205, 1211, 1219, 1231, 1245, 1271, 1289, 1300, 1313, 1316, 1325, 1329,
-              1346-1347, 1473-1474, 1491, 1499, 1553, 1570, 1596, 1602, 1619, 1624,
-              1635, 1939-1987, 2119, 2140, 2143, 2147, 2153, 2158, 2161, 2168, 2171,
-              2175, 2182
-            use_flag:
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            use_flag_clddet:
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 30
-            - 30
-            - 30
-            - 31
-            - 31
-            - 30
-            - 31
-            - 30
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 31
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 31
-            - 31
-            - 31
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 31
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 31
-            - 30
-            - 30
-            - 31
-            - 30
-            - 30
-            - 31
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 31
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 31
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 31
-            - 30
-            - 30
-            - 30
-            - 31
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 31
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 31
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-            - 30
-        maxvalue: 1.0e-12
         defer to post: true
-        action:
-          name: reject
-      - filter: Bounds Check
+      - filter: Perform Action
         filter variables:
-        - name: brightnessTemperature
-          channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211, 216,
-            224, 234, 236, 238-239, 242, 246, 248, 255, 264, 266, 268, 275, 279, 283,
-            285, 291, 295, 301, 305, 311, 332, 342, 389, 400, 402, 404, 406, 410,
-            427, 439-441, 445, 449, 455, 458, 461, 464, 467, 470, 473, 475, 482, 486-487,
-            490, 493, 496, 499, 501, 503, 505, 511, 513-514, 518-520, 522, 529, 534,
-            563, 568, 575, 592, 594, 596, 598, 600, 602, 604, 611, 614, 616, 618,
-            620, 622, 626, 631, 638, 646, 648, 652, 659, 673, 675, 678, 684, 688,
-            694, 700, 707, 710, 713-714, 718, 720, 722, 725, 728, 735, 742, 748, 753,
-            762, 780, 784, 798, 849, 860, 862, 866, 874, 882, 890, 898, 906-908, 914,
-            937, 972-973, 978, 980-981, 988, 995, 998, 1000, 1003, 1008-1010, 1014,
-            1017-1018, 1020, 1022, 1024, 1026, 1029-1030, 1032, 1034, 1037-1038, 1041-1042,
-            1044, 1046, 1049-1050, 1053-1054, 1058, 1060, 1062, 1064, 1066, 1069,
-            1076-1077, 1080, 1086, 1091, 1095, 1101, 1109, 1112, 1121, 1128, 1133,
-            1163, 1172, 1187, 1189, 1205, 1211, 1219, 1231, 1245, 1271, 1289, 1300,
-            1313, 1316, 1325, 1329, 1346-1347, 1473-1474, 1491, 1499, 1553, 1570,
-            1596, 1602, 1619, 1624, 1635, 1939-1987, 2119, 2140, 2143, 2147, 2153,
-            2158, 2161, 2168, 2171, 2175, 2182
-        test variables:
-        - name: ObsFunction/ChannelUseflagCheckRad
-          channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211, 216,
-            224, 234, 236, 238-239, 242, 246, 248, 255, 264, 266, 268, 275, 279, 283,
-            285, 291, 295, 301, 305, 311, 332, 342, 389, 400, 402, 404, 406, 410,
-            427, 439-441, 445, 449, 455, 458, 461, 464, 467, 470, 473, 475, 482, 486-487,
-            490, 493, 496, 499, 501, 503, 505, 511, 513-514, 518-520, 522, 529, 534,
-            563, 568, 575, 592, 594, 596, 598, 600, 602, 604, 611, 614, 616, 618,
-            620, 622, 626, 631, 638, 646, 648, 652, 659, 673, 675, 678, 684, 688,
-            694, 700, 707, 710, 713-714, 718, 720, 722, 725, 728, 735, 742, 748, 753,
-            762, 780, 784, 798, 849, 860, 862, 866, 874, 882, 890, 898, 906-908, 914,
-            937, 972-973, 978, 980-981, 988, 995, 998, 1000, 1003, 1008-1010, 1014,
-            1017-1018, 1020, 1022, 1024, 1026, 1029-1030, 1032, 1034, 1037-1038, 1041-1042,
-            1044, 1046, 1049-1050, 1053-1054, 1058, 1060, 1062, 1064, 1066, 1069,
-            1076-1077, 1080, 1086, 1091, 1095, 1101, 1109, 1112, 1121, 1128, 1133,
-            1163, 1172, 1187, 1189, 1205, 1211, 1219, 1231, 1245, 1271, 1289, 1300,
-            1313, 1316, 1325, 1329, 1346-1347, 1473-1474, 1491, 1499, 1553, 1570,
-            1596, 1602, 1619, 1624, 1635, 1939-1987, 2119, 2140, 2143, 2147, 2153,
-            2158, 2161, 2168, 2171, 2175, 2182
-          options:
-            channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211,
-              216, 224, 234, 236, 238-239, 242, 246, 248, 255, 264, 266, 268, 275,
-              279, 283, 285, 291, 295, 301, 305, 311, 332, 342, 389, 400, 402, 404,
-              406, 410, 427, 439-441, 445, 449, 455, 458, 461, 464, 467, 470, 473,
-              475, 482, 486-487, 490, 493, 496, 499, 501, 503, 505, 511, 513-514,
-              518-520, 522, 529, 534, 563, 568, 575, 592, 594, 596, 598, 600, 602,
-              604, 611, 614, 616, 618, 620, 622, 626, 631, 638, 646, 648, 652, 659,
-              673, 675, 678, 684, 688, 694, 700, 707, 710, 713-714, 718, 720, 722,
-              725, 728, 735, 742, 748, 753, 762, 780, 784, 798, 849, 860, 862, 866,
-              874, 882, 890, 898, 906-908, 914, 937, 972-973, 978, 980-981, 988, 995,
-              998, 1000, 1003, 1008-1010, 1014, 1017-1018, 1020, 1022, 1024, 1026,
-              1029-1030, 1032, 1034, 1037-1038, 1041-1042, 1044, 1046, 1049-1050,
-              1053-1054, 1058, 1060, 1062, 1064, 1066, 1069, 1076-1077, 1080, 1086,
-              1091, 1095, 1101, 1109, 1112, 1121, 1128, 1133, 1163, 1172, 1187, 1189,
-              1205, 1211, 1219, 1231, 1245, 1271, 1289, 1300, 1313, 1316, 1325, 1329,
-              1346-1347, 1473-1474, 1491, 1499, 1553, 1570, 1596, 1602, 1619, 1624,
-              1635, 1939-1987, 2119, 2140, 2143, 2147, 2153, 2158, 2161, 2168, 2171,
-              2175, 2182
-            use_flag:
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-        minvalue: 1.0e-12
+        - name: bendingAngle
         action:
-          name: reject
+          name: assign error
+          error function: JediAdjustObsError/bendingAngle
+        where:
+        - variable:
+            name: JediAdjustObsError/bendingAngle
+          value: is_valid
+        defer to post: true
+      - filter: Background Check RONBAM
+        filter variables:
+        - name: bendingAngle
+        defer to post: true
+      - filter: Background Check RONBAM
+        filter variables:
+        - name: bendingAngle
+        action:
+          name: RONBAMErrInflate_GEOS
+        defer to post: true
     - obs space:
         name: GMI GPM
         obsdatain:
@@ -16962,226 +13146,6 @@
         action:
           name: reject
     - obs space:
-        name: gnssrobndnbam
-        obsdatain:
-          engine:
-            type: H5File
-            obsfile: ./obs/gps.$BYYYYYMMDDTHH0000Z.nc4
-            missing file action: warn
-          obsgrouping:
-            group variables:
-            - sequenceNumber
-            sort variable: impactHeightRO
-            sort order: ascending
-        obsdataout:
-          engine:
-            type: H5File
-            obsfile: ./hofx/gps.$BYYYYYMMDDTHH0000Z.nc4
-        io pool:
-          max pool size: 6
-        simulated variables:
-        - bendingAngle
-      obs operator:
-        name: GnssroBndNBAM
-        obs options:
-          use_compress: 1
-#         vertlayer: mass
-          vertlayer: full
-          sr_steps: 2
-          super_ref_qc: NBAM
-#         GSI_version: GEOS
-      obs filters:
-      - filter: BlackList
-        where:
-        - variable:
-            name: MetaData/satelliteIdentifier
-          is_in: 41,265,266,421,440,724,725,726,727,728,729
-      - filter: Perform Action
-        filter variables:
-        - name: bendingAngle
-        where:
-        - variable: PreUseFlag/bendingAngle
-          minvalue: 1
-        action:
-          name: reject
-      - filter: Domain Check
-        filter variables:
-        - name: bendingAngle
-        where:
-        - variable:
-            name: MetaData/impactHeightRO
-          minvalue: 0
-          maxvalue: 55000.1
-        action:
-          name: reject
-      - filter: Bounds Check
-        filter variables:
-        - name: bendingAngle
-        where:
-        - variable:
-            name: MetaData/satelliteIdentifier
-          is_in: 265,266,267,268,269
-        test variables:
-        - name: MetaData/impactHeightRO
-        maxvalue: 45000.1
-        action:
-          name: reject
-      - filter: Bounds Check
-        filter variables:
-        - name: bendingAngle
-        where:
-        - variable:
-            name: MetaData/satelliteIdentifier
-          is_in: 3-5
-        test variables:
-        - name: MetaData/impactHeightRO
-        minvalue: 8000.1
-        action:
-          name: reject
-      - filter: Bounds Check
-        filter variables:
-        - name: bendingAngle
-        where:
-        - variable:
-            name: MetaData/satelliteIdentifier
-          is_in: 267,268,269
-        - variable:
-            name: MetaData/satelliteConstellationRO
-          is_in: 401
-        test variables:
-        - name: MetaData/impactHeightRO
-        minvalue: 5000.1
-        action:
-          name: reject
-      - filter: Bounds Check
-        filter variables:
-        - name: bendingAngle
-        where:
-        - variable:
-            name: MetaData/satelliteIdentifier
-          is_in: 267,268,269
-        - variable:
-            name: MetaData/satelliteConstellationRO
-          is_in: 402-999
-        test variables:
-        - name: MetaData/impactHeightRO
-        minvalue: 9000.1
-        action:
-          name: reject
-      - filter: Bounds Check
-        filter variables:
-        - name: bendingAngle
-        where:
-        - variable:
-            name: MetaData/satelliteIdentifier
-          is_in: 265,266
-        - variable:
-            name: MetaData/satelliteConstellationRO
-          is_in: 401
-        test variables:
-        - name: MetaData/impactHeightRO
-        minvalue: 5000.1
-        action:
-          name: reject
-      - filter: Bounds Check
-        filter variables:
-        - name: bendingAngle
-        where:
-        - variable:
-            name: MetaData/satelliteIdentifier
-          is_in: 265,266
-        - variable:
-            name: MetaData/satelliteConstellationRO
-          is_in: 402-999
-        test variables:
-        - name: MetaData/impactHeightRO
-        minvalue: 8000.1
-        action:
-          name: reject
-      - filter: ROobserror
-        filter variables:
-        - name: bendingAngle
-        errmodel: NBAM
-      - filter: Perform Action
-        filter variables:
-        - name: bendingAngle
-        action:
-          name: inflate error
-          inflation factor: 2.0
-        where:
-        - variable: MetaData/satelliteIdentifier
-          is_in: 267,268,269
-      - filter: Variable Assignment
-        assignments:
-        - name: JediAdjustObsError/bendingAngle
-          type: float
-          function:
-            name: ObsFunction/Arithmetic
-            options:
-              variables:
-              - name: ObsErrorData/bendingAngle
-        defer to post: true
-      - filter: Perform Action
-        filter variables:
-        - name: bendingAngle
-        action:
-          name: assign error
-          error parameter: 1.0
-        where:
-        - variable:
-            name: JediAdjustObsError/bendingAngle
-          maxvalue: 1.0
-        - variable:
-            name: JediAdjustObsError/bendingAngle
-          value: is_valid
-        - variable:
-            name: MetaData/satelliteIdentifier
-          is_in: 3,5,41,42,43,44,267,268,269,440,421,724,725,726,727,728,729,
-                 750,751,752,753,754,755,821,825
-        defer to post: true
-      - filter: Perform Action
-        filter variables:
-        - name: bendingAngle
-        action:
-          name: assign error
-          error parameter: 10.0
-        where:
-        - variable:
-            name: JediAdjustObsError/bendingAngle
-          minvalue: 10.0
-        - variable:
-            name: JediAdjustObsError/bendingAngle
-          value: is_valid
-        defer to post: true
-      - filter: Background Check
-        filter variables:
-        - name: bendingAngle
-        threshold: 5
-        action:
-          name: reject
-        defer to post: true
-      - filter: Perform Action
-        filter variables:
-        - name: bendingAngle
-        action:
-          name: assign error
-          error function: JediAdjustObsError/bendingAngle
-        where:
-        - variable:
-            name: JediAdjustObsError/bendingAngle
-          value: is_valid
-        defer to post: true
-      - filter: Background Check RONBAM
-        filter variables:
-        - name: bendingAngle
-        defer to post: true
-      - filter: Background Check RONBAM
-        filter variables:
-        - name: bendingAngle
-        action:
-          name: RONBAMErrInflate_GEOS
-        defer to post: true
-    - obs space:
         name: IASI METOP-B
         obsdatain:
           engine:
@@ -17193,7 +13157,7 @@
             type: H5File
             obsfile: ./hofx/iasi_metop-b.$BYYYYYMMDDTHH0000Z.nc4
         io pool:
-          max pool size: 6
+          max pool size: 12
         simulated variables:
         - brightnessTemperature
         channels: 16, 29, 32, 35, 38, 41, 44, 47, 49-51, 53, 55-57, 59, 61-63, 66,
@@ -23978,7 +19942,7 @@
             type: H5File
             obsfile: ./hofx/iasi_metop-c.$BYYYYYMMDDTHH0000Z.nc4
         io pool:
-          max pool size: 6
+          max pool size: 12
         simulated variables:
         - brightnessTemperature
         channels: 16, 29, 32, 35, 38, 41, 44, 47, 49-51, 53, 55-57, 59, 61-63, 66,
@@ -32204,7 +28168,7 @@
       obs operator:
         name: VertInterp
         vertical coordinate: air_pressure
-        observation alias file: /discover/nobackup/projects/gmao/dadev/rtodling/JEDI/x51/jprePP/run/jedi/Config/obsop_name_map.yaml
+        observation alias file: $FVHOME/run/jedi/Config/obsop_name_map.yaml
       obs filters:
       # range sanity check
       - filter: Bounds Check
@@ -32239,7 +28203,7 @@
       obs operator:
         name: VertInterp
         vertical coordinate: air_pressure
-        observation alias file: /discover/nobackup/projects/gmao/dadev/rtodling/JEDI/x51/jprePP/run/jedi/Config/obsop_name_map.yaml
+        observation alias file: $FVHOME/run/jedi/Config/obsop_name_map.yaml
       obs filters:
       # range sanity check
       - filter: Bounds Check
@@ -33817,43 +29781,23 @@
           name: reject
         defer to post: true
     - obs space:
-        name: Surface Marine Stations
+        name: sfcship_ps
         obsdatain:
           engine:
             type: H5File
-            obsfile: ./obs/sfcship.$BYYYYYMMDDTHH0000Z.nc4
+            obsfile: ./obs/sfcship_ps_obs.$BYYYYYMMDDTHH0000Z.nc4
             missing file action: warn
         obsdataout:
           engine:
             type: H5File
-            obsfile: ./hofx/sfcship.$BYYYYYMMDDTHH0000Z.nc4
+            obsfile: ./hofx/sfcship_ps_obs.$BYYYYYMMDDTHH0000Z.nc4
         io pool:
           max pool size: 6
         simulated variables:
-        - windEastward
-        - windNorthward
-        - virtualTemperature
-        - airTemperature
-        - specificHumidity
         - stationPressure
       obs operator:
         name: Composite
         components:
-        - name: VertInterp
-          variables:
-          - name: windEastward
-          - name: windNorthward
-          vertical coordinate: geopotential_height
-          observation vertical coordinate group: DerivedVariables
-          observation vertical coordinate: adjustedHeight
-          interpolation method: linear
-          hofx scaling field: SurfaceWindScalingHeight
-          hofx scaling field group: DerivedVariables
-        - name: VertInterp
-          observation alias file: $FVHOME/run/jedi/Config/obsop_name_map.yaml
-          variables:
-          - name: airTemperature
-          - name: virtualTemperature
         - name: SfcPCorrected
           variables:
           - name: stationPressure
@@ -33861,37 +29805,15 @@
           geovar_geomz: geopotential_height
           geovar_sfc_geomz: height_above_mean_sea_level_at_surface
           station_altitude: height
-        - name: Identity
-          variables:
-          - name: specificHumidity
       linear obs operator:
         name: Composite
         components:
-        - name: VertInterp
-          variables:
-          - name: windEastward
-          - name: windNorthward
-          vertical coordinate: geopotential_height
-          observation vertical coordinate group: DerivedVariables
-          observation vertical coordinate: adjustedHeight
-          interpolation method: linear
-          hofx scaling field: SurfaceWindScalingHeight
-          hofx scaling field group: DerivedVariables
-        - name: VertInterp
-          observation alias file: $FVHOME/run/jedi/Config/obsop_name_map.yaml
-          variables:
-          - name: airTemperature
-          - name: virtualTemperature
         - name: Identity
           variables:
           - name: stationPressure
-          - name: specificHumidity
       obs prior filters:
       - filter: Variable Transforms
         Transform: AdjustedHeightCoordinate
-        SkipWhenNoObs: false
-      - filter: Variable Transforms
-        Transform: SurfaceWindScalingHeight
         SkipWhenNoObs: false
       obs post filters:
       - filter: Perform Action
@@ -34061,6 +29983,150 @@
               use_air_pressure: false
               variable: stationPressure
         defer to post: true
+    - obs space:
+        name: sfcship_q
+        obsdatain:
+          engine:
+            type: H5File
+            obsfile: ./obs/sfcship_q_obs.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
+        obsdataout:
+          engine:
+            type: H5File
+            obsfile: ./hofx/sfcship_q_obs.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
+        simulated variables:
+        - specificHumidity
+      obs operator:
+        name: Composite
+        components:
+        - name: Identity
+          variables:
+          - name: specificHumidity
+      linear obs operator:
+        name: Composite
+        components:
+        - name: Identity
+          variables:
+          - name: specificHumidity
+      obs filters:
+      - filter: Perform Action
+        filter variables:
+        - name: specificHumidity
+        where:
+        - variable: PreUseFlag/specificHumidity
+          minvalue: 1
+        action:
+          name: reject
+      - filter: Perform Action
+        filter variables:
+        - name: specificHumidity
+        where:
+        - variable: ObsType/specificHumidity
+          is_in:
+          - 183
+        action:
+          name: assign error
+          error parameter: 100000000000.0
+      - filter: Perform Action
+        filter variables:
+        - name: specificHumidity
+        where:
+        - variable: ObsType/specificHumidity
+          is_in:
+          - 183
+        action:
+          name: reject
+      - filter: Perform Action
+        filter variables:
+        - name: specificHumidity
+        where:
+        - variable: ObsType/specificHumidity
+          is_in:
+          - 180
+        action:
+          name: assign error
+          error function:
+            name: ObsFunction/ObsErrorSatSpecHumidity
+            options:
+              variable: specificHumidity
+              input_error_name: GsiInputObsError
+      - filter: BlackList
+        filter variables:
+        - name: specificHumidity
+        action:
+          name: inflate error
+          inflation variable:
+            name: ObsFunction/ObsErrorFactorPressureCheck
+            options:
+              variable: specificHumidity
+              inflation factor: 8
+              adjusted_error_name: GsiAdjustObsError
+              geovar_sfc_geomz: height_above_mean_sea_level_at_surface
+      - filter: Background Check
+        filter variables:
+        - name: specificHumidity
+        threshold: 8.0
+        action:
+          name: reject
+        where:
+        - variable: PreQC/specificHumidity
+          is_not_in:
+          - 3
+        defer to post: true
+      - filter: Background Check
+        filter variables:
+        - name: specificHumidity
+        threshold: 5.6
+        action:
+          name: reject
+        where:
+        - variable: PreQC/specificHumidity
+          is_in:
+          - 3
+        defer to post: true
+      - filter: BlackList
+        filter variables:
+        - name: specificHumidity
+        action:
+          name: inflate error
+          inflation variable:
+            name: ObsFunction/ObsErrorFactorDuplicateCheck
+            options:
+              use_air_pressure: true
+              variable: specificHumidity
+        defer to post: true
+    - obs space:
+        name: sfcship_tsen
+        obsdatain:
+          engine:
+            type: H5File
+            obsfile: ./obs/sfcship_tsen_obs.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
+        obsdataout:
+          engine:
+            type: H5File
+            obsfile: ./hofx/sfcship_tsen_obs.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
+        simulated variables:
+        - airTemperature
+      obs operator:
+        name: Composite
+        components:
+        - name: VertInterp
+          observation alias file: $FVHOME/run/jedi/Config/obsop_name_map.yaml
+          variables:
+          - name: airTemperature
+      linear obs operator:
+        name: Composite
+        components:
+        - name: VertInterp
+          observation alias file: $FVHOME/run/jedi/Config/obsop_name_map.yaml
+          variables:
+          - name: airTemperature
+      obs filters:
       - filter: Perform Action
         filter variables:
         - name: airTemperature
@@ -34261,6 +30327,36 @@
         - name: ObsErrorData/airTemperature
         maxvalue: 100000.0
         defer to post: true
+    - obs space:
+        name: sfcship_tv
+        obsdatain:
+          engine:
+            type: H5File
+            obsfile: ./obs/sfcship_tv_obs.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
+        obsdataout:
+          engine:
+            type: H5File
+            obsfile: ./hofx/sfcship_tv_obs.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
+        simulated variables:
+        - virtualTemperature
+      obs operator:
+        name: Composite
+        components:
+        - name: VertInterp
+          observation alias file: $FVHOME/run/jedi/Config/obsop_name_map.yaml
+          variables:
+          - name: virtualTemperature
+      linear obs operator:
+        name: Composite
+        components:
+        - name: VertInterp
+          observation alias file: $FVHOME/run/jedi/Config/obsop_name_map.yaml
+          variables:
+          - name: virtualTemperature
+      obs filters:
       - filter: Perform Action
         filter variables:
         - name: virtualTemperature
@@ -34461,92 +30557,56 @@
         - name: ObsErrorData/virtualTemperature
         maxvalue: 100000.0
         defer to post: true
-      - filter: Perform Action
-        filter variables:
-        - name: specificHumidity
-        where:
-        - variable: PreUseFlag/specificHumidity
-          minvalue: 1
-        action:
-          name: reject
-      - filter: Perform Action
-        filter variables:
-        - name: specificHumidity
-        where:
-        - variable: ObsType/specificHumidity
-          is_in:
-          - 183
-        action:
-          name: assign error
-          error parameter: 100000000000.0
-      - filter: Perform Action
-        filter variables:
-        - name: specificHumidity
-        where:
-        - variable: ObsType/specificHumidity
-          is_in:
-          - 183
-        action:
-          name: reject
-      - filter: Perform Action
-        filter variables:
-        - name: specificHumidity
-        where:
-        - variable: ObsType/specificHumidity
-          is_in:
-          - 180
-        action:
-          name: assign error
-          error function:
-            name: ObsFunction/ObsErrorSatSpecHumidity
-            options:
-              variable: specificHumidity
-              input_error_name: GsiInputObsError
-      - filter: BlackList
-        filter variables:
-        - name: specificHumidity
-        action:
-          name: inflate error
-          inflation variable:
-            name: ObsFunction/ObsErrorFactorPressureCheck
-            options:
-              variable: specificHumidity
-              inflation factor: 8
-              adjusted_error_name: GsiAdjustObsError
-              geovar_sfc_geomz: height_above_mean_sea_level_at_surface
-      - filter: Background Check
-        filter variables:
-        - name: specificHumidity
-        threshold: 8.0
-        action:
-          name: reject
-        where:
-        - variable: PreQC/specificHumidity
-          is_not_in:
-          - 3
-        defer to post: true
-      - filter: Background Check
-        filter variables:
-        - name: specificHumidity
-        threshold: 5.6
-        action:
-          name: reject
-        where:
-        - variable: PreQC/specificHumidity
-          is_in:
-          - 3
-        defer to post: true
-      - filter: BlackList
-        filter variables:
-        - name: specificHumidity
-        action:
-          name: inflate error
-          inflation variable:
-            name: ObsFunction/ObsErrorFactorDuplicateCheck
-            options:
-              use_air_pressure: true
-              variable: specificHumidity
-        defer to post: true
+    - obs space:
+        name: sfcship_uv
+        obsdatain:
+          engine:
+            type: H5File
+            obsfile: ./obs/sfcship_uv_obs.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
+        obsdataout:
+          engine:
+            type: H5File
+            obsfile: ./hofx/sfcship_uv_obs.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
+        simulated variables:
+        - windEastward
+        - windNorthward
+      obs operator:
+        name: Composite
+        components:
+        - name: VertInterp
+          variables:
+          - name: windEastward
+          - name: windNorthward
+          vertical coordinate: geopotential_height
+          observation vertical coordinate group: DerivedVariables
+          observation vertical coordinate: adjustedHeight
+          interpolation method: linear
+          hofx scaling field: SurfaceWindScalingHeight
+          hofx scaling field group: DerivedVariables
+      linear obs operator:
+        name: Composite
+        components:
+        - name: VertInterp
+          variables:
+          - name: windEastward
+          - name: windNorthward
+          vertical coordinate: geopotential_height
+          observation vertical coordinate group: DerivedVariables
+          observation vertical coordinate: adjustedHeight
+          interpolation method: linear
+          hofx scaling field: SurfaceWindScalingHeight
+          hofx scaling field group: DerivedVariables
+      obs prior filters:
+      - filter: Variable Transforms
+        Transform: AdjustedHeightCoordinate
+        SkipWhenNoObs: false
+      - filter: Variable Transforms
+        Transform: SurfaceWindScalingHeight
+        SkipWhenNoObs: false
+      obs post filters:
       - filter: Perform Action
         filter variables:
         - name: windEastward
@@ -34755,43 +30815,23 @@
               variable: windNorthward
         defer to post: true
     - obs space:
-        name: Surface Land Stations
+        name: sfc_ps
         obsdatain:
           engine:
             type: H5File
-            obsfile: ./obs/sfc.$BYYYYYMMDDTHH0000Z.nc4
+            obsfile: ./obs/sfc_ps_obs.$BYYYYYMMDDTHH0000Z.nc4
             missing file action: warn
         obsdataout:
           engine:
             type: H5File
-            obsfile: ./hofx/sfc.$BYYYYYMMDDTHH0000Z.nc4
+            obsfile: ./hofx/sfc_ps_obs.$BYYYYYMMDDTHH0000Z.nc4
         io pool:
           max pool size: 6
         simulated variables:
-        - windEastward
-        - windNorthward
-        - virtualTemperature
-        - airTemperature
-        - specificHumidity
         - stationPressure
       obs operator:
         name: Composite
         components:
-        - name: VertInterp
-          variables:
-          - name: windEastward
-          - name: windNorthward
-          vertical coordinate: geopotential_height
-          observation vertical coordinate group: DerivedVariables
-          observation vertical coordinate: adjustedHeight
-          interpolation method: linear
-          hofx scaling field: SurfaceWindScalingHeight
-          hofx scaling field group: DerivedVariables
-        - name: VertInterp
-          observation alias file: $FVHOME/run/jedi/Config/obsop_name_map.yaml
-          variables:
-          - name: airTemperature
-          - name: virtualTemperature
         - name: SfcPCorrected
           variables:
           - name: stationPressure
@@ -34799,39 +30839,16 @@
           geovar_geomz: geopotential_height
           geovar_sfc_geomz: height_above_mean_sea_level_at_surface
           station_altitude: height
-        - name: Identity
-          observation alias file: $FVHOME/run/jedi/Config/obsop_name_map.yaml
-          variables:
-          - name: specificHumidity
       linear obs operator:
         name: Composite
         components:
-        - name: VertInterp
-          variables:
-          - name: windEastward
-          - name: windNorthward
-          vertical coordinate: geopotential_height
-          observation vertical coordinate group: DerivedVariables
-          observation vertical coordinate: adjustedHeight
-          interpolation method: linear
-          hofx scaling field: SurfaceWindScalingHeight
-          hofx scaling field group: DerivedVariables
-        - name: VertInterp
-          observation alias file: $FVHOME/run/jedi/Config/obsop_name_map.yaml
-          variables:
-          - name: airTemperature
-          - name: virtualTemperature
         - name: Identity
           observation alias file: $FVHOME/run/jedi/Config/obsop_name_map.yaml
           variables:
           - name: stationPressure
-          - name: specificHumidity
       obs prior filters:
       - filter: Variable Transforms
         Transform: AdjustedHeightCoordinate
-        SkipWhenNoObs: false
-      - filter: Variable Transforms
-        Transform: SurfaceWindScalingHeight
         SkipWhenNoObs: false
       obs post filters:
       - filter: Bounds Check
@@ -35041,6 +31058,36 @@
         - name: ObsErrorData/stationPressure
         maxvalue: 100000.0
         defer to post: true
+    - obs space:
+        name: sfc_q
+        obsdatain:
+          engine:
+            type: H5File
+            obsfile: ./obs/sfc_q_obs.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
+        obsdataout:
+          engine:
+            type: H5File
+            obsfile: ./hofx/sfc_q_obs.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
+        simulated variables:
+        - specificHumidity
+      obs operator:
+        name: Composite
+        components:
+        - name: Identity
+          observation alias file: $FVHOME/run/jedi/Config/obsop_name_map.yaml
+          variables:
+          - name: specificHumidity
+      linear obs operator:
+        name: Composite
+        components:
+        - name: Identity
+          observation alias file: $FVHOME/run/jedi/Config/obsop_name_map.yaml
+          variables:
+          - name: specificHumidity
+      obs filters:
       - filter: Perform Action
         filter variables:
         - name: specificHumidity
@@ -35049,6 +31096,36 @@
           is_in: 181,187
         action:
           name: reject
+    - obs space:
+        name: sfc_tsen
+        obsdatain:
+          engine:
+            type: H5File
+            obsfile: ./obs/sfc_tsen_obs.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
+        obsdataout:
+          engine:
+            type: H5File
+            obsfile: ./hofx/sfc_tsen_obs.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
+        simulated variables:
+        - airTemperature
+      obs operator:
+        name: Composite
+        components:
+        - name: VertInterp
+          observation alias file: $FVHOME/run/jedi/Config/obsop_name_map.yaml
+          variables:
+          - name: airTemperature
+      linear obs operator:
+        name: Composite
+        components:
+        - name: VertInterp
+          observation alias file: $FVHOME/run/jedi/Config/obsop_name_map.yaml
+          variables:
+          - name: airTemperature
+      obs filters:
       - filter: Perform Action
         filter variables:
         - name: airTemperature
@@ -35057,6 +31134,36 @@
           is_in: 181,187
         action:
           name: reject
+    - obs space:
+        name: sfc_tv
+        obsdatain:
+          engine:
+            type: H5File
+            obsfile: ./obs/sfc_tv_obs.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
+        obsdataout:
+          engine:
+            type: H5File
+            obsfile: ./hofx/sfc_tv_obs.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
+        simulated variables:
+        - virtualTemperature
+      obs operator:
+        name: Composite
+        components:
+        - name: VertInterp
+          observation alias file: $FVHOME/run/jedi/Config/obsop_name_map.yaml
+          variables:
+          - name: virtualTemperature
+      linear obs operator:
+        name: Composite
+        components:
+        - name: VertInterp
+          observation alias file: $FVHOME/run/jedi/Config/obsop_name_map.yaml
+          variables:
+          - name: virtualTemperature
+      obs filters:
       - filter: Perform Action
         filter variables:
         - name: virtualTemperature
@@ -35065,6 +31172,56 @@
           is_in: 181,187
         action:
           name: reject
+    - obs space:
+        name: sfc_uv
+        obsdatain:
+          engine:
+            type: H5File
+            obsfile: ./obs/sfc_uv_obs.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
+        obsdataout:
+          engine:
+            type: H5File
+            obsfile: ./hofx/sfc_uv_obs.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
+        simulated variables:
+        - windEastward
+        - windNorthward
+      obs operator:
+        name: Composite
+        components:
+        - name: VertInterp
+          variables:
+          - name: windEastward
+          - name: windNorthward
+          vertical coordinate: geopotential_height
+          observation vertical coordinate group: DerivedVariables
+          observation vertical coordinate: adjustedHeight
+          interpolation method: linear
+          hofx scaling field: SurfaceWindScalingHeight
+          hofx scaling field group: DerivedVariables
+      linear obs operator:
+        name: Composite
+        components:
+        - name: VertInterp
+          variables:
+          - name: windEastward
+          - name: windNorthward
+          vertical coordinate: geopotential_height
+          observation vertical coordinate group: DerivedVariables
+          observation vertical coordinate: adjustedHeight
+          interpolation method: linear
+          hofx scaling field: SurfaceWindScalingHeight
+          hofx scaling field group: DerivedVariables
+      obs prior filters:
+      - filter: Variable Transforms
+        Transform: AdjustedHeightCoordinate
+        SkipWhenNoObs: false
+      - filter: Variable Transforms
+        Transform: SurfaceWindScalingHeight
+        SkipWhenNoObs: false
+      obs post filters:
       - filter: Perform Action
         filter variables:
         - name: windEastward
@@ -35082,11 +31239,11 @@
         action:
           name: reject
     - obs space:
-        name: Radiosondes
+        name: sondes_ps
         obsdatain:
           engine:
             type: H5File
-            obsfile: ./obs/sondes.$BYYYYYMMDDTHH0000Z.nc4
+            obsfile: ./obs/sondes_ps_obs.$BYYYYYMMDDTHH0000Z.nc4
             missing file action: error
           obsgrouping:
             group variables:
@@ -35097,30 +31254,14 @@
         obsdataout:
           engine:
             type: H5File
-            obsfile: ./hofx/sondes.$BYYYYYMMDDTHH0000Z.nc4
+            obsfile: ./hofx/sondes_ps_obs.$BYYYYYMMDDTHH0000Z.nc4
         io pool:
           max pool size: 6
         simulated variables:
-        - windEastward
-        - windNorthward
-        - virtualTemperature
-        - airTemperature
-        - specificHumidity
         - stationPressure
       obs operator:
         name: Composite
         components:
-        - name: VertInterp
-          variables:
-          - name: windEastward
-          - name: windNorthward
-          hofx scaling field: SurfaceWindScalingPressure
-          hofx scaling field group: DerivedVariables
-        - name: VertInterp
-          variables:
-          - name: airTemperature
-          - name: virtualTemperature
-          - name: specificHumidity
         - name: SfcPCorrected
           variables:
           - name: stationPressure
@@ -35131,25 +31272,10 @@
       linear obs operator:
         name: Composite
         components:
-        - name: VertInterp
-          variables:
-          - name: windEastward
-          - name: windNorthward
-          hofx scaling field: SurfaceWindScalingPressure
-          hofx scaling field group: DerivedVariables
-        - name: VertInterp
-          variables:
-          - name: airTemperature
-          - name: virtualTemperature
-          - name: specificHumidity
         - name: Identity
           variables:
           - name: stationPressure
-      obs prior filters:
-      - filter: Variable Transforms
-        Transform: SurfaceWindScalingPressure
-        SkipWhenNoObs: false
-      obs post filters:
+      obs filters:
       - filter: Perform Action
         filter variables:
         - name: stationPressure
@@ -35200,88 +31326,40 @@
               geovar_geomz: geopotential_height
               geovar_sfc_geomz: height_above_mean_sea_level_at_surface
               station_altitude: height
-      - filter: Variable Assignment
-        assignments:
-        - name: TempObsErrorData/stationPressure
-          type: float
-          function:
-            name: ObsFunction/Arithmetic
-            options:
-              variables:
-              - name: ObsErrorData/stationPressure
-        defer to post: true
-      - filter: Perform Action
-        filter variables:
-        - name: stationPressure
-        action:
-          name: assign error
-          error parameter: 100
-        where:
-        - variable:
-            name: TempObsErrorData/stationPressure
-          maxvalue: 100
-        - variable:
-            name: TempObsErrorData/stationPressure
-          value: is_valid
-        defer to post: true
-      - filter: Perform Action
-        filter variables:
-        - name: stationPressure
-        action:
-          name: assign error
-          error parameter: 300
-        where:
-        - variable:
-            name: TempObsErrorData/stationPressure
-          minvalue: 300
-        - variable:
-            name: TempObsErrorData/stationPressure
-          value: is_valid
-        defer to post: true
-      - filter: Background Check
-        filter variables:
-        - name: stationPressure
-        threshold: 4.0
-        action:
-          name: reject
-        where:
-        - variable: PreQC/stationPressure
-          is_not_in:
-          - 3
-        defer to post: true
-      - filter: Background Check
-        filter variables:
-        - name: stationPressure
-        threshold: 2.8
-        action:
-          name: reject
-        where:
-        - variable: PreQC/stationPressure
-          is_in:
-          - 3
-        defer to post: true
-      - filter: Perform Action
-        filter variables:
-        - name: stationPressure
-        action:
-          name: assign error
-          error function: TempObsErrorData/stationPressure
-        where:
-        - variable:
-            name: TempObsErrorData/stationPressure
-          value: is_valid
-        defer to post: true
-      - filter: Perform Action
-        filter variables:
-        - name: stationPressure
-        action:
-          name: inflate error
-          inflation variable:
-            name: ObsFunction/ObsErrorFactorDuplicateCheck
-            options:
-              use_air_pressure: false
-              variable: stationPressure
-        defer to post: true
+    - obs space:
+        name: sondes_q
+        obsdatain:
+          engine:
+            type: H5File
+            obsfile: ./obs/sondes_q_obs.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: error
+          obsgrouping:
+            group variables:
+            - stationIdentification
+            - releaseTime
+            sort variable: pressure
+            sort order: descending
+        obsdataout:
+          engine:
+            type: H5File
+            obsfile: ./hofx/sondes_q_obs.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
+        simulated variables:
+        - specificHumidity
+      obs operator:
+        name: Composite
+        components:
+        - name: VertInterp
+          variables:
+          - name: specificHumidity
+      linear obs operator:
+        name: Composite
+        components:
+        - name: VertInterp
+          variables:
+          - name: specificHumidity
+      obs filters:
       - filter: Perform Action
         filter variables:
         - name: specificHumidity
@@ -35336,6 +31414,40 @@
               use_air_pressure: true
               variable: specificHumidity
         defer to post: true
+    - obs space:
+        name: sondes_tsen
+        obsdatain:
+          engine:
+            type: H5File
+            obsfile: ./obs/sondes_tsen_obs.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: error
+          obsgrouping:
+            group variables:
+            - stationIdentification
+            - releaseTime
+            sort variable: pressure
+            sort order: descending
+        obsdataout:
+          engine:
+            type: H5File
+            obsfile: ./hofx/sondes_tsen_obs.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
+        simulated variables:
+        - airTemperature
+      obs operator:
+        name: Composite
+        components:
+        - name: VertInterp
+          variables:
+          - name: airTemperature
+      linear obs operator:
+        name: Composite
+        components:
+        - name: VertInterp
+          variables:
+          - name: airTemperature
+      obs filters:
       - filter: Perform Action
         filter variables:
         - name: airTemperature
@@ -35534,6 +31646,40 @@
               use_air_pressure: true
               variable: airTemperature
         defer to post: true
+    - obs space:
+        name: sondes_tv
+        obsdatain:
+          engine:
+            type: H5File
+            obsfile: ./obs/sondes_tv_obs.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: error
+          obsgrouping:
+            group variables:
+            - stationIdentification
+            - releaseTime
+            sort variable: pressure
+            sort order: descending
+        obsdataout:
+          engine:
+            type: H5File
+            obsfile: ./hofx/sondes_tv_obs.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
+        simulated variables:
+        - virtualTemperature
+      obs operator:
+        name: Composite
+        components:
+        - name: VertInterp
+          variables:
+          - name: virtualTemperature
+      linear obs operator:
+        name: Composite
+        components:
+        - name: VertInterp
+          variables:
+          - name: virtualTemperature
+      obs filters:
       - filter: Perform Action
         filter variables:
         - name: virtualTemperature
@@ -35732,6 +31878,51 @@
               use_air_pressure: true
               variable: virtualTemperature
         defer to post: true
+    - obs space:
+        name: sondes_uv
+        obsdatain:
+          engine:
+            type: H5File
+            obsfile: ./obs/sondes_uv_obs.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: error
+          obsgrouping:
+            group variables:
+            - stationIdentification
+            - releaseTime
+            sort variable: pressure
+            sort order: descending
+        obsdataout:
+          engine:
+            type: H5File
+            obsfile: ./hofx/sondes_uv_obs.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
+        simulated variables:
+        - windEastward
+        - windNorthward
+      obs operator:
+        name: Composite
+        components:
+        - name: VertInterp
+          variables:
+          - name: windEastward
+          - name: windNorthward
+          hofx scaling field: SurfaceWindScalingPressure
+          hofx scaling field group: DerivedVariables
+      linear obs operator:
+        name: Composite
+        components:
+        - name: VertInterp
+          variables:
+          - name: windEastward
+          - name: windNorthward
+          hofx scaling field: SurfaceWindScalingPressure
+          hofx scaling field group: DerivedVariables
+      obs prior filters:
+      - filter: Variable Transforms
+        Transform: SurfaceWindScalingPressure
+        SkipWhenNoObs: false
+      obs post filters:
       - filter: Bounds Check
         filter variables:
         - name: windEastward
@@ -36807,3 +32998,81 @@
         minvalue: 1.0e-12
         action:
           name: reject
+    - obs space:
+        name: saberT
+        obsdatain:
+          engine:
+            type: H5File
+            obsfile: ./obs/saber_t_timed.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
+        obsdataout:
+          engine:
+            type: H5File
+            obsfile: ./hofx/saber_t_timed.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 1
+        simulated variables:
+        - airTemperature
+      obs operator:
+        name: Composite
+        components:
+        - name: VertInterp
+          variables:
+          - name: airTemperature
+      linear obs operator:
+        name: Composite
+        components:
+        - name: VertInterp
+          variables:
+          - name: airTemperature
+      obs filters:
+      - filter: Domain Check
+        filter variables:
+        - name: airTemperature
+        where:
+        - variable:
+            name: MetaData/pressure
+          minvalue: 5
+          maxvalue: 10000.0
+        action:
+          name: reject
+      - filter: Perform Action
+        filter variables:
+        - name: airTemperature
+        action:
+          name: passivate
+        defer to post: true
+      - filter: Perform Action
+        filter variables:
+        - name: airTemperature
+        action:
+          name: assign error
+          error function:
+            name: ObsFunction/ObsErrorModelStepwiseLinear
+            options:
+              xvar:
+                name: MetaData/pressure
+              xvals: [8.50851914e+04,5.97046046e+04,4.18949496e+04,2.93978466e+04,
+                      2.06285815e+04,1.44751546e+04,1.01572714e+04,7.12739624e+03,
+                      5.00132123e+03,3.50944625e+03,2.46259187e+03,1.72801015e+03,
+                      1.21255134e+03,8.50851914e+02,5.97046046e+02,4.18949496e+02,
+                      2.93978466e+02,2.06285815e+02,1.44751546e+02,1.01572714e+02,
+                      7.12739624e+01,5.00132123e+01,3.50944625e+01,2.46259187e+01,
+                      1.72801015e+01,1.21255134e+01,8.50851914e+00,5.97046046e+00,
+                      4.18949496e+00,2.93978466e+00,2.06285815e+00,1.44751546e+00,
+                      1.01572714e+00,7.12739624e-01,5.00132123e-01,3.50944625e-01,
+                      2.46259187e-01,1.72801015e-01,1.21255134e-01]
+              errors: [      160.0,       160.0, 153.03642847,120.34753278, 41.17975669,
+                       23.06202572,  8.3601981 ,  3.18719459 , 1.79196546 , 1.97379713,
+                        1.57073754,  1.12634655,  1.12307446 , 1.20582712 , 1.19869575,
+                        1.25091315,  1.63907942,  1.96384868 , 2.61642718 , 3.23840885,
+                        3.59636554,  4.17289048,  5.07024947 , 4.82717441 , 3.94751004,
+                        4.66466103,  6.24514474,  6.13995774 , 6.59820787 , 7.60539332,
+                        9.8369862 , 10.31535387, 11.58366423 ,13.92075107 ,15.72582962,
+                       17.39400635, 18.45249   , 18.36440028 ,18.87276406]
+      - filter: Perform Action
+        filter variables:
+        - name: airTemperature
+        action:
+          name: inflate error
+          inflation factor: 1.1

@@ -3699,7 +3699,7 @@ sub set_geosjedi {
   if( $ENV{OFFLINE_IODA_DIR} ) {
      $iodadir = $ENV{OFFLINE_IODA_DIR};
   } else {
-     $iodadir = "/discover/nobackup/projects/gmao/dadev/rtodling/archive/541/Milan/x0050/ioda/";
+     $iodadir = "/discover/nobackup/projects/gmao/dadev/rtodling/archive/542/prePP/ioda/";
   }
   $jediopts = "-fvhome $fvhome -iodadir $iodadir -archive $acqloc -gcmres $agcm_im $nogsi";
 
