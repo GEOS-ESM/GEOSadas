@@ -424,7 +424,7 @@ sub fetch_inputs {
     $tmpl = "$fvroot/etc/monthly_prefetch.j.tmpl";
     $prefetch_j = "$FVHOME/run/jobscripts/prefetch.$ftype.$yyyymm.j";
     
-    $jobname = "PF_$ftype";
+    $jobname = "PF${yyyymm}_$ftype";
     $outfile = "$listdir/$EXPID.prefetch.$ftype.$yyyymm.log.$$.txt.FAILED";
 
     if ($siteID eq "nccs") {
@@ -504,7 +504,7 @@ sub calc_monthly_means {
     $tmpl = "$fvroot/etc/monthly_means.j.tmpl";
     $means_j = "$FVHOME/run/jobscripts/means.$ftype.$yyyymm.j";
 
-    $jobname = "MM_$ftype";
+    $jobname = "MM${yyyymm}_$ftype";
     $outfile = "$listdir/$EXPID.means.$ftype.$yyyymm.log.$$.txt.FAILED";
     $tasks_per_node = 24;
 
@@ -598,7 +598,7 @@ sub tar_and_clean_inputs {
     $tmpl = "$fvroot/etc/monthly_tarandclean.j.tmpl";
     $tarandclean_j = "$FVHOME/run/jobscripts/tarandclean.$ftype.$yyyymm.j";
 
-    $jobname = "CL_$ftype";
+    $jobname = "CL${yyyymm}_$ftype";
     $outfile = "$listdir/$EXPID.tarandclean.$ftype.$yyyymm.log.$$.txt.FAILED";
 
     if ($siteID eq "nccs") {
@@ -789,7 +789,7 @@ sub monthly_plots {
     #---------------------------------
     $tmpl = "$fvroot/etc/plots_transfer.csh.tmpl";
     $transfer_csh = "$FVHOME/run/jobscripts/plots_transfer.$yyyymm.csh";
-    $jobname = "MPT$yyyymm";
+    $jobname = "MPT${yyyymm}";
     $outfile = "$listdir/$EXPID.plots_transfer.$yyyymm.log.$$.txt.FAILED";
 
     if ($siteID eq "nccs") {
@@ -825,7 +825,7 @@ sub monthly_plots {
     #--------------------------------
     $tmpl = "$fvroot/etc/monthly_plots.j.tmpl";
     $plots_j = "$FVHOME/run/jobscripts/plots.$yyyymm.j";
-    $jobname = "MP$yyyymm";
+    $jobname = "MP${yyyymm}";
     $outfile = "$listdir/$EXPID.plots.$yyyymm.log.$$.txt.FAILED";
 
     if ($siteID eq "nccs") {
@@ -883,7 +883,7 @@ sub finish_monthly_plots {
 
     # locate gcm_plot*.j files
     #-------------------------
-    $plot_dir = "$FVHOME/monthly_plots/plot";
+    $plot_dir = "$FVHOME/monthly_plots/$yyyymm/plot";
     die "Error. Cannot find directory: $plot_dir;" unless -d $plot_dir;
 
     chdir $plot_dir or die "Error while chdir $plot_dir; $!";
@@ -1023,7 +1023,7 @@ sub expand {
         $val_ENV  = $ENV{$varname};
         $val_eval = eval($var);
 
-        $var =~ s/([\$\{])/\\$1/;    # change '$' => '\$' and '{' => '\{'
+        $var =~ s/([\$\{\}])/\\$1/g;    # change '$'=>'\$', '{'=>'\{', '}'=>'\}'
 
         $strOUT =~ s/$var/$val_eval/ if defined($val_eval);
         $strOUT =~ s/$var/$val_ENV/  if defined($val_ENV);

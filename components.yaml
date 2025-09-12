@@ -5,7 +5,7 @@ GEOSadas:
 env:
   local: ./@env
   remote: ../ESMA_env.git
-  branch: feature/mathomp4/GEOSadas-5.29.5-SLES15
+  branch: FP_5_29_5/dao_ops/67b5d4c_PATCH
   develop: main
 
 cmake:
@@ -28,7 +28,7 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  branch: feature/mathomp4/GEOSadas-5.29.5-SLES15
+  branch: FP_5_29_5/dao_ops/a0bad33_PATCH
   develop: main
 
 GMAOpyobs:
@@ -65,7 +65,7 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  tag: v1.5.4.8-GEOS-FP-6
+  branch: FP_5_29_5/dao_ops/v1.5.4.8-GEOS-FP-6_PATCH
   develop: develop
 
 GEOSgcm_GridComp:
@@ -102,7 +102,7 @@ fvdycore:
 GEOSchem_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSphysics_GridComp/@GEOSchem_GridComp
   remote: ../GEOSchem_GridComp.git
-  tag: v1.6.1
+  branch: FP_5_29_5/dao_ops/v1.6.1_PATCH
   develop: develop
 
 HEMCO:
