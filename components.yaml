@@ -47,7 +47,7 @@ AeroML:
 GEOS_Util:
   local: ./src/Shared/@GMAO_Shared/@GEOS_Util
   remote: ../GEOS_Util.git
-  tag: v2.0.7
+  branch: FP_5_29_5/dao_ops/2.0.7_PATCH
   develop: main
 
 MAPL:
@@ -65,7 +65,7 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  branch: FP_5_29_5/dao_ops/v1.5.4.8-GEOS-FP-6_PATCH
+  branch: FP_5_29_5/dao_ops/v1.5.4.8-GEOS-FP-6_IR_sens_fix
   develop: develop
 
 GEOSgcm_GridComp:
