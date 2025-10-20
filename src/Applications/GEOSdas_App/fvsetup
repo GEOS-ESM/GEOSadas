@@ -3070,7 +3070,7 @@ sub get_nodeflg {
   $proc = "";
   # reset default if applicable
 
-  $ans = query(" Processing nodes (1:Haswell, 2:Skylake, 3:Cascase, 4:Milan)?", "2");
+  $ans = query(" Processing nodes (1:Haswell, 2:Skylake, 3:Cascade, 4:Milan)?", "4");
 
   if    ($ans == 1) { $nodeflg = "hasw"; $ncpus_per_node = 24 }
   elsif ($ans == 2) { $nodeflg = "sky";  $ncpus_per_node = 36 }
@@ -3236,6 +3236,8 @@ EOF
   $nx = query("  Number of PEs in the zonal direction (NX)?", $nx);
   $ny = query("  Number of PEs in the meridional direction (NY)?", $ny);
   $ncpus = $nx * $ny;
+  my $this_many_nodes = ceil($ncpus/$ncpus_per_node) + $o_servers;
+  $xncpus = $this_many_nodes * $ncpus_per_node;
 
   $jobn = query("  Job nickname?", $jobn);
   $jobn = substr($jobn,0,5);
@@ -3528,8 +3530,6 @@ EOF
           $berror_env  = "setenv BERROR  $berror_file";
        }
        if ( $geosit ) {
-       #  $berror_file = "\$FVHOME/fvInput/gsi/etc/berror_gmao/gmao24Jun2011_fp+oz_fix/MERRA2/Final";
-       #  $berror_env  = "setenv BERROR  $berror_file";
           $berror_env  = "# Likely need to point to new BERROR for GEOSIT (adjust fvsetup)";
        }
   }
@@ -3546,10 +3546,10 @@ EOF
       $nxgsi = query("  Number of procs in the zonal direction (NX)?", $nxDEF);
       $nygsi = query("  Number of procs in the meridional direction (NY)?", $nyDEF);
       $ncpus_gsi = $nxgsi * $nygsi;
-      last if $ncpus_gsi <= $ncpus;
+      last if $ncpus_gsi <= $xncpus;
 
       print "\n  >>> WARNING <<<"
-          . "\n  GSI CPUs ($ncpus_gsi) exceeds total number of CPUs ($ncpus)\n";
+          . "\n  GSI CPUs ($ncpus_gsi) exceeds total number of CPUs ($xncpus)\n";
       die ">>> ERROR <<< too many unsuccessful attempts;" if ++$cnt > 3;
       print "  Try again.\n\n";
   }
@@ -7588,8 +7588,6 @@ if ( $fvchem && $lm > 2 ) {
  }
  $pi = $i;       # p for PSAS
 
- my $xncpus = $ncpus + $o_servers * $ncpus_per_node;
-
 # Turn off some parallelization on discover
 #------------------------------------------
  if ( ($siteID eq "nccs") || ($siteID eq "nas") ) {
@@ -7597,6 +7595,16 @@ if ( $fvchem && $lm > 2 ) {
  } else {
      $paroff = 0;
  }
+
+# Allow for expanded memory usage when running GSI
+# ------------------------------------------------
+  if ($ncpus_per_node) {
+      $nodes_avail = int($ncpus / $ncpus_per_node  + 0.5);
+      $perhost_gsi = int($ncpus_gsi / $nodes_avail + 0.5);
+      if ($analat == 361 && $nodeflg == "mil") { $perhost_gsi = 42 };
+  } else {
+     die ">>> ERROR <<< ncpus_per_node must be declared.";
+  }
 
 # Batch wall-clock time setting
 #------------------------------
@@ -7632,6 +7640,7 @@ print  SCRIPT <<"EOF";
 #SBATCH --ntasks-per-node=$ncpus_per_node
 #SBATCH --constraint=$nodeflg
 #SBATCH --time=${daswallclk}:00
+#SBATCH --no-requeue
 EOF
 
 }else{
@@ -7654,17 +7663,7 @@ print SCRIPT <<"EOF";
 #SBATCH --job-name=$jobn
 #SBATCH --output=$jobn.log.o%j.txt
 #SBATCH --time=${daswallclk}:00
-#PBS -N $jobn
-#PBS -o $jobn.log.o%j.txt
-#PBS -l walltime=${daswallclk}:00
-##PBS -l mem=$mem
-#PBS -S /bin/csh
-#PBS -j eo
-#BSUB -J $jobn
-#BSUB -n $ncpus
-#BSUB -W $daswallclk
-#BSUB -o ${jobn}.log.o%J.txt
-#BSUB -e ${jobn}.log.o%J.txt
+#SBATCH --no-requeue
 }
 
 if ($dbqueue) {
@@ -7924,7 +7923,6 @@ print  SCRIPT <<"EOF";
 
   if (\$?I_MPI_ROOT) then
 #    The following as recommended by Scott and SI Team
-#    setenv I_MPI_USE_DYNAMIC_CONNECTIONS 0
      setenv I_MPI_SHM_HEAP_VSIZE   512
      setenv PSM2_MEMORY            large
      setenv I_MPI_ADJUST_GATHERV   3
@@ -7936,19 +7934,6 @@ print  SCRIPT <<"EOF";
        setenv I_MPI_FABRICS shm:ofi
        setenv I_MPI_OFI_PROVIDER psm3
      endif
-#    setenv ROMIO_FSTYPE_FORCE         "gpfs:"
-#    setenv I_MPI_FABRICS shm:ofi
-#    setenv I_MPI_FABRICS shm:dapl
-#    setenv I_MPI_FABRICS_LIST "dapl,ofa"
-#    setenv I_MPI_FALLBACK "enable"
-#    setenv I_MPI_MPD_RSH sshmpi
-#    setenv I_MPI_DAPL_CHECK_MAX_RDMA_SIZE 1
-#    setenv I_MPI_DAPL_UD_SEND_BUFFER_NUM 4096
-#    setenv I_MPI_DAPL_UD_RECV_BUFFER_NUM 4096
-#    setenv I_MPI_DAPL_UD_ACK_SEND_POOL_SIZE 4096
-#    setenv I_MPI_DAPL_UD_ACK_RECV_POOL_SIZE 4096
-#    setenv I_MPI_DAPL_UD_RNDV_EP_NUM 2
-#    setenv I_MPI_DAPL_UD_REQ_EVD_SIZE 2000
   endif
   if (\$?MPT_VERSION) then
      setenv DAPL_UCM_CQ_SIZE 4096
@@ -8798,8 +8783,6 @@ sub create_fscript {
  open(SCRIPT,">$fvhome/fcst/$jobf.j") or
  die ">>> ERROR <<< cannot write $fvhome/fcst/$jobf.j";
 
- my $xncpus = $ncpus + $o_servers * $ncpus_per_node;
-
  print  SCRIPT <<"EOF";
 #!/bin/csh -fx
 # ------------------------------------------
@@ -8822,6 +8805,7 @@ print  SCRIPT <<"EOF";
 #SBATCH --ntasks-per-node=$ncpus_per_node
 #SBATCH --constraint=$nodeflg
 #SBATCH --time=${fcswallclk}:00
+#SBATCH --no-requeue
 EOF
 
 }else{
@@ -8845,17 +8829,7 @@ print  SCRIPT <<"EOF";
 #SBATCH --job-name=fcst
 #SBATCH --output=fcst.log.o%j.txt
 #SBATCH --time=${fcswallclk}:00
-#PBS -N fcst
-#PBS -o fcst.log.o%j.txt
-#PBS -l walltime=${fcswallclk}:00
-##PBS -l mem=$mem
-#PBS -S /bin/csh
-#PBS -j eo
-#BSUB -J forecasting
-#BSUB -n $ncpus
-#BSUB -W $fcswallclk
-#BSUB -o fcst.log.o%J.txt
-#BSUB -e fcst.log.o%J.txt
+#SBATCH --no-requeue
 EOF
 }
 
@@ -9019,29 +8993,6 @@ print  SCRIPT <<"EOF";
        setenv I_MPI_FABRICS shm:ofi
        setenv I_MPI_OFI_PROVIDER psm3
      endif
-#    setenv I_MPI_FABRICS shm:dapl
-#    setenv I_MPI_FABRICS_LIST "dapl,ofa"
-#    setenv I_MPI_FALLBACK "enable"
-#    setenv I_MPI_MPD_RSH sshmpi
-#    setenv I_MPI_DAPL_CHECK_MAX_RDMA_SIZE 1
-##   setenv I_MPI_DAPL_UD on
-#    setenv I_MPI_DAPL_UD_SEND_BUFFER_NUM 4096
-#    setenv I_MPI_DAPL_UD_RECV_BUFFER_NUM 4096
-#    setenv I_MPI_DAPL_UD_ACK_SEND_POOL_SIZE 4096
-#    setenv I_MPI_DAPL_UD_ACK_RECV_POOL_SIZE 4096
-#    setenv I_MPI_DAPL_UD_RNDV_EP_NUM 2
-#    setenv I_MPI_DAPL_UD_REQ_EVD_SIZE 2000
-#    setenv I_MPI_JOB_STARTUP_TIMEOUT 10000
-#    setenv I_MPI_RDMA_RNDV_WRITE 1
-#    The following as recommended by Scott and SI Team
-     setenv I_MPI_SHM_HEAP_VSIZE   512
-     setenv PSM2_MEMORY            large
-     setenv I_MPI_ADJUST_GATHERV   3
-     setenv I_MPI_ADJUST_ALLREDUCE 12
-     setenv I_MPI_EXTRA_FILESYSTEM 1
-     setenv I_MPI_EXTRA_FILESYSTEM_LIST gpfs
-     setenv I_MPI_DEBUG 6
-#    setenv ROMIO_FSTYPE_FORCE         "gpfs:"
   endif
   if (\$?MPT_VERSION) then
      setenv MPI_COLL_REPRODUCIBLE
