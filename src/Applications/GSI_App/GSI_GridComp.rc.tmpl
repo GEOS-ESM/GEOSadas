@@ -12,43 +12,43 @@ GSIGridType: 0
 # GSI grid information 
 
 #regular grid use:
-GEOS IM: @GCMNLON
-GEOS JM: @GCMNLAT
-GEOS KM: @NSIG
-GSI IM:  @GSINLON
-GSI JM:  @GSINLAT
-GSI LM:  @NSIG
+GEOS IM: 576
+GEOS JM: 361
+GEOS KM: 72
+GSI IM:  576
+GSI JM:  361
+GSI LM:  72
 
 #Gaussian grid use:
-#GEOS IM: @JCAP
+#GEOS IM: 254
 #GEOS JM: @NLAT
-#GEOS KM: @NSIG
-#GSI IM:  @JCAP
+#GEOS KM: 72
+#GSI IM:  254
 #GSI JM:  @NLAT
-#GSI LM:  @NSIG
+#GSI LM:  72
 
 # NPEs along x and y
-NX:      @NXGSI
-NY:      @NYGSI
-ANA_NX:  @NXGSI
-ANA_NY:  @NYGSI
+NX:      16
+NY:      42
+ANA_NX:  16
+ANA_NY:  42
 ORIGIN_CENTER_LON: 0.0
 ORIGIN_CENTER_LAT: -90.0
 
 BEG_DATE: >>>IOBBKGD<<< >>>IOBBKGT<<<
 END_DATE: >>>IOEBKGD<<< >>>IOEBKGT<<<
-JOB_SGMT: 0 @VARWINDOW
+JOB_SGMT: 0 60000
 
-RUN_DT:   @SECASYNFRQ
+RUN_DT:   3600
 
-BKG_FREQUENCY: @ASYNFRQ
-ANA_FREQUENCY: @VARWINDOW
+BKG_FREQUENCY: 010000
+ANA_FREQUENCY: 60000
 OBS_FREQUENCY: 060000
 
-ANALYSIS_INCREMENT: @ANAINC
+ANALYSIS_INCREMENT: NO
 
 RECORD_ANALYSIS: >>>RECANA<<<
-RECORD_FREQUENCY: @ASYNFRQ
+RECORD_FREQUENCY: 010000
 RECORD_REF_TIME:  >>>ANATIME<<<
 RECORD_REF_DATE:  >>>ANADATE<<<
 
@@ -61,7 +61,7 @@ surface_ana_filename:   %s.ana.sfc.%y4%m2%d2_%h2%n2z.>>>NCSUFFIX<<<
 surface_inc_filename:   %s.inc.sfc.%y4%m2%d2_%h2%n2z.>>>NCSUFFIX<<<
 chem_bkg_filename:      %s.cbkg.eta.%y4%m2%d2_%h2%n2z.>>>NCSUFFIX<<<
 aero_bkg_filename:      NONE  # %s.abkg.eta.%y4%m2%d2_%h2%n2z.>>>NCSUFFIX<<<
-ensemble_upabkg_filename:  @AENSUPAFN
+ensemble_upabkg_filename:  %s.bkg.eta.%y4%m2%d2_%h2%n2z.>>>NCSUFFIX<<<
 upper-air_bkg_filename: %s.bkg.eta.%y4%m2%d2_%h2%n2z.>>>NCSUFFIX<<<
 upper-air_ana_filename: %s.ana.eta.%y4%m2%d2_%h2%n2z.>>>NCSUFFIX<<<
 upper-air_inc_filename: %s.inc.eta.%y4%m2%d2_%h2%n2z.>>>NCSUFFIX<<<
@@ -74,8 +74,8 @@ post-analysis_obs_filename: %s.ana.obs.%y4%m2%d2_%h2z.ods
 ensemble_upaprgb_filename: %s.prog.eta.%y4%m2%d2_%h2%n2z.nc4
 forecast_errorB_filename: fsens.eta.nc4
 
-vars_anaeta_file: phis,ps,ts,frland,frlandice,frlake,frocean,frseaice,delp,u,v,tv,sphu,ozone,qitot,qltot,qrtot,qstot
-vars_bkgeta_file: phis,ps,ts,frland,frlandice,frlake,frocean,frseaice,u,v,tv,sphu,ozone,qitot,qltot,qrtot,qstot
+vars_anaeta_file: phis,ps,ts,pblri,pblrf,pblsld,pblgld,pblrd,frland,frlandice,frlake,frocean,frseaice,delp,u,v,tv,sphu,ozone,qitot,qltot,qrtot,qstot
+vars_bkgeta_file: phis,ps,ts,pblri,pblrf,pblsld,pblgld,pblrd,frland,frlandice,frlake,frocean,frseaice,u,v,tv,sphu,ozone,qitot,qltot,qrtot,qstot
 vars_bkgsfc_file: U10M,V10M,SNOWDP,GWETTOP,TSOIL1,Z0M,DCOOL,DWARM,TDROP,TS_FOUND,TDEL
 
 # used in read_guess
