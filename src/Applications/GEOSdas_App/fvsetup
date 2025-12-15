@@ -1,4 +1,4 @@
-#!/usr/bin/env perl
+?!/usr/bin/env perl
 #
 # fvDAS Experiment setup utility.
 #
@@ -911,6 +911,7 @@ sub defaults {
                      ana.rc.tmpl
                      avhrr_l2a.pcf
                      modis_l2a.pcf
+                     viirs_l2a.pcf
                      obs.rc
                      psas.rc
                      sqc.rc );
