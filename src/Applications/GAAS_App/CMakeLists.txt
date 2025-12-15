@@ -13,6 +13,7 @@ esma_add_library(${this}
   SRCS ${SRCS}
   DEPENDENCIES GMAO_psas GMAO_ods GMAO_hermes Chem_Base)
 
+target_link_libraries(${this} PRIVATE OpenMP::OpenMP_Fortran)
 
 ecbuild_add_executable(TARGET ana_aod.x SOURCES ana_aod.F LIBS ${this} GMAO_gfio_r4 Chem_Base Chem_Shared) 
 ecbuild_add_executable(TARGET mpana_aod.x SOURCES mpana_aod.F90 LIBS ${this} GMAO_gfio_r4 Chem_Base Chem_Shared) 
