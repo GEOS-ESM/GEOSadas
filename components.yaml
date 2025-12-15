@@ -48,7 +48,7 @@ GMAOpyobs:
 AeroML:
   local: ./src/Shared/@AeroML
   remote: ../AeroML.git
-  tag: v1.1.0
+  tag: v1.4.0
   develop: develop
   sparse: ./config/AeroML.sparse
 
