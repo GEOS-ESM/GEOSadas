@@ -4391,6 +4391,9 @@ endif
   # ---------------------------
   /bin/cp $FVHOME/run/gaas/avhrr_l2a.pcf $AODWORK
   /bin/cp $FVHOME/run/gaas/modis_l2a.pcf $AODWORK
+  if ( -e $FVHOME/run/gaas/viirs_l2a.pcf ) then
+     /bin/cp $FVHOME/run/gaas/viirs_l2a.pcf $AODWORK
+  endif
 
   # Prepare ana.rc from template
   # ----------------------------
@@ -4412,6 +4415,7 @@ endif
   set aod_obs_list = (`echo $aod_obclass | sed "s/,/ /g"`)
 
   setenv MODIS_L2_HDF 0
+  setenv VIIRS_L2_HDF 0
   foreach aod_obs ($aod_obs_list)
      if ($aod_obs == 0) continue
      if ($aod_obs == patmosx_asc) then
@@ -4425,6 +4429,15 @@ endif
      if ($aod_obs == misr_F12_bright) sed -i "s/#___MISR___//"    $ana_rc
      if ($aod_obs == mod04_land_nnr)  sed -i "s/#___TERRA___//"   $ana_rc
      if ($aod_obs == myd04_land_nnr)  sed -i "s/#___AQUA___//"    $ana_rc
+
+     if ($aod_obs == vn20aerdt_002_flk) then
+         setenv VIIRS_L2_HDF 1
+         sed -i "s/#___NOAA20DT_NRT__//" $ana_rc
+     endif
+     if ($aod_obs == vn20aerdb_002_flk) then
+         setenv VIIRS_L2_HDF 1
+         sed -i "s/#___NOAA20DB_NRT__//"    $ana_rc
+     endif
 
      set dtype = `$FVROOT/bin/aod_data.py aod_type $aod_obs $AERO_OBSDBRC`
 
@@ -4506,6 +4519,7 @@ endif
   sed -i 6i"$line6" $jobf
   sed -i "s|>>>PATMOSX<<<|${patmosxFLG}|" $jobf
   sed -i "s|>>>MODIS_L2_HDF<<<|${MODIS_L2_HDF}|" $jobf
+  sed -i "s|>>>VIIRS_L2_HDF<<<|${VIIRS_L2_HDF}|" $jobf
 
   sed -i "s|>>>MYNODES<<<|${mynodes}|" $jobf
   sed -i "s|>>>AODWORK<<<|${AODWORK}|" $jobf
