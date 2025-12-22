@@ -22,6 +22,8 @@
 !---------------------------------------------------------------------- */
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <stdnoreturn.h>
 
 #define BUFSIZE 50000
 int WORDSIZE;
@@ -119,5 +121,5 @@ int wrdlen()
 void error(char* str)
 {
     printf("%s\n", str);
-    exit(1);
+    exit(EXIT_FAILURE);
 }
