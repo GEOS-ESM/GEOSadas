@@ -75,7 +75,7 @@ MAPL:
 GEOSldas_GridComp:
   local: ./src/Components/@GEOSldas_GridComp
   remote: ../GEOSldas_GridComp.git
-  tag: v2.0.0
+  tag: v3.1.0
 
 FMS:
   local: ./src/Shared/@FMS
@@ -111,7 +111,7 @@ GigaTraj:
 g5pert:
   local: ./src/Components/@g5pert
   remote: ../g5pert.git
-  tag: v1.1.2
+  tag: v1.1.3
   develop: main
 
 GEOSagcmPert_GridComp:
