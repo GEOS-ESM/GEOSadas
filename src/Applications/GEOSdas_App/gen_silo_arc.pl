@@ -436,6 +436,7 @@ sub append_other_info {
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg.prs.%y4%m2%d2_%h2z.nc4
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg.sfc.%y4%m2%d2_%h2z.iter%c.nc4
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.cbkg%c%c.eta.%y4%m2%d2_%h2z.nc4
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.extbkg%c%c.eta.%y4%m2%d2_%h2z.nc4
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.finc.eta.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.%s.nc4
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.inc.eta.%y4%m2%d2_%h2z.nc4
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.inc.eta.%y4%m2%d2_%h2z.iter%c.nc4
@@ -473,6 +474,7 @@ sub append_other_info {
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg.prs.%y4%m2%d2_%h2%n2z.nc4
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg.sfc.%y4%m2%d2_%h2%n2z.iter%c.nc4
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.cbkg%c%c.eta.%y4%m2%d2_%h2%n2z.nc4
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.extbkg%c%c.eta.%y4%m2%d2_%h2%n2z.nc4
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.inc.eta.%y4%m2%d2_%h2%n2z.nc4
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.inc.eta.%y4%m2%d2_%h2%n2z.iter%c.nc4
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.inc.sfc.%y4%m2%d2_%h2%n2z.nc4
