@@ -357,7 +357,7 @@ if ( ! -e $JEDIWRK/.DONE_JEDI_GET_BKG_${nymdb}_${nhmsb} ) then
         set lst = (`ls bkg.*.nc4`)
         set cres  = `getgfiodim.x $lst[1] | grep -v GFIO`
         @ jcres = $cres[1] + 1
-        setenv JEDI_BKG_RESOL $jcres
+        setenv JEDI_BKG_HRES $jcres
         vED -env $JEDIETC/convertinc_geos.yaml -o $JEDIWRK/Config/convertinc_geos.yaml
      endif
      cd -
@@ -439,7 +439,7 @@ if ( $JEDI_HYBRID ) then
      set   mms = `echo $ttag | cut -c5-6`
      set   dds = `echo $ttag | cut -c7-8`
      set   hhs = `echo $ttag | cut -c10-11`
-     set  cana = $EXPID.ana.ceta.${yyyys}${mms}${dds}_${hhs}00z.nc4 # wired for now
+     set  cana = $EXPID.jedi_ana.ceta.${yyyys}${mms}${dds}_${hhs}00z.nc4 # wired for now
      setenv JEDI_CUBED_BKG $cbkg
      setenv JEDI_CUBED_ANA $cana
      setenv ISO_STATES_DATE "${yyyys}-${mms}-${dds}T${hhs}:00:00Z"

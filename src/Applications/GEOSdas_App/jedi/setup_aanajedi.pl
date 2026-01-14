@@ -33,7 +33,8 @@ my $scriptname = basename($0);
 
 # Command line options
 
-  GetOptions ( "archive=s",
+  GetOptions ( "gcmres=s",
+               "archive=s",
                "cvbc=s",
                "fvhome=s",
                "iodadir=s",
@@ -98,6 +99,16 @@ sub init {
       }
    }
 
+   $jediqos = "#"; 
+   if ( $ENV{"GEOSJEDI_QOS"} ) {
+      $jediqos = "#SBATCH --qos=$GEOSJEDI_QOS";
+   }
+
+   $jedipartition = "#"; 
+   if ( $ENV{"GEOSJEDI_PARTITION"} ) {
+      $jediqos = "#SBATCH --qos=$GEOSJEDI_PARTITION";
+   }
+
    if ( $opt_jedistatic ) {
         $jedistatic = $opt_jedistatic;
    } else {
@@ -122,7 +133,7 @@ sub init {
    if ( $opt_jediroot ) {
         $jediroot = $opt_jediroot;
    } else {
-        $jediroot = "/discover/nobackup/projects/gmao/advda/swell/JediBundles/fv3_soca_SLES15_02062025/build-intel-release";
+        $jediroot = "/discover/nobackup/projects/gmao/advda/swell/JediBundles/fv3_soca_SLES15_06182025/build-intel-release";
    }
 
    if ( $opt_archive ) {
@@ -160,8 +171,6 @@ sub init {
    $jediinput = "$fvhome/fv3-jedi";
 
 # determined whether cubed or not
-  $agcm_im = $aim;
-  $agcm_jm = $ajm;
   $agcm_lm = $nlevs;
 
 # define layout depending on resolution
@@ -179,12 +188,20 @@ sub init {
   }
 
 # Var run configuration parameters
+  $agcm_im = $hres;
+  $difxlayout = 4;
+  $difylayout = 2;
+  if ( $opt_gcmres ) { $agcm_im = $opt_gcmres };
+  $agcm_jm = 6 * $agcm_im;
+  $agcm_lm = $vres;
   $cres = $hres + 1;
   $covres = $cres; # in most cases background fields and covariance at same resolution
   if ( $cres == 721 ) {
      if ( $scheme eq "hyb4denvar" ) {
        $varxlayout = 16;
        $varylayout = 7;
+       $difxlayout = 4;
+       $difylayout = 4;
        $gsixlayout = 21;
        $gsiylayout = 32;
        $perhost_var = 12;
@@ -275,6 +292,15 @@ sub init {
   }
   $ncpus_var = $varxlayout * $varylayout * 6;
   if ( $scheme eq "hyb4dcenvar" ) {$ncpus_var = $ncpus_var * 7}; # wired to hourly background
+  $diffntasks = $difxlayout * $difylayout * 6;
+
+# mkiau pe-settings
+  $mkiau_nx = 2;
+  $mkiau_ny = 12;
+  if ( $agcm_im == 720 ) {
+     $mkiau_nx = 4;
+     $mkiau_ny = 24;
+  }
 
 # build internal variables
 
@@ -288,6 +314,7 @@ sub init {
                     jedi_acquire_ebkg.j
                     jedi_acquire_ioda.j
                     jedi_acquire_vbc.j
+                    jedi_diffstates.j
                     jedi_run_var.j
                     ut_jedi.j
                   );
@@ -336,6 +363,7 @@ ed_var_yaml ("$JEDIHOME/Config","geosvar.yaml");
 if ( $hybridvar ) {
   ed_var_yaml ("$JEDIHOME/Config","diffstates_geos.yaml");
 }
+ed_mkiau_rc ("$JEDIHOME/Config","mkiau.rc.tenv");
 
 # take care of satbias acq
 ed_jedibkg_acq   ("$JEDIHOME/Config");
@@ -404,14 +432,14 @@ foreach $dir_in_build ( @build_dirs ) {
 
 }
 #......................................................................
-sub ed_miau_rc {
+sub ed_mkiau_rc {
 
-  my($mydir) = @_;
+  my($mydir,$config) = @_;
 
   my($acq);
 
   $tmprc  = "$mydir/tmp.rc";
-  $thisrc = "$mydir/mkiau.rc.tmpl";
+  $thisrc = "$mydir/$config";
 
      open(LUN,"$thisrc")  || die "Fail to open $thisrc $!\n";
      open(LUN2,">$tmprc") || die "Fail to open tmp.rc $!\n";
@@ -420,8 +448,8 @@ sub ed_miau_rc {
      #---------------------------------------
      while( defined($rcd = <LUN>) ) {
         chomp($rcd);
-        if($rcd =~ /\@NX/) {$rcd=~ s/\@NX/$miau_nx/g; }
-        if($rcd =~ /\@NY/) {$rcd=~ s/\@NY/$miau_ny/g; }
+        if($rcd =~ /\@NX/) {$rcd=~ s/\@NX/$mkiau_nx/g; }
+        if($rcd =~ /\@NY/) {$rcd=~ s/\@NY/$mkiau_ny/g; }
         if($rcd =~ /\@AGCM_IM/) {$rcd=~ s/\@AGCM_IM/$agcm_im/g; }
         if($rcd =~ /\@AGCM_JM/) {$rcd=~ s/\@AGCM_JM/$agcm_jm/g; }
         if($rcd =~ /\@AGCM_LM/) {$rcd=~ s/\@AGCM_LM/$agcm_lm/g; }
@@ -465,6 +493,9 @@ sub ed_conf_rc {
      #---------------------------------------
      while( defined($rcd = <LUN>) ) {
         chomp($rcd);
+        if($rcd =~ /\@GEOSJEDI_QOS/) {$rcd=~ s/\@GEOSJEDI_QOS/$jediqos/g;  }
+        if($rcd =~ /\@GEOSJEDI_PARTITION/) {$rcd=~ s/\@GEOSJEDI_PARTITION/$jedipartition/g;  }
+
         if($rcd =~ /\@JEDI_FEEDBACK_VARBC/) {$rcd=~ s/\@JEDI_FEEDBACK_VARBC/$cvbc/g;  }
         if($rcd =~ /\@JEDI_HYBRID/)         {$rcd=~ s/\@JEDI_HYBRID/$jedihyb/g;  }
         if($rcd =~ /\@JEDI_INPUT/)          {$rcd=~ s/\@JEDI_INPUT/$jediinput/g;  }
@@ -473,6 +504,7 @@ sub ed_conf_rc {
         if($rcd =~ /\@JEDI_ROOT/)           {$rcd=~ s/\@JEDI_ROOT/$jediroot/g;  }
         if($rcd =~ /\@JEDI_RUN_GETINC/)     {$rcd=~ s/\@JEDI_RUN_GETINC/$jediinc/g;  }
         if($rcd =~ /\@JEDI_STATIC_FILES/)   {$rcd=~ s/\@JEDI_STATIC_FILES/$jedistatic/g;  }
+        if($rcd =~ /\@JEDI_DIF_NTASKS/)     {$rcd=~ s/\@JEDI_DIF_NTASKS/$diffntasks/g;  }
         if($rcd =~ /\@JEDI_VAR_NCPUS/)      {$rcd=~ s/\@JEDI_VAR_NCPUS/$ncpus_var/g;  }
         if($rcd =~ /\@JEDI_VAR_PERHOST/)    {$rcd=~ s/\@JEDI_VAR_PERHOST/$perhost_var/g;  }
         if($rcd =~ /\@OFFLIODADIR/)         {$rcd=~ s/\@OFFLIODADIR/$iodadir/g;  }
@@ -566,9 +598,6 @@ sub ed_var_yaml {
   $tmprc  = "$mydir/tmp.rc";
   $thisrc = "$mydir/$conffn";
 
-  # the following will need ATTENTION:
-  $obsop_mapdir = "$fvhome/run/jedi/Config";
-
      open(LUN,"$thisrc")  || die "Fail to open $thisrc $!\n";
      open(LUN2,">$tmprc") || die "Fail to open tmp.rc $!\n";
 
@@ -576,13 +605,16 @@ sub ed_var_yaml {
      #---------------------------------------
      while( defined($rcd = <LUN>) ) {
         chomp($rcd);
+        if($rcd =~ /\@AGCM_IM/)             {$rcd=~ s/\@AGCM_IM/$agcm_im/g;  }
         if($rcd =~ /\@JEDI_BKG_HRES/)       {$rcd=~ s/\@JEDI_BKG_HRES/$cres/g;  }
         if($rcd =~ /\@JEDI_BKG_VRES/)       {$rcd=~ s/\@JEDI_BKG_VRES/$vres/g;  }
         if($rcd =~ /\@JEDI_BKGCOV_RESOL/)   {$rcd=~ s/\@JEDI_BKGCOV_RESOL/$covres/g;  }
         if($rcd =~ /\@JEDI_GSIBEC_NLAT/)    {$rcd=~ s/\@JEDI_GSIBEC_NLAT/$gsibec_lat/g;  }
         if($rcd =~ /\@JEDI_GSIBEC_NLON/)    {$rcd=~ s/\@JEDI_GSIBEC_NLON/$gsibec_lon/g;  }
         if($rcd =~ /\@JEDI_GSIBEC_NLEV/)    {$rcd=~ s/\@JEDI_GSIBEC_NLEV/$vres/g;  }
-        if($rcd =~ /\@JEDI_OBSOP_MAPDIR/)   {$rcd=~ s/\@JEDI_OBSOP_MAPDIR/$obsop_mapdir/g;  }
+        if($rcd =~ /\@JEDI_DIF_NTASKS/)     {$rcd=~ s/\@JEDI_DIF_NTASKS/$diffntasks/g;  }
+        if($rcd =~ /\@JEDI_DIF_XLAYOUT/)    {$rcd=~ s/\@JEDI_DIF_XLAYOUT/$difxlayout/g;  }
+        if($rcd =~ /\@JEDI_DIF_YLAYOUT/)    {$rcd=~ s/\@JEDI_DIF_YLAYOUT/$difylayout/g;  }
         if($rcd =~ /\@JEDI_VAR_XLAYOUT/)    {$rcd=~ s/\@JEDI_VAR_XLAYOUT/$varxlayout/g;  }
         if($rcd =~ /\@JEDI_VAR_YLAYOUT/)    {$rcd=~ s/\@JEDI_VAR_YLAYOUT/$varylayout/g;  }
         if($rcd =~ /\@JEDI_VAR_GSIXLAYOUT/) {$rcd=~ s/\@JEDI_VAR_GSIXLAYOUT/$gsixlayout/g;  }
@@ -694,6 +726,7 @@ OPTIONS
 
      -archive      location of archive (when bkg, others come from; default: /archive/u/\$user)
      -cvbc         cycle JEDI varBC, 0/1 (default: 1, i.e., cycle)
+     -gcmres       specify resolution of underying AGCM (default: hres in arg list)
      -fvhome       location of experiment home directory (default: \$expdir/\$expid)
      -jedihome     location of ensemble members (default: \$FVHOME/run/jedi)
      -jediroot     location of JEDI build directory (default: /discover/nobackup/projects/gmao/advda/swell/JediBundles/fv3_soca_SLES15/build-intel-release)
@@ -709,13 +742,15 @@ NECESSARY ENVIRONMENT
 
 OPTIONAL ENVIRONMENT
 
-      ARCHIVE      can be define in env or arg list
-      FVHOME       can be define in env or arg list
+      ARCHIVE            can be define in env or arg list
+      FVHOME             can be define in env or arg list
+      GEOSJEDI_QOS       can be used to defined slurm qos
+      GEOSJEDI_PARTITION can be used to defined slurm partition
 
 AUTHOR
 
      Ricardo Todling (Ricardo.Todling\@nasa.gov), NASA/GSFC/GMAO
-     Last modified: 06May2025                     by: R. Todling
+     Last modified: 31May2025                     by: R. Todling
 
 
 EOF

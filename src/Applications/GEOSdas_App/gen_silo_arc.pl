@@ -184,7 +184,7 @@ sub history_info {
 #=======================================================================
 sub restart_info {
     use AGCMrc qw(AGCM_rsts);
-    my ($label, $lineB, $lineN, $lineT, $lineTAR, $line);
+    my ($label, $lineB, $lineN, $lineT, @arrT, $line);
     my ($listname, @rsts, $rstL, $rst);
 
     $label = "#\n"
@@ -213,19 +213,13 @@ sub restart_info {
         }
     }
     printarc("#\n# restart tar file\n#\n");
-    $lineTAR = '${PESTOROOT}%s/rs/Y%y4/M%m2/%s.agcmrst.%y4%m2%d2_%h2z.tar';
-    printarc("$lineTAR\n");
-    $lineTAR = '${PESTOROOT}%s/rs/Y%y4/M%m2/%s.incrst.%y4%m2%d2_%h2z.tar';
-    printarc("$lineTAR\n");
-    $lineTAR = '${PESTOROOT}%s/rs/Y%y4/M%m2/%s.rst.%y4%m2%d2_%h2z.tar';
-    printarc("$lineTAR\n");
-    $lineTAR = '${PESTOROOT}%s/rs/Y%y4/M%m2/%s.bkgcrst.%y4%m2%d2_%h2z.tar';
-    printarc("$lineTAR\n");
-    $lineTAR = '${PESTOROOT}%s/rs/Y%y4/M%m2/%s.bkglforst.%y4%m2%d2_%h2z.tar';
-    printarc("$lineTAR\n");
-    $lineTAR = '${PESTOROOT}%s/jedi/rs/Y%y4/M%m2/%s.jedi_agcmrst.%y4%m2%d2_%h2z.tar';
-    printarc("$lineTAR\n");
-
+    $arrT[0] = '${PESTOROOT}%s/rs/Y%y4/M%m2/%s.agcmrst.%y4%m2%d2_%h2z.tar';
+    $arrT[1] = '${PESTOROOT}%s/rs/Y%y4/M%m2/%s.incrst.%y4%m2%d2_%h2z.tar';
+    $arrT[2] = '${PESTOROOT}%s/rs/Y%y4/M%m2/%s.rst.%y4%m2%d2_%h2z.tar';
+    $arrT[3] = '${PESTOROOT}%s/rs/Y%y4/M%m2/%s.bkgcrst.%y4%m2%d2_%h2z.tar';
+    $arrT[4] = '${PESTOROOT}%s/rs/Y%y4/M%m2/%s.bkglforst.%y4%m2%d2_%h2z.tar';
+    $arrT[5] = '${PESTOROOT}%s/jedi/rs/Y%y4/M%m2/%s.jedi_agcmrst.%y4%m2%d2_%h2z.tar';
+    for (@arrT) { printarc("$_\n") }
     closearc();
 }
 
@@ -235,8 +229,8 @@ sub restart_info {
 #=======================================================================
 sub gsiobs_info {
     my ($label, $line);
-    my (@convlist, @satlist, @ozlist, $conv, $sat, $oz, $dline1, $dline2, $dline3, $dline4);
-    my (%convlist, %satlist, %ozlist);
+    my ($conv, $sat, $oz, $dline1, $dline2, $dline3, $dline4);
+    my (@convlist, @satlist, @ozlist, %convlist, %satlist, %ozlist);
 
     $label = "#\n"
         .    "#   --------------------\n"
@@ -442,6 +436,7 @@ sub append_other_info {
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg.prs.%y4%m2%d2_%h2z.nc4
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg.sfc.%y4%m2%d2_%h2z.iter%c.nc4
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.cbkg%c%c.eta.%y4%m2%d2_%h2z.nc4
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.extbkg%c%c.eta.%y4%m2%d2_%h2z.nc4
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.finc.eta.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.%s.nc4
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.inc.eta.%y4%m2%d2_%h2z.nc4
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.inc.eta.%y4%m2%d2_%h2z.iter%c.nc4
@@ -479,6 +474,7 @@ sub append_other_info {
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg.prs.%y4%m2%d2_%h2%n2z.nc4
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bkg.sfc.%y4%m2%d2_%h2%n2z.iter%c.nc4
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.cbkg%c%c.eta.%y4%m2%d2_%h2%n2z.nc4
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.extbkg%c%c.eta.%y4%m2%d2_%h2%n2z.nc4
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.inc.eta.%y4%m2%d2_%h2%n2z.nc4
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.inc.eta.%y4%m2%d2_%h2%n2z.iter%c.nc4
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.inc.sfc.%y4%m2%d2_%h2%n2z.nc4

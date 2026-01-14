@@ -708,6 +708,7 @@ sub write_silo_mstorage_arc {
     print MSTORE $label;
 
     foreach $name (@topList) {
+        next if $name =~ m/^bkg.lfo_/;
         $silo = $cdef{"$name.silo.N1"};
         $template = $cdef{"$name.template.N1"};
         if ($fcstFLG and $template =~ m/^(.+)\.(.+)$/) {
