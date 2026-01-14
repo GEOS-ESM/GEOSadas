@@ -35,7 +35,7 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  branch: g5.42.2-with-main-updates
+  tag: v5.42.3
   sparse: ./config/GMAO_Shared.sparse
   develop: main
 
@@ -48,14 +48,14 @@ GMAOpyobs:
 AeroML:
   local: ./src/Shared/@AeroML
   remote: ../AeroML.git
-  tag: rt1.0.0-cak_tag0
+  tag: v5.42.0
   develop: develop
   sparse: ./config/AeroML.sparse
 
 GEOS_Util:
   local: ./src/Shared/@GMAO_Shared/@GEOS_Util
   remote: ../GEOS_Util.git
-  tag: g5.42.0
+  tag: v5.42.0
   develop: main
 
 GMAO_perllib:
@@ -86,19 +86,19 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  tag: v5.42.6
+  tag: v5.42.8
   develop: develop
 
 mksi:
    local: ./src/Components/@GEOSana_GridComp/GEOSaana_GridComp/GSI_GridComp/@mksi
    remote: ../GEOS_mksi.git
-   tag: v5.42.7
+   tag: v5.42.8
    develop: develop
 
 GEOSgcm_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp
   remote: ../GEOSgcm_GridComp.git
-  tag: g2.7.0.1
+  tag: v2.7.0.1
   sparse: ./config/GEOSgcm_GridComp.sparse
   develop: develop
 
@@ -117,7 +117,7 @@ g5pert:
 GEOSagcmPert_GridComp:
   local: ./src/Components/@GEOSagcmPert_GridComp
   remote: ../GEOSagcmPert_GridComp.git
-  tag: rt5.41.1
+  tag: v5.41.2
   develop: main
 
 FVdycoreCubed_GridComp:
@@ -251,7 +251,7 @@ umwm:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  tag: v2.3.8.6
+  tag: v2.3.8.7
   develop: develop
 
 Ocean-LETKF:
