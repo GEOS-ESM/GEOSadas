@@ -92,8 +92,7 @@ GEOSana_GridComp:
 mksi:
    local: ./src/Components/@GEOSana_GridComp/GEOSaana_GridComp/GSI_GridComp/@mksi
    remote: ../GEOS_mksi.git
-   branch: feature/pcastell/viirs_updates
-#   tag: v5.42.8
+   tag: v5.42.8
    develop: develop
 
 GEOSgcm_GridComp:
