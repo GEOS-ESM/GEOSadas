@@ -44,7 +44,7 @@ setenv JEDI_FV3VAR_MPIRUN "mpirun -perhost @JEDI_VAR_PERHOST -np $JEDI_NCPUS"
 setenv JEDI_MKIAU_MPIRUN "mpirun "
 
 setenv JEDI_STATIC_FILES @JEDI_STATIC_FILES
-setenv JEDI_CRTM_COEFFS  $JEDI_STATIC_FILES/jedi/crtm_coefficients/2.4.1/
+setenv JEDI_CRTM_COEFFS  $FVHOME/fvInput/gsi/etc/JEDI-CRTM-2.4.1j1-GMAO/Little_Endian/
 setenv JEDI_INPUT @JEDI_INPUT
 
 # post
