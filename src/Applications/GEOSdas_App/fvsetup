@@ -341,6 +341,7 @@
 # 25Jul2017 Holdaway   Added resource files associated with NGGPS FV3 tlm/adjoint, sens and svec
 # 19Jul2018 Wargan     Additions for OMPS
 # 2022,2024 sqz        Additions for LADAS 
+# 2025      sqz        integrated setup for LADAS 
 #-------------------------------------------------------------------------
 use Cwd qw(abs_path cwd);
 use English;
@@ -590,21 +591,22 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
   die "Failed to fix GOCART levels-referencing $!" if ( $rc );
 
 # Call LDAS setup script.
-#  Provide LDAS config input files in $ldassetup/: det_exeinp.txt, det_batinp.txt. 
-#  For Hyb-4dEnVar, do same for ens_exeinp.txt, ens_batinp.txt. 
-#  See GEOSldas/README.md for generating sample config input files.
 # ------------------------------------------------------------------------
     print "\n checkprintout  ldas_ana == 1 ($ldas_ana)\n";
     if ($ldas_ana == 1 ) {
-        $cmd = "$fvbin/ldas_setup setup $fvhome/lana --account $gid --nymdb $nymdb --nhmsb $nhmsb $ldassetup/det_exeinp.txt $ldassetup/det_batinp.txt";
+        get_nens4ldas();
+        $cmd     = "$fvbin/ldas_setup setup $fvhome/lana dummy_exeinp dummy_batinp -v --account $gid --nymdb $nymdb --nhmsb $nhmsb --ladas_cpl 1 --agcm_res $agcm_im4 --varwindow $varwindow --bcs_version $landbcs --rstloc $ldasics4det --nens $ldas_nens_det";
         print "$cmd\n";
         $rc = system $cmd;
         die "Failed to setup LDAS for det, check LDAS config input files $!" if ( $rc );
         chomp($aens_replay);
         if (($hyb_ens == 4) && ($aens_replay eq "no")) { 
-           $rc = system("$fvbin/ldas_setup setup $fvhome/lana --account $gid --nymdb $nymdb --nhmsb $nhmsb $ldassetup/ens_exeinp.txt $ldassetup/ens_batinp.txt");
-           die "Failed to setup LDAS for ens, check LDAS config input files $!" if ( $rc );
-       }
+            $aens_im4 = sprintf "%04i", $aens_im ;
+	    $cmd = "$fvbin/ldas_setup setup $fvhome/lana dummy_exeinp dummy_batinp -v --account $gid --nymdb $nymdb --nhmsb $nhmsb --ladas_cpl 2 --agcm_res $aens_im4 --varwindow $varwindow --bcs_version $landbcs --rstloc $ldasics4ens --nens $ldas_nens_atmens";
+	    print "$cmd\n";
+	    $rc = system $cmd;
+	    die "Failed to setup LDAS for ens, check LDAS config input files $!" if ( $rc );
+	}
      }
     
 # Monthly Setup
@@ -3541,30 +3543,37 @@ sub set_ldasANA {
         $ldas_ana = 1;
         $ldas_flag = 1;
 
-        $prompt = "  Location of LDAS initial forcing ";
-        $dflt = $fvics;
-        $dflt = dirname($fvics) unless -d $fvics;
+        $prompt = "  Location of LDAS initial surface met forcing (bkg.lfo) ";
+        $dflt = $drstloc;
+        $dflt = dirname($drstloc) unless -d $drstloc;
 
         $ldashold = query($prompt, $dflt);
             die ">>> Error <<< Cannot find directory, $ldashold;"
                 unless -d $ldashold;
 
         @bkglfo_files = (<$ldashold/*bkg*lfo*${nymdb}_${hhb}*>);
-            die ">>> Error <<< Cannot find bkglfo files in $ldashold;"
+            die ">>> Error <<< Cannot find bkg.lfo files in $ldashold;"
                 unless scalar(@bkglfo_files);
         
         $dflt = "n";
-        $ans2 = query("  Enable LDAS feedback to model y/n?", $dflt);
+        $ans2 = query("  Enable LDAS feedback to atm model y/n?", $dflt);
         if (yes($ans2)) {
             $ldasfdbk = 1;
         }
-        $dflt = "/discover/nobackup/$user/ldasSaveInput";
-        $ldassetup = query("  LDAS setup input path?", $dflt);
-      
+ 
+        $dflt        = "/discover/nobackup/$user/ldas_exp_C360/";
+        $prompt      = "  Location of LDAS initial conditions for deterministic component? (full_path/ldas_exp) ";
+        $ldasics4det = query($prompt, $dflt);
+           die ">>> Error <<< Cannot find directory, $ldasics4det;"
+                unless -d $ldasics4det;
+
         if ($hyb_ens == 4 ) {
-            $dflt = "/discover/nobackup/$user/ldasSaveInput";
-            $ldassetup4ens = query("  LDAS setup input path for ens?", $dflt);
-        }
+            $dflt        = "/discover/nobackup/$user/ldas_exp_C90/";
+            $prompt      = "  Location of LDAS initial conditions for ens? (full_path/ldas_exp) ";
+            $ldasics4ens = query($prompt);
+            die ">>> Error <<< Cannot find directory, $ldasics4ens;"
+                unless -d $ldasics4ens;
+	}
     }
     return 0;
 }
@@ -3852,7 +3861,39 @@ EOF
       $cmd = "get_atmens_rst.pl $flags $src_arcdir $expid $nymdb $hhb";
       print("$cmd\n");
       system($cmd);
+      $atm_nens_install = 'yes' ;
+  } else { 
+      # $src_arcdir == 'later' (user wants to provide atm ens restarts later) 
+      $dflt = 32 ;
+      $prompt = "  anticipated number of ensemble members to be installed 'later': ";
+      $atm_nens_input = query($prompt, $dflt);
+      $atm_nens_install = 'None';
   }
+}
+
+#======================================================================
+sub get_nens4ldas { 
+    $atm_nens         = -9999;
+    $ldas_nens_det    = -9999;
+    $ldas_nens_atmens = -9999; 
+   
+    if ($atm_nens_install == 'None' ){
+       $atm_nens = $atm_nens_input;
+    } 
+    if ($atm_nens_install == 'yes' ){
+       @enslist = (<$fvhome/atmens/mem???>);
+       if ( scalar(@enslist) > 1 ) {
+           $atm_nens = scalar(@enslist);
+       } 
+    } 
+    
+    $ldasics_det = "$ldasics4det/output/CF${agcm_im4}x6C_GLOBAL";
+    @enslist = (<$ldasics_det/rs/ens????>);
+    if ( scalar(@enslist) > 1 ) {
+        $ldas_nens_det = scalar(@enslist);
+    }
+
+    $ldas_nens_atmens = $atm_nens;
 }
 
 #=======================================================================
