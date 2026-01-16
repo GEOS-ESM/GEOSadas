@@ -195,6 +195,8 @@ OBS_INPUT::
 !  tmibufr        tmi         trmm        tmi_trmm              0.0     1      0        gmao_tmi_bufr
    gmibufr        gmi         gpm         gmi_gpm               0.0     1      0        gmao_gmi_bufr
    amsr2bufr      amsr2       gcom-w1     amsr2_gcom-w1         0.0     1      0        gmao_amsr2_bufr
+   abibufr        abi         g16         abi_g16               0.0     1      0        ncep_goescsr_bufr
+   abibufr        abi         g18         abi_g18               0.0     1      0        ncep_goescsr_bufr
 ! The following needs to be set for oneob-test:
 !  prepqc         dummy       dummy       dummy                 1.0     1      0        test
 ::

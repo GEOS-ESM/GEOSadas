@@ -129,6 +129,18 @@ DataSourceTable::
   320  MYDD        -100  MODIS/AQUA-Land (Deep Blue)
   323  ANET        -100  AERONET
   324  AVHRR       -100  AVHRR NNR Retrievals
+  335  VSNPPDBD    -100  VIIRS SNPP Deep Blue Deep
+  336  VSNPPDTL    -100  VIIRS SNPP Dark Target Land
+  337  VSNPPDTO    -100  VIIRS SNPP DARK Target Ocean
+  338  VN20DBL     -100  VIIRS NOAA20 Deep Blue LAND
+  339  VN20DBO     -100  VIIRS NOAA20 Deep Blue OCEAN
+  340  VN20DBD     -100  VIIRS NOAA20 Deep Blue DEEP
+  341  VN20DTL     -100  VIIRS NOAA20 Dark Target LAND
+  342  VN20DTO     -100  VIIRS NOAA20 Dark Target OCEAN
+  343  LANET       -100  Lunar Aeronet  
+  344  VN21DTL     -100  VIIRS NOAA21 Dark Target LAND
+  345  VN21DTO     -100  VIIRS NOAA21 Dark Target OCEAN
+  346  VN21DBD     -100  VIIRS NOAA21 Deep Blue DEEP
 
 ::      # End of DataSourceTable
 
@@ -203,6 +215,46 @@ ObsErr*ANET::   # kx = 323
 ::
 
 ObsErr*AVHRR::   # kx = 324 (like MYDO)
+  q_UprAir.u  0.22   0.21   0.20   0.19 
+::
+
+ObsErr*VSNPPDBD::   # kx = 335
+  q_UprAir.u  0.22   0.21   0.20   0.19
+::
+
+ObsErr*VSNPPDTO::   # kx = 336
+  q_UprAir.u  0.19   0.19   0.18   0.18
+::
+
+ObsErr*VSNPPDTL::   # kx = 337
+  q_UprAir.u  0.19   0.19   0.18   0.18
+::
+
+ObsErr*VN20DTL::   # kx = 341
+  q_UprAir.u  0.19   0.19   0.18   0.18
+::
+
+ObsErr*VN20DTO::   # kx = 342
+  q_UprAir.u  0.19   0.19   0.18   0.18
+::
+
+ObsErr*VN20DBD::   # kx = 340
+  q_UprAir.u  0.22   0.21   0.20   0.19
+::
+
+ObsErr*VN21DTL::   # kx = 344
+  q_UprAir.u  0.19   0.19   0.18   0.18
+::
+
+ObsErr*VN21DTO::   # kx = 345
+  q_UprAir.u  0.19   0.19   0.18   0.18
+::
+
+ObsErr*VN21DBD::   # kx = 346
+  q_UprAir.u  0.22   0.21   0.20   0.19
+::
+
+ObsErr*LANET::   # kx = 343  -- same as ANET for now
   q_UprAir.u  0.22   0.21   0.20   0.19 
 ::
 
