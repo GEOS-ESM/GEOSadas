@@ -2874,7 +2874,7 @@ exit 1
       fname2 @ acqstatus = \$acqstatus + \$status
       fname2 @ acqcnt ++
       if ($obsflag == 1) then
-          fname2 setup_gaas_obs.pl \$FVWORK -v -avhrr -modis
+          fname2 setup_gaas_obs.pl \$FVWORK -v -avhrr -modis -viirs
       endif
   endif
   if ( $?obsclass ) then
@@ -4432,11 +4432,11 @@ endif
 
      if ($aod_obs == vn20aerdt_002_flk) then
          setenv VIIRS_L2_HDF 1
-         sed -i "s/#___NOAA20DT_NRT__//" $ana_rc
+         sed -i "s/#___NOAA20DT_NRT___//" $ana_rc
      endif
      if ($aod_obs == vn20aerdb_002_flk) then
          setenv VIIRS_L2_HDF 1
-         sed -i "s/#___NOAA20DB_NRT__//"    $ana_rc
+         sed -i "s/#___NOAA20DB_NRT___//"    $ana_rc
      endif
 
      set dtype = `$FVROOT/bin/aod_data.py aod_type $aod_obs $AERO_OBSDBRC`

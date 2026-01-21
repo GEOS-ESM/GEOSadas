@@ -35,20 +35,23 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  tag: v5.42.3
+  branch: feature/fixes4viirs
+# tag: v5.42.3
   sparse: ./config/GMAO_Shared.sparse
   develop: main
 
 GMAOpyobs:
   local: ./src/Shared/@GMAO_Shared/@GMAO_pyobs
   remote: ../GMAOpyobs.git
-  tag: v1.0.6.1
+  branch: feature/fixes4viirs
+# tag: v1.5.0
   develop: develop
 
 AeroML:
   local: ./src/Shared/@AeroML
   remote: ../AeroML.git
-  tag: v1.4.0
+# tag: v1.4.0
+  tag: feature/fixes4viirs
   develop: develop
   sparse: ./config/AeroML.sparse
 
