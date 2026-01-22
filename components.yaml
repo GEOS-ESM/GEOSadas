@@ -35,22 +35,20 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  branch: feature/fixes4viirs
-# tag: v5.42.3
+  tag: v5.42.4
   sparse: ./config/GMAO_Shared.sparse
   develop: main
 
 GMAOpyobs:
   local: ./src/Shared/@GMAO_Shared/@GMAO_pyobs
   remote: ../GMAOpyobs.git
-  branch: feature/fixes4viirs
-# tag: v1.5.0
+  tag: v1.6.0
   develop: develop
 
 AeroML:
   local: ./src/Shared/@AeroML
   remote: ../AeroML.git
-# tag: v1.4.0
+  tag: v1.5.0
   tag: feature/fixes4viirs
   develop: develop
   sparse: ./config/AeroML.sparse
@@ -58,7 +56,7 @@ AeroML:
 GEOS_Util:
   local: ./src/Shared/@GMAO_Shared/@GEOS_Util
   remote: ../GEOS_Util.git
-  tag: v5.42.0
+  tag: v5.42.1
   develop: main
 
 GMAO_perllib:
@@ -95,7 +93,7 @@ GEOSana_GridComp:
 mksi:
    local: ./src/Components/@GEOSana_GridComp/GEOSaana_GridComp/GSI_GridComp/@mksi
    remote: ../GEOS_mksi.git
-   branch: feature/rtodling/viirs_4-5_42
+   tag: v5.43.0
    develop: develop
 
 GEOSgcm_GridComp:
