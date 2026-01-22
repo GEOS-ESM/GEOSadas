@@ -242,6 +242,15 @@ ObsErr*VN20DBD::   # kx = 340
   q_UprAir.u  0.22   0.21   0.20   0.19
 ::
 
+
+ObsErr*VN20DBL::   # kx = 338
+  q_UprAir.u  0.22   0.21   0.20   0.19
+::
+
+ObsErr*VN20DBO::   # kx = 339
+  q_UprAir.u  0.22   0.21   0.20   0.19
+::
+
 ObsErr*VN21DTL::   # kx = 344
   q_UprAir.u  0.19   0.19   0.18   0.18
 ::
