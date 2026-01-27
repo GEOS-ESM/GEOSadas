@@ -49,7 +49,6 @@ AeroML:
   local: ./src/Shared/@AeroML
   remote: ../AeroML.git
   tag: v1.5.0
-  tag: feature/fixes4viirs
   develop: develop
   sparse: ./config/AeroML.sparse
 
