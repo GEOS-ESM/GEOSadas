@@ -35,20 +35,20 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  tag: v5.42.3
+  tag: v5.42.4
   sparse: ./config/GMAO_Shared.sparse
   develop: main
 
 GMAOpyobs:
   local: ./src/Shared/@GMAO_Shared/@GMAO_pyobs
   remote: ../GMAOpyobs.git
-  tag: v1.0.6.1
+  tag: v1.6.0
   develop: develop
 
 AeroML:
   local: ./src/Shared/@AeroML
   remote: ../AeroML.git
-  tag: v5.42.0
+  tag: v1.5.0
   develop: develop
   sparse: ./config/AeroML.sparse
 
@@ -92,7 +92,7 @@ GEOSana_GridComp:
 mksi:
    local: ./src/Components/@GEOSana_GridComp/GEOSaana_GridComp/GSI_GridComp/@mksi
    remote: ../GEOS_mksi.git
-   tag: v5.42.8
+   tag: v5.43.1
    develop: develop
 
 GEOSgcm_GridComp:
