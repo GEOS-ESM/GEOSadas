@@ -760,20 +760,16 @@ sub defaults {
     @rs5_files = (@rs5_core, @rs5_boot, @rs5_others);
   }
 
-  @ap_files = qw ( errtable
-                   fvpsas.rc
+  @ap_files = qw ( fvpsas.rc
                    noreplay.acq
                    obs.rc
                    prepobs_errtable.global
                    prepobs_oiqc.oberrs
                    prepobs_prep.bufrtable
                    psas.rc
-                   redsondes.rc
-                   sqc.rc
-                   tovs.rc );
+                   sqc.rc );
 
-  @as_files = qw ( errtable
-                   fvpsas.rc
+  @as_files = qw ( fvpsas.rc
                    noreplay.acq
                    prepobs_errtable.global
                    prepobs_oiqc.oberrs
@@ -920,13 +916,11 @@ sub defaults {
 
   @g5rc_files = qw ( AGCM.rc.tmpl
                      GEOS_ChemGridComp.rc
-                     GEOS_ChemGridComp.tmp
                      GCMPROG.rc.tmpl
                      HISTORY.rc.tmpl
                      OBS_GridComp.rc.tmpl
                      saverst.rc 
                      GEOS_SurfaceGridComp.rc
-                     GEOS_SurfaceGridComp.tmp
                      GWD_GridComp.rc
                      logging.yaml );
 
@@ -3099,7 +3093,7 @@ sub get_fvhome {
   if ($ENV{ARCHIVE}) {
      $acqloc = "$ENV{ARCHIVE}";
   } else {
-     $acqloc = "/archive/u/$user";
+     $acqloc = "/discover/nobackup/$user/archive/";
   }
 
 
@@ -3853,7 +3847,7 @@ EOF
 
 # Copy and rename ensemble restarts
 # ---------------------------------
-  $dflt = "/archive/u/$user/$expid";
+  $dflt = "/discover/nobackup/$user/$expid";
   $prompt = "  Experiment archive directory for ensemble restarts or 'later':";
   $src_arcdir = query($prompt, $dflt);
   if (-d $src_arcdir) {
@@ -4637,7 +4631,7 @@ sub get_restart5 {
   $defexp = "u000_${res}${vres}";
   $nymdb = "20190116";
   $nymde = "20190119";
-  @inputs = qw( /archive/u/jstassi/restarts/GEOSadas-5_24_0 );
+  @inputs = qw( /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_42 );
   $defexploc = "$acqloc";
   if ( $do4dvar ) {
     $anastagedir = "/dev/null";
