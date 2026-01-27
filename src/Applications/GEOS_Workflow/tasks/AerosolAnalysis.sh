@@ -70,6 +70,9 @@ touch $AODWORK/.no_archiving
 # Copy over pcf files for NNR
 /bin/cp $FVHOME/run/gaas/avhrr_l2a.pcf $AODWORK
 /bin/cp $FVHOME/run/gaas/modis_l2a.pcf $AODWORK
+if [ -e $FVHOME/run/gaas/viirs_l2a.pcf ]; then
+    /bin/cp $FVHOME/run/gaas/viirs_l2a.pcf $AODWORK
+fi
 
 # Reset value of MODIS_L2A_L2_DIR to $MODIS_STAGE_DIR?
 # "set -u" ensures that this code fails if MODIS_STAGE_DIR is not set
@@ -101,6 +104,7 @@ bnhms=$(grep ^acq_bnhms $TIMEFILE | cut -d":" -f2)
 aero_obsdbrc=${AERO_OBSDBRC:-obsys-gaas.rc} # for custom rc, set this env var
 rcflag="-rc $AERO_OBSDBRC"
 MODIS_L2_HDF=0
+VIIRS_L2_HDF=0
 patmosxFLG=0
 numhrs=$(( $nsteps*6 ))
 aod_obclass=$(obsclass_filter.pl $rcflag $AOD_OBSCLASS $bnymd $bnhms $numhrs)
@@ -128,6 +132,16 @@ for aod_obs in ${aod_obs_list[@]}; do
     if [ "$aod_obs" == "myd04_land_nnr" ]; then
        sed -i "s/#___AQUA___//"    $ana_rc
     fi
+
+    if [ "$aod_obs" == "vn20aerdt_002_flk" ]; then
+       VIIRS_L2_HDF=1
+       sed -i "s/#___NOAA20DT_NRT__//" $ana_rc
+    fi
+    if [ "$aod_obs" == "vn20aerdb_002_flk" ]; then
+       VIIRS_L2_HDF=1
+       sed -i "s/#___NOAA20DB_NRT__//"    $ana_rc
+    fi
+
 
     dtype=$($FVROOT/bin/aod_data.py aod_type $aod_obs $aero_obsdbrc)
 
@@ -190,6 +204,7 @@ touch $GAASFAIL
 sed -e 5i"$line5" < $tmpl > $jobf
 sed -i "s|>>>PATMOSX<<<|${patmosxFLG}|" $jobf
 sed -i "s|>>>MODIS_L2_HDF<<<|${MODIS_L2_HDF}|" $jobf
+sed -i "s|>>>VIIRS_L2_HDF<<<|${VIIRS_L2_HDF}|" $jobf
 
 sed -i "s|>>>AODWORK<<<|${AODWORK}|" $jobf
 sed -i "s|>>>FVHOME<<<|${FVHOME}|" $jobf
