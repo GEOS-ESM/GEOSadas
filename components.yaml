@@ -140,7 +140,7 @@ mom6:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  tag: g1.5.6.3-GEOS-IT-1
+  tag: g1.5.6.3-GEOS-IT-2
   develop: develop
 
 UMD_Etc:
