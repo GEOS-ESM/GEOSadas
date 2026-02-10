@@ -65,7 +65,7 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  tag: g1.5.4.7-IT-sync-1
+  tag: v1.5.4.8-IT-AeroAffectRad
   develop: develop
 
 GEOSgcm_GridComp:
@@ -140,7 +140,7 @@ mom6:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  tag: g1.5.6.3-GEOS-IT-1
+  tag: g1.5.6.3-GEOS-IT-2
   develop: develop
 
 UMD_Etc:
