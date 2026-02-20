@@ -1003,10 +1003,10 @@ sub defaults {
                      DU2G_GridComp_ExtData.rc
                      DU2G_instance_DU.rc
                      DU2G_StateSpecs.rc
-                     GEOSachem_ExtData.rc
-                     GEOS_AChemGridComp.rc
-                     GEOS_AChem_History___.rc
-                     GEOSachem_Registry.rc
+                     ACHEM_GridComp.rc
+                     ACHEM_ExtData.rc
+                     ACHEM_History___.rc
+                     ACHEM_Registry.rc
                      GEOSCHEMCHEM_History___.rc
                      GEOSCHEMchem_Registry.rc
                      GEOS_IgniGridComp.rc
@@ -1029,13 +1029,13 @@ sub defaults {
                      HEMCO_GridComp.rc
                      HEMCO_Registry.rc
                      MAM7_ExtData.rc
-                     MAMchem_GridComp.rc
-                     MAMchem_History___.rc
-                     MAMchem_Registry.rc
                      mam_optics_calculator.rc
-                     MATRIXchem_GridComp.rc
-                     MATRIXchem_History___.rc
-                     MATRIXchem_Registry.rc
+                     MAM_GridComp.rc
+                     MAM_History___.rc
+                     MAM_Registry.rc
+                     MATRIX_GridComp.rc
+                     MATRIX_History___.rc
+                     MATRIX_Registry.rc
                      NI2G_GridComp_ExtData.rc
                      NI2G_instance_NI.rc
                      NI2G_StateSpecs.rc
@@ -1055,6 +1055,9 @@ sub defaults {
                      Rn_GridComp---SoAm.rc
                      Rn_History___.rc
                      Rn_Registry.rc
+                     RRG_GridComp_ExtData.rc
+                     RRG_GridComp_ExtData.yaml
+                     RRG_GridComp.rc
                      SC_GridComp.rc
                      SC_Mech_Registry.rc
                      SC_Registry.rc
@@ -1125,7 +1128,7 @@ sub defaults {
                         DNA_ExtData.yaml
                         DU2G_GridComp_ExtData.yaml
                         GAAS_GridComp_ExtData.yaml
-                        GEOSachem_ExtData.yaml
+                        ACHEM_ExtData.yaml
                         GMI_ExtData.yaml
                         HEMCOgmi_ExtData.yaml
                         HEMCOgocart2g_ExtData.yaml
@@ -1143,7 +1146,7 @@ sub defaults {
 #                       AMIP/CO2_GridComp_ExtData.yaml
 #                       AMIP/CFC_GridComp_ExtData.yaml
 #                       AMIP/Rn_GridComp_ExtData.yaml
-#                       AMIP/GEOSachem_ExtData.yaml
+#                       AMIP/ACHEM_ExtData.yaml
 #                       AMIP/CH4_GridComp_ExtData.yaml
 #                       AMIP/NI2G_GridComp_ExtData.yaml
 #                       AMIP/SS2G_GridComp_ExtData.yaml
@@ -10115,6 +10118,8 @@ sub init_agcm_rc {
     #------------------
     $rats = "PCHEM";
     $oanp = "PCHEM";
+    $ch4p = "none";
+    $co2p = "none";
     if ( $gocart_tracers ) { $aero = "GOCART2G";}
     else                   { $aero = "GOCART.data"; }
     if ( $cubed ) { 
@@ -10197,6 +10202,8 @@ sub init_agcm_rc {
     AGCM_label_subst("\@RATS_PROVIDER",  $rats);
     AGCM_label_subst("\@AERO_PROVIDER",  $aero);
     AGCM_label_subst("\@OANA_PROVIDER",  $oanp);
+    AGCM_label_subst("\@CH4_PROVIDER",   $ch4p);
+    AGCM_label_subst("\@CO2_PROVIDER",   $co2p);
 
     AGCM_label_subst("\@PCHEM_CLIM_YEARS", 1);
 

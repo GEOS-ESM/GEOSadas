@@ -5,7 +5,7 @@ GEOSadas:
 env:
   local: ./@env
   remote: ../ESMA_env.git
-  tag: v4.29.1
+  tag: v4.29.1.1
   develop: main
 
 cmake:
@@ -92,13 +92,13 @@ GEOSana_GridComp:
 mksi:
    local: ./src/Components/@GEOSana_GridComp/GEOSaana_GridComp/GSI_GridComp/@mksi
    remote: ../GEOS_mksi.git
-   tag: v5.43.1
+   tag: v5.43.2
    develop: develop
 
 GEOSgcm_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp
   remote: ../GEOSgcm_GridComp.git
-  tag: v2.7.0.2
+  tag: v2.7.6
   sparse: ./config/GEOSgcm_GridComp.sparse
   develop: develop
 
