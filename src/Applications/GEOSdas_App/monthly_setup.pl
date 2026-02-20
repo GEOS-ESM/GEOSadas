@@ -178,8 +178,8 @@ sub write_plotfiles {
     $outfil = "$run_mp_dir/plot/gcm_plot.tmpl";
 
     %values = ();
-    $values{"\@PLOT_T"} = "12:00:00";
-    $values{"\@PLOT_P"} = "SBATCH --nodes=4";
+    $values{"\@PLOT_T"} = "18:00:00";
+    $values{"\@PLOT_P"} = "SBATCH --nodes=2";
     $values{"\@PLOT_Q"} = "SBATCH --constraint=$thisnode";
     $values{"\@BATCH_GROUP"} = "SBATCH --account=$GID";
     $values{"\@SITE"} = uc($siteID);
