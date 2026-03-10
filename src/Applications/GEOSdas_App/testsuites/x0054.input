@@ -1,9 +1,9 @@
 #------------
-# x0054RPYa.input
+# x0054.input
 #------------
 
 codeID: 523f29e
-description: x0054RPYa__GEOSadas-5_44_0__agrid_C360__ogrid_C
+description: x0054__GEOSadas-5_44_4__agrid_C360__ogrid_C
 fvsetupID: f7aaa973c7
 
 ---ENDHEADERS---
@@ -29,7 +29,7 @@ EXPID? [u000_C360]
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [x0054RPYa__GEOSadas-5_44_0__agrid_C360__ogrid_C]
+EXPDSC? [x0054__GEOSadas-5_44_4__agrid_C360__ogrid_C]
 > 
 
 Land Boundary Conditions? [Icarus_Updated]
@@ -38,10 +38,10 @@ Land Boundary Conditions? [Icarus_Updated]
 Catchment Model choice? [1]
 > 
 
-FVHOME? [/discover/nobackup/rtodling/x0054RPYa]
-> /discover/nobackup/projects/gmao/dadev/rtodling/545/$expid
+FVHOME? [/discover/nobackup/rtodling/x0054]
+> /discover/nobackup/projects/gmao/dadev/rtodling/544/$expid
 
-The directory /discover/nobackup/projects/gmao/dadev/rtodling/545/x0054RPYa already exists. Clean it? [y]
+The directory /discover/nobackup/projects/gmao/dadev/rtodling/544/x0054 already exists. Clean it? [y]
 > 
 
 Processing nodes (1:Haswell, 2:Skylake, 3:Cascase, 4:Milan)? [2]
@@ -98,11 +98,11 @@ Run singular vector experiments (0=n,1=yes)? [0]
 Run analysis-sensitivity applications (0=no,1=yes)? [0]
 > 1
 
-Verifying experiment id: [x0054RPYa]
+Verifying experiment id: [x0054]
 > 
 
 Ending year-month-day? [20191121]
-> 20260106
+> 20260306
 
 Length of FORECAST run segments (in hours)? [123]
 > 
@@ -207,7 +207,7 @@ Do Aerosol Analysis (y/n)? [y]
 > 
 
 AOD OBSERVING CLASSES [or type 'none']?
-> vn20aerdt_002_flk,vn20aerdb_002_flk,aeronet_obs_llk
+> mod04_061_flk,myd04_061_flk,vn20aerdt_002_flk,vn20aerdb_002_flk,aeronet_obs_llk
 
 Enable GAAS feedback to model (y/n)? [y]
 > 
@@ -225,13 +225,19 @@ Select group: [s0818]
 > g0613
 
 Replayed Ensemble (from OPS)?  [yes]
+> no
+
+Use SPPT-scheme for Ensemble?  [yes]
 > 
 
-Replay exp name? [x0046d]
-> f5421_fpp
+Ensemble Resolution?  [C90]
+> 
 
-Replay archive directory? [/discover/nobackup/projects/gmao/dadev/rtodling/archive/x0046d]
-> /home/dao_ops/f5421_fpp/run/.../archive/
+Ensemble Vertical Levels?  [72]
+> 
+
+Experiment archive directory for ensemble restarts or 'later': [/archive/u/rtodling/x0054]
+> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_44/c360
 
 Edit COLLECTIONS list in run/HISTORY.rc.tmpl (y/n)? [n]
 > 
