@@ -936,7 +936,7 @@ exit 1
      endsw
 
      # control satwnd source based on date ...
-     if ( $beg_ana[1] < 20100701 ) then
+     if ( $end_ana[1] < 20130101 ) then
         echo "s/>>>USE_PREPB_SATWND<<</.true./g"  >> sed_file
      else
         echo "s/>>>USE_PREPB_SATWND<<</.false./g" >> sed_file
@@ -1155,7 +1155,7 @@ exit 1
      endsw
 
       # control satwnd source based on date ...
-     if ( $beg_ana[1] < 20100701 ) then
+     if ( $end_ana[1] < 20130101 ) then
         echo "s/>>>USE_PREPB_SATWND<<</.true./g"  >> sed_file
      else
         echo "s/>>>USE_PREPB_SATWND<<</.false./g" >> sed_file
