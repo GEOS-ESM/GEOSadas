@@ -154,7 +154,7 @@ endif
         touch    ../updated_ens/ensdiag/.no_archiving
         set fntype_all = (`edhist.pl -q 3 -list inc -X Bkg.eta,bkg.eta,bkg.sfc,abkg.eta,cbkg.eta,gaas_bkg.sfc,bkg.lfo_inst,bkg.lfo_tavg -i $rcfile`)
         foreach fntype ( $fntype_all )
-           if ( $fntype == "bkg_clcv" ) then
+           if ( $fntype == "bkg_clcv" || $fntype == "extbkg_clcv" ) then
               if ( ! -d   ../updated_ens/ensbkgx/${member} ) then
                  mkdir -p ../updated_ens/ensbkgx/${member}
                  touch    ../updated_ens/ensbkgx/.no_archiving

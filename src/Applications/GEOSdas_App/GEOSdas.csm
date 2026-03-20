@@ -142,6 +142,7 @@
   if ( !($?LDAS_ANA) )            setenv LDAS_ANA      0
   if ( !($?LDHOME) )              setenv LDHOME        none
   if ( !($?LOCAL_ACQUIRE) )       setenv LOCAL_ACQUIRE 0
+  if ( !($?LINKBCS_PY) )          setenv LINKBCS_PY    0
   if ( !($?MAP05RST) )            setenv MAP05RST      0
   if ( !($?MKRESRST ) )           setenv MKRESRST      0
   if ( !($?MONTHLY_RADMON) )      setenv MONTHLY_RADMON 0
@@ -701,6 +702,7 @@ exit 1
 
 
   set GcmBegDate = $mydate[1]
+  set GcmBegTime = $mydate[2] # for consistency
                               # Last line of CopyGcmRestarts4DAS_
 \end
 
@@ -3509,7 +3511,22 @@ endif
 
 #          Link to GEOS-5 GCM boundary condition files
 #          -------------------------------------------
-           lnbcs $nymdb || exit 95 
+           if ( $LINKBCS_PY ) then
+             set yyyyb = `echo $nymdb | cut -c1-4`
+             set   mmb = `echo $nymdb | cut -c5-6`
+             set   ddb = `echo $nymdb | cut -c7-8`
+             set   hhb = `echo $nhmsb | cut -c1-2`
+             set   mnb = `echo $nhmsb | cut -c3-4`
+             set isonow = ${yyyyb}-${mmb}-${ddb}T${hhb}:${mnb}:00
+             if ( -e linkbcs.yaml ) then
+                linkbcs.py --config linkbcs.yaml --timestamp $isonow
+             else
+               echo "Cannot find resources file with linkbcs information"
+               Call AbnormalExit_( 2 )
+             endif
+           else
+             lnbcs $nymdb || exit 95 
+           endif
 
 
 #          GEOS-5 GCM, need to convert ana "eta" files into rst (and overwrite existing rsts for fvcore and moist)

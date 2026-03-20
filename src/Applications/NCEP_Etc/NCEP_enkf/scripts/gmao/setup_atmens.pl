@@ -459,6 +459,7 @@ cp("$FVROOT/bin/atm_ens.j","$FVHOME/run");
 # generate boundary condition script
 $cmd = "$FVROOT/bin/gen_lnbcs.pl $cubed $bcopt -o $FVHOME/run/lnbcs_ens $aim $ajm $ogrid $lndbcs";
 $rc = system($cmd);
+build_lnbcs_yaml();
 
 # make sure .no_archiving exists in ATMENS
 if ( ! -d "$ATMENS" ) {
@@ -917,6 +918,61 @@ sub ed_g5fvlay_rc {
 # }
 
 }
+#......................................................................
+ 
+sub build_lnbcs_yaml {
+
+  my ( $ocean_grid_choice, $precip_correction, $catchcn );
+  my ( $ocean_model, $seaice_model, $lc_res );
+
+  #reynolds, merra-2, ostia, cubed_sphere_ostia, cubed_sphere_ostia_r21c
+  $ocean_grid_choice  = "cubed_sphere_ostia";
+  if ( $ogcm_grid_type eq "Cubed-Sphere" ) {
+    if ( $opt_r21c ) {
+       $ocean_grid_choice  = "cubed_sphere_ostia_r21c";
+    }
+  } else {
+    $ocean_grid_choice  = "ostia";
+  }
+
+  $precip_correction = "False";
+  if ( $pcp_forced ) {
+    $precip_correction = "True";
+  }
+
+  $catchcn = "False";
+  if ( $lsmchoice == 2 ){
+     $catchcn = "True";
+  }
+
+  #cice4 or cice6 (this entry is only required for coupled ocean)
+  $ocean_model = "data";
+  $seaice_model = "null";
+  if ($coupled) {
+    $ocean_model = "mom6";
+    $seaice_model = "cice6";
+  }
+
+  $lc_res = "c$agcm_im";
+
+  open(SCRIPT,">$fvhome/run/linkbcs_ens.yaml") or
+       die ">>> ERROR <<< cannot write $fvhome/run/linkbcs_ens.yaml";
+print  SCRIPT <<"EOF";
+platform: nccs
+experiment_type: ADAS
+agcm_grid: $lc_res
+land_version: $landbcs
+ocean_model: $ocean_model
+ogcm_grid: $ocean_grid_choice
+seaice_model: $seaice_model
+precip_correction: $precip_correction
+catchcn: $catchcn
+pchem_species: ops # or cmip, s2s, merra-2
+install_dir: $fvroot
+EOF
+
+}
+
 #......................................................................
 
 sub usage {

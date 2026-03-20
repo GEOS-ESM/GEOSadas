@@ -583,6 +583,7 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
 # Allow user to edit resources/scripts
 # ------------------------------------
   build_lnbcs();
+  build_lnbcs_yaml();
   edit_resources();   # *** silo.arc is created here
 
 # For now, fix GOCART RC files (vertical level referencing)
@@ -7989,6 +7990,73 @@ sub build_lnbcs {
   }
   print "$cmd\n";
   system($cmd);
+}
+
+#=======================================================================
+sub build_lnbcs_yaml {
+
+  my ( $ocean_grid_choice, $precip_correction, $catchcn );
+  my ( $land_version, $ocean_model, $seaice_model, $lc_res );
+
+  $bcopt = "";
+  if ( $merra2 ) { 
+     $bcopt = "-merra2" ;
+  }elsif ( $r21c ) {
+     $bcopt = "-r21c";
+  }elsif ($geosit) {
+     $bcopt = "-geosit"; 
+  }
+  #reynolds, merra-2, ostia, cubed_sphere_ostia, cubed_sphere_ostia_r21c
+  $ocean_grid_choice  = "cubed_sphere_ostia";
+  if ( $ogcm_grid_type eq "Cubed-Sphere" ) {
+    if ( $r21c ) {
+       $ocean_grid_choice  = "cubed_sphere_ostia_r21c";
+    }
+  } else {
+    $ocean_grid_choice  = "ostia";
+  }
+
+  $precip_correction = "False";
+  if ( $pcp_forced ) {
+    $precip_correction = "True";
+  }
+
+  $catchcn = "False";
+  if ( $lsmodel_flag == 2 ){
+     $catchcn = "True";
+  }
+
+  $land_version = "icarus-NLv3"; 
+  if ( $landbcs eq "Icarus_Updated" ) {
+     $land_version = "icarus"; 
+  }
+
+  #cice4 or cice6 (this entry is only required for coupled ocean)
+  $ocean_model = "data";
+  $seaice_model = "null";
+  if ($coupled) {
+    $ocean_model = "mom6";
+    $seaice_model = "cice6";
+  }
+
+  $lc_res = lc($res);
+
+  open(SCRIPT,">$fvhome/run/linkbcs.yaml") or
+       die ">>> ERROR <<< cannot write $fvhome/run/linkbcs.yaml";
+print  SCRIPT <<"EOF";
+platform: nccs
+experiment_type: ADAS
+agcm_grid: $lc_res
+land_version: $land_version
+ocean_model: $ocean_model
+ogcm_grid: $ocean_grid_choice
+seaice_model: $seaice_model
+precip_correction: $precip_correction
+catchcn: $catchcn
+pchem_species: ops # or cmip, s2s, merra-2
+install_dir: $fvroot
+EOF
+
 }
 
 #=======================================================================
