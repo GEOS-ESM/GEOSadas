@@ -158,11 +158,11 @@ endif
               if ( ! -d   ../updated_ens/ensbkgx/${member} ) then
                  mkdir -p ../updated_ens/ensbkgx/${member}
                  touch    ../updated_ens/ensbkgx/.no_archiving
-                 foreach fn ( `/bin/ls $expid.${fntype}.*.${member}.$ncsuffix` )
-                    set newname = `echo $fn | cut -d. -f1-3 `
-                    /bin/mv $fn ../updated_ens/ensbkgx/${member}/$newname.$ncsuffix
-                 end # fn
               endif
+              foreach fn ( `/bin/ls $expid.${fntype}.*.${member}.$ncsuffix` )
+                 set newname = `echo $fn | cut -d. -f1-3 `
+                 /bin/mv $fn ../updated_ens/ensbkgx/${member}/$newname.$ncsuffix
+              end # fn
            else 
               foreach fn ( `/bin/ls $expid.${fntype}.*.${member}.$ncsuffix` )
                  set newname = `echo $fn | cut -d. -f1-3 `
