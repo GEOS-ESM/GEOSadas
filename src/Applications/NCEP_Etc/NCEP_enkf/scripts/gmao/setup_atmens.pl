@@ -955,8 +955,8 @@ sub build_lnbcs_yaml {
 
   $lc_res = "c$agcm_im";
 
-  open(SCRIPT,">$fvhome/run/linkbcs_ens.yaml") or
-       die ">>> ERROR <<< cannot write $fvhome/run/linkbcs_ens.yaml";
+  open(SCRIPT,">$FVHOME/run/linkbcs_ens.yaml") or
+       die ">>> ERROR <<< cannot write $FVHOME/run/linkbcs_ens.yaml";
 print  SCRIPT <<"EOF";
 platform: nccs
 experiment_type: ADAS
