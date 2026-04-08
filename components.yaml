@@ -1,13 +1,13 @@
 GEOSadas:
   fixture: true
-  branch: feature/ygyu/v5.42.12/t1
+  tag: feature/ygyu/v5.42.12/t1
   develop: develop
 
 env:
   local: ./@env
   remote: ../ESMA_env.git
-  branch: feature/ygyu/v5.19.0/Apr8
-  ## tag: v5.19.0        # v5: Update to Baselibs 8.27.0
+  tag: feature/ygyu/v5.19.0/Apr8
+##  tag: v5.19.0        # v5: Update to Baselibs 8.27.0
   develop: main
 
 cmake:
