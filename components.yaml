@@ -5,19 +5,19 @@ GEOSadas:
 env:
   local: ./@env
   remote: ../ESMA_env.git
-  tag: v4.29.1
+  tag: v5.19.0        # v5: Update to Baselibs 8.27.0
   develop: main
 
 cmake:
   local: ./@cmake
   remote: ../ESMA_cmake.git
-  tag: v3.48.0
+  tag: v5.8.0         # up to date 2026-Apr
   develop: develop
 
 ecbuild:
   local: ./@cmake/@ecbuild
   remote: ../ecbuild.git
-  tag: geos/v1.4.0
+  tag: geos/v3.13.1   # up to date 2026-Apr
 
 crtm:
   local: ./src/Shared/JCSDA_crtm/@crtm
