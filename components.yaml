@@ -1,7 +1,6 @@
 GEOSadas:
   fixture: true
-  tag: feature/ygyu/v5.42.12/t1
-  develop: develop
+  develop: feature/ygyu/v5.42.12/t1
 
 env:
   local: ./@env
@@ -13,7 +12,9 @@ env:
 cmake:
   local: ./@cmake
   remote: ../ESMA_cmake.git
-  tag: v5.8.0         # up to date 2026-Apr
+#  tag: v5.8.0         # up to date 2026-Apr
+#  err: FMS::fms not found
+  tag: v3.75.0
   develop: develop
 
 ecbuild:
@@ -37,7 +38,8 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  tag: v5.42.3
+  ## tag: v5.42.3
+  tag:  feature/ygyu/test_GMAO_ncdiag
   sparse: ./config/GMAO_Shared.sparse
   develop: main
 
