@@ -28,23 +28,23 @@ ecbuild:
 ##  tag: geos/v2.4.1-jedi.1+1.1.0
 ##  develop: master
 
-NCEP_Shared:
-  local: ./src/Shared/@NCEP_Shared
-  remote: ../NCEP_Shared.git
-  tag: v5.42.3
-  sparse: ./config/NCEP_Shared.sparse
+#NCEP_Shared:
+#  local: ./src/Shared/@NCEP_Shared
+#  remote: ../NCEP_Shared.git
+#  tag: v5.42.3
+#  sparse: ./config/NCEP_Shared.sparse
+#  develop: main
+
+
+
+GMAO_Shared:
+  local: ./src/Shared/@GMAO_Shared
+  remote: ../GMAO_Shared.git
+  ## tag: v5.42.3
+  tag:  feature/ygyu/test_GMAO_ncdiag
+  sparse: ./config/GMAO_Shared.sparse
   develop: main
 
-
-#
-#GMAO_Shared:
-#  local: ./src/Shared/@GMAO_Shared
-#  remote: ../GMAO_Shared.git
-#  ## tag: v5.42.3
-#  tag:  feature/ygyu/test_GMAO_ncdiag
-#  sparse: ./config/GMAO_Shared.sparse
-#  develop: main
-#
 ###GMAOpyobs:
 ###  local: ./src/Shared/@GMAO_Shared/@GMAO_pyobs
 ###  remote: ../GMAOpyobs.git
