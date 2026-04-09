@@ -187,7 +187,7 @@ list( APPEND CRTM_SRCS
   src/Source_Functions/CRTM_Planck_Functions.f90
   src/Surface/CRTM_Surface_Define.f90
   src/Surface/SensorData/CRTM_SensorData_Define.f90
-  src/Test_Utility/UnitTest/UnitTest_Define.f90
+#  src/Test_Utility/UnitTest/UnitTest_Define.f90
   src/Utility/Binary_File_Utility.f90
   src/Utility/Compare_Float_Numbers.f90
   src/Utility/DateTime_Utility/DateTime_Utility.f90
@@ -241,3 +241,7 @@ endif ()
 if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
   target_compile_definitions(${this} PUBLIC NDEBUG)
 endif ()
+
+target_include_directories(${this} PRIVATE
+  ${CMAKE_BINARY_DIR}/include/crtm
+)

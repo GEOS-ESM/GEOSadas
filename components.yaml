@@ -22,14 +22,15 @@ ecbuild:
   remote: ../ecbuild.git
   tag: geos/v3.13.1   # up to date 2026-Apr
 
+# also works
+#crtm:
+#  local: ./src/Shared/JCSDA_crtm/@crtm
+#  remote: https://github.com/JCSDA-internal/crtm.git
+#  tag:  v2.4.1-jedi.2
+#  develop: develop
+
 crtm:
   local: ./src/Shared/JCSDA_crtm/@crtm
-  remote: https://github.com/JCSDA-internal/crtm.git
-  tag:  v2.4.1-jedi.2
-  develop: develop
-
-##crtm:
-##  local: ./src/Shared/JCSDA_crtm/@crtm
-##  remote: ../crtm.git
-##  tag: geos/v2.4.1-jedi.1+1.1.0
-##  develop: master
+  remote: ../crtm.git
+  tag: geos/v2.4.1-jedi.1+1.1.0
+  develop: master
