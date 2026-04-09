@@ -1,0 +1,35 @@
+GEOSadas:
+  fixture: true
+  develop: feature/ygyu/v5.42.12/t1
+
+env:
+  local: ./@env
+  remote: ../ESMA_env.git
+  tag: feature/ygyu/v5.19.0/Apr8
+##  tag: v5.19.0        # v5: Update to Baselibs 8.27.0
+  develop: main
+
+cmake:
+  local: ./@cmake
+  remote: ../ESMA_cmake.git
+#  tag: v5.8.0         # up to date 2026-Apr
+#  err: FMS::fms not found
+  tag: v3.75.0
+  develop: develop
+
+ecbuild:
+  local: ./@cmake/@ecbuild
+  remote: ../ecbuild.git
+  tag: geos/v3.13.1   # up to date 2026-Apr
+
+crtm:
+  local: ./src/Shared/JCSDA_crtm/@crtm
+  remote: https://github.com/JCSDA-internal/crtm.git
+  tag:  v2.4.1-jedi.2
+  develop: develop
+
+##crtm:
+##  local: ./src/Shared/JCSDA_crtm/@crtm
+##  remote: ../crtm.git
+##  tag: geos/v2.4.1-jedi.1+1.1.0
+##  develop: master
