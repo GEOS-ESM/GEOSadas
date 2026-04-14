@@ -21,12 +21,15 @@ ecbuild:
   remote: ../ecbuild.git
   tag: geos/v3.13.1   # up to date 2026-Apr
 
+# s1
 #crtm:
 #  local: ./src/Shared/JCSDA_crtm/@crtm
 #  remote: ../crtm.git
 #  tag: geos/v2.4.1-jedi.1+1.1.0
 #  develop: master
 
+
+# s2
 NCEP_Shared:
   local: ./src/Shared/@NCEP_Shared
   remote: ../NCEP_Shared.git
@@ -34,35 +37,36 @@ NCEP_Shared:
   sparse: ./config/NCEP_Shared.sparse
   develop: main
 
-#
-#GMAO_Shared:
-#  local: ./src/Shared/@GMAO_Shared
-#  remote: ../GMAO_Shared.git
-#  ## tag: v5.42.3
-#  tag:  feature/ygyu/test_GMAO_ncdiag
-#  sparse: ./config/GMAO_Shared.sparse
-#  develop: main
-## When updating the MAPL version, also update the MAPL version in the
-## CMakeLists.txt file for non-Baselibs builds
-#MAPL:
-#  local: ./src/Shared/@MAPL
-#  remote: ../MAPL.git
-#  tag: v2.52.0
-#  develop: develop
-#
-#
-#GEOS_Util:
-#  local: ./src/Shared/@GMAO_Shared/@GEOS_Util
-#  remote: ../GEOS_Util.git
-#  tag: v5.42.0
-#  develop: main
-#
-#GMAO_perllib:
-#  local: ./src/Shared/@GMAO_Shared/@GMAO_perllib
-#  remote: ../GMAO_perllib.git
-#  tag: v1.1.0
-#  develop: main
-#
+# s3
+
+GMAO_Shared:
+  local: ./src/Shared/@GMAO_Shared
+  remote: ../GMAO_Shared.git
+  ## tag: v5.42.3
+  tag:  feature/ygyu/test_GMAO_ncdiag
+  sparse: ./config/GMAO_Shared.sparse
+  develop: main
+# When updating the MAPL version, also update the MAPL version in the
+# CMakeLists.txt file for non-Baselibs builds
+MAPL:
+  local: ./src/Shared/@MAPL
+  remote: ../MAPL.git
+  tag: v2.52.0
+  develop: develop
+
+
+GEOS_Util:
+  local: ./src/Shared/@GMAO_Shared/@GEOS_Util
+  remote: ../GEOS_Util.git
+  tag: v5.42.0
+  develop: main
+
+GMAO_perllib:
+  local: ./src/Shared/@GMAO_Shared/@GMAO_perllib
+  remote: ../GMAO_perllib.git
+  tag: v1.1.0
+  develop: main
+
 
 #FMS:
 #  local: ./src/Shared/@FMS
