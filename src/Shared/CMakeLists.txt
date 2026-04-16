@@ -1,7 +1,7 @@
 esma_add_subdirectories (
 #  JCSDA_crtm
-#  @MAPL
-#  @GMAO_Shared
+  @MAPL
+  @GMAO_Shared
   @NCEP_Shared
 #  @AeroML/src
   )

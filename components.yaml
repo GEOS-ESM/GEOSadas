@@ -37,7 +37,7 @@ NCEP_Shared:
   sparse: ./config/NCEP_Shared.sparse
   develop: main
 
-# s3
+## s3
 
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
@@ -46,6 +46,7 @@ GMAO_Shared:
   tag:  feature/ygyu/test_GMAO_ncdiag
   sparse: ./config/GMAO_Shared.sparse
   develop: main
+
 # When updating the MAPL version, also update the MAPL version in the
 # CMakeLists.txt file for non-Baselibs builds
 MAPL:
@@ -53,7 +54,6 @@ MAPL:
   remote: ../MAPL.git
   tag: v2.52.0
   develop: develop
-
 
 GEOS_Util:
   local: ./src/Shared/@GMAO_Shared/@GEOS_Util
@@ -66,6 +66,7 @@ GMAO_perllib:
   remote: ../GMAO_perllib.git
   tag: v1.1.0
   develop: main
+
 
 
 #FMS:
