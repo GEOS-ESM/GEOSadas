@@ -3,12 +3,12 @@
 #-------------
 
 codeID: 523f29e
-description: j4drpy__GEOSadas-5_42_x__agrid_C360__ogrid_C
+description: j4drpy__GEOSadas-5_43_x__agrid_C360__ogrid_C
 fvsetupID: f7aaa973c7
 
 ---ENDHEADERS---
 
-Remote account for Intranet plots? [dao_it@train]
+Remote account for Intranet plots? [rtodling@train]
 > 
 
 Is this a MERRA2 (1), GEOSIT (2), R21C (3) experiment? [0]
@@ -29,7 +29,7 @@ EXPID? [u000_C360]
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [j4drpy__GEOSadas-5_42_x__agrid_C360__ogrid_C]
+EXPDSC? [j4drpy__GEOSadas-5_43_x__agrid_C360__ogrid_C]
 > 
 
 Land Boundary Conditions? [Icarus_Updated]
@@ -38,10 +38,10 @@ Land Boundary Conditions? [Icarus_Updated]
 Catchment Model choice? [1]
 > 
 
-FVHOME? [/discover/nobackup/dao_it/j4drpy]
-> /discover/nobackup/projects/gmao/dadev/rtodling/JEDI/x51/$expid
+FVHOME? [/discover/nobackup/rtodling/j4drpy]
+> /discover/nobackup/projects/gmao/dadev/rtodling/JEDI/543/$expid
 
-The directory /discover/nobackup/projects/gmao/dadev/rtodling/JEDI/x51/j4drpy already exists. Clean it? [y]
+The directory /discover/nobackup/projects/gmao/dadev/rtodling/JEDI/543/j4drpy already exists. Clean it? [y]
 > 
 
 Processing nodes (1:Haswell, 2:Skylake, 3:Cascase, 4:Milan)? [2]
