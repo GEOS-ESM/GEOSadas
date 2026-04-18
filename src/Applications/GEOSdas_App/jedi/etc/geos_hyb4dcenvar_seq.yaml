@@ -5,7 +5,6 @@ cost function:
   - air_temperature
   - water_vapor_mixing_ratio_wrt_moist_air
   - air_pressure_at_surface
-  - air_pressure_levels
   - cloud_liquid_ice
   - cloud_liquid_water
   - rain_water
@@ -18,8 +17,8 @@ cost function:
   - skin_temperature_at_surface
   background:
     states:
-    - datapath: './'
-      datetime: '$JEDI_ISO_DATE_001'
+    - datetime: $JEDI_ISO_DATE_001
+      datapath: './'
       filenames:
       - bkg.%yyyy%mm%ddT%hh%MM%ssZ.nc4
       - fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKG_HRES.nc4
@@ -103,8 +102,8 @@ cost function:
         air_pressure_levels: pe
         air_pressure_at_surface: ps
         sea_surface_temperature: ts_found
-    - datapath: './'
-      datetime: '$JEDI_ISO_DATE_002'
+    - datetime: $JEDI_ISO_DATE_002
+      datapath: './'
       filenames:
       - bkg.%yyyy%mm%ddT%hh%MM%ssZ.nc4
       - fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKG_HRES.nc4
@@ -114,8 +113,8 @@ cost function:
       max allowable geometry difference: 1e-3
       state variables: *statevars
       field io names: *field_io_names
-    - datapath: './'
-      datetime: '$JEDI_ISO_DATE_003'
+    - datetime: $JEDI_ISO_DATE_003
+      datapath: './'
       filenames:
       - bkg.%yyyy%mm%ddT%hh%MM%ssZ.nc4
       - fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKG_HRES.nc4
@@ -125,8 +124,8 @@ cost function:
       max allowable geometry difference: 1e-3
       state variables: *statevars
       field io names: *field_io_names
-    - datapath: './'
-      datetime: '$JEDI_ISO_DATE_004'
+    - datetime: $JEDI_ISO_DATE_004
+      datapath: './'
       filenames:
       - bkg.%yyyy%mm%ddT%hh%MM%ssZ.nc4
       - fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKG_HRES.nc4
@@ -136,8 +135,8 @@ cost function:
       max allowable geometry difference: 1e-3
       state variables: *statevars
       field io names: *field_io_names
-    - datapath: './'
-      datetime: '$JEDI_ISO_DATE_005'
+    - datetime: $JEDI_ISO_DATE_005
+      datapath: './'
       filenames:
       - bkg.%yyyy%mm%ddT%hh%MM%ssZ.nc4
       - fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKG_HRES.nc4
@@ -147,8 +146,8 @@ cost function:
       max allowable geometry difference: 1e-3
       state variables: *statevars
       field io names: *field_io_names
-    - datapath: './'
-      datetime: '$JEDI_ISO_DATE_006'
+    - datetime: $JEDI_ISO_DATE_006
+      datapath: './'
       filenames:
       - bkg.%yyyy%mm%ddT%hh%MM%ssZ.nc4
       - fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKG_HRES.nc4
@@ -158,8 +157,8 @@ cost function:
       max allowable geometry difference: 1e-3
       state variables: *statevars
       field io names: *field_io_names
-    - datapath: './'
-      datetime: '$JEDI_ISO_DATE_007'
+    - datetime: $JEDI_ISO_DATE_007
+      datapath: './'
       filenames:
       - bkg.%yyyy%mm%ddT%hh%MM%ssZ.nc4
       - fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKG_HRES.nc4
@@ -170,47 +169,270 @@ cost function:
       state variables: *statevars
       field io names: *field_io_names
   background error:
-    covariance model: SABER
-    linear variable change:
-      input variables: *anavars
-      linear variable change name: Control2Analysis
-      output variables: *anavars
-    saber central block:
-      read:
-        debugging mode: false
-        gsi akbk: ./fv3-jedi/fv3files/akbk@JEDI_BKG_VRES.nc4
-        gsi berror namelist file: ./fv3-jedi/gsibec/gsibec_configuration_l@JEDI_BKG_VRESx@JEDI_GSIBEC_NLONy@JEDI_GSIBEC_NLAT.nml
-        gsi error covariance file: ./fv3-jedi/gsibec/gsibec_coefficients_l@JEDI_BKG_VRESx@JEDI_GSIBEC_NLONy@JEDI_GSIBEC_NLAT.nc4
-        processor layout x direction: @JEDI_VAR_GSIXLAYOUT
-        processor layout y direction: @JEDI_VAR_GSIYLAYOUT
-#     saber block name: gsi covariance
-      saber block name: gsi hybrid covariance
+    covariance model: hybrid
+    components:
+    - covariance:
+        covariance model: SABER
+        linear variable change:
+          input variables: *anavars
+          linear variable change name: Control2Analysis
+          output variables: *anavars
+        saber central block:
+          read:
+            debugging mode: false
+            gsi akbk: ./fv3-jedi/fv3files/akbk@JEDI_BKG_VRES.nc4
+            gsi berror namelist file: ./fv3-jedi/gsibec/gsibec_configuration_l@JEDI_BKG_VRESx@JEDI_GSIBEC_NLONy@JEDI_GSIBEC_NLAT.nml
+            gsi error covariance file: ./fv3-jedi/gsibec/gsibec_coefficients_l@JEDI_BKG_VRESx@JEDI_GSIBEC_NLONy@JEDI_GSIBEC_NLAT.nc4
+            processor layout x direction: @JEDI_VAR_GSIXLAYOUT 
+            processor layout y direction: @JEDI_VAR_GSIYLAYOUT
+#         saber block name: gsi covariance
+          saber block name: gsi static covariance
 
-    saber outer blocks:
-    - saber block name: interpolation
-      inner geometry:
-        function space: StructuredColumns
-        custom grid matching gsi:
-          type: latlon
-          lats: @JEDI_GSIBEC_NLAT
-          lons: @JEDI_GSIBEC_NLON
-        custom partitioner matching gsi:
-          bands: @JEDI_VAR_GSIYLAYOUT
-        halo: 1
-      forward interpolator:
-        local interpolator type: oops unstructured grid interpolator
-      inverse interpolator:
-        local interpolator type: oops unstructured grid interpolator
+        saber outer blocks:
+        - saber block name: interpolation
+          inner geometry:
+            function space: StructuredColumns
+            custom grid matching gsi:
+              type: latlon
+              lats: @JEDI_GSIBEC_NLAT
+              lons: @JEDI_GSIBEC_NLON
+            custom partitioner matching gsi:
+              bands: @JEDI_VAR_GSIYLAYOUT
+            halo: 1
+          forward interpolator:
+            local interpolator type: oops unstructured grid interpolator
+          inverse interpolator:
+            local interpolator type: oops unstructured grid interpolator
 
-#   - debugging mode: false
-#     gsi akbk: ./fv3-jedi/fv3files/akbk@JEDI_BKG_VRES.nc4
-#     gsi berror namelist file: ./fv3-jedi/gsibec/gsibec_configuration_l@JEDI_BKG_VRESx@JEDI_GSIBEC_NLONy@JEDI_GSIBEC_NLAT.nml
-#     gsi error covariance file: ./fv3-jedi/gsibec/gsibec_coefficients_l@JEDI_BKG_VRESx@JEDI_GSIBEC_NLONy@JEDI_GSIBEC_NLAT.nc4
-#     processor layout x direction: @JEDI_VAR_GSIXLAYOUT
-#     processor layout y direction: @JEDI_VAR_GSIYLAYOUT
-#     saber block name: gsi interpolation to model grid
- 
-      state variables to inverse: *anavars
+#       saber outer blocks:
+#       - debugging mode: false
+#         gsi akbk: ./fv3-jedi/fv3files/akbk@JEDI_BKG_VRES.nc4
+#         gsi berror namelist file: ./fv3-jedi/gsibec/gsibec_configuration_l@JEDI_BKG_VRESx@JEDI_GSIBEC_NLONy@JEDI_GSIBEC_NLAT.nml
+#         gsi error covariance file: ./fv3-jedi/gsibec/gsibec_coefficients_l@JEDI_BKG_VRESx@JEDI_GSIBEC_NLONy@JEDI_GSIBEC_NLAT.nc4
+#         processor layout x direction: @JEDI_VAR_GSIXLAYOUT
+#         processor layout y direction: @JEDI_VAR_GSIYLAYOUT
+#         saber block name: gsi interpolation to model grid
+
+          state variables to inverse: *anavars
+      weight:
+##     datetime: $JEDI_ISO_DATE_001
+##     filetype: cube sphere history
+##     provider: geos
+##     max allowable geometry difference: 1e-3
+##     filename: betac.nc4
+##     field io names: *field_io_names
+        value: 0.50
+
+    - covariance:
+        covariance model: ensemble
+        members from template:
+          template:
+            states:
+            - datetime: $JEDI_ISO_DATE_001
+              filetype: cube sphere history
+              provider: geos
+              max allowable geometry difference: 1e-3
+              datapath: ./
+              filename: mem%mem%/geos.bkg_clcv.%yyyy%mm%dd_%hh%MMz.nc4
+              state variables: *anavars
+              field io names: *field_io_names
+            - datetime: $JEDI_ISO_DATE_002
+              filetype: cube sphere history
+              provider: geos
+              max allowable geometry difference: 1e-3
+              datapath: ./
+              filename: mem%mem%/geos.bkg_clcv.%yyyy%mm%dd_%hh%MMz.nc4
+              state variables: *anavars
+              field io names: *field_io_names
+            - datetime: $JEDI_ISO_DATE_003
+              filetype: cube sphere history
+              provider: geos
+              max allowable geometry difference: 1e-3
+              datapath: ./
+              filename: mem%mem%/geos.bkg_clcv.%yyyy%mm%dd_%hh%MMz.nc4
+              state variables: *anavars
+              field io names: *field_io_names
+            - datetime: $JEDI_ISO_DATE_004
+              filetype: cube sphere history
+              provider: geos
+              max allowable geometry difference: 1e-3
+              datapath: ./
+              filename: mem%mem%/geos.bkg_clcv.%yyyy%mm%dd_%hh%MMz.nc4
+              state variables: *anavars
+              field io names: *field_io_names
+            - datetime: $JEDI_ISO_DATE_005
+              filetype: cube sphere history
+              provider: geos
+              max allowable geometry difference: 1e-3
+              datapath: ./
+              filename: mem%mem%/geos.bkg_clcv.%yyyy%mm%dd_%hh%MMz.nc4
+              state variables: *anavars
+              field io names: *field_io_names
+            - datetime: $JEDI_ISO_DATE_006
+              filetype: cube sphere history
+              provider: geos
+              max allowable geometry difference: 1e-3
+              datapath: ./
+              filename: mem%mem%/geos.bkg_clcv.%yyyy%mm%dd_%hh%MMz.nc4
+              state variables: *anavars
+              field io names: *field_io_names
+            - datetime: $JEDI_ISO_DATE_007
+              filetype: cube sphere history
+              provider: geos
+              max allowable geometry difference: 1e-3
+              datapath: ./
+              filename: mem%mem%/geos.bkg_clcv.%yyyy%mm%dd_%hh%MMz.nc4
+              state variables: *anavars
+              field io names: *field_io_names
+          pattern: '%mem%'
+          nmembers: 32
+          zero padding: 3
+        localization:
+          localization method: SABER
+          saber central block:
+            saber block name: BUMP_NICAS
+            active variables: *anavars
+            read:
+              general:
+                universe length-scale: 2500.0e3
+              drivers:
+                multivariate strategy: duplicated
+                compute nicas: true
+              model:
+                level for 2d variables: last
+              nicas:
+                resolution: 6
+                explicit length-scales: true
+                horizontal length-scale:
+                - groups:
+                  - common
+                  profile:
+                  - 3350515.0   
+                  - 3350515.0   
+                  - 3350515.0   
+                  - 3350515.0   
+                  - 3350515.0   
+                  - 3350515.0   
+                  - 3350515.0   
+                  - 3092783.0   
+                  - 3092783.0   
+                  - 3092783.0   
+                  - 3092783.0   
+                  - 2835052.0   
+                  - 2835052.0   
+                  - 2835052.0   
+                  - 2577320.0   
+                  - 2577320.0   
+                  - 2577320.0   
+                  - 2577320.0   
+                  - 2577320.0   
+                  - 2577320.0   
+                  - 2577320.0   
+                  - 2448454.0   
+                  - 2319588.0   
+                  - 2190722.0   
+                  - 2190722.0   
+                  - 2061856.0   
+                  - 1804124.0   
+                  - 1804124.0   
+                  - 1804124.0   
+                  - 1804124.0   
+                  - 1804124.0   
+                  - 1804124.0   
+                  - 1804124.0   
+                  - 1804124.0   
+                  - 1804124.0   
+                  - 1804124.0   
+                  - 1804124.0   
+                  - 1804124.0   
+                  - 1675258.0   
+                  - 1417526.0   
+                  - 1288660.0   
+                  - 1237113.0   
+                  - 1185567.0   
+                  - 1082474.0   
+                  - 1030928.0   
+                  - 1030928.0   
+                  - 1030928.0   
+                  - 1030928.0   
+                  - 1030928.0   
+                  - 1030928.0   
+                  - 1030928.0   
+                  - 1030928.0   
+                  - 1030928.0   
+                  - 1030928.0   
+                  - 1030928.0   
+                  - 1030928.0   
+                  - 1030928.0   
+                  - 1030928.0   
+                  - 1030928.0   
+                  - 1030928.0   
+                  - 1030928.0   
+                  - 1030928.0   
+                  - 1030928.0   
+                  - 1030928.0   
+                  - 1030928.0   
+                  - 1030928.0   
+                  - 1030928.0   
+                  - 1030928.0   
+                  - 1030928.0   
+                  - 2030928.0   
+                  - 2030928.0   
+                  - 2030928.0   
+                vertical length-scale:
+                - groups:
+                  - common
+                  value: 1.23
+  
+        linear variable change:
+          linear variable change name: Control2Analysis
+          input variables: *anavars
+          output variables: *anavars
+
+      weight:
+##      - datetime: $JEDI_ISO_DATE_001
+##        filetype: cube sphere history
+##        provider: geos
+##        max allowable geometry difference: 1e-3
+##        filename: betae.nc4
+##        field io names: *field_io_names
+##      - datetime: $JEDI_ISO_DATE_002
+##        filetype: cube sphere history
+##        provider: geos
+##        max allowable geometry difference: 1e-3
+##        filename: betae.nc4
+##        field io names: *field_io_names
+##      - datetime: $JEDI_ISO_DATE_003
+##        filetype: cube sphere history
+##        provider: geos
+##        max allowable geometry difference: 1e-3
+##        filename: betae.nc4
+##        field io names: *field_io_names
+##      - datetime: $JEDI_ISO_DATE_004
+##        filetype: cube sphere history
+##        provider: geos
+##        max allowable geometry difference: 1e-3
+##        filename: betae.nc4
+##        field io names: *field_io_names
+##      - datetime: $JEDI_ISO_DATE_005
+##        filetype: cube sphere history
+##        provider: geos
+##        max allowable geometry difference: 1e-3
+##        filename: betae.nc4
+##        field io names: *field_io_names
+##      - datetime: $JEDI_ISO_DATE_006
+##        filetype: cube sphere history
+##        provider: geos
+##        max allowable geometry difference: 1e-3
+##        filename: betae.nc4
+##        field io names: *field_io_names
+##      - datetime: $JEDI_ISO_DATE_007
+##        filetype: cube sphere history
+##        provider: geos
+##        max allowable geometry difference: 1e-3
+##        filename: betae.nc4
+##        field io names: *field_io_names
+        value: 0.50
   cost type: 4D-Ens-Var
   geometry:
     akbk: ./fv3-jedi/fv3files/akbk@JEDI_BKG_VRES.nc4

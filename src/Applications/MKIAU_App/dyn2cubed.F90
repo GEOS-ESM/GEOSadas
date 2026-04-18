@@ -50,6 +50,7 @@
    type(ESMF_Config)       :: CF       ! configuration settings
 
    type(MAPL_CFIO)         :: CFIO
+   type(ServerManager)     :: io_server
 
 !  Grid Component Objects
 !  ----------------------
@@ -115,6 +116,7 @@
 
    integer :: proper_winds = 1
    logical :: overwrite_with_gsibetas=.false.
+   logical :: write_out_6tiles=.false.
 
 !  Coordinate variables
 !  --------------------
@@ -236,11 +238,17 @@ CONTAINS
  
 !   Write out bundle
 !   ----------------
-    call MAPL_CFIOCreate ( cfio, trim(outfname), clock, GCMBundle,  &
-!                          FREQUENCY=freq, &
-                           DESCR='Write Stats Fields', __RC__ )
-    call MAPL_CFIOWrite ( cfio, clock, GCMBundle, __RC__ )
-    call MAPL_cfioDestroy ( cfio )
+    if (write_out_6tiles) then
+      call io_server%initialize(comm)
+      call MAPL_Write_bundle(GCMBundle, clock, trim(outfname), __RC__ )
+      call io_server%finalize()
+    else
+      call MAPL_CFIOCreate ( cfio, trim(outfname), clock, GCMBundle,  &
+!                            FREQUENCY=freq, &
+                             DESCR='Write Stats Fields', __RC__ )
+      call MAPL_CFIOWrite ( cfio, clock, GCMBundle, __RC__ )
+      call MAPL_cfioDestroy ( cfio )
+    endif
 
 !   Test ... convert back to LL
 !   ---------------------------
@@ -421,6 +429,7 @@ CONTAINS
       allocate(beta_weight(LM_IAU))
       call read_covweights_ (covweights, covoption, beta_weight)
       overwrite_with_gsibetas=.true.
+      write_out_6tiles=.true.
    endif
 
 !  Set ESMF date/time

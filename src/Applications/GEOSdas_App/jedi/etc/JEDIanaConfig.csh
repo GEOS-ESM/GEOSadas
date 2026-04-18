@@ -33,12 +33,14 @@ setenv JEDI_RUN_CNVANA   0   # convert cc ana and/or inc output to ll
 setenv JEDI_RUN_GETINC   @JEDI_RUN_GETINC   # calc cubed inc from diff of cubed ana and bkg
 setenv JEDI_RUN_UPDRST   0   # not desirable
 
+setenv JEDI_DIF_NCPUS    @JEDI_DIF_NCPUS
+setenv JEDI_NCPUS        @JEDI_VAR_NCPUS
+
 setenv JEDI_ADDINC_MPIRUN "mpirun -np 12"
 setenv JEDI_CNVANA_MPIRUN "mpirun -np 12"
 setenv JEDI_CNVENS_MPIRUN "mpirun -np 12"
 setenv JEDI_CNVINC_MPIRUN "mpirun -np 12"
-setenv JEDI_GETINC_MPIRUN "mpirun -np @JEDI_DIF_NTASKS"
-setenv JEDI_NCPUS @JEDI_VAR_NCPUS
+setenv JEDI_GETINC_MPIRUN "mpirun -np $JEDI_DIF_NCPUS"
 setenv JEDI_FV3VAR_MPIRUN "mpirun -perhost @JEDI_VAR_PERHOST -np $JEDI_NCPUS"
 
 setenv JEDI_MKIAU_MPIRUN "mpirun "

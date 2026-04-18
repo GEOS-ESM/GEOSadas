@@ -2,7 +2,7 @@
 #---- blow  needs to be unwired ----
 #@GEOSJEDI_QOS
 #@GEOSJEDI_PARTITION
-#SBATCH --ntasks-per-node=12 --ntasks=@JEDI_DIF_NTASKS
+#SBATCH --ntasks-per-node=12 --ntasks=${JEDI_DIF_NCPUS}
 #SBATCH --constraint=mil
 #^^^^ above needs to be unwired ^^^^
 #SBATCH --account=$GID

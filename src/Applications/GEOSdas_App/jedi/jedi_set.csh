@@ -431,7 +431,7 @@ if ( $JEDI_HYBRID ) then
   cd $JEDIWRK
   if ( ! -e Config/diffstates_geos.yaml ) then
      echo " ${MYNAME}: missing Config/diffstates_geos.yaml file, aborting ... "
-    exit 1
+     exit 1
   endif
   foreach cbkg (`ls bkg.*.nc4` )
      set  ttag = `echo $cbkg | cut -d. -f2`
@@ -447,17 +447,39 @@ if ( $JEDI_HYBRID ) then
    end
 
 #  Also set localization scales and beta terms
-   set lst = (`ls bkg.*.nc4`)
-   set cres  = `getgfiodim.x $lst[1] | grep -v GFIO`
-   @ jcres = $cres[1] + 1
-   set rcname = ./fv3-jedi/gsibec/hyb_gsibec_configuration_c$jcres.nml
-   set nlat = `nmlread.py $rcname GRIDOPTS nlat`
-   set nlon = `nmlread.py $rcname GRIDOPTS nlon`
-   set nlev = `nmlread.py $rcname GRIDOPTS nsig`
-   ln -sf $FVHOME/run/gmao_global_hybens_info.x${nlon}y${nlat}l${nlev}.rc hybens_info
-   if (! -e hybens_info ) then
-      echo " ${MYNAME}: cannot find gmao_global_hybens_info.x${nlon}y${nlat}l${nlev}.rc , aborting ..."
+   if ( $JEDI_HYBRID == 1 ) then # when lat-lon ensemble, get scales ...
+      set lst = (`ls mem001/geos.*.nc4`)
+      set hres  = `getgfiodim.x $lst[1] | grep -v GFIO`
+      set nlon = $hres[1]
+      set nlat = $hres[2]
+      set nlev = $hres[3]
+      ln -sf $FVHOME/run/gmao_global_hybens_info.x${nlon}y${nlat}l${nlev}.rc hybens_info
+      if (! -e hybens_info ) then
+         echo " ${MYNAME}: cannot find gmao_global_hybens_info.x${nlon}y${nlat}l${nlev}.rc , aborting ..."
+         exit 1
+      endif
+   else
+      foreach fn (`ls mem001/geos.*.nc4`)
+        set cres  = `getgfiodim.x $fn | grep -v GFIO`
+        set nlon = $cres[1]
+        set nlat = $cres[2]
+        set nlev = $cres[3]
+        @ cres = $nlon + 1
+        if ( $nlon != $nlat ) then
+           echo " ${MYNAME}: error in resol of input file, aborting ..."
+           exit 1
+        endif
+        set tzzz  = `echo $fn   | cut -d. -f3`
+        set tnymd = `echo $tzzz | cut -c1-8`
+        set thhmm = `echo $tzzz | cut -c10-13`
+        /bin/cp fv3-jedi/bump/betac.c${cres}l${nlev}.nc4 betac.${tnymd}T${thhmm}00Z.nc4
+        /bin/cp fv3-jedi/bump/betae.c${cres}l${nlev}.nc4 betae.${tnymd}T${thhmm}00Z.nc4
+        # the betas need a date/time reset
+        reset_time.x betac.${tnymd}T${thhmm}00Z.nc4 $tnymd ${thhmm}00 -9 
+        reset_time.x betae.${tnymd}T${thhmm}00Z.nc4 $tnymd ${thhmm}00 -9
+      end
    endif
+   cd -
 endif
 
 # If here, likely successful
