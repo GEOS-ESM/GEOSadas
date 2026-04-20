@@ -122,7 +122,7 @@ if ( $JEDI_RUN ) then
    zeit_co.x jedi_run
    if ( $JEDI_MKIAU ) then
        zeit_ci.x jedi_mkiau
-       jedi_mkiau.csh $nymdb $nhmsb |& tee -a $FVWORK/$EXPID.jedi_mkiau.log.${nymdb}_${hhb}z.txt
+       jedi_mkiau.csh $nymdb $nhmsb |& tee -a $FVWORK/$EXPID.jedi_miau.log.${nymdb}_${hhb}z.txt
        if ( $status ) then
           echo " ${MYNAME}: jedi_mkiau.csh signal failure, aborting ..."
           exit (1)

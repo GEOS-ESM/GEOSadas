@@ -106,6 +106,7 @@ cost function:
 #     mole_fraction_of_carbon_dioxide_in_air: co2
   background error:
     covariance model: SABER
+    covariance type: gsi static covariance
 #   adjoint test: true
     saber central block:
       saber block name: gsi hybrid covariance
@@ -184,8 +185,8 @@ variational:
       layout:
       - @JEDI_VAR_XLAYOUT
       - @JEDI_VAR_YLAYOUT
-      npx: @JEDI_BKG_HRES
-      npy: @JEDI_BKG_HRES
+      npx: @JEDI_INC_1RES
+      npy: @JEDI_INC_1RES
       npz: @JEDI_BKG_VRES
     gradient norm reduction: 1e-3
     ninner: '100'
