@@ -108,7 +108,7 @@ sub init {
 
    $jedipartition = "#"; 
    if ( $ENV{"GEOSJEDI_PARTITION"} ) {
-      $jediqos = "#SBATCH --qos=$GEOSJEDI_PARTITION";
+      $jedipartition = "#SBATCH --qos=$GEOSJEDI_PARTITION";
    }
 
    if ( $opt_jedistatic ) {
@@ -429,6 +429,7 @@ ed_jediebkg_acq  ("$JEDIHOME/Config",$ensrpy,$exprpy);
 ed_jediebkgx_acq ("$JEDIHOME/Config",$ensrpy,$exprpy);
 ed_jediioda_acq  ("$JEDIHOME/Config");
 ed_jedivbc_acq   ("$JEDIHOME/Config");
+ed_diffstate_job ("$JEDIHOME/Config");
 
 set_jedi_static("$jediroot","$jediinput",$cres,$i1res,$gsibecres);
 
@@ -568,7 +569,7 @@ sub ed_conf_rc {
      #---------------------------------------
      while( defined($rcd = <LUN>) ) {
         chomp($rcd);
-        if($rcd =~ /\@GEOSJEDI_QOS/) {$rcd=~ s/\@GEOSJEDI_QOS/$jediqos/g;  }
+        if($rcd =~ /\@GEOSJEDI_QOS/)       {$rcd=~ s/\@GEOSJEDI_QOS/$jediqos/g;  }
         if($rcd =~ /\@GEOSJEDI_PARTITION/) {$rcd=~ s/\@GEOSJEDI_PARTITION/$jedipartition/g;  }
 
         if($rcd =~ /\@JEDI_FEEDBACK_VARBC/) {$rcd=~ s/\@JEDI_FEEDBACK_VARBC/$cvbc/g;  }
@@ -620,7 +621,7 @@ sub ed_jediebkg_acq {
  } else {
     $this_dir = "$my_rdir";
     $this_exp = "$my_rexp";
-    $this = "$this_dir/atmens/Y%y4/M%m2/$this_exp.atmens_ebkg.%y4%m2%d2_%h2z.tar => $expid..atmens_ebkg.%y4%m2%d2_%h2z.tar";
+    $this = "$this_dir/atmens/Y%y4/M%m2/$this_exp.atmens_ebkg.%y4%m2%d2_%h2z.tar => $expid.atmens_ebkg.%y4%m2%d2_%h2z.tar";
  }
 
  $acq = "$mydir/jedi_ebkg.acq";
@@ -643,7 +644,7 @@ sub ed_jediebkgx_acq {
  } else {
     $this_dir = "$my_rdir";
     $this_exp = "$my_rexp";
-    $this = "$this_dir/atmens/Y%y4/M%m2/$this_exp.atmens_ebkgx.%y4%m2%d2_%h2z.tar => $expid..atmens_ebkgx.%y4%m2%d2_%h2z.tar";
+    $this = "$this_dir/atmens/Y%y4/M%m2/$this_exp.atmens_ebkgx.%y4%m2%d2_%h2z.tar => $expid.atmens_ebkgx.%y4%m2%d2_%h2z.tar";
  }
 
  $acq = "$mydir/jedi_ebkgx.acq";
@@ -683,6 +684,32 @@ sub ed_jedivbc_acq {
  print  SCRIPT <<"EOF";
 $archive/$expid/jedi/obs/Y%y4/M%m2/$expid.jedi_vbc.%y4%m2%d2_%h2z.tar
 EOF
+}
+#......................................................................
+sub ed_diffstate_job {
+
+  my($mydir) = @_;
+
+  my $tmprc  = "$mydir/tmp.rc";
+  my $thisrc = "$mydir/$jedi_diffstates.j";
+    
+  open(LUN,"$thisrc")  || die "Fail to open $thisrc $!\n";
+  open(LUN2,">$tmprc") || die "Fail to open tmp.rc $!\n";
+
+  # Change variables to the correct inputs
+  #---------------------------------------
+  while( defined($rcd = <LUN>) ) {
+     chomp($rcd);
+     if($rcd =~ /\@GEOSJEDI_QOS/)       {$rcd=~ s/\@GEOSJEDI_QOS/$jediqos/g;  }
+     if($rcd =~ /\@GEOSJEDI_PARTITION/) {$rcd=~ s/\@GEOSJEDI_PARTITION/$jedipartition/g;  }
+     print(LUN2 "$rcd\n");
+  }
+ 
+  close(LUN);
+  close(LUN2);
+  cp($tmprc, $thisrc);
+  unlink $tmprc;
+
 }
 #......................................................................
 sub ed_var_yaml {
