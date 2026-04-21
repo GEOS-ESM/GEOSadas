@@ -129,16 +129,17 @@ cd iau/
 if ( $JEDI_HYBRID ) then
   set lst = `ls *agcm_import_rst.*nc4`
   if ( $#lst == 1 ) then
-     set nymd = `echo $lst | cut -d. -f3 | cut -c1-8`
-     set hhmm = `echo $lst | cut -d. -f3 | cut -c10-13`
-     set nhms = ${hhmm}00
-     set enddate = (`tick $nymd $nhms $JEDI_VARWINDOW`)
+     set nowdate = ( $nymd0 $nhms0 )
+     set enddate = (`tick $nowdate[1] $nowdate[2] $JEDI_VARWINDOW`)
      set notdone = 1
      while ( $notdone )
-       set thisdate = (`tick $nymd $nhms $JEDI_VARANAFRQ`)
-       set nymd = $thisdate[1]; set nhms = $thisdate[2]; set hhmm = `echo $nhms | cut -c1-4`
+       set nymd = $nowdate[1]; set nhms = $nowdate[2]; set hhmm = `echo $nhms | cut -c1-4`
        /bin/cp $lst[1] $EXPID.agcm_import_rst.${nymd}_${hhmm}z.nc4
-       if ( "$thisdate" == "$enddate" ) set notdone = 0
+       if ( "$nowdate" == "$enddate" ) then
+          set notdone = 0
+       else
+          set nowdate = (`tick $nymd $nhms $JEDI_VARANAFRQ`)
+       endif
      end
   endif
 else
