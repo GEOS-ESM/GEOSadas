@@ -121,6 +121,7 @@ cost function:
       sea_surface_temperature: ts_found
   background error:
     covariance model: SABER
+#   covariance type: gsi static covariance
     saber central block:
       saber block name: gsi hybrid covariance
       read:

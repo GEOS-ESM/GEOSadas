@@ -173,6 +173,7 @@ cost function:
     components:
     - covariance:
         covariance model: SABER
+#       covariance type: gsi hybrid covariance
         linear variable change:
           input variables: *anavars
           linear variable change name: Control2Analysis

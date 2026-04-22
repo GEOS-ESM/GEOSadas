@@ -66,6 +66,7 @@
           - airTemperature
       obs filters:
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         where:
         - variable:
             name: ObsType/airTemperature
@@ -74,6 +75,7 @@
         - name: MetaData/stationIdentification
           value: 'KX130   '
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         where:
         - variable:
             name: MetaData/instantaneousAltitudeRate
@@ -82,12 +84,14 @@
         - name: MetaData/instantaneousAltitudeRate
           value: 0.0
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         action:
           name: assign error
           error parameter: 2.0
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         action:
@@ -114,6 +118,7 @@
             name: ObsType/airTemperature
           is_in: 130
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         action:
@@ -140,6 +145,7 @@
             name: ObsType/airTemperature
           is_in: 131,133
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         action:
@@ -184,6 +190,7 @@
             name: ObsType/airTemperature
           is_in: 132
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         action:
@@ -214,6 +221,7 @@
             name: ObsType/airTemperature
           is_in: 134
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         action:
@@ -240,6 +248,7 @@
             name: ObsType/airTemperature
           is_in: 135
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         action:
@@ -254,6 +263,7 @@
               distance threshold: 60000.0
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         where:
@@ -263,6 +273,7 @@
           name: passivate
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         where:
@@ -273,6 +284,7 @@
           name: passivate
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         action:
           name: inflate error
           inflation factor: 10.0
@@ -288,6 +300,7 @@
           is_in: 130
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         action:
@@ -299,6 +312,7 @@
           value: is_valid
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         action:
@@ -313,6 +327,7 @@
               geovar_sfc_geomz: height_above_mean_sea_level_at_surface
         defer to post: true
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: TempObsErrorData/airTemperature
           type: float
@@ -323,6 +338,7 @@
               - name: ObsErrorData/airTemperature
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         action:
@@ -337,6 +353,7 @@
           value: is_valid
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         action:
@@ -351,6 +368,7 @@
           value: is_valid
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         where:
@@ -359,6 +377,7 @@
         action:
           name: reject
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         threshold: 7.0
@@ -370,6 +389,7 @@
           - 3
         defer to post: true
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         threshold: 4.9
@@ -381,6 +401,7 @@
           - 3
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         action:
@@ -392,6 +413,7 @@
           value: is_valid
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         action:
@@ -445,10 +467,12 @@
           hofx scaling field group: DerivedVariables
       obs prior filters:
       - filter: Variable Transforms
+        apply at iterations: 0, 1, 2
         Transform: SurfaceWindScalingPressure
         SkipWhenNoObs: false
       obs post filters:
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         - name: windNorthward
@@ -459,6 +483,7 @@
           name: passivate
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         - name: windNorthward
@@ -470,6 +495,7 @@
           name: passivate
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         - name: windNorthward
@@ -513,6 +539,7 @@
               - 2.4
               - 2.1
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         - name: windNorthward
@@ -524,6 +551,7 @@
             name: ObsType/windEastward
           is_in: 230
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         - name: windNorthward
@@ -535,6 +563,7 @@
             name: ObsType/windEastward
           is_in: 231
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         - name: windNorthward
@@ -546,6 +575,7 @@
             name: ObsType/windEastward
           is_in: 233
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         - name: windNorthward
@@ -557,6 +587,7 @@
             name: ObsType/windEastward
           is_in: 234, 235
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         - name: windNorthward
@@ -608,6 +639,7 @@
             name: ObsType/windEastward
           is_in: 232
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         action:
@@ -622,6 +654,7 @@
               distance threshold: 60000.0
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windNorthward
         action:
@@ -636,6 +669,7 @@
               distance threshold: 60000.0
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         action:
@@ -647,6 +681,7 @@
           value: is_valid
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windNorthward
         action:
@@ -658,6 +693,7 @@
           value: is_valid
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         action:
@@ -672,6 +708,7 @@
               geovar_sfc_geomz: height_above_mean_sea_level_at_surface
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windNorthward
         action:
@@ -686,6 +723,7 @@
               geovar_sfc_geomz: height_above_mean_sea_level_at_surface
         defer to post: true
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         function absolute threshold:
@@ -724,6 +762,7 @@
           name: reject
         defer to post: true
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windNorthward
         function absolute threshold:
@@ -762,6 +801,7 @@
           name: reject
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         action:
@@ -773,6 +813,7 @@
               variable: windEastward
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windNorthward
         action:
@@ -873,6 +914,7 @@
         input file: fv3-jedi/rcov/airs_aqua_119_jedi_rcov.nc4
       obs prior filters:
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1, 6-7, 10-11, 15-17, 20-22, 24, 27-28, 30, 36, 39-40, 42, 51-52,
@@ -895,7 +937,7 @@
             2325, 2328, 2333, 2339, 2348, 2353, 2355, 2357, 2363, 2370-2371, 2377
         action:
           name: assign error
-          error parameter vector:
+          error parameter vector: &error_param-airs_aqua
           - 1.2
           - 1.2
           - 1.3136
@@ -1178,6 +1220,7 @@
           - 0.75
           - 0.75
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: ObsError/brightnessTemperature
           channels: 1, 6-7, 10-11, 15-17, 20-22, 24, 27-28, 30, 36, 39-40, 42, 51-52,
@@ -1226,6 +1269,7 @@
                   2357, 2363, 2370-2371, 2377
       obs post filters:
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 2122, 2123, 2128, 2134, 2141, 2145, 2149, 2153, 2164, 2189, 2197,
@@ -1241,6 +1285,7 @@
         action:
           name: reject
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1, 6-7, 10-11, 15-17, 20-22, 24, 27-28, 30, 36, 39-40, 42, 51-52,
@@ -1305,6 +1350,7 @@
                 2164, 2189, 2197, 2209, 2226, 2234, 2280, 2318, 2321, 2325, 2328,
                 2333, 2339, 2348, 2353, 2355, 2357, 2363, 2370-2371, 2377
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1, 6-7, 10-11, 15-17, 20-22, 24, 27-28, 30, 36, 39-40, 42, 51-52,
@@ -1330,6 +1376,7 @@
         action:
           name: reject
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1, 6-7, 10-11, 15-17, 20-22, 24, 27-28, 30, 36, 39-40, 42, 51-52,
@@ -1395,6 +1442,7 @@
                 2333, 2339, 2348, 2353, 2355, 2357, 2363, 2370-2371, 2377
               sensor: airs_aqua
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1, 6-7, 10-11, 15-17, 20-22, 24, 27-28, 30, 36, 39-40, 42, 51-52,
@@ -1459,6 +1507,7 @@
                 2164, 2189, 2197, 2209, 2226, 2234, 2280, 2318, 2321, 2325, 2328,
                 2333, 2339, 2348, 2353, 2355, 2357, 2363, 2370-2371, 2377
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1, 6-7, 10-11, 15-17, 20-22, 24, 27-28, 30, 36, 39-40, 42, 51-52,
@@ -1519,6 +1568,7 @@
               2141, 2145, 2149, 2153, 2164, 2189, 2197, 2209, 2226, 2234, 2280, 2318,
               2321, 2325, 2328, 2333, 2339, 2348, 2353, 2355, 2357, 2363, 2370-2371,
               2377
+            error parameter vector: *error_param-airs_aqua
             use_flag: &id003
             - -1
             - -1
@@ -2089,10 +2139,15 @@
             - 4.0
             - 2.0
             - 4.0
+            cloud detection criteria:
+            - 0.60
+            - 0.68
+            - 0.72
         maxvalue: 1e-12
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1, 6-7, 10-11, 15-17, 20-22, 24, 27-28, 30, 36, 39-40, 42, 51-52,
@@ -2158,6 +2213,7 @@
         action:
           name: reject
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1, 6-7, 10-11, 15-17, 20-22, 24, 27-28, 30, 36, 39-40, 42, 51-52,
@@ -2235,6 +2291,7 @@
               - 2.0
               - 4.0
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1, 6-7, 10-11, 15-17, 20-22, 24, 27-28, 30, 36, 39-40, 42, 51-52,
@@ -2630,6 +2687,7 @@
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1, 6-7, 10-11, 15-17, 20-22, 24, 27-28, 30, 36, 39-40, 42, 51-52,
@@ -2697,6 +2755,7 @@
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1, 6-7, 10-11, 15-17, 20-22, 24, 27-28, 30, 36, 39-40, 42, 51-52,
@@ -2847,12 +2906,14 @@
           output file: ./vbc/amsr2_gcom-w1.$BYYYYYMMDDTHH0000Z.satbias_cov.nc4
       obs filters:
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-14
         minvalue: 50.0
         maxvalue: 340.0
       - filter: Domain Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-14
@@ -2871,6 +2932,7 @@
           minvalue: -60.0
           maxvalue: 60.0
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-14
@@ -2878,6 +2940,7 @@
         - name: ObsFunction/TotalColumnVaporGuess
         minvalue: 10.0
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-14
@@ -2885,6 +2948,7 @@
         - name: ObsFunction/SunGlintAngle
         minvalue: 20.0
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-14
@@ -2914,6 +2978,7 @@
             - ObsValue
         maxvalue: 1.0
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-14
@@ -2929,6 +2994,7 @@
             - HofX
         maxvalue: 1.0
       - filter: Difference Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-14
@@ -2955,6 +3021,7 @@
         minvalue: -0.5
         maxvalue: 0.5
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-14
@@ -3037,7 +3104,7 @@
               - 30.0
               - 20.0
       - filter: Background Check
-        apply at iterations: 0, 1
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-14
@@ -3045,7 +3112,7 @@
         action:
           name: reject
       - filter: Background Check
-        apply at iterations: 0, 1
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 7-10
@@ -3053,7 +3120,7 @@
         action:
           name: reject
       - filter: Background Check
-        apply at iterations: 0, 1
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 11-14
@@ -3061,6 +3128,7 @@
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-14
@@ -3165,6 +3233,7 @@
           output file: ./vbc/amsua_aqua.$BYYYYYMMDDTHH0000Z.satbias_cov.nc4
       obs prior filters:
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-15
@@ -3188,6 +3257,7 @@
           - 6.3
       obs post filters:
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-6,15
@@ -3199,12 +3269,14 @@
         maxvalue: 500.0
         flag all filter variables if any test variable is out of bounds: true
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-15
         minvalue: 100.0
         maxvalue: 500.0
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-15
@@ -3219,6 +3291,7 @@
         action:
           name: reject
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-15
@@ -3231,6 +3304,7 @@
               sensor: amsua_aqua
               channels: 1-15
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-15
@@ -3242,6 +3316,7 @@
             options:
               channels: 1-15
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-15
@@ -3268,6 +3343,7 @@
               - 2.0
               - 4.5
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-15
@@ -3316,6 +3392,7 @@
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-15
@@ -3346,6 +3423,7 @@
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-15
@@ -3435,6 +3513,7 @@
           output file: ./vbc/amsua_metop-b.$BYYYYYMMDDTHH0000Z.satbias_cov.nc4
       obs prior filters:
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-15
@@ -3458,6 +3537,7 @@
           - 2.5
       obs post filters:
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-6,15
@@ -3469,12 +3549,14 @@
         maxvalue: 500.0
         flag all filter variables if any test variable is out of bounds: true
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-15
         minvalue: 100.0
         maxvalue: 500.0
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-15
@@ -3489,6 +3571,7 @@
         action:
           name: reject
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-15
@@ -3501,6 +3584,7 @@
               sensor: amsua_metop-b
               channels: 1-15
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-15
@@ -3512,6 +3596,7 @@
             options:
               channels: 1-15
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-15
@@ -3538,6 +3623,7 @@
               - 2.0
               - 4.5
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-15
@@ -3586,6 +3672,7 @@
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-15
@@ -3616,6 +3703,7 @@
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-15
@@ -3705,6 +3793,7 @@
           output file: ./vbc/amsua_metop-c.$BYYYYYMMDDTHH0000Z.satbias_cov.nc4
       obs prior filters:
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-15
@@ -3728,6 +3817,7 @@
           - 2.5
       obs post filters:
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-6,15
@@ -3739,12 +3829,14 @@
         maxvalue: 500.0
         flag all filter variables if any test variable is out of bounds: true
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-15
         minvalue: 100.0
         maxvalue: 500.0
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-15
@@ -3759,6 +3851,7 @@
         action:
           name: reject
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-15
@@ -3771,6 +3864,7 @@
               sensor: amsua_metop-c
               channels: 1-15
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-15
@@ -3782,6 +3876,7 @@
             options:
               channels: 1-15
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-15
@@ -3808,6 +3903,7 @@
               - 2.0
               - 4.5
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-15
@@ -3856,6 +3952,7 @@
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-15
@@ -3886,6 +3983,7 @@
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-15
@@ -3975,6 +4073,7 @@
           output file: ./vbc/amsua_n15.$BYYYYYMMDDTHH0000Z.satbias_cov.nc4
       obs prior filters:
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-15
@@ -3998,6 +4097,7 @@
           - 3.0
       obs post filters:
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-6,15
@@ -4009,12 +4109,14 @@
         maxvalue: 500.0
         flag all filter variables if any test variable is out of bounds: true
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-15
         minvalue: 100.0
         maxvalue: 500.0
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-15
@@ -4029,6 +4131,7 @@
         action:
           name: reject
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-15
@@ -4041,6 +4144,7 @@
               sensor: amsua_n15
               channels: 1-15
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-15
@@ -4052,6 +4156,7 @@
             options:
               channels: 1-15
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-15
@@ -4078,6 +4183,7 @@
               - 2.0
               - 4.5
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-15
@@ -4126,6 +4232,7 @@
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-15
@@ -4156,6 +4263,7 @@
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-15
@@ -4245,6 +4353,7 @@
           output file: ./vbc/amsua_n19.$BYYYYYMMDDTHH0000Z.satbias_cov.nc4
       obs prior filters:
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-15
@@ -4268,6 +4377,7 @@
           - 2.5
       obs post filters:
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-6,15
@@ -4279,12 +4389,14 @@
         maxvalue: 500.0
         flag all filter variables if any test variable is out of bounds: true
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-15
         minvalue: 100.0
         maxvalue: 500.0
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-15
@@ -4299,6 +4411,7 @@
         action:
           name: reject
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-15
@@ -4311,6 +4424,7 @@
               sensor: amsua_n19
               channels: 1-15
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-15
@@ -4322,6 +4436,7 @@
             options:
               channels: 1-15
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-15
@@ -4348,6 +4463,7 @@
               - 2.0
               - 4.5
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-15
@@ -4396,6 +4512,7 @@
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-15
@@ -4426,6 +4543,7 @@
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-15
@@ -4515,6 +4633,7 @@
           output file: ./vbc/atms_n20.$BYYYYYMMDDTHH0000Z.satbias_cov.nc4
       obs prior filters:
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-22
@@ -4545,6 +4664,7 @@
           - 2.5
       obs post filters:
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-7,16-22
@@ -4556,12 +4676,14 @@
         maxvalue: 500.0
         flag all filter variables if any test variable is out of bounds: true
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-22
         minvalue: 100.0
         maxvalue: 500.0
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-22
@@ -4576,6 +4698,7 @@
         action:
           name: reject
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-22
@@ -4588,6 +4711,7 @@
               sensor: atms_n20
               channels: 1-22
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-22
@@ -4599,6 +4723,7 @@
             options:
               channels: 1-22
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-22
@@ -4625,6 +4750,7 @@
               - 2.0
               - 4.5
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-22
@@ -4680,6 +4806,7 @@
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-22
@@ -4717,6 +4844,7 @@
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-22
@@ -4806,6 +4934,7 @@
           output file: ./vbc/atms_npp.$BYYYYYMMDDTHH0000Z.satbias_cov.nc4
       obs prior filters:
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-22
@@ -4836,6 +4965,7 @@
           - 2.5
       obs post filters:
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-7,16-22
@@ -4847,12 +4977,14 @@
         maxvalue: 500.0
         flag all filter variables if any test variable is out of bounds: true
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-22
         minvalue: 100.0
         maxvalue: 500.0
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-22
@@ -4867,6 +4999,7 @@
         action:
           name: reject
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-22
@@ -4879,6 +5012,7 @@
               sensor: atms_npp
               channels: 1-22
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-22
@@ -4890,6 +5024,7 @@
             options:
               channels: 1-22
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-22
@@ -4916,6 +5051,7 @@
               - 2.0
               - 4.5
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-22
@@ -4971,6 +5107,7 @@
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-22
@@ -4996,7 +5133,7 @@
             - 1
             - 1
             - 1
-            - -1
+            - 1
             - -1
             - 1
             - 1
@@ -5008,6 +5145,7 @@
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-22
@@ -5090,16 +5228,18 @@
           output file: ./vbc/avhrr3_metop-b.$BYYYYYMMDDTHH0000Z.satbias_cov.nc4
       obs prior filters:
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 3-5
         action:
           name: assign error
-          error parameter vector:
+          error parameter vector: &error_parameter_avhrr3_metop-b
           - 1.0
           - 1.08
           - 1.12
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: ObsError/brightnessTemperature
           channels: 3-5
@@ -5112,6 +5252,7 @@
                 channels: 3-5
       obs post filters:
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 3
@@ -5125,6 +5266,7 @@
         action:
           name: reject
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 3-5
@@ -5136,6 +5278,7 @@
             options:
               channels: 3-5
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 3-5
@@ -5144,6 +5287,7 @@
         action:
           name: reject
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 3-5
@@ -5156,6 +5300,7 @@
               channels: 3-5
               sensor: avhrr3_metop-b
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 3-5
@@ -5167,6 +5312,7 @@
             options:
               channels: 3-5
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 3-5
@@ -5175,6 +5321,7 @@
           channels: 3-5
           options:
             channels: 3-5
+            error parameter vector: *error_parameter_avhrr3_metop-b
             use_flag: &id020
             - -1
             - 1
@@ -5197,6 +5344,7 @@
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 3-5
@@ -5222,6 +5370,7 @@
         action:
           name: reject
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 3-5
@@ -5246,6 +5395,7 @@
               - 2.0
               - 4.0
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 3-5
@@ -5274,6 +5424,7 @@
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 3-5
@@ -5354,16 +5505,18 @@
           output file: ./vbc/avhrr3_metop-c.$BYYYYYMMDDTHH0000Z.satbias_cov.nc4
       obs prior filters:
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 3-5
         action:
           name: assign error
-          error parameter vector:
+          error parameter vector: &error_parameter_avhrr3_metop-c
           - 0.6
           - 0.68
           - 0.72
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: ObsError/brightnessTemperature
           channels: 3-5
@@ -5376,6 +5529,7 @@
                 channels: 3-5
       obs post filters:
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 3
@@ -5389,6 +5543,7 @@
         action:
           name: reject
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 3-5
@@ -5400,6 +5555,7 @@
             options:
               channels: 3-5
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 3-5
@@ -5408,6 +5564,7 @@
         action:
           name: reject
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 3-5
@@ -5420,6 +5577,7 @@
               channels: 3-5
               sensor: avhrr3_metop-c
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 3-5
@@ -5431,6 +5589,7 @@
             options:
               channels: 3-5
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 3-5
@@ -5439,6 +5598,7 @@
           channels: 3-5
           options:
             channels: 3-5
+            error parameter vector: *error_parameter_avhrr3_metop-c
             use_flag:
             - -1
             - 1
@@ -5457,6 +5617,7 @@
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 3-5
@@ -5485,6 +5646,7 @@
         action:
           name: reject
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 3-5
@@ -5509,6 +5671,7 @@
               - 2.0
               - 4.0
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 3-5
@@ -5537,6 +5700,7 @@
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 3-5
@@ -5622,16 +5786,18 @@
           output file: ./vbc/avhrr3_n19.$BYYYYYMMDDTHH0000Z.satbias_cov.nc4
       obs prior filters:
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 3-5
         action:
           name: assign error
-          error parameter vector:
+          error parameter vector: &error_parameter_avhrr3_n19
           - 1.0
           - 1.08
           - 1.12
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: ObsError/brightnessTemperature
           channels: 3-5
@@ -5644,6 +5810,7 @@
                 channels: 3-5
       obs post filters:
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 3
@@ -5657,6 +5824,7 @@
         action:
           name: reject
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 3-5
@@ -5668,6 +5836,7 @@
             options:
               channels: 3-5
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 3-5
@@ -5676,6 +5845,7 @@
         action:
           name: reject
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 3-5
@@ -5688,6 +5858,7 @@
               channels: 3-5
               sensor: avhrr3_n19
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 3-5
@@ -5699,6 +5870,7 @@
             options:
               channels: 3-5
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 3-5
@@ -5707,6 +5879,7 @@
           channels: 3-5
           options:
             channels: 3-5
+            error parameter vector: *error_parameter_avhrr3_n19
             use_flag: &id021
             - -1
             - 1
@@ -5729,6 +5902,7 @@
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 3-5
@@ -5754,6 +5928,7 @@
         action:
           name: reject
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 3-5
@@ -5778,6 +5953,7 @@
               - 2.0
               - 4.0
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 3-5
@@ -5806,6 +5982,7 @@
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 3-5
@@ -5907,6 +6084,7 @@
         input file: fv3-jedi/rcov/cris-fsr_108_jedi_rcov.nc4
       obs prior filters:
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211, 216,
@@ -5928,7 +6106,7 @@
             2158, 2161, 2168, 2171, 2175, 2182
         action:
           name: assign error
-          error parameter vector:
+          error parameter vector: &error_param-cris-fsr_n20
           - 0.823
           - 0.76
           - 0.736
@@ -6361,6 +6539,7 @@
           - 0.943
           - 0.946
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: ObsError/brightnessTemperature
           channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211, 216,
@@ -6407,6 +6586,7 @@
                   2175, 2182
       obs post filters:
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1972, 1973, 1974, 1975, 1976, 1977, 1978, 1979, 1980, 1981, 1982,
@@ -6422,6 +6602,7 @@
         action:
           name: reject
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211, 216,
@@ -6483,6 +6664,7 @@
                 1619, 1624, 1635, 1939-1987, 2119, 2140, 2143, 2147, 2153, 2158, 2161,
                 2168, 2171, 2175, 2182
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211, 216,
@@ -6507,6 +6689,7 @@
         action:
           name: reject
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211, 216,
@@ -6569,6 +6752,7 @@
                 2168, 2171, 2175, 2182
               sensor: cris-fsr_n20
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211, 216,
@@ -6630,6 +6814,7 @@
                 1619, 1624, 1635, 1939-1987, 2119, 2140, 2143, 2147, 2153, 2158, 2161,
                 2168, 2171, 2175, 2182
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211, 216,
@@ -6687,6 +6872,7 @@
               1346-1347, 1473-1474, 1491, 1499, 1553, 1570, 1596, 1602, 1619, 1624,
               1635, 1939-1987, 2119, 2140, 2143, 2147, 2153, 2158, 2161, 2168, 2171,
               2175, 2182
+            error parameter vector: *error_param-cris-fsr_n20
             use_flag: &id022
             - -1
             - -1
@@ -7557,10 +7743,15 @@
             - 4.0
             - 2.0
             - 4.0
+            cloud detection criteria:
+            - 0.60
+            - 0.68
+            - 0.72
         maxvalue: 1e-12
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211, 216,
@@ -7623,6 +7814,7 @@
         action:
           name: reject
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211, 216,
@@ -7697,6 +7889,7 @@
               - 2.0
               - 4.0
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211, 216,
@@ -8237,6 +8430,7 @@
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211, 216,
@@ -8301,6 +8495,7 @@
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211, 216,
@@ -8451,6 +8646,7 @@
         input file: fv3-jedi/rcov/cris-fsr_108_jedi_rcov.nc4
       obs prior filters:
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211, 216,
@@ -8472,7 +8668,7 @@
             2158, 2161, 2168, 2171, 2175, 2182
         action:
           name: assign error
-          error parameter vector:
+          error parameter vector: &error_param-cris-fsr_npp
           - 0.823
           - 0.76
           - 0.736
@@ -8905,6 +9101,7 @@
           - 0.943
           - 0.946
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: ObsError/brightnessTemperature
           channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211, 216,
@@ -8951,6 +9148,7 @@
                   2175, 2182
       obs post filters:
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1972, 1973, 1974, 1975, 1976, 1977, 1978, 1979, 1980, 1981, 1982,
@@ -8966,6 +9164,7 @@
         action:
           name: reject
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211, 216,
@@ -9027,6 +9226,7 @@
                 1619, 1624, 1635, 1939-1987, 2119, 2140, 2143, 2147, 2153, 2158, 2161,
                 2168, 2171, 2175, 2182
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211, 216,
@@ -9051,6 +9251,7 @@
         action:
           name: reject
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211, 216,
@@ -9113,6 +9314,7 @@
                 2168, 2171, 2175, 2182
               sensor: cris-fsr_npp
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211, 216,
@@ -9174,6 +9376,7 @@
                 1619, 1624, 1635, 1939-1987, 2119, 2140, 2143, 2147, 2153, 2158, 2161,
                 2168, 2171, 2175, 2182
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211, 216,
@@ -9231,6 +9434,7 @@
               1346-1347, 1473-1474, 1491, 1499, 1553, 1570, 1596, 1602, 1619, 1624,
               1635, 1939-1987, 2119, 2140, 2143, 2147, 2153, 2158, 2161, 2168, 2171,
               2175, 2182
+            error parameter vector: *error_param-cris-fsr_npp
             use_flag: &id024
             - -1
             - -1
@@ -10101,10 +10305,15 @@
             - 4.0
             - 2.0
             - 4.0
+            cloud detection criteria:
+            - 0.60
+            - 0.68
+            - 0.72
         maxvalue: 1e-12
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211, 216,
@@ -10167,6 +10376,7 @@
         action:
           name: reject
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211, 216,
@@ -10241,6 +10451,7 @@
               - 2.0
               - 4.0
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211, 216,
@@ -10781,6 +10992,7 @@
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211, 216,
@@ -10845,6 +11057,7 @@
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211, 216,
@@ -11003,18 +11216,21 @@
           output file: ./vbc/gmi_gpm.$BYYYYYMMDDTHH0000Z.satbias_cov.nc4
       obs filters:
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-9
         minvalue: 50.0
         maxvalue: 320.0
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 10-13
         minvalue: 70.0
         maxvalue: 320.0
       - filter: Domain Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-13
@@ -11037,6 +11253,7 @@
             name: GeoVaLs/average_surface_temperature_within_field_of_view
           minvalue: 275
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-13
@@ -11050,6 +11267,7 @@
           minvalue: 25.0
           maxvalue: 40.0
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: DerivedMetaData/cloudWaterContent_obs
           type: float
@@ -11061,6 +11279,7 @@
               clwret_types:
               - ObsValue
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-13
@@ -11073,6 +11292,7 @@
             - ObsValue
         maxvalue: 900
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-13
@@ -11085,6 +11305,7 @@
             - HofX
         maxvalue: 900
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: DerivedMetaData/cloudWaterContent_hofx
           type: float
@@ -11096,6 +11317,7 @@
               clwret_types:
               - HofX
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-13
@@ -11136,6 +11358,7 @@
         action:
           name: reject
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-13
@@ -11176,6 +11399,7 @@
         action:
           name: reject
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-13
@@ -11216,6 +11440,7 @@
         action:
           name: reject
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-13
@@ -11283,7 +11508,7 @@
               - 4.5
               - 4.0
               - 3.8
-              - 300.0
+              - 11.0
               - 5.0
               - 11.5
               - 5.0
@@ -11319,7 +11544,7 @@
               - 30.0
               - 40.0
       - filter: Background Check
-        apply at iterations: 0, 1
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1,2,4,6
@@ -11328,7 +11553,7 @@
         action:
           name: reject
       - filter: Background Check
-        apply at iterations: 0, 1
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 9,10,11
@@ -11337,7 +11562,7 @@
         action:
           name: reject
       - filter: Background Check
-        apply at iterations: 0, 1
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 3,5,8
@@ -11346,7 +11571,7 @@
         action:
           name: reject
       - filter: Background Check
-        apply at iterations: 0, 1
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 12,13
@@ -11355,7 +11580,7 @@
         action:
           name: reject
       - filter: Background Check
-        apply at iterations: 0, 1
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 7
@@ -11364,6 +11589,7 @@
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-13
@@ -11422,11 +11648,13 @@
 #         GSI_version: GEOS
       obs filters:
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         where:
         - variable:
             name: MetaData/satelliteIdentifier
           is_in: 41,265,266,421,440,724,725,726,727,728,729
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: bendingAngle
         where:
@@ -11435,6 +11663,7 @@
         action:
           name: reject
       - filter: Domain Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: bendingAngle
         where:
@@ -11445,6 +11674,7 @@
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: bendingAngle
         where:
@@ -11457,6 +11687,7 @@
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: bendingAngle
         where:
@@ -11469,6 +11700,7 @@
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: bendingAngle
         where:
@@ -11484,6 +11716,7 @@
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: bendingAngle
         where:
@@ -11499,6 +11732,7 @@
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: bendingAngle
         where:
@@ -11514,6 +11748,7 @@
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: bendingAngle
         where:
@@ -11529,10 +11764,12 @@
         action:
           name: reject
       - filter: ROobserror
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: bendingAngle
         errmodel: NBAM
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: bendingAngle
         action:
@@ -11542,6 +11779,7 @@
         - variable: MetaData/satelliteIdentifier
           is_in: 267,268,269
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: JediAdjustObsError/bendingAngle
           type: float
@@ -11552,6 +11790,7 @@
               - name: ObsErrorData/bendingAngle
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: bendingAngle
         action:
@@ -11569,6 +11808,7 @@
           is_in: 3,5,41,42,43,44,267,268,269,440,421,724,725,726,727,728,729, 750,751,752,753,754,755,821,825
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: bendingAngle
         action:
@@ -11583,6 +11823,7 @@
           value: is_valid
         defer to post: true
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: bendingAngle
         threshold: 5
@@ -11590,6 +11831,7 @@
           name: reject
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: bendingAngle
         action:
@@ -11601,10 +11843,12 @@
           value: is_valid
         defer to post: true
       - filter: Background Check RONBAM
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: bendingAngle
         defer to post: true
       - filter: Background Check RONBAM
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: bendingAngle
         action:
@@ -11728,6 +11972,7 @@
         input file: fv3-jedi/rcov/iasi_metop_141_jedi_rcov.nc4
       obs prior filters:
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 16, 29, 32, 35, 38, 41, 44, 47, 49-51, 53, 55-57, 59, 61-63, 66,
@@ -12397,6 +12642,7 @@
           - 2.53
           - 9.0
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: ObsError/brightnessTemperature
           channels: 16, 29, 32, 35, 38, 41, 44, 47, 49-51, 53, 55-57, 59, 61-63, 66,
@@ -12505,6 +12751,7 @@
                   7912, 7950, 7972, 7980, 7995, 8007, 8015, 8055, 8078
       obs post filters:
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 7024, 7027, 7029, 7032, 7038, 7043, 7046, 7049, 7069, 7072, 7076,
@@ -12522,6 +12769,7 @@
         action:
           name: reject
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 16, 29, 32, 35, 38, 41, 44, 47, 49-51, 53, 55-57, 59, 61-63, 66,
@@ -12674,6 +12922,7 @@
                 7549, 7584, 7665-7666, 7831, 7836, 7853, 7865, 7885, 7888, 7912, 7950,
                 7972, 7980, 7995, 8007, 8015, 8055, 8078
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 16, 29, 32, 35, 38, 41, 44, 47, 49-51, 53, 55-57, 59, 61-63, 66,
@@ -12728,6 +12977,7 @@
         action:
           name: reject
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 16, 29, 32, 35, 38, 41, 44, 47, 49-51, 53, 55-57, 59, 61-63, 66,
@@ -12881,6 +13131,7 @@
                 7972, 7980, 7995, 8007, 8015, 8055, 8078
               sensor: iasi_metop-b
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 16, 29, 32, 35, 38, 41, 44, 47, 49-51, 53, 55-57, 59, 61-63, 66,
@@ -13033,6 +13284,7 @@
                 7549, 7584, 7665-7666, 7831, 7836, 7853, 7865, 7885, 7888, 7912, 7950,
                 7972, 7980, 7995, 8007, 8015, 8055, 8078
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 16, 29, 32, 35, 38, 41, 44, 47, 49-51, 53, 55-57, 59, 61-63, 66,
@@ -14420,10 +14672,15 @@
             - 4.0
             - 2.0
             - 4.0
+            cloud detection criteria:
+            - 0.60
+            - 0.68
+            - 0.72
         maxvalue: 1e-12
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 16, 29, 32, 35, 38, 41, 44, 47, 49-51, 53, 55-57, 59, 61-63, 66,
@@ -14576,6 +14833,7 @@
         action:
           name: reject
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 16, 29, 32, 35, 38, 41, 44, 47, 49-51, 53, 55-57, 59, 61-63, 66,
@@ -14741,6 +14999,7 @@
               - 2.0
               - 4.0
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 16, 29, 32, 35, 38, 41, 44, 47, 49-51, 53, 55-57, 59, 61-63, 66,
@@ -15620,6 +15879,7 @@
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 16, 29, 32, 35, 38, 41, 44, 47, 49-51, 53, 55-57, 59, 61-63, 66,
@@ -15773,6 +16033,7 @@
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 16, 29, 32, 35, 38, 41, 44, 47, 49-51, 53, 55-57, 59, 61-63, 66,
@@ -16041,6 +16302,7 @@
         input file: fv3-jedi/rcov/iasi_metop_141_jedi_rcov.nc4
       obs prior filters:
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 16, 29, 32, 35, 38, 41, 44, 47, 49-51, 53, 55-57, 59, 61-63, 66,
@@ -16710,6 +16972,7 @@
           - 2.53
           - 9.0
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: ObsError/brightnessTemperature
           channels: 16, 29, 32, 35, 38, 41, 44, 47, 49-51, 53, 55-57, 59, 61-63, 66,
@@ -16818,6 +17081,7 @@
                   7912, 7950, 7972, 7980, 7995, 8007, 8015, 8055, 8078
       obs post filters:
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 7024, 7027, 7029, 7032, 7038, 7043, 7046, 7049, 7069, 7072, 7076,
@@ -16835,6 +17099,7 @@
         action:
           name: reject
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 16, 29, 32, 35, 38, 41, 44, 47, 49-51, 53, 55-57, 59, 61-63, 66,
@@ -16987,6 +17252,7 @@
                 7549, 7584, 7665-7666, 7831, 7836, 7853, 7865, 7885, 7888, 7912, 7950,
                 7972, 7980, 7995, 8007, 8015, 8055, 8078
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 16, 29, 32, 35, 38, 41, 44, 47, 49-51, 53, 55-57, 59, 61-63, 66,
@@ -17041,6 +17307,7 @@
         action:
           name: reject
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 16, 29, 32, 35, 38, 41, 44, 47, 49-51, 53, 55-57, 59, 61-63, 66,
@@ -17194,6 +17461,7 @@
                 7972, 7980, 7995, 8007, 8015, 8055, 8078
               sensor: iasi_metop-c
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 16, 29, 32, 35, 38, 41, 44, 47, 49-51, 53, 55-57, 59, 61-63, 66,
@@ -17346,6 +17614,7 @@
                 7549, 7584, 7665-7666, 7831, 7836, 7853, 7865, 7885, 7888, 7912, 7950,
                 7972, 7980, 7995, 8007, 8015, 8055, 8078
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 16, 29, 32, 35, 38, 41, 44, 47, 49-51, 53, 55-57, 59, 61-63, 66,
@@ -18733,10 +19002,15 @@
             - 4.0
             - 2.0
             - 4.0
+            cloud detection criteria:
+            - 0.60
+            - 0.68
+            - 0.72
         maxvalue: 1e-12
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 16, 29, 32, 35, 38, 41, 44, 47, 49-51, 53, 55-57, 59, 61-63, 66,
@@ -18889,6 +19163,7 @@
         action:
           name: reject
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 16, 29, 32, 35, 38, 41, 44, 47, 49-51, 53, 55-57, 59, 61-63, 66,
@@ -19054,6 +19329,7 @@
               - 2.0
               - 4.0
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 16, 29, 32, 35, 38, 41, 44, 47, 49-51, 53, 55-57, 59, 61-63, 66,
@@ -19933,6 +20209,7 @@
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 16, 29, 32, 35, 38, 41, 44, 47, 49-51, 53, 55-57, 59, 61-63, 66,
@@ -20086,6 +20363,7 @@
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 16, 29, 32, 35, 38, 41, 44, 47, 49-51, 53, 55-57, 59, 61-63, 66,
@@ -20318,12 +20596,14 @@
           output file: ./vbc/mhs_metop-b.$BYYYYYMMDDTHH0000Z.satbias_cov.nc4
       obs filters:
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-5
         minvalue: 50.0
         maxvalue: 550.0
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-5
@@ -20343,6 +20623,7 @@
         action:
           name: reject
       - filter: Domain Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-5
@@ -20352,6 +20633,7 @@
           minvalue: 10
           maxvalue: 81
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-3
@@ -20367,6 +20649,7 @@
         action:
           name: reject
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-5
@@ -20375,6 +20658,7 @@
             name: GeoVaLs/surface_snow_area_fraction
           minvalue: 0.01
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-5
@@ -20383,6 +20667,7 @@
             name: GeoVaLs/ice_area_fraction
           minvalue: 0.01
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-5
@@ -20394,6 +20679,7 @@
             name: GeoVaLs/land_area_fraction
           maxvalue: 0.99
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-5
@@ -20405,6 +20691,7 @@
             name: GeoVaLs/average_surface_temperature_within_field_of_view
           maxvalue: 275
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-5
@@ -20454,6 +20741,7 @@
               - 50.0
               - 60.0
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-5
@@ -20503,6 +20791,7 @@
               - 25.0
               - 30.0
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-5
@@ -20515,6 +20804,7 @@
               sensor: mhs_metop-b
               channels: 1-5
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-5
@@ -20526,6 +20816,7 @@
             options:
               channels: 1-5
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-5
@@ -20606,6 +20897,7 @@
         action:
           name: reject
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-5
@@ -20767,12 +21059,14 @@
           output file: ./vbc/mhs_metop-c.$BYYYYYMMDDTHH0000Z.satbias_cov.nc4
       obs filters:
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-5
         minvalue: 50.0
         maxvalue: 550.0
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-5
@@ -20792,6 +21086,7 @@
         action:
           name: reject
       - filter: Domain Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-5
@@ -20801,6 +21096,7 @@
           minvalue: 10
           maxvalue: 81
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-3
@@ -20816,6 +21112,7 @@
         action:
           name: reject
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-5
@@ -20824,6 +21121,7 @@
             name: GeoVaLs/surface_snow_area_fraction
           minvalue: 0.01
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-5
@@ -20832,6 +21130,7 @@
             name: GeoVaLs/ice_area_fraction
           minvalue: 0.01
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-5
@@ -20843,6 +21142,7 @@
             name: GeoVaLs/land_area_fraction
           maxvalue: 0.99
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-5
@@ -20854,6 +21154,7 @@
             name: GeoVaLs/average_surface_temperature_within_field_of_view
           maxvalue: 275
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-5
@@ -20903,6 +21204,7 @@
               - 50.0
               - 60.0
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-5
@@ -20952,6 +21254,7 @@
               - 25.0
               - 30.0
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-5
@@ -20964,6 +21267,7 @@
               sensor: mhs_metop-c
               channels: 1-5
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-5
@@ -20975,6 +21279,7 @@
             options:
               channels: 1-5
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-5
@@ -21055,6 +21360,7 @@
         action:
           name: reject
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-5
@@ -21216,12 +21522,14 @@
           output file: ./vbc/mhs_n19.$BYYYYYMMDDTHH0000Z.satbias_cov.nc4
       obs filters:
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-5
         minvalue: 50.0
         maxvalue: 550.0
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-5
@@ -21241,6 +21549,7 @@
         action:
           name: reject
       - filter: Domain Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-5
@@ -21250,6 +21559,7 @@
           minvalue: 10
           maxvalue: 81
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-3
@@ -21265,6 +21575,7 @@
         action:
           name: reject
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-5
@@ -21273,6 +21584,7 @@
             name: GeoVaLs/surface_snow_area_fraction
           minvalue: 0.01
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-5
@@ -21281,6 +21593,7 @@
             name: GeoVaLs/ice_area_fraction
           minvalue: 0.01
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-5
@@ -21292,6 +21605,7 @@
             name: GeoVaLs/land_area_fraction
           maxvalue: 0.99
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-5
@@ -21303,6 +21617,7 @@
             name: GeoVaLs/average_surface_temperature_within_field_of_view
           maxvalue: 275
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-5
@@ -21352,6 +21667,7 @@
               - 50.0
               - 60.0
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-5
@@ -21401,6 +21717,7 @@
               - 25.0
               - 30.0
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-5
@@ -21413,6 +21730,7 @@
               sensor: mhs_n19
               channels: 1-5
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-5
@@ -21424,6 +21742,7 @@
             options:
               channels: 1-5
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-5
@@ -21504,6 +21823,7 @@
         action:
           name: reject
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-5
@@ -21605,6 +21925,7 @@
         observation alias file: $FVHOME/run/jedi/Config/obsop_name_map.yaml
       obs filters:
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: ozoneProfile
         minvalue: 0
@@ -21612,6 +21933,7 @@
         action:
           name: reject
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: ozoneProfile
         threshold: 5.0
@@ -21644,12 +21966,14 @@
         observation alias file: $FVHOME/run/jedi/Config/obsop_name_map.yaml
       obs filters:
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: ozoneTotal
         action:
           name: assign error
           error parameter: 5.0
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: ozoneTotal
         minvalue: 0
@@ -21657,6 +21981,7 @@
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: ozoneTotal
         test variables:
@@ -21665,6 +21990,7 @@
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: ozoneTotal
         test variables:
@@ -21674,6 +22000,7 @@
         action:
           name: reject
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: ozoneTotal
         threshold: 5.0
@@ -21702,6 +22029,7 @@
       obs filters:
       # range sanity check
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: ozoneProfile
         minvalue: 0
@@ -21710,6 +22038,7 @@
           name: reject
       # threshold is really threshold*observation error (threshold= relative threshold)
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: ozoneProfile
         threshold: 5.0
@@ -21738,6 +22067,7 @@
       obs filters:
       # range sanity check
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: ozoneProfile
         minvalue: 0
@@ -21746,6 +22076,7 @@
           name: reject
       # threshold is really threshold*observation error (threshold= relative threshold)
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: ozoneProfile
         threshold: 5.0
@@ -21777,12 +22108,14 @@
         - 1
       obs filters:
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: ozoneTotal
         action:
           name: assign error
           error parameter: 5.216
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: ozoneTotal
         minvalue: 0
@@ -21790,6 +22123,7 @@
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: ozoneTotal
         test variables:
@@ -21798,6 +22132,7 @@
         action:
           name: reject
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: ozoneTotal
         threshold: 5.0
@@ -21858,6 +22193,7 @@
           hofx scaling field group: DerivedVariables
       obs pre filters:
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         where:
@@ -21866,6 +22202,7 @@
         action:
           name: reject
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windNorthward
         where:
@@ -21875,19 +22212,24 @@
           name: reject
       obs prior filters:
       - filter: Variable Transforms
+        apply at iterations: 0, 1, 2
         Transform: AdjustedHeightCoordinate
         SkipWhenNoObs: false
       - filter: Variable Transforms
+        apply at iterations: 0, 1, 2
         Transform: SurfaceWindScalingHeight
         SkipWhenNoObs: false
       - filter: Variable Transforms
+        apply at iterations: 0, 1, 2
         Transform: SurfaceWindScalingPressure
         SkipWhenNoObs: false
       - filter: Variable Transforms
+        apply at iterations: 0, 1, 2
         Transform: SurfaceWindScalingCombined
         SkipWhenNoObs: false
       obs post filters:
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         - name: windNorthward
@@ -21969,6 +22311,7 @@
               - 3.9
               - 4.1
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         where:
@@ -21977,6 +22320,7 @@
         action:
           name: reject
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windNorthward
         where:
@@ -21985,6 +22329,7 @@
         action:
           name: reject
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         action:
@@ -21995,6 +22340,7 @@
             name: GsiAdjustObsError/windEastward
           value: is_valid
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windNorthward
         action:
@@ -22005,6 +22351,7 @@
             name: GsiAdjustObsError/windNorthward
           value: is_valid
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         where:
@@ -22021,6 +22368,7 @@
               adjusted_error_name: GsiAdjustObsError
               geovar_sfc_geomz: height_above_mean_sea_level_at_surface
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windNorthward
         where:
@@ -22037,6 +22385,7 @@
               adjusted_error_name: GsiAdjustObsError
               geovar_sfc_geomz: height_above_mean_sea_level_at_surface
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         function absolute threshold:
@@ -22054,6 +22403,7 @@
         action:
           name: reject
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windNorthward
         function absolute threshold:
@@ -22071,6 +22421,7 @@
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         test variables:
@@ -22080,6 +22431,7 @@
           name: reject
         defer to post: true
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: TempObsErrorData/windEastward
           type: float
@@ -22090,6 +22442,7 @@
               - name: ObsErrorData/windEastward
         defer to post: true
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: TempObsErrorData/windNorthward
           type: float
@@ -22100,6 +22453,7 @@
               - name: ObsErrorData/windNorthward
         defer to post: true
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windNorthward
         test variables:
@@ -22109,6 +22463,7 @@
           name: reject
         defer to post: true
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         action:
@@ -22124,6 +22479,7 @@
           is_in: 221
         defer to post: true
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windNorthward
         action:
@@ -22167,14 +22523,17 @@
         hofx scaling field group: DerivedVariables
       obs prior filters:
       - filter: Variable Transforms
+        apply at iterations: 0, 1, 2
         Transform: SurfaceWindScalingPressure
         SkipWhenNoObs: false
       obs post filters:
       - filter: PreQC
+        apply at iterations: 0, 1, 2
         maxvalue: 3
         action:
           name: reject
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         where:
@@ -22183,6 +22542,7 @@
         action:
           name: reject
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windNorthward
         where:
@@ -22191,6 +22551,7 @@
         action:
           name: reject
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         - name: windNorthward
@@ -22234,11 +22595,13 @@
               - 2
               - 2
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         where:
         - variable:
             name: ObsType/windEastward
           is_in: 240, 241, 248, 249, 251, 255, 256, 260
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         - name: windNorthward
@@ -22294,6 +22657,7 @@
             name: ObsType/windEastward
           is_in: 244
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         - name: windNorthward
@@ -22377,6 +22741,7 @@
             name: ObsType/windEastward
           is_in: 245, 246
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         - name: windNorthward
@@ -22460,6 +22825,7 @@
             name: ObsType/windEastward
           is_in: 242, 243, 247, 252, 253
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         - name: windNorthward
@@ -22543,6 +22909,7 @@
             name: ObsType/windEastward
           is_in: 254
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         - name: windNorthward
@@ -22626,6 +22993,7 @@
             name: ObsType/windEastward
           is_in: 250
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         - name: windNorthward
@@ -22681,6 +23049,7 @@
             name: ObsType/windEastward
           is_in: 257
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         - name: windNorthward
@@ -22720,6 +23089,7 @@
             name: ObsType/windEastward
           is_in: 258
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         - name: windNorthward
@@ -22775,6 +23145,7 @@
             name: ObsType/windEastward
           is_in: 259
       - filter: Difference Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         - name: windNorthward
@@ -22789,6 +23160,7 @@
             name: MetaData/surfaceQualifier
           minvalue: 1
       - filter: Difference Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         - name: windNorthward
@@ -22803,6 +23175,7 @@
             name: MetaData/surfaceQualifier
           minvalue: 1
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         - name: windNorthward
@@ -22816,6 +23189,7 @@
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         - name: windNorthward
@@ -22829,6 +23203,7 @@
         action:
           name: reject
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         where:
@@ -22845,6 +23220,7 @@
               adjusted_error_name: GsiAdjustObsError
               geovar_sfc_geomz: height_above_mean_sea_level_at_surface
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windNorthward
         where:
@@ -22861,6 +23237,7 @@
               adjusted_error_name: GsiAdjustObsError
               geovar_sfc_geomz: height_above_mean_sea_level_at_surface
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         function absolute threshold:
@@ -22954,6 +23331,7 @@
         action:
           name: reject
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windNorthward
         function absolute threshold:
@@ -23047,6 +23425,7 @@
         action:
           name: reject
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         action:
@@ -23062,6 +23441,7 @@
           is_in: 240-260
         defer to post: true
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windNorthward
         action:
@@ -23113,13 +23493,16 @@
         hofx scaling field group: DerivedVariables
       obs prior filters:
       - filter: Variable Transforms
+        apply at iterations: 0, 1, 2
         Transform: AdjustedHeightCoordinate
         SkipWhenNoObs: false
       - filter: Variable Transforms
+        apply at iterations: 0, 1, 2
         Transform: SurfaceWindScalingHeight
         SkipWhenNoObs: false
       obs post filters:
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         - name: windNorthward
@@ -23189,6 +23572,7 @@
               - 2.0
               - 2.0
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         where:
@@ -23197,6 +23581,7 @@
         action:
           name: reject
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windNorthward
         where:
@@ -23205,6 +23590,7 @@
         action:
           name: reject
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         where:
@@ -23221,6 +23607,7 @@
               adjusted_error_name: GsiAdjustObsError
               geovar_sfc_geomz: height_above_mean_sea_level_at_surface
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windNorthward
         where:
@@ -23237,6 +23624,7 @@
               adjusted_error_name: GsiAdjustObsError
               geovar_sfc_geomz: height_above_mean_sea_level_at_surface
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         - name: windNorthward
@@ -23250,6 +23638,7 @@
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         - name: windNorthward
@@ -23265,6 +23654,7 @@
         minvalue: -5.0
         maxvalue: 5.0
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         - name: windNorthward
@@ -23280,6 +23670,7 @@
         minvalue: -5.0
         maxvalue: 5.0
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         function absolute threshold:
@@ -23298,6 +23689,7 @@
           name: reject
         defer to post: true
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windNorthward
         function absolute threshold:
@@ -23388,13 +23780,16 @@
           - name: specificHumidity
       obs prior filters:
       - filter: Variable Transforms
+        apply at iterations: 0, 1, 2
         Transform: AdjustedHeightCoordinate
         SkipWhenNoObs: false
       - filter: Variable Transforms
+        apply at iterations: 0, 1, 2
         Transform: SurfaceWindScalingHeight
         SkipWhenNoObs: false
       obs post filters:
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: stationPressure
         where:
@@ -23403,11 +23798,13 @@
         action:
           name: reject
       - filter: RejectList
+        apply at iterations: 0, 1, 2
         where:
         - variable:
             name: PreQC/stationPressure
           is_in: 4-15
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: stationPressure
         where:
@@ -23436,6 +23833,7 @@
               - 120
               - 100000000000.0
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: stationPressure
         where:
@@ -23446,6 +23844,7 @@
           name: assign error
           error parameter: 100000000000.0
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         action:
           name: inflate error
           inflation factor: 0.7
@@ -23457,6 +23856,7 @@
           is_in:
           - 0
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         action:
           name: inflate error
           inflation factor: 1.2
@@ -23465,6 +23865,7 @@
           is_in:
           - 3
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: stationPressure
         action:
@@ -23476,6 +23877,7 @@
               geovar_sfc_geomz: height_above_mean_sea_level_at_surface
               station_altitude: height
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: TempObsErrorData/stationPressure
           type: float
@@ -23486,6 +23888,7 @@
               - name: ObsErrorData/stationPressure
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: stationPressure
         action:
@@ -23500,6 +23903,7 @@
           value: is_valid
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: stationPressure
         action:
@@ -23514,6 +23918,7 @@
           value: is_valid
         defer to post: true
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: stationPressure
         threshold: 4.0
@@ -23527,6 +23932,7 @@
           is_in: 180,183
         defer to post: true
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: stationPressure
         threshold: 2.8
@@ -23540,6 +23946,7 @@
           is_in: 180,183
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: stationPressure
         action:
@@ -23551,6 +23958,7 @@
           value: is_valid
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: stationPressure
         action:
@@ -23562,6 +23970,7 @@
               variable: stationPressure
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         where:
@@ -23572,6 +23981,7 @@
           name: assign error
           error parameter: 100000000000.0
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         where:
@@ -23581,6 +23991,7 @@
         action:
           name: reject
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         where:
@@ -23605,6 +24016,7 @@
               - 2.25
               - 1.0
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         action:
@@ -23620,6 +24032,7 @@
               distance threshold: -1.0
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         action:
@@ -23631,6 +24044,7 @@
           - 3 7
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         action:
@@ -23642,6 +24056,7 @@
           maxvalue: 9999
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         action:
@@ -23653,6 +24068,7 @@
           value: is_valid
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         action:
@@ -23665,6 +24081,7 @@
               geovar_sfc_geomz: height_above_mean_sea_level_at_surface
         defer to post: true
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: TempObsErrorData/airTemperature
           type: float
@@ -23675,6 +24092,7 @@
               - name: ObsErrorData/airTemperature
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         action:
@@ -23689,6 +24107,7 @@
           value: is_valid
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         action:
@@ -23703,6 +24122,7 @@
           value: is_valid
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         where:
@@ -23711,6 +24131,7 @@
         action:
           name: reject
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         threshold: 7.0
@@ -23722,6 +24143,7 @@
           - 3
         defer to post: true
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         threshold: 4.9
@@ -23733,6 +24155,7 @@
           - 3
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         action:
@@ -23744,6 +24167,7 @@
           value: is_valid
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         action:
@@ -23755,6 +24179,7 @@
               variable: airTemperature
         defer to post: true
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         test variables:
@@ -23762,6 +24187,7 @@
         maxvalue: 100000.0
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: virtualTemperature
         where:
@@ -23772,6 +24198,7 @@
           name: assign error
           error parameter: 100000000000.0
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: virtualTemperature
         where:
@@ -23781,6 +24208,7 @@
         action:
           name: reject
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: virtualTemperature
         where:
@@ -23805,6 +24233,7 @@
               - 2.25
               - 1.0
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: virtualTemperature
         action:
@@ -23820,6 +24249,7 @@
               distance threshold: -1.0
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: virtualTemperature
         action:
@@ -23831,6 +24261,7 @@
           - 3 7
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: virtualTemperature
         action:
@@ -23842,6 +24273,7 @@
           maxvalue: 9999
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: virtualTemperature
         action:
@@ -23853,6 +24285,7 @@
           value: is_valid
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: virtualTemperature
         action:
@@ -23865,6 +24298,7 @@
               geovar_sfc_geomz: height_above_mean_sea_level_at_surface
         defer to post: true
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: TempObsErrorData/virtualTemperature
           type: float
@@ -23875,6 +24309,7 @@
               - name: ObsErrorData/virtualTemperature
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: virtualTemperature
         action:
@@ -23889,6 +24324,7 @@
           value: is_valid
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: virtualTemperature
         action:
@@ -23903,6 +24339,7 @@
           value: is_valid
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: virtualTemperature
         where:
@@ -23911,6 +24348,7 @@
         action:
           name: reject
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: virtualTemperature
         threshold: 7.0
@@ -23922,6 +24360,7 @@
           - 3
         defer to post: true
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: virtualTemperature
         threshold: 4.9
@@ -23933,6 +24372,7 @@
           - 3
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: virtualTemperature
         action:
@@ -23944,6 +24384,7 @@
           value: is_valid
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: virtualTemperature
         action:
@@ -23955,6 +24396,7 @@
               variable: virtualTemperature
         defer to post: true
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: virtualTemperature
         test variables:
@@ -23962,6 +24404,7 @@
         maxvalue: 100000.0
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: specificHumidity
         where:
@@ -23970,6 +24413,7 @@
         action:
           name: reject
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: specificHumidity
         where:
@@ -23980,6 +24424,7 @@
           name: assign error
           error parameter: 100000000000.0
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: specificHumidity
         where:
@@ -23989,6 +24434,7 @@
         action:
           name: reject
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: specificHumidity
         where:
@@ -24003,6 +24449,7 @@
               variable: specificHumidity
               input_error_name: GsiInputObsError
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: specificHumidity
         action:
@@ -24015,6 +24462,7 @@
               adjusted_error_name: GsiAdjustObsError
               geovar_sfc_geomz: height_above_mean_sea_level_at_surface
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: specificHumidity
         threshold: 8.0
@@ -24026,6 +24474,7 @@
           - 3
         defer to post: true
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: specificHumidity
         threshold: 5.6
@@ -24037,6 +24486,7 @@
           - 3
         defer to post: true
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: specificHumidity
         action:
@@ -24048,6 +24498,7 @@
               variable: specificHumidity
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         where:
@@ -24058,6 +24509,7 @@
           name: assign error
           error parameter: 100000000000.0
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         where:
@@ -24067,6 +24519,7 @@
         action:
           name: reject
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         - name: windNorthward
@@ -24078,6 +24531,7 @@
           name: assign error
           error parameter: 2.5
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         - name: windNorthward
@@ -24089,6 +24543,7 @@
           name: assign error
           error parameter: 2.2
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         where:
@@ -24097,6 +24552,7 @@
         action:
           name: reject
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windNorthward
         where:
@@ -24105,6 +24561,7 @@
         action:
           name: reject
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         action:
@@ -24117,6 +24574,7 @@
               adjusted_error_name: GsiAdjustObsError
               geovar_sfc_geomz: height_above_mean_sea_level_at_surface
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windNorthward
         action:
@@ -24129,6 +24587,7 @@
               adjusted_error_name: GsiAdjustObsError
               geovar_sfc_geomz: height_above_mean_sea_level_at_surface
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         threshold: 6.0
@@ -24140,6 +24599,7 @@
           - 3
         defer to post: true
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         threshold: 4.2
@@ -24151,6 +24611,7 @@
           - 3
         defer to post: true
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windNorthward
         threshold: 6.0
@@ -24162,6 +24623,7 @@
           - 3
         defer to post: true
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windNorthward
         threshold: 4.2
@@ -24173,6 +24635,7 @@
           - 3
         defer to post: true
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         function absolute threshold:
@@ -24203,6 +24666,7 @@
           name: reject
         defer to post: true
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windNorthward
         function absolute threshold:
@@ -24233,6 +24697,7 @@
           name: reject
         defer to post: true
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         action:
@@ -24244,6 +24709,7 @@
               variable: windEastward
         defer to post: true
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windNorthward
         action:
@@ -24329,19 +24795,23 @@
           - name: specificHumidity
       obs prior filters:
       - filter: Variable Transforms
+        apply at iterations: 0, 1, 2
         Transform: AdjustedHeightCoordinate
         SkipWhenNoObs: false
       - filter: Variable Transforms
+        apply at iterations: 0, 1, 2
         Transform: SurfaceWindScalingHeight
         SkipWhenNoObs: false
       obs post filters:
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: stationPressure
         minvalue: 49999
         action:
           name: reject
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: stationPressure
         where:
@@ -24350,11 +24820,13 @@
         action:
           name: reject
       - filter: RejectList
+        apply at iterations: 0, 1, 2
         where:
         - variable:
             name: PreQC/stationPressure
           is_in: 4-15
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: stationPressure
         where:
@@ -24379,6 +24851,7 @@
               - 120
               - 100000000000.0
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: stationPressure
         where:
@@ -24403,6 +24876,7 @@
               - 160
               - 100000000000.0
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         action:
           name: inflate error
           inflation factor: 1.2
@@ -24411,6 +24885,7 @@
           is_in:
           - 3
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: stationPressure
         action:
@@ -24422,6 +24897,7 @@
               geovar_sfc_geomz: height_above_mean_sea_level_at_surface
               station_altitude: height
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: TempObsErrorData/stationPressure
           type: float
@@ -24432,6 +24908,7 @@
               - name: ObsErrorData/stationPressure
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: stationPressure
         action:
@@ -24446,6 +24923,7 @@
           value: is_valid
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: stationPressure
         action:
@@ -24460,6 +24938,7 @@
           value: is_valid
         defer to post: true
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: stationPressure
         threshold: 4.0
@@ -24473,6 +24952,7 @@
           is_in: 187
         defer to post: true
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: stationPressure
         threshold: 2.8
@@ -24486,6 +24966,7 @@
           is_in: 187
         defer to post: true
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: stationPressure
         threshold: 3.6
@@ -24500,6 +24981,7 @@
           - 181
         defer to post: true
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: stationPressure
         threshold: 2.52
@@ -24514,6 +24996,7 @@
           - 181
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: stationPressure
         action:
@@ -24525,6 +25008,7 @@
           value: is_valid
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: stationPressure
         action:
@@ -24536,6 +25020,7 @@
               variable: stationPressure
         defer to post: true
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: stationPressure
         test variables:
@@ -24543,6 +25028,7 @@
         maxvalue: 100000.0
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: specificHumidity
         where:
@@ -24551,6 +25037,7 @@
         action:
           name: reject
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         where:
@@ -24559,6 +25046,7 @@
         action:
           name: reject
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: virtualTemperature
         where:
@@ -24567,6 +25055,7 @@
         action:
           name: reject
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         where:
@@ -24575,6 +25064,7 @@
         action:
           name: reject
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windNorthward
         where:
@@ -24649,10 +25139,12 @@
           - name: stationPressure
       obs prior filters:
       - filter: Variable Transforms
+        apply at iterations: 0, 1, 2
         Transform: SurfaceWindScalingPressure
         SkipWhenNoObs: false
       obs post filters:
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: stationPressure
         where:
@@ -24661,11 +25153,13 @@
         action:
           name: reject
       - filter: RejectList
+        apply at iterations: 0, 1, 2
         where:
         - variable:
             name: PreQC/stationPressure
           is_in: 4-15
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: stationPressure
         action:
@@ -24682,6 +25176,7 @@
               - 100
               - 100000000000.0
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: stationPressure
         action:
@@ -24692,6 +25187,7 @@
           is_in:
           - 3
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: stationPressure
         action:
@@ -24703,6 +25199,7 @@
               geovar_sfc_geomz: height_above_mean_sea_level_at_surface
               station_altitude: height
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: TempObsErrorData/stationPressure
           type: float
@@ -24713,6 +25210,7 @@
               - name: ObsErrorData/stationPressure
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: stationPressure
         action:
@@ -24727,6 +25225,7 @@
           value: is_valid
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: stationPressure
         action:
@@ -24741,6 +25240,7 @@
           value: is_valid
         defer to post: true
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: stationPressure
         threshold: 4.0
@@ -24752,6 +25252,7 @@
           - 3
         defer to post: true
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: stationPressure
         threshold: 2.8
@@ -24763,6 +25264,7 @@
           - 3
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: stationPressure
         action:
@@ -24774,6 +25276,7 @@
           value: is_valid
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: stationPressure
         action:
@@ -24785,6 +25288,7 @@
               variable: stationPressure
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: specificHumidity
         where:
@@ -24793,6 +25297,7 @@
         action:
           name: reject
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: specificHumidity
         where:
@@ -24805,6 +25310,7 @@
               variable: specificHumidity
               input_error_name: GsiInputObsError
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: specificHumidity
         action:
@@ -24818,6 +25324,7 @@
               geovar_sfc_geomz: height_above_mean_sea_level_at_surface
         defer to post: true
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: TempObsErrorData/specificHumidity
           type: float
@@ -24828,6 +25335,7 @@
               - name: ObsErrorData/specificHumidity
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: specificHumidity
         action:
@@ -24839,6 +25347,7 @@
               variable: specificHumidity
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         action:
@@ -24887,6 +25396,7 @@
               - 1.85
               - 2.0
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         action:
@@ -24902,6 +25412,7 @@
               distance threshold: -1.0
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         action:
@@ -24913,6 +25424,7 @@
           - 3 7
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         action:
@@ -24924,6 +25436,7 @@
           maxvalue: 9999
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         action:
@@ -24935,6 +25448,7 @@
           value: is_valid
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         action:
@@ -24947,6 +25461,7 @@
               geovar_sfc_geomz: height_above_mean_sea_level_at_surface
         defer to post: true
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: TempObsErrorData/airTemperature
           type: float
@@ -24957,6 +25472,7 @@
               - name: ObsErrorData/airTemperature
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         action:
@@ -24971,6 +25487,7 @@
           value: is_valid
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         action:
@@ -24985,6 +25502,7 @@
           value: is_valid
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         where:
@@ -24993,6 +25511,7 @@
         action:
           name: reject
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         threshold: 8.0
@@ -25004,6 +25523,7 @@
           - 3
         defer to post: true
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         threshold: 5.6
@@ -25015,6 +25535,7 @@
           - 3
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         action:
@@ -25026,6 +25547,7 @@
           value: is_valid
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: airTemperature
         action:
@@ -25037,6 +25559,7 @@
               variable: airTemperature
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: virtualTemperature
         action:
@@ -25085,6 +25608,7 @@
               - 1.85
               - 2.0
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: virtualTemperature
         action:
@@ -25100,6 +25624,7 @@
               distance threshold: -1.0
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: virtualTemperature
         action:
@@ -25111,6 +25636,7 @@
           - 3 7
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: virtualTemperature
         action:
@@ -25122,6 +25648,7 @@
           maxvalue: 9999
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: virtualTemperature
         action:
@@ -25133,6 +25660,7 @@
           value: is_valid
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: virtualTemperature
         action:
@@ -25145,6 +25673,7 @@
               geovar_sfc_geomz: height_above_mean_sea_level_at_surface
         defer to post: true
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: TempObsErrorData/virtualTemperature
           type: float
@@ -25155,6 +25684,7 @@
               - name: ObsErrorData/virtualTemperature
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: virtualTemperature
         action:
@@ -25169,6 +25699,7 @@
           value: is_valid
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: virtualTemperature
         action:
@@ -25183,6 +25714,7 @@
           value: is_valid
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: virtualTemperature
         where:
@@ -25191,6 +25723,7 @@
         action:
           name: reject
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: virtualTemperature
         threshold: 8.0
@@ -25202,6 +25735,7 @@
           - 3
         defer to post: true
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: virtualTemperature
         threshold: 5.6
@@ -25213,6 +25747,7 @@
           - 3
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: virtualTemperature
         action:
@@ -25224,6 +25759,7 @@
           value: is_valid
         defer to post: true
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: virtualTemperature
         action:
@@ -25235,6 +25771,7 @@
               variable: virtualTemperature
         defer to post: true
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         - name: windNorthward
@@ -25316,6 +25853,7 @@
               - 3.9
               - 4.1
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         where:
@@ -25324,6 +25862,7 @@
         action:
           name: reject
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windNorthward
         where:
@@ -25332,6 +25871,7 @@
         action:
           name: reject
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         action:
@@ -25342,6 +25882,7 @@
             name: GsiAdjustObsError/windEastward
           value: is_valid
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windNorthward
         action:
@@ -25352,6 +25893,7 @@
             name: GsiAdjustObsError/windNorthward
           value: is_valid
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         where:
@@ -25368,6 +25910,7 @@
               adjusted_error_name: GsiAdjustObsError
               geovar_sfc_geomz: height_above_mean_sea_level_at_surface
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windNorthward
         where:
@@ -25384,6 +25927,7 @@
               adjusted_error_name: GsiAdjustObsError
               geovar_sfc_geomz: height_above_mean_sea_level_at_surface
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         function absolute threshold:
@@ -25405,6 +25949,7 @@
         action:
           name: reject
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windNorthward
         function absolute threshold:
@@ -25426,6 +25971,7 @@
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         test variables:
@@ -25435,6 +25981,7 @@
           name: reject
         defer to post: true
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: TempObsErrorData/windEastward
           type: float
@@ -25445,6 +25992,7 @@
               - name: ObsErrorData/windEastward
         defer to post: true
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: TempObsErrorData/windNorthward
           type: float
@@ -25455,6 +26003,7 @@
               - name: ObsErrorData/windNorthward
         defer to post: true
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windNorthward
         test variables:
@@ -25464,6 +26013,7 @@
           name: reject
         defer to post: true
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         action:
@@ -25479,6 +26029,7 @@
           is_in: 220
         defer to post: true
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: windNorthward
         action:
@@ -25569,6 +26120,7 @@
           output file: ./vbc/ssmis_f17.$BYYYYYMMDDTHH0000Z.satbias_cov.nc4
       obs prior filters:
       - filter: Perform Action
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-24
@@ -25601,6 +26153,7 @@
           - 1.0
       obs post filters:
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-24
@@ -25613,6 +26166,7 @@
         action:
           name: reject
       - filter: RejectList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-24
@@ -25626,6 +26180,7 @@
           maxvalue: 0.99
           max_exclusive: true
       - filter: RejectList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-3,8-18
@@ -25647,6 +26202,7 @@
           maxvalue: 0.99
           max_exclusive: true
       - filter: Difference Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-2, 12-16
@@ -25660,6 +26216,7 @@
           maxvalue: 0.99
           max_exclusive: true
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-24
@@ -25673,6 +26230,7 @@
         action:
           name: reject
       - filter: Difference Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 9
@@ -25693,6 +26251,7 @@
             intercept: 271.252327
         maxvalue: 2
       - filter: Difference Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 10
@@ -25713,6 +26272,7 @@
             intercept: 272.280341
         maxvalue: 2
       - filter: Difference Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 11
@@ -25733,6 +26293,7 @@
             intercept: 278.824902
         maxvalue: 2
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-24
@@ -25770,6 +26331,7 @@
         action:
           name: reject
       - filter: BlackList
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-24
@@ -25794,6 +26356,7 @@
               - 0.5
               - 0.5
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: DerivedMetaData/errorInflationFactor1
           type: float
@@ -25807,6 +26370,7 @@
               exponents:
               - -1
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature_1
         threshold: DerivedMetaData/errorInflationFactor1
@@ -25814,6 +26378,7 @@
         action:
           name: reject
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: DerivedMetaData/errorInflationFactor2
           type: float
@@ -25827,6 +26392,7 @@
               exponents:
               - -1
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature_2
         threshold: DerivedMetaData/errorInflationFactor2
@@ -25834,6 +26400,7 @@
         action:
           name: reject
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: DerivedMetaData/errorInflationFactor3
           type: float
@@ -25847,6 +26414,7 @@
               exponents:
               - -1
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature_3
         threshold: DerivedMetaData/errorInflationFactor3
@@ -25854,6 +26422,7 @@
         action:
           name: reject
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: DerivedMetaData/errorInflationFactor4
           type: float
@@ -25867,6 +26436,7 @@
               exponents:
               - -1
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature_4
         threshold: DerivedMetaData/errorInflationFactor4
@@ -25874,6 +26444,7 @@
         action:
           name: reject
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: DerivedMetaData/errorInflationFactor5
           type: float
@@ -25887,6 +26458,7 @@
               exponents:
               - -1
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature_5
         threshold: DerivedMetaData/errorInflationFactor5
@@ -25894,6 +26466,7 @@
         action:
           name: reject
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: DerivedMetaData/errorInflationFactor6
           type: float
@@ -25907,6 +26480,7 @@
               exponents:
               - -1
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature_6
         threshold: DerivedMetaData/errorInflationFactor6
@@ -25914,6 +26488,7 @@
         action:
           name: reject
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: DerivedMetaData/errorInflationFactor7
           type: float
@@ -25927,6 +26502,7 @@
               exponents:
               - -1
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature_7
         threshold: DerivedMetaData/errorInflationFactor7
@@ -25934,6 +26510,7 @@
         action:
           name: reject
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: DerivedMetaData/errorInflationFactor8
           type: float
@@ -25947,6 +26524,7 @@
               exponents:
               - -1
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature_8
         threshold: DerivedMetaData/errorInflationFactor8
@@ -25954,6 +26532,7 @@
         action:
           name: reject
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: DerivedMetaData/errorInflationFactor9
           type: float
@@ -25967,6 +26546,7 @@
               exponents:
               - -1
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature_9
         threshold: DerivedMetaData/errorInflationFactor9
@@ -25974,6 +26554,7 @@
         action:
           name: reject
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: DerivedMetaData/errorInflationFactor10
           type: float
@@ -25987,6 +26568,7 @@
               exponents:
               - -1
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature_10
         threshold: DerivedMetaData/errorInflationFactor10
@@ -25994,6 +26576,7 @@
         action:
           name: reject
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: DerivedMetaData/errorInflationFactor11
           type: float
@@ -26007,6 +26590,7 @@
               exponents:
               - -1
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature_11
         threshold: DerivedMetaData/errorInflationFactor11
@@ -26014,6 +26598,7 @@
         action:
           name: reject
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: DerivedMetaData/errorInflationFactor12
           type: float
@@ -26027,6 +26612,7 @@
               exponents:
               - -1
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature_12
         threshold: DerivedMetaData/errorInflationFactor12
@@ -26034,6 +26620,7 @@
         action:
           name: reject
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: DerivedMetaData/errorInflationFactor13
           type: float
@@ -26047,6 +26634,7 @@
               exponents:
               - -1
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature_13
         threshold: DerivedMetaData/errorInflationFactor13
@@ -26054,6 +26642,7 @@
         action:
           name: reject
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: DerivedMetaData/errorInflationFactor14
           type: float
@@ -26067,6 +26656,7 @@
               exponents:
               - -1
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature_14
         threshold: DerivedMetaData/errorInflationFactor14
@@ -26074,6 +26664,7 @@
         action:
           name: reject
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: DerivedMetaData/errorInflationFactor15
           type: float
@@ -26087,6 +26678,7 @@
               exponents:
               - -1
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature_15
         threshold: DerivedMetaData/errorInflationFactor15
@@ -26094,6 +26686,7 @@
         action:
           name: reject
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: DerivedMetaData/errorInflationFactor16
           type: float
@@ -26107,6 +26700,7 @@
               exponents:
               - -1
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature_16
         threshold: DerivedMetaData/errorInflationFactor16
@@ -26114,6 +26708,7 @@
         action:
           name: reject
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: DerivedMetaData/errorInflationFactor17
           type: float
@@ -26127,6 +26722,7 @@
               exponents:
               - -1
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature_17
         threshold: DerivedMetaData/errorInflationFactor17
@@ -26134,6 +26730,7 @@
         action:
           name: reject
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: DerivedMetaData/errorInflationFactor18
           type: float
@@ -26147,6 +26744,7 @@
               exponents:
               - -1
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature_18
         threshold: DerivedMetaData/errorInflationFactor18
@@ -26154,6 +26752,7 @@
         action:
           name: reject
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: DerivedMetaData/errorInflationFactor19
           type: float
@@ -26167,6 +26766,7 @@
               exponents:
               - -1
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature_19
         threshold: DerivedMetaData/errorInflationFactor19
@@ -26174,6 +26774,7 @@
         action:
           name: reject
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: DerivedMetaData/errorInflationFactor20
           type: float
@@ -26187,6 +26788,7 @@
               exponents:
               - -1
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature_20
         threshold: DerivedMetaData/errorInflationFactor20
@@ -26194,6 +26796,7 @@
         action:
           name: reject
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: DerivedMetaData/errorInflationFactor21
           type: float
@@ -26207,6 +26810,7 @@
               exponents:
               - -1
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature_21
         threshold: DerivedMetaData/errorInflationFactor21
@@ -26214,6 +26818,7 @@
         action:
           name: reject
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: DerivedMetaData/errorInflationFactor22
           type: float
@@ -26227,6 +26832,7 @@
               exponents:
               - -1
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature_22
         threshold: DerivedMetaData/errorInflationFactor22
@@ -26234,6 +26840,7 @@
         action:
           name: reject
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: DerivedMetaData/errorInflationFactor23
           type: float
@@ -26247,6 +26854,7 @@
               exponents:
               - -1
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature_23
         threshold: DerivedMetaData/errorInflationFactor23
@@ -26254,6 +26862,7 @@
         action:
           name: reject
       - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
         assignments:
         - name: DerivedMetaData/errorInflationFactor24
           type: float
@@ -26267,6 +26876,7 @@
               exponents:
               - -1
       - filter: Background Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature_24
         threshold: DerivedMetaData/errorInflationFactor24
@@ -26274,6 +26884,7 @@
         action:
           name: reject
       - filter: Bounds Check
+        apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-24

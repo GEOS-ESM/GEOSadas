@@ -171,6 +171,7 @@ cost function:
       field io names: *field_io_names
   background error:
     covariance model: SABER
+#   covariance type: gsi hybrid covariance
     linear variable change:
       input variables: *anavars
       linear variable change name: Control2Analysis
