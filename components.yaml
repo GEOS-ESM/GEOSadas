@@ -1,23 +1,23 @@
 GEOSadas:
   fixture: true
-  develop: develop
+  develop: feature/ygyu/v5.42.12/t2
 
 env:
   local: ./@env
   remote: ../ESMA_env.git
-  tag: v4.29.1
+  tag: feature/ygyu/v5.19.0/Apr8
   develop: main
 
 cmake:
   local: ./@cmake
   remote: ../ESMA_cmake.git
-  tag: v3.48.0
+  tag: v3.75.0
   develop: develop
 
 ecbuild:
   local: ./@cmake/@ecbuild
   remote: ../ecbuild.git
-  tag: geos/v1.4.0
+  tag: geos/v3.13.1   # up to date 2026-Apr
 
 crtm:
   local: ./src/Shared/JCSDA_crtm/@crtm
@@ -28,14 +28,14 @@ crtm:
 NCEP_Shared:
   local: ./src/Shared/@NCEP_Shared
   remote: ../NCEP_Shared.git
-  tag: v5.42.3
+  tag: feature/ygyu/v5.42.3/Apr8
   sparse: ./config/NCEP_Shared.sparse
   develop: main
 
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  tag: v5.42.3
+  tag:  feature/ygyu/test_GMAO_ncdiag
   sparse: ./config/GMAO_Shared.sparse
   develop: main
 
@@ -86,7 +86,7 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  tag: v5.42.8
+  tag: feature/ygyu/v5.42.8/Apr8
   develop: develop
 
 mksi:
@@ -111,7 +111,7 @@ GigaTraj:
 g5pert:
   local: ./src/Components/@g5pert
   remote: ../g5pert.git
-  tag: v1.1.2
+  tag: feature/ygyu/v1.1.2/Apr8
   develop: main
 
 GEOSagcmPert_GridComp:
@@ -251,7 +251,7 @@ umwm:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  tag: v2.3.8.7
+  tag: feature/ygyu/v2.3.8.7/Apr8
   develop: develop
 
 Ocean-LETKF:
