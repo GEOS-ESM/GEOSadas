@@ -17618,7 +17618,7 @@ C       "STORM-RELATIVE COORDINATES" (SRC) ADJUSTS THE (X,Y) POSITION
 C          OF EACH OBSERVATION TO BE IN THE SAME RELATIVE POSITION TO
 C          THE STORM CENTER AT THE ANALYSIS TIME.
 C
-
+      EXTERNAL DTIME
 C-----------------------------------------------------------------------
 
       ENTRY CHORC(IHZ)

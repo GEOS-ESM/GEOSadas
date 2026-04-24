@@ -133,7 +133,7 @@ contains
     endif
     if ( error > errormax ) then
        print *, 'get_: DEBUG, error insanity (err/max): ', error, errormax
-       stop(1)
+       stop 1
     endif
 
    end subroutine get_

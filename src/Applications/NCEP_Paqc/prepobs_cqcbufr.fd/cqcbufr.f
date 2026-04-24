@@ -341,6 +341,7 @@ C$$$
 
       LOGICAL          TEST, DOVTMP, USESQN, DOHOR, DOTMP, POUT,
      &                 DOT40, WRT23
+      EXTERNAL         STAT
       NAMELIST /NAMLST/ TEST, DOVTMP, USESQN, DOHOR, DOTMP, DOT40,
      &                  WRT23,RADCOR
 

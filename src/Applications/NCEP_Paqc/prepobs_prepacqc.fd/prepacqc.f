@@ -603,10 +603,6 @@ c ------------------------------------------------------------------------------
                                             !  PREPBUFR-like profiles file
 c Namelist variables
 c ------------------
-      namelist /nrlacqcinput/ trad,l_otw,l_nhonly,l_doprofiles,
-     +                        l_allev_pf,l_prof1lvl,l_mandlvl,tsplines,
-     +                        l_ext_table,l_qmwrite
-
       real trad               ! Time window radius for outputting reports (if l_otw=T)
       logical l_otw           ! T=eliminate reports outside the time window radius +/- trad
      +,       l_nhonly        ! T=eliminate reports outside tropics & N. Hemisphere
@@ -649,6 +645,9 @@ c ------------------
                               ! F=take prepbufr format definition from input prepbufr file
      +,       l_qmwrite       ! T=write NRL QMs in main prepbufr output file
                               ! F=omit NRL QMs from main prepbufr output file - use with old formats
+      namelist /nrlacqcinput/ trad,l_otw,l_nhonly,l_doprofiles,
+     +                        l_allev_pf,l_prof1lvl,l_mandlvl,tsplines,
+     +                        l_ext_table,l_qmwrite
 
 c Variables used to hold original aircraft data read from the input PREPBUFR file - necessary
 c  for carrying data through program so that it can be written to output profiles PREPBUFR-

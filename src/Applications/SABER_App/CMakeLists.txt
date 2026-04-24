@@ -2,7 +2,12 @@
 if (CMAKE_Fortran_COMPILER_ID MATCHES Intel)
 #  set (CMAKE_Fortran_FLAGS_RELEASE "${FOPT3} ${EXTENDED_SOURCE} ${BIG_ENDIAN} ${BYTERECLEN} ${FP_MODEL_STRICT} ${ALIGNCOM}")
    set (CMAKE_Fortran_FLAGS_RELEASE "${FOPT3} ${EXTENDED_SOURCE}                             ${FP_MODEL_STRICT} ${ALIGNCOM}")
+elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "GNU")
+  set (CMAKE_Fortran_FLAGS_RELEASE
+       "${CMAKE_Fortran_FLAGS_RELEASE} ${FOPT3} -ffixed-line-length-none")
 endif ()
+
+
 
 ecbuild_add_executable (
   TARGET saber2ods.x

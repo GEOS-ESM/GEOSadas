@@ -535,6 +535,7 @@ C  ----------------------------
 C  READ NEXT INPUT BUFR MESSAGE
 C  ----------------------------
 
+
       CALL READMG(NFIN,SUBSET,IDATEP,IRET)
       IF(IRET.NE.0) THEN
 C ALL BUFR MESSAGES IN FILE HAVE BEEN READ CLOSE INPUT DATA SET
@@ -3752,6 +3753,7 @@ C$$$
       CHARACTER*36  TEXT(3:8)
       REAL  FIELD(120,0:24,9,3:8)
       INTEGER  NTIM(26),IZ(120)
+      CHARACTER*90 FMT104, FMT105
 
       COMMON/DATEZ/JDATE(4),KDATE(5,NT,NS),MDATE(5),NDATE(5)
       COMMON/PST/IOFFSET(3:8),LVLINCR(3:8),ILEVELS(3:8),STATS,LPRNT(4)
@@ -3834,6 +3836,11 @@ C  -----------------------------------------------------
 
 C  PRINT SELECTED STATISTICS (OVER SEPARATE HOURS) (USER-FRIENDLY FORM)
 C  -------------------------------------------------------------------
+      WRITE(FMT104,'(A,I0,A,I0,A)') "('above ground',",INDX,
+     &      "(14X,I2.2),14X,'ALL'/'------------',",INDX,
+     &      "(14X,'--'),14X,'---')"
+
+      WRITE(FMT105,'(A,I0,A)') "(I9,6X,",INDX+1,"(F12.2,'/',I3))"
 
       IF(INDX.GT.0.AND.INDX.LT.24)  THEN
         WRITE(61,101) TEXT(ITYPE),TITLE
@@ -3845,10 +3852,10 @@ C  -------------------------------------------------------------------
           IF(.NOT.LPRNT(ISTAT)) CYCLE
           JSTAT = ISTAT + 5
           WRITE(61,103) STATISTIC(ISTAT)
-          WRITE(61,104) (NTIM(I),I=1,INDX)
+          WRITE(61,FMT104) (NTIM(I),I=1,INDX)
           DO L=1,ILEVELS(ITYPE)
             IF(NINT(FIELD(L,24,1,ITYPE)).LE.1) CYCLE
-            WRITE(61,105) IZ(L),(FIELD(L,NTIM(N),JSTAT,ITYPE),
+            WRITE(61,FMT105) IZ(L),(FIELD(L,NTIM(N),JSTAT,ITYPE),
      $       NINT(FIELD(L,NTIM(N),1,ITYPE)),N=1,INDX),
      $       FIELD(L,24,JSTAT,ITYPE),NINT(FIELD(L,24,1,ITYPE))
           ENDDO
@@ -3862,9 +3869,9 @@ C  -------------------------------------------------------------------
   101 FORMAT(/128('*')/'==> Statistics for ',A36//'Field: ',A/)
   102 FORMAT(/'  ~~~~~> No reports of this type present'/)
   103 FORMAT(35X,A8,'/COUNT'//'~LEVEL(m)    Hour (UTC) ==============>')
-  104 FORMAT('above ground',<INDX>(14X,I2.2),14X,'ALL'/'------------',
-     $ <INDX>(14X,'--'),14X,'---')
-  105 FORMAT(I9,6X,<INDX+1>(F12.2,'/',I3))
+C  104 FORMAT('above ground',<INDX>(14X,I2.2),14X,'ALL'/'------------',
+C     $ <INDX>(14X,'--'),14X,'---')
+C  105 FORMAT(I9,6X,<INDX+1>(F12.2,'/',I3))
   106 FORMAT(//)
 
       END
