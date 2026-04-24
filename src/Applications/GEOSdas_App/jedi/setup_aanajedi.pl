@@ -462,24 +462,24 @@ Assignfn("$jedistatic/jedi/interfaces/geos_atmosphere/GEOS_CRTM_Surface/geos.crt
 # gsibec ...
 if ( $scheme eq "hyb4denvar" ) {
 
-  Assignfn("$jedistatic/jedi/interfaces/geos_atmosphere/gsibec/1.0.1/hyb4d_gsibec_configuration_$myllres.nml","$mydir/gsibec/gsibec_configuration_$myllres.nml");
+  Assignfn("$jedistatic/jedi/interfaces/geos_atmosphere/gsibec/1.0.2/hyb4d_gsibec_configuration_$myllres.nml","$mydir/gsibec/gsibec_configuration_$myllres.nml");
 
 } elsif ( $scheme eq "hyb3denvar" ) {
 
-  Assignfn("$jedistatic/jedi/interfaces/geos_atmosphere/gsibec/1.0.1/hyb3d_gsibec_configuration_$myllres.nml","$mydir/gsibec/gsibec_configuration_$myllres.nml");
+  Assignfn("$jedistatic/jedi/interfaces/geos_atmosphere/gsibec/1.0.2/hyb3d_gsibec_configuration_$myllres.nml","$mydir/gsibec/gsibec_configuration_$myllres.nml");
 
 } elsif ( $scheme eq "hyb3dcenvar" or $scheme eq "hyb4dcenvar" or scheme eq "hyb4dcenvar_seq" ) {
 
-  Assignfn("$jedistatic/jedi/interfaces/geos_atmosphere/gsibec/1.0.1/cli_gsibec_configuration_$myllres.nml","$mydir/gsibec/gsibec_configuration_$myllres.nml");
+  Assignfn("$jedistatic/jedi/interfaces/geos_atmosphere/gsibec/1.0.2/cli_gsibec_configuration_$myllres.nml","$mydir/gsibec/gsibec_configuration_$myllres.nml");
   Assignfn("$jedistatic/jedi/interfaces/geos_atmosphere/bump/betac.c${myi1cres}l${nlevs}.nc4","$mydir/bump/betac.c${myi1cres}l${nlevs}.nc4");
   Assignfn("$jedistatic/jedi/interfaces/geos_atmosphere/bump/betae.c${myi1cres}l${nlevs}.nc4","$mydir/bump/betae.c${myi1cres}l${nlevs}.nc4");
 
 } else {
 
-  Assignfn("$jedistatic/jedi/interfaces/geos_atmosphere/gsibec/1.0.1/cli_gsibec_configuration_$myllres.nml","$mydir/gsibec/gsibec_configuration_$myllres.nml");
+  Assignfn("$jedistatic/jedi/interfaces/geos_atmosphere/gsibec/1.0.2/cli_gsibec_configuration_$myllres.nml","$mydir/gsibec/gsibec_configuration_$myllres.nml");
 
 }
-Assignfn("$jedistatic/jedi/interfaces/geos_atmosphere/gsibec/1.0.1/gsi-coeffs-gmao-global-$myllres.nc4","$mydir/gsibec/gsibec_coefficients_$myllres.nc4");
+Assignfn("$jedistatic/jedi/interfaces/geos_atmosphere/gsibec/1.0.2/gsi-coeffs-gmao-global-$myllres.nc4","$mydir/gsibec/gsibec_coefficients_$myllres.nc4");
 
 # Rcov ...
 $files_tmp = `sh -c "ls $jedistatic/jedi/interfaces/geos_atmosphere/rcov/1.0.0/* 2>/dev/null"`;

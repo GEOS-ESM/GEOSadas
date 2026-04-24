@@ -5,7 +5,6 @@ cost function:
   - air_temperature
   - water_vapor_mixing_ratio_wrt_moist_air
   - air_pressure_at_surface
-  - air_pressure_levels
   - cloud_liquid_ice
   - cloud_liquid_water
   - rain_water
@@ -199,7 +198,6 @@ variational:
         air_temperature: t
         water_vapor_mixing_ratio_wrt_moist_air: q
         air_pressure_at_surface: ps
-        air_pressure_levels: pe
         cloud_liquid_ice: qi
         cloud_liquid_water: ql
         rain_water: qr

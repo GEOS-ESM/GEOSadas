@@ -5,7 +5,6 @@ cost function:
   - air_temperature
   - water_vapor_mixing_ratio_wrt_moist_air
   - air_pressure_at_surface
-  - air_pressure_levels
   - cloud_liquid_ice
   - cloud_liquid_water
   - rain_water
@@ -318,8 +317,8 @@ variational:
 #           field io names: *field_io_names
 #     write increment: true
 # - ninner: '25'
-#   diagnostics:
-#     departures: ombg
+##  diagnostics:
+##    departures: ombg
 #   geometry:
 #     akbk: ./fv3-jedi/fv3files/akbk@JEDI_BKG_VRES.nc4
 #     fms initialization:
