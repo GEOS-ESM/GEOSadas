@@ -75,7 +75,8 @@ MAPL:
 GEOSldas_GridComp:
   local: ./src/Components/@GEOSldas_GridComp
   remote: ../GEOSldas_GridComp.git
-  tag: v2.0.0
+  #tag: v2.0.0
+  tag: feature/ygyu/v2.0.0/Apr8
 
 FMS:
   local: ./src/Shared/@FMS
@@ -117,7 +118,8 @@ g5pert:
 GEOSagcmPert_GridComp:
   local: ./src/Components/@GEOSagcmPert_GridComp
   remote: ../GEOSagcmPert_GridComp.git
-  tag: v5.41.2
+  # tag: v5.41.2
+  tag:  feature/ygyu/v5.41.2/Apr8
   develop: main
 
 FVdycoreCubed_GridComp:
