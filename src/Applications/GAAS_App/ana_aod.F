@@ -357,7 +357,7 @@
                call Analyzer ( ods, nobs_good, im_so, jm_so, dy_a, 
      &              chAOD, do_avk, y_k, skipPSAS )
          
-               if (PSAS_convergence(dy_a) ==.FALSE.) then
+               if (PSAS_convergence(dy_a) .eqv. .FALSE.) then
                    print*, "<<WARNING>><<WARNING>> no convergence at low resolution as well; so increments will be all set to zeros"
                    dy_a%qa(1)%data3d = 0.0 
                else

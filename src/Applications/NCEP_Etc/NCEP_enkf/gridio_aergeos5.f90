@@ -347,7 +347,7 @@
      ! Write all other fields in file not updated by the analysis
      ! -----------------------------
        do n = 1, nVars_  
-          if (mask(n) == .True.) then
+          if (mask(n) .eqv. .True.) then
              if (nrank(n) == 3) then
                  if(name_(n) == 'PS') then
                    call MAPL_VarWrite(aer_bkg_upd,'PS',ps(:,:,1),lev=1,rc=rc)

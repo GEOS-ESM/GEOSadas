@@ -460,7 +460,7 @@ CONTAINS
            if (rank==3) then
              i3d=getindex_(trim(NAME),names3d)
              call ESMF_FieldGet(Field, farrayPtr=ptr3d, __RC__ )
-             if(debug_cfioread)then
+             if(debug_cfioread/=0)then
                if(trim(NAME)=='delp') ptr3d => debug3d(:,:,:,1)
                if(trim(NAME)=='u'   ) ptr3d => debug3d(:,:,:,2)
                if(trim(NAME)=='v'   ) ptr3d => debug3d(:,:,:,3)

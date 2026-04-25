@@ -598,7 +598,7 @@ Program SingularVectors
                print *, ' (z,z)     = ',  xdot(1), '(Sum of the squares = 1)'
                print *, ' (Sz,Sz)   = ',  xdot(2)
                print *, ' (S''Sz,z)  = ', xdot(3)
-               if(abs(xdot(2)>0.d0)) &
+               if(abs(xdot(2))>0.d0) &
                print *, ' Rel error = ', abs(xdot(2)-xdot(3))/xdot(2)
                print *
            endif

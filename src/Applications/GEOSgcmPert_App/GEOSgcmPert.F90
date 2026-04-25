@@ -500,7 +500,7 @@ Program GEOS5_Main
         call ESMF_ClockGet(Clock, CurrTime=startTime, __RC__)
         call MAPL_CFIORead(PERT_FILE,  startTime, IniBundle, only_vars=lstvars, __RC__ )
         call BundleExt2Int(IniBundle,LLPertBundle)
-        if(dotp_test) then
+        if(dotp_test/=0) then
            !Create a new empty bundle with GCM variable names
            X0PertBundle = MAPL_BundleCreate ( name='X0 bundle', grid=LLPERTgrid, fieldNames=GSIvars, __RC__ )
            !Copy the GSI vars in IniBundle to the GCM vars in X0Bundle
@@ -611,7 +611,7 @@ Program GEOS5_Main
 
 !      If so, calculate <Tx,Tx>
 !      ------------------------
-      if (dotp_test) then
+      if (dotp_test/=0) then
           rdot(2) = apert_dot_product (EXPORTS(ROOT),EXPORTS(ROOT),__RC__)
       endif
 
@@ -774,7 +774,7 @@ Program GEOS5_Main
     enddo BACKWARD_TIME_LOOP ! end of BACKWARD time loop
 #endif /* SOON */
 
-    if (dotp_test) then
+    if (dotp_test/=0) then
 
 !       Complete dot product test
 !       -------------------------
@@ -786,7 +786,7 @@ Program GEOS5_Main
               print *, '(x,x)    = ',  rdot(1)
               print *, '(Tx,Tx)  = ',  rdot(2)
               print *, '(T''Tx,x) = ', rdot(3)
-              if(abs(rdot(2)>0.d0)) &
+              if(abs(rdot(2))>0.d0) &
               print *, 'rel error = ', abs(rdot(2)-rdot(3))/rdot(2)
               print *
               call ESMF_FieldBundleDestroy (X0PertBundle, __RC__)
