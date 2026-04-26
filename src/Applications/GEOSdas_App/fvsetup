@@ -458,8 +458,9 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
       if ($runjobFLG) {
           print "\n";
       } else {
-          $ans = query1("Is this correct (y/n)?", "n");
-          exit unless yes($ans);
+#          $ans = query1("Is this correct (y/n)?", "n");
+#          exit unless yes($ans);
+          print "\n";
       }
   }
 
@@ -5112,7 +5113,7 @@ EOF
        $agcm_grid_type = "Cubed-Sphere";
        $agcm_im  =  48;
        $agcm_jm  =  $agcm_im * 6;
-       $nx  = 2;
+       $nx  = 1;   # 2
        $ny  = $nx * 6;
        $km  = $vres;
        $dt  = 450;
@@ -5128,7 +5129,7 @@ EOF
        $hist_jm = $ana_jm;
        $histc_im = $ana_im;
        $histc_jm = $ana_jm;
-       $nx_pert = 2;
+       $nx_pert = 1;  # 2
        $ny_pert = 6 * $nx_pert;
        $hist_pert_im = $ana_im;
        $hist_pert_jm = $ana_jm;
