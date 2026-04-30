@@ -459,10 +459,6 @@ foreach $fn ( @rc2jediobs ) {
 }
 
 cp("$FVROOT/etc/jedi/geos_${scheme}.yaml","$JEDIHOME/Config/geosvar.yaml");
-# Add observation chunk to for full var yaml file
-$cmd = `$fvbin/insert_file_atstr.pl $FVROOT/etc/jedi/geos_jediobs.yaml $JEDIHOME/Config/geosvar.yaml OBSYAML_END`;
-print "$cmd\n";
-system($cmd); 
 
 # take of resolution and layout
 ed_conf_rc ("$JEDIHOME","JEDIanaConfig.csh");

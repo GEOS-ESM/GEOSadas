@@ -9,7 +9,6 @@ set (ALLETC
    geos_hyb4dcenvar_seq.yaml
    geos_hyb3denvar.yaml
    geos_hyb4denvar.yaml
-   geos_jediobs.yaml
    jedi_acquire_bkg.j
    jedi_acquire_ebkg.j
    jedi_acquire_ioda.j
