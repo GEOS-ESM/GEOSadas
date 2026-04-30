@@ -1,0 +1,79 @@
+
+radiance::
+ amsua_metop-b   326
+ amsua_metop-c   327
+ mhs_metop-b     826
+ mhs_metop-c     827
+ airs_aqua        49     
+ iasi_metop-b    876
+ iasi_metop-c    877
+ atms_npp        900
+ atms_n20        920
+ ssmis_f17       717
+ avhrr_metop-b   626
+ avhrr_metop-c   627
+ gmi_gpm         706
+ cris-fsr_n20    960
+#cris-fsr_n21    961
+ amsr2_gcom-w1   550
+::
+
+specific_humidity::
+ sondeQ          120
+::
+
+aircraftT::
+ airep          130
+ asdar          131
+ mdcars         133
+#tamdar         134
+::
+
+sfc_temperature::
+  sfcMarineT     180
+::
+
+gnssro::
+ gps_metop-b       3
+ gps_metop-c       5
+ terra-sar        42
+ tandem-x         43
+ paz              44
+ cosmic-e1       750
+ cosmic-e2       751
+#cosmic-e3       752
+ cosmic-e4       753
+ cosmic-e5       754
+ cosmic-e6       755
+ planetiq        267
+ spire           269
+ kompsat5        825
+::
+
+ozone::
+ mls55_aura    330
+ ompslpnc_npp  337
+ ompslpnc_n21  358
+::
+
+sonde_wind::
+ sonde         220
+ pibal         221
+ pilot         229
+::
+
+satwind::
+#cdwvisnesdis  251
+#cdwirswnesdis 240
+ cdwvismeteo   243
+ cdwvisgms     242
+ cdwirmeteo    253
+ cdwirgms      252
+ cdwirgoes     245
+ cdwwvmeteo    254
+ cdwwvgms      250
+ cdwwvgoes     246
+ cdwwvgoesdl   247
+ cdwavhrr      244
+#cdwviirs      260
+::
