@@ -474,7 +474,7 @@ ed_jediebkg_acq  ("$JEDIHOME/Config",$ensrpy,$exprpy);
 ed_jediebkgx_acq ("$JEDIHOME/Config",$ensrpy,$exprpy);
 ed_jediioda_acq  ("$JEDIHOME/Config");
 ed_jedivbc_acq   ("$JEDIHOME/Config");
-ed_diffstate_job ("$JEDIHOME/Config");
+ed_diffstate_job ("$JEDIHOME");
 
 set_jedi_static("$jediroot","$jediinput",$cres,$i1res,$gsibecres);
 
@@ -736,7 +736,7 @@ sub ed_diffstate_job {
   my($mydir) = @_;
 
   my $tmprc  = "$mydir/tmp.rc";
-  my $thisrc = "$mydir/$jedi_diffstates.j";
+  my $thisrc = "$mydir/jedi_diffstates.j";
     
   open(LUN,"$thisrc")  || die "Fail to open $thisrc $!\n";
   open(LUN2,">$tmprc") || die "Fail to open tmp.rc $!\n";
