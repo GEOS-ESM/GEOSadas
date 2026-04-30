@@ -1,0 +1,38 @@
+    - obs space:
+        name: OMPSLPNC N21
+        obsdatain:
+          engine:
+            type: H5File
+            obsfile: ./obs/ompslpnc_n21.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
+        obsdataout:
+          engine:
+            type: H5File
+            obsfile: ./hofx/ompslpnc_n21.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
+        simulated variables:
+        - ozoneProfile
+      obs operator:
+        name: VertInterp
+        vertical coordinate: air_pressure
+        observation alias file: /discover/nobackup/projects/gmao/dadev/rtodling/JEDI/x51/jprePP/run/jedi/Config/obsop_name_map.yaml
+      obs filters:
+      # range sanity check
+      - filter: Bounds Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: ozoneProfile
+        minvalue: 0
+        maxvalue: 10000
+        action:
+          name: reject
+      # threshold is really threshold*observation error (threshold= relative threshold)
+      - filter: Background Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: ozoneProfile
+        threshold: 5.0
+        action:
+          name: reject
+      observation_name: ompslpnc_n21

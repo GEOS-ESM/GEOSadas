@@ -25,7 +25,7 @@ if ( $#argv < 2 ) then
    echo " AUTHOR"
    echo "   Ricardo Todling (Ricardo.Todling@nasa.gov), NASA/GMAO "
    echo "     Initial version: 18Oct2020    by: R. Todling"
-   echo "     Last   modified: 01May2025    by: R. Todling"
+   echo "     Last   modified: 30Apr2026    by: R. Todling"
    echo " \\end{verbatim} "
    echo " \\clearpage "
    exit(0)
@@ -236,9 +236,9 @@ if ( $JEDI_FEEDBACK_VARBC ) then
      echo "${MYNAME}: failed to retrieve vbc tar-ball"
      exit 1
    endif
-  #/bin/rm *satbias*.nc4 *aircraft*csv - NOTE: there is no fully functional aircraft VarBC TBD
-   /bin/rm *satbias*.nc4
-   # unfold tar-ball and overwrite all bias correction files
+
+  #/bin/rm *satbias*.nc4
+   # unfold tar-ball and overwrite bias correction files with those from (own) previous cycle
    tar xvf *vbc*tar
    cd -
 
@@ -246,7 +246,6 @@ if ( $JEDI_FEEDBACK_VARBC ) then
 endif
 
 # The following accommodates for the case when the satbias coeff and cov are in the same
-# file - typically the stuff in R2D2 ca June 2024.
 cd obs
 set satbcov = `ls *.sabias_cov.*nc4`
 if ( $status ) then
@@ -284,6 +283,43 @@ else
   echo "WARNING: No aircraft obs files where found ..."
 endif
 cd -
+
+# Build full yaml to run var, or grab existing yaml
+# -------------------------------------------------
+if ( -e $JEDIETC/geosvar.${nymda}_${hha}z.yaml ) then
+  echo " ${MYNAME}: using user-provided geosvar.${nymda}_${hha}z.yaml"
+else
+  cd obs
+  # get a list of available obs files
+  set obstypes = ()
+  foreach fn (`ls -r *.${nymdb}T${nhmsb}Z.nc4` )
+    set typ = `echo $fn | cut -d. -f1`
+    if ( ! -e exclude.$typ.${nymda}_${hha}z ) then
+       set obstypes = ( $typ.yaml $obstypes ) 
+    endif
+  end
+  if ( "$obstypes" == "" ) then
+     echo " ${MYNAME}: failed to gather obs to handle, aborting ..."
+     exit(2)
+  else 
+    echo " ${MYNAME}: Handling these obs-types:"
+    echo " ${MYNAME}: $obstypes "
+  endif
+  cd -
+  set obstypes = ( "0observations.yaml" $obstypes )
+  assemble_obs_yaml.pl $JEDIETC/obs $obstypes Config/obs.${nymdb}T${nhmsb}Z.yaml
+  if ( ! -e  Config/obs.${nymdb}T${nhmsb}Z.yaml ) then
+     echo " ${MYNAME}: failed to building obs.${nymdb}T${nhmsb}Z.yaml, aborting ..."
+     exit(2)
+  endif
+
+  # Construct full VAR yaml
+  /bin/cp Config/geosvar.yaml geosvar.tmpl
+  insert_file_atstr.pl Config/obs.${nymdb}T${nhmsb}Z.yaml geosvar.tmpl OBSYAML_END
+  vED -env geosvar.tmpl -o Config/geosvar.${nymda}_${hha}z.yaml
+  /bin/cp Config/geosvar.${nymda}_${hha}z.yaml $JEDIETC/geosvar.${nymda}_${hha}z.yaml
+
+endif
 
 # ensemble & background files
 setenv JEDI_GET_ENSBKG 0

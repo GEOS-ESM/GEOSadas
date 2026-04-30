@@ -1,0 +1,301 @@
+    - obs space:
+        name: ATMS NPP
+        obsdatain:
+          engine:
+            type: H5File
+            obsfile: ./obs/atms_npp.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
+        obsdataout:
+          engine:
+            type: H5File
+            obsfile: ./hofx/atms_npp.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
+        simulated variables:
+        - brightnessTemperature
+        channels: 1-22
+      obs operator:
+        name: CRTM
+        Absorbers:
+        - H2O
+        - O3
+        - CO2
+        obs options:
+          Sensor_ID: atms_npp
+          EndianType: little_endian
+          CoefficientPath: $JEDI_CRTM_COEFFS
+        linear obs operator:
+          Absorbers:
+          - H2O
+          - O3
+          Surfaces:
+          - Water_Temperature
+          - Land_Temperature
+          - Ice_Temperature
+          - Snow_Temperature
+      obs bias:
+        input file: ./obs/atms_npp.$PYYYYYMMDDTHH0000Z.satbias.nc4
+        output file: ./vbc/atms_npp.$BYYYYYMMDDTHH0000Z.satbias.nc4
+#       variables without bc:
+#       - brightnessTemperature
+#       channels: 15
+        variational bc:
+          predictors:
+          - name: constant
+          - name: cloudWaterContent
+            sensor: ATMS
+            clwdif_ch238: 1
+            clwdif_ch314: 2
+          - name: lapseRate
+            order: 2
+            tlapse: ./obs/atms_npp.$PYYYYYMMDDTHH0000Z.tlapse.txt
+          - name: lapseRate
+            tlapse: ./obs/atms_npp.$PYYYYYMMDDTHH0000Z.tlapse.txt
+          - name: emissivityJacobian
+          - name: sensorScanAngle
+            order: 4
+          - name: sensorScanAngle
+            order: 3
+          - name: sensorScanAngle
+            order: 2
+          - name: sensorScanAngle
+        covariance:
+          minimal required obs number: 20
+          variance range:
+          - 1e-06
+          - 10.0
+          step size: 0.0001
+          largest analysis variance: 10000.0
+          prior:
+            input file: ./obs/atms_npp.$PYYYYYMMDDTHH0000Z.satbias_cov.nc4
+            inflation:
+              ratio: 1.1
+              ratio for small dataset: 2.0
+          output file: ./vbc/atms_npp.$BYYYYYMMDDTHH0000Z.satbias_cov.nc4
+      obs prior filters:
+      - filter: Perform Action
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-22
+        action:
+          name: assign error
+          error parameter vector: &id018
+          - 5.0
+          - 5.0
+          - 5.0
+          - 3.0
+          - 0.55
+          - 0.3
+          - 0.3
+          - 0.3
+          - 0.3
+          - 0.3
+          - 0.35
+          - 0.4
+          - 0.55
+          - 0.8
+          - 5.0
+          - 5.0
+          - 2.5
+          - 2.5
+          - 2.5
+          - 2.5
+          - 2.5
+          - 2.5
+      obs post filters:
+      - filter: Bounds Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-7,16-22
+        test variables:
+        - name: ObsValue/brightnessTemperature
+          channels: 1-7,16
+        treat missing as out of bounds: true
+        minvalue: 100.0
+        maxvalue: 500.0
+        flag all filter variables if any test variable is out of bounds: true
+      - filter: Bounds Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-22
+        minvalue: 100.0
+        maxvalue: 500.0
+      - filter: Bounds Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-22
+        test variables:
+        - name: ObsFunction/HydrometeorCheckAMSUAclr
+          channels: 1-22
+          options:
+            sensor: atms_npp
+            channels: 1-22
+            test_biaspredictor: cloudWaterContentPredictor
+        maxvalue: 0.0
+        action:
+          name: reject
+      - filter: BlackList
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-22
+        action:
+          name: inflate error
+          inflation variable:
+            name: ObsFunction/ObsErrorFactorTopoRad
+            channels: 1-22
+            options:
+              sensor: atms_npp
+              channels: 1-22
+      - filter: BlackList
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-22
+        action:
+          name: inflate error
+          inflation variable:
+            name: ObsFunction/ObsErrorFactorTransmitTopRad
+            channels: 1-22
+            options:
+              channels: 1-22
+      - filter: BlackList
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-22
+        action:
+          name: inflate error
+          inflation variable:
+            name: ObsFunction/ObsErrorFactorSurfJacobianRad
+            channels: 1-22
+            options:
+              channels: 1-22
+              use_biasterm: true
+              test_biasterm: ObsBiasTerm
+              sensor: atms_npp
+              obserr_demisf:
+              - 0.01
+              - 0.02
+              - 0.015
+              - 0.02
+              - 0.2
+              obserr_dtempf:
+              - 0.5
+              - 2.0
+              - 1.0
+              - 2.0
+              - 4.5
+      - filter: Background Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-22
+        function absolute threshold:
+        - name: ObsFunction/ObsErrorBoundMW
+          channels: 1-22
+          options:
+            sensor: atms_npp
+            channels: 1-22
+            obserr_bound_latitude:
+              name: ObsFunction/ObsErrorFactorLatRad
+              options:
+                latitude_parameters:
+                - 25.0
+                - 0.25
+                - 0.04
+                - 3.0
+            obserr_bound_transmittop:
+              name: ObsFunction/ObsErrorFactorTransmitTopRad
+              channels: 1-22
+              options:
+                channels: 1-22
+            obserr_bound_topo:
+              name: ObsFunction/ObsErrorFactorTopoRad
+              channels: 1-22
+              options:
+                channels: 1-22
+                sensor: atms_npp
+            error parameter vector: *id018
+            obserr_bound_max:
+            - 4.5
+            - 4.5
+            - 3.0
+            - 3.0
+            - 1.0
+            - 1.0
+            - 1.0
+            - 1.0
+            - 1.0
+            - 1.0
+            - 1.0
+            - 1.0
+            - 1.0
+            - 2.0
+            - 4.5
+            - 4.5
+            - 2.0
+            - 2.0
+            - 2.0
+            - 2.0
+            - 2.0
+            - 2.0
+        action:
+          name: reject
+      - filter: Bounds Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-22
+        test variables:
+        - name: ObsFunction/InterChannelConsistencyCheck
+          channels: 1-22
+          options:
+            channels: 1-22
+            use passive_bc: true
+            sensor: atms_npp
+            use_flag: &id019
+            - -1
+            - -1
+            - -1
+            - -1
+            - 1
+            - 1
+            - 1
+            - 1
+            - 1
+            - 1
+            - 1
+            - 1
+            - 1
+            - 1
+            - 1
+            - -1
+            - 1
+            - 1
+            - 1
+            - 1
+            - 1
+            - 1
+        maxvalue: 1e-12
+        action:
+          name: reject
+      - filter: Bounds Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-22
+        test variables:
+        - name: ObsFunction/ChannelUseflagCheckRad
+          channels: 1-22
+          options:
+            channels: 1-22
+            use_flag: *id019
+        minvalue: 1e-12
+        action:
+          name: reject
+      observation_name: atms_npp

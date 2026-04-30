@@ -26,3 +26,7 @@ install (
    DESTINATION etc/jedi
    )
 
+install(
+   DIRECTORY obs/
+   DESTINATION etc/jedi/obs
+   )

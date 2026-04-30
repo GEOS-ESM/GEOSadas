@@ -1,0 +1,400 @@
+    - obs space:
+        name: Aircraft Wind
+        obsdatain:
+          engine:
+            type: H5File
+            obsfile: ./obs/aircraft_wind.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
+          obsgrouping:
+            group variables:
+            - stationIdentification
+            - releaseTime
+            sort variable: pressure
+            sort order: descending
+        obsdataout:
+          engine:
+            type: H5File
+            obsfile: ./hofx/aircraft_wind.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
+        simulated variables:
+        - windEastward
+        - windNorthward
+      obs operator:
+        name: Composite
+        components:
+        - name: VertInterp
+          variables:
+          - name: windEastward
+          - name: windNorthward
+          hofx scaling field: SurfaceWindScalingPressure
+          hofx scaling field group: DerivedVariables
+      linear obs operator:
+        name: Composite
+        components:
+        - name: VertInterp
+          variables:
+          - name: windEastward
+          - name: windNorthward
+          hofx scaling field: SurfaceWindScalingPressure
+          hofx scaling field group: DerivedVariables
+      obs prior filters:
+      - filter: Variable Transforms
+        apply at iterations: 0, 1, 2
+        Transform: SurfaceWindScalingPressure
+        SkipWhenNoObs: false
+      obs post filters:
+      - filter: Perform Action
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: windEastward
+        - name: windNorthward
+        where:
+        - variable: PreQC/windEastward
+          is_in: 4-15
+        action:
+          name: passivate
+        defer to post: true
+      - filter: Perform Action
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: windEastward
+        - name: windNorthward
+        where:
+        - variable:
+            name: ObsType/windEastward
+          is_in: 234, 235
+        action:
+          name: passivate
+        defer to post: true
+      - filter: Perform Action
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: windEastward
+        - name: windNorthward
+        action:
+          name: assign error
+          error function:
+            name: ObsFunction/ObsErrorModelStepwiseLinear
+            options:
+              xvar:
+                name: MetaData/pressure
+              xvals:
+              - 100000
+              - 95000
+              - 80000
+              - 65000
+              - 60000
+              - 55000
+              - 50000
+              - 45000
+              - 40000
+              - 35000
+              - 30000
+              - 25000
+              - 20000
+              - 15000
+              - 10000
+              errors:
+              - 1.4
+              - 1.5
+              - 1.6
+              - 1.8
+              - 1.9
+              - 2.0
+              - 2.1
+              - 2.3
+              - 2.6
+              - 2.8
+              - 3.0
+              - 3.2
+              - 2.7
+              - 2.4
+              - 2.1
+      - filter: Perform Action
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: windEastward
+        - name: windNorthward
+        action:
+          name: assign error
+          error parameter: 3.6
+        where:
+        - variable:
+            name: ObsType/windEastward
+          is_in: 230
+      - filter: Perform Action
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: windEastward
+        - name: windNorthward
+        action:
+          name: assign error
+          error parameter: 3.0
+        where:
+        - variable:
+            name: ObsType/windEastward
+          is_in: 231
+      - filter: Perform Action
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: windEastward
+        - name: windNorthward
+        action:
+          name: assign error
+          error parameter: 2.5
+        where:
+        - variable:
+            name: ObsType/windEastward
+          is_in: 233
+      - filter: Perform Action
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: windEastward
+        - name: windNorthward
+        action:
+          name: assign error
+          error parameter: 3.0
+        where:
+        - variable:
+            name: ObsType/windEastward
+          is_in: 234, 235
+      - filter: Perform Action
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: windEastward
+        - name: windNorthward
+        action:
+          name: assign error
+          error function:
+            name: ObsFunction/ObsErrorModelStepwiseLinear
+            options:
+              xvar:
+                name: MetaData/pressure
+              xvals:
+              - 80000
+              - 75000
+              - 70000
+              - 65000
+              - 60000
+              - 55000
+              - 50000
+              - 45000
+              - 40000
+              - 35000
+              - 30000
+              - 25000
+              - 4000
+              - 3000
+              - 2000
+              - 1000
+              - 500
+              errors:
+              - 1.5
+              - 1.6
+              - 1.7
+              - 1.8
+              - 1.9
+              - 2.0
+              - 2.1
+              - 2.2
+              - 2.2
+              - 2.3
+              - 2.3
+              - 2.4
+              - 2.4
+              - 2.5
+              - 2.7
+              - 2.9
+              - 3.1
+        where:
+        - variable:
+            name: ObsType/windEastward
+          is_in: 232
+      - filter: Perform Action
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: windEastward
+        action:
+          name: inflate error
+          inflation variable:
+            name: ObsFunction/ObsErrorFactorConventional
+            options:
+              test QCflag: PreQC
+              inflate variables:
+              - windEastward
+              pressure: MetaData/pressure
+              distance threshold: 60000.0
+        defer to post: true
+      - filter: Perform Action
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: windNorthward
+        action:
+          name: inflate error
+          inflation variable:
+            name: ObsFunction/ObsErrorFactorConventional
+            options:
+              test QCflag: PreQC
+              inflate variables:
+              - windNorthward
+              pressure: MetaData/pressure
+              distance threshold: 60000.0
+        defer to post: true
+      - filter: Perform Action
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: windEastward
+        action:
+          name: assign error
+          error function: GsiAdjustObsError/windEastward
+        where:
+        - variable:
+            name: GsiAdjustObsError/windEastward
+          value: is_valid
+        defer to post: true
+      - filter: Perform Action
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: windNorthward
+        action:
+          name: assign error
+          error function: GsiAdjustObsError/windNorthward
+        where:
+        - variable:
+            name: GsiAdjustObsError/windNorthward
+          value: is_valid
+        defer to post: true
+      - filter: Perform Action
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: windEastward
+        action:
+          name: inflate error
+          inflation variable:
+            name: ObsFunction/ObsErrorFactorPressureCheck
+            options:
+              variable: windEastward
+              inflation factor: 4.0
+              surface_obs: false
+              adjusted_error_name: GsiAdjustObsError
+              geovar_sfc_geomz: height_above_mean_sea_level_at_surface
+        defer to post: true
+      - filter: Perform Action
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: windNorthward
+        action:
+          name: inflate error
+          inflation variable:
+            name: ObsFunction/ObsErrorFactorPressureCheck
+            options:
+              variable: windNorthward
+              inflation factor: 4.0
+              surface_obs: false
+              adjusted_error_name: GsiAdjustObsError
+              geovar_sfc_geomz: height_above_mean_sea_level_at_surface
+        defer to post: true
+      - filter: Background Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: windEastward
+        function absolute threshold:
+        - name: ObsFunction/WindsSPDBCheck
+          options:
+            wndtype:
+            - 230
+            - 231
+            - 232
+            - 233
+            - 234
+            - 235
+            cgross:
+            - 6.0
+            - 6.5
+            - 7.0
+            - 7.5
+            - 7.5
+            - 7.5
+            error_min:
+            - 1.4
+            - 1.4
+            - 1.4
+            - 1.4
+            - 1.4
+            - 1.4
+            error_max:
+            - 6.1
+            - 6.1
+            - 6.1
+            - 6.1
+            - 6.1
+            - 6.1
+            variable: windEastward
+        action:
+          name: reject
+        defer to post: true
+      - filter: Background Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: windNorthward
+        function absolute threshold:
+        - name: ObsFunction/WindsSPDBCheck
+          options:
+            wndtype:
+            - 230
+            - 231
+            - 232
+            - 233
+            - 234
+            - 235
+            cgross:
+            - 6.0
+            - 6.5
+            - 7.0
+            - 7.5
+            - 7.5
+            - 7.5
+            error_min:
+            - 1.4
+            - 1.4
+            - 1.4
+            - 1.4
+            - 1.4
+            - 1.4
+            error_max:
+            - 6.1
+            - 6.1
+            - 6.1
+            - 6.1
+            - 6.1
+            - 6.1
+            variable: windNorthward
+        action:
+          name: reject
+        defer to post: true
+      - filter: Perform Action
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: windEastward
+        action:
+          name: inflate error
+          inflation variable:
+            name: ObsFunction/ObsErrorFactorDuplicateCheck
+            options:
+              use_air_pressure: true
+              variable: windEastward
+        defer to post: true
+      - filter: Perform Action
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: windNorthward
+        action:
+          name: inflate error
+          inflation variable:
+            name: ObsFunction/ObsErrorFactorDuplicateCheck
+            options:
+              use_air_pressure: true
+              variable: windNorthward
+        defer to post: true
+      observation_name: aircraft_wind
