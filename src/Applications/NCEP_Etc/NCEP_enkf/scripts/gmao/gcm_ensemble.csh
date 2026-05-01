@@ -156,6 +156,7 @@ if ( !($?AGCM_WALLCLOCK)) setenv AGCM_WALLCLOCK 1:00:00
 if ( !($?AGCM_QNAME)    ) setenv AGCM_QNAME NULL
 if ( !($?ATMENS_DO4DIAU)) setenv ATMENS_DO4DIAU 0
 if ( !($?ATMENS_IGNORE_CHKPNT)) setenv ATMENS_IGNORE_CHKPNT 0
+if ( !($?LINKBCS_PY)) setenv LINKBCS_PY 0
 
 if ( !($?JOBGEN_PFXNAME) ) then
   set pfxname = ""
@@ -222,10 +223,12 @@ set nmem = $members[1]
 
 # Quick checks
 # ------------
- which lnbcs_ens
- if( $status ) then
-     echo " ${MYNAME}: cannot find lnbcs_ens (should be in $FVHOME/run, aborting ..."
-     exit(1)
+ if ( ! $LINKBCS_PY ) then
+   which lnbcs_ens
+   if( $status ) then
+       echo " ${MYNAME}: cannot find lnbcs_ens (should be in $FVHOME/run, aborting ..."
+       exit(1)
+   endif
  endif
 
 # Get positioned inside ENSWORK

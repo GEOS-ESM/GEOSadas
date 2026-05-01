@@ -122,7 +122,22 @@
 
 #       Link to GEOS-5 GCM boundary condition files
 #       -------------------------------------------
-        lnbcs $GcmBegDate || exit 95 
+        if ( $LINKBCS_PY ) then
+          set yyyyb = `echo $GcmBegDate | cut -c1-4`
+          set   mmb = `echo $GcmBegDate | cut -c5-6`
+          set   ddb = `echo $GcmBegDate | cut -c7-8`
+          set   hhb = `echo $GcmBegTime | cut -c1-2`
+          set   mnb = `echo $GcmBegTime | cut -c3-4`
+          set isonow = ${yyyyb}-${mmb}-${ddb}T${hhb}:${mnb}:00
+          if ( -e linkbcs.yaml ) then
+             linkbcs.py --config linkbcs.yaml --timestamp $isonow
+          else
+             echo $myname": cannot link bcs."
+             exit 100
+          endif
+        else
+          lnbcs $GcmBegDate || exit 95 
+        endif
 
                                                        zeit_ci.x blend
 #       G5/NCEP hybrid forecast restarts
@@ -162,7 +177,22 @@
 #  Link to GEOS-5 GCM boundary condition files
 #  -------------------------------------------
                                                        zeit_ci.x lnbcs 
-   lnbcs $GcmBegDate || exit 95 
+    if ( $LINKBCS_PY ) then
+     set yyyyb = `echo $GcmBegDate | cut -c1-4`
+     set   mmb = `echo $GcmBegDate | cut -c5-6`
+     set   ddb = `echo $GcmBegDate | cut -c7-8`
+     set   hhb = `echo $GcmBegTime | cut -c1-2`
+     set   mnb = `echo $GcmBegTime | cut -c3-4`
+     set isonow = ${yyyyb}-${mmb}-${ddb}T${hhb}:${mnb}:00
+     if ( -e linkbcs.yaml ) then
+        linkbcs.py --config linkbcs.yaml --timestamp $isonow
+     else
+       echo $myname": cannot link bcs."
+       exit 100
+     endif
+   else
+     lnbcs $GcmBegDate || exit 95 
+   endif
                                                        zeit_co.x lnbcs 
 
   endif # running in FORECAST or DAS mode 

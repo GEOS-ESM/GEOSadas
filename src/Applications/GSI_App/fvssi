@@ -53,7 +53,7 @@
   if ( !($?ANA4DUPD_IAU0_ONLY) ) setenv ANA4DUPD_IAU0_ONLY 0 # assume 4d increment
   if ( !($?ANGLEBC) )    setenv ANGLEBC  0
   if ( !($?BATCH_SUBCMD)  )  setenv BATCH_SUBCMD "sbatch"
-  if ( !($?CLEANUP_TAIL) )        setenv CLEANUP_TAIL  0
+  if ( !($?CLEANUP_TAIL) )        setenv CLEANUP_TAIL  1
   if ( !($?DATAMOVE_CONSTRAINT)  )  setenv DATAMOVE_CONSTRAINT NULL
   if ( !($?INCSENS)   )  setenv INCSENS 0
   if ( !($?GSI_NETCDF_DIAG) )  setenv GSI_NETCDF_DIAG 0
