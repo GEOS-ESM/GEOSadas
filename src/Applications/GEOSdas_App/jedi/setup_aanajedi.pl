@@ -377,6 +377,44 @@ sub init {
                     ut_jedi.j
                   );
 
+  @rc2jediobs = qw ( 0observations.yaml
+                     aircraft_temperature.yaml
+                     aircraft_wind.yaml
+                     airs_aqua.yaml
+                     amsr2_gcom-w1.yaml
+                     amsua_aqua.yaml
+                     amsua_metop-b.yaml
+                     amsua_metop-c.yaml
+                     amsua_n15.yaml
+                     amsua_n19.yaml
+                     atms_n20.yaml
+                     atms_npp.yaml
+                     avhrr3_metop-b.yaml
+                     avhrr3_metop-c.yaml
+                     avhrr3_n19.yaml
+                     cris-fsr_n20.yaml
+                     cris-fsr_npp.yaml
+                     gmi_gpm.yaml
+                     gps.yaml
+                     iasi_metop-b.yaml
+                     iasi_metop-c.yaml
+                     mhs_metop-b.yaml
+                     mhs_metop-c.yaml
+                     mhs_n19.yaml
+                     mls55_aura.yaml
+                     omi_aura.yaml
+                     ompslpnc_n21.yaml
+                     ompslpnc_npp.yaml
+                     ompsnm_npp.yaml
+                     pibal.yaml
+                     satwind.yaml
+                     scatwind.yaml
+                     sfcship.yaml
+                     sfc.yaml
+                     sondes.yaml
+                     ssmis_f17.yaml
+                   );
+
 }
 #......................................................................
 
@@ -388,6 +426,10 @@ if ( ! -d $JEDIHOME ) {
 if ( ! -d "$JEDIHOME/Config" ) {
    $rc = system("/bin/mkdir -p $JEDIHOME/Config" );
 }
+if ( ! -d "$JEDIHOME/Config/obs" ) {
+   $rc = system("/bin/mkdir -p $JEDIHOME/Config/obs" );
+}
+# transfer resource files to proper location
 # transfer resource files to proper location
 # TBD: at this time, no editing is done of the resource
 #      user must edit files as needed
@@ -410,10 +452,13 @@ if ( ! -e "$JEDIHOME/Config/geosvar.yaml" ) {
    die "File $JEDIHOME/Config/geosvar.yaml not found \n";
 }
 
-# Add observation chunk to for full var yaml file
-$cmd = `$fvbin/insert_file_atstr.pl $FVROOT/etc/jedi/geos_jediobs.yaml $JEDIHOME/Config/geosvar.yaml OBSYAML_END`;
-print "$cmd\n";
-system($cmd); 
+# Copy obs yamls to experiment config location
+foreach $fn ( @rc2jediobs ) {
+  chomp($fn);
+  cp("$FVROOT/etc/jedi/obs/$fn","$JEDIHOME/Config/obs/$fn");
+}
+
+cp("$FVROOT/etc/jedi/geos_${scheme}.yaml","$JEDIHOME/Config/geosvar.yaml");
 
 # take of resolution and layout
 ed_conf_rc ("$JEDIHOME","JEDIanaConfig.csh");
@@ -429,7 +474,7 @@ ed_jediebkg_acq  ("$JEDIHOME/Config",$ensrpy,$exprpy);
 ed_jediebkgx_acq ("$JEDIHOME/Config",$ensrpy,$exprpy);
 ed_jediioda_acq  ("$JEDIHOME/Config");
 ed_jedivbc_acq   ("$JEDIHOME/Config");
-ed_diffstate_job ("$JEDIHOME/Config");
+ed_diffstate_job ("$JEDIHOME");
 
 set_jedi_static("$jediroot","$jediinput",$cres,$i1res,$gsibecres);
 
@@ -691,7 +736,7 @@ sub ed_diffstate_job {
   my($mydir) = @_;
 
   my $tmprc  = "$mydir/tmp.rc";
-  my $thisrc = "$mydir/$jedi_diffstates.j";
+  my $thisrc = "$mydir/jedi_diffstates.j";
     
   open(LUN,"$thisrc")  || die "Fail to open $thisrc $!\n";
   open(LUN2,">$tmprc") || die "Fail to open tmp.rc $!\n";

@@ -27,7 +27,7 @@ if ( $#argv < 2 ) then
    echo " AUTHOR"
    echo "   Ricardo Todling (Ricardo.Todling@nasa.gov), NASA/GMAO "
    echo "     Initial version: 18Oct2020    by: R. Todling"
-   echo "     Last   modified: 22Set2023    by: R. Todling"
+   echo "     Last   modified: 30Apr2026    by: R. Todling"
    echo " \\end{verbatim} "
    echo " \\clearpage "
    exit(0)
@@ -158,7 +158,9 @@ if ( ! -e $FVWORK/.DONE_jedi_run_ana.csh.$yyyymmddhh) then
    if ( -e Config/geosvar.${nymda}_${hha}z.yaml ) then
       setenv MYCONF Config/geosvar.${nymda}_${hha}z.yaml
    else
-      setenv MYCONF Config/geosvar.yaml
+#     setenv MYCONF Config/geosvar.yaml
+       echo " ${MYNAME}: geosvar.${nymda}_${hha}z.yaml not found, aborting ..."
+       exit (2) 
    endif
    if ( $JEDI_RUN_ADANA_TEST ) then
       setenv MYCONF Config/envarfgat4adtest.yaml

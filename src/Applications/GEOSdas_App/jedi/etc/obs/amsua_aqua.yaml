@@ -1,0 +1,280 @@
+    - obs space:
+        name: AMSU-A AQUA
+        obsdatain:
+          engine:
+            type: H5File
+            obsfile: ./obs/amsua_aqua.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
+        obsdataout:
+          engine:
+            type: H5File
+            obsfile: ./hofx/amsua_aqua.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
+        simulated variables:
+        - brightnessTemperature
+        channels: 1-15
+      obs operator:
+        name: CRTM
+        Absorbers:
+        - H2O
+        - O3
+        - CO2
+        obs options:
+          Sensor_ID: amsua_aqua
+          EndianType: little_endian
+          CoefficientPath: $JEDI_CRTM_COEFFS
+        linear obs operator:
+          Absorbers:
+          - H2O
+          - O3
+          Surfaces:
+          - Water_Temperature
+          - Land_Temperature
+          - Ice_Temperature
+          - Snow_Temperature
+      obs bias:
+        input file: ./obs/amsua_aqua.$PYYYYYMMDDTHH0000Z.satbias.nc4
+        output file: ./vbc/amsua_aqua.$BYYYYYMMDDTHH0000Z.satbias.nc4
+#       variables without bc:
+#       - brightnessTemperature
+#       channels: 14
+        variational bc:
+          predictors:
+          - name: constant
+          - name: cloudWaterContent
+            sensor: AMSUA
+            clwdif_ch238: 1
+            clwdif_ch314: 2
+          - name: lapseRate
+            order: 2
+            tlapse: ./obs/amsua_aqua.$PYYYYYMMDDTHH0000Z.tlapse.txt
+          - name: lapseRate
+            tlapse: ./obs/amsua_aqua.$PYYYYYMMDDTHH0000Z.tlapse.txt
+          - name: emissivityJacobian
+          - name: sensorScanAngle
+            order: 4
+          - name: sensorScanAngle
+            order: 3
+          - name: sensorScanAngle
+            order: 2
+          - name: sensorScanAngle
+        covariance:
+          minimal required obs number: 20
+          variance range:
+          - 1e-06
+          - 10.0
+          step size: 0.0001
+          largest analysis variance: 10000.0
+          prior:
+            input file: ./obs/amsua_aqua.$PYYYYYMMDDTHH0000Z.satbias_cov.nc4
+            inflation:
+              ratio: 1.1
+              ratio for small dataset: 2.0
+          output file: ./vbc/amsua_aqua.$BYYYYYMMDDTHH0000Z.satbias_cov.nc4
+      obs prior filters:
+      - filter: Perform Action
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-15
+        action:
+          name: assign error
+          error parameter vector: &id006
+          - 2.5
+          - 2.0
+          - 2.0
+          - 0.5
+          - 0.4
+          - 0.4
+          - 0.5
+          - 0.3
+          - 0.35
+          - 0.35
+          - 0.45
+          - 1.0
+          - 1.5
+          - 3.75
+          - 6.3
+      obs post filters:
+      - filter: Bounds Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-6,15
+        test variables:
+        - name: ObsValue/brightnessTemperature
+          channels: 1-6,15
+        treat missing as out of bounds: true
+        minvalue: 100.0
+        maxvalue: 500.0
+        flag all filter variables if any test variable is out of bounds: true
+      - filter: Bounds Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-15
+        minvalue: 100.0
+        maxvalue: 500.0
+      - filter: Bounds Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-15
+        test variables:
+        - name: ObsFunction/HydrometeorCheckAMSUAclr
+          channels: 1-15
+          options:
+            sensor: amsua_aqua
+            channels: 1-15
+            test_biaspredictor: cloudWaterContentPredictor
+        maxvalue: 0.0
+        action:
+          name: reject
+      - filter: BlackList
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-15
+        action:
+          name: inflate error
+          inflation variable:
+            name: ObsFunction/ObsErrorFactorTopoRad
+            channels: 1-15
+            options:
+              sensor: amsua_aqua
+              channels: 1-15
+      - filter: BlackList
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-15
+        action:
+          name: inflate error
+          inflation variable:
+            name: ObsFunction/ObsErrorFactorTransmitTopRad
+            channels: 1-15
+            options:
+              channels: 1-15
+      - filter: BlackList
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-15
+        action:
+          name: inflate error
+          inflation variable:
+            name: ObsFunction/ObsErrorFactorSurfJacobianRad
+            channels: 1-15
+            options:
+              channels: 1-15
+              sensor: amsua_aqua
+              use_biasterm: true
+              test_biasterm: ObsBiasTerm
+              obserr_demisf:
+              - 0.01
+              - 0.02
+              - 0.015
+              - 0.02
+              - 0.2
+              obserr_dtempf:
+              - 0.5
+              - 2.0
+              - 1.0
+              - 2.0
+              - 4.5
+      - filter: Background Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-15
+        function absolute threshold:
+        - name: ObsFunction/ObsErrorBoundMW
+          channels: 1-15
+          options:
+            sensor: amsua_aqua
+            channels: 1-15
+            obserr_bound_latitude:
+              name: ObsFunction/ObsErrorFactorLatRad
+              options:
+                latitude_parameters:
+                - 25.0
+                - 0.25
+                - 0.04
+                - 3.0
+            obserr_bound_transmittop:
+              name: ObsFunction/ObsErrorFactorTransmitTopRad
+              channels: 1-15
+              options:
+                channels: 1-15
+            obserr_bound_topo:
+              name: ObsFunction/ObsErrorFactorTopoRad
+              channels: 1-15
+              options:
+                channels: 1-15
+                sensor: amsua_aqua
+            error parameter vector: *id006
+            obserr_bound_max:
+            - 4.5
+            - 4.5
+            - 4.5
+            - 3.0
+            - 2.0
+            - 2.0
+            - 2.0
+            - 2.0
+            - 2.0
+            - 2.0
+            - 3.0
+            - 3.5
+            - 4.5
+            - 4.5
+            - 4.5
+        action:
+          name: reject
+      - filter: Bounds Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-15
+        test variables:
+        - name: ObsFunction/InterChannelConsistencyCheck
+          channels: 1-15
+          options:
+            channels: 1-15
+            use passive_bc: true
+            sensor: amsua_aqua
+            use_flag: &id007
+            - -1
+            - -1
+            - -1
+            - -1
+            - -1
+            - -1
+            - -1
+            - -1
+            - -1
+            - -1
+            - -1
+            - -1
+            - -1
+            - -1
+            - -1
+        maxvalue: 1e-12
+        action:
+          name: reject
+      - filter: Bounds Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-15
+        test variables:
+        - name: ObsFunction/ChannelUseflagCheckRad
+          channels: 1-15
+          options:
+            channels: 1-15
+            use_flag: *id007
+        minvalue: 1e-12
+        action:
+          name: reject
+      observation_name: amsua_aqua

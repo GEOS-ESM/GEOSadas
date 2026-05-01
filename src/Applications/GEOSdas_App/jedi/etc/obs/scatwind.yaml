@@ -1,0 +1,251 @@
+    - obs space:
+        name: Scatterometer Winds
+        obsdatain:
+          engine:
+            type: H5File
+            obsfile: ./obs/scatwind.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
+        obsdataout:
+          engine:
+            type: H5File
+            obsfile: ./hofx/scatwind.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
+        simulated variables:
+        - windEastward
+        - windNorthward
+      obs operator:
+        name: VertInterp
+        observation alias file: $FVHOME/run/jedi/Config/obsop_name_map.yaml
+        vertical coordinate: geopotential_height
+        observation vertical coordinate group: DerivedVariables
+        observation vertical coordinate: adjustedHeight
+        interpolation method: linear
+        hofx scaling field: SurfaceWindScalingHeight
+        hofx scaling field group: DerivedVariables
+      linear obs operator:
+        name: VertInterp
+        observation alias file: $FVHOME/run/jedi/Config/obsop_name_map.yaml
+        vertical coordinate: geopotential_height
+        observation vertical coordinate group: DerivedVariables
+        observation vertical coordinate: adjustedHeight
+        interpolation method: linear
+        hofx scaling field: SurfaceWindScalingHeight
+        hofx scaling field group: DerivedVariables
+      obs prior filters:
+      - filter: Variable Transforms
+        apply at iterations: 0, 1, 2
+        Transform: AdjustedHeightCoordinate
+        SkipWhenNoObs: false
+      - filter: Variable Transforms
+        apply at iterations: 0, 1, 2
+        Transform: SurfaceWindScalingHeight
+        SkipWhenNoObs: false
+      obs post filters:
+      - filter: Bounds Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: windEastward
+        - name: windNorthward
+        minvalue: -135
+        maxvalue: 135
+        action:
+          name: assign error
+          error function:
+            name: ObsFunction/ObsErrorModelStepwiseLinear
+            options:
+              xvar:
+                name: MetaData/pressure
+              xvals:
+              - 110000
+              - 105000
+              - 100000
+              - 95000
+              - 90000
+              - 85000
+              - 80000
+              - 75000
+              - 70000
+              - 65000
+              - 60000
+              - 55000
+              - 50000
+              - 45000
+              - 40000
+              - 35000
+              - 30000
+              - 25000
+              - 20000
+              - 15000
+              - 10000
+              - 7500
+              - 5000
+              - 4000
+              - 3000
+              - 2000
+              - 1000
+              errors:
+              - 2.0
+              - 2.0
+              - 2.0
+              - 2.0
+              - 2.0
+              - 2.0
+              - 2.0
+              - 2.0
+              - 2.0
+              - 2.0
+              - 2.0
+              - 2.0
+              - 2.0
+              - 2.0
+              - 2.0
+              - 2.0
+              - 2.0
+              - 2.0
+              - 2.0
+              - 2.0
+              - 2.0
+              - 2.0
+              - 2.0
+              - 2.0
+              - 2.0
+              - 2.0
+              - 2.0
+      - filter: Perform Action
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: windEastward
+        where:
+        - variable: PreUseFlag/windEastward
+          is_in: 100
+        action:
+          name: reject
+      - filter: Perform Action
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: windNorthward
+        where:
+        - variable: PreUseFlag/windNorthward
+          is_in: 100
+        action:
+          name: reject
+      - filter: BlackList
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: windEastward
+        where:
+        - variable:
+            name: ObsType/windEastward
+          is_in: 290
+        action:
+          name: inflate error
+          inflation variable:
+            name: ObsFunction/ObsErrorFactorPressureCheck
+            options:
+              variable: windEastward
+              inflation factor: 4.0
+              adjusted_error_name: GsiAdjustObsError
+              geovar_sfc_geomz: height_above_mean_sea_level_at_surface
+      - filter: BlackList
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: windNorthward
+        where:
+        - variable:
+            name: ObsType/windNorthward
+          is_in: 290
+        action:
+          name: inflate error
+          inflation variable:
+            name: ObsFunction/ObsErrorFactorPressureCheck
+            options:
+              variable: windNorthward
+              inflation factor: 4.0
+              adjusted_error_name: GsiAdjustObsError
+              geovar_sfc_geomz: height_above_mean_sea_level_at_surface
+      - filter: Bounds Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: windEastward
+        - name: windNorthward
+        test variables:
+        - name: ObsFunction/ScatWindsAmbiguityCheck
+        maxvalue: 1e-12
+        where:
+        - variable:
+            name: ObsType/windEastward
+          is_in: 290
+        action:
+          name: reject
+      - filter: Bounds Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: windEastward
+        - name: windNorthward
+        test variables:
+        - name: ObsFunction/Arithmetic
+          options:
+            variables:
+            - name: ObsValue/windEastward
+            - name: HofX/windEastward
+            coefs:
+            - 1.0
+            - -1.0
+        minvalue: -5.0
+        maxvalue: 5.0
+      - filter: Bounds Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: windEastward
+        - name: windNorthward
+        test variables:
+        - name: ObsFunction/Arithmetic
+          options:
+            variables:
+            - name: ObsValue/windNorthward
+            - name: HofX/windNorthward
+            coefs:
+            - 1.0
+            - -1.0
+        minvalue: -5.0
+        maxvalue: 5.0
+      - filter: Background Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: windEastward
+        function absolute threshold:
+        - name: ObsFunction/WindsSPDBCheck
+          options:
+            wndtype:
+            - 290
+            cgross:
+            - 5.0
+            error_min:
+            - 1.4
+            error_max:
+            - 6.1
+            variable: windEastward
+        action:
+          name: reject
+        defer to post: true
+      - filter: Background Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: windNorthward
+        function absolute threshold:
+        - name: ObsFunction/WindsSPDBCheck
+          options:
+            wndtype:
+            - 290
+            cgross:
+            - 5.0
+            error_min:
+            - 1.4
+            error_max:
+            - 6.1
+            variable: windNorthward
+        action:
+          name: reject
+        defer to post: true
+      observation_name: scatwind

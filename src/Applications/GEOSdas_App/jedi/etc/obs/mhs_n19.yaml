@@ -1,0 +1,463 @@
+    - obs space:
+        name: MHS NOAA-19
+        obsdatain:
+          engine:
+            type: H5File
+            obsfile: ./obs/mhs_n19.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
+        obsdataout:
+          engine:
+            type: H5File
+            obsfile: ./hofx/mhs_n19.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
+        simulated variables:
+        - brightnessTemperature
+        channels: 1-5
+      obs operator:
+        name: CRTM
+        Absorbers:
+        - H2O
+        - O3
+        - CO2
+        Clouds:
+        - Water
+        - Ice
+        - Rain
+        - Snow
+        Cloud_Fraction: 1.0
+        Cloud_Seeding: true
+        obs options:
+          Sensor_ID: mhs_n19
+          EndianType: little_endian
+          CoefficientPath: $JEDI_CRTM_COEFFS
+        linear obs operator:
+          Absorbers:
+          - H2O
+          - O3
+          Clouds:
+          - Water
+          - Ice
+          - Rain
+          - Snow
+          Surfaces:
+          - Water_Temperature
+          - Land_Temperature
+          - Ice_Temperature
+          - Snow_Temperature
+      obs bias:
+        input file: ./obs/mhs_n19.$PYYYYYMMDDTHH0000Z.satbias.nc4
+        output file: ./vbc/mhs_n19.$BYYYYYMMDDTHH0000Z.satbias.nc4
+        variational bc:
+          predictors:
+          - name: constant
+          - name: lapseRate
+            order: 2
+            tlapse: ./obs/mhs_n19.$PYYYYYMMDDTHH0000Z.tlapse.txt
+          - name: lapseRate
+            tlapse: ./obs/mhs_n19.$PYYYYYMMDDTHH0000Z.tlapse.txt
+          - name: emissivityJacobian
+          - name: sensorScanAngle
+            order: 4
+          - name: sensorScanAngle
+            order: 3
+          - name: sensorScanAngle
+            order: 2
+          - name: sensorScanAngle
+        covariance:
+          minimal required obs number: 20
+          variance range:
+          - 1e-06
+          - 10.0
+          step size: 0.0001
+          largest analysis variance: 10000.0
+          prior:
+            input file: ./obs/mhs_n19.$PYYYYYMMDDTHH0000Z.satbias_cov.nc4
+            inflation:
+              ratio: 1.1
+              ratio for small dataset: 2.0
+          output file: ./vbc/mhs_n19.$BYYYYYMMDDTHH0000Z.satbias_cov.nc4
+      obs filters:
+      - filter: Bounds Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-5
+        minvalue: 50.0
+        maxvalue: 550.0
+      - filter: Bounds Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-5
+        test variables:
+        - name: ObsFunction/ChannelUseflagCheckRad
+          channels: 1-5
+          options:
+            channels: 1-5
+            sensor: mhs_n19
+            use_flag:
+            - -1
+            - -1
+            - -1
+            - -1
+            - -1
+        minvalue: 1e-12
+        action:
+          name: reject
+      - filter: Domain Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-5
+        where:
+        - variable:
+            name: MetaData/sensorScanPosition
+          minvalue: 10
+          maxvalue: 81
+      - filter: BlackList
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-3
+        where:
+        - variable:
+            name: MetaData/latitude
+          minvalue: -25.0
+          maxvalue: -10.0
+        - variable:
+            name: MetaData/longitude
+          minvalue: 260.0
+          maxvalue: 300.0
+        action:
+          name: reject
+      - filter: BlackList
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-5
+        where:
+        - variable:
+            name: GeoVaLs/surface_snow_area_fraction
+          minvalue: 0.01
+      - filter: BlackList
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-5
+        where:
+        - variable:
+            name: GeoVaLs/ice_area_fraction
+          minvalue: 0.01
+      - filter: BlackList
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-5
+        where:
+        - variable:
+            name: GeoVaLs/water_area_fraction
+          maxvalue: 0.99
+        - variable:
+            name: GeoVaLs/land_area_fraction
+          maxvalue: 0.99
+      - filter: BlackList
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-5
+        where:
+        - variable:
+            name: GeoVaLs/water_area_fraction
+          minvalue: 0.99
+        - variable:
+            name: GeoVaLs/average_surface_temperature_within_field_of_view
+          maxvalue: 275
+      - filter: BlackList
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-5
+        where:
+        - variable:
+            name: GeoVaLs/water_area_fraction
+          maxvalue: 0.99
+        action:
+          name: assign error
+          error function:
+            name: ObsFunction/ObsErrorModelRamp
+            channels: 1-5
+            options:
+              channels: 1-5
+              xvar:
+                name: ObsFunction/CLWRetSymmetricMW
+                options:
+                  clwret_ch89v: 1
+                  clwret_ch166v: 2
+                  clwret_types:
+                  - ObsValue
+                  - HofX
+                  bias_application: HofX
+                  test_bias: ObsBiasData
+              x0:
+              - 0.05
+              - 0.05
+              - 0.05
+              - 0.05
+              - 0.05
+              x1:
+              - 25.0
+              - 25.0
+              - 25.0
+              - 25.0
+              - 25.0
+              err0:
+              - 300.0
+              - 300.0
+              - 2.5
+              - 2.0
+              - 2.0
+              err1:
+              - 700.0
+              - 700.0
+              - 30.0
+              - 50.0
+              - 60.0
+      - filter: BlackList
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-5
+        where:
+        - variable:
+            name: GeoVaLs/water_area_fraction
+          minvalue: 0.99
+        action:
+          name: assign error
+          error function:
+            name: ObsFunction/ObsErrorModelRamp
+            channels: 1-5
+            options:
+              channels: 1-5
+              xvar:
+                name: ObsFunction/CLWRetSymmetricMW
+                options:
+                  clwret_ch89v: 1
+                  clwret_ch166v: 2
+                  clwret_types:
+                  - ObsValue
+                  - HofX
+                  bias_application: HofX
+                  test_bias: ObsBiasData
+              x0:
+              - 0.05
+              - 0.05
+              - 0.05
+              - 0.05
+              - 0.05
+              x1:
+              - 25.0
+              - 25.0
+              - 25.0
+              - 25.0
+              - 25.0
+              err0:
+              - 300.0
+              - 300.0
+              - 2.5
+              - 2.0
+              - 2.0
+              err1:
+              - 350.0
+              - 350.0
+              - 15.0
+              - 25.0
+              - 30.0
+      - filter: BlackList
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-5
+        action:
+          name: inflate error
+          inflation variable:
+            name: ObsFunction/ObsErrorFactorTopoRad
+            channels: 1-5
+            options:
+              sensor: mhs_n19
+              channels: 1-5
+      - filter: BlackList
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-5
+        action:
+          name: inflate error
+          inflation variable:
+            name: ObsFunction/ObsErrorFactorTransmitTopRad
+            channels: 1-5
+            options:
+              channels: 1-5
+      - filter: Background Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-5
+        where:
+        - variable:
+            name: GeoVaLs/water_area_fraction
+          maxvalue: 0.99
+        function absolute threshold:
+        - name: ObsFunction/ObsErrorBoundMW
+          channels: 1-5
+          options:
+            sensor: mhs_n19
+            channels: 1-5
+            threshold: 2.0
+            obserr_bound_latitude:
+              name: ObsFunction/ObsErrorFactorLatRad
+              options:
+                latitude_parameters:
+                - 0.0
+                - 1.0
+                - 0.0
+                - 1.0
+            obserr_bound_transmittop:
+              name: ObsFunction/ObsErrorFactorTransmitTopRad
+              channels: 1-5
+              options:
+                channels: 1-5
+            obserr_bound_topo:
+              name: ObsFunction/ObsErrorFactorTopoRad
+              channels: 1-5
+              options:
+                channels: 1-5
+                sensor: mhs_n19
+            obserr_function:
+              name: ObsFunction/ObsErrorModelRamp
+              channels: 1-5
+              options:
+                channels: 1-5
+                xvar:
+                  name: ObsFunction/CLWRetSymmetricMW
+                  options:
+                    clwret_ch89v: 1
+                    clwret_ch166v: 2
+                    clwret_types:
+                    - ObsValue
+                    - HofX
+                    bias_application: HofX
+                x0:
+                - 0.05
+                - 0.05
+                - 0.05
+                - 0.05
+                - 0.05
+                x1:
+                - 25.0
+                - 25.0
+                - 25.0
+                - 25.0
+                - 25.0
+                err0:
+                - 300.0
+                - 300.0
+                - 2.5
+                - 2.0
+                - 2.0
+                err1:
+                - 700.0
+                - 700.0
+                - 30.0
+                - 50.0
+                - 60.0
+            obserr_bound_max:
+            - 5.0
+            - 5.0
+            - 10.0
+            - 10.0
+            - 10.0
+        action:
+          name: reject
+      - filter: Background Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-5
+        where:
+        - variable:
+            name: GeoVaLs/water_area_fraction
+          minvalue: 0.99
+        function absolute threshold:
+        - name: ObsFunction/ObsErrorBoundMW
+          channels: 1-5
+          options:
+            sensor: mhs_n19
+            channels: 1-5
+            threshold: 2.0
+            obserr_bound_latitude:
+              name: ObsFunction/ObsErrorFactorLatRad
+              options:
+                latitude_parameters:
+                - 0.0
+                - 1.0
+                - 0.0
+                - 1.0
+            obserr_bound_transmittop:
+              name: ObsFunction/ObsErrorFactorTransmitTopRad
+              channels: 1-5
+              options:
+                channels: 1-5
+            obserr_bound_topo:
+              name: ObsFunction/ObsErrorFactorTopoRad
+              channels: 1-5
+              options:
+                channels: 1-5
+                sensor: mhs_n19
+            obserr_function:
+              name: ObsFunction/ObsErrorModelRamp
+              channels: 1-5
+              options:
+                channels: 1-5
+                xvar:
+                  name: ObsFunction/CLWRetSymmetricMW
+                  options:
+                    clwret_ch89v: 1
+                    clwret_ch166v: 2
+                    clwret_types:
+                    - ObsValue
+                    - HofX
+                    bias_application: HofX
+                x0:
+                - 0.05
+                - 0.05
+                - 0.05
+                - 0.05
+                - 0.05
+                x1:
+                - 25.0
+                - 25.0
+                - 25.0
+                - 25.0
+                - 25.0
+                err0:
+                - 300.0
+                - 300.0
+                - 2.5
+                - 2.0
+                - 2.0
+                err1:
+                - 350.0
+                - 350.0
+                - 15.0
+                - 25.0
+                - 30.0
+            obserr_bound_max:
+            - 5.0
+            - 5.0
+            - 10.0
+            - 10.0
+            - 10.0
+        action:
+          name: reject
+      observation_name: mhs_n19
