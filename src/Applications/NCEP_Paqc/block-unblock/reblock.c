@@ -22,6 +22,7 @@
 !---------------------------------------------------------------------- */
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #define BUFSIZE 50000
 int WORDSIZE;

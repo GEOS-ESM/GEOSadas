@@ -123,6 +123,7 @@ if ( !($?HYBRIDGSI)     ) setenv FAILED 1
 if ( !($?LINK_RST)      ) setenv FAILED 1
 if ( !($?TIMEINC)       ) setenv FAILED 1
 
+if ( !($?LINKBCS_PY)    ) setenv LINKBCS_PY 0
 if ( !($?NCSUFFIX)      ) setenv NCSUFFIX nc4
 if ( !($?RSTEXT)        ) setenv RSTEXT bin
 
@@ -393,6 +394,21 @@ cd $ENSWORK/$member
 
         # Link in BCS
         # -----------
-        lnbcs_ens $nymdb
+        if ( $LINKBCS_PY ) then
+          set yyyyb = `echo $nymdb | cut -c1-4`
+          set   mmb = `echo $nymdb | cut -c5-6`
+          set   ddb = `echo $nymdb | cut -c7-8`
+          set   hhb = `echo $nhmsb | cut -c1-2`
+          set   mnb = `echo $nhmsb | cut -c3-4`
+          set isonow = ${yyyyb}-${mmb}-${ddb}T${hhb}:${mnb}:00
+          if ( -e linkbcs_ens.yaml ) then
+             linkbcs.py --config linkbcs_ens.yaml --timestamp $isonow
+          else
+            echo " ${MYNAME}: Cannot find resources file with linkbcs information"
+            exit 3 
+          endif
+        else
+          lnbcs_ens $nymdb
+        endif
 
 cd -
