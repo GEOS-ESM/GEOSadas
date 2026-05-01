@@ -32204,7 +32204,7 @@
       obs operator:
         name: VertInterp
         vertical coordinate: air_pressure
-        observation alias file: /discover/nobackup/projects/gmao/dadev/rtodling/JEDI/x51/jprePP/run/jedi/Config/obsop_name_map.yaml
+        observation alias file: $FVHOME/run/jedi/Config/obsop_name_map.yaml
       obs filters:
       # range sanity check
       - filter: Bounds Check
@@ -32239,7 +32239,7 @@
       obs operator:
         name: VertInterp
         vertical coordinate: air_pressure
-        observation alias file: /discover/nobackup/projects/gmao/dadev/rtodling/JEDI/x51/jprePP/run/jedi/Config/obsop_name_map.yaml
+        observation alias file: $FVHOME/run/jedi/Config/obsop_name_map.yaml
       obs filters:
       # range sanity check
       - filter: Bounds Check
