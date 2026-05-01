@@ -86,13 +86,13 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  tag: v5.45.1
+  tag: v5.45.2
   develop: develop
 
 mksi:
    local: ./src/Components/@GEOSana_GridComp/GEOSaana_GridComp/GSI_GridComp/@mksi
    remote: ../GEOS_mksi.git
-   tag: v5.43.2
+   tag: v5.44.0
    develop: develop
 
 GEOSgcm_GridComp:
@@ -153,7 +153,7 @@ geos-chem:
 GOCART:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSphysics_GridComp/@GEOSchem_GridComp/@GOCART
   remote: ../GOCART.git
-  tag: v2.3.0
+  tag: g2.3.2
   develop: develop
 
 QuickChem:
@@ -213,7 +213,7 @@ GAAS:
 ACHEM:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSphysics_GridComp/@GEOSchem_GridComp/@ACHEM
   remote: ../ACHEM.git
-  tag: v1.0.0
+  tag: v1.1.0
   develop: develop
 
 GEOS_OceanGridComp:
