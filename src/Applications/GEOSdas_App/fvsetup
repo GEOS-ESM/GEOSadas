@@ -583,6 +583,7 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
 # Allow user to edit resources/scripts
 # ------------------------------------
   build_lnbcs();
+  build_lnbcs_yaml();
   edit_resources();   # *** silo.arc is created here
 
 # For now, fix GOCART RC files (vertical level referencing)
@@ -5670,6 +5671,7 @@ sub archiving_rules {
 #                   GSI DIAGNOSTIC FILES
 #                   --------------------
 #
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_abi_%c%c%c_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_airs_aqua_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_amsr2_gcom-w1_%c%c%c.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_amsre_aqua_%c%c%c.%y4%m2%d2_%h2z.bin
@@ -5731,6 +5733,7 @@ sub archiving_rules {
 #                   -----------------------
 #                   CORRESPONDING ODS FILES
 #                   -----------------------
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_abi_%c%c%c.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_airs_aqua.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_amsr2_gcom-w1.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_amsre_aqua.%y4%m2%d2_%h2z.ods
@@ -5791,6 +5794,7 @@ sub archiving_rules {
 #                   -----------------------------------
 #                   CORRESPONDING 0 hr IMPACT ODS FILES
 #                   -----------------------------------
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_abi_%c%c%.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_airs_aqua.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_amsr2_gcom-w1.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp0hr_diag_amsre_aqua.%y4%m2%d2_%h2z.ods
@@ -5876,6 +5880,7 @@ sub archiving_rules {
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_sndr_%c%c%c_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_sndr_g%c%c_prep_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_imgr_%c%c%c_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_abi_%c%c%_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_airs_aqua_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_msu_%c%c%c_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_msu_tirosn_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
@@ -5914,6 +5919,7 @@ sub archiving_rules {
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_sndr_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_sndr_g%c%c_prep_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_imgr_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_abi_%c%c%_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_airs_aqua_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_msu_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_msu_tirosn_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
@@ -5953,6 +5959,7 @@ sub archiving_rules {
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_sndr_%c%c%c_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_sndr_g%c%c_prep_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_imgr_%c%c%c_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_abi_%c%c%c_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_airs_aqua_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_msu_%c%c%c_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_msu_tirosn_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
@@ -5983,6 +5990,7 @@ sub archiving_rules {
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c_sndr_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c_sndr_g%c%c_prep_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c_imgr_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c_abi_%c%c%_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c_airs_aqua_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c_msu_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c_msu_tirosn_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
@@ -6009,6 +6017,7 @@ sub archiving_rules {
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c%c_sndr_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c%c_sndr_g%c%c_prep_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c%c_imgr_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c%c_abi_%c%c%_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c%c_airs_aqua_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c%c_msu_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c%c_msu_tirosn_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
@@ -6035,6 +6044,7 @@ sub archiving_rules {
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c_sndr_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c_sndr_g%c%c_prep_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c_imgr_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c_abi_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c_airs_aqua_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c_msu_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c_msu_tirosn_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
@@ -6061,6 +6071,7 @@ sub archiving_rules {
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c%c%c_sndr_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c%c%c_sndr_g%c%c_prep_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c%c%c_imgr_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c%c%c_abi_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c%c%c_airs_aqua_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c%c%c_msu_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c%c%c_msu_tirosn_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
@@ -7090,6 +7101,7 @@ sub arch_asens {
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_sndr_%c%c%c_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_sndr_g%c%c_prep_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_imgr_%c%c%c_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_abi_%c%c%_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_airs_aqua_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_msu_%c%c%c_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_msu_tirosn_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
@@ -7107,6 +7119,7 @@ sub arch_asens {
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_ssu_tirosn_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diag_tmi_trmm_%c%c%c_%c%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.bin
 #
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_abi_g%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_airs_aqua.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_amsr2_gcom-w1.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_amsre_%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
@@ -7173,6 +7186,7 @@ sub arch_asens {
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_sndr_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_sndr_g%c%c_prep_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_imgr_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_abi_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_airs_aqua_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_msu_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_msu_tirosn_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
@@ -7201,6 +7215,7 @@ sub arch_asens {
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_sndr_%c%c%c_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_sndr_g%c%c_prep_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_imgr_%c%c%c_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_abi_%c%c%_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_airs_aqua_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_msu_%c%c%c_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c_msu_tirosn_%c%c%c_%c%c%c%c.sigo.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
@@ -7229,6 +7244,7 @@ sub arch_asens {
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c_sndr_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c_sndr_g%c%c_prep_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c_imgr_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c_abi_%c%c%_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c_airs_aqua_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c_msu_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c_msu_tirosn_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
@@ -7255,6 +7271,7 @@ sub arch_asens {
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c%c_sndr_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c%c_sndr_g%c%c_prep_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c%c_imgr_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c%c_abi_%c%c%_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c%c_airs_aqua_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c%c_msu_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c_%c%c%c%c%c_msu_tirosn_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
@@ -7281,6 +7298,7 @@ sub arch_asens {
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c_sndr_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c_sndr_g%c%c_prep_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c_imgr_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c_abi_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c_airs_aqua_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c_msu_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c_msu_tirosn_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
@@ -7307,6 +7325,7 @@ sub arch_asens {
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c%c%c_sndr_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c%c%c_sndr_g%c%c_prep_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c%c%c_imgr_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c%c%c_abi_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c%c%c_airs_aqua_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c%c%c_msu_%c%c%c_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.imp%c%c%c%c_%c%c%c%c%c_msu_tirosn_%c%c%c_%c%c%c%c.obs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z-%y4%m2%d2_%h2z.ods
@@ -7368,6 +7387,7 @@ sub arch_anasa {
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bbiassa.eta.%y4%m2%d2_%h2z.bin
 \${PESTOROOT}%s/rs/Y%y4/M%m2/%s.agcmrstsa.%y4%m2%d2_%h2z.tar
 #
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_abi_%c%c%c.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_airs_aqua.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_amsr2_gcom-w1.%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_amsre_aqua.%y4%m2%d2_%h2z.ods
@@ -7419,6 +7439,7 @@ sub arch_anasa {
 \${PESTOROOT}%s/etc/Y%y4/M%m2/%s.odssa.log.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.txt
 \${PESTOROOT}%s/etc/Y%y4/M%m2/%s.zeitsa.reg.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.txt
 #
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_abi_%c%c%c.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_airs_aqua.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_amsr2_gcom-w1.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_amsre_aqua.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
@@ -7478,6 +7499,7 @@ sub arch_anasa {
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_conv_tcp_ges.%y4%m2%d2_%h2z.nc4
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_conv_uv_ges.%y4%m2%d2_%h2z.nc4
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_acos_ges.%y4%m2%d2_%h2z.nc4
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_abi_%c%c%c_ges.%y4%m2%d2_%h2z.nc4
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_airs_aqua_ges.%y4%m2%d2_%h2z.nc4
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_amsr2_gcom-w1_ges.%y4%m2%d2_%h2z.nc4
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_amsre_aqua_ges.%y4%m2%d2_%h2z.nc4
@@ -7496,166 +7518,64 @@ sub arch_anasa {
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_amsub_n15_ges.%y4%m2%d2_%h2z.nc4
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_amsub_n16_ges.%y4%m2%d2_%h2z.nc4
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_amsub_n17_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_atms_n20_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_atms_npp_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_avhrr_metop-a_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_avhrr_metop-b_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_avhrr_metop-c_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_avhrr_n15_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_avhrr_n16_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_avhrr_n17_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_avhrr_n18_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_avhrr_n19_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_cris-fsr_n20_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_cris-fsr_npp_ges.%y4%m2%d2_%h2z.nc4
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_atms_n%c%c_ges.%y4%m2%d2_%h2z.nc4
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_avhrr_metop-%c_ges.%y4%m2%d2_%h2z.nc4
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_avhrr_n%c%c_ges.%y4%m2%d2_%h2z.nc4
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_cris-fsr_n%c%c_ges.%y4%m2%d2_%h2z.nc4
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_cris_npp_ges.%y4%m2%d2_%h2z.nc4
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_gmi_gpm_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_goes_n08_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_goes_n10_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_goes_n12_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_hirs2_n05_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_hirs2_n06_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_hirs2_n07_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_hirs2_n08_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_hirs2_n09_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_hirs2_n10_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_hirs2_n11_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_hirs2_n12_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_hirs2_n14_ges.%y4%m2%d2_%h2z.nc4
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_goes_n%c%c_ges.%y4%m2%d2_%h2z.nc4
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_hirs2_n%c%c_ges.%y4%m2%d2_%h2z.nc4
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_hirs2_tirosn_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_hirs3_n15_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_hirs3_n16_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_hirs3_n17_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_hirs4_metop-a_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_hirs4_metop-b_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_hirs4_n18_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_hirs4_n19_ges.%y4%m2%d2_%h2z.nc4
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_hirs3_n%c%c_ges.%y4%m2%d2_%h2z.nc4
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_hirs4_metop-%c.%y4%m2%d2_%h2z.nc4
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_hirs4_metop-%c.%y4%m2%d2_%h2z.nc4
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_hirs4_n%c%c_ges.%y4%m2%d2_%h2z.nc4
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_hsb_aqua_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_iasi_metop-a_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_iasi_metop-b_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_iasi_metop-c_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_imgr_g08_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_imgr_g10_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_imgr_g12_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_mhs_metop-a_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_mhs_metop-b_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_mhs_metop-c_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_mhs_n18_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_mhs_n19_ges.%y4%m2%d2_%h2z.nc4
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_iasi_metop-%c_ges.%y4%m2%d2_%h2z.nc4
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_imgr_g%c%c_ges.%y4%m2%d2_%h2z.nc4
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_mhs_metop-%c_ges.%y4%m2%d2_%h2z.nc4
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_mhs_n%c%c_ges.%y4%m2%d2_%h2z.nc4
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_mopitt_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_msu_n05_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_msu_n06_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_msu_n07_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_msu_n08_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_msu_n09_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_msu_n10_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_msu_n11_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_msu_n12_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_msu_n14_ges.%y4%m2%d2_%h2z.nc4
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_msu_n%c%c_ges.%y4%m2%d2_%h2z.nc4
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_msu_tirosn_ges.%y4%m2%d2_%h2z.nc4
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_pcp_ssmi_dmsp_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_pcp_ssmi_dmsp08_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_pcp_ssmi_dmsp10_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_pcp_ssmi_dmsp11_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_pcp_ssmi_dmsp13_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_pcp_ssmi_dmsp14_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_pcp_ssmi_dmsp15_ges.%y4%m2%d2_%h2z.nc4
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_pcp_ssmi_dmsp%c%c_ges.%y4%m2%d2_%h2z.nc4
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_pcp_tmi_trmm_ges.%y4%m2%d2_%h2z.nc4
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_pcp_tmi_trmm_lnd_ges.%y4%m2%d2_%h2z.nc4
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_pcp_tmi_trmm_ocn_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_seviri_m08_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_seviri_m09_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_seviri_m10_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sndr_g08_prep_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sndr_g10_prep_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sndr_g11_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sndr_g11_prep_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sndr_g12_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sndr_g12_prep_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sndr_g13_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sndr_g13_prep_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sndr_g15_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sndrd1_g11_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sndrd1_g12_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sndrd1_g13_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sndrd1_g14_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sndrd1_g15_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sndrd2_g11_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sndrd2_g12_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sndrd2_g13_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sndrd2_g14_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sndrd2_g15_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sndrd3_g11_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sndrd3_g12_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sndrd3_g13_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sndrd3_g14_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sndrd3_g15_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sndrd4_g11_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sndrd4_g12_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sndrd4_g13_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sndrd4_g14_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sndrd4_g15_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_ssmi_f08_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_ssmi_f10_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_ssmi_f11_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_ssmi_f13_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_ssmi_f14_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_ssmi_f15_ges.%y4%m2%d2_%h2z.nc4
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_seviri_m%c%c_ges.%y4%m2%d2_%h2z.nc4
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sndr_g%c%c_prep_ges.%y4%m2%d2_%h2z.nc4
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sndrd%c_g%c%c_ges.%y4%m2%d2_%h2z.nc4
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_ssmi_f%c%c_ges.%y4%m2%d2_%h2z.nc4
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_ssmis_env_f16_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_ssmis_f16_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_ssmis_f17_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_ssmis_f18_ges.%y4%m2%d2_%h2z.nc4
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_ssmis_f%c%c_ges.%y4%m2%d2_%h2z.nc4
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_ssmis_img_f16_ges.%y4%m2%d2_%h2z.nc4
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_ssmis_las_f16_ges.%y4%m2%d2_%h2z.nc4
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_ssmis_uas_f16_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_ssu_n05_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_ssu_n06_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_ssu_n07_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_ssu_n08_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_ssu_n09_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_ssu_n11_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_ssu_n14_ges.%y4%m2%d2_%h2z.nc4
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_ssu_n%c%c_ges.%y4%m2%d2_%h2z.nc4
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_ssu_tirosn_ges.%y4%m2%d2_%h2z.nc4
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_tmi_trmm_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_gome_metop-a_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_gome_metop-b_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_mls20_aura_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_mls22_aura_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_mls30_aura_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_mls55_aura_ges.%y4%m2%d2_%h2z.nc4
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_gome_metop-%c_ges.%y4%m2%d2_%h2z.nc4
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_mls%c%c_aura_ges.%y4%m2%d2_%h2z.nc4
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_mls_aura_ges.%y4%m2%d2_%h2z.nc4
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_o3lev_aura_ges.%y4%m2%d2_%h2z.nc4
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_omi_aura_ges.%y4%m2%d2_%h2z.nc4
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_omieff_aura_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_ompslpnc_npp_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_ompslpuv_npp_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_ompslpvis_npp_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_ompsnm_npp_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_ompsnmeff_npp_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_ompsnp_npp_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_ompsnpnc_npp_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sbuv2_n07_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sbuv2_n09_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sbuv2_n11_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sbuv2_n14_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sbuv2_n16_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sbuv2_n17_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sbuv2_n18_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sbuv2_n19_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sbuv2_nim07_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sbuv8_n07_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sbuv8_n09_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sbuv8_n11_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sbuv8_n14_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sbuv8_n16_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sbuv8_n17_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sbuv8_n18_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sbuv8_n19_ges.%y4%m2%d2_%h2z.nc4
-\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sbuv8_nim07_ges.%y4%m2%d2_%h2z.nc4
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_ompslpnc_n%c%c_ges.%y4%m2%d2_%h2z.nc4
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_ompslpuv_n%c%c_ges.%y4%m2%d2_%h2z.nc4
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_ompslpvis_n%c%c_ges.%y4%m2%d2_%h2z.nc4
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_ompsnm_n%c%c_ges.%y4%m2%d2_%h2z.nc4
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_ompsnmeff_n%c%c_ges.%y4%m2%d2_%h2z.nc4
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_ompsnp_n%c%c_ges.%y4%m2%d2_%h2z.nc4
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_ompsnpnc_n%c%c_ges.%y4%m2%d2_%h2z.nc4
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sbuv%c_n%c%c_ges.%y4%m2%d2_%h2z.nc4
+\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_sbuv%c_nim07_ges.%y4%m2%d2_%h2z.nc4
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_tomseff_ep_ges.%y4%m2%d2_%h2z.nc4
 \${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_tomseff_nim07_ges.%y4%m2%d2_%h2z.nc4
 #
 # The following for doing observation-minus-forecast diagnostics
+#\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_abi_%c%c%c_ges.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_airs_aqua_ges.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_amsr2_gcom-w1_ges.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
 #\${PESTOROOT}%s/obs/Y%y4/M%m2/D%d2/H%h2/%s.diagsa_amsre_aqua_ges.%y4%m2%d2_%h2z+%y4%m2%d2_%h2z.ods
@@ -7989,6 +7909,73 @@ sub build_lnbcs {
   }
   print "$cmd\n";
   system($cmd);
+}
+
+#=======================================================================
+sub build_lnbcs_yaml {
+
+  my ( $ocean_grid_choice, $precip_correction, $catchcn );
+  my ( $land_version, $ocean_model, $seaice_model, $lc_res );
+
+  $bcopt = "";
+  if ( $merra2 ) { 
+     $bcopt = "-merra2" ;
+  }elsif ( $r21c ) {
+     $bcopt = "-r21c";
+  }elsif ($geosit) {
+     $bcopt = "-geosit"; 
+  }
+  #reynolds, merra-2, ostia, cubed_sphere_ostia, cubed_sphere_ostia_r21c
+  $ocean_grid_choice  = "cubed_sphere_ostia";
+  if ( $ogcm_grid_type eq "Cubed-Sphere" ) {
+    if ( $r21c ) {
+       $ocean_grid_choice  = "cubed_sphere_ostia_r21c";
+    }
+  } else {
+    $ocean_grid_choice  = "ostia";
+  }
+
+  $precip_correction = "False";
+  if ( $pcp_forced ) {
+    $precip_correction = "True";
+  }
+
+  $catchcn = "False";
+  if ( $lsmodel_flag == 2 ){
+     $catchcn = "True";
+  }
+
+  $land_version = "icarus-NLv3"; 
+  if ( $landbcs eq "Icarus_Updated" ) {
+     $land_version = "icarus"; 
+  }
+
+  #cice4 or cice6 (this entry is only required for coupled ocean)
+  $ocean_model = "data";
+  $seaice_model = "null";
+  if ($coupled) {
+    $ocean_model = "mom6";
+    $seaice_model = "cice6";
+  }
+
+  $lc_res = lc($res);
+
+  open(SCRIPT,">$fvhome/run/linkbcs.yaml") or
+       die ">>> ERROR <<< cannot write $fvhome/run/linkbcs.yaml";
+print  SCRIPT <<"EOF";
+platform: nccs
+experiment_type: ADAS
+agcm_grid: $lc_res
+land_version: $land_version
+ocean_model: $ocean_model
+ogcm_grid: $ocean_grid_choice
+seaice_model: $seaice_model
+precip_correction: $precip_correction
+catchcn: $catchcn
+pchem_species: ops # or cmip, s2s, merra-2
+install_dir: $fvroot
+EOF
+
 }
 
 #=======================================================================
