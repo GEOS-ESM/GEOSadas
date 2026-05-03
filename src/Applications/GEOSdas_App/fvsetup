@@ -489,6 +489,7 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
 
 # Determine GCM spatial resolution
 # --------------------------------
+
   welcome();
   while3 ( \&get_rem_acct_info );
   while3 ( \&get_specific_info );
@@ -518,6 +519,8 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
 # ----------------------------------
   while3 ( \&get_times  );
   while3 ( \&get_setgsi );
+
+#nail
   while3 ( \&get_obsys  );
   while3 ( \&set_radcor );
   while3 ( \&set_rcov );
@@ -1218,10 +1221,11 @@ sub defaults {
       $arcwallclk = "2:00";
   }
 
+#nail
 # Determine where running at DAO computer centers
 # -----------------------------------------------
   @ComputingCenters = ("nas.nasa","gsfc.nasa","ncep.noaa",
-                       "nccs.nasa","discover", "dali");
+                       "nccs.nasa","discover", "dali"    ,"gs6150");
   my $hname = hostname();
   ($name, $alias, $addrtype, $length, @addrs) =
       gethostbyname($hname || "localhost");
@@ -1263,6 +1267,11 @@ sub defaults {
       }
     } else { $mhost = $MHOST or $mhost = "lou.nas.nasa.gov";}
   }
+  #nail
+  print("hname, name GLFAG DAO:  $hname  $name  $GFLAG $DAO \n");
+  print("mhost:  $mhost \n");
+
+
 
 # Set cqc/sbc/daotovs and others depending on analyzer
 # ----------------------------------------------------
@@ -3178,12 +3187,13 @@ sub get_nodeflg {
   $proc = "";
   # reset default if applicable
 
-  $ans = query(" Processing nodes (1:Haswell, 2:Skylake, 3:Cascade, 4:Milan)?", "4");
+  $ans = query(" Processing nodes (1:Haswell, 2:Skylake, 3:Cascade, 4:Milan), 5:Linux?", "5");
 
   if    ($ans == 1) { $nodeflg = "hasw"; $ncpus_per_node = 24 }
   elsif ($ans == 2) { $nodeflg = "sky";  $ncpus_per_node = 36 }
   elsif ($ans == 3) { $nodeflg = "cas";  $ncpus_per_node = 45 }
   elsif ($ans == 4) { $nodeflg = "mil";  $ncpus_per_node = 54 }
+  elsif ($ans == 5) { $nodeflg = "Linux";  $ncpus_per_node = 6 }
 
   # currently not applicable at nccs
   #---------------------------------
@@ -3229,16 +3239,16 @@ sub get_times {
   #----------------------------------------------------------
   if ( $hres eq "C" ) {                              #       CPUs
 #                                                    #       ----
-      if    ($res eq "C48")  { $nx =  4; $ny = 24 }  # (b)    96
-      elsif ($res eq "C90")  { $nx =  4; $ny = 24 }  # (c)    96
+      if    ($res eq "C48")  { $nx =  1; $ny =  6 }  # (b)     6
+      elsif ($res eq "C90")  { $nx =  1; $ny =  6 }  # (c)     6
       elsif ($res eq "C180") { $nx =  9; $ny = 30 }  # (d)   270
       elsif ($res eq "C360") { $nx = 10; $ny = 36 }  # (e)   360
       else                   { $nx = 28; $ny = 48 }  # (f+) 1344
   }
   else {
-      if    ($hres eq "a") { $nx =  4; $ny = 12 }    # (a)    48
-      elsif ($hres eq "b") { $nx =  4; $ny = 12 }    # (b)    48
-      elsif ($hres eq "c") { $nx =  8; $ny = 12 }    # (c)    96
+      if    ($hres eq "a") { $nx =  1; $ny =  6 }    # (a)     6
+      elsif ($hres eq "b") { $nx =  1; $ny =  6 }    # (b)     6
+      elsif ($hres eq "c") { $nx =  1; $ny =  6 }    # (c)     6
       elsif ($hres eq "d") { $nx = 12; $ny = 20 }    # (d)   240
       elsif ($hres eq "e") { $nx = 12; $ny = 32 }    # (e)   384
       else                 { $nx = 24; $ny = 36 }    # (f+)  864
@@ -3586,9 +3596,9 @@ sub get_setgsi {
 
   # GEOS-5 GSI MPI decomposition; must be compatible w/ ncpus                 CPUs
   #----------------------------------------------------------                 ----
-  if    ($hres eq "a")                   { $nxgsi =  4; $nygsi =  8 }  # (a)   32
-  elsif ($hres eq "b" or $res eq "C48")  { $nxgsi =  4; $nygsi = 12 }  # (b)   48
-  elsif ($hres eq "c" or $res eq "C90")  { $nxgsi =  4; $nygsi = 12 }  # (c)   48
+  if    ($hres eq "a")                   { $nxgsi =  1; $nygsi =  6 }  # (a)    6
+  elsif ($hres eq "b" or $res eq "C48")  { $nxgsi =  1; $nygsi =  6 }  # (b)    6
+  elsif ($hres eq "c" or $res eq "C90")  { $nxgsi =  1; $nygsi =  6 }  # (c)    6
   elsif ($hres eq "d" or $res eq "C180") { $nxgsi =  6; $nygsi = 32 }  # (d)  192
   elsif ($hres eq "e" or $res eq "C360") { $nxgsi = 12; $nygsi = 20 }  # (e)  240
   else                                   { $nxgsi = 16; $nygsi = 42 }  # (f+) 672
@@ -3968,6 +3978,12 @@ sub get_obsys {
 
   $obsysrc = "$fvetc/obsys-${loc}.rc";
   $obsysGrc = "$fvetc/obsys-${loc}-gaas.rc";
+
+  #nail
+  print("GFLAG = $GFLAG \n");
+  print "fvroot =  $fvroot \n";
+  print "fvetc =  $fvetc \n";
+
 
   $nrt = 0;
   $rflags = "";
@@ -4431,7 +4447,7 @@ EOF
   print   "GOCART TRACERS\n";
   print   "--------------\n\n";
 
-  $ans = query("  Include GOCART tracers (CO,CO2,aerosols,etc) (y/n)?", "y");
+  $ans = query("  Include GOCART tracers (CO,CO2,aerosols,etc) (y/n)?", "n");
   $gocart_tracers = 0 if neg($ans);
 
   # query for aerosol analysis
@@ -4785,6 +4801,9 @@ sub get_GID {
     }
 
     $export_none = "";
+    ## nail ygyu bypass
+    $gid="g0613"
+
     if ($gid) {
         if ($siteID eq "nccs") { $group_list  = "SBATCH --account=$gid";
                                  $group_list1 = "SBATCH --account=\$GID";
@@ -10918,6 +10937,9 @@ sub copy_restarts_iau {
     if ($checkFLG) { $copyFLG = " -symlink"  }
     else           { $copyFLG = " -forkcopy" }
 
+    #nail
+    # -alltar is needed on Linux
+    #
     $cmd = "$fvbin/copy_restarts.pl"
         .   " -nymd $nymdb"
         .   " -nhms $nhmsb"
@@ -10926,6 +10948,8 @@ sub copy_restarts_iau {
         .   " -dest $fvhome/recycle"
         .   " -newid $expid"
         .   " -noprompt"
+        .   " -alltar"
+        .   " -nodmget"
         .   " -bf $dtasyn_hrs";
     $cmd .= " -X gaas_bkg_sfc"    unless $gaas_ana;
     $cmd .= " -X agcm_import"     unless $agcm_rst_flg;
