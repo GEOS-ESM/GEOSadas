@@ -1240,9 +1240,11 @@ sub defaults {
   $gsfc  = ".gsfc.";
   $gsfc2 = ".nccs.";
   $gsfc3 = "prv.cube";
+  $gsfc4 = "gs6150";  
   $ncep  = ".ncep.";
   if ( $name =~ m/$gsfc/  || $alias =~ m/$gsfc/  ||
-       $name =~ m/$gsfc2/ || $alias =~ m/$gsfc2/ || $name =~ m/$gsfc3/) {
+       $name =~ m/$gsfc2/ || $alias =~ m/$gsfc2/ ||
+       $name =~ m/$gsfc3/ || $name =~ m/$gsfc4/  ) {
     unless ($NOBACKUP) {
         die ">>> ERROR <<< NOBACKUP environment variable not defined."; }
     unless ($ARCHIVE) {
@@ -1253,7 +1255,8 @@ sub defaults {
   } else {
     $GFLAG = 0;
   }
-
+  print ("GFLAG =  $GFLAG \n");
+  
 # Mass storage
 # ------------
   if( $DAO == 1 ) {        #nas or gsfc accounts
@@ -1268,9 +1271,8 @@ sub defaults {
     } else { $mhost = $MHOST or $mhost = "lou.nas.nasa.gov";}
   }
   #nail
-  print("hname, name GLFAG DAO:  $hname  $name  $GFLAG $DAO \n");
+  print("hname, name, GFLAG DAO:  $hname , $name , $GFLAG , $DAO \n");
   print("mhost:  $mhost \n");
-
 
 
 # Set cqc/sbc/daotovs and others depending on analyzer
@@ -4801,8 +4803,6 @@ sub get_GID {
     }
 
     $export_none = "";
-    ## nail ygyu bypass
-    $gid="g0613"
 
     if ($gid) {
         if ($siteID eq "nccs") { $group_list  = "SBATCH --account=$gid";
@@ -8072,7 +8072,7 @@ print  SCRIPT <<"EOF";
 #SBATCH --output=$jobn.log.o%j.txt
 #SBATCH --ntasks=$xncpus
 #SBATCH --ntasks-per-node=$ncpus_per_node
-#SBATCH --constraint=$nodeflg
+###SBATCH --constraint=$nodeflg   
 #SBATCH --time=${daswallclk}:00
 #SBATCH --no-requeue
 EOF
@@ -9076,7 +9076,7 @@ EOF
            if ( \$?DATAMOVE_CONSTRAINT ) then
               echo2 "#\$DATAMOVE_CONSTRAINT"
            else
-              echo2 "#SBATCH --constraint=$nodeflg"
+##              echo2 "#SBATCH --constraint=$nodeflg"
            endif
            echo2 ""
            echo2 "setenv FVHOME \$FVHOME"
@@ -9248,7 +9248,7 @@ print  SCRIPT <<"EOF";
 #SBATCH --output=fcst.log.o%j.txt
 #SBATCH --ntasks=$xncpus
 #SBATCH --ntasks-per-node=$ncpus_per_node
-#SBATCH --constraint=$nodeflg
+###SBATCH --constraint=$nodeflg
 #SBATCH --time=${fcswallclk}:00
 #SBATCH --no-requeue
 EOF
