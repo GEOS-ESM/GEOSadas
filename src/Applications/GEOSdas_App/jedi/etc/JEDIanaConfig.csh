@@ -14,6 +14,8 @@ setenv JEDI_VAROFFSET 10800    # background time offset
 setenv JEDI_FEEDBACK_VARBC @JEDI_FEEDBACK_VARBC   # controls whether or not to feedback biases
 
 setenv JEDI_SWELLUSE 0  # bypass use of SWELL for now
+setenv SWELL_INSTALL @SWELL_INSTALL
+setenv SWELL_CONVNCDIAG_SUITE $FVWORK/${EXPID}-convert_ncdiags
 setenv OFFLINE_IODA_DIR @OFFLIODADIR # /discover/nobackup/projects/gmao/dadev/rtodling/archive/530/x0049/R2D2DataStore/Local/v2/
 
 # Details ...
@@ -22,7 +24,7 @@ setenv JEDI_OBS_OPT @JEDI_OBS_OPT  # 1= point to xexp-like set (data in tar-ball
                                    # 2= point to existing set of ncdiag-ioda-converted set (swell/.../DATE/geos_atmosphere)
                                    # 3= generate on the fly based on GSI (nc4) diags (TBD)
 
-setenv JEDI_GSI2IODA 0
+setenv JEDI_GSI2IODA @JEDI_GSI2IODA
 setenv JEDI_OBS_DIR $FVWORK/IODA
 
 setenv JEDI_ROOT @JEDI_ROOT

@@ -2,6 +2,7 @@ set (ALLETC
    JEDIanaConfig.csh
    SWELLConfig.csh
    diffstates_geos.yaml
+   diag2ioda.yaml
    geos_3dvar.yaml
    geos_3dfgat.yaml
    geos_hyb3dcenvar.yaml

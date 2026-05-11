@@ -3702,12 +3702,16 @@ sub set_geosjedi {
   if ( ! $ENV{GEOSJEDI} ) { return 0 };
 
   $nogsi = " ";
-  if ( $skipgsi ) { $nogsi = "-nogsi" };
-
-  if( $ENV{OFFLINE_IODA_DIR} ) {
-     $iodadir = $ENV{OFFLINE_IODA_DIR};
+  if ( $skipgsi ) { 
+     $nogsi = "-nogsi";
+     if( $ENV{OFFLINE_IODA_DIR} ) {
+        $iodadir = $ENV{OFFLINE_IODA_DIR};
+     } else {
+        $iodadir = "/discover/nobackup/projects/gmao/dadev/rtodling/archive/541/Milan/x0050/ioda/";
+     }
   } else {
-     $iodadir = "/discover/nobackup/projects/gmao/dadev/rtodling/archive/541/Milan/x0050/ioda/";
+     $iodadir = "/dev/null"; # this expects ncdiag files to be created by GSI
+                             # so that JEDIana can convert files to IODA on the fly
   }
   $xtra4jedi = "";
   if ( $jedi_ensrpy ) {

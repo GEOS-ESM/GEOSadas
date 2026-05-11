@@ -28,6 +28,7 @@ set   mma = `echo nymda | cut -c5-6`
 set   dda = `echo nymda | cut -c7-8`
 set   hhb = `echo $nhmsb | cut -c1-2`
 set   hha = `echo $nhmsa | cut -c1-2`
+set yyyymmddhh = ${nymda}${hha}
 
 setenv NYMDA $nymda
 setenv   HHA $hha
@@ -60,8 +61,13 @@ else
   source  $FVHOME/run/jedi/JEDIanaConfig.csh
 endif
 
+if ( -e $FVWORK/.DONE_${MYNAME}.$yyyymmddhh ) then
+   echo "${MYNAME}: all done"
+   exit(0)
+endif
+
 setenv JEDIWORK $FVWORK/jedi.$nymda.$nhmsa
-if ( ! -d $JEDIWORK ) mkdir -p $JEDIWORK/swell
+if ( ! -d $JEDIWORK ) mkdir -p $JEDIWORK/jedi.$nymda.$nhmsa
 
 # Setup SWELL & IODA Files
 # ========================
@@ -72,23 +78,23 @@ if ( $JEDI_SWELLUSE && $JEDI_OBS_OPT == 3 ) then
      exit (1)
   endif
 
-  # Convert GSI-nc4-diag files to IODA
-  # ----------------------------------
-  if ( $JEDI_GSI2IODA ) then
-    jedi_gsi2ioda.csh $nymda $nhmsa $FVWORK $FVWORK $JEDIWORK
-    if ( $status ) then
-      echo "Trouble converting GSI output to IODA, aborting ..."
-      exit 1
-    endif
-  endif
-
 else
 
 # If here, IODA files must be available 
 # -------------------------------------
   if ( $OFFLINE_IODA_DIR == "/dev/null" ) then
+
+     # Convert GSI-nc4-diag files to IODA
+     # ----------------------------------
+     if ( $JEDI_GSI2IODA ) then
+       jedi_gsi2ioda.csh $nymda $nhmsa $FVWORK $FVWORK $JEDIWORK
+       if ( $status ) then
+         echo "Trouble converting GSI output to IODA, aborting ..."
+         exit 1
+       endif
+     endif
+
   else
-#    set IODADIR = $OFFLINE_IODA_DIR/Y$yyyya/M$mma/D$dda/H$hha/
      set IODADIR = $OFFLINE_IODA_DIR/${nymda}T${hha}0000Z/geos_atmosphere
      if ( ! -d $FVWORK/ioda.${nymda}_${hha}0000 ) mkdir $FVWORK/ioda.${nymda}_${hha}0000
      cd $FVWORK/ioda.${nymda}_${hha}0000
@@ -161,7 +167,7 @@ if ( $?SKIPGSI ) then
      echo " ${MYNAME}: WARNING, JEDI-related IAU will be used in model integration. "
    endif
 endif
-if ( $JEDI_IAU_OVERWRITE ) then
+if ( $JEDI_MKIAU && $JEDI_IAU_OVERWRITE ) then
   zeit_ci.x jedi_up4geos
   jedi_upd4geos.csh $nymdb $nhmsb |& tee -a $FVWORK/$EXPID.jedi_upd.log.${nymdb}_${hhb}z.txt
   if ( $status ) then
@@ -171,4 +177,8 @@ if ( $JEDI_IAU_OVERWRITE ) then
   zeit_co.x jedi_up4geos
 endif
 
+# If here, likely successful
+# --------------------------
+touch $FVWORK/.DONE_${MYNAME}.$yyyymmddhh
+echo " ${MYNAME}: Complete "
 exit(0)

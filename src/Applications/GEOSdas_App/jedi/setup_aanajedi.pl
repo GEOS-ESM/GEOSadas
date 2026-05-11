@@ -117,12 +117,16 @@ sub init {
         $jedistatic = "/discover/nobackup/projects/gmao/advda/SwellStaticFiles";
    }
 
+   $gsi2ioda = 0;
    if ( $opt_iodadir ) {
-        $iodadir = $opt_iodadir;
-        $jedi_obs_opt = 2; # ioda files provided by user
-   } else {
+     if ( $opt_iodadir eq "/dev/null" ) {
         $iodadir = "/dev/null";
         $jedi_obs_opt = 3; # convert ncdiag-to-ioda on the fly
+        $gsi2ioda = 1;
+     } else {
+        $iodadir = $opt_iodadir;
+        $jedi_obs_opt = 2; # ioda files provided by user
+     }
    }
 
    if ( $opt_cvbc ) {
@@ -176,6 +180,9 @@ sub init {
    if ( $opt_nogsi ) {
       $nogsi = 1;
    }
+
+# Swell is wired for now
+  $swell_install = "/gpfsm/dnb10/projects/p61/rtodling/JEDI1/2026/SWELL/Apr";
 
 # other settings
    $jediinput = "$fvhome/fv3-jedi";
@@ -362,7 +369,8 @@ sub init {
 
 # build internal variables
 
-  @rc2conf   = qw ( diffstates_geos.yaml
+  @rc2conf   = qw ( diag2ioda.yaml
+                    diffstates_geos.yaml
                     mkiau.rc.tenv
                     obsop_name_map.yaml );
 
@@ -621,6 +629,7 @@ sub ed_conf_rc {
         if($rcd =~ /\@JEDI_HYBRID/)         {$rcd=~ s/\@JEDI_HYBRID/$jedihyb/g;  }
         if($rcd =~ /\@JEDI_INPUT/)          {$rcd=~ s/\@JEDI_INPUT/$jediinput/g;  }
         if($rcd =~ /\@JEDI_OBS_OPT/)        {$rcd=~ s/\@JEDI_OBS_OPT/$jedi_obs_opt/g;  }
+        if($rcd =~ /\@JEDI_GSI2IODA/)       {$rcd=~ s/\@JEDI_GSI2IODA/$gsi2ioda/g;  }
         if($rcd =~ /\@JEDI_IAU_OVERWRITE/)  {$rcd=~ s/\@JEDI_IAU_OVERWRITE/$nogsi/g;  }
         if($rcd =~ /\@JEDI_ROOT/)           {$rcd=~ s/\@JEDI_ROOT/$jediroot/g;  }
         if($rcd =~ /\@JEDI_RUN_GETINC/)     {$rcd=~ s/\@JEDI_RUN_GETINC/$jediinc/g;  }
@@ -629,6 +638,8 @@ sub ed_conf_rc {
         if($rcd =~ /\@JEDI_VAR_NCPUS/)      {$rcd=~ s/\@JEDI_VAR_NCPUS/$ncpus_var/g;  }
         if($rcd =~ /\@JEDI_VAR_PERHOST/)    {$rcd=~ s/\@JEDI_VAR_PERHOST/$perhost_var/g;  }
         if($rcd =~ /\@OFFLIODADIR/)         {$rcd=~ s/\@OFFLIODADIR/$iodadir/g;  }
+
+        if($rcd =~ /\@SWELL_INSTALL/)       {$rcd=~ s/\@SWELL_INSTALL/$swell_install/g;  }
 
         if($rcd =~ /\@NODENAME/)            {$rcd=~ s/\@NODENAME/$nodename/g; }
         print(LUN2 "$rcd\n");
