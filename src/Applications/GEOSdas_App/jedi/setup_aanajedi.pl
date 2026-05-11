@@ -117,12 +117,11 @@ sub init {
         $jedistatic = "/discover/nobackup/projects/gmao/advda/SwellStaticFiles";
    }
 
-   $gsi2ioda = 0;
+   $jedi_obs_opt = 1; # point to tar-ball from x-like-exp
    if ( $opt_iodadir ) {
-     if ( $opt_iodadir eq "/dev/null" ) {
+     if ( $opt_iodadir eq "/dev/null" or $opt_iodadir eq "/dev/null/" ) {
         $iodadir = "/dev/null";
         $jedi_obs_opt = 3; # convert ncdiag-to-ioda on the fly
-        $gsi2ioda = 1;
      } else {
         $iodadir = $opt_iodadir;
         $jedi_obs_opt = 2; # ioda files provided by user
@@ -222,8 +221,8 @@ sub init {
        $gsixlayout = 21;
        $gsiylayout = 32;
        $perhost_var = 12;
-       $gsibec_lat = 361;
-       $gsibec_lon = 576;
+       $gsibec_lat = 721;
+       $gsibec_lon = 1152;
      } elsif ( $scheme eq "hyb4dcenvar" or $scheme eq "hyb4dcenvar_seq" ) {
        $i1res = $hres / 2 + 1; # resolution of inner loop (only used for BUMP opt for now)
        die "You are pushing the envelop, no settings for this yet, aborting ... \n";
@@ -238,11 +237,23 @@ sub init {
      }
   } elsif ( $cres == 361 ) {
      if ( $scheme eq "hyb4denvar" ) {
-       $varxlayout = 16;
-       $varylayout = 7;
-       $gsixlayout = 21;
-       $gsiylayout = 32;
-       $perhost_var = 12;
+       $gsibec_lat = 361;
+       $gsibec_lon = 576;
+       if ( $agcm_im == 720 ) {
+         $varxlayout = 16;
+         $varylayout = 7;
+         $gsixlayout = 21;
+         $gsiylayout = 32;
+         $perhost_var = 12;
+         $gsibec_lat = 721;
+         $gsibec_lon = 1152;
+       } else {
+         $varxlayout = 16;
+         $varylayout = 7;
+         $gsixlayout = 21;
+         $gsiylayout = 32;
+         $perhost_var = 12;
+       }
      } elsif ( $scheme eq "hyb4dcenvar_seq" ) {
        $varxlayout = 16;
        $varylayout = 7;
@@ -271,8 +282,6 @@ sub init {
        $gsiylayout = 6 * $gsixlayout;
        $perhost_var = 16;
      }
-     $gsibec_lat = 361;
-     $gsibec_lon = 576;
   } elsif ( $cres == 181 ) {
      if ( $scheme eq "hyb4denvar" ) {
        $varxlayout = 16;
@@ -384,6 +393,8 @@ sub init {
                     jedi_run_var.j
                     ut_jedi.j
                   );
+
+  @rc2adjedi  = qw ( JEDIadanaConfig.csh );
 
   @rc2jediobs = qw ( 0observations.yaml
                      aircraft_temperature.yaml
@@ -629,7 +640,6 @@ sub ed_conf_rc {
         if($rcd =~ /\@JEDI_HYBRID/)         {$rcd=~ s/\@JEDI_HYBRID/$jedihyb/g;  }
         if($rcd =~ /\@JEDI_INPUT/)          {$rcd=~ s/\@JEDI_INPUT/$jediinput/g;  }
         if($rcd =~ /\@JEDI_OBS_OPT/)        {$rcd=~ s/\@JEDI_OBS_OPT/$jedi_obs_opt/g;  }
-        if($rcd =~ /\@JEDI_GSI2IODA/)       {$rcd=~ s/\@JEDI_GSI2IODA/$gsi2ioda/g;  }
         if($rcd =~ /\@JEDI_IAU_OVERWRITE/)  {$rcd=~ s/\@JEDI_IAU_OVERWRITE/$nogsi/g;  }
         if($rcd =~ /\@JEDI_ROOT/)           {$rcd=~ s/\@JEDI_ROOT/$jediroot/g;  }
         if($rcd =~ /\@JEDI_RUN_GETINC/)     {$rcd=~ s/\@JEDI_RUN_GETINC/$jediinc/g;  }

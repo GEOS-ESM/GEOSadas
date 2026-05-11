@@ -1,9 +1,9 @@
-#------------
-# prePP.input
-#------------
+#-------------
+# jprePP.input
+#-------------
 
 codeID: 523f29e
-description: prePP__GEOSadas-5_43_4__agrid_C720__ogrid_C
+description: jprePP__GEOSadas-5_43_x__agrid_C720__ogrid_C
 fvsetupID: f7aaa973c7
 
 ---ENDHEADERS---
@@ -29,7 +29,7 @@ EXPID? [u000_C720]
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [prePP__GEOSadas-5_41_2__agrid_C720__ogrid_C]
+EXPDSC? [jprePP__GEOSadas-5_41_2__agrid_C720__ogrid_C]
 > 
 
 Land Boundary Conditions? [Icarus_Updated]
@@ -38,10 +38,10 @@ Land Boundary Conditions? [Icarus_Updated]
 Catchment Model choice? [1]
 > 
 
-FVHOME? [/discover/nobackup/rtodling/prePP]
+FVHOME? [/discover/nobackup/rtodling/jprePP]
 > /discover/nobackup/projects/gmao/dadev/TSE_staging/rtodling/543/$expid
 
-The directory /discover/nobackup/projects/gmao/dadev/rtodling/prePP does not exist. Create it now? [y]
+The directory /discover/nobackup/projects/gmao/dadev/rtodling/jprePP does not exist. Create it now? [y]
 > 
 
 Processing nodes (1:Haswell, 2:Skylake, 3:Cascase, 4:Milan)? [2]
@@ -98,7 +98,7 @@ Run singular vector experiments (0=n,1=yes)? [0]
 Run analysis-sensitivity applications (0=no,1=yes)? [0]
 > 1
 
-Verifying experiment id: [prePP]
+Verifying experiment id: [jprePP]
 > 
 
 Ending year-month-day? [20210921]
@@ -207,7 +207,7 @@ Do Aerosol Analysis (y/n)? [y]
 > 
 
 AOD OBSERVING CLASSES [or type 'none']?
-> mod04_061_flk,myd04_061_flk,aeronet_obs_flk
+> mod04_061_flk,myd04_061_flk,aeronet_obs_llk
 
 Enable GAAS feedback to model (y/n)? [y]
 > 
@@ -225,19 +225,13 @@ Select group: [g0613]
 > g0613
 
 Replayed Ensemble?  [yes]
-> no
+>
 
-Use SPPT-scheme for Ensemble?  [yes]
-> 
+Replay exp name? [x0046d]
+> f5421_fpp
 
-Ensemble Resolution?  [C90]
-> C180
-
-Ensemble Vertical Levels?  [72]
-> 
-
-Experiment archive directory for ensemble restarts or 'later': [/archive/u/rtodling/prePP]
-> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_42/f5421_fpp
+Replay archive directory? [/discover/nobackup/projects/gmao/dadev/rtodling/archive/x0046d]
+> /home/dao_ops/f5421_fpp/run/.../archive/
 
 Edit COLLECTIONS list in run/HISTORY.rc.tmpl (y/n)? [n]
 > 

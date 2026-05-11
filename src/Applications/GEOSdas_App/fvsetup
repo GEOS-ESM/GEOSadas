@@ -3707,7 +3707,8 @@ sub set_geosjedi {
      if( $ENV{OFFLINE_IODA_DIR} ) {
         $iodadir = $ENV{OFFLINE_IODA_DIR};
      } else {
-        $iodadir = "/discover/nobackup/projects/gmao/dadev/rtodling/archive/541/Milan/x0050/ioda/";
+#       $iodadir = "/discover/nobackup/projects/gmao/dadev/rtodling/archive/541/Milan/x0050/ioda/";
+        $iodadir = "/discover/nobackup/projects/gmao/dadev/rtodling/archive/544/x0054/ioda/";
      }
   } else {
      $iodadir = "/dev/null"; # this expects ncdiag files to be created by GSI

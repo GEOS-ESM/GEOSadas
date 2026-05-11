@@ -62,7 +62,7 @@ endif
 
 if ( !($?JEDI_ROOT)  )  setenv FAILED   1
 if ( !($?JEDI_CRTM_COEFFS) )  setenv FAILED   1
-if ( !($?JEDI_GSI2IODA)  )  setenv FAILED   1
+if ( !($?JEDI_OBS_OPT)  )  setenv FAILED   1
 
 if ( $SYSFAILED ) then
   env
@@ -75,7 +75,7 @@ if ( $FAILED ) then
   exit (1)
 endif
 
-if ( ! $JEDI_GSI2IODA ) then
+if ( $JEDI_OBS_OPT != 3 ) then
    echo "${MYNAME}: skipping GSI2IODA ..."
    exit(0)
 endif 
@@ -102,7 +102,7 @@ set pdda      = `echo $pnymda | cut -c7-8`
 set phha      = `echo $pnhmsa | cut -c1-2`
 
 # Convert GSI-nc4-diag files to IODA
-if ( $JEDI_GSI2IODA ) then
+#if ( $JEDI_OBS_OPT == 3 ) then
   cd $JEDIWORK
 
   # link diag files for conversion
@@ -139,7 +139,7 @@ if ( $JEDI_GSI2IODA ) then
      if ( -d ~/cylc-run/${EXPID}-convert_ncdiags-suite ) then
         /bin/rm -r ~/cylc-run/${EXPID}-convert_ncdiags-suite
      endif
-     $DRYRUN swell create convert_ncdiags --override diag2ioda.yaml
+     $DRYRUN swell create convert_ncdiags --skip-r2d2 --override diag2ioda.yaml
   else
      echo "Trouble finding diag2ioda.yaml, aborting ..."
      exit 1
@@ -162,7 +162,7 @@ if ( $JEDI_GSI2IODA ) then
         exit 1
      endif
    endif
-endif
+#endif
 
 touch $FVWORK/.DONE_${MYNAME}.$yyyymmddhh
 echo " ${MYNAME}: Complete "

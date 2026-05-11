@@ -38,7 +38,6 @@ if ( !($?FVHOME)        )  setenv FAILED   1
 if ( !($?FVWORK)        )  setenv FAILED   1
 if ( !($?GID)           )  setenv FAILED   1
 if ( !($?JEDI_OBS_OPT)  )  setenv FAILED   1
-if ( !($?JEDI_OBS_DIR)  )  setenv FAILED   1
 if ( !($?JEDI_HYBRID)   )  setenv FAILED   1
 if ( !($?JEDI_FEEDBACK_VARBC) )  setenv FAILED   1
 if ( !($?OFFLINE_IODA_DIR) ) setenv FAILED   1
@@ -188,8 +187,8 @@ if ( $JEDI_RUN_ADANA || $JEDI_OBS_OPT == 1 ) then
   endif
 endif # adjoint analysis
 
-# Link IODA observation files
-# ---------------------------
+# Link IODA files from available from offline generation
+# ------------------------------------------------------
 if ( $JEDI_OBS_OPT == 2 ) then
    pwd
    ls
@@ -201,18 +200,23 @@ if ( $JEDI_OBS_OPT == 2 ) then
       exit 1
    endif
    cd -
-   echo " ${MYNAME}: linked IODA files successfully"
+   echo " ${MYNAME}: successfully linked offline available IODA files"
 endif
 
-# Link IODA observation files
-# ---------------------------
+# Link IODA observation files that have been generated on the fly
+# ---------------------------------------------------------------
 if ( $JEDI_OBS_OPT == 3 ) then
    pwd
    ls
    cd obs
-   ln -sf $FVWORK/ioda.${nymda}_${hha}0000/* .
+   if ( "$OFFLINE_IODA_DIR" == "/dev/null/" || "$OFFLINE_IODA_DIR" == "/dev/null" ) then
+      ln -sf $FVWORK/ioda.${nymda}_${hha}0000/* .
+   else
+      echo " ${MYNAME}: inconsistent settings, cannot link IODA files, aborting ..."
+      exit 1
+   endif
    cd -
-   echo " ${MYNAME}: linked IODA files successfully"
+   echo " ${MYNAME}: successfully linked IODA files generated on the fly"
 endif
 
 # If so, feedback VarBC (from previous cycle)

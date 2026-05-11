@@ -51,7 +51,7 @@ if ( !($?JEDI_POST) )  setenv JEDI_POST  0
 if ( !($?JEDI_IAU_OVERWRITE) )  setenv JEDI_IAU_OVERWRITE  0
 if ( !($?JEDI_RUN_ADANA_TEST) ) setenv JEDI_RUN_ADANA_TEST 0
 if ( !($?JEDI_RUN_ADANA) ) setenv JEDI_RUN_ADANA 0
-if ( !($?JEDI_GSI2IODA) ) setenv JEDI_GSI2IODA 0
+if ( !($?JEDI_OBS_OPT) ) setenv JEDI_OBS_OPT 0
 if ( !($?JEDI_SWELLUSE) ) setenv JEDI_SWELLUSE 1
 if ( !($?OFFLINE_IODA_DIR) ) setenv OFFLINE_IODA_DIR /dev/null
 
@@ -71,7 +71,7 @@ if ( ! -d $JEDIWORK ) mkdir -p $JEDIWORK/jedi.$nymda.$nhmsa
 
 # Setup SWELL & IODA Files
 # ========================
-if ( $JEDI_SWELLUSE && $JEDI_OBS_OPT == 3 ) then
+if ( $JEDI_SWELLUSE ) then
   jedi_swellset.csh $nymda $nhmsa $JEDIDIR $JEDIWORK
   if ($status) then
      echo "${MYNAME}: failed, aborting ..."
@@ -82,11 +82,11 @@ else
 
 # If here, IODA files must be available 
 # -------------------------------------
-  if ( $OFFLINE_IODA_DIR == "/dev/null" ) then
+  if ( $OFFLINE_IODA_DIR == "/dev/null" || $OFFLINE_IODA_DIR == "/dev/null/" ) then
 
      # Convert GSI-nc4-diag files to IODA
      # ----------------------------------
-     if ( $JEDI_GSI2IODA ) then
+     if ( $JEDI_OBS_OPT == 3 ) then
        jedi_gsi2ioda.csh $nymda $nhmsa $FVWORK $FVWORK $JEDIWORK
        if ( $status ) then
          echo "Trouble converting GSI output to IODA, aborting ..."
