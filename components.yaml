@@ -92,7 +92,7 @@ GEOSana_GridComp:
 mksi:
    local: ./src/Components/@GEOSana_GridComp/GEOSaana_GridComp/GSI_GridComp/@mksi
    remote: ../GEOS_mksi.git
-   tag: v5.43.3
+   tag: v5.43.4
    develop: develop
 
 GEOSgcm_GridComp:
