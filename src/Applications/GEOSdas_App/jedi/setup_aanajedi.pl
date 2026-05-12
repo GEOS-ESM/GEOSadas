@@ -108,7 +108,7 @@ sub init {
 
    $jedipartition = "#"; 
    if ( $ENV{"GEOSJEDI_PARTITION"} ) {
-      $jedipartition = "#SBATCH --qos=$GEOSJEDI_PARTITION";
+      $jedipartition = "#SBATCH --partition=$GEOSJEDI_PARTITION";
    }
 
    if ( $opt_jedistatic ) {
