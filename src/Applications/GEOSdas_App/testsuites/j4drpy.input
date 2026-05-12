@@ -81,7 +81,7 @@ AeroCom? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/AeroCom]
 > 
 
 FVICS? [/archive/u/jstassi/restarts/GEOSadas-5_24_0]
-> /discover/nobackup/projects/gmao/dadev/rtodling/archive/541/Milan/x0050/rs/Y2023/M10/x0050.rst.20231004_15z.tar
+> /discover/nobackup/projects/gmao/dadev/rtodling/archive/543/x0053RPY/rs/Y2025/M12/x0053RPY.rst.20251230_21z.tar
 
 Run model-adjoint-related applications (0=no,1=yes)? [0]
 > 1
@@ -150,7 +150,7 @@ Which main class of ObsSys (1: NRT; 2: MERRA; 3: MERRA-2; 4: GEOS-IT; 5: R21C)? 
 > 
 
 OBSERVING SYSTEM CLASSES?
-> disc_airs_bufr,disc_amsua_bufr,gmao_amsr2_bufr,gmao_gmi_bufr,mls_nrt_nc,ncep_1bamua_bufr,ncep_acftpfl_bufr,ncep_atms_bufr,ncep_aura_omi_bufr,ncep_avcsam_bufr,ncep_avcspm_bufr,ncep_crisfsr_bufr,ncep_goesfv_bufr,ncep_gpsro_bufr,ncep_mhs_bufr,ncep_mtiasi_bufr,ncep_prep_bufr,ncep_satwnd_bufr,ncep_ssmis_bufr,ncep_tcvitals,npp_ompsnm_bufr,r21c_npp_ompslp_nc,m2scr_n21_ompslp_nc,gmao_mlst_bufr
+> disc_airs_bufr,gmao_amsr2_bufr,gmao_gmi_bufr,mls_nrt_nc,ncep_1bamua_bufr,ncep_acftpfl_bufr,ncep_atms_bufr,ncep_aura_omi_bufr,ncep_avcsam_bufr,ncep_avcspm_bufr,ncep_crisfsr_bufr,ncep_goesfv_bufr,ncep_gpsro_bufr,ncep_mhs_bufr,ncep_mtiasi_bufr,ncep_prep_bufr,ncep_satwnd_bufr,ncep_ssmis_bufr,ncep_tcvitals,npp_ompsnm_bufr,n21_ompslp_nc,gmao_mlst_bufr,aura_omieff_nc,npp_ompslp_nc
 
 CHECKING OBSYSTEM? [2]
 > 1

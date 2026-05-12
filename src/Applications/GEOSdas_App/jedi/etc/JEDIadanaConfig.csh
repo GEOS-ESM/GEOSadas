@@ -19,7 +19,7 @@ setenv OFFLINE_IODA_DIR @OFFLIODADIR # /discover/nobackup/projects/gmao/dadev/rt
 
 # Details ...
 setenv MAPLFIX      0
-setenv JEDI_OBS_OPT @JEDI_OBS_OPT  # 1= point to xexp-like set (data in tar-balls; data from existing exp)
+setenv JEDI_OBS_OPT 1              # 1= point to xexp-like set (data in tar-balls; data from existing exp)
                                    # 2= point to existing set of ncdiag-ioda-converted set (swell/.../DATE/geos_atmosphere)
                                    # 3= generate on the fly based on GSI (nc4) diags (TBD)
 

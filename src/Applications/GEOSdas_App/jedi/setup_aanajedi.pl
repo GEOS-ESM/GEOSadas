@@ -108,7 +108,7 @@ sub init {
 
    $jedipartition = "#"; 
    if ( $ENV{"GEOSJEDI_PARTITION"} ) {
-      $jedipartition = "#SBATCH --qos=$GEOSJEDI_PARTITION";
+      $jedipartition = "#SBATCH --partition=$GEOSJEDI_PARTITION";
    }
 
    if ( $opt_jedistatic ) {
@@ -117,12 +117,15 @@ sub init {
         $jedistatic = "/discover/nobackup/projects/gmao/advda/SwellStaticFiles";
    }
 
+   $jedi_obs_opt = 1; # point to tar-ball from x-like-exp
    if ( $opt_iodadir ) {
-        $iodadir = $opt_iodadir;
-        $jedi_obs_opt = 2; # ioda files provided by user
-   } else {
+     if ( $opt_iodadir eq "/dev/null" or $opt_iodadir eq "/dev/null/" ) {
         $iodadir = "/dev/null";
         $jedi_obs_opt = 3; # convert ncdiag-to-ioda on the fly
+     } else {
+        $iodadir = $opt_iodadir;
+        $jedi_obs_opt = 2; # ioda files provided by user
+     }
    }
 
    if ( $opt_cvbc ) {
@@ -177,6 +180,9 @@ sub init {
       $nogsi = 1;
    }
 
+# Swell is wired for now
+  $swell_install = "/gpfsm/dnb10/projects/p61/rtodling/JEDI1/2026/SWELL/Apr";
+
 # other settings
    $jediinput = "$fvhome/fv3-jedi";
 
@@ -215,8 +221,8 @@ sub init {
        $gsixlayout = 21;
        $gsiylayout = 32;
        $perhost_var = 12;
-       $gsibec_lat = 361;
-       $gsibec_lon = 576;
+       $gsibec_lat = 721;
+       $gsibec_lon = 1152;
      } elsif ( $scheme eq "hyb4dcenvar" or $scheme eq "hyb4dcenvar_seq" ) {
        $i1res = $hres / 2 + 1; # resolution of inner loop (only used for BUMP opt for now)
        die "You are pushing the envelop, no settings for this yet, aborting ... \n";
@@ -231,11 +237,23 @@ sub init {
      }
   } elsif ( $cres == 361 ) {
      if ( $scheme eq "hyb4denvar" ) {
-       $varxlayout = 16;
-       $varylayout = 7;
-       $gsixlayout = 21;
-       $gsiylayout = 32;
-       $perhost_var = 12;
+       $gsibec_lat = 361;
+       $gsibec_lon = 576;
+       if ( $agcm_im == 720 ) {
+         $varxlayout = 16;
+         $varylayout = 7;
+         $gsixlayout = 21;
+         $gsiylayout = 32;
+         $perhost_var = 12;
+         $gsibec_lat = 721;
+         $gsibec_lon = 1152;
+       } else {
+         $varxlayout = 16;
+         $varylayout = 7;
+         $gsixlayout = 21;
+         $gsiylayout = 32;
+         $perhost_var = 12;
+       }
      } elsif ( $scheme eq "hyb4dcenvar_seq" ) {
        $varxlayout = 16;
        $varylayout = 7;
@@ -264,8 +282,6 @@ sub init {
        $gsiylayout = 6 * $gsixlayout;
        $perhost_var = 16;
      }
-     $gsibec_lat = 361;
-     $gsibec_lon = 576;
   } elsif ( $cres == 181 ) {
      if ( $scheme eq "hyb4denvar" ) {
        $varxlayout = 16;
@@ -362,7 +378,8 @@ sub init {
 
 # build internal variables
 
-  @rc2conf   = qw ( diffstates_geos.yaml
+  @rc2conf   = qw ( diag2ioda.yaml
+                    diffstates_geos.yaml
                     mkiau.rc.tenv
                     obsop_name_map.yaml );
 
@@ -376,6 +393,8 @@ sub init {
                     jedi_run_var.j
                     ut_jedi.j
                   );
+
+  @rc2adjedi  = qw ( JEDIadanaConfig.csh );
 
   @rc2jediobs = qw ( 0observations.yaml
                      aircraft_temperature.yaml
@@ -629,6 +648,8 @@ sub ed_conf_rc {
         if($rcd =~ /\@JEDI_VAR_NCPUS/)      {$rcd=~ s/\@JEDI_VAR_NCPUS/$ncpus_var/g;  }
         if($rcd =~ /\@JEDI_VAR_PERHOST/)    {$rcd=~ s/\@JEDI_VAR_PERHOST/$perhost_var/g;  }
         if($rcd =~ /\@OFFLIODADIR/)         {$rcd=~ s/\@OFFLIODADIR/$iodadir/g;  }
+
+        if($rcd =~ /\@SWELL_INSTALL/)       {$rcd=~ s/\@SWELL_INSTALL/$swell_install/g;  }
 
         if($rcd =~ /\@NODENAME/)            {$rcd=~ s/\@NODENAME/$nodename/g; }
         print(LUN2 "$rcd\n");
