@@ -146,7 +146,7 @@ set phha      = `echo $pnhmsa | cut -c1-2`
   endif
 
   # launch convert suite
-  swell launch $JEDIWORK/${EXPID}-convert_ncdiags/${EXPID}-convert_ncdiags-suite -b
+  swell launch $JEDIWORK/${EXPID}-convert_ncdiags/${EXPID}-convert_ncdiags-suite -b -t PT30S
   if ( $status ) then
      echo "Trouble converting GSI output to IODA, aborting ..."
      exit 1
