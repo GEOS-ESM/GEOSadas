@@ -181,7 +181,7 @@ sub init {
    }
 
 # Swell is wired for now
-  $swell_install = "/gpfsm/dnb10/projects/p61/rtodling/JEDI1/2026/SWELL/Apr";
+  $swell_install = "/gpfsm/dnb10/projects/p61/rtodling/JEDI1/2026/SWELL/May/opt";
 
 # other settings
    $jediinput = "$fvhome/fv3-jedi";

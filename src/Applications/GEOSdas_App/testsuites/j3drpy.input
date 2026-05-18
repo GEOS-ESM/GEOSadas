@@ -228,10 +228,10 @@ Replayed Ensemble (from OPS)?  [yes]
 > 
 
 Replay exp name? [x0046d]
-> x0050
+> x0054
 
 Replay archive directory? [/discover/nobackup/projects/gmao/dadev/rtodling/archive/x0046d]
-> /discover/nobackup/projects/gmao/dadev/rtodling/archive/541/Milan/x0050
+> /discover/nobackup/projects/gmao/dadev/rtodling/archive/544/x0054
 
 Edit COLLECTIONS list in run/HISTORY.rc.tmpl (y/n)? [n]
 > 
