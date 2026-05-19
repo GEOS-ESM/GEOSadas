@@ -86,11 +86,13 @@ cd $MYWORK
 foreach fn  ( $lst )
   set this = `echo $fn | cut -d. -f1`
   set use = (`grep $this satinfo | cut -c26-30`)
+  set cld = (`grep $this satinfo | cut -c72-77`)
   if ( $status ) then
     /bin/cp $inpobs/$this.yaml $outobs/$this.yaml
   else
     /bin/rm -f sed_file
-    echo "s/>>>use_channels_${this}<<</$use/1"  >> sed_file
+    echo "s/>>>use_channels_${this}<<</$use/1"     >> sed_file
+    echo "s/>>>clddet_channels_${this}<<</$cld/1"  >> sed_file
     sed -f sed_file  $inpobs/$this.yaml  > $outobs/$this.yaml
   endif
 end
