@@ -25,7 +25,7 @@ if ( $#argv < 2 ) then
    echo " AUTHOR"
    echo "   Ricardo Todling (Ricardo.Todling@nasa.gov), NASA/GMAO "
    echo "     Initial version: 18Oct2020    by: R. Todling"
-   echo "     Last   modified: 30Apr2026    by: R. Todling"
+   echo "     Last   modified: 19May2026    by: R. Todling"
    echo " \\end{verbatim} "
    echo " \\clearpage "
    exit(0)
@@ -310,8 +310,12 @@ else
     echo " ${MYNAME}: $obstypes "
   endif
   cd -
+  # Set flag for used observing system (based on GMAO db)
+  jedi_useflags.csh $nymda $nhmsa $JEDIETC/obs $JEDIWRK/Config/obs
+
+  # Assemble var-yaml
   set obstypes = ( "0observations.yaml" $obstypes )
-  assemble_obs_yaml.pl $JEDIETC/obs $obstypes Config/obs.${nymdb}T${nhmsb}Z.yaml
+  assemble_obs_yaml.pl $JEDIWRK/Config/obs $obstypes Config/obs.${nymdb}T${nhmsb}Z.yaml
   if ( ! -e  Config/obs.${nymdb}T${nhmsb}Z.yaml ) then
      echo " ${MYNAME}: failed to building obs.${nymdb}T${nhmsb}Z.yaml, aborting ..."
      exit(2)

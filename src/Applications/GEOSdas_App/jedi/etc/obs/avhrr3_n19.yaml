@@ -161,10 +161,7 @@
           options:
             channels: 3-5
             error parameter vector: *error_parameter_avhrr3_n19
-            use_flag: &id021
-            - -1
-            - 1
-            - 1
+            use_flag: &id021 >>>use_channels_avhrr3_n19-b<<<
             use_flag_clddet:
             - 1
             - 1

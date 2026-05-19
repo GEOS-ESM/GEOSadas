@@ -477,20 +477,7 @@
           options:
             channels: 1-13
             sensor: gmi_gpm
-            use_flag:
-            - -1
-            - -1
-            - -1
-            - -1
-            - 1
-            - 1
-            - 1
-            - -1
-            - -1
-            - 1
-            - -1
-            - 1
-            - 1
+            use_flag: >>>use_channels_gmi_gpm<<<
         minvalue: 1e-12
         action:
           name: reject
