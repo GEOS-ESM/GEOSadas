@@ -258,29 +258,7 @@
             channels: 1-22
             use passive_bc: true
             sensor: atms_n20
-            use_flag: &id017
-            - -1
-            - -1
-            - -1
-            - -1
-            - 1
-            - 1
-            - 1
-            - 1
-            - 1
-            - 1
-            - 1
-            - 1
-            - 1
-            - 1
-            - 1
-            - -1
-            - 1
-            - 1
-            - 1
-            - 1
-            - 1
-            - 1
+            use_flag: >>>use_channels_atms_n20<<<
         maxvalue: 1e-12
         action:
           name: reject
@@ -294,7 +272,7 @@
           channels: 1-22
           options:
             channels: 1-22
-            use_flag: *id017
+            use_flag: >>>use_channels_atms_n20<<<
         minvalue: 1e-12
         action:
           name: reject

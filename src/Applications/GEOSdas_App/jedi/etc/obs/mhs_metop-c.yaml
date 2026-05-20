@@ -96,12 +96,7 @@
           options:
             channels: 1-5
             sensor: mhs_metop-c
-            use_flag:
-            - 1
-            - 1
-            - 1
-            - 1
-            - 1
+            use_flag: >>>use_channels_mhs_metop-c<<<
         minvalue: 1e-12
         action:
           name: reject

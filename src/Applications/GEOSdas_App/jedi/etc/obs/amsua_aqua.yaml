@@ -244,22 +244,7 @@
             channels: 1-15
             use passive_bc: true
             sensor: amsua_aqua
-            use_flag: &id007
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
-            - -1
+            use_flag: >>>use_channels_amsua_aqua<<<
         maxvalue: 1e-12
         action:
           name: reject
@@ -273,7 +258,7 @@
           channels: 1-15
           options:
             channels: 1-15
-            use_flag: *id007
+            use_flag: >>>use_channels_amsua_aqua<<<
         minvalue: 1e-12
         action:
           name: reject
