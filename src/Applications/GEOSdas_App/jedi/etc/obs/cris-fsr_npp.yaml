@@ -875,8 +875,8 @@
               1635, 1939-1987, 2119, 2140, 2143, 2147, 2153, 2158, 2161, 2168, 2171,
               2175, 2182
             error parameter vector: *error_param-cris-fsr_npp
-            use_flag: &id024 >>>use_channels_cris-fsr_npp<<<
-            use_flag_clddet: &id025 >>>clddet_channels_cris-fsr_npp<<<
+            use_flag: >>>use_channels_cris-fsr_npp<<<
+            use_flag_clddet: >>>clddet_channels_cris-fsr_npp<<<
             obserr_dtempf:
             - 0.5
             - 2.0
@@ -949,7 +949,7 @@
               1346-1347, 1473-1474, 1491, 1499, 1553, 1570, 1596, 1602, 1619, 1624,
               1635, 1939-1987, 2119, 2140, 2143, 2147, 2153, 2158, 2161, 2168, 2171,
               2175, 2182
-            use_flag: *id024
+            use_flag: >>>use_channels_cris-fsr_npp<<<
         maxvalue: 1e-12
         action:
           name: reject
@@ -1628,8 +1628,8 @@
               1346-1347, 1473-1474, 1491, 1499, 1553, 1570, 1596, 1602, 1619, 1624,
               1635, 1939-1987, 2119, 2140, 2143, 2147, 2153, 2158, 2161, 2168, 2171,
               2175, 2182
-            use_flag: *id024
-            use_flag_clddet: *id025
+            use_flag: >>>use_channels_cris-fsr_npp<<<
+            use_flag_clddet: >>clddet_channels_cris-fsr_npp<<<
         maxvalue: 1e-12
         defer to post: true
         action:
@@ -1693,7 +1693,7 @@
               1346-1347, 1473-1474, 1491, 1499, 1553, 1570, 1596, 1602, 1619, 1624,
               1635, 1939-1987, 2119, 2140, 2143, 2147, 2153, 2158, 2161, 2168, 2171,
               2175, 2182
-            use_flag: *id024
+            use_flag: >>>use_channels_cris-fsr_npp<<<
         minvalue: 1e-12
         action:
           name: reject

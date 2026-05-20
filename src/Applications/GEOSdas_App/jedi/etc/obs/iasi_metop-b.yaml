@@ -1575,8 +1575,8 @@
               7444, 7475, 7549, 7584, 7665-7666, 7831, 7836, 7853, 7865, 7885, 7888,
               7912, 7950, 7972, 7980, 7995, 8007, 8015, 8055, 8078
             error parameter vector: *id026
-            use_flag: &id027 >>>use_channels_iasi_metop-b<<<
-            use_flag_clddet: &id028 >>>clddet_channels_iasi_metop-b<<<
+            use_flag: >>>use_channels_iasi_metop-b<<<
+            use_flag_clddet: >>>clddet_channels_iasi_metop-b<<<
             obserr_dtempf:
             - 0.5
             - 2.0
@@ -1739,7 +1739,7 @@
               7444, 7475, 7549, 7584, 7665-7666, 7831, 7836, 7853, 7865, 7885, 7888,
               7912, 7950, 7972, 7980, 7995, 8007, 8015, 8055, 8078
             error parameter vector: *id026
-            use_flag: *id027
+            use_flag: >>>use_channels_iasi_metop-b<<<
         maxvalue: 1e-12
         action:
           name: reject
@@ -2937,8 +2937,8 @@
               7247, 7267, 7269, 7284, 7389, 7419, 7423-7424, 7426, 7428, 7431, 7436,
               7444, 7475, 7549, 7584, 7665-7666, 7831, 7836, 7853, 7865, 7885, 7888,
               7912, 7950, 7972, 7980, 7995, 8007, 8015, 8055, 8078
-            use_flag: *id027
-            use_flag_clddet: *id028
+            use_flag: >>>use_channels_iasi_metop-b<<<
+            use_flag_clddet: >>>clddet_channels_iasi_metop-b<<<
         maxvalue: 1e-12
         defer to post: true
         action:
@@ -3091,7 +3091,7 @@
               7247, 7267, 7269, 7284, 7389, 7419, 7423-7424, 7426, 7428, 7431, 7436,
               7444, 7475, 7549, 7584, 7665-7666, 7831, 7836, 7853, 7865, 7885, 7888,
               7912, 7950, 7972, 7980, 7995, 8007, 8015, 8055, 8078
-            use_flag: *id027
+            use_flag: >>>use_channels_iasi_metop-b<<<
         minvalue: 1e-12
         action:
           name: reject

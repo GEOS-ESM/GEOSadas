@@ -161,7 +161,7 @@
           options:
             channels: 3-5
             error parameter vector: *error_parameter_avhrr3_n19
-            use_flag: &id021 >>>use_channels_avhrr3_n19-b<<<
+            use_flag: >>>use_channels_avhrr3_n19-b<<<
             use_flag_clddet: >>>clddet_channels_avhrr3_n19<<<
             obserr_dtempf:
             - 0.5
@@ -186,7 +186,7 @@
           channels: 3-5
           options:
             channels: 3-5
-            use_flag: *id021
+            use_flag: >>>use_channels_avhrr3_n19-b<<<
             obserr_demisf:
             - 0.01
             - 0.02
@@ -266,7 +266,7 @@
           channels: 3-5
           options:
             channels: 3-5
-            use_flag: *id021
+            use_flag: >>>use_channels_avhrr3_n19-b<<<
         minvalue: 1e-12
         action:
           name: reject
