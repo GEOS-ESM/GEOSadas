@@ -17,7 +17,7 @@
 #                       - Generalized handling of bkg files & how they become rst
 #  01Mar2007  RL/TO     Added support for /input DMF status checking
 #  12Mar2007  Todling   - Renamed IAUOSET to DOIAU
-#  1June2007  Kokron    Added zeit calls and mods to support running prepqc while the 
+#  1June2007  Kokron    Added zeit calls and mods to support running prepqc while the
 #                       model is still running
 #  2Aug2007   Kokron    Call cnv2prs using prund.pl when on discover.  Speedup ~80 min to 4 min
 #  13Jul2007  Todling   Add mechanisms to triger cycling 4dvar
@@ -35,7 +35,7 @@
 #  23Jan2008  Owens     Added InterimTag_() function to partition log files during multi-day runs
 #  23Mar2008  Todling   Add -ifcst to forecast from offset IAU-initialized state
 #  21Apr2008  Owens     Mods to preserve obsys.acq functionality in PreAnalysisQC_()
-#                       for multi-day runs and parallelize calls within FixEndian 
+#                       for multi-day runs and parallelize calls within FixEndian
 #                       and FixUnblock portions of the subroutine
 #  23Apr2008  Stassi    Added sub LandAnalysisRun_()
 #  23Jun2008  Todling   Fix to skip analysis option
@@ -75,9 +75,9 @@
 #  16Sep2015 Todling    - Save RSTs as tar-ball
 #                       - add env var RSTSUFFIX to prepare for nc4/bin RSTs opt
 #  10May2016 Todling    - Add ability to run TLM using increments from 4d-analysis
-#                       - Revise multi-incremental approach for 4d-analysis 
+#                       - Revise multi-incremental approach for 4d-analysis
 #                         (cost goes down with successive updates)
-#                       - Temporarily leaving test lines commented out 
+#                       - Temporarily leaving test lines commented out
 #   8Dec2021 Sienkiewicz - add option for 'cleanup_tail' for aircraft bias correction
 #-----------------------------------------------------------------------------
 
@@ -191,8 +191,8 @@
   endif
 
   if ( $?RUN_OPT_BEGIN ) then
-        set run_opt_begin = ( $RUN_OPT_BEGIN ) 
-  else 
+        set run_opt_begin = ( $RUN_OPT_BEGIN )
+  else
         set run_opt_begin = ""
   endif
 
@@ -201,8 +201,8 @@
   setenv SENS      0
   set grsv =       0 # by default do not copy gradient vector
   set strict =    "" # by default do not be strict about input files
-  set log    =     0 # by default do not log warnings or errors 
-  set blendg5 =    0 # by default do not blend g5 analysis with rs files   
+  set log    =     0 # by default do not log warnings or errors
+  set blendg5 =    0 # by default do not blend g5 analysis with rs files
   set blendrs =    0 # by default do not blend ncep data with rs files
   set blendec =    0 # by default do not blend ncep data with rs files
   set ifcst   =    0 # by default do not initialize forecast, i.e., don't force first 6hr of fcst w/ IAU inc
@@ -214,7 +214,7 @@
 # --------------------------------
   alias fname1 'echo \!* >! $fname'   # write first line of $fname
   alias fname2 'echo \!* >> $fname'   # append to $fname
- 
+
                                                  # Last line of Initialize_
 \end
 
@@ -225,6 +225,7 @@
 #------------------------
   if ( $?ECHO___ ) set echo
 
+  echo "argv in ParseCmdLine_ = $argv"
   if ( $#argv > 0 ) then
   foreach token ( $argv )
      if ( "$token" == "-dtg" ) then
@@ -313,7 +314,7 @@
        setenv FVHOME  $1
        setenv FVWORK  $2
        setenv EXPID   `basename $FVHOME`
-       if ( !($?ANAID) )  setenv ANAID $EXPID 
+       if ( !($?ANAID) )  setenv ANAID $EXPID
   endif
 
 # Check for optional directory specifications
@@ -362,8 +363,8 @@ usage:
 cat <<EOF
 
 NAME
-     fvpsas - Script for GMAO Data Assimilation or Forecast runs 
-          
+     fvpsas - Script for GMAO Data Assimilation or Forecast runs
+
 SYNOPSIS
 
      fvpsas [-h] [-fcst itime] [-log]
@@ -371,26 +372,26 @@ SYNOPSIS
 
 DESCRIPTION
 
-     This script runs the GMAO-GCMs in Data Assimilation or Forecast 
+     This script runs the GMAO-GCMs in Data Assimilation or Forecast
      mode for one job segment. On input:
 
      fvhome     experiment home directory, e.g., /scratch1/$user/v000_b55
      fvwork     working directory, e.g., \$TMPDIR
 
-     Restarts, namelists and resource files are  expected to be available 
+     Restarts, namelists and resource files are  expected to be available
      in \$FVHOME/recycle and \$FVHOME/run.  The run is performed in \$FVWORK,
      and the output files are left there for archival by the calling script.
 
 OPTIONS
 
-     -grsv        copy gradient vector to \$FVHOME/asens 
+     -grsv        copy gradient vector to \$FVHOME/asens
      -h           prints this page
-     -fcst itime  forecast mode; itime specifies the initial condition 
+     -fcst itime  forecast mode; itime specifies the initial condition
                   time, for example: 19990901_18z
      -strict      returns with non-zero error if acquire fails to
                   resolve all input files
-     -obsclass cls1,cls2...  
-                  observation data classes, such as conv_tovs,ssmi_wentz_tpw 
+     -obsclass cls1,cls2...
+                  observation data classes, such as conv_tovs,ssmi_wentz_tpw
      -req_obsclass cls1,cls2
                   observation data classes, such as ncep_prep_bufr, that are REQUIRED for the
                   DAS to run.  These are always run in strict mode.
@@ -416,7 +417,7 @@ ENVIRONMENT
     CONVSFC     if 1, enables lcv2prs conversion of surface output fields
     CONVUPA     if 1, enables lcv2prs conversion of upper-air output fields
 
-SEE ALSO  
+SEE ALSO
 
     fvsetup     experiment setup utility
     fvdas.j     Main experiment script created by fvsetup.
@@ -455,7 +456,7 @@ exit 1
     exit 1
   endif
 
-# Cannot do GAASFDBK unless GAAS_ANA is on 
+# Cannot do GAASFDBK unless GAAS_ANA is on
 # ----------------------------------------
   if ( ! $FORECAST ) then
      if ( $GAASFDBK && ( ! $GAAS_ANA ) ) then
@@ -482,13 +483,13 @@ exit 1
         setenv SKIPANA 1   # no ANALYSIS
   else
         if ( $?MPIRUN_IAU ) then
-              set makeiaux = ( $MPIRUN_IAU ) 
-        else 
+              set makeiaux = ( $MPIRUN_IAU )
+        else
               exit 94
         endif
         if ( $?MPIRUN_IDF ) then
-              set idfupdx = ( $MPIRUN_IDF ) 
-        else 
+              set idfupdx = ( $MPIRUN_IDF )
+        else
               exit 95
         endif
   endif
@@ -519,6 +520,10 @@ exit 1
        setenv DOING_ANA 1
   endif
 
+  echo "DOING_ANA = $DOING_ANA"
+  echo "nail csm 1"
+
+
   set lnobs = "-lnobs"
 
                                                # Last line of SanityCheck_
@@ -538,30 +543,30 @@ exit 1
   /bin/cp $FVHOME/run/*.rc            .         # resource files
   /bin/cp $FVHOME/run/*.namelist      .         # FORTRAN namelists
   /bin/cp $FVHOME/run/*.sed           .         # templates
-  /bin/cp $FVHOME/run/*.tbl           .         # fvCCM diagnostic table         
+  /bin/cp $FVHOME/run/*.tbl           .         # fvCCM diagnostic table
   /bin/cp $FVHOME/run/*.tmpl          .         # any templates
   /bin/cp $FVHOME/run/prepobs*        .         # all parameter files
   /bin/cp $FVHOME/run/*.yaml          .         # yaml resources
   /bin/cp $FVHOME/run/gmao_acft_bias.parm .
   if ( -d $FVHOME/run/fsens ) then
-      /bin/cp $FVHOME/run/fsens/*.tmpl    .	
-      /bin/cp $FVHOME/run/fsens/*.rc      .	
+      /bin/cp $FVHOME/run/fsens/*.tmpl    .
+      /bin/cp $FVHOME/run/fsens/*.rc      .
   endif
   if ( -d $FVHOME/run/mom ) then
-      /bin/cp $FVHOME/run/mom/*_table     .	
-      /bin/cp $FVHOME/run/mom/MOM_*       .	
+      /bin/cp $FVHOME/run/mom/*_table     .
+      /bin/cp $FVHOME/run/mom/MOM_*       .
   endif
   if ( $FORECAST ) then
        foreach file ( `ls ${fchome}/*` )
           if ( $file =~ *.log.* ) continue
-          set ext = $file:e            
+          set ext = $file:e
           if ( "$ext" != "bin" && "$ext" != "$NCSUFFIX" && "$ext" != "tar" ) then
                 /bin/cp $file .   # skip restarts
-          endif 
+          endif
        end
        if ( -d $FVHOME/fcst/mom ) then
-           /bin/cp $FVHOME/fcst/mom/*_table  .	
-           /bin/cp $FVHOME/run/mom/MOM_*     .	
+           /bin/cp $FVHOME/fcst/mom/*_table  .
+           /bin/cp $FVHOME/run/mom/MOM_*     .
        endif
   endif
   cat fvcore_layout.rc >> input.nml
@@ -578,7 +583,11 @@ exit 1
 # Get GOCART rc files
 # -------------------
   if ( -d "$FVHOME/run/gocart" ) then
-       cp $FVHOME/run/gocart/* .
+     echo "nail x1"
+       cp -r "$FVHOME/run/gocart/." .
+##            cp -r $FVHOME/run/gocart .
+##  find "$FVHOME/run/gocart/" -maxdepth 1 -type f -exec cp {} . \;
+     echo "nail y"
   endif
 
 # Set HISTORY gaas products on or off
@@ -591,7 +600,7 @@ exit 1
        foreach hist ( `ls HIST*.rc.tmpl` )
           edhist.pl $hist -i -Xdep GAAS
        end
-  endif       
+  endif
 
 # Enable GAAS feedback in the GCM if GAASFDBK is on; Disable if off
 # -----------------------------------------------------------------
@@ -619,7 +628,7 @@ exit 1
   if ( $BOOTSTRAP ) then
       cp -f AGCM.rc.tmpl AGCM.rc.tmpl.HOLD
       cp -f AGCM.BOOTSTRAP.rc.tmpl AGCM.rc.tmpl
-  endif 
+  endif
 
 # If 4DVAR then link to adjoint nml file
 # --------------------------------------
@@ -630,7 +639,7 @@ exit 1
      ln -s fvcoretraj_layout.rc input.nml
   endif
 
-                                        # Last line of CopyResourceFiles_ 
+                                        # Last line of CopyResourceFiles_
 \end
 
 #.............................................................................
@@ -640,7 +649,7 @@ exit 1
 # ------------------------------------
   if ( $?ECHO___ ) set echo
 
-  foreach rsf ( d $grs_list )   
+  foreach rsf ( d $grs_list )
      if ( "$rsf" == "d" ) then
         set rsfile = $fcstage/stage/$EXPID.rst.lcv.$itime.bin
      else
@@ -653,7 +662,7 @@ exit 1
             endif
         endif
      endif
-     ln -s $rsfile ./${rsf}_rst 
+     ln -s $rsfile ./${rsf}_rst
   end
 
   set itime_hhmm = $itime:s/z/00z/
@@ -695,7 +704,7 @@ exit 1
                 if ("$grs_boot" =~ *$rs*) continue
             endif
         endif
-        /bin/cp $rsfile ./${rs}_rst & 
+        /bin/cp $rsfile ./${rs}_rst &
      endif
   end
 
@@ -716,7 +725,7 @@ exit 1
 # Bring restarts from recycle into work dir
 # -----------------------------------------
   set momrst_failed = 0
-  if ( $FcstCase_ ) then 
+  if ( $FcstCase_ ) then
        echo "Not ready to hand Coupled forecasts, aborting ..."
        Call AbnormalExit_( 1 )
   else  # DASCase
@@ -831,7 +840,7 @@ exit 1
   if(-e ExtData.rc )    /bin/rm -f   ExtData.rc
   cd $FVHOME/run/gocart
   set  extdata_files = `/bin/ls -1 *_ExtData.rc`
-  cat $extdata_files > $FVWORK/ExtData.rc 
+  cat $extdata_files > $FVWORK/ExtData.rc
   set hh = `echo $gcm_nhms0 | cut -c1-2`
   if ( ${gcm_nymd0}${hh} >= 2021103021 ) then
      foreach line (`grep -ni qfed $FVWORK/ExtData.rc | gawk '{print $1}' FS=":"`)
@@ -881,7 +890,7 @@ exit 1
      endif
      set anadt = `grep "^RUN_DT:" $this_obsvrA_ftmpl | cut -d: -f2`
      @ adtbck = $aoffset_sec
-     @ adtfwd = $varwindow_sec 
+     @ adtfwd = $varwindow_sec
      set beg_ana = ( $gcm_nymd0 $gcm_nhms0 )
      set end_ana = ( `tick $beg_ana[1] $beg_ana[2] $adtfwd` )
 
@@ -897,13 +906,13 @@ exit 1
           set wrt_ana = ( `echo $beg_ana` )   # 4dvar observer has initial integration time as reference time
           echo "s/>>>ANADATE<<</${wrt_ana[1]}/1" >> sed_file
           echo "s/>>>ANATIME<<</${wrt_ana[2]}/1" >> sed_file
-     else                                     # 3dvar observer has synoptic-time as reference time 
+     else                                     # 3dvar observer has synoptic-time as reference time
           echo "s/>>>ANADATE<<</${nymdb}/1"      >> sed_file
           echo "s/>>>ANATIME<<</${nhmsb}/1"      >> sed_file
      endif
      /bin/rm -f ./GSI_GridComp.rc
      sed -f sed_file  ./$this_obsvrA_ftmpl  > ./GSI_GridComp.rc
- 
+
 #    Append observation table to the grid-comp
 #    -----------------------------------------
      append_gsigcrc.pl $FVWORK/obsys.rc GSI_GridComp.rc
@@ -914,9 +923,9 @@ exit 1
 
 #    Extract analysis resolution
 #    ---------------------------
-     set gsinlat = `echorc.x -rc GSI_GridComp.rc "GSI JM"` 
-     set gsinlon = `echorc.x -rc GSI_GridComp.rc "GSI IM"` 
-     set gsinlev = `echorc.x -rc GSI_GridComp.rc "GSI LM"` 
+     set gsinlat = `echorc.x -rc GSI_GridComp.rc "GSI JM"`
+     set gsinlon = `echorc.x -rc GSI_GridComp.rc "GSI IM"`
+     set gsinlev = `echorc.x -rc GSI_GridComp.rc "GSI LM"`
 
 #    Prepare main GSI resource file
 #    -------------------------------
@@ -1198,7 +1207,7 @@ exit 1
 
                             # Last line of UpdateGsiGridCompResource
 \end
-                                                                                                                                              
+
 
 #.............................................................................
 
@@ -1239,8 +1248,8 @@ exit 1
      echo "s/>>>IOBTRJD<<</$TrjBegDate/1"     >> sed_file
      echo "s/>>>IOBTRJT<<</$TrjBegTime/1"     >> sed_file
      echo "s/>>>IOETRJD<<</$TrjEndDate/1"     >> sed_file
-     echo "s/>>>IOETRJT<<</$TrjEndTime/1"     >> sed_file   
-     echo "s/>>>TRAJFRQ<<</$trajfrqhms/1"     >> sed_file   
+     echo "s/>>>IOETRJT<<</$TrjEndTime/1"     >> sed_file
+     echo "s/>>>TRAJFRQ<<</$trajfrqhms/1"     >> sed_file
      echo "s/>>>NCSUFFIX<<</${NCSUFFIX}/1"    >> sed_file
      /bin/rm -f HISTORY.rc
      if ( -e HISTORY_${hh_beg}.rc.tmpl ) then
@@ -1255,7 +1264,7 @@ exit 1
         ln -s  $fcstage/stage/$EXPID.vtx_prs_rst.$itime.bin   ./$vtxfile
      endif
 
-                         # Last line of UpdateHistoryResource4Forecast_() 
+                         # Last line of UpdateHistoryResource4Forecast_()
 \end
 
 #.............................................................................
@@ -1266,7 +1275,7 @@ exit 1
 
   setenv SHORTFCST 1
 
-                              # Last line of UpdateHistoryResource4Forecast_() 
+                              # Last line of UpdateHistoryResource4Forecast_()
 \end
 #.............................................................................
 # ------------------------------------------
@@ -1310,7 +1319,7 @@ exit 1
              endif
           end  # < id0 >
        #--endif  # < -e saverst.rc >
-     else 
+     else
        set fcs_nymdi = 22000101  # dummy date
        set fcs_nhmsi = 000000    # dummy time
      endif  # < -e saverst.rc >
@@ -1349,21 +1358,21 @@ exit 1
           set qcref_nhms = ${qcref[2]}
           echo "s/>>>IOBBKGD<<</${wrt_rst_nymd}/1" >> sed_file  # for IAU, only write bkg's at later half of integration
           echo "s/>>>IOBBKGT<<</${wrt_rst_nhms}/1" >> sed_file
-          echo "s/>>>IOBQCD<<</${qcref_nymd}/1"    >> sed_file   
+          echo "s/>>>IOBQCD<<</${qcref_nymd}/1"    >> sed_file
           echo "s/>>>IOBQCT<<</${qcref_nhms}/1"    >> sed_file
-          echo "s/>>>IOEQCD<<</${qcref_nymd}/1"    >> sed_file   
+          echo "s/>>>IOEQCD<<</${qcref_nymd}/1"    >> sed_file
           echo "s/>>>IOEQCT<<</${qcref_nhms}/1"    >> sed_file
           echo "s/>>>IOBTRJD<<</$TrjBegDate/1"     >> sed_file
           echo "s/>>>IOBTRJT<<</$TrjBegTime/1"     >> sed_file
           echo "s/>>>IOETRJD<<</$TrjEndDate/1"     >> sed_file
-          echo "s/>>>IOETRJT<<</$TrjEndTime/1"     >> sed_file   
-          echo "s/>>>TRAJFRQ<<</$trajfrqhms/1"     >> sed_file   
+          echo "s/>>>IOETRJT<<</$TrjEndTime/1"     >> sed_file
+          echo "s/>>>TRAJFRQ<<</$trajfrqhms/1"     >> sed_file
      else
           echo "s/>>>IOBBKGD<<</17760704/1"   >> sed_file       # write bkg's from begining of time
           echo "s/>>>IOBBKGT<<</000000/1"     >> sed_file
      endif
      echo "s/>>>IOEBKGD<<</${ioebkgd}/1"      >> sed_file
-     echo "s/>>>IOEBKGT<<</${ioebkgt}/1"      >> sed_file   
+     echo "s/>>>IOEBKGT<<</${ioebkgt}/1"      >> sed_file
      echo "s/>>>FCSDATE<<</${fcs_nymdi}/1"    >> sed_file
      echo "s/>>>FCSTIME<<</${fcs_nhmsi}/1"    >> sed_file
      echo "s/>>>NCSUFFIX<<</${NCSUFFIX}/1"    >> sed_file
@@ -1445,7 +1454,7 @@ exit 1
 
   endif # < SHORTFCST >
 
-                        # Last line of UpdateHistoryResource4SplitExec_() 
+                        # Last line of UpdateHistoryResource4SplitExec_()
 
 \end
 
@@ -1469,7 +1478,7 @@ exit 1
   set nhms = ${dtg[2]}
   set hour = `echo ${dtg[2]} | cut -c1-2`
   set ncepeta_ana_file = `echorc.x -template $EXPID $dtg[1] $dtg[2] -rc blendrs.rc ncepeta_ana_file`
- 
+
   ncep2geos.pl -prs $dtg[1] $dtg[2]
      if ( -e   $ncepeta_ana_file ) then
         ln -sf $ncepeta_ana_file ana4replay.eta.{$dtg[1]}_${hour}z.$NCSUFFIX
@@ -1529,15 +1538,15 @@ exit 1
 
   if ( $?FVSPOOL ) then
      set spool = $FVSPOOL
-  else        
+  else
      set diren = `dirname $FVHOME`
      set spool = $diren/spool
   endif
-  
+
   if (`uname -n` !~ borg*) then
-  
+
        acquire -v -rc blend.acq -s $spool -d . -strict $nymd $nhms 060000 1
-       
+
   else
 
        set qsub_acquire = 1
@@ -1591,7 +1600,7 @@ exit 1
                  -moistrst moist_internal_restart \
                  -nymd $nymd -nhms $nhms \
                  -topo topo_dynave.data
- 
+
   set dyn_status = $status
   if ( $dyn_status )  then
       exit 97
@@ -1633,7 +1642,7 @@ exit 1
         cd agcmRSTinput_$this
         tar xvf ../$rstlst
         if ( "$EXPID" != "$vexpid" ) then
-           foreach fn ( `ls *agcm_internal_rst*` ) 
+           foreach fn ( `ls *agcm_internal_rst*` )
                set sfx = `echo $fn | cut -d. -f2-`
                /bin/mv $vexpid.$sfx $EXPID.$sfx
            end
@@ -1663,8 +1672,8 @@ exit 1
      endif
 
      if ( $?MPIRUN_IAU ) then
-          set makeiaux = ( $MPIRUN_IAU ) 
-     else 
+          set makeiaux = ( $MPIRUN_IAU )
+     else
           echo $myname": env MPIRUN_IAU undefined, cannot run makeiau.x "
           echo $myname": saving  abnormal logs to ${FVHOME}/run"
           echo $myname": abnormal exit from fvpsas, bye, bye..."
@@ -1744,14 +1753,14 @@ exit 1
         fname2 " acquire -v -rc fcst03.acq -s $spool -d . $beg_ana[1] $beg_ana[2] $fcstacq_freq $nfcst "
         endif
         fname2 "exit"
-                                                                                                          
+
         $BATCH_SUBCMD $BLOCKFLAG -o $acqlog $fname
 
      endif
 
      if ( $DO4DIAU ) then
- 
-        # make sure analysis at end of interval is the same as original from Var corresponding to 
+
+        # make sure analysis at end of interval is the same as original from Var corresponding to
         # proper cycle (i.e., account for fact that DAS cycle overwrites analysis at end of interval)
         if ( -e fcst09.acq ) then
            set ana09upa  = `echorc.x -template $EXPID $end_ana[1] $end_ana[2] upper-air_ana09_filename`
@@ -1786,7 +1795,7 @@ exit 1
 
         foreach fn ( `ls *.agcmrst*tar` )
            tar xvf $fn
-        end 
+        end
 
         foreach fn (`ls *.agcm_import_rst.*`)
             set noexpid = `echo $fn | cut -d. -f2-`
@@ -1836,9 +1845,9 @@ exit 1
              exit 4
         endif
 
-     
+
         if ( -e mkiau.rc.tmpl ) then
-      
+
             /bin/rm -f sed_file
             echo "s/>>>EXPID<<</${EXPID}/1"         > sed_file
             echo "s/>>>BKGFNAME<<</${bkg4ainc}/1"  >> sed_file
@@ -1848,7 +1857,7 @@ exit 1
             echo "s/>>>ANATIME<<</${initref[2]}/1" >> sed_file
             /bin/rm -f ./mkiau.rc
             sed -f sed_file  ./mkiau.rc.tmpl  > ./mkiau.rc
-            echorc.x -rc ./mkiau.rc AGCM_INTERNAL_CHECKPOINT_FILE 
+            echorc.x -rc ./mkiau.rc AGCM_INTERNAL_CHECKPOINT_FILE
             set iaufn = `echorc.x -rc mkiau.rc -template $EXPID $initref[1] $initref[2] AGCM_INTERNAL_CHECKPOINT_FILE`
             if ( -e $iaufn ) /bin/rm $iaufn
             $makeiaux
@@ -1861,7 +1870,7 @@ exit 1
                       -imout $imout -jmout $jmout \
                       -divr -iau agcm_import_rst \
                       -nymd $initref[1] -nhms $initref[2]
-                                                                                               
+
         endif
         if ( -e IAU_EGRESS ) then
            echo "IAU increment generated"
@@ -1941,7 +1950,7 @@ exit 1
         fname2 "cd $FVWORK"
         fname2 " acquire -v -rc aod4fcst.acq -s $spool -d . -strict $initref[1] $initref[2] 030000 2 "
         fname2 "exit"
-                                                                                                          
+
         $BATCH_SUBCMD $BLOCKFLAG -o $acqlog $fname
 
      endif
@@ -1953,7 +1962,7 @@ exit 1
        if ( -e das.$sfx ) then
           /bin/rm das.$sfx
        else
-          ln -sf $fn das.$sfx 
+          ln -sf $fn das.$sfx
        endif
      end
 
@@ -1968,7 +1977,7 @@ exit 1
 
      @ nbkgfiles = $TIMEINC / $ASYNBKG + 1
      if(! $DOIAU ) set nbkgfiles = 1
-     @ nbkgtotal = 2 * $nbkgfiles 
+     @ nbkgtotal = 2 * $nbkgfiles
 
      set upa_brs_list = `ls $FVHOME/recycle/$EXPID.bkg*eta*.$NCSUFFIX`
      set sfc_brs_list = `ls $FVHOME/recycle/$EXPID.bkg*sfc*.$NCSUFFIX`
@@ -2032,7 +2041,7 @@ exit 1
      endif
 
      foreach rs ( $ars_list )
-         /bin/cp $FVHOME/recycle/$EXPID.ana_${rs}_rst.*.txt ./$rs 
+         /bin/cp $FVHOME/recycle/$EXPID.ana_${rs}_rst.*.txt ./$rs
          if ( ( $status ) && ( ! $BOOTSTRAP ) ) then
              echo $myname": cannot acquire $FVHOME/recycle/$EXPID.ana_${rs}_rst"
              if ( $log ) then
@@ -2077,7 +2086,7 @@ exit 1
                 exit 90
              endif
           end
-       endif        
+       endif
      endif # <DO4DVAR>
 
      foreach rs ( $sfc_brs_list )
@@ -2123,7 +2132,7 @@ exit 1
                              -D "${EXPID}.j FATAL ERROR: $myname cannot acquire background files from $FVHOME/recycle/"
              endif
              exit 90
-     endif 
+     endif
      set gda_file = `ls $FVHOME/recycle/$EXPID.trak.GDA.rst.*.txt`
      if ( ! $status ) then
           /bin/cp $gda_file  .
@@ -2150,7 +2159,7 @@ exit 1
 #       /bin/cp $FVHOME/recycle/$ptrjfile1  $ptrjfile2
      endif
 
-                              # Last line of CopyAnaRestarts_() 
+                              # Last line of CopyAnaRestarts_()
 \end
 
 #.............................................................................
@@ -2180,12 +2189,12 @@ exit 1
        @ afreqhr = $ANAFREQ   / 60           # analysis freq in hours
        @ afreqsc = $ANAFREQ   * 60           # analysis in seconds
        set buf   = `tick 20010101 000000 $afreqsc`  # just a trick to get nhmsa w/o ref to fvpsasdt
-       set nhmsa = $buf[2]       
+       set nhmsa = $buf[2]
  else
        @ afreqhr = $ANAFREQ   / 60           # analysis freq in hours
        @ afreqsc = $ANAFREQ   * 60           # analysis in seconds
        @ nhmsa   = $afreqhr * 10000
- endif    
+ endif
 
  @ anatime_hrs    = $ANATIME    / 60
  @ dtasyn_hrs     = $ASYNBKG    / 60
@@ -2225,9 +2234,9 @@ exit 1
         set fcst_end = ( `tick $fcst_beg $nsecs` )
    endif
 
-                              # Last line of DetermineSimulationTimes_ 
+                              # Last line of DetermineSimulationTimes_
 \end
-   
+
 #.............................................................................
 
 # ----------------------------------------------------------------
@@ -2241,22 +2250,22 @@ exit 1
      set $_ExpEndEpoch = (`grep -i end_date CAP.rc.tmpl|awk '{print $2 $3}'`)
   endif
 
-                                        # Last line of DetermineExpTimes_   
+                                        # Last line of DetermineExpTimes_
 
 \end
-   
+
 #.............................................................................
 
 # -------------------------------------------------------------------
-  Sub DetermineGcmTimes_ ( _GcmBegEpoch, _GcmEndEpoch, _GcmLenEpoch )  
+  Sub DetermineGcmTimes_ ( _GcmBegEpoch, _GcmEndEpoch, _GcmLenEpoch )
 # -------------------------------------------------------------------
   if ( $?ECHO___ ) set echo
 
   set GcmBegEpoch_ = ( `rst_date d_rst` )
   if ($ihh0 >= 0 ) then
-     set GcmLenEpoch_ = `grep "^JOB_SGMT:" CAP_${ihh0}.rc.tmpl | cut -d: -f2` 
+     set GcmLenEpoch_ = `grep "^JOB_SGMT:" CAP_${ihh0}.rc.tmpl | cut -d: -f2`
   else
-     set GcmLenEpoch_ = `grep "^JOB_SGMT:" CAP.rc.tmpl | cut -d: -f2` 
+     set GcmLenEpoch_ = `grep "^JOB_SGMT:" CAP.rc.tmpl | cut -d: -f2`
   endif
 
 # Return results by reference
@@ -2265,9 +2274,9 @@ exit 1
   set $_GcmLenEpoch = ( $GcmLenEpoch_ )
   set $_GcmEndEpoch = ( `tick $GcmBegEpoch_ $GcmLenEpoch_` )
 
-                              # Last line of DetermineGcmTimes_   
+                              # Last line of DetermineGcmTimes_
 \end
-   
+
 # -------------------------------------------------------------------
   Sub DetermineTrjTimes_ ( _TrjBegEpoch, _TrjEndEpoch )
 # -------------------------------------------------------------------
@@ -2299,7 +2308,7 @@ exit 1
   if ( ! $doit ) exit 0
 
 
-# The following are calculated in DetermineGcmTimes but main script has 
+# The following are calculated in DetermineGcmTimes but main script has
 # this call placed too late for forecast applications to grab information!
 # -----------------------------------------------------------------------
   set FcsBegEpoch = ( $RstNow )
@@ -2365,8 +2374,8 @@ exit 1
   end
 
   echo " max int time for perturbation applications is $nintmax hrs"
-  echo " max lag time for perturbation applications is $nlagmax hrs"  
-  echo " min lag time for perturbation applications is $nlagmin hrs"  
+  echo " max lag time for perturbation applications is $nlagmax hrs"
+  echo " min lag time for perturbation applications is $nlagmin hrs"
 
   @ nlagmin = $nlagmin * 3600
   @ nlagmax = $nlagmax * 3600
@@ -2379,14 +2388,14 @@ exit 1
   set $_TrjEndEpoch = ( $TrjEndEpoch )
   set $_TrjBegEpoch = ( $TrjBegEpoch )
 
-                              # Last line of DetermineTrjTimes_   
+                              # Last line of DetermineTrjTimes_
 \end
-   
+
 #.............................................................................
-   
+
 # ----------------------------------------------------------------------------
   Sub DetermineAnaTimes_ ( DoingIAU_, GcmBegDate_, GcmBegTime_, AnaFreqMins_, \
-                           _AnaBegEpoch, _AnaFreqEpoch ) 
+                           _AnaBegEpoch, _AnaFreqEpoch )
 # ----------------------------------------------------------------------------
   if ( $?ECHO___ ) set echo
 
@@ -2395,7 +2404,7 @@ exit 1
   @ AnaFreqSecs_  = $AnaFreqMins_ * 60
   @ hh = $AnaFreqSecs_ / 3600
   @ mm = ($AnaFreqSecs_ % 3600) / 60
-  @ AnaFreqTime_  = $hh * 10000 + $mm * 100 
+  @ AnaFreqTime_  = $hh * 10000 + $mm * 100
   if ( $hh < 10 ) set AnaFreqTime_  = 0$AnaFreqTime_
 
 # Return results by reference
@@ -2408,9 +2417,9 @@ exit 1
   endif
   set $_AnaFreqEpoch  = ( 00000000 $AnaFreqTime_ )
 
-                              # Last line of DetermineAnaTimes_   
+                              # Last line of DetermineAnaTimes_
 \end
-   
+
 #.............................................................................
 
 # ---------------------------------
@@ -2420,13 +2429,13 @@ exit 1
 
 # if ( $?NSTEP ) then
 #       @ nstep   = $NSTEP
-# else 
+# else
 #       @ nstep   = $ndays * 24 / ($nhmsa / 10000)
 # endif
 # if ( $?NLOOK ) then
 #       @ nlook   = $NLOOK
-# else 
-#       @ nlook   = $nstep 
+# else
+#       @ nlook   = $nstep
 # endif
 # if ( $?FVSPOOL ) then
 #    set spool = $FVSPOOL
@@ -2437,14 +2446,14 @@ exit 1
 
      if ( $?NSTEP ) then
            @ nstep   = $NSTEP
-     else 
+     else
            @ ntv     = $varwindow_hrs / $obstwindow_hrs             # no. of obs time intervals within var window
            @ nstep   =             24 / $obstwindow_hrs + $ntv - 1  # no. of obs time intervals within one day
      endif
      if ( $?NLOOK ) then
            @ nlook   = $NLOOK
-     else 
-           @ nlook   = $nstep 
+     else
+           @ nlook   = $nstep
      endif
      if ( $?FVSPOOL ) then
         set spool = $FVSPOOL
@@ -2482,7 +2491,7 @@ exit 1
      # ----------------------------------------
      if ( (`uname -n` !~ borg*) || ( $LOCAL_ACQUIRE ) ) then
            acquire -v -rc replay.acq -s $spool -d $FVWORK -la $nlook -ssh  \
-                      $strict $rpl_nymdb $rpl_nhmsb $inhms $nstep 
+                      $strict $rpl_nymdb $rpl_nhmsb $inhms $nstep
      else
 
         # Do something special when on NCCS linux cluster
@@ -2557,14 +2566,14 @@ exit 1
           if ( "$anafn" != "$thisana" ) /bin/mv $anafn $thisana
        end
 
-                              # Last line of AcquireReplayAnalysis_ 
+                              # Last line of AcquireReplayAnalysis_
 \end
 
 
 #.............................................................................
 
 # -------------------------------
-  Sub AcquireObservations_() 
+  Sub AcquireObservations_()
 # -------------------------------
   if ( $?ECHO___ ) set echo
   set qsub_acquire = 0
@@ -2583,7 +2592,7 @@ exit 1
             set ecode = "93"
             set emessage = "FATAL ERROR: DMF appears to be down.  Stopping."
        endif
-  endif    
+  endif
 
 # User provides her own obsys.acq
 # -------------------------------
@@ -2591,7 +2600,7 @@ exit 1
      if (`uname -n` !~ borg*) then
 
          acquire -v -rc obsys.acq -s $spool -d $FVWORK -la $nlook -ssh  \
-                 $strict $bnymd $bnhms $inhms $nstep 
+                 $strict $bnymd $bnhms $inhms $nstep
          set acq_status = $status
 
      else
@@ -2698,12 +2707,12 @@ exit 1
 
         acquire_obsys -v -d $FVWORK -s $spool -la $nlook -ssh  \
                       $strict $bnymd $bnhms $onhms $nstep $obsclass
-        set acq_status = $status  
+        set acq_status = $status
 
         if ( ($?req_obsclass ) ) then
            acquire_obsys -v -d $FVWORK -s $spool -la $nlook -ssh  \
                       -strict $bnymd $bnhms $onhms $nstep $req_obsclass
-           set acq_status2 = $status  
+           set acq_status2 = $status
         endif
 
      else
@@ -2728,7 +2737,7 @@ exit 1
              Call SubmitAcquireObsJobs_( $look_ahead )
         end
 
-        # Now do an acquire for tomorrows data but don't wait 
+        # Now do an acquire for tomorrows data but don't wait
         #----------------------------------------------------
         if ( ( $nlook ) &&  ( ! -e "${FVWORK}/acquire.FAILED" ) ) then
              set la_dtg=`tick $enymd `
@@ -2754,7 +2763,7 @@ exit 1
               set dmf_alive = `cat /archive/input/dao_ops/.DMF_IS_ALIVE`
          else
               set dmf_alive = ""
-         endif 
+         endif
          if ( ( ( `uname -n` !~ borg* ) && ("$dmf_alive" != "DMF_IS_ALIVE" ) ) \
                  || ( -e "${FVWORK}/dmf.FAILED" ) ) then
             set ecode = "93"
@@ -2762,7 +2771,7 @@ exit 1
             echo $myname": $emessage"
          endif
      endif
-          
+
   else
 
       set acq_status = 0  # nothing to do
@@ -2777,7 +2786,7 @@ exit 1
      set ecode = "99"
      set emessage = "FATAL ERROR: $myname cannot acquire observational data"
      echo "$emessage"
-  endif 
+  endif
 
 # Log error message if needed
 # ---------------------------
@@ -2785,7 +2794,7 @@ exit 1
      Err_Log.pl -N ${EXPID}.job.${bnymd} -C $ecode \
         -I $ERROR_ID -X $ERROR_EXP -E 5 $ERROR_LOG_NAME \
         -D "${EXPID}.job.${bnymd} $emessage"
-        
+
   endif
   if ( $ecode ) exit $ecode
 
@@ -2805,7 +2814,7 @@ exit 1
         set acqflags1 = "$acqflags"
         set qblock = ""
   else
-        if ( !($?strict) )  set strict = ""  
+        if ( !($?strict) )  set strict = ""
         set obsflag = 1
         set acqflags  = "-d $FVWORK -s $spool -strict"
         set acqflags1 = "-d $FVWORK -s $spool $strict"
@@ -2928,8 +2937,8 @@ exit 1
 
 # Get info about pre-qc files to be combined for QC
 # ------------------------------------------------------
- 
-# Check for special handling on discover  
+
+# Check for special handling on discover
  if ( ( $qsub_acquire && ( -e obsys.acq.all ) ) || ( -e obsys.acq ) ) then
        if ( -e obsys.acq.all ) then
             set acq = "obsys.acq.all"
@@ -2946,8 +2955,8 @@ exit 1
 
    if ( `grep -c pre-qc $aacq` ) then
 # Remove hard-wired times
-       grep pre-qc $aacq | grep -v ^\# | grep "%h2" | cut -d\> -f2 > pre-qc_acq 
-       grep pre-qc $aacq | grep -v ^\# | grep -v "%h2" | sed 's/\.t..z\./.t%h2z./' | cut -d\> -f2 >> pre-qc_acq 
+       grep pre-qc $aacq | grep -v ^\# | grep "%h2" | cut -d\> -f2 > pre-qc_acq
+       grep pre-qc $aacq | grep -v ^\# | grep -v "%h2" | sed 's/\.t..z\./.t%h2z./' | cut -d\> -f2 >> pre-qc_acq
 
 # Remove duplicate entries
        cat pre-qc_acq | sort | uniq > pre-qc.acq
@@ -2966,7 +2975,7 @@ exit 1
   else
         cat $acq | grep -v ^\# | sort | uniq > obsys_acq
   endif
-endif 
+endif
 
 # Fix unblocked files
 # -------------------
@@ -2976,8 +2985,8 @@ endif
   end
   wait
   ls *FAILED_BLOCK
-# if ( ( ! $status ) && ( $STRICT ) ) exit 96 
-  if ( ! $status ) exit 96 
+# if ( ( ! $status ) && ( $STRICT ) ) exit 96
+  if ( ! $status ) exit 96
   zeit_co.x FixUnblocked
 
 # Flip QM=9 flag for ASCAT in prepbufr
@@ -2994,7 +3003,7 @@ endif
 # Fix big_endian/little_endian in the upa-buffer files
 # ----------------------------------------------------
   zeit_ci.x FixEndian
-  if ( ( `uname -s` == "OSF1" ) || (`uname -s` == "Linux" && (`uname -m` == "ia64" || `uname -m` == "x86_64")) ) then  
+  if ( ( `uname -s` == "OSF1" ) || (`uname -s` == "Linux" && (`uname -m` == "ia64" || `uname -m` == "x86_64")) ) then
      foreach upa ( `ls *upabufr*bfr` )
          Reblock.csh $upa &
      end
@@ -3002,10 +3011,10 @@ endif
           Reblock.csh $blk &
      end
   endif
-  wait 
+  wait
   ls *FAILED_BLOCK
-# if ( ( ! $status ) && ( $STRICT ) ) exit 96 
-  if ( ! $status ) exit 96 
+# if ( ( ! $status ) && ( $STRICT ) ) exit 96
+  if ( ! $status ) exit 96
   zeit_co.x FixEndian
 
                               # Last line of PreAnalysisQC_()
@@ -3074,10 +3083,10 @@ endif
    endif
 
    set bkgfile  = `echorc.x -template $EXPID $nymdb $nhmsb upper-air_bkg_filename`
-   prepqc.pl $opt_pb $nymdb $nhmsb $bkgfile 
+   prepqc.pl $opt_pb $nymdb $nhmsb $bkgfile
    if ( $status ) then
        Call AbnormalExit_( 2 )
-   endif  
+   endif
 
    if ( ($HYBRIDGSI != "/dev/null") ) then
      if ( ($STAGE4HYBGSI != "/dev/null") ) then
@@ -3118,9 +3127,9 @@ endif
             @ nsegs = $NSEGS
       else
             @ nsegs = 240000 / $nhmsa
-      endif  
+      endif
 
-                              # Last line of SplitExecInit_ 
+                              # Last line of SplitExecInit_
 \end
 
 
@@ -3147,7 +3156,7 @@ endif
             set this_seg_end = `tick ${stdate} ${afreqsc}`
             set ana_nymde    = $this_seg_end[1]          # next analysis date
             set ana_nhmse    = $this_seg_end[2]          # next analysis time
-         else         
+         else
             set nymdb        = $gcm_nymd0                # gcm initial date for next cycle
             set nhmsb        = $gcm_nhms0                # gcm initial time for next cycle
             set this_seg_end = `tick ${stdate} ${afreqsc}`
@@ -3178,13 +3187,13 @@ endif
          set bkgfile  = `echorc.x -template $EXPID $nymdb $nhmsb upper-air_bkg_filename`
          set anafile  = `echorc.x -template $EXPID $nymdb $nhmsb upper-air_ana_filename`
 
-                              # Last line of 
+                              # Last line of
 \end
 
 #.............................................................................
 
 # ----------------------------------
-  Sub AnalysisRun_( Viter_, Final_ ) 
+  Sub AnalysisRun_( Viter_, Final_ )
 # ----------------------------------
   if ( $?ECHO___ ) set echo
   if ( $SKIPGSI && ! -e $FVHOME/run/AGCM.BOOTSTRAP.rc.tmpl ) exit 0
@@ -3200,9 +3209,9 @@ endif
 
 #          Get dimension of analysis (this defines berror dim)
 #          ---------------------------------------------------
-           set gsinlat = `echorc.x -rc GSI_GridComp.rc "GSI JM"` 
-           set gsinlon = `echorc.x -rc GSI_GridComp.rc "GSI IM"` 
-           set gsinlev = `echorc.x -rc GSI_GridComp.rc "GSI LM"` 
+           set gsinlat = `echorc.x -rc GSI_GridComp.rc "GSI JM"`
+           set gsinlon = `echorc.x -rc GSI_GridComp.rc "GSI IM"`
+           set gsinlev = `echorc.x -rc GSI_GridComp.rc "GSI LM"`
            if( $DO4DVAR ) then
              @ jiter = $Viter_ + 1
              if ( -e gsi_fdda_$jiter.rc.tmpl ) then
@@ -3288,7 +3297,7 @@ endif
                     endif
                  end
                  if ( $notfound && ( ! -e $FVHOME/run/gaas/GAAS.BOOTSTRAP ) ) then
-                    echo "Cannot find AOD Analysis and related files. Aborting ..." 
+                    echo "Cannot find AOD Analysis and related files. Aborting ..."
                     Call AbnormalExit_( 1 )
                  endif
               endif
@@ -3301,13 +3310,13 @@ endif
            endif
 
 #
-                              # Last line of AnalysisRun_()  
+                              # Last line of AnalysisRun_()
 \end
 
 #.............................................................................
 
 # ----------------------------------
-  Sub JEDI_AnalysisRun_( Viter_, Final_ ) 
+  Sub JEDI_AnalysisRun_( Viter_, Final_ )
 # ----------------------------------
   if ( $?ECHO___ ) set echo
 #
@@ -3333,13 +3342,13 @@ endif
      Call AbnormalExit_( 1 )
   endif
 
-                              # Last line of JEDI_AnalysisRun_()  
+                              # Last line of JEDI_AnalysisRun_()
 \end
 
 #.............................................................................
 
 # ------------------------------
-  Sub StageAna4FSens_() 
+  Sub StageAna4FSens_()
 # ------------------------------
   if ( $?ECHO___ ) set echo
 
@@ -3376,7 +3385,7 @@ endif
 
   #--endif
 
-                              # Last line of StageAna4FSens_()  
+                              # Last line of StageAna4FSens_()
 \end
 
 #.............................................................................
@@ -3396,7 +3405,7 @@ endif
   # for now, only do it once ...
   @ viterp1 = $Viter_ + 1
   echo "EvolveAinc0_, iteration: $viterp1 "
-# if ( $viterp1 > 1 ) exit 0 
+# if ( $viterp1 > 1 ) exit 0
 
 # Run TLM over this period of time
 # set runtlm_mn = $ASYNBKG  # if set to this, runs TLM in chucks of times based on BKG freq (WC form)
@@ -3449,7 +3458,7 @@ endif
          /bin/cp $pertfn $xincfn
      end # <while>
      # finally add iteration number identifier to relevant filenames
-     # NOTE: cannot retag xinc.eta here ... this happens later 
+     # NOTE: cannot retag xinc.eta here ... this happens later
      foreach fntyp ( inc.eta )
         rndasfiles -purge $EXPID $fntyp $beg_ana[1] $beg_ana[2] \
                                         $end_ana[1] $end_ana[2] $ASYNBKG $viterp1
@@ -3509,7 +3518,7 @@ endif
 
 #          Link to GEOS-5 GCM boundary condition files
 #          -------------------------------------------
-           lnbcs $nymdb || exit 95 
+           lnbcs $nymdb || exit 95
 
 
 #          GEOS-5 GCM, need to convert ana "eta" files into rst (and overwrite existing rsts for fvcore and moist)
@@ -3584,9 +3593,9 @@ endif
                      else
                           set bkg4iau = $bkgfile
                      endif
-                    
+
                      if ( -e mkiau.rc.tmpl ) then
-                  
+
                          if ( -e replay.acq && -e replay_agcm.acq ) then
                             touch IAU_EGRESS
                             set myiau_full = `echorc.x -template $EXPID $gcm_nymd0 $gcm_nhms0 iau_tendency_filename`
@@ -3626,7 +3635,7 @@ endif
                                    -imout $imout -jmout $jmout \
                                    -divr -iau agcm_import_rst \
                                    -nymd $nymdb -nhms $nhmsb
-  
+
                      endif
                      if ( -e IAU_EGRESS ) then
                         echo "IAU increment generated"
@@ -3638,7 +3647,7 @@ endif
                      if ( ${status} ) then
                          Call AbnormalExit_( 4 )
                      endif
- 
+
                     set myiau = `echorc.x -template $EXPID $gcm_nymd0 $gcm_nhms0 iau_tendency_filename`
                     /bin/cp -f agcm_import_rst $myiau
 
@@ -3653,7 +3662,7 @@ endif
                   set bkg_upa   = `echorc.x -template $EXPID $end_ana[1] $end_ana[2] upper-air_bkg_filename`
                   set bkg_sfc   = `echorc.x -template $EXPID $end_ana[1] $end_ana[2] surface_bkg_filename`
                   set chm_eta   = `echorc.x -template $EXPID $end_ana[1] $end_ana[2] chem_bkg_filename`
-                  /bin/rm $bkg_upa $bkg_sfc $chm_eta 
+                  /bin/rm $bkg_upa $bkg_sfc $chm_eta
 
               else  # 4DVAR or FGAT
 
@@ -3709,7 +3718,7 @@ endif
                         echo "Failed to generate IAU increment"
                         Call AbnormalExit_( 4 )
                     endif
- 
+
                     # Move all backgrounds/etc to names indicating iteration number
                     # Special-handle bkg at initial time
                      if ( ! -e IDFUPD.rc.tmpl ) then # only when not doing digital filter
@@ -3774,7 +3783,7 @@ endif
                      set afile  = `echorc.x -template $EXPID $wrt_ana[1] $wrt_ana[2] upper-air_ana_filename`
                      set bfile  = `echorc.x -template $EXPID $wrt_ana[1] $wrt_ana[2] upper-air_bkg_filename`
                      set ifile  = `echorc.x -template $EXPID $wrt_ana[1] $wrt_ana[2] upper-air_inc_filename`
-  
+
                      # Move all backgrounds to naming indicating iteration
                      # Special-handle bkg at initial time
                      rndasfiles $EXPID bkg.eta $beg_ana[1] $beg_ana[2] \
@@ -3805,7 +3814,7 @@ endif
                         if ( ${status} ) then
                             Call AbnormalExit_( 4 )
                         endif
- 
+
                         /bin/cp -f fvcore_internal_rst.ana.${wrt_ana[1]}_${hh}z fvcore_internal_rst &
                         /bin/cp -f  moist_internal_rst.ana.${wrt_ana[1]}_${hh}z  moist_internal_rst &
                         /bin/cp -f  pchem_internal_rst.ana.${wrt_ana[1]}_${hh}z  pchem_internal_rst &
@@ -3814,7 +3823,7 @@ endif
                         /bin/mv -f fvcore_internal_rst.ana.${wrt_ana[1]}_${hh}z $EXPID.ana.fvcore_internal_rst.${wrt_ana[1]}_${hh}z.$RSTSUFFIX
                         /bin/mv -f  moist_internal_rst.ana.${wrt_ana[1]}_${hh}z  $EXPID.ana.moist_internal_rst.${wrt_ana[1]}_${hh}z.$RSTSUFFIX
                         /bin/mv -f  pchem_internal_rst.ana.${wrt_ana[1]}_${hh}z  $EXPID.ana.pchem_internal_rst.${wrt_ana[1]}_${hh}z.$RSTSUFFIX
-   
+
                         rndasfiles -purge -sfx $RSTSUFFIX $EXPID ana.fvcore_internal_rst $wrt_ana[1] $wrt_ana[2] \
                                                                                          $wrt_ana[1] $wrt_ana[2] 0 $viterp1
                         rndasfiles -purge -sfx $RSTSUFFIX $EXPID ana.moist_internal_rst  $wrt_ana[1] $wrt_ana[2] \
@@ -3841,7 +3850,7 @@ endif
              if ( -e das.$sfx ) then
                 /bin/rm das.$sfx
              else
-                ln -sf $fn das.$sfx 
+                ln -sf $fn das.$sfx
              endif
          end
 
@@ -3864,13 +3873,13 @@ endif
      if ( ! $DO4DVAR ) exit 0
 
      if ( -e IDFUPD.rc.tmpl ) then
-                
+
          set idfb   = `echorc.x -rc IDFUPD.rc.tmpl DFIB_INTERNAL_RESTART_FILE`
          set idfa   = `echorc.x -rc IDFUPD.rc.tmpl DFIA_INTERNAL_RESTART_FILE`
 
          set hhmm = `echo ${wrt_rst_nhms} | cut -c1-4`
 
-         if ( -e $idfb && -e $idfa ) then 
+         if ( -e $idfb && -e $idfa ) then
 
             /bin/rm -f sed_file
             echo "s/>>>IOBBKGD<<</${wrt_rst_nymd}/1"  >> sed_file
@@ -4016,7 +4025,7 @@ endif
                echo "s/>>>REFTIME<<</${wrt_rst_nhms}/1" >> sed_file # actual time to write rst for next cycle
                if ( $MKRESRST ) then
                      echo "s/>>>RECFINL<<</YES/1"             >> sed_file # write out checkpoint rst
-               else 
+               else
                      echo "s/>>>RECFINL<<</NO/1"              >> sed_file # do not write out checkpoint rst
                endif
                echo "s/>>>FCSDATE<<</${fcs_nymdi}/1"    >> sed_file # date of extra restart (normally for fcst)
@@ -4164,24 +4173,24 @@ endif
               if ( $AGCMFCST ) then
                    set savetest1 = `echo $itime | cut -c 10-11`
                    set savetest2 = `tick 20010101 ${savetest1}0000 10800 |  cut -c10-11`
-                   set savetest3 = `tick 20010101 ${savetest1}0000 21600 |  cut -c10-11` 
+                   set savetest3 = `tick 20010101 ${savetest1}0000 21600 |  cut -c10-11`
                    set save_rst = ()
                    if ( `grep -c $savetest1 saverst.rc.orig` ) set save_rst = ( $savetest1 )
                    if ( `grep -c $savetest2 saverst.rc.orig` ) set save_rst = ( $save_rst $savetest2 )
-                   if ( `grep -c $savetest3 saverst.rc.orig` ) set final_fcst = 1 
+                   if ( `grep -c $savetest3 saverst.rc.orig` ) set final_fcst = 1
                    if ( $#save_rst ) echo $save_rst >! saverst.rc
                    if ( ( -e saverst.rc ) && ( ! -z saverst.rc ) )  then
                         if ( `grep -c $savetest2 saverst.rc.orig` ) then
                               set fcs_nymdi = $nymdb
                               set fcs_nhmsi = $nhmsb
-                        else  
+                        else
                               set fcs_nymdi = 22000101
                               set fcs_nhmsi = 000000
-                        endif 
-                   else 
+                        endif
+                   else
                         echo "@saverst" >! saverst.rc
                    endif
-              else 
+              else
                     set final_fcst = 0
                     set savetest = `echo ${nhmsb} | cut -c1-2`
                     if ( `grep -c $savetest saverst.rc.orig` ) then
@@ -4201,12 +4210,12 @@ endif
               set tot2store = `echo $#saverst`
               set id0       = 0
               while ( $id0 < $tot2store )
-                 @ id0++ 
+                 @ id0++
                  set saveme = "$saverst[$id0]"
                  set fcs_nymdi = $nymdb
                  set fcs_nhmsi = ${saveme}0000
                  if ( $nhmsb == $fcs_nhmsi ) then
-                   foreach rs ( $grs_list ) 
+                   foreach rs ( $grs_list )
                      if ( -e ${rs}_rst && ! -e $EXPID.${rs}_rst.${nymdb}_${saveme}z.$RSTSUFFIX ) \
                         /bin/cp  ${rs}_rst $EXPID.${rs}_rst.${nymdb}_${saveme}z.$RSTSUFFIX &
                    end
@@ -4252,7 +4261,7 @@ endif
                  $MYNAME             \
                  $FVWORK/.DONE_CENTRAL_${MYNAME}.$yyyymmddhh \
                  "Central AGCM Failed "
-    
+
                  if ( -e agcm_central.j ) then
                     $BATCH_SUBCMD $BLOCKFLAG agcm_central.j
                  else
@@ -4272,7 +4281,7 @@ endif
          endif
 
 #        Capture exit status
-#        -------------------        
+#        -------------------
          $dryrun ls ./EGRESS
          set model_status = $status
          if ( $model_status ) then
@@ -4290,7 +4299,7 @@ endif
          /bin/rm -r       cap_restart                    # make sure and redefine cap_restart
          rst_date d_rst > cap_restart
 
-                              # Last line of SplitExecGcmRun_() 
+                              # Last line of SplitExecGcmRun_()
 \end
 
 #.............................................................................
@@ -4382,7 +4391,7 @@ endif
   endif
 
   # Set up separate work directory
-  # ------------------------------  
+  # ------------------------------
   setenv AODWORK $FVWORK/aod.$aod_date.$aod_time
   mkdir $AODWORK
   touch $AODWORK/.no_archiving
@@ -4517,7 +4526,7 @@ endif
   sed -i "s|>>>NCPUS_AOD<<<|${NCPUS_AOD}|" $jobf
   sed -i "s|>>>NYMD<<<|${aod_date}|" $jobf
   sed -i "s|>>>NHMS<<<|${aod_time}|" $jobf
- 
+
   echo "cat $jobf"
   if ($status) then
      exit 1
@@ -4562,7 +4571,7 @@ endif
   if ( $?ECHO___ ) set echo
 
 
-        if ( ( $BOOTSTRAP ) && ( $seg == 0 ) ) then 
+        if ( ( $BOOTSTRAP ) && ( $seg == 0 ) ) then
              setenv BOOTSTRAP 0
              mv -f ./AGCM.rc.tmpl.HOLD ./AGCM.rc.tmpl
              mv -f ./AGCM.rc.HOLD ./AGCM.rc
@@ -4614,7 +4623,7 @@ endif
         if ( $mystat ) then
             Call AbnormalExit_( 2 )
         endif
-                              # Last line of RenameRstCheckPoint_() 
+                              # Last line of RenameRstCheckPoint_()
 \end
 
 #.............................................................................
@@ -4642,7 +4651,7 @@ endif
    endif
 
    if ( $FORECAST ) then
- 
+
 #       Which CAP to use?
 #       -----------------
 
@@ -4717,7 +4726,7 @@ endif
         set GcmBegTime = $GcmBegEpoch[2]
         set GcmEndDate = $GcmEndEpoch[1]
         set GcmEndTime = $GcmEndEpoch[2]
-        
+
 #       Which CAP to use?
 #       -----------------
         set nymdt = $GcmBegEpoch[1]
@@ -4733,13 +4742,13 @@ endif
         echo "s/>>>IOBBKGD<<</$GcmBegDate/1"  >> sed_file
         echo "s/>>>IOBBKGT<<</$GcmBegTime/1"  >> sed_file
         echo "s/>>>IOEBKGD<<</$GcmEndDate/1"  >> sed_file
-        echo "s/>>>IOEBKGT<<</$GcmEndTime/1"  >> sed_file   
+        echo "s/>>>IOEBKGT<<</$GcmEndTime/1"  >> sed_file
         echo "s/>>>NCSUFFIX<<</${NCSUFFIX}/1" >> sed_file
         /bin/rm -f HISTORY.rc
         sed -f sed_file  $myhist  > ./HISTORY.rc
 
 #       Define AGCM rc files; output of desired restarts
-#             probably broken 
+#             probably broken
 #       -----------------------------------------------
         /bin/rm -f sed_file AGCM.rc AGCM.rc.HOLD
         echo "s/>>>REFDATE<<</$GcmBegDate/1"   > sed_file
@@ -4856,7 +4865,7 @@ endif
         set grs_list = ( `grs_list.pl -rc AGCM.rc.HOLD` )
    endif
 
-                              # Last line of SingleExecGcmRun_() 
+                              # Last line of SingleExecGcmRun_()
 \end
 
 
@@ -4972,8 +4981,8 @@ endif
 #    Check tcvitals for valid entries
 #    (assumes tcvitals.yyyymmddhh naming convention)
 #    ------------------------------------------------
-     set hh1g = `echo $nhms1g     | cut -c1-2` 
-     set hha  = `echo $anadate[2] | cut -c1-2` 
+     set hh1g = `echo $nhms1g     | cut -c1-2`
+     set hha  = `echo $anadate[2] | cut -c1-2`
      touch tcvitals.${anadate[1]}${hha}+${nymde}${hhe}
      foreach vitals  ( `ls *tcvitals*` )
         echo "Checking $vitals for valid entries."
@@ -4991,7 +5000,7 @@ endif
      vtrack -trktyp FV5 -fcst -freq $VTRKFRQF -fcsthrs $adjust_fcsthrs -rc $FVWORK/vtrack.rc $anadate[1] $anadate[2] $EXPID
                                            zeit_co.x vtrack2
 #    Tag tcvitals for distribution
-#    -----------------------------   
+#    -----------------------------
      /bin/mv tcvitals.${anadate[1]}${hha}+${nymde}${hhe} ${EXPID}.tcvitals.${nymd1g}${hh1g}+${nymde}${hhe}.txt
 
   endif  # doing vortex tracking
@@ -5065,10 +5074,10 @@ endif
              set bkguparst_lst = ( $bkguparst_lst $myname )
 
              set myname  = `echorc.x -template $EXPID $bkg_dateb[1] $bkg_dateb[2] aerorst_bkg${fhr}_filename`
-             set abkgetarst_lst   = ( $abkgetarst_lst   $myname ) 
+             set abkgetarst_lst   = ( $abkgetarst_lst   $myname )
 
              set myname  = `echorc.x -template $EXPID $bkg_dateb[1] $bkg_dateb[2] chemrst_bkg${fhr}_filename`
-             set cbkgetarst_lst   = ( $cbkgetarst_lst   $myname ) 
+             set cbkgetarst_lst   = ( $cbkgetarst_lst   $myname )
 
              set myname  = `echorc.x -template $EXPID $bkg_dateb[1] $bkg_dateb[2] surface_bkg_filename`
              set sfcbkg_lst = ( $sfcbkg_lst $myname )
@@ -5086,17 +5095,17 @@ endif
              set chembkg_lst = ( $chembkg_lst $myname )
 
              set myname  = `echorc.x -template $EXPID $bkg_dateb[1] $bkg_dateb[2] aero_bkg_filename`
-             set abkg_lst   = ( $abkg_lst   $myname ) 
+             set abkg_lst   = ( $abkg_lst   $myname )
 
              set myname  = `echorc.x -template $EXPID $bkg_dateb[1] $bkg_dateb[2] chem_bkg_filename`
-             set cbkg_lst   = ( $cbkg_lst   $myname ) 
+             set cbkg_lst   = ( $cbkg_lst   $myname )
 
              if ($bkgbits != $bkgbits0) then
                  set myname  = `echorc.x -template $EXPID $bkg_dateb[1] $bkg_dateb[2] gaas_bkg_filename`
-                 set gaasbkg_lst    = ( $gaasbkg_lst    $myname ) 
+                 set gaasbkg_lst    = ( $gaasbkg_lst    $myname )
 
                  set myname  = `echorc.x -template $EXPID $bkg_dateb[1] $bkg_dateb[2] gaasrst_bkg_filename`
-                 set gaasbkgrst_lst = ( $gaasbkgrst_lst $myname ) 
+                 set gaasbkgrst_lst = ( $gaasbkgrst_lst $myname )
              endif
 
           set bkg_dateb  = `tick $bkg_dateb[1] $bkg_dateb[2] $bkg_dtsec`
@@ -5146,7 +5155,7 @@ endif
 # -----------------------------------
   if ( $?ECHO___ ) set echo
 
-#        Store intermediate restarts for later forecasts 
+#        Store intermediate restarts for later forecasts
 #        -----------------------------------------------
          if ( $VAROFFSET ) then
            if ( ! `grep -c "@" saverst.rc` ) then
@@ -5160,10 +5169,10 @@ endif
               set nymd_chkpnt = ""
               set   hh_chkpnt = ""
               @ nchkpnt = 0
-              foreach  fn ( $chkpfiles ) 
+              foreach  fn ( $chkpfiles )
                  set d_chkpnt = `echo $fn | cut -d. -f2- | cut -c1-8`
                  set h_chkpnt = `echo $fn | cut -d. -f2- | cut -c10-11`
-                 foreach hr ( $saverst ) 
+                 foreach hr ( $saverst )
                     if( $hr == $h_chkpnt ) then
                        set nymd_chkpnt = ( $nymd_chkpnt $d_chkpnt )
                        set   hh_chkpnt = (   $hh_chkpnt $h_chkpnt )
@@ -5220,9 +5229,9 @@ endif
                          end
                          wait
                     endif
-                    if ( -e biasinp.$RSTSUFFIX ) then 
+                    if ( -e biasinp.$RSTSUFFIX ) then
                         $cmd -f biasinp.$RSTSUFFIX $EXPID.biasinp_rst.${nymd_sv}_${hh_sv}z.$RSTSUFFIX
-                        echo "$STAGE4FCST/$EXPID.biasinp_rst.${nymd_sv}_${hh_sv}z.$RSTSUFFIX" stage4fcst.arc 
+                        echo "$STAGE4FCST/$EXPID.biasinp_rst.${nymd_sv}_${hh_sv}z.$RSTSUFFIX" stage4fcst.arc
                     endif
                     if ( -e biasinp.ctl ) then
                         $cmd -f biasinp.ctl $EXPID.biasinp_rst.${nymd_sv}_${hh_sv}z.ctl
@@ -5350,7 +5359,7 @@ endif
           set tfile = `echorc.x -template $EXPID $TrjEndEpoch[1] $TrjEndEpoch[2] -fill $ftrajtmpl`
           set ftraj = `echorc.x -template $EXPID $TrjEndEpoch[1] $TrjEndEpoch[2] upalcv_traj_filename`
           set mtraj = `echorc.x -template $EXPID $TrjEndEpoch[1] $TrjEndEpoch[2] upalcv_mtrj_filename`
-          set pfile = `echorc.x -template $EXPID $TrjEndEpoch[1] $TrjEndEpoch[2] upper-air_prog_filename` 
+          set pfile = `echorc.x -template $EXPID $TrjEndEpoch[1] $TrjEndEpoch[2] upper-air_prog_filename`
           set  hhmn = `echo $TrjEndEpoch[2] | cut -c1-4`
           set xfile = `ls -1 $EXPID.prog.eta.????????_??z+${TrjEndEpoch[1]}_${hhmn}z.$NCSUFFIX`
           if (! -e $xfile ) set xfile = `ls -1 $EXPID.prog.eta.${TrjEndEpoch[1]}_${hhmn}z.$NCSUFFIX`
@@ -5407,8 +5416,8 @@ endif
              if ( ${pert_status} ) then
                  Call AbnormalExit_( 2 )
              endif
-           endif 
-                                                                                                             
+           endif
+
 #          Calculate sensitivity
 #          ---------------------
            if( -e CAP_apert.rc.tmpl ) then
@@ -5417,7 +5426,7 @@ endif
               set rundt = `grep "^HEARTBEAT_DT:" CAP.rc.tmpl       | cut -d: -f2`
            endif
 
-           set thisrc = fvsens.ccmrun.namelist.tmpl 
+           set thisrc = fvsens.ccmrun.namelist.tmpl
            set     hh = `echo ${FcsBegEpoch[2]} | cut -c1-2`
            if (-e fvsens.ccmrun.namelist_${hh}.tmpl) set thisrc = fvsens.ccmrun.namelist_${hh}.tmpl
            if (-e initadj.rc && -e $thisrc) then
@@ -5508,7 +5517,7 @@ endif
 # -----------------------------------
   if ( $?ECHO___ ) set echo
 
-#  Move checkpoint files into restart files 
+#  Move checkpoint files into restart files
 #  (this will fail for d_rst ... it's ok)
 #  ----------------------------------------
         /bin/rm d_rst
@@ -5536,7 +5545,7 @@ endif
   set checkpoint_files = ( `ls *_checkpoint*` )
   if ($#checkpoint_files == 0) exit 0
 
-# Move checkpoint files into restart files 
+# Move checkpoint files into restart files
 # ----------------------------------------
   set recdate = `grep RECORD_REF_DATE AGCM.rc | grep -v "#" | cut -d: -f2`
   set rectime = `grep RECORD_REF_TIME AGCM.rc | grep -v "#" | cut -d: -f2`
@@ -5565,7 +5574,7 @@ endif
 
 # Check for HREPACK and wait for it to finish
 # -------------------------------------------
-   if ( ( $DOFREPACK ) && ( ! -e ./EGRESS_HREPACK ) ) then 
+   if ( ( $DOFREPACK ) && ( ! -e ./EGRESS_HREPACK ) ) then
          @ waitcounter = 0
                             zeit_ci.x frepack
          while ( ( ! -e ./EGRESS_HREPACK ) && ( $waitcounter < $HREPACK_WAIT ) )
@@ -5601,7 +5610,7 @@ endif
         set files = $ftype
         if ( !($status) ) then        # at least 1 file of this type
            foreach file ( $files )
-# -- Special handling for repacked files    
+# -- Special handling for repacked files
               if ( ( $file =~ *.fana.eta.* ) || ( $file =~ *.${this_itime}+* ) ) then
                    echo "not renaming $file"
               else
@@ -5708,12 +5717,12 @@ endif
 
      set    allftypes = ( `read_HIST.csh ./HISTORY.rc`)
      foreach ftype ( $allftypes )
-# -- Special handling for repacked files    
-        set ftype = `echo $ftype | sed -e 's/_unz//'` 
+# -- Special handling for repacked files
+        set ftype = `echo $ftype | sed -e 's/_unz//'`
         set files = `/bin/ls -1 ${ftype}*.$NCSUFFIX`
         if ( !($status) ) then        # at least 1 file of this type
            foreach file ( $files )
-# -- Special handling for repacked files    
+# -- Special handling for repacked files
               if ( ( $file =~ *.fana.eta.* ) || ( $file =~ *.${itime}+* ) || ( $file =~ *+-* ) ) then
                    echo "not renaming $file"
               else
@@ -5861,7 +5870,7 @@ endif
         /bin/mv -f sana.log    $EXPID.sana.log.${tag}.txt
         /bin/mv -f cqc.log     $EXPID.cqc.log.${tag}.txt
         /bin/mv -f prepqc.log  $EXPID.prepqc.log.${tag}.txt
-   
+
    endif
 
   exit 0
@@ -5915,13 +5924,13 @@ endif
         setenv RSTHOLD $FVHOME/recycle/hold
         foreach rs ( $grs_list )
             if ( $rs == "agcm_import" || $rs == "aiau_import" ) continue
-            if ( -e ${rs}_rst ) /bin/mv -f ${rs}_rst  $EXPID.${rs}_rst.$rtag.$RSTSUFFIX 
+            if ( -e ${rs}_rst ) /bin/mv -f ${rs}_rst  $EXPID.${rs}_rst.$rtag.$RSTSUFFIX
             /bin/cp $EXPID.${rs}_rst.$rtag.$RSTSUFFIX $RSTHOLD/ &
             if ( $final_fcst )   /bin/cp $EXPID.${rs}_rst.$rtag.$RSTSUFFIX ${fcstage}/ &
         end
 
-        /bin/cp -f d_rst $EXPID.d_rst 
-        /bin/mv -f d_rst $EXPID.rst.lcv.$rtag.bin 
+        /bin/cp -f d_rst $EXPID.d_rst
+        /bin/mv -f d_rst $EXPID.rst.lcv.$rtag.bin
         /bin/cp $EXPID.rst.lcv.$rtag.bin $RSTHOLD/ &
         if ( $final_fcst ) /bin/cp $EXPID.rst.lcv.$rtag.bin ${fcstage}/ &
 
@@ -5950,7 +5959,7 @@ endif
                 /bin/cp $EXPID.biasinp.$rtag.ctl $EXPID.biasinp_rst.$rtag.ctl
                 /bin/cp $EXPID.biasinp_rst.$rtag.ctl $RSTHOLD/ &
             endif
-    
+
             # local copy to be moved by pesto, 2nd copy to be dealt w/ by recycle
             #--------------------------------------------------------------------
             if ( $DO4DVAR ) then                                        # initial traj needed for 4dvar
@@ -5969,7 +5978,7 @@ endif
             endif
 
 
-            set GDA_list  = `ls *GDA.all.*` 
+            set GDA_list  = `ls *GDA.all.*`
             if ( ! $status ) then
                  set GDA_rst = `echo $GDA_list[$#GDA_list] | sed -e 's/\.all\./.rst./'`
                  /bin/cp $GDA_list[$#GDA_list] ./${GDA_rst}
@@ -5981,12 +5990,12 @@ endif
             endif
 
             if ( $DO4DVAR ) then
-    
+
                 # local copy to be moved by pesto, 2nd copy to be dealt w/ by recycle
                 #--------------------------------------------------------------------
                 /bin/cp $EXPID.bkg.eta.$rtag.$NCSUFFIX $EXPID.bkg_eta_rst.$rtag.$NCSUFFIX &
                 /bin/cp $EXPID.bkg.eta.$rtag.$NCSUFFIX $RSTHOLD/$EXPID.bkg_eta_rst.$rtag.$NCSUFFIX &
-    
+
                 /bin/cp $EXPID.cbkg.eta.$rtag.$NCSUFFIX $EXPID.cbkg_eta_rst.$rtag.$NCSUFFIX &
                 /bin/cp $EXPID.cbkg.eta.$rtag.$NCSUFFIX $RSTHOLD/$EXPID.cbkg_eta_rst.$rtag.$NCSUFFIX &
 
@@ -6089,8 +6098,8 @@ endif
        foreach rs ( $grs_list )
             if ( -e ${rs}_checkpoint.${chk_tag} ) then
                 /bin/mv  ${rs}_checkpoint.${chk_tag}  $EXPID.${rs}_rst.${rst_tag}
-            else 
-                /bin/mv  ${rs}_checkpoint  $EXPID.${rs}_rst.${rst_tag} 
+            else
+                /bin/mv  ${rs}_checkpoint  $EXPID.${rs}_rst.${rst_tag}
             endif
        end
        wait
@@ -6105,17 +6114,17 @@ endif
        set momoutdir = `nmlread.py fvcore_layout.rc MOM_input_nml restart_output_dir`
        set mylcvs = (`ls -1 $EXPID.rst.lcv*`)
        set momtag = `echo $mylcvs[1] | cut -d. -f4`
-       /bin/mv $momoutdir/MOM.res.nc $FVHOME/recycle/hold/$EXPID.mom_rst.${momtag}.nc4 
+       /bin/mv $momoutdir/MOM.res.nc $FVHOME/recycle/hold/$EXPID.mom_rst.${momtag}.nc4
        foreach fn ( 1 2 3 )
-         /bin/mv $momoutdir/MOM.res_${fn}.nc $FVHOME/recycle/hold/$EXPID.mom${fn}_rst.${momtag}.nc4 
+         /bin/mv $momoutdir/MOM.res_${fn}.nc $FVHOME/recycle/hold/$EXPID.mom${fn}_rst.${momtag}.nc4
        end
     endif
     set lstbkglfo = `ls $FVWORK/$EXPID.bkg.lfo*.$NCSUFFIX`
     if ( ${%lstbkglfo}  ) then
        tar cvf $FVWORK/$EXPID.bkglforst.${rtag}.tar $EXPID.bkg.lfo*.$NCSUFFIX
-    endif 
+    endif
     cd $FVHOME/recycle/hold
-    tar cvf $FVWORK/$EXPID.rst.${rtag}.tar $EXPID.* 
+    tar cvf $FVWORK/$EXPID.rst.${rtag}.tar $EXPID.*
     /bin/mv $FVWORK/$EXPID.xinc*$NCSUFFIX .
     if ( ! $status ) then
        tar cvf $FVWORK/$EXPID.incrst.${rtag3}.tar $EXPID.xinc*$NCSUFFIX
@@ -6151,19 +6160,19 @@ endif
 #.............................................................................
 # -----------------------------------
   Sub MovePredictorOutput_( )
-#------------------------------------ 
+#------------------------------------
 
   if ( $LDAS_ANA ) then
     /bin/rm -f $FVHOME/recycle/holdpredout/*lfo*
-    /bin/cp  $FVWORK/*bkg.lfo*.nc4  $FVHOME/recycle/holdpredout/. 
-  endif 
-   
-  exit 0                      
+    /bin/cp  $FVWORK/*bkg.lfo*.nc4  $FVHOME/recycle/holdpredout/.
+  endif
+
+  exit 0
                               # Last line of MovePredictorOutput_()
-       
+
 \end
- 
-#............................................................................. 
+
+#.............................................................................
 
 # ------------------------------------
   Sub AbnormalExit_( _exitcode )

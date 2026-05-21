@@ -334,13 +334,13 @@
 #                      Vortex track and reloc are now on by default
 # 03Dec2015 Todling    Default location of BERROR set in analyzer (not here)
 # 07Dec2015 Todling    Increase resolution of ADM for e/C360/C720 cases
-# 06Dec2016 da Silva   Eliminated .pcf.tmpl files from AOD analysis; requires latest 
+# 06Dec2016 da Silva   Eliminated .pcf.tmpl files from AOD analysis; requires latest
 #                      config.py from MAPL (rev 1.15 or later)
 # 28Feb2017 Todling    Abilitate cubed-SST option
 # 26May2017 Sienkiewicz Additions for new radiance bias correction
 # 25Jul2017 Holdaway   Added resource files associated with NGGPS FV3 tlm/adjoint, sens and svec
 # 19Jul2018 Wargan     Additions for OMPS
-# 2022,2024 sqz        Additions for LADAS 
+# 2022,2024 sqz        Additions for LADAS
 #-------------------------------------------------------------------------
 use Cwd qw(abs_path cwd);
 use English;
@@ -489,11 +489,15 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
 
 # Determine GCM spatial resolution
 # --------------------------------
-
   welcome();
   while3 ( \&get_rem_acct_info );
   while3 ( \&get_specific_info );
+
+##ygyu
+#if(0){
+
   get_dimsg5gcm();
+
 
 # User defined options
 # --------------------
@@ -502,6 +506,7 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
   while3 ( \&get_fvhome    );
   while3 ( \&get_nodeflg   );
   while3 ( \&get_varwindow );
+
 
 # Create BC file names and make sure files can be found
 # -----------------------------------------------------
@@ -519,13 +524,11 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
 # ----------------------------------
   while3 ( \&get_times  );
   while3 ( \&get_setgsi );
-
-#nail
   while3 ( \&get_obsys  );
   while3 ( \&set_radcor );
   while3 ( \&set_rcov );
   while3 ( \&set_acftbias );
-  while3 ( \&set_newradbc ); 
+  while3 ( \&set_newradbc );
   while3 ( \&set_ldasANA  );
   while3 ( \&get_forecast );
   if ($DAO == 0) { while3 ( \&get_mhost ) }
@@ -594,8 +597,8 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
   die "Failed to fix GOCART levels-referencing $!" if ( $rc );
 
 # Call LDAS setup script.
-#  Provide LDAS config input files in $ldassetup/: det_exeinp.txt, det_batinp.txt. 
-#  For Hyb-4dEnVar, do same for ens_exeinp.txt, ens_batinp.txt. 
+#  Provide LDAS config input files in $ldassetup/: det_exeinp.txt, det_batinp.txt.
+#  For Hyb-4dEnVar, do same for ens_exeinp.txt, ens_batinp.txt.
 #  See GEOSldas/README.md for generating sample config input files.
 # ------------------------------------------------------------------------
     print "\n checkprintout  ldas_ana == 1 ($ldas_ana)\n";
@@ -605,12 +608,12 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
         $rc = system $cmd;
         die "Failed to setup LDAS for det, check LDAS config input files $!" if ( $rc );
         chomp($aens_replay);
-        if (($hyb_ens == 4) && ($aens_replay eq "no")) { 
+        if (($hyb_ens == 4) && ($aens_replay eq "no")) {
            $rc = system("$fvbin/ldas_setup setup $fvhome/lana --account $gid --nymdb $nymdb --nhmsb $nhmsb $ldassetup/ens_exeinp.txt $ldassetup/ens_batinp.txt");
            die "Failed to setup LDAS for ens, check LDAS config input files $!" if ( $rc );
        }
      }
-    
+
 # Monthly Setup
 # -------------------------------------------------------------
 # [this must be after HISTORY.rc.tmpl and silo.arc are created]
@@ -652,45 +655,45 @@ sub set_inputparams {
     }
 
     %inputparams = ("acftbias"       => $acftbias,
-                    "asynbkg_min"    => $asynbkg_min, 
-                    "berror_env"     => $berror_env, 
+                    "asynbkg_min"    => $asynbkg_min,
+                    "berror_env"     => $berror_env,
                     "convsfc"        => $convsfc,
-                    "convupa"        => $convupa, 
-                    "do4dvar"        => $do4dvar, 
-                    "do4diau"        => $do4diau, 
-                    "doRcorr"        => $doRcorr, 
-                    "expid"          => $expid, 
-                    "fcswallclk"     => $fcswallclk, 
+                    "convupa"        => $convupa,
+                    "do4dvar"        => $do4dvar,
+                    "do4diau"        => $do4diau,
+                    "doRcorr"        => $doRcorr,
+                    "expid"          => $expid,
+                    "fcswallclk"     => $fcswallclk,
                     "fvbcs"          => $fvbcs,
-                    "fvhome"         => $fvhome, 
-                    "fvroot"         => $fvroot, 
-                    "g5gcm"          => $g5gcm, 
-                    "gid"            => $gid, 
-                    "group_list"     => $group_list, 
-                    "export_none"    => $export_none, 
-                    "hyb_ens"        => $hyb_ens, 
-                    "joba"           => $joba, 
-                    "jobfs"          => $jobfs, 
+                    "fvhome"         => $fvhome,
+                    "fvroot"         => $fvroot,
+                    "g5gcm"          => $g5gcm,
+                    "gid"            => $gid,
+                    "group_list"     => $group_list,
+                    "export_none"    => $export_none,
+                    "hyb_ens"        => $hyb_ens,
+                    "joba"           => $joba,
+                    "jobfs"          => $jobfs,
                     "jobqueue1"      => $jobqueue1,
-                    "jobsa"          => $jobsa, 
-                    "mem"            => $mem, 
-                    "mywork"         => $mywork, 
-                    "nametag"        => $nametag, 
-                    "ncpus"          => $ncpus, 
+                    "jobsa"          => $jobsa,
+                    "mem"            => $mem,
+                    "mywork"         => $mywork,
+                    "nametag"        => $nametag,
+                    "ncpus"          => $ncpus,
                     "ncpus_gsi"      => $ncpus_gsi,
                     "perhost_gsi"    => $perhost_gsi,
-                    "nodeflg"        => $nodeflg, 
+                    "nodeflg"        => $nodeflg,
                     "ncsuffix"       => $ncsuffix,
 		    "newradbc"       => $newradbc,
-                    "nvarouter"      => $nvarouter, 
+                    "nvarouter"      => $nvarouter,
                     "obClass"        => $obClass,
-                    "oiqc"           => $oiqc, 
-                    "osfmodule"      => $osfmodule, 
+                    "oiqc"           => $oiqc,
+                    "osfmodule"      => $osfmodule,
                     "prepqc"         => $prepqc,
                     "qsub"           => $qsub,
                     "specres"        => $specres,
                     "varoffset"      => $varoffset,
-                    "varwindow"      => $varwindow, 
+                    "varwindow"      => $varwindow,
                     "wcnstrt"        => $wcnstrt );
 
 }
@@ -925,7 +928,7 @@ sub defaults {
                      GCMPROG.rc.tmpl
                      HISTORY.rc.tmpl
                      OBS_GridComp.rc.tmpl
-                     saverst.rc 
+                     saverst.rc
                      GEOS_SurfaceGridComp.rc
                      GEOS_SurfaceGridComp.tmp
                      GWD_GridComp.rc
@@ -1177,7 +1180,7 @@ sub defaults {
   $fvchem  = 1; # if ( -e "$fvetc/DU_GridComp.rc" );
   $doiau   = 0;
 
-  if ( $g5gcm ) { 
+  if ( $g5gcm ) {
        $modelexec = "GEOSgcm.x";
   } else {
        print "\n\n*** WARNING ***  Cannot find $fvbin/GEOSgcm.x\n\n";
@@ -1240,7 +1243,7 @@ sub defaults {
   $gsfc  = ".gsfc.";
   $gsfc2 = ".nccs.";
   $gsfc3 = "prv.cube";
-  $gsfc4 = "gs6150";  
+  $gsfc4 = "gs6150";
   $ncep  = ".ncep.";
   if ( $name =~ m/$gsfc/  || $alias =~ m/$gsfc/  ||
        $name =~ m/$gsfc2/ || $alias =~ m/$gsfc2/ ||
@@ -1256,7 +1259,7 @@ sub defaults {
     $GFLAG = 0;
   }
   print ("GFLAG =  $GFLAG \n");
-  
+
 # Mass storage
 # ------------
   if( $DAO == 1 ) {        #nas or gsfc accounts
@@ -1569,7 +1572,7 @@ sub ed_g5prog_rc {
     else {
         if($rcd =~ /\@FV3TRAJ/) { $rcd =~ s/\@FV3TRAJ/#/ }
         if($rcd =~ /\@FVTRAJ/)  { $rcd =~ s/\@FVTRAJ// }
-    }                                 
+    }
     print(LUN2 "$rcd\n");
   }
   close(LUN);
@@ -1883,7 +1886,7 @@ sub ed_ncep_rc {
        } else {
           if($rcd =~ /\@RADBC/) {$rcd=~ s/\@RADBC//g; }
        }
-	   
+
        if ( $siglevs <= 72 ) {
           if($rcd =~ /\@NLEV_EXT/) {$rcd=~ s/\@NLEV_EXT/18/g; }
        } elsif ( $siglevs > 72 & $siglevs <= 132 ) {
@@ -2543,7 +2546,7 @@ sub ed_aens_das_replay_acq {
 $replay_arcdir/atmens/Y%y4/M%m2/$aens_replay_expid.atmens_ebkg.%y4%m2%d2_%h2z.tar => $expid.atmens_ebkg.%y4%m2%d2_%h2z.tar
 EOF
 
-  if ( $mydir eq "run") { 
+  if ( $mydir eq "run") {
      $acq = "$fvhome/anasa/atmens_replay.acq";
      open(SCRIPT,">$acq") or die ">>> ERROR <<< cannot write $acq";
      print  SCRIPT <<"EOF";
@@ -2564,7 +2567,7 @@ sub ddd_hhmmss {
     # input number of hours
     #----------------------
     $hours = shift @_;
-    
+
     # convert hours to days & hrs
     #----------------------------
     $days = $hours / $HRS_PER_DAY;
@@ -2742,7 +2745,7 @@ EOF
 #=======================================================================
 sub get_lsmodel {
 
-    my $lndbcs_r21c = "Icarus-NLv3";	    
+    my $lndbcs_r21c = "Icarus-NLv3";
     my $lndbcs_def = "Icarus_Updated";
     my $lsdflt = 1;
     my $rrdflt = 0;
@@ -2824,7 +2827,7 @@ sub get_fvbcs {
                 ." ** WARNING ** default FVINPUT location set by "
                 ."environment variable: \$FVINPUT\n\n";
         }
-    }         
+    }
     # real-time boundary conditions; default: real-time
     # -------------------------------------------------
     if ($ogcm eq "c") {
@@ -2836,7 +2839,7 @@ sub get_fvbcs {
         $fvrtbcs = "$fvbcs/g5gcm/bcs/SST/$ogrid";
         $sstfile = "dataoceanfile_MERRA2_SST.$ogrid.\$year.data";
         $icefile = "dataoceanfile_MERRA2_ICE.$ogrid.\$year.data";
-    } 
+    }
     elsif ($ogcm eq "f" || $ogcm eq "C") {
         $fvrtbcs = "$fvbcs/g5gcm/bcs/realtime/OSTIA_REYNOLDS";
         $sstfile = "dataoceanfile_OSTIA_REYNOLDS_SST.$ogrid.\$year.data";
@@ -3234,8 +3237,8 @@ sub get_times {
   $ndays  = 1;           # this is fixed at 1-day for now
   $nhours = $ndays * $HRS_PER_DAY;
   $nsegs  = 1;
-  $fhours21 = 123;       
-  $fhours15 =  33;       
+  $fhours21 = 123;
+  $fhours15 =  33;
 
   # GEOS-5 GCM MPI decomposition; must be compatible w/ ncpus
   #----------------------------------------------------------
@@ -3397,7 +3400,7 @@ EOF
       $asynbkg_hms = sprintf("%6.6d","$asynbkg_hms"); #print "asynbkg_hms = $asynbkg_hms \n";
   }
 
-  $pcp_forced = ($merra2 or $r21c );  
+  $pcp_forced = ($merra2 or $r21c );
 
   $beg_date = "$nymdb $nhmsb"  ; # GEOS-5 GCM starting date parameter
   $end_date = "$nymde $nhmse"  ; # GEOS-5 GCM ending   date parameter
@@ -3535,7 +3538,7 @@ sub set_ldasANA {
     my (@bkglfo_files);
 
     # initialize Land DAS processing flag
-    #------------------------------------ 
+    #------------------------------------
     $ldas_ana = 0;
     $ldas_flag = 0;
     $ldasfdbk = 0;
@@ -3564,7 +3567,7 @@ sub set_ldasANA {
         @bkglfo_files = (<$ldashold/*bkg*lfo*${nymdb}_${hhb}*>);
             die ">>> Error <<< Cannot find bkglfo files in $ldashold;"
                 unless scalar(@bkglfo_files);
-        
+
         $dflt = "n";
         $ans2 = query("  Enable LDAS feedback to model y/n?", $dflt);
         if (yes($ans2)) {
@@ -3572,7 +3575,7 @@ sub set_ldasANA {
         }
         $dflt = "/discover/nobackup/$user/ldasSaveInput";
         $ldassetup = query("  LDAS setup input path?", $dflt);
-      
+
         if ($hyb_ens == 4 ) {
             $dflt = "/discover/nobackup/$user/ldasSaveInput";
             $ldassetup4ens = query("  LDAS setup input path for ens?", $dflt);
@@ -3654,7 +3657,7 @@ EOF
        if ( $anahgrd eq "a"  ) { $analon =   72; $analat =  46 }
        if ( $anahgrd eq "b"  ) { $analon =  144; $analat =  91 }
        if ( $anahgrd eq "c"  ) { $analon =  288; $analat = 181 }
-       if ( $anahgrd eq "d"  ) { $analon =  576; $analat = 361 } 
+       if ( $anahgrd eq "d"  ) { $analon =  576; $analat = 361 }
        if ( $anahgrd eq "e"  ) { $analon = 1152; $analat = 721 }
 
        $gsires  = "l${siglevs}_${analon}x${analat}";
@@ -3719,7 +3722,7 @@ sub set_geosjedi {
   if ( $ENV{JEDI_ATMVAR_SCHEME} ) {
       $jedivar = $ENV{JEDI_ATMVAR_SCHEME};
   } else {
-    if ( $hyb_ens < 3 ) { 
+    if ( $hyb_ens < 3 ) {
       $jedivar = "3dfgat";
     } else {
       $jedivar = "hyb4denvar";
@@ -3728,7 +3731,7 @@ sub set_geosjedi {
 
   $cmd = "$fvbin/setup_aanajedi.pl $jedivar $expid $bjedi_im $vres $jediopts";
   print "$cmd\n";
-  system($cmd); 
+  system($cmd);
 
   return 0 ;
 }
@@ -3738,11 +3741,11 @@ sub set_atmens {
   my ( $radbc ) = @_;
 
   if ( $hyb_ens < 3 ){ return 0 };
- 
+
 # defaults (here for now)
 # -----------------------
   if ($r21c) {
-     $aens_replay = "no";	  
+     $aens_replay = "no";
   } else {
      $aens_replay = "yes";
   }
@@ -3804,11 +3807,11 @@ EOF
   } else {
      $rcorrarg = "";
   }
-  
+
  if ($aens_res eq "C360") {
     $aensupa = "Bkg.eta";
  }
-  
+
  $aens_lsmodel = "";
   if ( $lsmodel_flag == 2 ) {
        $aens_lsmodel = "-lsmcm";
@@ -3816,15 +3819,15 @@ EOF
 
   $aens_lev = query("  Ensemble Vertical Levels? ", $aens_lev);
 
-# If so, setup EnADAS 
+# If so, setup EnADAS
 # -------------------
-  if ($r21c) { 
+  if ($r21c) {
      $bcopt = "-r21c";
-  } 
+  }
   $flags = "-nlevs $aens_lev $setacftbc $rcorrarg $setradbc $aens_lsmodel -expdir $fvhome/.. $sppt_flag $bcopt";
   $flags .= " -fvhome $fvhome" if $checkFLG;
   $flags .= " -ldasflg $ldas_flag";
-  $params = " $aens_ana $expid $aens_im $aens_jm $aens_ocn $landbcs"; 
+  $params = " $aens_ana $expid $aens_im $aens_jm $aens_ocn $landbcs";
 
   $cmd = "$fvbin/setup_atmens.pl -nodename $nodeflg $flags $params";
   print "$cmd\n";
@@ -3844,7 +3847,7 @@ EOF
   $atm_ens_j = "$fvhome/run/atm_ens.j";
   $atm_ens_j_tilde = "${atm_ens_j}~";
   rename($atm_ens_j, $atm_ens_j_tilde);
-      
+
   open(TILDE, "< $atm_ens_j_tilde") or die "Error opening $atm_ens_j_tilde;";
   open(JSCRPT, "> $atm_ens_j") or die "Error opening $atm_ens_j;";
   foreach $line (<TILDE>) {
@@ -4012,6 +4015,10 @@ sub get_obsys {
       $rflags .= " -stem r21c";
   }
 
+
+  print " fvbin = $fvbin ";
+
+
   $reqobs = $fvbin . "/require_obsys.pl";
   $cmd = "$reqobs -drc $obsysrc -class_desc $rflags ";
   $rc = system($cmd);
@@ -4055,9 +4062,12 @@ sub get_obsys {
 # -----------
   print("\n  DEFAULT: $obsclass\n\n");
   $ans = query("OBSERVING SYSTEM CLASSES?");
+  print "\n ans = $ans \n";
+
   $obsclass = $ans unless blank($ans);
   $obsclass =~ s/\s//g;
   $fvANS2[-1] = $obsclass;  # update @fvANS2 since default response not sent to query()
+  print "final obsclass = $obsclass \n";
 
   if(length($obsclass) <= 1) {
     print("Please type in obclass names...\n");
@@ -4635,8 +4645,8 @@ sub get_restart5 {
       if (($res eq "C180") and ($ogcm eq "e") and ($siteID eq "nccs")) {
           $fvics = $merra2_nccs_fvics;
       }
-  }          
-  
+  }
+
   $fvics = $default unless $fvics eq $merra2_nccs_fvics;
   $drstloc = "$fvics/rs/Y${yyyyb}/M${mmb}";
   $rst_set = 1;
@@ -5417,7 +5427,7 @@ EOF
       $latlon_ogcm = "#";
   }
   elsif ($ogcm eq "T") {
-      $coupled = 1; 
+      $coupled = 1;
       $ocean_name = "MOM6";
       $ogcmrdt = $dt;
       $ogcm_grid_type = "Tripolar";
@@ -5514,8 +5524,8 @@ sub mkdir_fvhome {  # create directories on FVHOME
       mkpath("$fvhome/recycle/holdpredout")
           or die ">> Error << creating subdir, $fvhome/recycle/holdpredout;";
   }
-  unlink("$fvhome/fvInput") if ( -e "$fvhome/fvInput" ) ; 
-  symlink("$fvbcs","$fvhome/fvInput"); 
+  unlink("$fvhome/fvInput") if ( -e "$fvhome/fvInput" ) ;
+  symlink("$fvbcs","$fvhome/fvInput");
 
 # Some directories are not meant to be archived
 # ---------------------------------------------
@@ -7342,7 +7352,7 @@ sub arch_anasa {
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.anasa.satbias.%y4%m2%d2_%h2z.txt
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.anasa.satbang.%y4%m2%d2_%h2z.txt
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.anasa.satbiaspc.%y4%m2%d2_%h2z.txt
-\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.anasa.acftbias.%y4%m2%d2_%h2z.txt 
+\${PESTOROOT}%s/ana/Y%y4/M%m2/%s.anasa.acftbias.%y4%m2%d2_%h2z.txt
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.anasa.eta.%y4%m2%d2_%h2%n2z.$ncsuffix
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.xincsa.eta.%y4%m2%d2_%h2%n2z.$ncsuffix
 \${PESTOROOT}%s/ana/Y%y4/M%m2/%s.bbiassa.eta.%y4%m2%d2_%h2z.$ncsuffix
@@ -7809,7 +7819,7 @@ set echo
 setenv GID $gid
 setenv FVHOME $fvhome  # experiment home directory
 setenv FVROOT  `cat \$FVHOME/.FVROOT`
-setenv FVBINDIR \$FVROOT/bin 
+setenv FVBINDIR \$FVROOT/bin
 setenv NCSUFFIX $ncsuffix
 
 cd  # start from home otherwise the which's get messed up in SLURM
@@ -7892,7 +7902,7 @@ if (\$arch_type == "MKEEP") set flags = "-v -p"
 if (\$status) then
    if ( \$?ERR ) then
       \$ERR -C 77 -E 4 -D "fvarchive.j ERROR copying \$arch_type files for \$arch_date to \$FVARCH."
-      exit 77 
+      exit 77
    endif
 endif
 
@@ -7939,7 +7949,7 @@ if ((\$arch_type == "ADAS") && (\$\?yyyymm) && (\$\?dd)) then
           if (\$MONTHLY_RADMON) set flags = "\$flags -radmon \$MONTHLY_RADMON"
 
           if ("\$flags" != "") \$monthlyPost \$flags
-      endif  
+      endif
    endif
 endif
 
@@ -7956,12 +7966,12 @@ close(SCRIPT);
 #=======================================================================
 sub build_lnbcs {
   $bcopt = "";
-  if ( $merra2 ) { 
+  if ( $merra2 ) {
      $bcopt = "-merra2" ;
   }elsif ( $r21c ) {
      $bcopt = "-r21c";
   }elsif ($geosit) {
-     $bcopt = "-geosit"; 
+     $bcopt = "-geosit";
   }
   if ( $cubed ) {
      $cmd = "$fvbin/gen_lnbcs.pl -fvhome $fvhome -o lnbcs $bcopt -cubed $agcm_im $agcm_jm ${ogcm}${ogcm_id} $landbcs";
@@ -8072,7 +8082,7 @@ print  SCRIPT <<"EOF";
 #SBATCH --output=$jobn.log.o%j.txt
 #SBATCH --ntasks=$xncpus
 #SBATCH --ntasks-per-node=$ncpus_per_node
-###SBATCH --constraint=$nodeflg   
+###SBATCH --constraint=$nodeflg
 #SBATCH --time=${daswallclk}:00
 #SBATCH --no-requeue
 EOF
@@ -8248,10 +8258,10 @@ print  SCRIPT <<"EOF";
   setenv GAAS_ANA $gaas_ana # 1 = aerosol analysis, 0 = disables it
   setenv GAASFDBK $gaasfdbk # 1 = feedback aerosol analysis into GCM, 0 = don't
   setenv SKIP_PSAS 0 #  sets do_you_want_to_skip_PSAS in ana.rc.tmpl; 0 = no, 1 = yes
-  setenv LDAS_ANA $ldas_ana # 1 = land analysis, 0 = disables it 
-  setenv LDASFDBK $ldasfdbk # 1 = read land analysis incr into GCM (feedback), 0 = don't 
-  setenv LDHOME  $ldashome  # land analysis home dir (ldas_exp/) for central 
-  setenv LDHOME4ENS $ldashome4ens  # land analysis home dir for atm_ens  
+  setenv LDAS_ANA $ldas_ana # 1 = land analysis, 0 = disables it
+  setenv LDASFDBK $ldasfdbk # 1 = read land analysis incr into GCM (feedback), 0 = don't
+  setenv LDHOME  $ldashome  # land analysis home dir (ldas_exp/) for central
+  setenv LDHOME4ENS $ldashome4ens  # land analysis home dir for atm_ens
   setenv IGNORE_0 1   # 1 = ignore 0 length obs files in acquire
   setenv FCSTIMES "$fcstimes"
   setenv FCSTATS  "21"
@@ -8400,7 +8410,7 @@ print  SCRIPT <<"EOF";
      setenv MPI_XPMEM_ENABLE no
      setenv MPI_NUM_MEMORY_REGIONS 0
      setenv SUPRESS_XPMEM_TRIM_THRESH 1
-  endif 
+  endif
   setenv SLURM_DISTRIBUTION block
 
 # For some reason, PMI_RANK is randomly set and interferes
@@ -8887,7 +8897,7 @@ print  SCRIPT <<"EOF";
                 if ( \$BATCH_SUBCMD == "sbatch" ) then
                    sbatch --export=this_nymdhh="\$this_ana" g5asens.j
                 else
-                   qsub -v this_nymdhh="\$this_ana" g5asens.j 
+                   qsub -v this_nymdhh="\$this_ana" g5asens.j
                 endif
                 cd -
              else
@@ -9195,7 +9205,7 @@ sub write_FVDAS_Run_Config {
     if ($geosit || $r21c) {
         $ENV{"MKSI_SIDB"}   = "\$FVHOME/run/gmao_satinfo.db";
         $ENV{"MKSIOZ_SIDB"} = "\$FVHOME/run/gmao_ozinfo.db";
-	$ENV{"MKSICN_SIDB"} = "\$FVHOME/run/gmao_convinfo.db" 
+	$ENV{"MKSICN_SIDB"} = "\$FVHOME/run/gmao_convinfo.db"
     }
 
     unless ( $ENV{"ARCHIVE"} ) {
@@ -9332,7 +9342,7 @@ print SCRIPT <<"EOF";
   endif
   if( (`uname -s` == "Linux") && ( (`uname -m` == "ia64") || (`uname -m` == "x86_64") ) ) then
       setenv FORT90L -Wl,-T
-# NOTE: if user has access to TSE: 
+# NOTE: if user has access to TSE:
 #       (i) comment out three lines below
 #       (ii) uncomment and adjust following line
       setenv FVWORK $fvhome/../tmp.\$\$
@@ -9369,7 +9379,7 @@ print  SCRIPT <<"EOF";
   setenv GEOSUTIL \$FVROOT
   \$GEOSUTIL/plots/configure
   source .quickplotrc
- 
+
 # Internal parameters controling system behavior
 # ----------------------------------------------
   setenv G5GCM   $g5gcm # 1 = enables GEOS-5 GCM, 0 = disables GEOS-5 GCM (back to fvGCM)
@@ -9592,9 +9602,9 @@ EOF
 EOF
 
     }elsif ($siteName eq "pfe") {
-  
+
   print  SCRIPT <<"EOF";
-  
+
 # Altix ICE specific configuration
 # ----------------------------
   limit stacksize unlimited
@@ -9846,7 +9856,7 @@ print  SCRIPT <<"EOF";
      # check for presence of tarball
      set rstlst = `ls *.rst.\${nymd}_\${hh}z.tar`
      set vexpid = `echo \$rstlst | cut -d. -f1`
-     if ( -e \$vexpid.rst.\${nymd}_\${hh}z.tar ) then     
+     if ( -e \$vexpid.rst.\${nymd}_\${hh}z.tar ) then
         if (! -d RSTinput_\${nymd}_\${hh}z ) mkdir RSTinput_\${nymd}_\${hh}z
         cd RSTinput_\${nymd}_\${hh}z
         tar xvf ../\$vexpid.rst.\${nymd}_\${hh}z.tar
@@ -9872,7 +9882,7 @@ print  SCRIPT <<"EOF";
         /bin/rm -r \$FVWORK
         exit 1
      endif
-  endif 
+  endif
 
 # obtain ldas incr for the first 6h integration
 #----------------------------------------------
@@ -10101,11 +10111,11 @@ sub init_agcm_rc {
     $oanp = "PCHEM";
     if ( $gocart_tracers ) { $aero = "GOCART2G";}
     else                   { $aero = "GOCART.data"; }
-    if ( $cubed ) { 
+    if ( $cubed ) {
          $dycore = "FV3";
          if ($hist_im >= $ogcm_im) { $INTERPOLATE_SST = 1 }
          else                      { $INTERPOLATE_SST = 0 }
-    } else { 
+    } else {
          $dycore = "FV";
          if ($agcm_im >= $ogcm_im) { $INTERPOLATE_SST = 1 }
          else                      { $INTERPOLATE_SST = 0 }
@@ -10142,7 +10152,7 @@ sub init_agcm_rc {
     AGCM_label_subst("\@NX", $nx);
     AGCM_label_subst("\@NY", $ny);
     AGCM_label_subst("\@NUM_READERS", $num_readers);
-    AGCM_label_subst("\@NUM_WRITERS", 1); #_RT: for now, it seems not good to have it larger than 1 
+    AGCM_label_subst("\@NUM_WRITERS", 1); #_RT: for now, it seems not good to have it larger than 1
 
     AGCM_label_subst("\@OCEAN_NAME", $ocean_name);
     AGCM_label_subst("\@OGCM_IM", $ogcm_im);
@@ -10219,7 +10229,7 @@ sub init_agcm_rc {
     AGCM_label_subst("\@LDAS_INCR"   , $ldas_flag);
 
     #  Choice of LSM parameters
-    if ( "$landbcs" eq "Icarus-NLv3" ) { 
+    if ( "$landbcs" eq "Icarus-NLv3" ) {
        AGCM_label_subst("\@LSM_PARMS" , " ");
     } else {
        AGCM_label_subst("\@LSM_PARMS" , "#");
@@ -10227,7 +10237,7 @@ sub init_agcm_rc {
 
     #  Choice of Coupling
     AGCM_label_subst("\@MOM6" , "#");
-    if ( $coupled ) { 
+    if ( $coupled ) {
        AGCM_label_subst("\@COUPLED"   , " ");
        AGCM_label_subst("\@DATAOCEAN" , "#");
        AGCM_label_subst("\@CICE6" , "");
@@ -10256,11 +10266,11 @@ sub init_agcm_rc {
         AGCM_label_subst("\@OX_RELAXTIME", "0.00");
     }
 
-    # precip forcing: 
+    # precip forcing:
     #   default is based on NCA settings (but line is commented since we don't want this done)
     if ( $pcp_forced ) {
         $pcp_fntmpl = "d5_merra/Y%y4/M%m2/d5_merra.tavg1_2d_lfo_Nx_corr.%y4%m2%d2_%h230z.nc";
-        #if (r21c) { $pcp_fntmpl = " "}; # ADD when pcp files are ready 
+        #if (r21c) { $pcp_fntmpl = " "}; # ADD when pcp files are ready
     } else {
         if ( $nymd < 19890101 ) {
            $pcp_fntmpl = "d5_merra_jan79/diag/Y%y4/d5_merra_jan79.tavg1_2d_lfo_Nx_corr.%y4%m2%d2_%h230z.nc";
@@ -10271,7 +10281,7 @@ sub init_agcm_rc {
         }
     }
     AGCM_label_subst("\@PRECIP_FILE", "$pcp_fntmpl");
-    
+
 }
 
 #=======================================================================
@@ -10351,10 +10361,10 @@ sub copy_resources {
               $missing{$g5name}++;
           }
           if ($fname eq "GEOS_ChemGridComp.rc") {
-              if ($gocart_tracers) { 
+              if ($gocart_tracers) {
                                      $vvflgs  =  "ENABLE_GOCART=.TRUE.";
                                      $vvflgs .= ",ENABLE_GOCART_DATA=.FALSE." }
-              else                 { 
+              else                 {
                                      $vvflgs  =  "ENABLE_GOCART=.FALSE.";
                                      $vvflgs .= ",ENABLE_GOCART_DATA=.TRUE." }
               if ($gaasfdbk)       { $vvflgs .= ",ENABLE_GAAS=.TRUE." }
@@ -10400,7 +10410,7 @@ sub copy_resources {
               @bkglfo_files = (<$ldashold/$expid_old.bkg.lfo*.nc4>);
               die ">>> Error <<< No $expid_old lfo files found in $ldashold;"
                   unless scalar(@bkglfo_files);
-              
+
               foreach $fname_old ( @bkglfo_files ) {
                   ($fname = basename($fname_old)) =~ s/$expid_old/$expid/;
                   cp($fname_old, "$target/$fname");
@@ -10636,7 +10646,7 @@ sub copy_resources {
 
           } else {
              print "ERROR: Computing center unknown\n";
-          } 
+          }
       }
 
       if ( %missing ) {
@@ -10673,8 +10683,8 @@ sub copy_resources {
                cp("$fn", "$fvhome/run");
             }
          }
-	 if ( -d "$fvetc/atmens/R21C" ){     
-	    my @files = glob("$fvetc/atmens/R21C" . "/*");	 
+	 if ( -d "$fvetc/atmens/R21C" ){
+	    my @files = glob("$fvetc/atmens/R21C" . "/*");
             foreach my $fn ( @files ) {
                cp("$fn","$fvhome/run/atmens");
             }
@@ -10682,12 +10692,12 @@ sub copy_resources {
       }
 
       # Update gocart files for pre-2000 case
-      if ( $r21c   ) { $casedir = "R21C"  };     
-      if ( $geosit ) { $casedir = "GEOSIT"};     
+      if ( $r21c   ) { $casedir = "R21C"  };
+      if ( $geosit ) { $casedir = "GEOSIT"};
       if ( $r21c || $geosit ){
          if ( $nymdb < 20000331 && $hhb < 23 ) {
-	    if ( -d "$fvetc/$casedir" ){     
-	       my @files = glob("$fvetc/$casedir/19600101-20000331/" . "/*");	 
+	    if ( -d "$fvetc/$casedir" ){
+	       my @files = glob("$fvetc/$casedir/19600101-20000331/" . "/*");
                foreach my $fn ( @files ) {
                   cp("$fn","$fvhome/run/gocart");
                }
@@ -10734,7 +10744,7 @@ sub copy_resources {
           ed_ncep_rc("gsi_sens.rc.tmpl","run");
 
           # overwrite some of the RC files when setting up for MERRA2
-          if( $merra2 ) { 
+          if( $merra2 ) {
             $cmd = "$fvbin/setup_4merra2.pl $fvhome $nymdb $hhb $ana_im $ana_jm $siglevs";
             print "$cmd\n";
             system($cmd);
@@ -10801,8 +10811,8 @@ sub copy_resources {
        }
     }
   }
-  if ( $r21c   ) { $casedir = "R21C"  };     
-  if ( $geosit ) { $casedir = "GEOSIT"};     
+  if ( $r21c   ) { $casedir = "R21C"  };
+  if ( $geosit ) { $casedir = "GEOSIT"};
   if ( $r21c || $geosit ){
     mkdir ("$fvhome/run/gmao_satinfo.db");
     if ( -d "$fvetc/gmao_satinfo.db/$casedir" ) {
@@ -10873,7 +10883,7 @@ sub find_expid {
         }
     }
     return $expid_found;
-}    
+}
 
 #=======================================================================
 sub edit_collections {
@@ -10918,11 +10928,11 @@ sub timeLagStartHours {
     $numhrs = shift @_;
     $deg    = shift @_;
     $taub   = shift @_;
-        
+
     $lag1 = $numhrs - $taub;
     if ($lag1 < 0) { $lag1 = 0; $deg = 1; }
-    $lag1  = sprintf "%02d", $lag1; 
-     
+    $lag1  = sprintf "%02d", $lag1;
+
     return "$lag1";
 }
 
@@ -11175,7 +11185,7 @@ sub pause {
 # => $dflt: (optional) default value to use for <cr> response
 # => $ANS:  (optional) store this response in the input file
 #                      regardless of the actually user response.
-# 
+#
 # local variables
 # => $ans1: user input
 # => $ans2: user response (i.e. dflt response if user inputs <cr>)
@@ -11251,7 +11261,7 @@ sub query {
 # input parameters
 # => prompt: use this line to prompt for a response
 # => dflt: (optional) default value to use for <cr> response
-# 
+#
 # Notes
 # 1. Use this alternative for query() when you do not want to store the
 #    prompt and response.
@@ -11407,7 +11417,7 @@ sub edit_resources {
   #-------------------
   @rmTilde = ();
   find(\&find_tilde_files, $fvhome);
-  foreach (@rmTilde) { print "removing $_\n"; unlink $_ } 
+  foreach (@rmTilde) { print "removing $_\n"; unlink $_ }
 
   print <<"EOF";
 
@@ -11442,7 +11452,7 @@ EOF
 
   $editor = $option{$ans};
   $editor = $option{$dflt} unless $editor;
-      
+
   return 0 if $editor eq "QUIT";
 
   if ( lc $editor ne "quit" ) {
@@ -11525,7 +11535,7 @@ sub save_inputs {
 sub merge_txt {
   my ($sources,$target) = @_;
 
-  open my $out, '>>', $target or die "Could not open '$target' for appending\n"; 
+  open my $out, '>>', $target or die "Could not open '$target' for appending\n";
   foreach my $file (@$sources) {
     if (open my $in, '<', $file) {
         while (my $line = <$in>) {
@@ -11620,7 +11630,7 @@ sub write_saved_inputs {
     print "  Output file written: $save_file\n\n";
 
     return;
-}   
+}
 
 #=======================================================================
 # name - while3
