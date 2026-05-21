@@ -493,11 +493,7 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
   while3 ( \&get_rem_acct_info );
   while3 ( \&get_specific_info );
 
-##ygyu
-#if(0){
-
   get_dimsg5gcm();
-
 
 # User defined options
 # --------------------
@@ -520,6 +516,9 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
   while3 ( \&def_admdims );
   while3 ( \&inq_anasens );
 
+###ygyu
+#if(0){
+
 # Continue with user defined options
 # ----------------------------------
   while3 ( \&get_times  );
@@ -538,6 +537,9 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
   while3 ( \&get_rstype );
   while3 ( \&get_GID );
 
+#}
+## ygyu: done
+  
 # Create subdirectories in FVHOME
 # -------------------------------
   mkdir_fvhome();
@@ -3096,7 +3098,8 @@ sub get_fvhome {
   } elsif ( $siteID eq "nccs" ) {
         $mywork = "/discover/nobackup";
         $jobqueue2 = "SBATCH --partition=datamove";
-        $fvhome = "/discover/nobackup/$user/$expid";
+        ## $fvhome = "/discover/nobackup/$user/$expid";
+        $fvhome = "/media/$user/MyPassport_1T/$user/fvwork/$expid";
 
         if (defined($FVHOME)) {
             $mywork = dirname("$FVHOME");
@@ -4624,7 +4627,7 @@ sub get_restart5 {
   $defexp = "u000_${res}${vres}";
   $nymdb = "20190116";
   $nymde = "20190119";
-  @inputs = qw( /archive/u/jstassi/restarts/GEOSadas-5_24_0 );
+  @inputs = qw( /discover/nobackup/projects/gmao/dadev/rtodling/archive/541/Milan/x0050/rs/Y2023/M10/x0050.rst.20231004_15z.tar );
   $defexploc = "$acqloc";
   if ( $do4dvar ) {
     $anastagedir = "/dev/null";
@@ -4863,7 +4866,7 @@ sub get_dimsg5gcm {
    elsif ($r21c)  { $ores = "C";
                     $res  = "C360";
                   }
-   else           { $ores = "f"   }
+   else           { $ores = "c"   }     # change f to c
 
 print <<"EOF";
 
@@ -10347,6 +10350,7 @@ sub copy_resources {
       }
       foreach $fname ( @g5rc_files ) {
 
+#          echo "fname in g5rc_files =  "
           $g5name = $fname;
           $g5name = $g5hist_rc if ($g5name eq "HISTORY.rc.tmpl");
           $g5name = $g5prog_rc if ($g5name eq "GCMPROG.rc.tmpl");
