@@ -153,12 +153,19 @@
 
 #  Getting started...
 #  ------------------
+   printf "\nnail -7: fvpas"
+   printf "argv = %s \n"   $argv
    Call  Initialize_()
    printf "\nnail 1: fvpas"
    printf "argv = %s \n"   $argv
+   exit 1
+
+
    Call_ ParseCmdLine_  $argv
    printf "nail 3 af Call_ ParseCmdLine_ : fvpas \n"
    Call  SanityCheck_()
+   echo "nail4 DOING_ANA = $DOING_ANA"
+
 
    setenv DO4DVAR 0
 

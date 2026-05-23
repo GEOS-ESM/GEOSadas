@@ -3099,7 +3099,8 @@ sub get_fvhome {
         $mywork = "/discover/nobackup";
         $jobqueue2 = "SBATCH --partition=datamove";
         ## $fvhome = "/discover/nobackup/$user/$expid";
-        $fvhome = "/media/$user/MyPassport_1T/$user/fvwork/$expid";
+        ## $fvhome = "/media/$user/MyPassport_1T/$user/fvwork/$expid";
+        $fvhome = "$HOME/fast_scratch/$expid";
 
         if (defined($FVHOME)) {
             $mywork = dirname("$FVHOME");

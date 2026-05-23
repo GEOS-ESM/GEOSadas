@@ -584,9 +584,9 @@ exit 1
 # -------------------
   if ( -d "$FVHOME/run/gocart" ) then
      echo "nail x1"
-       cp -r "$FVHOME/run/gocart/." .
-##            cp -r $FVHOME/run/gocart .
-##  find "$FVHOME/run/gocart/" -maxdepth 1 -type f -exec cp {} . \;
+       cp -r "$FVHOME/run/gocart/." .                                 # new way
+##            cp -r $FVHOME/run/gocart .                              # old way
+##  find "$FVHOME/run/gocart/" -maxdepth 1 -type f -exec cp {} . \;   # another way
      echo "nail y"
   endif
 
@@ -2092,25 +2092,25 @@ exit 1
      foreach rs ( $sfc_brs_list )
           set fvdate = (`fndate.pl $rs`)
           set bkgfile  = `echorc.x -template $EXPID $fvdate[1] $fvdate[2] surface_bkg_filename`
-         /bin/cp ${rs} $bkgfile &
+         /bin/ln -fs ${rs} $bkgfile &
      end
      foreach rs ( $upa_brs_list )
           set fvdate = (`fndate.pl $rs`)
           set bkgfile  = `echorc.x -template $EXPID $fvdate[1] $fvdate[2] upper-air_bkg_filename`
-         /bin/cp ${rs} $bkgfile &
+         /bin/ln -fs ${rs} $bkgfile &
      end
      if ( $?chm_brs_list ) then
          foreach rs ( $chm_brs_list )
               set fvdate = (`fndate.pl $rs`)
               set bkgfile  = `echorc.x -template $EXPID $fvdate[1] $fvdate[2] chem_bkg_filename`
-             /bin/cp ${rs} $bkgfile &
+             /bin/ln -fs ${rs} $bkgfile &
          end
      endif
      if ( $?aer_brs_list ) then
          foreach rs ( $aer_brs_list )
               set fvdate = (`fndate.pl $rs`)
               set bkgfile  = `echorc.x -template $EXPID $fvdate[1] $fvdate[2] aero_bkg_filename`
-             /bin/cp ${rs} $bkgfile &
+             /bin/ln -fs ${rs} $bkgfile &
          end
      endif
      wait
