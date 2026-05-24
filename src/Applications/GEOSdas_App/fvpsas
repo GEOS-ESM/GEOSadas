@@ -158,15 +158,12 @@
    Call  Initialize_()
    printf "\nnail 1: fvpas"
    printf "argv = %s \n"   $argv
-   exit 1
 
 
    Call_ ParseCmdLine_  $argv
    printf "nail 3 af Call_ ParseCmdLine_ : fvpas \n"
    Call  SanityCheck_()
    echo "nail4 DOING_ANA = $DOING_ANA"
-
-
    setenv DO4DVAR 0
 
 #
@@ -224,6 +221,7 @@
              Call UpdateHistoryResource4Forecast_()
         endif
 
+
 #       Link to GEOS-5 GCM boundary condition files
 #       -------------------------------------------
         lnbcs $GcmBegDate || exit 95
@@ -267,13 +265,15 @@
                                                        zeit_ci.x CopyGCMRS
         Call CopyGcmRestarts4DAS_()
         wait # while copies are being done in the background
-        Call CopyMOMRestarts_( 0 )
+# ygyu change back        
+#        Call CopyMOMRestarts_( 0 )
                                                        zeit_co.x CopyGCMRS
 
 #       Link to GEOS-5 GCM boundary condition files
 #       -------------------------------------------
                                                        zeit_ci.x lnbcs
-        lnbcs $GcmBegDate || exit 95
+# ygyu change back        
+#        lnbcs $GcmBegDate || exit 95
                                                        zeit_co.x lnbcs
 
 #       Determine time of trajectory output in forecast mode

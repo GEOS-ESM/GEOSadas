@@ -693,7 +693,7 @@ exit 1
   foreach rs ( d $grs_list )
      if ( "$rs" == "d" ) then
         set rsfile = $FVHOME/recycle/$EXPID.rst.lcv.$itime.bin
-        /bin/cp $rsfile ./d_rst
+        /bin/ln -s $rsfile ./d_rst
         set mydate = (`rst_date ./d_rst`)
      else
         set rsbase = $FVHOME/recycle/$EXPID.${rs}_rst.$itime
@@ -704,7 +704,7 @@ exit 1
                 if ("$grs_boot" =~ *$rs*) continue
             endif
         endif
-        /bin/cp $rsfile ./${rs}_rst &
+        /bin/ln -s $rsfile ./${rs}_rst &
      endif
   end
 
