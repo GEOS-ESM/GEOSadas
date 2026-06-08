@@ -3,8 +3,11 @@
 setenv FVROOT /home/dao_ops/GEOSadas-5_43_0/GEOSadas/install-SLES15
 set path = ( . $FVROOT/bin $path )
 
-setenv DRYRUN #echo
+setenv DRYRUN # echo
 setenv OUTFIGS $TMP/SwellExperiments/Figs
+#setenv XTRA "--xGSI --common"
+setenv XTRA 
+setenv TOTRAIN 0
 
 set humKX = (`echorc.x -rc ostats.rc -ncol 2 specific_humidity`)
 set humNM = (`echorc.x -rc ostats.rc -ncol 1 specific_humidity`)
@@ -24,24 +27,28 @@ set ozNM = (`echorc.x -rc ostats.rc -ncol 1 ozone`)
 set stwKX = (`echorc.x -rc ostats.rc -ncol 2 satwind`)
 set stwNM = (`echorc.x -rc ostats.rc -ncol 1 satwind`)
 
-set humKX = ()
-set acTKX = ()
-set radKX = ()
-set gpsKX = ()
+#set humKX = ()
+#set acTKX = ()
+#set radKX = ()
+#set gpsKX = ()
 #set ozKX  = ()
-set stwKX = ()
+#set stwKX = ()
 
 set expidGSI  = x0054
+set expidGSI  = null
 set expidGSI  = x0053RPY
 set expidJEDI = j4drpy
+set expidJEDI = null
+set expidJEDI = j4drp1
 
-#set nymd = 20260113
-set nymd = 20260120
-set nhms = 000000
+foreach nymd ( 20260115 )
+foreach nhms ( 000000 060000 120000 180000 )
 
 set ODSarch  = $DAD/archive/544
 set ODSarch  = $DAD/archive/543
 set IODAarch = $DAD/archive/JEDI/543
+
+if ( ! -d $OUTFIGS ) mkdir -p $OUTFIGS
 
 # GEOS-GSI experiment output
 if ( $expidGSI != "null" ) then
@@ -141,10 +148,16 @@ if ( $expidGSI != "null" ) then
     @ ic++
   end
   wait
+  if ( $TOTRAIN ) then
+     scp $OUTFIGS/$expidGSI.*.${nymd}_${hh}z.png train:/san_agcm/geos5/$expidGSI/obs/images
+  endif
 
 endif # GEOS-GSI
 
 # GEOS-JEDI experiment output
+
+set radKX = (`echorc.x -rc ostats.rc -ncol 2 jedi_radiance`)
+set radNM = (`echorc.x -rc ostats.rc -ncol 1 jedi_radiance`)
 
 if ( $expidJEDI != "null" ) then
 
@@ -214,8 +227,8 @@ if ( $expidJEDI != "null" ) then
     set jhh   = `echo $jnhms | cut -c1-2`
     set  hh   = `echo $nhms  | cut -c1-2`
     set instr = $radNM[$ic]
-  
-    $DRYRUN ~/src/python/JEDI/OBS/ioda_prs.binned.py --obtype radiance --satid $kx \
+
+    $DRYRUN ~/src/python/JEDI/OBS/ioda_prs.binned.py --obtype radiance --satid $kx $XTRA \
            --fig $OUTFIGS/$expidJEDI.${instr}.${nymd}_${hh}z.png \
            --tarname $IODAarch/$expidJEDI/jedi/obs/Y$jyyyy/M$jmm/$expidJEDI.jedi_hofx.${jnymd}_${jhh}z.tar \
            ${instr}.${jnymd}T${jhh}0000Z.nc4 &
@@ -261,4 +274,10 @@ if ( $expidJEDI != "null" ) then
   end
   wait
 
+  if ( $TOTRAIN ) then
+     scp $OUTFIGS/$expidJEDI.*.${nymd}_${hh}z.png train:/san_agcm/geos5/$expidJEDI/obs/images
+  endif
 endif # GEOS-JEDI
+
+end # nhms
+end # nymd

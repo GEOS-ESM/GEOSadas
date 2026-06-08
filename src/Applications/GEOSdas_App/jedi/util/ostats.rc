@@ -9,9 +9,30 @@ radiance::
  iasi_metop-c    877
  atms_npp        900
  atms_n20        920
+ atms_n21        921
  ssmis_f17       717
  avhrr_metop-b   626
  avhrr_metop-c   627
+ gmi_gpm         706
+ cris-fsr_n20    960
+#cris-fsr_n21    961
+ amsr2_gcom-w1   550
+::
+
+jedi_radiance::
+ amsua_metop-b   326
+ amsua_metop-c   327
+ mhs_metop-b     826
+ mhs_metop-c     827
+ airs_aqua        49     
+ iasi_metop-b    876
+ iasi_metop-c    877
+ atms_npp        900
+ atms_n20        920
+ atms_n21        921
+ ssmis_f17       717
+ avhrr3_metop-b   626
+ avhrr3_metop-c   627
  gmi_gpm         706
  cris-fsr_n20    960
 #cris-fsr_n21    961
