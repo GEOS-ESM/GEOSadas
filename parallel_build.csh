@@ -13,7 +13,7 @@ if ($name != $name:t) then
    set scriptname = $name:t
    cd $name:h
 endif
-set srcdir = `pwd -L`
+set srcdir = `pwd`
 setenv ESMADIR $srcdir
 
 # Save the original argv because I'm not a good
@@ -30,25 +30,26 @@ while ($#argv)
    shift
 end
 
-if (! -d ${ESMADIR}/@env) then
+if (-d ${ESMADIR}/@env || -d ${ESMADIR}/env@ || -d ${ESMADIR}/env) then
+   if ( "$DEVELOP" == "TRUE" ) then
+      echo "Checking out development branches of GEOSgcm_GridComp, GEOSgcm_App, GMAO_Shared, and GEOS_Util"
+      mepo develop GEOSgcm_GridComp GEOSgcm_App GMAO_Shared GEOS_Util
+   endif
+   mepo status
+else
    if ($?PBS_JOBID || $?SLURM_JOBID) then
       echo " mepo clone must be run!"
       echo " This requires internet access but you are on a compute node"
       echo " Please run from a head node"
       exit 1
    else
-      echo "Running mepo initialization"
-      mepo init
-      mepo clone
+      echo "Running mepo clone"
+      mepo clone --partial blobless
       if ( "$DEVELOP" == "TRUE" ) then
-         echo "Checking out development branches of GEOSgcm_GridComp and GEOSgcm_App"
-         mepo develop GEOSgcm_GridComp GEOSgcm_App
+         echo "Checking out development branches of GEOSgcm_GridComp, GEOSgcm_App, GMAO_Shared, and GEOS_Util"
+         mepo develop GEOSgcm_GridComp GEOSgcm_App GMAO_Shared GEOS_Util
       endif
-   endif
-else
-   if ( "$DEVELOP" == "TRUE" ) then
-      echo "Checking out development branches of GEOSgcm_GridComp and GEOSgcm_App"
-      mepo develop GEOSgcm_GridComp GEOSgcm_App
+      mepo status
    endif
 endif
 
@@ -57,5 +58,9 @@ set argv = "$origargv"
 
 if ( -d ${ESMADIR}/@env ) then
    ${ESMADIR}/@env/build.csh -esmadir $ESMADIR $argv
+else if ( -d ${ESMADIR}/env@ ) then
+   ${ESMADIR}/env@/build.csh -esmadir $ESMADIR $argv
+else if ( -d ${ESMADIR}/env ) then
+   ${ESMADIR}/env/build.csh -esmadir $ESMADIR $argv
 endif
 

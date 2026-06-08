@@ -1,10 +1,27 @@
 version: 2.1
 
+parameters:
+  GHA_Actor:
+    type: string
+    default: ""
+  GHA_Action:
+    type: string
+    default: ""
+  GHA_Event:
+    type: string
+    default: ""
+  GHA_Meta:
+    type: string
+    default: ""
+
 # Anchors to prevent forgetting to update a version
-baselibs_version: &baselibs_version v7.23.0
+os_version: &os_version ubuntu24
+baselibs_version: &baselibs_version v8.32.0
+bcs_version: &bcs_version v12.0.0
+tag_build_arg_name: &tag_build_arg_name gcmversion
 
 orbs:
-  ci: geos-esm/circleci-tools@2.10
+  ci: geos-esm/circleci-tools@5
 
 workflows:
   build-test:
