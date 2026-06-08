@@ -9,6 +9,7 @@ radiance::
  iasi_metop-c    877
  atms_npp        900
  atms_n20        920
+ atms_n21        921
  ssmis_f17       717
  avhrr_metop-b   626
  avhrr_metop-c   627
@@ -28,6 +29,7 @@ jedi_radiance::
  iasi_metop-c    877
  atms_npp        900
  atms_n20        920
+ atms_n21        921
  ssmis_f17       717
  avhrr3_metop-b   626
  avhrr3_metop-c   627

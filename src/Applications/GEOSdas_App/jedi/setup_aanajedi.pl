@@ -407,6 +407,7 @@ sub init {
                      amsua_n15.yaml
                      amsua_n19.yaml
                      atms_n20.yaml
+                     atms_n21.yaml
                      atms_npp.yaml
                      avhrr3_metop-b.yaml
                      avhrr3_metop-c.yaml
