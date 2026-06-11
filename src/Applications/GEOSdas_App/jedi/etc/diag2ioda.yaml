@@ -85,7 +85,7 @@ models:
     - mhs_n19
     - mls55_aura
     - omi_aura
-#   - omieff_aura
+    - omieff_aura
     - ompslpnc_n21
     - ompslpnc_npp
     - ompsnm_npp
