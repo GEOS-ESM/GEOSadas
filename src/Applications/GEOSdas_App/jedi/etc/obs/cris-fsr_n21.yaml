@@ -883,6 +883,7 @@
             - 4.0
             - 2.0
             - 4.0
+            cldthreshold_clearsky: 0.01
             cloud detection criteria:
             - 0.60
             - 0.68
