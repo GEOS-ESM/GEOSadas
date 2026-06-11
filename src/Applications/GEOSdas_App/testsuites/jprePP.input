@@ -1,21 +1,21 @@
 #-------------
-# j4drpy.input
+# jprePP.input
 #-------------
 
 codeID: 523f29e
-description: j4drpy__GEOSadas-5_44_x__agrid_C360__ogrid_C
+description: jprePP__GEOSadas-5_44_x__agrid_C720__ogrid_C
 fvsetupID: f7aaa973c7
 
 ---ENDHEADERS---
 
-Remote account for Intranet plots? [dao_it@train]
+Remote account for Intranet plots? [rtodling@train]
 > 
 
 Is this a MERRA2 (1), GEOSIT (2), R21C (3) experiment? [0]
 > 
 
 AGCM Horizontal Resolution? [C48]
-> C360
+> C720
 
 AGCM Vertical Resolution? [72]
 > 
@@ -23,13 +23,13 @@ AGCM Vertical Resolution? [72]
 OGCM Resolution? [f]
 > C
 
-EXPID? [u000_C360]
+EXPID? [u000_C720]
 > $expid
 
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [j4drpy__GEOSadas-5_44_x__agrid_C360__ogrid_C]
+EXPDSC? [jprePP__GEOSadas-5_41_2__agrid_C720__ogrid_C]
 > 
 
 Land Boundary Conditions? [Icarus_Updated]
@@ -38,10 +38,10 @@ Land Boundary Conditions? [Icarus_Updated]
 Catchment Model choice? [1]
 > 
 
-FVHOME? [/discover/nobackup/dao_it/j4drpy]
-> /discover/nobackup/projects/gmao/dadev/rtodling/JEDI/x51/$expid
+FVHOME? [/discover/nobackup/rtodling/jprePP]
+> /discover/nobackup/projects/gmao/dadev/TSE_staging/rtodling/543/$expid
 
-The directory /discover/nobackup/projects/gmao/dadev/rtodling/JEDI/x51/j4drpy already exists. Clean it? [y]
+The directory /discover/nobackup/projects/gmao/dadev/rtodling/jprePP does not exist. Create it now? [y]
 > 
 
 Processing nodes (1:Haswell, 2:Skylake, 3:Cascase, 4:Milan)? [2]
@@ -81,7 +81,7 @@ AeroCom? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/AeroCom]
 > 
 
 FVICS? [/archive/u/jstassi/restarts/GEOSadas-5_24_0]
-> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_44/c360/rs/Y2025/M11/c360.rst.20251128_21z.tar
+> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_42/f5421_fpp/rs/Y2025/M12/f5421_fpp.rst.20251228_21z.tar 
 
 Run model-adjoint-related applications (0=no,1=yes)? [0]
 > 1
@@ -98,11 +98,11 @@ Run singular vector experiments (0=n,1=yes)? [0]
 Run analysis-sensitivity applications (0=no,1=yes)? [0]
 > 1
 
-Verifying experiment id: [j4drpy]
+Verifying experiment id: [jprePP]
 > 
 
-Ending year-month-day? [20191121]
-> 20231010
+Ending year-month-day? [20210921]
+> 20260206
 
 Length of FORECAST run segments (in hours)? [123]
 > 
@@ -110,14 +110,14 @@ Length of FORECAST run segments (in hours)? [123]
 Number of one-day DAS segments per PBS job? [1]
 > 
 
-Number of PEs in the zonal direction (NX)? [10]
-> 12
+Number of PEs in the zonal direction (NX)? [28]
+> 24
 
-Number of PEs in the meridional direction (NY)? [36]
-> 48
+Number of PEs in the meridional direction (NY)? [48]
+> 144
 
 Job nickname? [g5das]
-> g5j4d
+> $expid
 
 Run in split executable mode (1=yes;0=no)? [1]
 > 
@@ -134,23 +134,23 @@ Analysis vertical levels (sig))? [72]
 GSI grid resolution? [NA]
 > 
 
-GEOS grid resolution instead? [d]
+GEOS grid resolution instead? [e]
 > 
 
 Ensemble Hybrid (<0;3=3dHyb;4=Hyb4d)? [-1]
 > 4
 
-Number of procs in the zonal direction (NX)? [12]
-> 16
+Number of procs in the zonal direction (NX)? [16]
+> 27
 
-Number of procs in the meridional direction (NY)? [20]
-> 42
-
-Which main class of ObsSys (1: NRT; 2: MERRA; 3: MERRA-2; 4: GEOS-IT; 5: R21C)? [1]
+Number of procs in the meridional direction (NY)? [42]
 > 
 
+Which main class of ObsSys (1: NRT; 2: MERRA; 3: MERRA-2; 4: GEOS-IT; 5: R21C)? [1]
+> 1
+
 OBSERVING SYSTEM CLASSES?
-> disc_airs_bufr,gmao_amsr2_bufr,gmao_gmi_bufr,mls_nrt_nc,ncep_1bamua_bufr,ncep_acftpfl_bufr,ncep_atms_bufr,ncep_aura_omi_bufr,ncep_avcsam_bufr,ncep_avcspm_bufr,ncep_crisfsr_bufr,ncep_goesfv_bufr,ncep_gpsro_bufr,ncep_mhs_bufr,ncep_mtiasi_bufr,ncep_prep_bufr,ncep_satwnd_bufr,ncep_ssmis_bufr,ncep_tcvitals,npp_ompsnm_bufr,n21_ompslp_nc,gmao_mlst_bufr,aura_omieff_nc,npp_ompslp_nc,ncep_goescsr_bufr
+> disc_airs_bufr,gmao_amsr2_bufr,gmao_gmi_bufr,mls_nrt_nc,ncep_1bamua_bufr,ncep_acftpfl_bufr,ncep_atms_bufr,ncep_aura_omi_bufr,ncep_avcsam_bufr,ncep_avcspm_bufr,ncep_crisfsr_bufr,ncep_goesfv_bufr,ncep_gpsro_bufr,ncep_mhs_bufr,ncep_mtiasi_bufr,ncep_prep_bufr,ncep_satwnd_bufr,ncep_ssmis_bufr,ncep_tcvitals,npp_ompsnm_bufr,n21_ompslp_nc,gmao_mlst_bufr,aura_omieff_nc,npp_ompslp_nc
 
 CHECKING OBSYSTEM? [2]
 > 1
@@ -221,17 +221,17 @@ Which template? [GCMPROG.rc.tmpl]
 Output Restart TYPE (bin or nc4) [nc4]
 > 
 
-Select group: [s0818]
+Select group: [g0613]
 > g0613
 
-Replayed Ensemble (from OPS)?  [yes]
-> 
+Replayed Ensemble?  [yes]
+>
 
 Replay exp name? [x0046d]
-> x0050
+> f5421_fpp
 
 Replay archive directory? [/discover/nobackup/projects/gmao/dadev/rtodling/archive/x0046d]
-> /discover/nobackup/projects/gmao/dadev/rtodling/archive/541/Milan/x0050
+> /home/dao_ops/f5421_fpp/run/.../archive/
 
 Edit COLLECTIONS list in run/HISTORY.rc.tmpl (y/n)? [n]
 > 
