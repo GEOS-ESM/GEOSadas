@@ -1,21 +1,4 @@
 cost function:
-  cost type: 3D-Var
-  jb evaluation: false
-  time window:
-    begin: $JEDI_ISO_DATE_BEG
-    end: $JEDI_ISO_DATE_END
-    bound to include: begin
-  geometry:
-    fms initialization:
-      namelist filename: ./fv3-jedi/fv3files/fmsmpp.nml
-      field table filename: ./fv3-jedi/fv3files/field_table_gmao
-    akbk: ./fv3-jedi/fv3files/akbk@JEDI_BKG_VRES.nc4
-    layout:
-    - @JEDI_VAR_XLAYOUT
-    - @JEDI_VAR_YLAYOUT
-    npx: @JEDI_BKG_HRES
-    npy: @JEDI_BKG_HRES
-    npz: @JEDI_BKG_VRES
   analysis variables: &anavars
   - eastward_wind
   - northward_wind
@@ -34,7 +17,7 @@ cost function:
   - fraction_of_ice
   - skin_temperature_at_surface
   background:
-    datetime: $JEDI_ISO_DATE_ANA
+    datetime: $JEDI_ISO_DATE_BEG
     filetype: cube sphere history
     provider: geos
     compute edge pressure from surface pressure: true
@@ -43,7 +26,7 @@ cost function:
     filenames:
     - bkg.%yyyy%mm%ddT%hh%MM%ssZ.nc4
     - fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKG_HRES.nc4
-    state variables: &statevars
+    state variables:
     - eastward_wind
     - northward_wind
     - air_temperature
@@ -84,6 +67,7 @@ cost function:
     - eastward_wind_at_surface
     - northward_wind_at_surface
     - sea_surface_temperature
+#   - mole_fraction_of_carbon_dioxide_in_air 
     field io names: &field_io_names
       eastward_wind: ua
       northward_wind: va
@@ -119,9 +103,11 @@ cost function:
       air_pressure_levels: pe
       air_pressure_at_surface: ps
       sea_surface_temperature: ts_found
+#     mole_fraction_of_carbon_dioxide_in_air: co2
   background error:
     covariance model: SABER
 #   covariance type: gsi static covariance
+#   adjoint test: true
     saber central block:
       saber block name: gsi hybrid covariance
       read:
@@ -148,15 +134,6 @@ cost function:
       inverse interpolator:
         local interpolator type: oops unstructured grid interpolator
 
-#   saber outer blocks:
-#   - saber block name: gsi interpolation to model grid
-#     gsi akbk: ./fv3-jedi/fv3files/akbk@JEDI_BKG_VRES.nc4
-#     gsi error covariance file: ./fv3-jedi/gsibec/gsibec_coefficients_l@JEDI_BKG_VRESx@JEDI_GSIBEC_NLONy@JEDI_GSIBEC_NLAT.nc4
-#     gsi berror namelist file: ./fv3-jedi/gsibec/gsibec_configuration_l@JEDI_BKG_VRESx@JEDI_GSIBEC_NLONy@JEDI_GSIBEC_NLAT.nml
-#     processor layout x direction: @JEDI_VAR_GSIXLAYOUT
-#     processor layout y direction: @JEDI_VAR_GSIYLAYOUT
-#     debugging mode: false
-
       state variables to inverse: *anavars
     linear variable change:
       linear variable change name: Control2Analysis
@@ -164,6 +141,38 @@ cost function:
       output variables: *anavars
 # OBSYAML_BEG
 # OBSYAML_END
+  cost type: 3D-FGAT
+  jb evaluation: false
+  time window:
+    begin: $JEDI_ISO_DATE_BEG
+    length: PT6H
+    bound to include: begin
+  geometry:
+    fms initialization:
+      namelist filename: ./fv3-jedi/fv3files/fmsmpp.nml
+      field table filename: ./fv3-jedi/fv3files/field_table_gmao
+    akbk: ./fv3-jedi/fv3files/akbk@JEDI_BKG_VRES.nc4
+    layout:
+    - @JEDI_VAR_XLAYOUT
+    - @JEDI_VAR_YLAYOUT
+    npx: @JEDI_BKG_HRES
+    npy: @JEDI_BKG_HRES
+    npz: @JEDI_BKG_VRES
+  model:
+    name: PSEUDO
+    tstep: PT3H
+    filetype: cube sphere history
+    provider: geos
+    compute edge pressure from surface pressure: true
+    max allowable geometry difference: 1e-3
+    datapath: ./
+    filenames:
+    - bkg.%yyyy%mm%ddT%hh%MM%ssZ.nc4
+    - fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKG_HRES.nc4
+    field io names: *field_io_names
+  variable change:
+    variable change name: Analysis2Model
+# forecast length: PT6H
 variational:
   minimizer:
     algorithm: DRPCG
@@ -176,11 +185,32 @@ variational:
       layout:
       - @JEDI_VAR_XLAYOUT
       - @JEDI_VAR_YLAYOUT
-      npx: @JEDI_BKG_HRES
-      npy: @JEDI_BKG_HRES
+      npx: @JEDI_INC_1RES
+      npy: @JEDI_INC_1RES
       npz: @JEDI_BKG_VRES
     gradient norm reduction: 1e-3
     ninner: '100'
+    linear model:
+      name: Identity
+      increment variables: *anavars
+      field io names: &inc_io_names
+        eastward_wind: ua
+        northward_wind: va
+        air_temperature: t
+        water_vapor_mixing_ratio_wrt_moist_air: q
+        air_pressure_at_surface: ps
+        cloud_liquid_ice: qi
+        cloud_liquid_water: ql
+        rain_water: qr
+        snow_water: qs
+        mole_fraction_of_ozone_in_air: o3ppmv
+        geopotential_height_times_gravity_at_surface: phis
+        fraction_of_ocean: frocean
+        fraction_of_lake: frlake
+        fraction_of_ice: frseaice
+        skin_temperature_at_surface: ts
+      variable change: Identity
+      tstep: PT3H
     diagnostics:
       departures: ombg
     online diagnostics:
@@ -191,7 +221,7 @@ variational:
           gridtype: latlon
           datapath: ./inc
           filename: $EXPID.jedi_inc1.eta.
-          field io names: &field_io_names
+          field io names: *field_io_names
 final:
   diagnostics:
     departures: oman
@@ -203,5 +233,4 @@ output:
   datapath: ./ana
   filename: $EXPID.jedi_ana.ceta.%yyyy%mm%dd_%hh%MMz.nc4
   first: PT0H
-  frequency: PT1H
-  field io names: &field_io_names
+  frequency: PT3H

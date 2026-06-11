@@ -25,7 +25,7 @@ if ( $#argv < 2 ) then
    echo " AUTHOR"
    echo "   Ricardo Todling (Ricardo.Todling@nasa.gov), NASA/GMAO "
    echo "     Initial version: 18Oct2020    by: R. Todling"
-   echo "     Last   modified: 01May2025    by: R. Todling"
+   echo "     Last   modified: 19May2026    by: R. Todling"
    echo " \\end{verbatim} "
    echo " \\clearpage "
    exit(0)
@@ -38,7 +38,6 @@ if ( !($?FVHOME)        )  setenv FAILED   1
 if ( !($?FVWORK)        )  setenv FAILED   1
 if ( !($?GID)           )  setenv FAILED   1
 if ( !($?JEDI_OBS_OPT)  )  setenv FAILED   1
-if ( !($?JEDI_OBS_DIR)  )  setenv FAILED   1
 if ( !($?JEDI_HYBRID)   )  setenv FAILED   1
 if ( !($?JEDI_FEEDBACK_VARBC) )  setenv FAILED   1
 if ( !($?OFFLINE_IODA_DIR) ) setenv FAILED   1
@@ -188,8 +187,8 @@ if ( $JEDI_RUN_ADANA || $JEDI_OBS_OPT == 1 ) then
   endif
 endif # adjoint analysis
 
-# Link IODA observation files
-# ---------------------------
+# Link IODA files from available from offline generation
+# ------------------------------------------------------
 if ( $JEDI_OBS_OPT == 2 ) then
    pwd
    ls
@@ -201,18 +200,23 @@ if ( $JEDI_OBS_OPT == 2 ) then
       exit 1
    endif
    cd -
-   echo " ${MYNAME}: linked IODA files successfully"
+   echo " ${MYNAME}: successfully linked offline available IODA files"
 endif
 
-# Link IODA observation files
-# ---------------------------
+# Link IODA observation files that have been generated on the fly
+# ---------------------------------------------------------------
 if ( $JEDI_OBS_OPT == 3 ) then
    pwd
    ls
    cd obs
-   ln -sf $FVWORK/ioda.${nymda}_${hha}0000/* .
+   if ( "$OFFLINE_IODA_DIR" == "/dev/null/" || "$OFFLINE_IODA_DIR" == "/dev/null" ) then
+      ln -sf $FVWORK/ioda.${nymda}_${hha}0000/* .
+   else
+      echo " ${MYNAME}: inconsistent settings, cannot link IODA files, aborting ..."
+      exit 1
+   endif
    cd -
-   echo " ${MYNAME}: linked IODA files successfully"
+   echo " ${MYNAME}: successfully linked IODA files generated on the fly"
 endif
 
 # If so, feedback VarBC (from previous cycle)
@@ -236,9 +240,9 @@ if ( $JEDI_FEEDBACK_VARBC ) then
      echo "${MYNAME}: failed to retrieve vbc tar-ball"
      exit 1
    endif
-  #/bin/rm *satbias*.nc4 *aircraft*csv - NOTE: there is no fully functional aircraft VarBC TBD
-   /bin/rm *satbias*.nc4
-   # unfold tar-ball and overwrite all bias correction files
+
+  #/bin/rm *satbias*.nc4
+   # unfold tar-ball and overwrite bias correction files with those from (own) previous cycle
    tar xvf *vbc*tar
    cd -
 
@@ -246,7 +250,6 @@ if ( $JEDI_FEEDBACK_VARBC ) then
 endif
 
 # The following accommodates for the case when the satbias coeff and cov are in the same
-# file - typically the stuff in R2D2 ca June 2024.
 cd obs
 set satbcov = `ls *.sabias_cov.*nc4`
 if ( $status ) then
@@ -284,6 +287,47 @@ else
   echo "WARNING: No aircraft obs files where found ..."
 endif
 cd -
+
+# Build full yaml to run var, or grab existing yaml
+# -------------------------------------------------
+if ( -e $JEDIETC/geosvar.${nymda}_${hha}z.yaml ) then
+  echo " ${MYNAME}: using user-provided geosvar.${nymda}_${hha}z.yaml"
+else
+  cd obs
+  # get a list of available obs files
+  set obstypes = ()
+  foreach fn (`ls -r *.${nymdb}T${nhmsb}Z.nc4` )
+    set typ = `echo $fn | cut -d. -f1`
+    if ( ! -e exclude.$typ.${nymda}_${hha}z ) then
+       set obstypes = ( $typ.yaml $obstypes ) 
+    endif
+  end
+  if ( "$obstypes" == "" ) then
+     echo " ${MYNAME}: failed to gather obs to handle, aborting ..."
+     exit(2)
+  else 
+    echo " ${MYNAME}: Handling these obs-types:"
+    echo " ${MYNAME}: $obstypes "
+  endif
+  cd -
+  # Set flag for used observing system (based on GMAO db)
+  jedi_useflags.csh $nymda $nhmsa $JEDIETC/obs $JEDIWRK/Config/obs
+
+  # Assemble var-yaml
+  set obstypes = ( "0observations.yaml" $obstypes )
+  assemble_obs_yaml.pl $JEDIWRK/Config/obs $obstypes Config/obs.${nymdb}T${nhmsb}Z.yaml
+  if ( ! -e  Config/obs.${nymdb}T${nhmsb}Z.yaml ) then
+     echo " ${MYNAME}: failed to building obs.${nymdb}T${nhmsb}Z.yaml, aborting ..."
+     exit(2)
+  endif
+
+  # Construct full VAR yaml
+  /bin/cp Config/geosvar.yaml geosvar.tmpl
+  insert_file_atstr.pl Config/obs.${nymdb}T${nhmsb}Z.yaml geosvar.tmpl OBSYAML_END
+  vED -env geosvar.tmpl -o Config/geosvar.${nymda}_${hha}z.yaml
+  /bin/cp Config/geosvar.${nymda}_${hha}z.yaml $JEDIETC/geosvar.${nymda}_${hha}z.yaml
+
+endif
 
 # ensemble & background files
 setenv JEDI_GET_ENSBKG 0
@@ -431,7 +475,7 @@ if ( $JEDI_HYBRID ) then
   cd $JEDIWRK
   if ( ! -e Config/diffstates_geos.yaml ) then
      echo " ${MYNAME}: missing Config/diffstates_geos.yaml file, aborting ... "
-    exit 1
+     exit 1
   endif
   foreach cbkg (`ls bkg.*.nc4` )
      set  ttag = `echo $cbkg | cut -d. -f2`
@@ -447,17 +491,39 @@ if ( $JEDI_HYBRID ) then
    end
 
 #  Also set localization scales and beta terms
-   set lst = (`ls bkg.*.nc4`)
-   set cres  = `getgfiodim.x $lst[1] | grep -v GFIO`
-   @ jcres = $cres[1] + 1
-   set rcname = ./fv3-jedi/gsibec/hyb_gsibec_configuration_c$jcres.nml
-   set nlat = `nmlread.py $rcname GRIDOPTS nlat`
-   set nlon = `nmlread.py $rcname GRIDOPTS nlon`
-   set nlev = `nmlread.py $rcname GRIDOPTS nsig`
-   ln -sf $FVHOME/run/gmao_global_hybens_info.x${nlon}y${nlat}l${nlev}.rc hybens_info
-   if (! -e hybens_info ) then
-      echo " ${MYNAME}: cannot find gmao_global_hybens_info.x${nlon}y${nlat}l${nlev}.rc , aborting ..."
+   if ( $JEDI_HYBRID == 1 ) then # when lat-lon ensemble, get scales ...
+      set lst = (`ls mem001/geos.*.nc4`)
+      set hres  = `getgfiodim.x $lst[1] | grep -v GFIO`
+      set nlon = $hres[1]
+      set nlat = $hres[2]
+      set nlev = $hres[3]
+      ln -sf $FVHOME/run/gmao_global_hybens_info.x${nlon}y${nlat}l${nlev}.rc hybens_info
+      if (! -e hybens_info ) then
+         echo " ${MYNAME}: cannot find gmao_global_hybens_info.x${nlon}y${nlat}l${nlev}.rc , aborting ..."
+         exit 1
+      endif
+   else
+      foreach fn (`ls mem001/geos.*.nc4`)
+        set cres  = `getgfiodim.x $fn | grep -v GFIO`
+        set nlon = $cres[1]
+        set nlat = $cres[2]
+        set nlev = $cres[3]
+        @ cres = $nlon + 1
+        if ( $nlon != $nlat ) then
+           echo " ${MYNAME}: error in resol of input file, aborting ..."
+           exit 1
+        endif
+        set tzzz  = `echo $fn   | cut -d. -f3`
+        set tnymd = `echo $tzzz | cut -c1-8`
+        set thhmm = `echo $tzzz | cut -c10-13`
+        /bin/cp fv3-jedi/bump/betac.c${cres}l${nlev}.nc4 betac.${tnymd}T${thhmm}00Z.nc4
+        /bin/cp fv3-jedi/bump/betae.c${cres}l${nlev}.nc4 betae.${tnymd}T${thhmm}00Z.nc4
+        # the betas need a date/time reset
+        reset_time.x betac.${tnymd}T${thhmm}00Z.nc4 $tnymd ${thhmm}00 -9 
+        reset_time.x betae.${tnymd}T${thhmm}00Z.nc4 $tnymd ${thhmm}00 -9
+      end
    endif
+   cd -
 endif
 
 # If here, likely successful

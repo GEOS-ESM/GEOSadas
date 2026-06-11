@@ -1,0 +1,271 @@
+    - obs space:
+        name: AVHRR-3 METOP-B
+        obsdatain:
+          engine:
+            type: H5File
+            obsfile: ./obs/avhrr3_metop-b.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
+        obsdataout:
+          engine:
+            type: H5File
+            obsfile: ./hofx/avhrr3_metop-b.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
+        simulated variables:
+        - brightnessTemperature
+        channels: 3-5
+      obs operator:
+        name: CRTM
+        Absorbers:
+        - H2O
+        - O3
+        - CO2
+        obs options:
+          Sensor_ID: avhrr3_metop-b
+          EndianType: little_endian
+          CoefficientPath: $JEDI_CRTM_COEFFS
+        linear obs operator:
+          Absorbers:
+          - H2O
+          - O3
+          Surfaces:
+          - Water_Temperature
+          - Land_Temperature
+          - Ice_Temperature
+          - Snow_Temperature
+      obs bias:
+        input file: ./obs/avhrr3_metop-b.$PYYYYYMMDDTHH0000Z.satbias.nc4
+        output file: ./vbc/avhrr3_metop-b.$BYYYYYMMDDTHH0000Z.satbias.nc4
+        variational bc:
+          predictors:
+          - name: constant
+          - name: lapseRate
+            order: 2
+            tlapse: ./obs/avhrr3_metop-b.$PYYYYYMMDDTHH0000Z.tlapse.txt
+          - name: lapseRate
+            tlapse: ./obs/avhrr3_metop-b.$PYYYYYMMDDTHH0000Z.tlapse.txt
+          - name: emissivityJacobian
+          - name: sensorScanAngle
+            order: 4
+          - name: sensorScanAngle
+            order: 3
+          - name: sensorScanAngle
+            order: 2
+          - name: sensorScanAngle
+        covariance:
+          minimal required obs number: 20
+          variance range:
+          - 1e-06
+          - 10.0
+          step size: 0.0001
+          largest analysis variance: 10000.0
+          prior:
+            input file: ./obs/avhrr3_metop-b.$PYYYYYMMDDTHH0000Z.satbias_cov.nc4
+            inflation:
+              ratio: 1.1
+              ratio for small dataset: 2.0
+          output file: ./vbc/avhrr3_metop-b.$BYYYYYMMDDTHH0000Z.satbias_cov.nc4
+      obs prior filters:
+      - filter: Perform Action
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 3-5
+        action:
+          name: assign error
+          error parameter vector: &error_parameter_avhrr3_metop-b
+          - 1.0
+          - 1.08
+          - 1.12
+      - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
+        assignments:
+        - name: ObsError/brightnessTemperature
+          channels: 3-5
+          type: float
+          function:
+            name: ObsFunction/Arithmetic
+            options:
+              variables:
+              - name: ObsErrorData/brightnessTemperature
+                channels: 3-5
+      obs post filters:
+      - filter: BlackList
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 3
+        where:
+        - variable:
+            name: MetaData/solarZenithAngle
+          maxvalue: 88.9999
+        - variable:
+            name: GeoVaLs/water_area_fraction
+          minvalue: 1e-12
+        action:
+          name: reject
+      - filter: BlackList
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 3-5
+        action:
+          name: inflate error
+          inflation variable:
+            name: ObsFunction/ObsErrorFactorWavenumIR
+            channels: 3-5
+            options:
+              channels: 3-5
+      - filter: Bounds Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 3-5
+        minvalue: 1e-05
+        maxvalue: 1000.0
+        action:
+          name: reject
+      - filter: BlackList
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 3-5
+        action:
+          name: inflate error
+          inflation variable:
+            name: ObsFunction/ObsErrorFactorTopoRad
+            channels: 3-5
+            options:
+              channels: 3-5
+              sensor: avhrr3_metop-b
+      - filter: BlackList
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 3-5
+        action:
+          name: inflate error
+          inflation variable:
+            name: ObsFunction/ObsErrorFactorTransmitTopRad
+            channels: 3-5
+            options:
+              channels: 3-5
+      - filter: Bounds Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 3-5
+        test variables:
+        - name: ObsFunction/CloudDetectMinResidualAVHRR
+          channels: 3-5
+          options:
+            channels: 3-5
+            error parameter vector: *error_parameter_avhrr3_metop-b
+            use_flag: >>>use_channels_avhrr3_metop-b<<<
+            use_flag_clddet: >>>clddet_channels_avhrr3_metop-b<<<
+            obserr_dtempf:
+            - 0.5
+            - 2.0
+            - 4.0
+            - 2.0
+            - 4.0
+            cloud detection criteria:
+            - 0.6
+            - 0.68
+            - 0.72
+        maxvalue: 1e-12
+        action:
+          name: reject
+      - filter: Bounds Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 3-5
+        test variables:
+        - name: ObsFunction/NearSSTRetCheckIR
+          channels: 3-5
+          options:
+            channels: 3-5
+            use_flag: >>>use_channels_avhrr3_metop-b<<<
+            obserr_demisf:
+            - 0.01
+            - 0.02
+            - 0.03
+            - 0.02
+            - 0.03
+            obserr_dtempf:
+            - 0.5
+            - 2.0
+            - 4.0
+            - 2.0
+            - 4.0
+        maxvalue: 1e-12
+        action:
+          name: reject
+      - filter: BlackList
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 3-5
+        action:
+          name: inflate error
+          inflation variable:
+            name: ObsFunction/ObsErrorFactorSurfJacobianRad
+            channels: 3-5
+            options:
+              channels: 3-5
+              sensor: avhrr3_metop-b
+              obserr_demisf:
+              - 0.01
+              - 0.02
+              - 0.03
+              - 0.02
+              - 0.03
+              obserr_dtempf:
+              - 0.5
+              - 2.0
+              - 4.0
+              - 2.0
+              - 4.0
+      - filter: Background Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 3-5
+        function absolute threshold:
+        - name: ObsFunction/ObsErrorBoundIR
+          channels: 3-5
+          options:
+            channels: 3-5
+            obserr_bound_latitude:
+              name: ObsFunction/ObsErrorFactorLatRad
+              options:
+                latitude_parameters:
+                - 25.0
+                - 0.5
+                - 0.04
+                - 1.0
+            obserr_bound_transmittop:
+              name: ObsFunction/ObsErrorFactorTransmitTopRad
+              channels: 3-5
+              options:
+                channels: 3-5
+            obserr_bound_max:
+            - 3.0
+            - 3.0
+            - 3.0
+        action:
+          name: reject
+      - filter: Bounds Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 3-5
+        test variables:
+        - name: ObsFunction/ChannelUseflagCheckRad
+          channels: 3-5
+          options:
+            channels: 3-5
+            use_flag: >>>use_channels_avhrr3_metop-b<<<
+        minvalue: 1e-12
+      observation_name: avhrr3_metop-b

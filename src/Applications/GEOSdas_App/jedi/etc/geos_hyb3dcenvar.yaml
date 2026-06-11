@@ -1,4 +1,17 @@
 cost function:
+  cost type: 3D-Var
+  geometry:
+    akbk: ./fv3-jedi/fv3files/akbk@JEDI_BKG_VRES.nc4
+    fms initialization:
+      field table filename: ./fv3-jedi/fv3files/field_table_gmao
+      namelist filename: ./fv3-jedi/fv3files/fmsmpp.nml
+    layout:
+    - @JEDI_VAR_XLAYOUT
+    - @JEDI_VAR_YLAYOUT
+    npx: @JEDI_BKG_HRES
+    npy: @JEDI_BKG_HRES
+    npz: @JEDI_BKG_VRES
+  jb evaluation: false
   analysis variables: &anavars
   - eastward_wind
   - northward_wind
@@ -18,57 +31,56 @@ cost function:
   - fraction_of_ice
   - skin_temperature_at_surface
   background:
-    states:
-    - datapath: './'
-      datetime: $JEDI_ISO_DATE_ANA
-      filenames:
-      - bkg.%yyyy%mm%ddT%hh%MM%ssZ.nc4
-      - fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKG_HRES.nc4
-      filetype: cube sphere history
-      provider: geos
-      compute edge pressure from surface pressure: true
-      max allowable geometry difference: 1e-3
-      state variables: &statevars
-      - eastward_wind
-      - northward_wind
-      - air_temperature
-      - air_pressure_levels
-      - air_pressure_at_surface
-      - water_vapor_mixing_ratio_wrt_moist_air
-      - cloud_liquid_ice
-      - cloud_liquid_water
-      - rain_water
-      - snow_water
-      - mole_fraction_of_ozone_in_air
-      - geopotential_height_times_gravity_at_surface
-      - initial_mass_fraction_of_large_scale_cloud_condensate
-      - initial_mass_fraction_of_convective_cloud_condensate
-      - convective_cloud_area_fraction
-      - fraction_of_ocean
-      - fraction_of_land
-      - isotropic_variance_of_filtered_topography
-      - surface_velocity_scale
-      - surface_buoyancy_scale
-      - planetary_boundary_layer_height
-      - surface_exchange_coefficient_for_momentum
-      - surface_exchange_coefficient_for_heat
-      - surface_exchange_coefficient_for_moisture
-      - KCBL_before_moist
-      - surface_temp_before_moist
-      - lower_index_where_Kh_greater_than_2
-      - upper_index_where_Kh_greater_than_2
-      - fraction_of_lake
-      - fraction_of_ice
-      - vtype
-      - stype
-      - vfrac
-      - sheleg
-      - skin_temperature_at_surface
-      - soilt
-      - soilm
-      - eastward_wind_at_surface
-      - northward_wind_at_surface
-      - sea_surface_temperature
+    datetime: $JEDI_ISO_DATE_ANA
+    datapath: './'
+    filenames:
+    - bkg.%yyyy%mm%ddT%hh%MM%ssZ.nc4
+    - fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKG_HRES.nc4
+    filetype: cube sphere history
+    provider: geos
+    compute edge pressure from surface pressure: true
+    max allowable geometry difference: 1e-3
+    state variables: &statevars
+    - eastward_wind
+    - northward_wind
+    - air_temperature
+    - air_pressure_levels
+    - air_pressure_at_surface
+    - water_vapor_mixing_ratio_wrt_moist_air
+    - cloud_liquid_ice
+    - cloud_liquid_water
+    - rain_water
+    - snow_water
+    - mole_fraction_of_ozone_in_air
+    - geopotential_height_times_gravity_at_surface
+    - initial_mass_fraction_of_large_scale_cloud_condensate
+    - initial_mass_fraction_of_convective_cloud_condensate
+    - convective_cloud_area_fraction
+    - fraction_of_ocean
+    - fraction_of_land
+    - isotropic_variance_of_filtered_topography
+    - surface_velocity_scale
+    - surface_buoyancy_scale
+    - planetary_boundary_layer_height
+    - surface_exchange_coefficient_for_momentum
+    - surface_exchange_coefficient_for_heat
+    - surface_exchange_coefficient_for_moisture
+    - KCBL_before_moist
+    - surface_temp_before_moist
+    - lower_index_where_Kh_greater_than_2
+    - upper_index_where_Kh_greater_than_2
+    - fraction_of_lake
+    - fraction_of_ice
+    - vtype
+    - stype
+    - vfrac
+    - sheleg
+    - skin_temperature_at_surface
+    - soilt
+    - soilm
+    - eastward_wind_at_surface
+    - northward_wind_at_surface
+    - sea_surface_temperature
     field io names: &field_io_names
       eastward_wind: ua
       northward_wind: va
@@ -109,20 +121,16 @@ cost function:
     components:
     - covariance:
         covariance model: SABER
-        linear variable change:
-          input variables: *anavars
-          linear variable change name: Control2Analysis
-          output variables: *anavars
+#       covariance type: gsi hybrid covariance
         saber central block:
+          saber block name: gsi static covariance
           read:
             debugging mode: false
             gsi akbk: ./fv3-jedi/fv3files/akbk@JEDI_BKG_VRES.nc4
-            gsi berror namelist file: ./fv3-jedi/gsibec/cli_gsibec_configuration_c@JEDI_BKGCOV_RESOL.nml
-            gsi error covariance file: ./fv3-jedi/gsibec/gsibec_coefficients_c@JEDI_BKGCOV_RESOL.nc4
+            gsi berror namelist file: ./fv3-jedi/gsibec/gsibec_configuration_l@JEDI_BKG_VRESx@JEDI_GSIBEC_NLONy@JEDI_GSIBEC_NLAT.nml
+            gsi error covariance file: ./fv3-jedi/gsibec/gsibec_coefficients_l@JEDI_BKG_VRESx@JEDI_GSIBEC_NLONy@JEDI_GSIBEC_NLAT.nc4
             processor layout x direction: @JEDI_VAR_GSIXLAYOUT 
             processor layout y direction: @JEDI_VAR_GSIYLAYOUT
-#         saber block name: gsi covariance
-          saber block name: gsi static covariance
 
         saber outer blocks:
         - saber block name: interpolation
@@ -140,38 +148,32 @@ cost function:
           inverse interpolator:
             local interpolator type: oops unstructured grid interpolator
 
-#       saber outer blocks:
-#       - debugging mode: false
-#         gsi akbk: ./fv3-jedi/fv3files/akbk@JEDI_BKG_VRES.nc4
-#         gsi berror namelist file: ./fv3-jedi/gsibec/cli_gsibec_configuration_c@JEDI_BKGCOV_RESOL.nml
-#         gsi error covariance file: ./fv3-jedi/gsibec/gsibec_coefficients_c@JEDI_BKGCOV_RESOL.nc4
-#         processor layout x direction: @JEDI_VAR_GSIXLAYOUT
-#         processor layout y direction: @JEDI_VAR_GSIYLAYOUT
-#         saber block name: gsi interpolation to model grid
-
           state variables to inverse: *anavars
+        linear variable change:
+          input variables: *anavars
+          linear variable change name: Control2Analysis
+          output variables: *anavars
       weight:
-##     datetime: 2020-12-15T00:00:00Z
-##     filetype: cube sphere history
-##     provider: geos
-##     compute edge pressure from surface pressure: true
-##     max allowable geometry difference: 1e-3
-##     filename: Data/inputs/geos_c90/clim6.nc4
-        value: 0.50
+        datetime: $JEDI_ISO_DATE_ANA
+        filetype: cube sphere history
+        provider: geos
+        max allowable geometry difference: 1e-3
+        filename: betac.%yyyy%mm%ddT%hh%MM%ssZ.nc4
+        field io names: *field_io_names
+##      value: 0.50
 
     - covariance:
         covariance model: ensemble
         members from template:
           template:
-            states:
-            - datetime: $JEDI_ISO_DATE_ANA
-              filetype: cube sphere history
-              provider: geos
-              compute edge pressure from surface pressure: true
-              max allowable geometry difference: 1e-3
-              state variables: *anavars
-              datapath: ./
-              filenames: [mem%mem%/geos.bkg_clcv.%yyyy%mm%dd_%hh%MMz.nc4, fv3-jedi/bkg/geos.crtmsrf.@JEDI_BKGCOV_RESOL.nc4]
+            datetime: $JEDI_ISO_DATE_ANA
+            filetype: cube sphere history
+            provider: geos
+            max allowable geometry difference: 1e-3
+            state variables: *anavars
+            field io names: *field_io_names
+            datapath: ./
+            filename: mem%mem%/geos.bkg_clcv.%yyyy%mm%dd_%hh%MMz.nc4
           pattern: '%mem%'
           nmembers: 32
           zero padding: 3
@@ -278,25 +280,14 @@ cost function:
           output variables: *anavars
 
       weight:
-#       datetime: 2020-12-15T00:00:00Z
-#       filetype: cube sphere history
-#       provider: geos
-#       filename: Data/inputs/geos_c90/tropo6.nc4
-#       filename: Data/inputs/geos_c90/ens6.nc4
-        value: 0.50
-  cost type: 3D-Var
-  geometry:
-    akbk: ./fv3-jedi/fv3files/akbk@JEDI_BKG_VRES.nc4
-    fms initialization:
-      field table filename: ./fv3-jedi/fv3files/field_table_gmao
-      namelist filename: ./fv3-jedi/fv3files/fmsmpp.nml
-    layout:
-    - @JEDI_VAR_XLAYOUT
-    - @JEDI_VAR_YLAYOUT
-    npx: @JEDI_BKG_HRES
-    npy: @JEDI_BKG_HRES
-    npz: @JEDI_BKG_VRES
-  jb evaluation: false
+        datetime: $JEDI_ISO_DATE_ANA
+        filetype: cube sphere history
+        provider: geos
+        max allowable geometry difference: 1e-3
+        filename: betae.%yyyy%mm%ddT%hh%MM%ssZ.nc4
+        field io names: *field_io_names
+##      value: 0.50
+
 # OBSYAML_BEG
 # OBSYAML_END
   time window:
@@ -330,8 +321,8 @@ variational:
       layout:
       - @JEDI_VAR_XLAYOUT
       - @JEDI_VAR_YLAYOUT
-      npx: @JEDI_BKG_HRES
-      npy: @JEDI_BKG_HRES
+      npx: @JEDI_INC_1RES
+      npy: @JEDI_INC_1RES
       npz: @JEDI_BKG_VRES
     gradient norm reduction: 1e-3
     linear model:
@@ -361,8 +352,8 @@ variational:
 #     layout:
 #     - @JEDI_VAR_XLAYOUT
 #     - @JEDI_VAR_YLAYOUT
-#     npx: @JEDI_BKG_HRES
-#     npy: @JEDI_BKG_HRES
+#     npx: @JEDI_INC_1RES
+#     npy: @JEDI_INC_1RES
 #     npz: @JEDI_BKG_VRES
 #   gradient norm reduction: 1e-3
 #   linear model:

@@ -1,0 +1,322 @@
+    - obs space:
+        name: AMSR2 GCOM-W1
+        obsdatain:
+          engine:
+            type: H5File
+            obsfile: ./obs/amsr2_gcom-w1.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
+        obsdataout:
+          engine:
+            type: H5File
+            obsfile: ./hofx/amsr2_gcom-w1.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
+        simulated variables:
+        - brightnessTemperature
+        channels: 1-14
+      obs operator:
+        name: CRTM
+        Absorbers:
+        - H2O
+        - O3
+        - CO2
+        Clouds:
+        - Water
+        - Ice
+        - Rain
+        - Snow
+        Cloud_Fraction: 1.0
+        Cloud_Seeding: true
+        obs options:
+          Sensor_ID: amsr2_gcom-w1
+          EndianType: little_endian
+          CoefficientPath: $JEDI_CRTM_COEFFS
+        linear obs operator:
+          Absorbers:
+          - H2O
+          - O3
+          Clouds:
+          - Water
+          - Ice
+          - Rain
+          - Snow
+          Surfaces:
+          - Water_Temperature
+          - Land_Temperature
+          - Ice_Temperature
+          - Snow_Temperature
+      obs bias:
+        input file: ./obs/amsr2_gcom-w1.$PYYYYYMMDDTHH0000Z.satbias.nc4
+        output file: ./vbc/amsr2_gcom-w1.$BYYYYYMMDDTHH0000Z.satbias.nc4
+        variational bc:
+          predictors:
+          - name: constant
+          - name: lapseRate
+            order: 2
+            tlapse: ./obs/amsr2_gcom-w1.$PYYYYYMMDDTHH0000Z.tlapse.txt
+          - name: lapseRate
+            tlapse: ./obs/amsr2_gcom-w1.$PYYYYYMMDDTHH0000Z.tlapse.txt
+          - name: emissivityJacobian
+          - name: sensorScanAngle
+            var_name: sensorScanPosition
+            order: 4
+          - name: sensorScanAngle
+            var_name: sensorScanPosition
+            order: 3
+          - name: sensorScanAngle
+            var_name: sensorScanPosition
+            order: 2
+          - name: sensorScanAngle
+            var_name: sensorScanPosition
+        covariance:
+          minimal required obs number: 20
+          variance range:
+          - 1e-06
+          - 10.0
+          step size: 0.0001
+          largest analysis variance: 10000.0
+          prior:
+            input file: ./obs/amsr2_gcom-w1.$PYYYYYMMDDTHH0000Z.satbias_cov.nc4
+            inflation:
+              ratio: 1.1
+              ratio for small dataset: 2.0
+          output file: ./vbc/amsr2_gcom-w1.$BYYYYYMMDDTHH0000Z.satbias_cov.nc4
+      obs filters:
+      - filter: Bounds Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-14
+        minvalue: 50.0
+        maxvalue: 340.0
+      - filter: Domain Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-14
+        where:
+        - variable:
+            name: GeoVaLs/water_area_fraction
+          minvalue: 0.999
+        - variable:
+            name: GeoVaLs/skin_temperature_at_surface_where_sea
+          minvalue: 275
+        - variable:
+            name: GeoVaLs/wind_speed_at_surface
+          maxvalue: 12
+        - variable:
+            name: MetaData/latitude
+          minvalue: -60.0
+          maxvalue: 60.0
+      - filter: Bounds Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-14
+        test variables:
+        - name: ObsFunction/TotalColumnVaporGuess
+        minvalue: 10.0
+      - filter: Bounds Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-14
+        test variables:
+        - name: ObsFunction/SunGlintAngle
+        minvalue: 20.0
+      - filter: Bounds Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-14
+        test variables:
+        - name: ObsFunction/CLWRetMW
+          options:
+            clwret_ch18v: 7
+            clwret_ch18h: 8
+            clwret_ch36v: 11
+            clwret_ch36h: 12
+            sys_bias: &id005
+            - 0.48
+            - 3.0737
+            - 0.7433
+            - 3.643
+            - 3.5304
+            - 4.427
+            - 5.1448
+            - 5.0785
+            - 4.9763
+            - 9.3215
+            - 2.5789
+            - 5.5274
+            - 0.6641
+            - 1.3674
+            clwret_types:
+            - ObsValue
+        maxvalue: 1.0
+      - filter: Bounds Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-14
+        test variables:
+        - name: ObsFunction/CLWRetMW
+          options:
+            clwret_ch18v: 7
+            clwret_ch18h: 8
+            clwret_ch36v: 11
+            clwret_ch36h: 12
+            sys_bias: *id005
+            clwret_types:
+            - HofX
+        maxvalue: 1.0
+      - filter: Difference Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-14
+        value:
+          name: ObsFunction/CLWRetMW
+          options:
+            clwret_ch18v: 7
+            clwret_ch18h: 8
+            clwret_ch36v: 11
+            clwret_ch36h: 12
+            sys_bias: *id005
+            clwret_types:
+            - ObsValue
+        reference:
+          name: ObsFunction/CLWRetMW
+          options:
+            clwret_ch18v: 7
+            clwret_ch18h: 8
+            clwret_ch36v: 11
+            clwret_ch36h: 12
+            sys_bias: *id005
+            clwret_types:
+            - HofX
+        minvalue: -0.5
+        maxvalue: 0.5
+      - filter: BlackList
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-14
+        action:
+          name: assign error
+          error function:
+            name: ObsFunction/ObsErrorModelRamp
+            channels: 1-14
+            options:
+              channels: 1-14
+              xvar:
+                name: ObsFunction/CLWRetSymmetricMW
+                options:
+                  clwret_ch18v: 7
+                  clwret_ch18h: 8
+                  clwret_ch36v: 11
+                  clwret_ch36h: 12
+                  sys_bias: *id005
+                  clwret_types:
+                  - ObsValue
+                  - HofX
+              x0:
+              - 0.05
+              - 0.05
+              - 0.05
+              - 0.05
+              - 0.1
+              - 0.1
+              - 0.05
+              - 0.05
+              - 0.05
+              - 0.05
+              - 0.05
+              - 0.05
+              - 0.05
+              - 0.05
+              x1:
+              - 0.6
+              - 0.6
+              - 0.6
+              - 0.6
+              - 0.6
+              - 0.5
+              - 0.3
+              - 0.3
+              - 0.3
+              - 0.3
+              - 0.3
+              - 0.3
+              - 0.3
+              - 0.3
+              err0:
+              - 0.8
+              - 0.9
+              - 0.8
+              - 0.9
+              - 1.0
+              - 1.1
+              - 2.0
+              - 3.5
+              - 3.0
+              - 4.8
+              - 5.0
+              - 6.0
+              - 4.5
+              - 6.3
+              err1:
+              - 5.0
+              - 5.0
+              - 5.0
+              - 5.0
+              - 5.0
+              - 18.5
+              - 20.0
+              - 40.0
+              - 20.0
+              - 25.0
+              - 30.0
+              - 30.0
+              - 30.0
+              - 20.0
+      - filter: Background Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-14
+        threshold: 2.0
+        action:
+          name: reject
+      - filter: Background Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 7-10
+        absolute threshold: 30
+        action:
+          name: reject
+      - filter: Background Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 11-14
+        absolute threshold: 50
+        action:
+          name: reject
+      - filter: Bounds Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-14
+        test variables:
+        - name: ObsFunction/ChannelUseflagCheckRad
+          channels: 1-14
+          options:
+            channels: 1-14
+            sensor: amsr2_gcom-w1
+            use_flag: >>>use_channels_amsr2_gcom-w1<<<
+        minvalue: 1e-12
+        action:
+          name: reject
+      observation_name: amsr2_gcom-w1
