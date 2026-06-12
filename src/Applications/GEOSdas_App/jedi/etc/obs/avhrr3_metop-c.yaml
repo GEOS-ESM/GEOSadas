@@ -182,6 +182,7 @@
           channels: 3-5
           options:
             channels: 3-5
+            error parameter vector: *error_parameter_avhrr3_metop-c
             use_flag: >>>use_channels_avhrr3_metop-c<<<
             obserr_demisf:
             - 0.01
@@ -246,6 +247,7 @@
               channels: 3-5
               options:
                 channels: 3-5
+            error parameter vector: *error_parameter_avhrr3_metop-c
             obserr_bound_max:
             - 3.0
             - 3.0

@@ -186,6 +186,7 @@
           channels: 3-5
           options:
             channels: 3-5
+            error parameter vector: *error_parameter_avhrr3_n19
             use_flag: >>>use_channels_avhrr3_n19-b<<<
             obserr_demisf:
             - 0.01
@@ -250,6 +251,7 @@
               channels: 3-5
               options:
                 channels: 3-5
+            error parameter vector: *error_parameter_avhrr3_n19
             obserr_bound_max:
             - 3.0
             - 3.0

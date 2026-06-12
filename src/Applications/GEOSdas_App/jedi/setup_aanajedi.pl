@@ -132,7 +132,7 @@ sub init {
         $cvbc = $opt_cvbc;  # =1 cycle varbc 
         if ($cvbc > 1) {die "invalid entry, cvbc 0/1 only.\n"};
    } else {
-        $cvbc = 0; # do not cycle JEDI varBC yet (JEDI not handling aircraft Variances on output yet)
+        $cvbc = 1; # cycle JEDI varBC yet (caution: not sure aircraft bias cycle properly in JEDI)
    }
 
    if ( $opt_jediroot ) {
@@ -413,6 +413,7 @@ sub init {
                      avhrr3_metop-c.yaml
                      avhrr3_n19.yaml
                      cris-fsr_n20.yaml
+                     cris-fsr_n21.yaml
                      cris-fsr_npp.yaml
                      gmi_gpm.yaml
                      gps.yaml

@@ -12,6 +12,7 @@ setenv JEDI_IAU_OVERWRITE  @JEDI_IAU_OVERWRITE   # overwrite GSI-IAU with JEDI-I
 setenv JEDI_RUN_ADANA_TEST 0   # run adjoint JEDI-Var
 setenv JEDI_VAROFFSET 10800    # background time offset
 setenv JEDI_FEEDBACK_VARBC @JEDI_FEEDBACK_VARBC   # controls whether or not to feedback biases
+                                                  # caution: not sure aircraft bias cycle properly in JEDI
 
 setenv JEDI_SWELLUSE 0  # bypass use of SWELL for now
 setenv SWELL_INSTALL @SWELL_INSTALL
