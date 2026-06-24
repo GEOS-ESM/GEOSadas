@@ -75,7 +75,7 @@ MAPL:
 GEOSldas_GridComp:
   local: ./src/Components/@GEOSldas_GridComp
   remote: ../GEOSldas_GridComp.git
-  tag: v3.1.0
+  branch: feature/qliu/ladas_new_nml_etc
 
 FMS:
   local: ./src/Shared/@FMS
