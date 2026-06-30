@@ -815,7 +815,6 @@ sub run_fvsetup {
     if ($verify) {
         print "\nUnless you are sure the input file is okay, you should quit"
             . " and run the checkinput utility before continuing.\n";
-        $ans = query("Continue (y/n)?", "n");
         if ($nocheck) { $dflt = "y" }
         else          { $dflt = "n" }
         $ans = query("Continue (y/n)?", $dflt);
