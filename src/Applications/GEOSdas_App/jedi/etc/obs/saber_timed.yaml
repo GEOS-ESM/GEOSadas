@@ -1,0 +1,79 @@
+    - obs space:
+        name: saber_timed
+        obsdatain:
+          engine:
+            type: H5File
+            obsfile: ./obs/saber_t_timed.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
+        obsdataout:
+          engine:
+            type: H5File
+            obsfile: ./hofx/saber_t_timed.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 1
+        simulated variables:
+        - airTemperature
+      obs operator:
+        name: Composite
+        components:
+        - name: VertInterp
+          variables:
+          - name: airTemperature
+      linear obs operator:
+        name: Composite
+        components:
+        - name: VertInterp
+          variables:
+          - name: airTemperature
+      obs filters:
+      - filter: Domain Check
+        filter variables:
+        - name: airTemperature
+        where:
+        - variable:
+            name: MetaData/pressure
+          minvalue: 5
+          maxvalue: 10000.0
+        action:
+          name: reject
+      - filter: Perform Action
+        filter variables:
+        - name: airTemperature
+        action:
+          name: passivate
+        defer to post: true
+      - filter: Perform Action
+        filter variables:
+        - name: airTemperature
+        action:
+          name: assign error
+          error function:
+            name: ObsFunction/ObsErrorModelStepwiseLinear
+            options:
+              xvar:
+                name: MetaData/pressure
+              xvals: [8.50851914e+04,5.97046046e+04,4.18949496e+04,2.93978466e+04,
+                      2.06285815e+04,1.44751546e+04,1.01572714e+04,7.12739624e+03,
+                      5.00132123e+03,3.50944625e+03,2.46259187e+03,1.72801015e+03,
+                      1.21255134e+03,8.50851914e+02,5.97046046e+02,4.18949496e+02,
+                      2.93978466e+02,2.06285815e+02,1.44751546e+02,1.01572714e+02,
+                      7.12739624e+01,5.00132123e+01,3.50944625e+01,2.46259187e+01,
+                      1.72801015e+01,1.21255134e+01,8.50851914e+00,5.97046046e+00,
+                      4.18949496e+00,2.93978466e+00,2.06285815e+00,1.44751546e+00,
+                      1.01572714e+00,7.12739624e-01,5.00132123e-01,3.50944625e-01,
+                      2.46259187e-01,1.72801015e-01,1.21255134e-01]
+              errors: [      160.0,       160.0, 153.03642847,120.34753278, 41.17975669,
+                       23.06202572,  8.3601981 ,  3.18719459 , 1.79196546 , 1.97379713,
+                        1.57073754,  1.12634655,  1.12307446 , 1.20582712 , 1.19869575,
+                        1.25091315,  1.63907942,  1.96384868 , 2.61642718 , 3.23840885,
+                        3.59636554,  4.17289048,  5.07024947 , 4.82717441 , 3.94751004,
+                        4.66466103,  6.24514474,  6.13995774 , 6.59820787 , 7.60539332,
+                        9.8369862 , 10.31535387, 11.58366423 ,13.92075107 ,15.72582962,
+                       17.39400635, 18.45249   , 18.36440028 ,18.87276406]
+      - filter: Perform Action
+        filter variables:
+        - name: airTemperature
+        action:
+          name: inflate error
+          inflation factor: 1.1
+      observation_name: saber_timed
