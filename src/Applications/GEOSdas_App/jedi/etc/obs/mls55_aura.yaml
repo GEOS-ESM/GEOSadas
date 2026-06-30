@@ -33,4 +33,13 @@
         threshold: 5.0
         action:
           name: reject
+      - filter: Bounds Check
+        filter variables:
+        - name: ozoneProfile
+        test variables:
+        - name: MetaData/pressure
+        minvalue: 10
+        maxvalue: 25000
+        action:
+          name: reject
       observation_name: mls55_aura

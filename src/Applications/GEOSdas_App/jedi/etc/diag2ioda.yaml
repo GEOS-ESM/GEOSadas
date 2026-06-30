@@ -56,6 +56,7 @@ models:
 
     # Which observations do you want to include?
     observations:
+    - abi_g16
     - abi_g18
     - aircraft
     - airs_aqua

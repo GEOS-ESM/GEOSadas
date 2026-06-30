@@ -74,9 +74,9 @@
         action:
           name: assign error
           error parameter vector: &error_parameter_avhrr3_metop-c
-          - 0.6
-          - 0.68
-          - 0.72
+          - 1.0
+          - 1.08
+          - 1.12
       - filter: Variable Assignment
         apply at iterations: 0, 1, 2
         assignments:
@@ -169,6 +169,10 @@
             - 4.0
             - 2.0
             - 4.0
+            cloud detection criteria:
+            - 0.6
+            - 0.68
+            - 0.72
         maxvalue: 1e-12
         action:
           name: reject

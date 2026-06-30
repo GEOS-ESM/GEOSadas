@@ -15,6 +15,28 @@ else
 endif
 
 if ( $#argv < 4 ) then
+   echo " "
+   echo " \\begin{verbatim} "
+   echo " "
+   echo " NAME "
+   echo " "
+   echo "  $MYNAME  - drive entire JEDI-based analysis for GEOS"
+   echo " "
+   echo " SYNOPSIS "
+   echo " "
+   echo "  $MYNAME  nymdb nhmsb nymda nhmsa "
+   echo " "
+   echo "   nymdb  -  starting date of cycle"
+   echo "   nhmsb  -  starting time of cycle"
+   echo "   nymda  -  analysis date"
+   echo "   nhmsa  -  analysis time"
+   echo " "
+   echo " AUTHOR"
+   echo "   Ricardo Todling (Ricardo.Todling@nasa.gov), NASA/GMAO "
+   echo "     Initial version: 18Oct2020    by: R. Todling"
+   echo "     Last   modified: 14Jun2026    by: R. Todling"
+   echo " \\end{verbatim} "
+   echo " \\clearpage "
    echo " ${MYNAME}: invalid arg list, aborting"
    exit(1)
 endif
@@ -51,6 +73,7 @@ if ( !($?JEDI_POST) )  setenv JEDI_POST  0
 if ( !($?JEDI_IAU_OVERWRITE) )  setenv JEDI_IAU_OVERWRITE  0
 if ( !($?JEDI_RUN_ADANA_TEST) ) setenv JEDI_RUN_ADANA_TEST 0
 if ( !($?JEDI_RUN_ADANA) ) setenv JEDI_RUN_ADANA 0
+if ( !($?JEDI_RUN_EAANA) ) setenv JEDI_RUN_EAANA 0
 if ( !($?JEDI_OBS_OPT) ) setenv JEDI_OBS_OPT 0
 if ( !($?JEDI_SWELLUSE) ) setenv JEDI_SWELLUSE 1
 if ( !($?OFFLINE_IODA_DIR) ) setenv OFFLINE_IODA_DIR /dev/null
@@ -59,6 +82,9 @@ if ( $JEDI_RUN_ADANA ) then
   source  $FVHOME/run/jedi/JEDIadanaConfig.csh
 else
   source  $FVHOME/run/jedi/JEDIanaConfig.csh
+  if ( $JEDI_RUN_EAANA ) then
+    source  $FVHOME/run/jedi/JEDIatmensConfig.csh
+  endif
 endif
 
 if ( -e $FVWORK/.DONE_${MYNAME}.$yyyymmddhh ) then

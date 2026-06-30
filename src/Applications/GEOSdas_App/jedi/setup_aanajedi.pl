@@ -397,6 +397,8 @@ sub init {
   @rc2adjedi  = qw ( JEDIadanaConfig.csh );
 
   @rc2jediobs = qw ( 0observations.yaml
+                     abi_g16.yaml
+                     abi_g18.yaml
                      aircraft_temperature.yaml
                      aircraft_wind.yaml
                      airs_aqua.yaml
@@ -411,6 +413,7 @@ sub init {
                      atms_npp.yaml
                      avhrr3_metop-b.yaml
                      avhrr3_metop-c.yaml
+                     avhrr3_n18.yaml
                      avhrr3_n19.yaml
                      cris-fsr_n20.yaml
                      cris-fsr_n21.yaml
@@ -424,10 +427,12 @@ sub init {
                      mhs_n19.yaml
                      mls55_aura.yaml
                      omi_aura.yaml
+                     omieff_aura.yaml
                      ompslpnc_n21.yaml
                      ompslpnc_npp.yaml
                      ompsnm_npp.yaml
                      pibal.yaml
+                     saber_timed.yaml
                      satwind.yaml
                      scatwind.yaml
                      sfcship.yaml

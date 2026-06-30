@@ -25,10 +25,10 @@ if ( $#argv < 2 ) then
    echo " AUTHOR"
    echo "   Ricardo Todling (Ricardo.Todling@nasa.gov), NASA/GMAO "
    echo "     Initial version: 18Oct2020    by: R. Todling"
-   echo "     Last   modified: 19May2026    by: R. Todling"
+   echo "     Last   modified: 14Jun2026    by: R. Todling"
    echo " \\end{verbatim} "
    echo " \\clearpage "
-   exit(0)
+   exit(1)
 endif
 
 setenv FAILED 0
@@ -37,9 +37,9 @@ if ( !($?EXPID)         )  setenv FAILED   1
 if ( !($?FVHOME)        )  setenv FAILED   1
 if ( !($?FVWORK)        )  setenv FAILED   1
 if ( !($?GID)           )  setenv FAILED   1
-if ( !($?JEDI_OBS_OPT)  )  setenv FAILED   1
-if ( !($?JEDI_HYBRID)   )  setenv FAILED   1
 if ( !($?JEDI_FEEDBACK_VARBC) )  setenv FAILED   1
+if ( !($?JEDI_HYBRID)   )  setenv FAILED   1
+if ( !($?JEDI_OBS_OPT)  )  setenv FAILED   1
 if ( !($?OFFLINE_IODA_DIR) ) setenv FAILED   1
 
 if ( $FAILED ) then
@@ -51,6 +51,7 @@ endif
 # Defaults
 if ( !($?JEDI_ANAFREQ))    setenv JEDI_ANAFREQ   21600
 if ( !($?JEDI_RUN_ADANA) ) setenv JEDI_RUN_ADANA 0
+if ( !($?JEDI_RUN_EAANA) ) setenv JEDI_RUN_EAANA 0
 if ( !($?JEDI_VAROFFSET))  setenv JEDI_VAROFFSET 10800
 if ( !($?JEDI_VARWINDOW))  setenv JEDI_VARWINDOW 21600
 if ( !($?MAPLFIX)       )  setenv MAPLFIX  0
@@ -104,6 +105,8 @@ setenv JEDI_ISO_DATE_ANA  "${yyyya}-${mma}-${dda}T${hha}:00:00Z"
 setenv JEDI_ISO_DATE_END  "${yyyye}-${mme}-${dde}T${hhe}:00:00Z"
 setenv AYYYYMMDDHH         ${yyyya}${mma}${dda}${hha}
 setenv AYYYYMMDD_HH        ${yyyya}${mma}${dda}_${hha}
+setenv AYYYYYMMDDHH        ${nymda}${hha}
+setenv AYYYYYMMDDTHH0000Z  ${nymda}T${hha}0000Z
 setenv BYYYYYMMDDTHH0000Z  ${nymdb}T${hhb}0000Z
 setenv PYYYYYMMDDTHH0000Z  ${nymdp}T${hhp}0000Z
 
@@ -155,7 +158,8 @@ foreach dir ( ana atmens bkg hofx iau obs osen inc vbc )
    if ( ! -d $dir ) mkdir -p $dir
 end
 
-# if adjoint analysis, retrieve IODA files
+# If so, retrieve IODA files from existig ru
+# In adjoint case, IODA files are from same exp
 if ( $JEDI_RUN_ADANA || $JEDI_OBS_OPT == 1 ) then
   setenv NYMD  $nymda # initial date of current cycle
   setenv NHMS  $nhmsa # initial time of current cycle
@@ -187,8 +191,8 @@ if ( $JEDI_RUN_ADANA || $JEDI_OBS_OPT == 1 ) then
   endif
 endif # adjoint analysis
 
-# Link IODA files from available from offline generation
-# ------------------------------------------------------
+# Or, link IODA files available from offline generation
+# -----------------------------------------------------
 if ( $JEDI_OBS_OPT == 2 ) then
    pwd
    ls
@@ -203,8 +207,8 @@ if ( $JEDI_OBS_OPT == 2 ) then
    echo " ${MYNAME}: successfully linked offline available IODA files"
 endif
 
-# Link IODA observation files that have been generated on the fly
-# ---------------------------------------------------------------
+# Or, link IODA observation files that have been generated on the fly
+# -------------------------------------------------------------------
 if ( $JEDI_OBS_OPT == 3 ) then
    pwd
    ls
@@ -251,47 +255,65 @@ endif
 
 # The following accommodates for the case when the satbias coeff and cov are in the same
 cd obs
-set satbcov = `ls *.sabias_cov.*nc4`
-if ( $status ) then
-  echo "${MYNAME}: could not find satbias_cov"
-  echo "${MYNAME}: linking satbias to satbias_cov ..."
+#set satbcov = `ls *.satbias_cov.*nc4`
+#if ( $status ) then
+# echo "${MYNAME}: could not find satbias_cov"
+# echo "${MYNAME}: linking satbias to satbias_cov ..."
   foreach fn ( `ls *.satbias.*nc4` )
     set prefix = `echo $fn | cut -d. -f1-2`
-    ln -s $fn $prefix.satbias_cov.nc4
+    if ( ! -e $prefix.satbias_cov.nc4 ) then
+       ln -s $fn $prefix.satbias_cov.nc4
+    endif
   end
-endif
+#endif
 cd -
 # The following accommodates for the case when the satbias coeff and cov are in the same
 cd obs
+set acft = 0
+if ( -e aircraft_tsen_obs_${AYYYYYMMDDHH}.nc4 ) then
+  ln -sf aircraft_tsen_obs_${AYYYYYMMDDHH}.nc4 aircraft_temperature.$BYYYYYMMDDTHH0000Z.nc4
+  set acft = 1
+endif
+if ( -e aircraft_uv_obs_${AYYYYYMMDDHH}.nc4  ) then
+  ln -sf aircraft_uv_obs_${AYYYYYMMDDHH}.nc4 aircraft_wind.$BYYYYYMMDDTHH0000Z.nc4
+endif
 if ( -e aircraft.$BYYYYYMMDDTHH0000Z.nc4 ) then 
   ln -s aircraft.$BYYYYYMMDDTHH0000Z.nc4 aircraft_temperature.$BYYYYYMMDDTHH0000Z.nc4
   ln -s aircraft.$BYYYYYMMDDTHH0000Z.nc4        aircraft_wind.$BYYYYYMMDDTHH0000Z.nc4
+  set acft = 1
+endif
+if ( $acft ) then
   set acftbias = `ls *.acftbias`
   if ( $status ) then
-    set acftbias_in = `ls aircraft_abias_air.*.nc4`
-    if (! $status ) then
-      set ttag = `echo $acftbias_in | cut -d. -f2`
-      ln -sf $acftbias_in aircraft_temperature.$ttag.acftbias
-      if ( ! -e aircraft_temperature.$ttag.acftbias_cov ) then
-        ln -sf aircraft_temperature.$ttag.acftbias aircraft_temperature.$ttag.acftbias_cov
-      endif
-    else
-      echo "WARNING: No aircraft bias files where found ..."
-      echo "WARNING: No aircraft bias files where found ..."
-      echo "WARNING: No aircraft bias files where found ..."
+     set acftbias_in = `ls aircraft_abias_air.*.nc4`
+     if (! $status ) then
+        set ttag = `echo $acftbias_in | cut -d. -f2`
+        ln -sf $acftbias_in aircraft_temperature.$ttag.acftbias
+        if ( ! -e aircraft_temperature.$ttag.acftbias_cov ) then
+          ln -sf aircraft_temperature.$ttag.acftbias aircraft_temperature.$ttag.acftbias_cov
+        endif
+     else
+       echo "WARNING: No aircraft bias files where found ..."
+       echo "WARNING: No aircraft bias files where found ..."
+       echo "WARNING: No aircraft bias files where found ..."
+    endif
+  else
+    if (   -e aircraft_temperature.$ttag.acftbias  && \
+         ! -e aircraft_temperature.$ttag.acftbias_cov ) then
+      ln -sf aircraft_temperature.$ttag.acftbias aircraft_temperature.$ttag.acftbias_cov
     endif
   endif
-else
-  echo "WARNING: No aircraft obs files where found ..."
-  echo "WARNING: No aircraft obs files where found ..."
-  echo "WARNING: No aircraft obs files where found ..."
 endif
 cd -
 
 # Build full yaml to run var, or grab existing yaml
 # -------------------------------------------------
-if ( -e $JEDIETC/geosvar.${nymda}_${hha}z.yaml ) then
-  echo " ${MYNAME}: using user-provided geosvar.${nymda}_${hha}z.yaml"
+set this = $JEDIETC/geosvar.${nymda}_${hha}z.yaml
+if ( $JEDI_RUN_EAANA ) then
+  set this = $JEDIETC/geosens.${nymda}_${hha}z.yaml
+endif
+if ( -e $this ) then
+  echo " ${MYNAME}: using user-provided $this"
 else
   cd obs
   # get a list of available obs files
@@ -322,16 +344,20 @@ else
   endif
 
   # Construct full VAR yaml
-  /bin/cp Config/geosvar.yaml geosvar.tmpl
-  insert_file_atstr.pl Config/obs.${nymdb}T${nhmsb}Z.yaml geosvar.tmpl OBSYAML_END
-  vED -env geosvar.tmpl -o Config/geosvar.${nymda}_${hha}z.yaml
-  /bin/cp Config/geosvar.${nymda}_${hha}z.yaml $JEDIETC/geosvar.${nymda}_${hha}z.yaml
+  set this = geosvar
+  if ( $JEDI_RUN_EAANA ) then
+    set this = geosens
+  endif
+  /bin/cp Config/$this.yaml geostmp.tmpl
+  insert_file_atstr.pl Config/obs.${nymdb}T${nhmsb}Z.yaml geostmp.tmpl OBSYAML_END
+  vED -env geostmp.tmpl -o Config/$this.${nymda}_${hha}z.yaml
+  /bin/cp Config/$this.${nymda}_${hha}z.yaml $JEDIETC/$this.${nymda}_${hha}z.yaml
 
 endif
 
-# ensemble & background files
+# Acquire background ensemble (either for hybrid VAR or ensemble DA)
 setenv JEDI_GET_ENSBKG 0
-if ( $JEDI_HYBRID ) then
+if ( $JEDI_HYBRID || $JEDI_RUN_EAANA ) then
   if ( $JEDI_HYBRID == 1 ) then # lat-lon ensemble
      set ensdir = $FVHOME/atmens
      set bkgtyp = "bkg.eta"
@@ -342,7 +368,7 @@ if ( $JEDI_HYBRID ) then
      set nwords = 3
   endif
   if ( -d $ensdir ) then  # ensemble is present in FVHOME
-     set this = `ls -1d $ensdir/mem*`
+     set this = `ls -1d $ensdir/mem* | wc`
      @ nmem = $this[1] 
      cd $JEDIWRK
      @ nc = 0
@@ -363,7 +389,9 @@ if ( $JEDI_HYBRID ) then
   endif
 endif
 
-if ( ! -e $JEDIWRK/.DONE_JEDI_GET_BKG_${nymdb}_${nhmsb} ) then
+# Acquire background fields (unless running ensemble DA)
+if ( ! $JEDI_RUN_EAANA ) then
+ if ( ! -e $JEDIWRK/.DONE_JEDI_GET_BKG_${nymdb}_${nhmsb} ) then
   cd bkg
   setenv NYMD  $nymdb # initial date of current cycle
   setenv NHMS  $nhmsb # initial time of current cycle
@@ -418,6 +446,7 @@ if ( ! -e $JEDIWRK/.DONE_JEDI_GET_BKG_${nymdb}_${nhmsb} ) then
      exit(3)
   endif
   touch $JEDIWRK/.DONE_JEDI_GET_BKG_${nymdb}_${nhmsb}
+ endif
 endif
 
 # When applicable, retrieve ensemble background

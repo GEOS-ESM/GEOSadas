@@ -30,7 +30,7 @@ if ( $#argv < 2 ) then
    echo "     Last   modified: 30Apr2026    by: R. Todling"
    echo " \\end{verbatim} "
    echo " \\clearpage "
-   exit(0)
+   exit(1)
 endif
 
 
@@ -153,13 +153,16 @@ endif
 # ----------------------
 if ( ! -e $FVWORK/.DONE_jedi_run_ana.csh.$yyyymmddhh) then
  if ( $JEDI_RUN_ANA ) then
-   zeit_ci.x jedi_var
+   zeit_ci.x jedi_run
 
-   if ( -e Config/geosvar.${nymda}_${hha}z.yaml ) then
-      setenv MYCONF Config/geosvar.${nymda}_${hha}z.yaml
+   set this = geosvar
+   if ( $JEDI_RUN_EAANA ) then
+      set this = geosens
+   endif
+   if ( -e Config/$this.${nymda}_${hha}z.yaml ) then
+      setenv MYCONF Config/$this.${nymda}_${hha}z.yaml
    else
-#     setenv MYCONF Config/geosvar.yaml
-       echo " ${MYNAME}: geosvar.${nymda}_${hha}z.yaml not found, aborting ..."
+       echo " ${MYNAME}: $this.${nymda}_${hha}z.yaml not found, aborting ..."
        exit (2) 
    endif
    if ( $JEDI_RUN_ADANA_TEST ) then
@@ -171,18 +174,30 @@ if ( ! -e $FVWORK/.DONE_jedi_run_ana.csh.$yyyymmddhh) then
       if (! -d inc ) mkdir inc 
    endif
 
-   if ( -e $FVHOME/run/jedi/jedi_run_var.j ) then
-      sbatch -W $FVHOME/run/jedi/jedi_run_var.j
-      sleep 2
+   if ( $JEDI_RUN_EAANA ) then
+     if ( -e $FVHOME/run/jedi/jedi_run_eda.j ) then
+        vED -env $FVHOME/run/jedi/jedi_run_eda.j -o jedi_run_eda.j
+        sbatch -W jedi_run_eda.j
+        sleep 2
+     else
+       echo " ${MYNAME}: cannot find jedi_run_eda.j, aborting ... "
+       exit (2) 
+     endif
    else
-      $JEDI_FV3VAR_MPIRUN $JEDIBUILD/bin/fv3jedi_var.x $MYCONF |& tee -a $FVWORK/$JEDIVARLOG
-      if ( $status ) then
-          echo " ${MYNAME}: failed in VAR, aborting ..."
-          exit (1)
-      endif
+     if ( -e $FVHOME/run/jedi/jedi_run_var.j ) then
+        vED -env $FVHOME/run/jedi/jedi_run_var.j -o jedi_run_var.j
+        sbatch -W jedi_run_var.j
+        sleep 2
+     else
+        $JEDI_FV3VAR_MPIRUN $JEDIBUILD/bin/fv3jedi_var.x $MYCONF |& tee -a $FVWORK/$JEDIVARLOG
+        if ( $status ) then
+            echo " ${MYNAME}: failed in VAR, aborting ..."
+            exit (1)
+        endif
+     endif
+     /bin/mv *inc*nc4 ./inc # somehow datapath setting in yaml is not effective at inc part
    endif
-   /bin/mv *inc*nc4 ./inc # somehow datapath setting in yaml is not effective at inc part
-   zeit_co.x jedi_var
+   zeit_co.x jedi_run
    
    # Converged in these many iterations
    # ----------------------------------
