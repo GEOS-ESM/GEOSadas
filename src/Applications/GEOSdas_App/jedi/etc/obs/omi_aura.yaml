@@ -1,0 +1,67 @@
+    - obs space:
+        name: OMI AURA
+        obsdatain:
+          engine:
+            type: H5File
+            obsfile: ./obs/omi_aura.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
+        obsdataout:
+          engine:
+            type: H5File
+            obsfile: ./hofx/omi_aura.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
+        simulated variables:
+        - ozoneTotal
+      obs operator:
+        name: AtmVertInterpLay
+        geovals:
+        - mole_fraction_of_ozone_in_air
+        coefficients:
+        - 0.0078976797
+        nlevels:
+        - 1
+        observation alias file: $FVHOME/run/jedi/Config/obsop_name_map.yaml
+      obs filters:
+      - filter: Perform Action
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: ozoneTotal
+        action:
+          name: assign error
+          error parameter: 5.0
+      - filter: Bounds Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: ozoneTotal
+        minvalue: 0
+        maxvalue: 1000
+        action:
+          name: reject
+      - filter: Bounds Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: ozoneTotal
+        test variables:
+        - name: MetaData/solarZenithAngle
+        maxvalue: 84.0
+        action:
+          name: reject
+      - filter: Bounds Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: ozoneTotal
+        test variables:
+        - name: MetaData/sensorScanPosition
+        minvalue: 3
+        maxvalue: 24
+        action:
+          name: reject
+      - filter: Background Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: ozoneTotal
+        threshold: 5.0
+        action:
+          name: reject
+      observation_name: omi_aura
