@@ -1,0 +1,352 @@
+    - obs space:
+        name: Surface Land Stations
+        obsdatain:
+          engine:
+            type: H5File
+            obsfile: ./obs/sfc.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
+        obsdataout:
+          engine:
+            type: H5File
+            obsfile: ./hofx/sfc.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
+        simulated variables:
+        - windEastward
+        - windNorthward
+        - virtualTemperature
+        - airTemperature
+        - specificHumidity
+        - stationPressure
+      obs operator:
+        name: Composite
+        components:
+        - name: VertInterp
+          variables:
+          - name: windEastward
+          - name: windNorthward
+          vertical coordinate: geopotential_height
+          observation vertical coordinate group: DerivedVariables
+          observation vertical coordinate: adjustedHeight
+          interpolation method: linear
+          hofx scaling field: SurfaceWindScalingHeight
+          hofx scaling field group: DerivedVariables
+        - name: VertInterp
+          observation alias file: $FVHOME/run/jedi/Config/obsop_name_map.yaml
+          variables:
+          - name: airTemperature
+          - name: virtualTemperature
+        - name: SfcCorrected
+          variables:
+          - name: stationPressure
+          correction scheme to use: GSL
+          geovar_geomz: geopotential_height
+          geovar_sfc_geomz: height_above_mean_sea_level_at_surface
+          station_altitude: height
+        - name: Identity
+          observation alias file: $FVHOME/run/jedi/Config/obsop_name_map.yaml
+          variables:
+          - name: specificHumidity
+      linear obs operator:
+        name: Composite
+        components:
+        - name: VertInterp
+          variables:
+          - name: windEastward
+          - name: windNorthward
+          vertical coordinate: geopotential_height
+          observation vertical coordinate group: DerivedVariables
+          observation vertical coordinate: adjustedHeight
+          interpolation method: linear
+          hofx scaling field: SurfaceWindScalingHeight
+          hofx scaling field group: DerivedVariables
+        - name: VertInterp
+          observation alias file: $FVHOME/run/jedi/Config/obsop_name_map.yaml
+          variables:
+          - name: airTemperature
+          - name: virtualTemperature
+        - name: Identity
+          observation alias file: $FVHOME/run/jedi/Config/obsop_name_map.yaml
+          variables:
+          - name: stationPressure
+          - name: specificHumidity
+      obs prior filters:
+      - filter: Variable Transforms
+        apply at iterations: 0, 1, 2
+        Transform: AdjustedHeightCoordinate
+        SkipWhenNoObs: false
+      - filter: Variable Transforms
+        apply at iterations: 0, 1, 2
+        Transform: SurfaceWindScalingHeight
+        SkipWhenNoObs: false
+      obs post filters:
+      - filter: Bounds Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: stationPressure
+        minvalue: 49999
+        action:
+          name: reject
+      - filter: Perform Action
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: stationPressure
+        where:
+        - variable: PreUseFlag/stationPressure
+          minvalue: 1
+        action:
+          name: reject
+      - filter: RejectList
+        apply at iterations: 0, 1, 2
+        where:
+        - variable:
+            name: PreQC/stationPressure
+          is_in: 4-15
+      - filter: Perform Action
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: stationPressure
+        where:
+        - variable: ObsType/stationPressure
+          is_in:
+          - 181
+        action:
+          name: assign error
+          error function:
+            name: ObsFunction/ObsErrorModelStepwiseLinear
+            options:
+              xvar:
+                name: ObsValue/stationPressure
+              xvals:
+              - 70000
+              - 65000
+              - 60000
+              - 55000
+              errors:
+              - 100
+              - 120
+              - 120
+              - 100000000000.0
+      - filter: Perform Action
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: stationPressure
+        where:
+        - variable: ObsType/stationPressure
+          is_in:
+          - 187
+        action:
+          name: assign error
+          error function:
+            name: ObsFunction/ObsErrorModelStepwiseLinear
+            options:
+              xvar:
+                name: ObsValue/stationPressure
+              xvals:
+              - 80000
+              - 75000
+              - 70000
+              - 65000
+              errors:
+              - 100
+              - 130
+              - 160
+              - 100000000000.0
+      - filter: Perform Action
+        apply at iterations: 0, 1, 2
+        action:
+          name: inflate error
+          inflation factor: 1.2
+        where:
+        - variable: PreQC/stationPressure
+          is_in:
+          - 3
+      - filter: Perform Action
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: stationPressure
+        action:
+          name: inflate error
+          inflation variable:
+            name: ObsFunction/ObsErrorFactorSfcPressure
+            options:
+              geovar_geomz: geopotential_height
+              geovar_sfc_geomz: height_above_mean_sea_level_at_surface
+              station_altitude: height
+      - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
+        assignments:
+        - name: TempObsErrorData/stationPressure
+          type: float
+          function:
+            name: ObsFunction/Arithmetic
+            options:
+              variables:
+              - name: ObsErrorData/stationPressure
+        defer to post: true
+      - filter: Perform Action
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: stationPressure
+        action:
+          name: assign error
+          error parameter: 100
+        where:
+        - variable:
+            name: TempObsErrorData/stationPressure
+          maxvalue: 100
+        - variable:
+            name: TempObsErrorData/stationPressure
+          value: is_valid
+        defer to post: true
+      - filter: Perform Action
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: stationPressure
+        action:
+          name: assign error
+          error parameter: 300
+        where:
+        - variable:
+            name: TempObsErrorData/stationPressure
+          minvalue: 300
+        - variable:
+            name: TempObsErrorData/stationPressure
+          value: is_valid
+        defer to post: true
+      - filter: Background Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: stationPressure
+        threshold: 4.0
+        action:
+          name: reject
+        where:
+        - variable: PreQC/stationPressure
+          is_not_in:
+          - 3
+        - variable: ObsType/stationPressure
+          is_in: 187
+        defer to post: true
+      - filter: Background Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: stationPressure
+        threshold: 2.8
+        action:
+          name: reject
+        where:
+        - variable: PreQC/stationPressure
+          is_in:
+          - 3
+        - variable: ObsType/stationPressure
+          is_in: 187
+        defer to post: true
+      - filter: Background Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: stationPressure
+        threshold: 3.6
+        action:
+          name: reject
+        where:
+        - variable: PreQC/stationPressure
+          is_not_in:
+          - 3
+        - variable: ObsType/stationPressure
+          is_in:
+          - 181
+        defer to post: true
+      - filter: Background Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: stationPressure
+        threshold: 2.52
+        action:
+          name: reject
+        where:
+        - variable: PreQC/stationPressure
+          is_in:
+          - 3
+        - variable: ObsType/stationPressure
+          is_in:
+          - 181
+        defer to post: true
+      - filter: Perform Action
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: stationPressure
+        action:
+          name: assign error
+          error function: TempObsErrorData/stationPressure
+        where:
+        - variable:
+            name: TempObsErrorData/stationPressure
+          value: is_valid
+        defer to post: true
+      - filter: Perform Action
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: stationPressure
+        action:
+          name: inflate error
+          inflation variable:
+            name: ObsFunction/ObsErrorFactorDuplicateCheck
+            options:
+              use_air_pressure: false
+              variable: stationPressure
+        defer to post: true
+      - filter: Bounds Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: stationPressure
+        test variables:
+        - name: ObsErrorData/stationPressure
+        maxvalue: 100000.0
+        defer to post: true
+      - filter: Perform Action
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: specificHumidity
+        where:
+        - variable: ObsType/specificHumidity
+          is_in: 181,187
+        action:
+          name: reject
+      - filter: Perform Action
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: airTemperature
+        where:
+        - variable: ObsType/airTemperature
+          is_in: 181,187
+        action:
+          name: reject
+      - filter: Perform Action
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: virtualTemperature
+        where:
+        - variable: ObsType/virtualTemperature
+          is_in: 181,187
+        action:
+          name: reject
+      - filter: Perform Action
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: windEastward
+        where:
+        - variable: ObsType/windEastward
+          is_in: 281,287
+        action:
+          name: reject
+      - filter: Perform Action
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: windNorthward
+        where:
+        - variable: ObsType/windNorthward
+          is_in: 281,287
+        action:
+          name: reject
+      observation_name: sfc

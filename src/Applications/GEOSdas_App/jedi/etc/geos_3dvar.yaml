@@ -121,12 +121,13 @@ cost function:
       sea_surface_temperature: ts_found
   background error:
     covariance model: SABER
+#   covariance type: gsi static covariance
     saber central block:
       saber block name: gsi hybrid covariance
       read:
         gsi akbk: ./fv3-jedi/fv3files/akbk@JEDI_BKG_VRES.nc4
-        gsi error covariance file: ./fv3-jedi/gsibec/gsibec_coefficients_c@JEDI_BKGCOV_RESOL.nc4
-        gsi berror namelist file: ./fv3-jedi/gsibec/cli_gsibec_configuration_c@JEDI_BKGCOV_RESOL.nml
+        gsi error covariance file: ./fv3-jedi/gsibec/gsibec_coefficients_l@JEDI_BKG_VRESx@JEDI_GSIBEC_NLONy@JEDI_GSIBEC_NLAT.nc4
+        gsi berror namelist file: ./fv3-jedi/gsibec/gsibec_configuration_l@JEDI_BKG_VRESx@JEDI_GSIBEC_NLONy@JEDI_GSIBEC_NLAT.nml
         processor layout x direction: @JEDI_VAR_GSIXLAYOUT
         processor layout y direction: @JEDI_VAR_GSIYLAYOUT
         debugging mode: false
@@ -150,8 +151,8 @@ cost function:
 #   saber outer blocks:
 #   - saber block name: gsi interpolation to model grid
 #     gsi akbk: ./fv3-jedi/fv3files/akbk@JEDI_BKG_VRES.nc4
-#     gsi error covariance file: ./fv3-jedi/gsibec/gsibec_coefficients_c@JEDI_BKGCOV_RESOL.nc4
-#     gsi berror namelist file: ./fv3-jedi/gsibec/cli_gsibec_configuration_c@JEDI_BKGCOV_RESOL.nml
+#     gsi error covariance file: ./fv3-jedi/gsibec/gsibec_coefficients_l@JEDI_BKG_VRESx@JEDI_GSIBEC_NLONy@JEDI_GSIBEC_NLAT.nc4
+#     gsi berror namelist file: ./fv3-jedi/gsibec/gsibec_configuration_l@JEDI_BKG_VRESx@JEDI_GSIBEC_NLONy@JEDI_GSIBEC_NLAT.nml
 #     processor layout x direction: @JEDI_VAR_GSIXLAYOUT
 #     processor layout y direction: @JEDI_VAR_GSIYLAYOUT
 #     debugging mode: false
