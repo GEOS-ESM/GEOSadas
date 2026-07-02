@@ -1,0 +1,238 @@
+    - obs space:
+        name: gnssrobndnbam
+        obsdatain:
+          engine:
+            type: H5File
+            obsfile: ./obs/gps.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
+          obsgrouping:
+            group variables:
+            - sequenceNumber
+            sort variable: impactHeightRO
+            sort order: ascending
+        obsdataout:
+          engine:
+            type: H5File
+            obsfile: ./hofx/gps.$BYYYYYMMDDTHH0000Z.nc4
+        io pool:
+          max pool size: 6
+        simulated variables:
+        - bendingAngle
+      obs operator:
+        name: GnssroBndNBAM
+        obs options:
+          use_compress: 1
+#         vertlayer: mass
+          vertlayer: full
+          sr_steps: 2
+          super_ref_qc: NBAM
+#         GSI_version: GEOS
+      obs filters:
+      - filter: BlackList
+        apply at iterations: 0, 1, 2
+        where:
+        - variable:
+            name: MetaData/satelliteIdentifier
+          is_in: 41,265,266,421,440,724,725,726,727,728,729
+      - filter: Perform Action
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: bendingAngle
+        where:
+        - variable: PreUseFlag/bendingAngle
+          minvalue: 1
+        action:
+          name: reject
+      - filter: Domain Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: bendingAngle
+        where:
+        - variable:
+            name: MetaData/impactHeightRO
+          minvalue: 0
+          maxvalue: 55000.1
+        action:
+          name: reject
+      - filter: Bounds Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: bendingAngle
+        where:
+        - variable:
+            name: MetaData/satelliteIdentifier
+          is_in: 265,266,267,268,269
+        test variables:
+        - name: MetaData/impactHeightRO
+        maxvalue: 45000.1
+        action:
+          name: reject
+      - filter: Bounds Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: bendingAngle
+        where:
+        - variable:
+            name: MetaData/satelliteIdentifier
+          is_in: 3-5
+        test variables:
+        - name: MetaData/impactHeightRO
+        minvalue: 8000.1
+        action:
+          name: reject
+      - filter: Bounds Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: bendingAngle
+        where:
+        - variable:
+            name: MetaData/satelliteIdentifier
+          is_in: 267,268,269
+        - variable:
+            name: MetaData/satelliteConstellationRO
+          is_in: 401
+        test variables:
+        - name: MetaData/impactHeightRO
+        minvalue: 5000.1
+        action:
+          name: reject
+      - filter: Bounds Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: bendingAngle
+        where:
+        - variable:
+            name: MetaData/satelliteIdentifier
+          is_in: 267,268,269
+        - variable:
+            name: MetaData/satelliteConstellationRO
+          is_in: 402-999
+        test variables:
+        - name: MetaData/impactHeightRO
+        minvalue: 9000.1
+        action:
+          name: reject
+      - filter: Bounds Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: bendingAngle
+        where:
+        - variable:
+            name: MetaData/satelliteIdentifier
+          is_in: 265,266
+        - variable:
+            name: MetaData/satelliteConstellationRO
+          is_in: 401
+        test variables:
+        - name: MetaData/impactHeightRO
+        minvalue: 5000.1
+        action:
+          name: reject
+      - filter: Bounds Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: bendingAngle
+        where:
+        - variable:
+            name: MetaData/satelliteIdentifier
+          is_in: 265,266
+        - variable:
+            name: MetaData/satelliteConstellationRO
+          is_in: 402-999
+        test variables:
+        - name: MetaData/impactHeightRO
+        minvalue: 8000.1
+        action:
+          name: reject
+      - filter: ROobserror
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: bendingAngle
+        errmodel: NBAM
+      - filter: Perform Action
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: bendingAngle
+        action:
+          name: inflate error
+          inflation factor: 2.0
+        where:
+        - variable: MetaData/satelliteIdentifier
+          is_in: 267,268,269
+      - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
+        assignments:
+        - name: JediAdjustObsError/bendingAngle
+          type: float
+          function:
+            name: ObsFunction/Arithmetic
+            options:
+              variables:
+              - name: ObsErrorData/bendingAngle
+        defer to post: true
+      - filter: Perform Action
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: bendingAngle
+        action:
+          name: assign error
+          error parameter: 1.0
+        where:
+        - variable:
+            name: JediAdjustObsError/bendingAngle
+          maxvalue: 1.0
+        - variable:
+            name: JediAdjustObsError/bendingAngle
+          value: is_valid
+        - variable:
+            name: MetaData/satelliteIdentifier
+          is_in: 3,5,41,42,43,44,267,268,269,440,421,724,725,726,727,728,729, 750,751,752,753,754,755,821,825
+        defer to post: true
+      - filter: Perform Action
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: bendingAngle
+        action:
+          name: assign error
+          error parameter: 10.0
+        where:
+        - variable:
+            name: JediAdjustObsError/bendingAngle
+          minvalue: 10.0
+        - variable:
+            name: JediAdjustObsError/bendingAngle
+          value: is_valid
+        defer to post: true
+      - filter: Background Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: bendingAngle
+        threshold: 5
+        action:
+          name: reject
+        defer to post: true
+      - filter: Perform Action
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: bendingAngle
+        action:
+          name: assign error
+          error function: JediAdjustObsError/bendingAngle
+        where:
+        - variable:
+            name: JediAdjustObsError/bendingAngle
+          value: is_valid
+        defer to post: true
+      - filter: Background Check RONBAM
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: bendingAngle
+        defer to post: true
+      - filter: Background Check RONBAM
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: bendingAngle
+        action:
+          name: RONBAMErrInflate_GEOS
+        defer to post: true
+      observation_name: gps

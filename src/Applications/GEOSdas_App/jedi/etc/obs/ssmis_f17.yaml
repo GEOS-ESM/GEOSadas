@@ -1,0 +1,829 @@
+    - obs space:
+        name: ssmis_f17
+        obsdatain:
+          engine:
+            type: H5File
+            obsfile: ./obs/ssmis_f17.$BYYYYYMMDDTHH0000Z.nc4
+            missing file action: warn
+        obsdataout:
+          engine:
+            type: H5File
+            obsfile: ./hofx/ssmis_f17.$BYYYYYMMDDTHH0000Z.nc4
+        simulated variables:
+        - brightnessTemperature
+        channels: 1-24
+      io pool:
+        max pool size: 6
+      obs operator:
+        name: CRTM
+        Absorbers:
+        - H2O
+        - O3
+        - CO2
+        linear obs operator:
+          Absorbers:
+          - H2O
+          - O3
+          Surfaces:
+          - Water_Temperature
+          - Land_Temperature
+          - Ice_Temperature
+          - Snow_Temperature
+        obs options:
+          Sensor_ID: ssmis_f17
+          EndianType: little_endian
+          CoefficientPath: $JEDI_CRTM_COEFFS
+      obs bias:
+        input file: ./obs/ssmis_f17.$PYYYYYMMDDTHH0000Z.satbias.nc4
+        output file: ./vbc/ssmis_f17.$BYYYYYMMDDTHH0000Z.satbias.nc4
+        variational bc:
+          predictors:
+          - name: constant
+          - name: lapseRate
+            order: 2
+            tlapse: ./obs/ssmis_f17.$PYYYYYMMDDTHH0000Z.tlapse.txt
+          - name: lapseRate
+            tlapse: ./obs/ssmis_f17.$PYYYYYMMDDTHH0000Z.tlapse.txt
+          - name: cosineOfLatitudeTimesOrbitNode
+          - name: sineOfLatitude
+          - name: emissivityJacobian
+          - name: sensorScanAngle
+            var_name: sensorScanPosition
+            order: 4
+          - name: sensorScanAngle
+            var_name: sensorScanPosition
+            order: 3
+          - name: sensorScanAngle
+            var_name: sensorScanPosition
+            order: 2
+          - name: sensorScanAngle
+            var_name: sensorScanPosition
+        covariance:
+          minimal required obs number: 20
+          variance range:
+          - 1e-06
+          - 10.0
+          step size: 0.0001
+          largest analysis variance: 10000.0
+          prior:
+            input file: ./obs/ssmis_f17.$PYYYYYMMDDTHH0000Z.satbias_cov.nc4
+            inflation:
+              ratio: 1.1
+              ratio for small dataset: 2.0
+          output file: ./vbc/ssmis_f17.$BYYYYYMMDDTHH0000Z.satbias_cov.nc4
+      obs prior filters:
+      - filter: Perform Action
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-24
+        action:
+          name: assign error
+          error parameter vector:
+          - 1.5
+          - 0.5
+          - 0.5
+          - 0.5
+          - 0.5
+          - 1.0
+          - 1.0
+          - 3.0
+          - 3.0
+          - 3.0
+          - 3.0
+          - 2.4
+          - 1.27
+          - 1.44
+          - 3.0
+          - 1.34
+          - 1.74
+          - 3.75
+          - 3.0
+          - 3.0
+          - 2.0
+          - 6.4
+          - 1.0
+          - 1.0
+      obs post filters:
+      - filter: Background Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-24
+        absolute threshold: 3.5
+        remove bias correction: true
+        where:
+        - variable:
+            name: GeoVaLs/water_area_fraction
+          minvalue: 0.99
+        action:
+          name: reject
+      - filter: RejectList
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-24
+        where:
+        - variable:
+            name: GeoVaLs/geopotential_height_at_surface
+          minvalue: 2000.0
+          min_exclusive: true
+        - variable:
+            name: GeoVaLs/water_area_fraction
+          maxvalue: 0.99
+          max_exclusive: true
+      - filter: RejectList
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-3,8-18
+        where:
+        - variable:
+            name: GeoVaLs/land_area_fraction
+          maxvalue: 0.99
+          max_exclusive: true
+        - variable:
+            name: GeoVaLs/water_area_fraction
+          maxvalue: 0.99
+          max_exclusive: true
+        - variable:
+            name: GeoVaLs/ice_area_fraction
+          maxvalue: 0.99
+          max_exclusive: true
+        - variable:
+            name: GeoVaLs/surface_snow_area_fraction
+          maxvalue: 0.99
+          max_exclusive: true
+      - filter: Difference Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-2, 12-16
+        reference: ObsValue/brightnessTemperature_2
+        value: HofX/brightnessTemperature_2
+        minvalue: -1.5
+        maxvalue: 1.5
+        where:
+        - variable:
+            name: GeoVaLs/water_area_fraction
+          maxvalue: 0.99
+          max_exclusive: true
+      - filter: Background Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-24
+        absolute threshold: 3.5
+        remove bias correction: true
+        where:
+        - variable:
+            name: GeoVaLs/water_area_fraction
+          maxvalue: 0.99
+          max_exclusive: true
+        action:
+          name: reject
+      - filter: Difference Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 9
+        reference: ObsValue/brightnessTemperature_9
+        value:
+          name: ObsFunction/Arithmetic
+          options:
+            variables:
+            - name: HofX/brightnessTemperature_17
+            - name: ObsBiasData/brightnessTemperature_17
+            - name: HofX/brightnessTemperature_8
+            - name: ObsBiasData/brightnessTemperature_8
+            coefs:
+            - -0.485934
+            - 0.485934
+            - 0.473806
+            - -0.473806
+            intercept: 271.252327
+        maxvalue: 2
+      - filter: Difference Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 10
+        reference: ObsValue/brightnessTemperature_10
+        value:
+          name: ObsFunction/Arithmetic
+          options:
+            variables:
+            - name: HofX/brightnessTemperature_17
+            - name: ObsBiasData/brightnessTemperature_17
+            - name: HofX/brightnessTemperature_8
+            - name: ObsBiasData/brightnessTemperature_8
+            coefs:
+            - -0.413688
+            - 0.413688
+            - 0.361549
+            - -0.361549
+            intercept: 272.280341
+        maxvalue: 2
+      - filter: Difference Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 11
+        reference: ObsValue/brightnessTemperature_11
+        value:
+          name: ObsFunction/Arithmetic
+          options:
+            variables:
+            - name: HofX/brightnessTemperature_17
+            - name: ObsBiasData/brightnessTemperature_17
+            - name: HofX/brightnessTemperature_8
+            - name: ObsBiasData/brightnessTemperature_8
+            coefs:
+            - -0.400882
+            - 0.400882
+            - 0.27051
+            - -0.27051
+            intercept: 278.824902
+        maxvalue: 2
+      - filter: Bounds Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-24
+        test variables:
+        - name: ObsFunction/NearSSTRetCheckIR
+          channels: 1-24
+          options:
+            channels: 1-24
+            use_flag: >>>use_channels_ssmis_f17<<<
+        maxvalue: 1e-12
+        action:
+          name: reject
+      - filter: BlackList
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-24
+        action:
+          name: inflate error
+          inflation variable:
+            name: ObsFunction/ObsErrorFactorSurfJacobianRad
+            channels: 1-24
+            options:
+              channels: 1-24
+              sensor: ssmis_f17
+              obserr_demisf:
+              - 0.01
+              - 0.01
+              - 0.01
+              - 0.01
+              - 0.01
+              obserr_dtempf:
+              - 0.5
+              - 0.5
+              - 0.5
+              - 0.5
+              - 0.5
+      - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
+        assignments:
+        - name: DerivedMetaData/errorInflationFactor1
+          type: float
+          function:
+            name: ObsFunction/Arithmetic
+            options:
+              variables:
+              - name: ObsErrorData/brightnessTemperature_1
+              coefs:
+              - 2.25
+              exponents:
+              - -1
+      - filter: Background Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature_1
+        threshold: DerivedMetaData/errorInflationFactor1
+        absolute threshold: 6.0
+        action:
+          name: reject
+      - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
+        assignments:
+        - name: DerivedMetaData/errorInflationFactor2
+          type: float
+          function:
+            name: ObsFunction/Arithmetic
+            options:
+              variables:
+              - name: ObsErrorData/brightnessTemperature_2
+              coefs:
+              - 0.75
+              exponents:
+              - -1
+      - filter: Background Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature_2
+        threshold: DerivedMetaData/errorInflationFactor2
+        absolute threshold: 6.0
+        action:
+          name: reject
+      - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
+        assignments:
+        - name: DerivedMetaData/errorInflationFactor3
+          type: float
+          function:
+            name: ObsFunction/Arithmetic
+            options:
+              variables:
+              - name: ObsErrorData/brightnessTemperature_3
+              coefs:
+              - 0.75
+              exponents:
+              - -1
+      - filter: Background Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature_3
+        threshold: DerivedMetaData/errorInflationFactor3
+        absolute threshold: 6.0
+        action:
+          name: reject
+      - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
+        assignments:
+        - name: DerivedMetaData/errorInflationFactor4
+          type: float
+          function:
+            name: ObsFunction/Arithmetic
+            options:
+              variables:
+              - name: ObsErrorData/brightnessTemperature_4
+              coefs:
+              - 0.75
+              exponents:
+              - -1
+      - filter: Background Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature_4
+        threshold: DerivedMetaData/errorInflationFactor4
+        absolute threshold: 6.0
+        action:
+          name: reject
+      - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
+        assignments:
+        - name: DerivedMetaData/errorInflationFactor5
+          type: float
+          function:
+            name: ObsFunction/Arithmetic
+            options:
+              variables:
+              - name: ObsErrorData/brightnessTemperature_5
+              coefs:
+              - 0.75
+              exponents:
+              - -1
+      - filter: Background Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature_5
+        threshold: DerivedMetaData/errorInflationFactor5
+        absolute threshold: 6.0
+        action:
+          name: reject
+      - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
+        assignments:
+        - name: DerivedMetaData/errorInflationFactor6
+          type: float
+          function:
+            name: ObsFunction/Arithmetic
+            options:
+              variables:
+              - name: ObsErrorData/brightnessTemperature_6
+              coefs:
+              - 1.5
+              exponents:
+              - -1
+      - filter: Background Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature_6
+        threshold: DerivedMetaData/errorInflationFactor6
+        absolute threshold: 6.0
+        action:
+          name: reject
+      - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
+        assignments:
+        - name: DerivedMetaData/errorInflationFactor7
+          type: float
+          function:
+            name: ObsFunction/Arithmetic
+            options:
+              variables:
+              - name: ObsErrorData/brightnessTemperature_7
+              coefs:
+              - 1.5
+              exponents:
+              - -1
+      - filter: Background Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature_7
+        threshold: DerivedMetaData/errorInflationFactor7
+        absolute threshold: 6.0
+        action:
+          name: reject
+      - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
+        assignments:
+        - name: DerivedMetaData/errorInflationFactor8
+          type: float
+          function:
+            name: ObsFunction/Arithmetic
+            options:
+              variables:
+              - name: ObsErrorData/brightnessTemperature_8
+              coefs:
+              - 4.5
+              exponents:
+              - -1
+      - filter: Background Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature_8
+        threshold: DerivedMetaData/errorInflationFactor8
+        absolute threshold: 6.0
+        action:
+          name: reject
+      - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
+        assignments:
+        - name: DerivedMetaData/errorInflationFactor9
+          type: float
+          function:
+            name: ObsFunction/Arithmetic
+            options:
+              variables:
+              - name: ObsErrorData/brightnessTemperature_9
+              coefs:
+              - 4.5
+              exponents:
+              - -1
+      - filter: Background Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature_9
+        threshold: DerivedMetaData/errorInflationFactor9
+        absolute threshold: 6.0
+        action:
+          name: reject
+      - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
+        assignments:
+        - name: DerivedMetaData/errorInflationFactor10
+          type: float
+          function:
+            name: ObsFunction/Arithmetic
+            options:
+              variables:
+              - name: ObsErrorData/brightnessTemperature_10
+              coefs:
+              - 4.5
+              exponents:
+              - -1
+      - filter: Background Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature_10
+        threshold: DerivedMetaData/errorInflationFactor10
+        absolute threshold: 6.0
+        action:
+          name: reject
+      - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
+        assignments:
+        - name: DerivedMetaData/errorInflationFactor11
+          type: float
+          function:
+            name: ObsFunction/Arithmetic
+            options:
+              variables:
+              - name: ObsErrorData/brightnessTemperature_11
+              coefs:
+              - 4.5
+              exponents:
+              - -1
+      - filter: Background Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature_11
+        threshold: DerivedMetaData/errorInflationFactor11
+        absolute threshold: 6.0
+        action:
+          name: reject
+      - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
+        assignments:
+        - name: DerivedMetaData/errorInflationFactor12
+          type: float
+          function:
+            name: ObsFunction/Arithmetic
+            options:
+              variables:
+              - name: ObsErrorData/brightnessTemperature_12
+              coefs:
+              - 3.6
+              exponents:
+              - -1
+      - filter: Background Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature_12
+        threshold: DerivedMetaData/errorInflationFactor12
+        absolute threshold: 6.0
+        action:
+          name: reject
+      - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
+        assignments:
+        - name: DerivedMetaData/errorInflationFactor13
+          type: float
+          function:
+            name: ObsFunction/Arithmetic
+            options:
+              variables:
+              - name: ObsErrorData/brightnessTemperature_13
+              coefs:
+              - 1.905
+              exponents:
+              - -1
+      - filter: Background Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature_13
+        threshold: DerivedMetaData/errorInflationFactor13
+        absolute threshold: 6.0
+        action:
+          name: reject
+      - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
+        assignments:
+        - name: DerivedMetaData/errorInflationFactor14
+          type: float
+          function:
+            name: ObsFunction/Arithmetic
+            options:
+              variables:
+              - name: ObsErrorData/brightnessTemperature_14
+              coefs:
+              - 2.16
+              exponents:
+              - -1
+      - filter: Background Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature_14
+        threshold: DerivedMetaData/errorInflationFactor14
+        absolute threshold: 6.0
+        action:
+          name: reject
+      - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
+        assignments:
+        - name: DerivedMetaData/errorInflationFactor15
+          type: float
+          function:
+            name: ObsFunction/Arithmetic
+            options:
+              variables:
+              - name: ObsErrorData/brightnessTemperature_15
+              coefs:
+              - 4.5
+              exponents:
+              - -1
+      - filter: Background Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature_15
+        threshold: DerivedMetaData/errorInflationFactor15
+        absolute threshold: 6.0
+        action:
+          name: reject
+      - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
+        assignments:
+        - name: DerivedMetaData/errorInflationFactor16
+          type: float
+          function:
+            name: ObsFunction/Arithmetic
+            options:
+              variables:
+              - name: ObsErrorData/brightnessTemperature_16
+              coefs:
+              - 2.01
+              exponents:
+              - -1
+      - filter: Background Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature_16
+        threshold: DerivedMetaData/errorInflationFactor16
+        absolute threshold: 6.0
+        action:
+          name: reject
+      - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
+        assignments:
+        - name: DerivedMetaData/errorInflationFactor17
+          type: float
+          function:
+            name: ObsFunction/Arithmetic
+            options:
+              variables:
+              - name: ObsErrorData/brightnessTemperature_17
+              coefs:
+              - 2.61
+              exponents:
+              - -1
+      - filter: Background Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature_17
+        threshold: DerivedMetaData/errorInflationFactor17
+        absolute threshold: 6.0
+        action:
+          name: reject
+      - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
+        assignments:
+        - name: DerivedMetaData/errorInflationFactor18
+          type: float
+          function:
+            name: ObsFunction/Arithmetic
+            options:
+              variables:
+              - name: ObsErrorData/brightnessTemperature_18
+              coefs:
+              - 5.625
+              exponents:
+              - -1
+      - filter: Background Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature_18
+        threshold: DerivedMetaData/errorInflationFactor18
+        absolute threshold: 6.0
+        action:
+          name: reject
+      - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
+        assignments:
+        - name: DerivedMetaData/errorInflationFactor19
+          type: float
+          function:
+            name: ObsFunction/Arithmetic
+            options:
+              variables:
+              - name: ObsErrorData/brightnessTemperature_19
+              coefs:
+              - 4.5
+              exponents:
+              - -1
+      - filter: Background Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature_19
+        threshold: DerivedMetaData/errorInflationFactor19
+        absolute threshold: 6.0
+        action:
+          name: reject
+      - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
+        assignments:
+        - name: DerivedMetaData/errorInflationFactor20
+          type: float
+          function:
+            name: ObsFunction/Arithmetic
+            options:
+              variables:
+              - name: ObsErrorData/brightnessTemperature_20
+              coefs:
+              - 4.5
+              exponents:
+              - -1
+      - filter: Background Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature_20
+        threshold: DerivedMetaData/errorInflationFactor20
+        absolute threshold: 6.0
+        action:
+          name: reject
+      - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
+        assignments:
+        - name: DerivedMetaData/errorInflationFactor21
+          type: float
+          function:
+            name: ObsFunction/Arithmetic
+            options:
+              variables:
+              - name: ObsErrorData/brightnessTemperature_21
+              coefs:
+              - 3.0
+              exponents:
+              - -1
+      - filter: Background Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature_21
+        threshold: DerivedMetaData/errorInflationFactor21
+        absolute threshold: 6.0
+        action:
+          name: reject
+      - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
+        assignments:
+        - name: DerivedMetaData/errorInflationFactor22
+          type: float
+          function:
+            name: ObsFunction/Arithmetic
+            options:
+              variables:
+              - name: ObsErrorData/brightnessTemperature_22
+              coefs:
+              - 9.6
+              exponents:
+              - -1
+      - filter: Background Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature_22
+        threshold: DerivedMetaData/errorInflationFactor22
+        absolute threshold: 6.0
+        action:
+          name: reject
+      - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
+        assignments:
+        - name: DerivedMetaData/errorInflationFactor23
+          type: float
+          function:
+            name: ObsFunction/Arithmetic
+            options:
+              variables:
+              - name: ObsErrorData/brightnessTemperature_23
+              coefs:
+              - 1.5
+              exponents:
+              - -1
+      - filter: Background Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature_23
+        threshold: DerivedMetaData/errorInflationFactor23
+        absolute threshold: 6.0
+        action:
+          name: reject
+      - filter: Variable Assignment
+        apply at iterations: 0, 1, 2
+        assignments:
+        - name: DerivedMetaData/errorInflationFactor24
+          type: float
+          function:
+            name: ObsFunction/Arithmetic
+            options:
+              variables:
+              - name: ObsErrorData/brightnessTemperature_24
+              coefs:
+              - 1.5
+              exponents:
+              - -1
+      - filter: Background Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature_24
+        threshold: DerivedMetaData/errorInflationFactor24
+        absolute threshold: 6.0
+        action:
+          name: reject
+      - filter: Bounds Check
+        apply at iterations: 0, 1, 2
+        filter variables:
+        - name: brightnessTemperature
+          channels: 1-24
+        test variables:
+        - name: ObsFunction/ChannelUseflagCheckRad
+          channels: 1-24
+          options:
+            channels: 1-24
+            use_flag: >>>use_channels_ssmis_f17<<<
+        minvalue: 1e-12
+        action:
+          name: reject
+      observation_name: ssmis_f17

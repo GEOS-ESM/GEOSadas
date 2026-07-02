@@ -1,12 +1,13 @@
 esma_add_subdirectories (
-  @MAPL
-  @GMAO_Shared
-  @NCEP_Shared
-  @AeroML/src
+  GMAO_Shared
+  NCEP_Shared
+  AeroML/src
   JCSDA_crtm
   )
 
-# Special case - FMS is built twice with two
-# different precisions.
-add_subdirectory (@FMS fms_r4)
-add_subdirectory (@FMS fms_r8)
+if (NOT MAPL_FOUND)
+  message (STATUS "External MAPL library not found. Building MAPL from source.")
+  esma_add_subdirectory (MAPL)
+else ()
+  message (STATUS "MAPL library found. Using MAPL from ${MAPL_BASE_DIR}")
+endif ()

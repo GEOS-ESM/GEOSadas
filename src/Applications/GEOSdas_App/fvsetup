@@ -392,6 +392,7 @@ my ($landbcs);
 my ($coupled, $ores, $mometc);
 my ($o_servers,$bckend_wrts, $xncpus, $ncpus_per_node);
 my ($skipgsi);
+my ($jedi_ensrpy, $jedi_exprpy);
 
 my ($sysfile, $nodeflg);
 my (@rmTilde);
@@ -2526,6 +2527,9 @@ sub ed_aens_das_replay_acq {
   $replay_arcdir = "/discover/nobackup/projects/gmao/advda/rtodling/archive/x0044";
   $replay_arcdir = query("Replay archive directory?", $replay_arcdir);
 
+  $jedi_ensrpy = $replay_arcdir;
+  $jedi_exprpy = $aens_replay_expid;
+
   $acq = "$fvhome/$mydir/atmens_replay.acq";
   open(SCRIPT,">$acq") or die ">>> ERROR <<< cannot write $acq";
   print  SCRIPT <<"EOF";
@@ -3702,20 +3706,31 @@ sub set_geosjedi {
   if ( ! $ENV{GEOSJEDI} ) { return 0 };
 
   $nogsi = " ";
-  if ( $skipgsi ) { $nogsi = "-nogsi" };
-
-  if( $ENV{OFFLINE_IODA_DIR} ) {
-     $iodadir = $ENV{OFFLINE_IODA_DIR};
+  if ( $skipgsi ) { 
+     $nogsi = "-nogsi";
+     if( $ENV{OFFLINE_IODA_DIR} ) {
+        $iodadir = $ENV{OFFLINE_IODA_DIR};
+     } else {
+#       $iodadir = "/discover/nobackup/projects/gmao/dadev/rtodling/archive/541/Milan/x0050/ioda/";
+        $iodadir = "/discover/nobackup/projects/gmao/dadev/rtodling/archive/544/x0054/ioda/";
+     }
   } else {
-     $iodadir = "/discover/nobackup/projects/gmao/dadev/rtodling/archive/541/Milan/x0050/ioda/";
+     $iodadir = "/dev/null"; # this expects ncdiag files to be created by GSI
+                             # so that JEDIana can convert files to IODA on the fly
   }
-  $jediopts = "-fvhome $fvhome -iodadir $iodadir -archive $acqloc -gcmres $agcm_im $nogsi";
+  $xtra4jedi = "";
+  if ( $jedi_ensrpy ) {
+     $xtra4jedi = "-ensrpy $jedi_ensrpy -exprpy $jedi_exprpy";
+  }
+  $jediopts = "-fvhome $fvhome -iodadir $iodadir -archive $acqloc -gcmres $agcm_im $nogsi $xtra4jedi";
 
   if ( $ENV{JEDI_ATMVAR_SCHEME} ) {
       $jedivar = $ENV{JEDI_ATMVAR_SCHEME};
   } else {
     if ( $hyb_ens < 3 ) { 
       $jedivar = "3dfgat";
+    } elsif ( $hyb_ens == 3 ) { 
+      $jedivar = "hyb3denvar";
     } else {
       $jedivar = "hyb4denvar";
     }
