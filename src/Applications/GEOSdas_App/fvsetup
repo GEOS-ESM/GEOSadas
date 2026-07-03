@@ -4065,7 +4065,10 @@ sub get_obsys {
 # Regular run
 # -----------
   print("\n  DEFAULT: $obsclass\n\n");
-  $ans = query("OBSERVING SYSTEM CLASSES?");
+#  ans = "ncep_atms_bufr,ncep_satwnd_bufr,disc_airs_bufr"         # ygyu add
+#  print "\n intended obsclass = $ans \n";
+  ##  $ans = query("OBSERVING SYSTEM CLASSES?", $ans);
+  $ans = query("OBSERVING SYSTEM CLASSES?");      
   print "\n ans = $ans \n";
 
   $obsclass = $ans unless blank($ans);
@@ -4463,7 +4466,7 @@ EOF
   print   "GOCART TRACERS\n";
   print   "--------------\n\n";
 
-  $ans = query("  Include GOCART tracers (CO,CO2,aerosols,etc) (y/n)?", "n");
+  $ans = query("  Include GOCART tracers (CO,CO2,aerosols,etc) (y/n)?", "y");
   $gocart_tracers = 0 if neg($ans);
 
   # query for aerosol analysis
@@ -8080,15 +8083,16 @@ if ( $fvchem && $lm > 2 ) {
 #$jobqueue1
 EOF
 
+#ygyu test 
 if ( $siteID eq "nccs" ) {
 print  SCRIPT <<"EOF";
-#SBATCH --job-name=$jobn
-#SBATCH --output=$jobn.log.o%j.txt
-#SBATCH --ntasks=$xncpus
-#SBATCH --ntasks-per-node=$ncpus_per_node
-###SBATCH --constraint=$nodeflg
-#SBATCH --time=${daswallclk}:00
-#SBATCH --no-requeue
+##SBATCH --job-name=$jobn
+##SBATCH --output=$jobn.log.o%j.txt
+##SBATCH --ntasks=$xncpus
+##SBATCH --ntasks-per-node=$ncpus_per_node
+####SBATCH --constraint=$nodeflg
+##SBATCH --time=${daswallclk}:00
+##SBATCH --no-requeue
 EOF
 
 }else{
@@ -8132,6 +8136,9 @@ print SCRIPT <<"EOF";
  set myname = `basename \$0`
  cd # in latest SLURM env job also starts from where submitted
     # it needs to be at home to be able to properly resolve which commands
+
+ # ygyu add
+ setenv esma_mpirun mpirun
 
 # Source Run Time Environment settings
 # ------------------------------------

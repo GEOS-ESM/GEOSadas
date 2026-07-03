@@ -4505,7 +4505,8 @@ endif
   else if ( $npn == 128 ) then
      set mynodes = "mil"
   else
-     set mynodes = "hasw"
+#ygyu     set mynodes = "hasw"
+       set mynodes = ""
   endif
 
   setenv GAASFAIL $AODWORK/ana_aod.FAILED.$$
@@ -4546,8 +4547,12 @@ endif
      # submit job and save job ID
      #---------------------------
      if ( $AODBLOCKJOB ) then
-        set jobIDline = (`$PBS_BIN/$BATCH_SUBCMD $BLOCKFLAG -o $gaasLOG $jobf`)
+#ygyu
+#should have fixed PBS_BIN definition     
+##        set jobIDline = (`$PBS_BIN/$BATCH_SUBCMD $BLOCKFLAG -o $gaasLOG $jobf`)
+        set jobIDline = (`$BATCH_SUBCMD $BLOCKFLAG -o $gaasLOG $jobf`)     
      else
+#ygyu
         set jobIDline = (`$PBS_BIN/$BATCH_SUBCMD -o $gaasLOG $jobf`)
      endif
      set jobID = $jobIDline[$#jobIDline]
