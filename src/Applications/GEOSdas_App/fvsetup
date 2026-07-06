@@ -9997,8 +9997,10 @@ sub init_agcm_rc {
     #   default is based on NCA settings (but line is commented since we don't want this done)
     if ( $pcp_forced ) {
         $pcp_fntmpl = "d5_merra/Y%y4/M%m2/d5_merra.tavg1_2d_lfo_Nx_corr.%y4%m2%d2_%h230z.nc";
-        if (r21c) { $pcp_fntmpl = "precip_corr_R21C/diag/Y%y4/M%m2/R21C.tavg_1hr_prcpcorr_c360_sfc.%y4%m2%d2_%h230.nc4"};  
+        if (r21c) { $pcp_fntmpl = "precip_corr_R21C/diag/Y%y4/M%m2/R21C.tavg_1hr_prcpcorr_c360_sfc.%y4%m2%d2_%h230.nc4"};
+        if (r21c) { $pcp_sclim_fntmpl = "precip_corr_R21C/clim//M21CtoIMGv7BF.precip_clim_scale.8888%m2%d2.nc4"};	
     } else {
+	$pcp_sclim_fntmpl = "/dev/null ";
         if ( $nymd < 19890101 ) {
            $pcp_fntmpl = "d5_merra_jan79/diag/Y%y4/d5_merra_jan79.tavg1_2d_lfo_Nx_corr.%y4%m2%d2_%h230z.nc";
         } elsif ( $nymd > 19890101 && $nymd < 19980101 ) {
@@ -10008,7 +10010,7 @@ sub init_agcm_rc {
         }
     }
     AGCM_label_subst("\@PRECIP_FILE", "$pcp_fntmpl");
-    
+    AGCM_label_subst("\@PRECIP_FILE_CLIMSCALE", "$pcp_sclim_fntmpl");
 }
 
 #=======================================================================

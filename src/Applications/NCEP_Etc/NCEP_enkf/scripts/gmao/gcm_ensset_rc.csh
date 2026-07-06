@@ -345,6 +345,17 @@ cd $ENSWORK/$member
          echo "s/>>>COUPLED<<</#/1"          >> sed_file
          echo "s/>>>MEMBER<<</${member}/1"   >> sed_file
          echo "s/>>>MEMIDX<<</${memidx}/1"   >> sed_file
+
+	 # Update Precip Correction option for MERRA-21C
+         # to transition from IMERG to scaled_clim 		
+	 set hh = `echo $nhmsb | cut -c 1-2`
+	 set check_date = ${nymdb}${hh}
+	 set pcp_forced = `grep -c '^PRECIP_FILE:' ./AGCM.rc.tmpl`
+	 
+         if ( ${check_date} >= 2025093021 && ${pcp_forced} > 0 ) then
+            echo 's/^PRECIP_FILE:/#PRECIP_FILE:/'            >> sed_file
+            echo 's/^#PRECIP_FILE_CLIMSCALE:/PRECIP_FILE_CLIMSCALE:/' >> sed_file
+         endif
          /bin/rm -f ./AGCM.rc
          sed -f sed_file  $myagcmrc > ./AGCM.rc
 
