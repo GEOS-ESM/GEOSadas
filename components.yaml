@@ -28,7 +28,7 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  tag: v1.7.2+R21C_v1.0.5
+  tag: v1.7.2+R21C_v1.0.6
   develop: R21C
 
 GMAOpyobs:
@@ -65,13 +65,13 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  tag: v1.5.5-R21C-7
+  tag: v1.5.5-R21C-8
   develop: R21C
 
 GEOSgcm_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp
   remote: ../GEOSgcm_GridComp.git
-  tag: v1.18.1+R21C_v1.0.4
+  tag: v1.18.1+R21C_v1.0.5
   sparse: ./config/GEOSgcm_GridComp.sparse
   develop: R21C
 
@@ -195,7 +195,7 @@ RRTMGP:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  tag: v1.9.6+R21C_v1.0.6
+  tag: v1.9.6+R21C_v1.0.7
   develop: R21C
 
 Ocean-LETKF:
