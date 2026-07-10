@@ -305,7 +305,7 @@ sub ed_g5agcm_rc {
     # uncomment precipation force except when specified
     # -------------------------------------------------
     if ( $pcp_forced ) {
-        $uncomment{"#PRECIP_FILE"}  = 1;
+        $uncomment{"#PRECIP_FILE:"}  = 1;
         $uncomment{"#USE_PP_TAPER"} = 1;
     }
 

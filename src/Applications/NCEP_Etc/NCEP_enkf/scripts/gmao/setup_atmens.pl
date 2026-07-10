@@ -536,8 +536,9 @@ sub ed_agcm_rc {
         }
 
         if ( $dopcpcor ) {
-	   if($rcd =~ /\#PRECIP_FILE/) {$rcd=~ s/\#PRECIP_FILE/PRECIP_FILE/g; }   	
-	   if($rcd =~ /\@PRECIP_FILE/) {$rcd=~ s/\@PRECIP_FILE/precip_corr_R21C\/diag\/Y%y4\/M%m2\/R21C.tavg_1hr_prcpcorr_c360_sfc.%y4%m2%d2_%h230.nc4/g; }
+	   if($rcd =~ /\#PRECIP_FILE\b/) {$rcd=~ s/\#PRECIP_FILE\b/PRECIP_FILE/g; }   	
+	   if($rcd =~ /\@PRECIP_FILE\b/) {$rcd=~ s/\@PRECIP_FILE\b/precip_corr_R21C\/diag\/Y%y4\/M%m2\/R21C.tavg_1hr_prcpcorr_c360_sfc.%y4%m2%d2_%h230.nc4/g; }
+	   if($rcd =~ /\@PRECIP_FILE_CLIMSCALE\b/) {$rcd=~ s/\@PRECIP_FILE_CLIMSCALE\b/precip_corr_R21C\/clim\/M21CtoIMGv7BF.precip_clim_scale.8888%m2%d2.nc4/g; }
 	   if($rcd =~ /\#USE_PP_TAPER/) {$rcd=~ s/\#USE_PP_TAPER/USE_PP_TAPER/g; } 
 	}
 
