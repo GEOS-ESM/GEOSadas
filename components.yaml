@@ -55,7 +55,7 @@ AeroML:
 GEOS_Util:
   local: ./src/Shared/@GMAO_Shared/@GEOS_Util
   remote: ../GEOS_Util.git
-  tag: v2.1.13
+  tag: g3.0.2
   develop: main
 
 GMAO_perllib:
@@ -92,7 +92,7 @@ GEOSana_GridComp:
 mksi:
    local: ./src/Components/@GEOSana_GridComp/GEOSaana_GridComp/GSI_GridComp/@mksi
    remote: ../GEOS_mksi.git
-   tag: v5.44.0
+   tag: v5.44.1
    develop: develop
 
 GEOSgcm_GridComp:
@@ -153,7 +153,7 @@ geos-chem:
 GOCART:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSphysics_GridComp/@GEOSchem_GridComp/@GOCART
   remote: ../GOCART.git
-  tag: g2.3.2
+  tag: g2.3.3
   develop: develop
 
 QuickChem:
@@ -287,7 +287,7 @@ umwm:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  tag: g2.3.8.12
+  tag: g2.3.8.13
   develop: develop
 
 Ocean-LETKF:
