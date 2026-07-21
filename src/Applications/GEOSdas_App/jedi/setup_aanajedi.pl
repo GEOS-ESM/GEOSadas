@@ -138,7 +138,7 @@ sub init {
    if ( $opt_jediroot ) {
         $jediroot = $opt_jediroot;
    } else {
-        $jediroot = "/discover/nobackup/projects/gmao/advda/swell/JediBundles/fv3_soca_SLES15_01152026/build-intel-release";
+        $jediroot = "/discover/nobackup/projects/gmao/advda/swell/JediBundles/fv3_soca_SLES15_07162026/build-intel-release";
    }
 
    if ( $opt_archive ) {
@@ -178,6 +178,13 @@ sub init {
    $nogsi = 0;
    if ( $opt_nogsi ) {
       $nogsi = 1;
+   }
+
+   $iau_overwrite = 0;
+   if ( $nogsi ) {
+     if ( $ENV{JEDI_IAU_OVERWRITE} ) {
+        $iau_overwrite = $ENV{JEDI_IAU_OVERWRITE};
+     }
    }
 
 # Swell is wired for now
@@ -647,7 +654,7 @@ sub ed_conf_rc {
         if($rcd =~ /\@JEDI_HYBRID/)         {$rcd=~ s/\@JEDI_HYBRID/$jedihyb/g;  }
         if($rcd =~ /\@JEDI_INPUT/)          {$rcd=~ s/\@JEDI_INPUT/$jediinput/g;  }
         if($rcd =~ /\@JEDI_OBS_OPT/)        {$rcd=~ s/\@JEDI_OBS_OPT/$jedi_obs_opt/g;  }
-        if($rcd =~ /\@JEDI_IAU_OVERWRITE/)  {$rcd=~ s/\@JEDI_IAU_OVERWRITE/$nogsi/g;  }
+        if($rcd =~ /\@JEDI_IAU_OVERWRITE/)  {$rcd=~ s/\@JEDI_IAU_OVERWRITE/$iau_overwrite/g;  }
         if($rcd =~ /\@JEDI_ROOT/)           {$rcd=~ s/\@JEDI_ROOT/$jediroot/g;  }
         if($rcd =~ /\@JEDI_RUN_GETINC/)     {$rcd=~ s/\@JEDI_RUN_GETINC/$jediinc/g;  }
         if($rcd =~ /\@JEDI_STATIC_FILES/)   {$rcd=~ s/\@JEDI_STATIC_FILES/$jedistatic/g;  }
@@ -828,7 +835,7 @@ sub ed_var_yaml {
 #......................................................................
 sub ed_rst4fcst_acq {
 
-  return 0 unless ( $nogsi );
+  return 0 unless ( $iau_overwrite );
 
   my($mydir,$scheme) = @_;
 
@@ -850,7 +857,7 @@ EOF
 #......................................................................
 sub ed_4dfcst03_acq {
 
-  return 0 unless ( $nogsi );
+  return 0 unless ( $iau_overwrite );
 
   my($mydir,$scheme) = @_;
 

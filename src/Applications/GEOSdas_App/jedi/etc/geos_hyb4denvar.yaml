@@ -317,26 +317,26 @@ variational:
 #           gridtype: latlon
 #           field io names: *field_io_names
 #     write increment: true
-# - ninner: '25'
-##  diagnostics:
-##    departures: ombg
-#   geometry:
-#     akbk: ./fv3-jedi/fv3files/akbk@JEDI_BKG_VRES.nc4
-#     fms initialization:
-#       field table filename: ./fv3-jedi/fv3files/field_table_gmao
-#       namelist filename: ./fv3-jedi/fv3files/fmsmpp.nml
-#     layout:
-#     - @JEDI_VAR_XLAYOUT
-#     - @JEDI_VAR_YLAYOUT
-#     npx: @JEDI_BKG_HRES
-#     npy: @JEDI_BKG_HRES
-#     npz: @JEDI_BKG_VRES
-#   gradient norm reduction: 1e-3
-#   linear model:
-#     increment variables: *anavars
-#     name: Identity
-#     tstep: PT1H
-#     variable change: Identity
+  - ninner: '25'
+    diagnostics:
+      departures: ombg
+    geometry:
+      akbk: ./fv3-jedi/fv3files/akbk@JEDI_BKG_VRES.nc4
+      fms initialization:
+        field table filename: ./fv3-jedi/fv3files/field_table_gmao
+        namelist filename: ./fv3-jedi/fv3files/fmsmpp.nml
+      layout:
+      - @JEDI_VAR_XLAYOUT
+      - @JEDI_VAR_YLAYOUT
+      npx: @JEDI_BKG_HRES
+      npy: @JEDI_BKG_HRES
+      npz: @JEDI_BKG_VRES
+    gradient norm reduction: 1e-3
+    linear model:
+      increment variables: *anavars
+      name: Identity
+      tstep: PT1H
+      variable change: Identity
 #   online diagnostics:
 #     increment:
 #       state component:

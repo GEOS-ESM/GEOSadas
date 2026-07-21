@@ -71,19 +71,19 @@
           name: reject
       obs prior filters:
       - filter: Variable Transforms
-        apply at iterations: 0, 1, 2
+#       apply at iterations: 0, 1, 2
         Transform: AdjustedHeightCoordinate
         SkipWhenNoObs: false
       - filter: Variable Transforms
-        apply at iterations: 0, 1, 2
+#       apply at iterations: 0, 1, 2
         Transform: SurfaceWindScalingHeight
         SkipWhenNoObs: false
       - filter: Variable Transforms
-        apply at iterations: 0, 1, 2
+#       apply at iterations: 0, 1, 2
         Transform: SurfaceWindScalingPressure
         SkipWhenNoObs: false
       - filter: Variable Transforms
-        apply at iterations: 0, 1, 2
+#       apply at iterations: 0, 1, 2
         Transform: SurfaceWindScalingCombined
         SkipWhenNoObs: false
       obs post filters:
