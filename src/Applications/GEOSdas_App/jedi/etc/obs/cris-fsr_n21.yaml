@@ -544,7 +544,7 @@
           - 0.943
           - 0.946
       - filter: Variable Assignment
-        apply at iterations: 0, 1, 2
+#       apply at iterations: 0, 1, 2
         assignments:
         - name: ObsError/brightnessTemperature
           channels: 19, 24, 26-28, 31-33, 37, 39, 42, 44, 47, 49-200, 208, 211, 216,

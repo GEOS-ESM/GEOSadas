@@ -3187,7 +3187,7 @@ sub get_nodeflg {
   if    ($ans == 1) { $nodeflg = "hasw"; $ncpus_per_node = 24 }
   elsif ($ans == 2) { $nodeflg = "sky";  $ncpus_per_node = 36 }
   elsif ($ans == 3) { $nodeflg = "cas";  $ncpus_per_node = 45 }
-  elsif ($ans == 4) { $nodeflg = "mil";  $ncpus_per_node = 54 }
+  elsif ($ans == 4) { $nodeflg = "mil";  $ncpus_per_node = 64 }
 
   # currently not applicable at nccs
   #---------------------------------

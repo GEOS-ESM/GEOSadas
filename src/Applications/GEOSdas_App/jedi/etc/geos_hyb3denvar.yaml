@@ -106,7 +106,7 @@ cost function:
 #     mole_fraction_of_carbon_dioxide_in_air: co2
   background error:
     covariance model: SABER
-#   covariance type: gsi static covariance
+    covariance type: gsi static covariance
 #   adjoint test: true
     saber central block:
       saber block name: gsi hybrid covariance

@@ -52,7 +52,7 @@
           hofx scaling field group: DerivedVariables
       obs pre filters:
       - filter: Perform Action
-        apply at iterations: 0, 1, 2
+#       apply at iterations: 0, 1, 2
         filter variables:
         - name: windEastward
         where:
@@ -61,7 +61,7 @@
         action:
           name: reject
       - filter: Perform Action
-        apply at iterations: 0, 1, 2
+#       apply at iterations: 0, 1, 2
         filter variables:
         - name: windNorthward
         where:

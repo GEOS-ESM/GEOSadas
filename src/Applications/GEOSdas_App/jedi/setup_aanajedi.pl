@@ -180,7 +180,7 @@ sub init {
       $nogsi = 1;
    }
 
-   $iau_overwrite = 0;
+   $iau_overwrite = 1;
    if ( $nogsi ) {
      if ( $ENV{JEDI_IAU_OVERWRITE} ) {
         $iau_overwrite = $ENV{JEDI_IAU_OVERWRITE};
