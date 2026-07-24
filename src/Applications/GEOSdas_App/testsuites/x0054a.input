@@ -1,9 +1,9 @@
 #-------------
-# j54rpy.input
+# x0054a.input
 #-------------
 
 codeID: 523f29e
-description: j54rpy__GEOSadas-5_44_x__agrid_C360__ogrid_C
+description: x0054a__GEOSadas-5_44_4__agrid_C360__ogrid_C
 fvsetupID: f7aaa973c7
 
 ---ENDHEADERS---
@@ -29,7 +29,7 @@ EXPID? [u000_C360]
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [j54rpy__GEOSadas-5_44_x__agrid_C360__ogrid_C]
+EXPDSC? [x0054a__GEOSadas-5_44_4__agrid_C360__ogrid_C]
 > 
 
 Land Boundary Conditions? [Icarus_Updated]
@@ -38,10 +38,10 @@ Land Boundary Conditions? [Icarus_Updated]
 Catchment Model choice? [1]
 > 
 
-FVHOME? [/discover/nobackup/rtodling/j54rpy]
-> /discover/nobackup/projects/gmao/dadev/rtodling/JEDI/544/$expid
+FVHOME? [/discover/nobackup/rtodling/x0054a]
+> /discover/nobackup/projects/gmao/dadev/rtodling/544/$expid
 
-The directory /discover/nobackup/projects/gmao/dadev/rtodling/JEDI/544/j54rpy already exists. Clean it? [y]
+The directory /discover/nobackup/projects/gmao/dadev/rtodling/544/x0054a already exists. Clean it? [y]
 > 
 
 Processing nodes (1:Haswell, 2:Skylake, 3:Cascase, 4:Milan)? [2]
@@ -81,7 +81,7 @@ AeroCom? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/AeroCom]
 > 
 
 FVICS? [/archive/u/jstassi/restarts/GEOSadas-5_24_0]
-> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_44/Rev1/x0054/rs/Y2025/M12/x0054.rst.20251228_21z.tar
+> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_44/Rev1/c360/rs/Y2025/M11/c360.rst.20251128_21z.tar
 
 Run model-adjoint-related applications (0=no,1=yes)? [0]
 > 1
@@ -98,11 +98,11 @@ Run singular vector experiments (0=n,1=yes)? [0]
 Run analysis-sensitivity applications (0=no,1=yes)? [0]
 > 1
 
-Verifying experiment id: [j54rpy]
+Verifying experiment id: [x0054a]
 > 
 
 Ending year-month-day? [20191121]
-> 20260206
+> 20260306
 
 Length of FORECAST run segments (in hours)? [123]
 > 
@@ -117,7 +117,7 @@ Number of PEs in the meridional direction (NY)? [36]
 > 48
 
 Job nickname? [g5das]
-> g5j54
+> x54
 
 Run in split executable mode (1=yes;0=no)? [1]
 > 
@@ -225,13 +225,19 @@ Select group: [s0818]
 > g0613
 
 Replayed Ensemble (from OPS)?  [yes]
+> no
+
+Use SPPT-scheme for Ensemble?  [yes]
 > 
 
-Replay exp name? [x0046d]
-> x0054
+Ensemble Resolution?  [C90]
+> 
 
-Replay archive directory? [/discover/nobackup/projects/gmao/dadev/rtodling/archive/x0046d]
-> /discover/nobackup/projects/gmao/dadev/rtodling/archive/544/x0054
+Ensemble Vertical Levels?  [72]
+> 
+
+Experiment archive directory for ensemble restarts or 'later': [/archive/u/rtodling/x0054a]
+> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_44/c360
 
 Edit COLLECTIONS list in run/HISTORY.rc.tmpl (y/n)? [n]
 > 
