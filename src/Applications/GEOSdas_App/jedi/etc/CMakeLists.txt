@@ -17,6 +17,7 @@ set (ALLETC
    jedi_diffstates.j
    jedi_run_var.j
    mkiau.rc.tenv
+   mkiau_cubed.rc.tenv
    obsop_name_map.yaml
    ut_jedi.j
    )

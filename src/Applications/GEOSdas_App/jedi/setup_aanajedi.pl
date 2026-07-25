@@ -388,6 +388,7 @@ sub init {
   @rc2conf   = qw ( diag2ioda.yaml
                     diffstates_geos.yaml
                     mkiau.rc.tenv
+                    mkiau_cubed.rc.tenv
                     obsop_name_map.yaml );
 
   @rc2jedi   = qw ( JEDIanaConfig.csh
@@ -500,6 +501,7 @@ if ( $hybridvar ) {
   ed_var_yaml ("$JEDIHOME/Config","diffstates_geos.yaml");
 }
 ed_mkiau_rc ("$JEDIHOME/Config","mkiau.rc.tenv");
+ed_mkiau_rc ("$JEDIHOME/Config","mkiau_cubed.rc.tenv");
 
 # take care of satbias acq
 ed_jedibkg_acq   ("$JEDIHOME/Config");
