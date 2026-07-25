@@ -35,6 +35,9 @@ EXPDSC? [C90C__GEOSadas-5_30_0__agrid_C90__ogrid_CS]
 Land Boundary Conditions? [Icarus_Updated]
 > Icarus-NLv3
 
+Catchment Model choice? [1]
+> 
+
 FVHOME? [/discover/nobackup/jstassi/C90C]
 > 
 
@@ -42,7 +45,8 @@ The directory /discover/nobackup/jstassi/C90C does not exist. Create it now? [y]
 > 
 
 Processing nodes (1:Haswell, 2:Skylake, 3:Cascase, 4:Milan)? [2]
-> 
+> 4
+
 Which case of variational analysis? [1]
 > 
 

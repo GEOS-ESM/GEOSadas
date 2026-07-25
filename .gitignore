@@ -9,3 +9,16 @@
 parallel_build.o*
 log.*
 /action.j
+
+CMakeUserPresets.json
+
+# Ignore possible symlinked directories
+build-*
+install-*
+
+*.swp
+*.swo
+.DS_Store
+*#
+.#*
+**/CVS/

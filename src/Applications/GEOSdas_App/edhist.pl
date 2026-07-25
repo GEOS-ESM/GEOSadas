@@ -1378,7 +1378,7 @@ sub add_silo_mstorage_traits {
     #------------------------------
   outer: foreach $name (@bottomList) {
 
-      next outer if $name =~ m/_rst/ and $name ne "bkg_clcv_rst";
+      next outer if $name =~ m/_rst/ and $name ne "bkg_clcv_rst" and $name ne "extbkg_clcv_rst" ;
       unless ($traitHash{$name} =~ m/\bsilo\b/) {
           $traitHash{$name} =~ s/:template:/:template:silo.N1:/;
 

@@ -1,0 +1,134 @@
+# What is the experiment id?
+experiment_id: ${EXPID}-convert_ncdiags
+
+# What is the experiment root (the directory where the experiment will be stored)?
+experiment_root: $JEDIWORK
+
+# What is the time of the first cycle (middle of the window)?
+start_cycle_point: '$JEDI_ISO_DATE_ANA'
+
+# What is the time of the final cycle (middle of the window)?
+final_cycle_point: '$JEDI_ISO_DATE_ANA'
+
+# List of models in this experiment
+model_components:
+- geos_atmosphere
+
+# Set the Cylc runahead limit: the maximum number of cycles that may be active ahead of the current cycle (e.g. P1: up to 1 cycle ahead, P3: up to 3 cycles ahead, default P4).
+runahead_limit: P4
+
+# What experiment_id should r2d2 reference for experiment?
+r2d2_experiment_id: swell-convert_ncdiags
+
+# Skip registering and storing results of this experiment in R2D2?
+skip_r2d2: false
+
+# Do you want to use an existing JEDI build or create a new build?
+jedi_build_method: use_existing
+
+# What is the path to the existing JEDI build directory?
+existing_jedi_build_directory: $JEDI_ROOT
+
+# What is the path to the existing JEDI source code directory?
+existing_jedi_source_directory: $JEDI_ROOT/../
+
+# Configurations for the model components.
+models:
+
+  # Configuration for the geos_atmosphere model component.
+  geos_atmosphere:
+
+    # Enter the cycle times for this model.
+    cycle_times:
+    - T00
+    - T06
+    - T12
+    - T18
+
+    # What is the location where GSI bias correction files can be found?
+    path_to_gsi_bc_coefficients: $JEDIWORK/GSIBIAS/*bias*%Y%m%d_%Hz.txt
+
+    # What is the duration for the data assimilation window?
+    window_length: PT6H
+
+    # What is the path to where the GSI ncdiags are stored?
+    path_to_gsi_nc_diags: $JEDIWORK/GSIDIAGS
+
+    # Which observations do you want to include?
+    observations:
+    - abi_g16
+    - abi_g18
+    - aircraft
+    - airs_aqua
+    - amsr2_gcom-w1
+    - amsua_aqua
+    - amsua_metop-b
+    - amsua_metop-c
+    - amsua_n15
+    - amsua_n18
+    - amsua_n19
+    - atms_n20
+    - atms_n21
+    - atms_npp
+    - avhrr3_metop-b
+    - avhrr3_metop-c
+    - avhrr3_n18
+    - avhrr3_n19
+    - cris-fsr_n20
+    - cris-fsr_n21
+    - cris-fsr_npp
+    - gmi_gpm
+    - gps
+    - iasi_metop-b
+    - iasi_metop-c
+    - mhs_metop-b
+    - mhs_metop-c
+    - mhs_n19
+    - mls55_aura
+    - omi_aura
+    - omieff_aura
+    - ompslpnc_n21
+    - ompslpnc_npp
+    - ompsnm_npp
+    - pibal
+    - satwind
+    - scatwind
+    - sfcship
+    - sfc
+    - sondes
+    - ssmis_f17
+
+    # When running the ncdiag to ioda converted do you want to produce GeoVaLs files?
+    produce_geovals: false
+
+    # Is it a single-observation test?
+    single_observations: false
+
+    # Provide a list of patterns that you wish to remove from the cycle directory.
+    clean_patterns:
+    - gsi_bcs/*.nc4
+    - gsi_bcs/*.txt
+    - gsi_bcs/*.yaml
+    - gsi_bcs
+    - gsi_ncdiags/*.nc4
+    - gsi_ncdiags/aircraft/*.nc4
+    - gsi_ncdiags/aircraft
+    - gsi_ncdiags
+
+    # How long before the middle of the analysis window did the background providing forecast begin?
+    background_time_offset: PT9H
+
+    # What is the path to the CRTM coefficient files?
+    crtm_coeff_dir: $JEDI_CRTM_COEFFS
+
+    # What is the path to the Swell formatted observing system records?
+    observing_system_records_path: None
+
+# Datetime this file was created (auto added)
+datetime_created: 20260331_163310Z
+
+# Computing platform to run the experiment
+platform: nccs_discover_sles15
+
+# Record of the suite being executed
+suite_to_run: convert_ncdiags

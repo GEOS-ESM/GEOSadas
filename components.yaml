@@ -1,6 +1,6 @@
 GEOSadas:
   fixture: true
-  develop: feature/ygyu/v5.42.12/t2
+  develop: feature/ygyu/dev_2026July24_t2
 
 env:
   local: ./@env
@@ -28,6 +28,7 @@ crtm:
 NCEP_Shared:
   local: ./src/Shared/@NCEP_Shared
   remote: ../NCEP_Shared.git
+  #tag: v5.42.3
   tag: feature/ygyu/v5.42.3/Apr8
   sparse: ./config/NCEP_Shared.sparse
   develop: main
@@ -35,27 +36,28 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  tag:  feature/ygyu/test_GMAO_ncdiag
+  #tag: v5.42.4
+  tag: feature/ygyu/v5.42.4/July24
   sparse: ./config/GMAO_Shared.sparse
   develop: main
 
 GMAOpyobs:
   local: ./src/Shared/@GMAO_Shared/@GMAO_pyobs
   remote: ../GMAOpyobs.git
-  tag: v1.0.6.1
+  tag: v1.6.0
   develop: develop
 
 AeroML:
   local: ./src/Shared/@AeroML
   remote: ../AeroML.git
-  tag: v5.42.0
+  tag: v1.5.1
   develop: develop
   sparse: ./config/AeroML.sparse
 
 GEOS_Util:
   local: ./src/Shared/@GMAO_Shared/@GEOS_Util
   remote: ../GEOS_Util.git
-  tag: v5.42.0
+  tag: v2.1.13
   develop: main
 
 GMAO_perllib:
@@ -65,18 +67,18 @@ GMAO_perllib:
   develop: main
 
 # When updating the MAPL version, also update the MAPL version in the
-# CMakeLists.txt file for non-Baselibs builds
+# CMakeLists.txt file for non-Baselibs builds (if included in CMakeLists.txt)
 MAPL:
   local: ./src/Shared/@MAPL
   remote: ../MAPL.git
-  tag: v2.52.0
+  tag: v2.57.1
   develop: develop
 
 GEOSldas_GridComp:
   local: ./src/Components/@GEOSldas_GridComp
   remote: ../GEOSldas_GridComp.git
-  #tag: v2.0.0
-  tag: feature/ygyu/v2.0.0/Apr8
+  #tag: v3.1.0
+  tag: feature/ygyu/v3.1.0/July24
 
 FMS:
   local: ./src/Shared/@FMS
@@ -87,20 +89,22 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  tag: feature/ygyu/v5.42.8/Apr8
+  #tag: v5.45.2
+  tag: feature/ygyu/v5.45.2/July24
   develop: develop
+
 
 mksi:
    local: ./src/Components/@GEOSana_GridComp/GEOSaana_GridComp/GSI_GridComp/@mksi
    remote: ../GEOS_mksi.git
-#   tag: v5.42.8
-   tag:  feature/ygyu/v5.42.8/Apr8
+   #tag: v5.44.0  / v5.44.1
+   tag: feature/ygyu/v5.44.1/July24
    develop: develop
 
 GEOSgcm_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp
   remote: ../GEOSgcm_GridComp.git
-  tag: v2.7.0.2
+  tag: v2.7.6.1
   sparse: ./config/GEOSgcm_GridComp.sparse
   develop: develop
 
@@ -113,20 +117,21 @@ GigaTraj:
 g5pert:
   local: ./src/Components/@g5pert
   remote: ../g5pert.git
-  tag: feature/ygyu/v1.1.2/Apr8
+  #tag: v1.1.3
+  tag: feature/ygyu/v1.1.3/July24
   develop: main
 
 GEOSagcmPert_GridComp:
   local: ./src/Components/@GEOSagcmPert_GridComp
   remote: ../GEOSagcmPert_GridComp.git
-  # tag: v5.41.2
-  tag:  feature/ygyu/v5.41.2/Apr8
+  #tag: v5.43.0
+  tag: feature/ygyu/v5.43.0/July24
   develop: main
 
 FVdycoreCubed_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSsuperdyn_GridComp/@FVdycoreCubed_GridComp
   remote: ../FVdycoreCubed_GridComp.git
-  tag: v2.13.1
+  tag: v2.14.1
   develop: develop
 
 fvdycore:
@@ -138,7 +143,7 @@ fvdycore:
 GEOSchem_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSphysics_GridComp/@GEOSchem_GridComp
   remote: ../GEOSchem_GridComp.git
-  tag: v1.15.0
+  tag: v1.16.0
   develop: develop
 
 HEMCO:
@@ -156,13 +161,19 @@ geos-chem:
 GOCART:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSphysics_GridComp/@GEOSchem_GridComp/@GOCART
   remote: ../GOCART.git
-  tag: v2.3.0
+  tag: g2.3.2
   develop: develop
 
 QuickChem:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSphysics_GridComp/@GEOSchem_GridComp/@QuickChem
   remote: ../QuickChem.git
   tag: v1.0.0
+  develop: main
+
+RRG:
+  local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSphysics_GridComp/@GEOSchem_GridComp/@RRG
+  remote: ../RRG.git
+  tag: v1.1.0
   develop: main
 
 TR:
@@ -183,11 +194,41 @@ StratChem:
   tag: v1.0.0
   develop: develop
 
+MAM:
+  local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSphysics_GridComp/@GEOSchem_GridComp/@MAM
+  remote: ../MAM.git
+  tag: v1.0.0
+  develop: main
+
+MATRIX:
+  local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSphysics_GridComp/@GEOSchem_GridComp/@MATRIX
+  remote: ../MATRIX.git
+  tag: v1.0.0
+  develop: main
+
+CARMA:
+  local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSphysics_GridComp/@GEOSchem_GridComp/@CARMA
+  remote: ../CARMA.git
+  tag: v1.1.0
+  develop: develop
+
+GAAS:
+  local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSphysics_GridComp/@GEOSchem_GridComp/@GAAS
+  remote: ../GAAS.git
+  tag: v1.0.0
+  develop: develop
+
+ACHEM:
+  local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSphysics_GridComp/@GEOSchem_GridComp/@ACHEM
+  remote: ../ACHEM.git
+  tag: v1.1.0
+  develop: develop
+
 GEOS_OceanGridComp:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSogcm_GridComp/@GEOS_OceanGridComp
   remote: ../GEOS_OceanGridComp.git
-  tag: v2.3.0
-  develop: develop
+  tag: v2.7.0
+  develop: release/v2
 
 mom:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSogcm_GridComp/@GEOS_OceanGridComp/MOM_GEOS5PlugMod/@mom
@@ -198,8 +239,8 @@ mom:
 mom6:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSogcm_GridComp/@GEOS_OceanGridComp/MOM6_GEOSPlug/@mom6
   remote: ../MOM6.git
-  tag: geos/v3.3
-  develop: main
+  tag: geos/v3.7
+  develop: geos/main
   recurse_submodules: true
 
 mit:
@@ -229,7 +270,7 @@ sis2:
 GEOSradiation_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSphysics_GridComp/@GEOSradiation_GridComp
   remote: ../GEOSradiation_GridComp.git
-  tag: v1.10.0
+  tag: v1.12.0
   develop: develop
 
 RRTMGP:
@@ -242,7 +283,7 @@ RRTMGP:
 ww3:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSwgcm_GridComp/GEOSwavewatch_GridComp/@ww3
   remote: ../WW3.git
-  tag: v6.07.1-geos-r2
+  tag: v7.14-geos-r1
   develop: geos/develop
 
 umwm:
@@ -254,7 +295,8 @@ umwm:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  tag: feature/ygyu/v2.3.8.7/Apr8
+  #tag: g2.3.8.12
+  tag: feature/ygyu/g2.3.8.12/July24
   develop: develop
 
 Ocean-LETKF:

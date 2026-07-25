@@ -36,6 +36,9 @@ EXPDSC? [C48f__GEOSadas-5_30_0__agrid_C48__ogrid_f34]
 Land Boundary Conditions? [Icarus_Updated]
 > 
 
+Catchment Model choice? [1]
+> 
+
 FVHOME? [/discover/nobackup/jstassi/C48f]
 > 
 
@@ -43,7 +46,7 @@ The directory /discover/nobackup/jstassi/C48f does not exist. Create it now? [y]
 > 
 
 Processing nodes (1:Haswell, 2:Skylake, 3:Cascase, 4:Milan)? [2]
-> 
+> 4
 
 Which case of variational analysis? [1]
 > 
