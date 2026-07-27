@@ -2756,7 +2756,10 @@ EOF
 sub get_lsmodel {
 
     my $lndbcs_r21c = "Icarus-NLv3";
-    my $lndbcs_def = "Icarus_Updated";
+    #    my $lndbcs_def = "Icarus_Updated";
+    # ygyu change
+    my $lndbcs_def = "Icarus-NLv3";
+    my $lndbcs_def = "Icarus";
     my $lsdflt = 1;
     my $rrdflt = 0;
 
@@ -2772,9 +2775,10 @@ sub get_lsmodel {
 ----------------
 LAND BCS Version
 ----------------
-    Icarus_Updated (default)
+    Icarus_Updated (I did not copy this dir)
     or
-    Icarus-NLv3
+    Icarus-NLv3 (I still miss Share/topo/pchem files)
+    Icarus      (default)
 
 EOF
 ;
@@ -4690,8 +4694,9 @@ sub get_restart5 {
   $nymdb = "20190116";
   $nymde = "20190119";
 ##  ygyu record
-##  @inputs = qw( /discover/nobackup/projects/gmao/dadev/rtodling/archive/541/Milan/x0050/rs/Y2023/M10/x0050.rst.20231004_15z.tar );
-  @inputs = qw( /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_42 );
+  @inputs = qw( /discover/nobackup/projects/gmao/dadev/rtodling/archive/541/Milan/x0050/rs/Y2023/M10/x0050.rst.20231004_15z.tar );
+##  5_42/ 5_44
+##  @inputs = qw( /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_42 );
   $defexploc = "$acqloc";
   if ( $do4dvar ) {
     $anastagedir = "/dev/null";
