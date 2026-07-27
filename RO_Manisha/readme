@@ -1,0 +1,5 @@
+Directory for old GNSS RO code producing PBLH heights: 
+/discover/nobackup/mganesha/DSI_PBL/bufr2nc/scripts/read_nclfile_twopeaks.ncl
+
+Directory for bufr to netcdf code: 
+/discover/nobackup/mganesha/DSI_PBL/bufr2nc/ioda_gnssro_bufr2nc.sh
