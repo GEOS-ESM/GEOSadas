@@ -69,7 +69,7 @@ GMAO_perllib:
 MAPL:
   local: ./src/Shared/@MAPL
   remote: ../MAPL.git
-  tag: v2.57.1
+  tag: v2.57.2
   develop: develop
 
 GEOSldas_GridComp:
@@ -86,7 +86,7 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  tag: v5.45.2
+  tag: v5.45.4
   develop: develop
 
 mksi:

@@ -749,7 +749,7 @@ sub ed_jediioda_acq {
  open(SCRIPT,">$acq") or
  die ">>> ERROR <<< cannot write $acq";
  print  SCRIPT <<"EOF";
-$archive/$expid/jedi/obs/Y%y4/M%m2/$expid.jedi_ioda.%y4%m2%d2_%h2z.tar
+$archive/$expid/jedi/obs/Y%y4/M%m2/$expid.jedi_hofx.%y4%m2%d2_%h2z.tar
 EOF
 }
 #......................................................................
@@ -936,7 +936,7 @@ OPTIONS
      -gcmres       specify resolution of underying AGCM (default: hres in arg list)
      -fvhome       location of experiment home directory (default: \$expdir/\$expid)
      -jedihome     location of ensemble members (default: \$FVHOME/run/jedi)
-     -jediroot     location of JEDI build directory (default: /discover/nobackup/projects/gmao/advda/swell/JediBundles/fv3_soca_SLES15/build-intel-release)
+     -jediroot     location of JEDI build directory (default: /discover/nobackup/projects/gmao/advda/swell/JediBundles/fv3_soca_SLES15_07162026_gsibec1.4.3/build-intel-release)
      -jedistatic   location of JEDI static files (default: /discover/nobackup/projects/gmao/advda/SwellStaticFiles)
      -iodadir      location of pre-existing IODA files (default: /dev/null, ie, run ncdiag2ioda)
      -h            prints this usage notice
