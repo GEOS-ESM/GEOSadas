@@ -5,6 +5,7 @@ set (ALLETC
    diag2ioda.yaml
    geos_3dvar.yaml
    geos_3dfgat.yaml
+   geos_hofx.yaml
    geos_hyb3dcenvar.yaml
    geos_hyb4dcenvar.yaml
    geos_hyb4dcenvar_seq.yaml

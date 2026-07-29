@@ -486,6 +486,9 @@ if ( ! -d "$JEDIHOME/Config" ) {
 if ( ! -d "$JEDIHOME/Config/obs" ) {
    $rc = system("/bin/mkdir -p $JEDIHOME/Config/obs" );
 }
+if ( ! -d "$JEDIHOME/Config/fcobs" ) {
+   $rc = system("/bin/mkdir -p $JEDIHOME/Config/fcobs" );
+}
 # transfer resource files to proper location
 # transfer resource files to proper location
 # TBD: at this time, no editing is done of the resource
@@ -513,11 +516,18 @@ cp("$FVROOT/etc/jedi/geos_${scheme}.yaml","$JEDIHOME/Config/geosvar.yaml");
 if ( ! -e "$JEDIHOME/Config/geosvar.yaml" ) {
    die "File $JEDIHOME/Config/geosvar.yaml not found \n";
 }
+cp("$FVROOT/etc/jedi/geos_hofx.yaml","$JEDIHOME/Config/geoshofx.yaml");
 
 # Copy obs yamls to experiment config location
 foreach $fn ( @rc2jediobs ) {
   chomp($fn);
   cp("$FVROOT/etc/jedi/obs/$fn","$JEDIHOME/Config/obs/$fn");
+}
+
+# Copy a subset of obs yamls to use for fcst verification purposes
+foreach $fn ( @rc2hofxobs ) {
+  chomp($fn);
+  cp("$FVROOT/etc/jedi/obs/$fn","$JEDIHOME/Config/fcobs/$fn");
 }
 
 cp("$FVROOT/etc/jedi/geos_${scheme}.yaml","$JEDIHOME/Config/geosvar.yaml");
