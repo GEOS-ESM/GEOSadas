@@ -4130,7 +4130,7 @@ sub get_obsys {
 #  ans = "ncep_atms_bufr,ncep_satwnd_bufr,disc_airs_bufr"         # ygyu add
 #  print "\n intended obsclass = $ans \n";
   ##  $ans = query("OBSERVING SYSTEM CLASSES?", $ans);
-  $ans = query("OBSERVING SYSTEM CLASSES?");      
+  $ans = query("OBSERVING SYSTEM CLASSES?", "ncep_acftpfl_bufr,ncep_prep_bufr,ncep_tcvitals,ncep_satwnd_bufr");
   print "\n ans = $ans \n";
 
   $obsclass = $ans unless blank($ans);
@@ -9238,6 +9238,9 @@ end # while: loop over fvDAS run segments
 EOF
 
  close(SCRIPT);
+# ygyu: make the job script executable
+ chmod(0700, "$fvhome/run/$jobn.j") or
+ warn ">>> WARNING <<< could not change permissions on $jobn.j";
  write_FVDAS_Run_Config();
 }
 
