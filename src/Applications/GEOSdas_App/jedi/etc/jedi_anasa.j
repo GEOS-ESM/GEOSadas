@@ -1,5 +1,5 @@
 #!/bin/csh -fx
-@GEOSJEDI_GID#SBATCH --account=$GID
+@GEOSJEDI_GID
 @GEOSJEDI_QOS
 @GEOSJEDI_PARTITION
 #SBATCH --job-name=janasa
