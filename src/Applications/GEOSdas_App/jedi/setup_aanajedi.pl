@@ -2,9 +2,6 @@
 # 
 # setup_aanajedi - setup for an atmospheric JEDI analysis
 #
-#  20Apr2015 Todling  Initial code
-#  01May2015 Todling  Add 4d-capability
-#
 #-----------------------------------------------------------------------------------------------------
 
 use Env;                 # make env vars readily available
@@ -99,6 +96,11 @@ sub init {
       } else {
         die "Env Var FVHOME or arg -fvhome needed \n";
       }
+   }
+
+   $jedigid = "#"; 
+   if ( $ENV{"GEOSJEDI_GID"} ) {
+      $jedigid = "#SBATCH --account=$GEOSJEDI_GID";
    }
 
    $jediqos = "#"; 
@@ -396,11 +398,14 @@ sub init {
                     jedi_acquire_bkg.j
                     jedi_acquire_ebkg.j
                     jedi_acquire_ioda.j
+                    jedi_acquire_prog.j
                     jedi_acquire_vbc.j
                     jedi_diffstates.j
                     jedi_run_var.j
                     ut_jedi.j
                   );
+
+  @rc2sajedi  = qw ( jedi_anasa.j );
 
   @rc2adjedi  = qw ( JEDIadanaConfig.csh );
 
@@ -449,6 +454,24 @@ sub init {
                      ssmis_f17.yaml
                    );
 
+# For now, hofx avoids using observations that are bias corrected
+  @rc2hofxobs = qw ( 0hofx.yaml
+                     gps.yaml
+                     mls55_aura.yaml
+                     omi_aura.yaml
+                     omieff_aura.yaml
+                     ompslpnc_n21.yaml
+                     ompslpnc_npp.yaml
+                     ompsnm_npp.yaml
+                     pibal.yaml
+                     saber_timed.yaml
+                     satwind.yaml
+                     scatwind.yaml
+                     sfcship.yaml
+                     sfc.yaml
+                     sondes.yaml
+                   );
+
 }
 #......................................................................
 
@@ -475,6 +498,11 @@ foreach $fn ( @rc2jedi ) {
     cp("$FVROOT/etc/jedi/$fn","$JEDIHOME/$fn");
   }
 }
+
+foreach $fn ( @rc2sajedi ) {
+  cp("$FVROOT/etc/jedi/$fn","$FVHOME/anasa/$fn");
+}
+ed_anasa_job("$FVHOME/anasa","jedi_anasa.j");
 
 # Copy scheme yaml to proper location
 foreach $fn ( @rc2conf ) {
@@ -508,6 +536,7 @@ ed_jedibkg_acq   ("$JEDIHOME/Config");
 ed_jediebkg_acq  ("$JEDIHOME/Config",$ensrpy,$exprpy);
 ed_jediebkgx_acq ("$JEDIHOME/Config",$ensrpy,$exprpy);
 ed_jediioda_acq  ("$JEDIHOME/Config");
+ed_jediprog_acq  ("$JEDIHOME/Config");
 ed_jedivbc_acq   ("$JEDIHOME/Config");
 ed_diffstate_job ("$JEDIHOME");
 
@@ -606,6 +635,37 @@ sub ed_mkiau_rc {
         if($rcd =~ /\@AGCM_IM/) {$rcd=~ s/\@AGCM_IM/$agcm_im/g; }
         if($rcd =~ /\@AGCM_JM/) {$rcd=~ s/\@AGCM_JM/$agcm_jm/g; }
         if($rcd =~ /\@AGCM_LM/) {$rcd=~ s/\@AGCM_LM/$agcm_lm/g; }
+        print(LUN2 "$rcd\n");
+     }
+
+     close(LUN);
+     close(LUN2);
+     cp($tmprc, $thisrc);
+     unlink $tmprc;
+
+}
+#......................................................................
+sub ed_anasa_job{
+
+  my($mydir,$config) = @_;
+
+  my($acq);
+
+  $tmprc  = "$mydir/tmp.rc";
+  $thisrc = "$mydir/$config";
+
+     open(LUN,"$thisrc")  || die "Fail to open $thisrc $!\n";
+     open(LUN2,">$tmprc") || die "Fail to open tmp.rc $!\n";
+
+     # Change variables to the correct inputs
+     #---------------------------------------
+     while( defined($rcd = <LUN>) ) {
+        chomp($rcd);
+        if($rcd =~ /\@GEOSJEDI_GID/) {$rcd=~ s/\@GEOSJEDI_GID/$jedigid/g; }
+        if($rcd =~ /\@GEOSJEDI_QOS/) {$rcd=~ s/\@GEOSJEDI_QOS/$jediqos/g; }
+        if($rcd =~ /\@GEOSJEDI_PARTITION/) {$rcd=~ s/\@GEOSJEDI_PARTITION/$jedipartition/g; }
+        if($rcd =~ /\@FVHOME/) {$rcd=~ s/\@FVHOME/$fvhome/g; }
+        if($rcd =~ /\@ARCHIVE/) {$rcd=~ s/\@ARCHIVE/$archive/g; }
         print(LUN2 "$rcd\n");
      }
 
@@ -750,6 +810,21 @@ sub ed_jediioda_acq {
  die ">>> ERROR <<< cannot write $acq";
  print  SCRIPT <<"EOF";
 $archive/$expid/jedi/obs/Y%y4/M%m2/$expid.jedi_hofx.%y4%m2%d2_%h2z.tar
+EOF
+}
+#......................................................................
+sub ed_jediprog_acq {
+
+  my($mydir) = @_;
+
+  my($acq);
+
+  $acq = "$mydir/jedi_prog.acq";
+
+ open(SCRIPT,">$acq") or
+ die ">>> ERROR <<< cannot write $acq";
+ print  SCRIPT <<"EOF";
+$archive/$expid/prog/Y\$YYYYF/\M$MMF/D\$DDF/H\$HHF/j54rp2.prog.ceta.\${FYYYYMMDD_HH}z+\${AYYYYMMDD_HH}00z.nc4
 EOF
 }
 #......................................................................
@@ -951,13 +1026,14 @@ OPTIONAL ENVIRONMENT
 
       ARCHIVE            can be define in env or arg list
       FVHOME             can be define in env or arg list
+      GEOSJEDI_GID       can be used to defined slurm account
       GEOSJEDI_QOS       can be used to defined slurm qos
       GEOSJEDI_PARTITION can be used to defined slurm partition
 
 AUTHOR
 
      Ricardo Todling (Ricardo.Todling\@nasa.gov), NASA/GSFC/GMAO
-     Last modified: 31May2025                     by: R. Todling
+     Last modified: 29Jul2026                     by: R. Todling
 
 
 EOF
