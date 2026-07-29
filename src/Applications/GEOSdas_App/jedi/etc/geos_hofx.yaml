@@ -3,7 +3,7 @@
     datetime: '$JEDI_ISO_DATE_004'
     filenames:
     - bkg.%yyyy%mm%ddT%hh%MM%ssZ.nc4
-    - fv3-jedi/bkg/geos.crtmsrf.91.nc4
+    - fv3-jedi/bkg/geos.crtmsrf.181.nc4
     filetype: cube sphere history
     provider: geos
     compute edge pressure from surface pressure: true
@@ -94,8 +94,8 @@
     layout:
     - 4
     - 4
-    npx: 91
-    npy: 91
+    npx: 181
+    npy: 181
     npz: 72
 # OBSYAML_BEG
 # OBSYAML_END
