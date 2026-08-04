@@ -196,6 +196,7 @@ if ( ! -e $FVWORK/.DONE_jedi_run_ana.csh.$yyyymmddhh) then
      else
         if ( $fcoff ) then
            $JEDI_FV3HOX_MPIRUN $JEDIBUILD/bin/fv3jedi_hofx_nomodel.x $MYCONF |& tee -a $FVWORK/$JEDIVARLOG
+#          $JEDI_FV3HOX_MPIRUN /discover/nobackup/projects/gmao/advda/rtodling/JEDI1/2026/24Jun/build-intel-release/bin/fv3jedi_hofx_nomodel.x $MYCONF |& tee -a $FVWORK/$JEDIVARLOG
            if ( $status ) then
               echo " ${MYNAME}: failed in VAR, aborting ..."
               exit (1)

@@ -3252,9 +3252,13 @@ endif
 
 #             then run analysis
 #             -----------------
-              $dryrun analyzer $nymdb $nhmsb -expid $EXPID -t $SPECRES -levs $gsinlev -x $gsinlon -y $gsinlat -jiter $Viter_ $lnobs -log ana.log
-              if ( ${status} ) then
-                  Call AbnormalExit_( 3 )
+              if ( -e $FVHOME/geos_run_analyzer ) then
+                 $BATCH_SUBCMD $BLOCKFLAG $FVHOME/geos_run_analyzer.j
+              else
+                 $dryrun analyzer $nymdb $nhmsb -expid $EXPID -t $SPECRES -levs $gsinlev -x $gsinlon -y $gsinlat -jiter $Viter_ $lnobs -log ana.log
+                 if ( ${status} ) then
+                     Call AbnormalExit_( 3 )
+                 endif
               endif
 
               set ana_check = ( `grep ">>> WARNING <<< does not exist" ana.log | cut -d '<' -f4` )
@@ -4282,7 +4286,11 @@ endif
             if ( $use_shmem ) RmShmKeys_sshmpi.csh
             /bin/rm -f ./EGRESS
                                    zeit_ci.x gcm
-            $dryrun $run_opt_begin |& tee -a fvpsas.log
+            if ( -e $FVHOME/geos_run_gcm.j ) then
+               $BATCH_SUBCMD $BLOCKFLAG geos_run_gcm.j
+            else
+               $dryrun $run_opt_begin |& tee -a fvpsas.log
+            endif
             echo "GCM status = $status"
                                    zeit_co.x gcm
             if ( $use_shmem ) RmShmKeys_sshmpi.csh
@@ -4871,7 +4879,11 @@ endif
          setenv  REPACK_PBS 0
    endif
                           zeit_ci.x gcm
-   $dryrun $run_opt_begin |& tee fvpsas.log
+   if ( -e $FVHOME/geos_run_gcm.j ) then
+      $BATCH_SUBCMD $BLOCKFLAG geos_run_gcm.j
+   else
+      $dryrun $run_opt_begin |& tee fvpsas.log
+   endif
                           zeit_co.x gcm
 
 #  Check whether we ran without errors

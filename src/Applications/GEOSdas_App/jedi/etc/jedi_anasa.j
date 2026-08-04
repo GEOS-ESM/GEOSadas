@@ -41,7 +41,7 @@ endif
 set path = ( . $FVHOME/anasa $FVHOME/run/jedi $FVHOME/run $FVROOT/bin $path )
 source $FVROOT/bin/g5_modules
 
-setenv FVWORK $FVHOME/../tmpjasens.$$
+setenv FVWORK $FVHOME/../tmpjanasa.$$
 setenv HOLDRESULTS $FVWORK/Results
 mkdir -p $FVWORK
 mkdir -p $HOLDRESULTS

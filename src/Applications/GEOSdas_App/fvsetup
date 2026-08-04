@@ -572,6 +572,11 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
 # ------------------------------------
   create_fscript();
 
+# Create offline GCM and Analysis run jobs
+# ----------------------------------------
+  create_geos_run_gcm("run");
+  create_geos_run_ana("run");
+
 # Create job scripts to run stand-alone analysis
 # ----------------------------------------------
    set_inputparams();
@@ -9226,6 +9231,72 @@ sub write_FVDAS_Run_Config {
     system("$fvbin/write_FVDAS_Run_Config.pl -remNODE $remNODE -remID $remID");
 }
 
+#=======================================================================
+sub create_geos_run_gcm {
+
+  return 0 unless ( $fulldas );
+
+  my($mydir) = @_;
+
+  my($frun, $ft, $acq);
+
+  $acq = "$fvhome/$mydir/_geos_run_gcm.j";
+ open(SCRIPT,">$acq") or
+ die ">>> ERROR <<< cannot write $acq";
+ print  SCRIPT <<"EOF";
+#!/bin/csh -fx
+# ------------------------------
+#$group_list
+#_SBATCH --qos=dastest
+#_SBATCH --partition=preops
+#SBATCH --job-name=gcm_${expid}
+#SBATCH --output=gcm_${expid}.log.o%j.txt
+#SBATCH --ntasks=$xncpus
+#SBATCH --ntasks-per-node=$ncpus_per_node
+#SBATCH --constraint=$nodeflg
+#SBATCH --time=2:00:00
+
+source \$FVROOT/modules
+
+cd \$FVWORK
+
+\$RUN_OPT_BEGIN |& tee -a fvpsas.log
+
+EOF
+}
+#=======================================================================
+sub create_geos_run_ana {
+
+  return 0 unless ( $fulldas );
+
+  my($mydir) = @_;
+
+  my($frun, $ft, $acq);
+
+  $acq = "$fvhome/$mydir/_geos_run_analyzer.j";
+ open(SCRIPT,">$acq") or
+ die ">>> ERROR <<< cannot write $acq";
+ print  SCRIPT <<"EOF";
+#!/bin/csh -fx
+# ------------------------------
+#$group_list
+#_SBATCH --qos=dastest
+#_SBATCH --partition=preops
+#SBATCH --job-name=ana_${expid}
+#SBATCH --output=ana_${expid}.log.o%j.txt
+#SBATCH --nodes=10
+#SBATCH --constraint=$nodeflg
+#SBATCH --time=2:00:00
+
+source \$FVROOT/modules
+
+cd \$FVWORK
+
+analyzer \$nymdb \$nhmsb -expid \$EXPID -t \$SPECRES -levs \$gsinlev -x \$gsinlon -y \$gsinlat \
+         -jiter \$Viter_ \$lnobs -log ana.log
+
+EOF
+}
 #=======================================================================
 sub create_ana_aod_script_tmpl {
     my ($infl, $outf);
