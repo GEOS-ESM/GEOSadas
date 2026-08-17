@@ -3333,7 +3333,7 @@ endif
   endif
 
 
-  jedi_driver.csh $gcm_nymd0 $gcm_nhms0 $ana_datetime[1] $ana_datetime[2] |& tee -a $FVWORK/$EXPID.jedi_drv.log.${gcm_nymd0}_${this_hh0}z.txt
+  jedi_driver.csh $gcm_nymd0 $gcm_nhms0 $ana_datetime[1] $ana_datetime[2] 0 |& tee -a $FVWORK/$EXPID.jedi_drv.log.${gcm_nymd0}_${this_hh0}z.txt
   if ( $status ) then
      echo "JEDI analysis failed, aborting ..."
      Call AbnormalExit_( 1 )
