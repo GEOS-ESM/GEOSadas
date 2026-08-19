@@ -35,7 +35,7 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  tag: v5.42.4
+  tag: g5.42.4.2
   sparse: ./config/GMAO_Shared.sparse
   develop: main
 
@@ -55,7 +55,7 @@ AeroML:
 GEOS_Util:
   local: ./src/Shared/@GMAO_Shared/@GEOS_Util
   remote: ../GEOS_Util.git
-  tag: v2.1.13
+  tag: g3.0.2
   develop: main
 
 GMAO_perllib:
@@ -69,13 +69,13 @@ GMAO_perllib:
 MAPL:
   local: ./src/Shared/@MAPL
   remote: ../MAPL.git
-  tag: v2.57.1
+  tag: v2.57.2
   develop: develop
 
 GEOSldas_GridComp:
   local: ./src/Components/@GEOSldas_GridComp
   remote: ../GEOSldas_GridComp.git
-  tag: v3.1.0
+  tag: g3.1.1
 
 FMS:
   local: ./src/Shared/@FMS
@@ -86,19 +86,19 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  tag: v5.45.2
+  tag: v5.45.5
   develop: develop
 
 mksi:
    local: ./src/Components/@GEOSana_GridComp/GEOSaana_GridComp/GSI_GridComp/@mksi
    remote: ../GEOS_mksi.git
-   tag: v5.44.0
+   tag: v5.44.2
    develop: develop
 
 GEOSgcm_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp
   remote: ../GEOSgcm_GridComp.git
-  tag: v2.7.6.1
+  tag: g2.7.6.2
   sparse: ./config/GEOSgcm_GridComp.sparse
   develop: develop
 
@@ -153,7 +153,7 @@ geos-chem:
 GOCART:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSphysics_GridComp/@GEOSchem_GridComp/@GOCART
   remote: ../GOCART.git
-  tag: g2.3.2
+  tag: g2.3.3
   develop: develop
 
 QuickChem:
@@ -287,7 +287,7 @@ umwm:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  tag: g2.3.8.12
+  tag: g2.3.8.13
   develop: develop
 
 Ocean-LETKF:

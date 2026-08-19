@@ -33,6 +33,9 @@
           - Land_Temperature
           - Ice_Temperature
           - Snow_Temperature
+          zeroO3JacRange:
+          - 996.0
+          - 1170.0
       obs bias:
         input file: ./obs/avhrr3_n19.$PYYYYYMMDDTHH0000Z.satbias.nc4
         output file: ./vbc/avhrr3_n19.$BYYYYYMMDDTHH0000Z.satbias.nc4
@@ -67,7 +70,7 @@
           output file: ./vbc/avhrr3_n19.$BYYYYYMMDDTHH0000Z.satbias_cov.nc4
       obs prior filters:
       - filter: Perform Action
-        apply at iterations: 0, 1, 2
+#       apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 3-5
@@ -78,7 +81,7 @@
           - 1.08
           - 1.12
       - filter: Variable Assignment
-        apply at iterations: 0, 1, 2
+#       apply at iterations: 0, 1, 2
         assignments:
         - name: ObsError/brightnessTemperature
           channels: 3-5
