@@ -55,7 +55,7 @@ AeroML:
 GEOS_Util:
   local: ./src/Shared/@GMAO_Shared/@GEOS_Util
   remote: ../GEOS_Util.git
-  tag: g3.0.2
+  tag: v2.1.13
   develop: main
 
 GMAO_perllib:
@@ -287,7 +287,7 @@ umwm:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  tag: g2.3.8.13
+  tag: g2.3.8.14
   develop: develop
 
 Ocean-LETKF:
