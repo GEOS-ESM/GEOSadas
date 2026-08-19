@@ -140,7 +140,7 @@ sub init {
    if ( $opt_jediroot ) {
         $jediroot = $opt_jediroot;
    } else {
-        $jediroot = "/discover/nobackup/projects/gmao/advda/swell/JediBundles/fv3_soca_SLES15_07162026_gsibec1.4.3/build-intel-release";
+        $jediroot = "/discover/nobackup/projects/gmao/advda/swell/JediBundles/fv3_soca_SLES15_08142026/build-intel-release";
    }
 
    if ( $opt_archive ) {
@@ -503,9 +503,9 @@ foreach $fn ( @rc2jedi ) {
 }
 
 foreach $fn ( @rc2sajedi ) {
-  cp("$FVROOT/etc/jedi/$fn","$FVHOME/anasa/$fn");
+  cp("$FVROOT/etc/jedi/$fn","$fvhome/anasa/$fn");
 }
-ed_anasa_job("$FVHOME/anasa","jedi_anasa.j");
+ed_anasa_job("$fvhome/anasa","jedi_anasa.j");
 
 # Copy scheme yaml to proper location
 foreach $fn ( @rc2conf ) {
@@ -553,8 +553,8 @@ ed_diffstate_job ("$JEDIHOME");
 set_jedi_static("$jediroot","$jediinput",$cres,$i1res,$gsibecres);
 
 # edit main DAS existing settings when GSI is bypassed
-ed_rst4fcst_acq("$FVHOME/fcst/","$scheme");
-ed_4dfcst03_acq("$FVHOME/fcst/","$scheme");
+ed_rst4fcst_acq("$fvhome/fcst/");
+ed_4dfcst03_acq("$fvhome/fcst/");
 
 }
 #......................................................................
@@ -924,18 +924,17 @@ sub ed_rst4fcst_acq {
 
   return 0 unless ( $iau_overwrite );
 
-  my($mydir,$scheme) = @_;
+  my($mydir) = @_;
 
-  my($frun, $ft, $acq);
+  my($acq);
+  $acq = "$mydir/rst4fcst.acq";
 
-  $acq = "$fvhome/$mydir/rst4fcst.acq";
-
-  open(SCRIPT,">$acq") or
-  die ">>> ERROR <<< cannot write $acq";
+  open(SCRIPT,">$acq") || die ">>> ERROR <<< cannot write $acq";
   print  SCRIPT <<"EOF";
 $archive/$expid/rs/Y%y4/M%m2/$expid.rst.%y4%m2%d2_%h2z.tar
 EOF
 if ( ! $hybridvar ) {
+  open(SCRIPT,">$acq") || die ">>> ERROR <<< cannot write $acq";
  print  SCRIPT <<"EOF";
 $archive/$expid/jedi/rs/Y%y4/M%m2/$expid.jedi_agcmrst.%y4%m2%d2_%h2z.tar
 EOF
@@ -946,15 +945,13 @@ sub ed_4dfcst03_acq {
 
   return 0 unless ( $iau_overwrite );
 
-  my($mydir,$scheme) = @_;
+  my($mydir) = @_;
 
   if ( ! $hybridvar ) { return 0 };
 
-  my($frun, $ft, $acq);
-
-  $acq = "$fvhome/$mydir/fcst03.acq";
-  open(SCRIPT,">$acq") or
-  die ">>> ERROR <<< cannot write $acq";
+  my($acq);
+  $acq = "$mydir/fcst03.acq";
+  open(SCRIPT,">$acq") || die ">>> ERROR <<< cannot write $acq";
   print  SCRIPT <<"EOF";
 $archive/$expid/jedi/rs/Y%y4/M%m2/$expid.jedi_agcmrst.%y4%m2%d2_%h2z.tar => $expid.agcmrst.%y4%m2%d2_%h2z.tar
 EOF

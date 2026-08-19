@@ -16,6 +16,7 @@ set (ALLETC
    jedi_acquire_ioda.j
    jedi_acquire_vbc.j
    jedi_diffstates.j
+   jedi_anasa.j
    jedi_run_var.j
    mkiau.rc.tenv
    mkiau_cubed.rc.tenv

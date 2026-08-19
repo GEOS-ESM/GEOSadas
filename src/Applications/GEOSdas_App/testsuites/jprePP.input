@@ -81,7 +81,7 @@ AeroCom? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/AeroCom]
 > 
 
 FVICS? [/archive/u/jstassi/restarts/GEOSadas-5_24_0]
-> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_43/f5430_fp/rs/Y2026/M03/f5430_fp.rst.20260323_21z.tar
+> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_44/Rev1/f5430_fp/rs/Y2026/M03/f5430_fp.rst.20260328_21z.tar
 
 Run model-adjoint-related applications (0=no,1=yes)? [0]
 > 1
@@ -102,7 +102,7 @@ Verifying experiment id: [jprePP]
 > 
 
 Ending year-month-day? [20210921]
-> 20260506
+> 20260706
 
 Length of FORECAST run segments (in hours)? [123]
 > 
@@ -207,7 +207,7 @@ Do Aerosol Analysis (y/n)? [y]
 > 
 
 AOD OBSERVING CLASSES [or type 'none']?
-> mod04_061_flk,myd04_061_flk,vn20aerdt_002_flk,vn20aerdb_002_flk,aeronet_obs_llk
+> vn20aerdt_002_flk,vn20aerdb_002_flk,aeronet_obs_llk
 
 Enable GAAS feedback to model (y/n)? [y]
 > 
