@@ -86,7 +86,7 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  tag: v5.45.4
+  tag: v5.45.5
   develop: develop
 
 mksi:
