@@ -64,7 +64,7 @@
           - name: stationPressure
       obs prior filters:
       - filter: Variable Transforms
-        apply at iterations: 0, 1, 2
+#       apply at iterations: 0, 1, 2
         Transform: SurfaceWindScalingPressure
         SkipWhenNoObs: false
       obs post filters:
