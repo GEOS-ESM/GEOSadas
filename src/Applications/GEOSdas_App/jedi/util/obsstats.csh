@@ -3,17 +3,23 @@
 setenv FVROOT /home/dao_ops/GEOSadas-5_43_0/GEOSadas/install-SLES15
 set path = ( . $FVROOT/bin $path )
 
-setenv DRYRUN # echo
+setenv DRYRUN #echo
 setenv OUTFIGS $TMP/SwellExperiments/Figs
-#setenv XTRA "--xGSI --common"
+setenv XTRA "--xGSI --common"
 setenv XTRA 
-setenv TOTRAIN 0
+setenv TOTRAIN 1
 
 set humKX = (`echorc.x -rc ostats.rc -ncol 2 specific_humidity`)
 set humNM = (`echorc.x -rc ostats.rc -ncol 1 specific_humidity`)
 
+set sntKX = (`echorc.x -rc ostats.rc -ncol 2 sonde_temperature`)
+set sntNM = (`echorc.x -rc ostats.rc -ncol 1 sonde_temperature`)
+
 set acTKX = (`echorc.x -rc ostats.rc -ncol 2 aircraftT`)
 set acTNM = (`echorc.x -rc ostats.rc -ncol 1 aircraftT`)
+
+set acWKX = (`echorc.x -rc ostats.rc -ncol 2 aircraftW`)
+set acWNM = (`echorc.x -rc ostats.rc -ncol 1 aircraftW`)
 
 set radKX = (`echorc.x -rc ostats.rc -ncol 2 radiance`)
 set radNM = (`echorc.x -rc ostats.rc -ncol 1 radiance`)
@@ -28,27 +34,49 @@ set stwKX = (`echorc.x -rc ostats.rc -ncol 2 satwind`)
 set stwNM = (`echorc.x -rc ostats.rc -ncol 1 satwind`)
 
 #set humKX = ()
+#set sntKX = ()
 #set acTKX = ()
+#set acWKX = ()
 #set radKX = ()
 #set gpsKX = ()
 #set ozKX  = ()
 #set stwKX = ()
 
+set expidGSI  = x0053RPY
+set expidGSI  = f5430_fp
 set expidGSI  = x0054
 set expidGSI  = null
-set expidGSI  = x0053RPY
+
 set expidJEDI = j4drpy
+set expidJEDI = j4drp2
+set expidJEDI = fpjedi_test
 set expidJEDI = null
-set expidJEDI = j4drp1
+set expidJEDI = j54rp1
+set expidJEDI = local
 
-foreach nymd ( 20260115 )
-foreach nhms ( 000000 060000 120000 180000 )
+#foreach nymd ( 20231010 )
+#foreach nhms ( 000000 )
+ foreach nymd ( 20260125 )
+ foreach nhms ( 180000 )
 
-set ODSarch  = $DAD/archive/544
+#foreach nymd ( 20260128 )
+#foreach nhms ( 000000 060000 120000 180000 )
+#foreach nhms (  120000 180000 )
+
 set ODSarch  = $DAD/archive/543
-set IODAarch = $DAD/archive/JEDI/543
+set ODSarch  = /gpfsm/dnb06/projects/p174/
+set ODSarch  = $DAD/archive/544
 
-if ( ! -d $OUTFIGS ) mkdir -p $OUTFIGS
+set IODAarch = $DAD/archive/JEDI/543
+set IODAarch = /gpfsm/dnb33/rtodling/SwellExperiments/swell-3dvar_atmos/run/20231010T000000Z/geos_atmosphere/hofx
+set IODAarch = /discover/nobackup/projects/gmao/nca/archive/
+set IODAarch = $DAD/archive/JEDI/544
+set IODAarch = /gpfsm/dnb10/projects/p139/rtodling/JEDI/544/j54rp1/morgue/jedi.20260125.180000/hofx
+
+if ( $expidJEDI == "local" ) then
+   setenv TOTRAIN 0
+   mkdir -p $IODAarch/Figs
+endif
 
 # GEOS-GSI experiment output
 if ( $expidGSI != "null" ) then
@@ -62,6 +90,22 @@ if ( $expidGSI != "null" ) then
     set instr = $stwNM[$ic]
     
     $DRYRUN ~/src/python/JEDI/OBS/ioda_prs.binned.py --obtype sondes_u --satid $kx \
+        --fig $OUTFIGS/$expidGSI.${instr}.${nymd}_${hh}z.png \
+        $ODSarch/$expidGSI/obs/Y$yyyy/M$mm/D$dd/H$hh/$expidGSI.diag_conv.${nymd}_${hh}z.ods &
+    
+    @ ic++
+  end
+  wait
+
+  @ ic = 1
+  foreach kx ( $sntKX )
+    set yyyy = `echo $nymd | cut -c1-4`
+    set mm   = `echo $nymd | cut -c5-6`
+    set dd   = `echo $nymd | cut -c7-8`
+    set hh   = `echo $nhms | cut -c1-2`
+    set instr = $sntNM[$ic]
+    
+    $DRYRUN ~/src/python/JEDI/OBS/ioda_prs.binned.py --obtype sondes_tsen --satid $kx \
         --fig $OUTFIGS/$expidGSI.${instr}.${nymd}_${hh}z.png \
         $ODSarch/$expidGSI/obs/Y$yyyy/M$mm/D$dd/H$hh/$expidGSI.diag_conv.${nymd}_${hh}z.ods &
     
@@ -95,6 +139,22 @@ if ( $expidGSI != "null" ) then
     
     $DRYRUN ~/src/python/JEDI/OBS/ioda_prs.binned.py --obtype temperature --satid $kx \
         --fig $OUTFIGS/$expidGSI.aircraftT_${instr}.${nymd}_${hh}z.png \
+        $ODSarch/$expidGSI/obs/Y$yyyy/M$mm/D$dd/H$hh/$expidGSI.diag_conv.${nymd}_${hh}z.ods &
+    
+    @ ic++
+  end
+  wait
+
+  @ ic = 1
+  foreach kx ( $acWKX )
+    set yyyy = `echo $nymd | cut -c1-4`
+    set mm   = `echo $nymd | cut -c5-6`
+    set dd   = `echo $nymd | cut -c7-8`
+    set hh   = `echo $nhms | cut -c1-2`
+    set instr = $acWNM[$ic]
+    
+    $DRYRUN ~/src/python/JEDI/OBS/ioda_prs.binned.py --obtype aircraft_u --satid $kx \
+        --fig $OUTFIGS/$expidGSI.aircraftU_${instr}.${nymd}_${hh}z.png \
         $ODSarch/$expidGSI/obs/Y$yyyy/M$mm/D$dd/H$hh/$expidGSI.diag_conv.${nymd}_${hh}z.ods &
     
     @ ic++
@@ -156,8 +216,8 @@ endif # GEOS-GSI
 
 # GEOS-JEDI experiment output
 
-set radKX = (`echorc.x -rc ostats.rc -ncol 2 jedi_radiance`)
-set radNM = (`echorc.x -rc ostats.rc -ncol 1 jedi_radiance`)
+#set radKX = (`echorc.x -rc ostats.rc -ncol 2 jedi_radiance`)
+#set radNM = (`echorc.x -rc ostats.rc -ncol 1 jedi_radiance`)
 
 if ( $expidJEDI != "null" ) then
 
@@ -174,10 +234,40 @@ if ( $expidJEDI != "null" ) then
     set  hh   = `echo $nhms  | cut -c1-2`
     set instr = $stwNM[$ic]
   
-    $DRYRUN ~/src/python/JEDI/OBS/ioda_prs.binned.py --obtype sondes_u --satid $kx \
-           --fig $OUTFIGS/$expidJEDI.${instr}.${nymd}_${hh}z.png \
-           --tarname $IODAarch/$expidJEDI/jedi/obs/Y$jyyyy/M$jmm/$expidJEDI.jedi_hofx.${jnymd}_${jhh}z.tar \
-           satwind.${jnymd}T${jhh}0000Z.nc4 &
+    if ( $expidJEDI == "local" ) then
+      $DRYRUN ~/src/python/JEDI/OBS/ioda_prs.binned.py --obtype sondes_u --satid $kx $XTRA \
+             --fig $IODAarch/Figs/${instr}.${nymd}_${hh}z.png \
+                   $IODAarch/*satwind.${jnymd}T${jhh}0000Z.nc4 &
+    else
+      $DRYRUN ~/src/python/JEDI/OBS/ioda_prs.binned.py --obtype sondes_u --satid $kx \
+            --fig $OUTFIGS/$expidJEDI.${instr}.${nymd}_${hh}z.png \
+             --tarname $IODAarch/$expidJEDI/jedi/obs/Y$jyyyy/M$jmm/$expidJEDI.jedi_hofx.${jnymd}_${jhh}z.tar \
+             satwind.${jnymd}T${jhh}0000Z.nc4 &
+    endif
+
+    @ ic++
+  end
+  wait
+
+  @ ic = 1
+  foreach kx ( $sntKX )
+    set jyyyy = `echo $jnymd | cut -c1-4`
+    set jmm   = `echo $jnymd | cut -c5-6`
+    set jdd   = `echo $jnymd | cut -c7-8`
+    set jhh   = `echo $jnhms | cut -c1-2`
+    set  hh   = `echo $nhms  | cut -c1-2`
+    set instr = $sntNM[$ic]
+  
+    if ( $expidJEDI == "local" ) then
+      $DRYRUN ~/src/python/JEDI/OBS/ioda_prs.binned.py --obtype sondes_tsen --satid $kx $XTRA \
+             --fig $IODAarch/Figs/${instr}.${nymd}_${hh}z.png \
+                   $IODAarch/sondes.${jnymd}T${jhh}0000Z.nc4 &
+    else
+      $DRYRUN ~/src/python/JEDI/OBS/ioda_prs.binned.py --obtype sondes_tsen --satid $kx \
+            --fig $OUTFIGS/$expidJEDI.${instr}.${nymd}_${hh}z.png \
+             --tarname $IODAarch/$expidJEDI/jedi/obs/Y$jyyyy/M$jmm/$expidJEDI.jedi_hofx.${jnymd}_${jhh}z.tar \
+             sondes.${jnymd}T${jhh}0000Z.nc4 &
+    endif
 
     @ ic++
   end
@@ -192,10 +282,16 @@ if ( $expidJEDI != "null" ) then
     set  hh   = `echo $nhms  | cut -c1-2`
     set instr = $humNM[$ic]
   
-    $DRYRUN ~/src/python/JEDI/OBS/ioda_prs.binned.py --obtype sondes_q --satid $kx \
-           --fig $OUTFIGS/$expidJEDI.${instr}.${nymd}_${hh}z.png \
-           --tarname $IODAarch/$expidJEDI/jedi/obs/Y$jyyyy/M$jmm/$expidJEDI.jedi_hofx.${jnymd}_${jhh}z.tar \
-           sondes.${jnymd}T${jhh}0000Z.nc4 &
+    if ( $expidJEDI == "local" ) then
+      $DRYRUN ~/src/python/JEDI/OBS/ioda_prs.binned.py --obtype sondes_q --satid $kx \
+             --fig $IODAarch/Figs/${instr}.${nymd}_${hh}z.png \
+                   $IODAarch/sondes.${jnymd}T${jhh}0000Z.nc4 &
+    else
+      $DRYRUN ~/src/python/JEDI/OBS/ioda_prs.binned.py --obtype sondes_q --satid $kx \
+             --fig $OUTFIGS/$expidJEDI.${instr}.${nymd}_${hh}z.png \
+             --tarname $IODAarch/$expidJEDI/jedi/obs/Y$jyyyy/M$jmm/$expidJEDI.jedi_hofx.${jnymd}_${jhh}z.tar \
+             sondes.${jnymd}T${jhh}0000Z.nc4 &
+    endif
 
     @ ic++
   end
@@ -210,10 +306,40 @@ if ( $expidJEDI != "null" ) then
     set  hh   = `echo $nhms  | cut -c1-2`
     set instr = $acTNM[$ic]
   
-    $DRYRUN ~/src/python/JEDI/OBS/ioda_prs.binned.py --obtype temperature --satid $kx \
-           --fig $OUTFIGS/$expidJEDI.aircraftT_${instr}.${nymd}_${hh}z.png \
-           --tarname $IODAarch/$expidJEDI/jedi/obs/Y$jyyyy/M$jmm/$expidJEDI.jedi_hofx.${jnymd}_${jhh}z.tar \
-           aircraft_temperature.${jnymd}T${jhh}0000Z.nc4 &
+    if ( $expidJEDI == "local" ) then
+      $DRYRUN ~/src/python/JEDI/OBS/ioda_prs.binned.py --obtype temperature --satid $kx \
+             --fig $IODAarch/Figs/aircraftT_${instr}.${nymd}_${hh}z.png \
+                   $IODAarch/*aircraft_temperature.${jnymd}T${jhh}0000Z.nc4 &
+    else
+      $DRYRUN ~/src/python/JEDI/OBS/ioda_prs.binned.py --obtype temperature --satid $kx \
+             --fig $OUTFIGS/$expidJEDI.aircraftT_${instr}.${nymd}_${hh}z.png \
+             --tarname $IODAarch/$expidJEDI/jedi/obs/Y$jyyyy/M$jmm/$expidJEDI.jedi_hofx.${jnymd}_${jhh}z.tar \
+             aircraft_temperature.${jnymd}T${jhh}0000Z.nc4 &
+    endif
+
+    @ ic++
+  end
+  wait
+
+  @ ic = 1
+  foreach kx ( $acWKX )
+    set jyyyy = `echo $jnymd | cut -c1-4`
+    set jmm   = `echo $jnymd | cut -c5-6`
+    set jdd   = `echo $jnymd | cut -c7-8`
+    set jhh   = `echo $jnhms | cut -c1-2`
+    set  hh   = `echo $nhms  | cut -c1-2`
+    set instr = $acWNM[$ic]
+  
+    if ( $expidJEDI == "local" ) then
+      $DRYRUN ~/src/python/JEDI/OBS/ioda_prs.binned.py --obtype aircraft_u --satid $kx \
+             --fig $IODAarch/Figs/aircraftU_${instr}.${nymd}_${hh}z.png \
+                   $IODAarch/*aircraft_wind.${jnymd}T${jhh}0000Z.nc4 &
+    else
+      $DRYRUN ~/src/python/JEDI/OBS/ioda_prs.binned.py --obtype aircraft_u --satid $kx \
+             --fig $OUTFIGS/$expidJEDI.aircraftU_${instr}.${nymd}_${hh}z.png \
+             --tarname $IODAarch/$expidJEDI/jedi/obs/Y$jyyyy/M$jmm/$expidJEDI.jedi_hofx.${jnymd}_${jhh}z.tar \
+             aircraft_wind.${jnymd}T${jhh}0000Z.nc4 &
+    endif
 
     @ ic++
   end
@@ -228,10 +354,16 @@ if ( $expidJEDI != "null" ) then
     set  hh   = `echo $nhms  | cut -c1-2`
     set instr = $radNM[$ic]
 
-    $DRYRUN ~/src/python/JEDI/OBS/ioda_prs.binned.py --obtype radiance --satid $kx $XTRA \
-           --fig $OUTFIGS/$expidJEDI.${instr}.${nymd}_${hh}z.png \
-           --tarname $IODAarch/$expidJEDI/jedi/obs/Y$jyyyy/M$jmm/$expidJEDI.jedi_hofx.${jnymd}_${jhh}z.tar \
-           ${instr}.${jnymd}T${jhh}0000Z.nc4 &
+    if ( $expidJEDI == "local" ) then
+      $DRYRUN ~/src/python/JEDI/OBS/ioda_prs.binned.py --obtype radiance --satid $kx $XTRA \
+             --fig $IODAarch/Figs/${instr}.${nymd}_${hh}z.png \
+                   $IODAarch/*${instr}.${jnymd}T${jhh}0000Z.nc4 &
+    else
+      $DRYRUN ~/src/python/JEDI/OBS/ioda_prs.binned.py --obtype radiance --satid $kx $XTRA \
+             --fig $OUTFIGS/$expidJEDI.${instr}.${nymd}_${hh}z.png \
+             --tarname $IODAarch/$expidJEDI/jedi/obs/Y$jyyyy/M$jmm/$expidJEDI.jedi_hofx.${jnymd}_${jhh}z.tar \
+             ${instr}.${jnymd}T${jhh}0000Z.nc4 &
+    endif
 
     @ ic++
   end
@@ -246,10 +378,16 @@ if ( $expidJEDI != "null" ) then
     set  hh   = `echo $nhms  | cut -c1-2`
     set instr = $ozNM[$ic]
   
-    $DRYRUN ~/src/python/JEDI/OBS/ioda_prs.binned.py --var ozoneProfile \
-           --fig $OUTFIGS/$expidJEDI.${instr}.${nymd}_${hh}z.png \
-           --tarname $IODAarch/$expidJEDI/jedi/obs/Y$jyyyy/M$jmm/$expidJEDI.jedi_hofx.${jnymd}_${jhh}z.tar \
-           ${instr}.${jnymd}T${jhh}0000Z.nc4 &
+    if ( $expidJEDI == "local" ) then
+      $DRYRUN ~/src/python/JEDI/OBS/ioda_prs.binned.py --var ozoneProfile \
+             --fig $IODAarch/Figs/${instr}.${nymd}_${hh}z.png \
+                   $IODAarch/*${instr}.${jnymd}T${jhh}0000Z.nc4 &
+    else
+      $DRYRUN ~/src/python/JEDI/OBS/ioda_prs.binned.py --var ozoneProfile \
+             --fig $OUTFIGS/$expidJEDI.${instr}.${nymd}_${hh}z.png \
+             --tarname $IODAarch/$expidJEDI/jedi/obs/Y$jyyyy/M$jmm/$expidJEDI.jedi_hofx.${jnymd}_${jhh}z.tar \
+             ${instr}.${jnymd}T${jhh}0000Z.nc4 &
+    endif
   
     @ ic++
   end
@@ -264,11 +402,18 @@ if ( $expidJEDI != "null" ) then
     set  hh   = `echo $nhms  | cut -c1-2`
     set instr = $gpsNM[$ic]
   
-    $DRYRUN ~/src/python/JEDI/OBS/ioda_prs.binned.py --var bendingAngle --satid $kx \
-           --scale obs \
-           --fig $OUTFIGS/$expidJEDI.${instr}.${nymd}_${hh}z.png \
-           --tarname $IODAarch/$expidJEDI/jedi/obs/Y$jyyyy/M$jmm/$expidJEDI.jedi_hofx.${jnymd}_${jhh}z.tar \
-           gps.${jnymd}T${jhh}0000Z.nc4 &
+    if ( $expidJEDI == "local" ) then
+      $DRYRUN ~/src/python/JEDI/OBS/ioda_prs.binned.py --var bendingAngle --satid $kx \
+             --scale obs \
+             --fig $IODAarch/Figs/${instr}.${nymd}_${hh}z.png \
+                   $IODAarch/*gps.${jnymd}T${jhh}0000Z.nc4 &
+    else
+      $DRYRUN ~/src/python/JEDI/OBS/ioda_prs.binned.py --var bendingAngle --satid $kx \
+             --scale obs \
+             --fig $OUTFIGS/$expidJEDI.${instr}.${nymd}_${hh}z.png \
+             --tarname $IODAarch/$expidJEDI/jedi/obs/Y$jyyyy/M$jmm/$expidJEDI.jedi_hofx.${jnymd}_${jhh}z.tar \
+             gps.${jnymd}T${jhh}0000Z.nc4 &
+    endif
 
     @ ic++
   end

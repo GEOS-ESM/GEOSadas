@@ -29,6 +29,9 @@
           - Land_Temperature
           - Ice_Temperature
           - Snow_Temperature
+          zeroO3JacRange:
+          - 996.0
+          - 1170.0
         obs options:
           Sensor_ID: ssmis_f17
           EndianType: little_endian
@@ -73,7 +76,7 @@
           output file: ./vbc/ssmis_f17.$BYYYYYMMDDTHH0000Z.satbias_cov.nc4
       obs prior filters:
       - filter: Perform Action
-        apply at iterations: 0, 1, 2
+#       apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1-24
