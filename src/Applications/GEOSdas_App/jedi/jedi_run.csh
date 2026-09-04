@@ -73,6 +73,7 @@ set mmb      = `echo $nymdb | cut -c5-6`
 set ddb      = `echo $nymdb | cut -c7-8`
 set hhb      = `echo $nhmsb | cut -c1-2`
 set yyyymmddhh = ${nymdb}${hhb}
+setenv BYYYYYMMDDTHH0000Z  ${nymdb}T${hhb}0000Z
 
 set anadate  = `tick $nymdb $nhmsb $JEDI_VAROFFSET`
 set nymda    = $anadate[1]
@@ -208,6 +209,11 @@ if ( ! -e $FVWORK/.DONE_jedi_run_ana.csh.$yyyymmddhh) then
               exit (1)
            endif
         endif
+     endif
+     set ichk = `grep NaN $FVWORK/$JEDIVARLOG | wc`
+     if ( $ichk[1] > 0 ) then
+         echo " ${MYNAME}: NaNs found in JEDI, failed in VAR, aborting ..."
+         exit (1)
      endif
      set lstinc = `ls *inc*nc4`
      if ( ! $status ) /bin/mv *inc*nc4 ./inc # somehow datapath setting in yaml is not effective at inc part
@@ -346,7 +352,13 @@ cd -
 # -------------
 touch $JEDIETC/VBC.BOOTSTRAP.DONE
 cd $JEDIWRK/vbc
-tar cvf $FVWORK/$EXPID.jedi_vbc.${nymdb}_${hhb}z.tar *satbias*nc4 *aircraft*csv
+/bin/cp $JEDIWRK/obs/*tlapse.txt .
+foreach fn (`ls *tlapse.txt`)
+  set pfx = `echo $fn | cut -d. -f1`
+  /bin/mv $fn $pfx.$BYYYYYMMDDTHH0000Z.tlapse.txt # time tag as current as
+                                                  # if JEDI output these
+end
+tar cvf $FVWORK/$EXPID.jedi_vbc.${nymdb}_${hhb}z.tar *satbias*nc4 *aircraft*csv *.txt
 cd -
 
 # If here, likely successful
