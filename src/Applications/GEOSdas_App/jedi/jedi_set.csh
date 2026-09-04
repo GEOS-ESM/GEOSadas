@@ -183,8 +183,8 @@ end
 # If so, retrieve IODA files from existig ru
 # In adjoint case, IODA files are from same exp
 if ( $JEDI_RUN_ANASA || $JEDI_RUN_ADANA || $JEDI_OBS_OPT == 1 ) then
-  setenv NYMDB  $nymdb # initial date of current cycle
-  setenv NHMSB  $nhmsb # initial time of current cycle
+  setenv NYMD  $nymdb # initial date of current cycle
+  setenv NHMS  $nhmsb # initial time of current cycle
   setenv ACQWORK $FVWORK
   vED -env $FVHOME/run/jedi/jedi_acquire_ioda.j -o jedi_acquire_ioda.j
   if ( $BATCH_SUBCMD == "sbatch" ) then
