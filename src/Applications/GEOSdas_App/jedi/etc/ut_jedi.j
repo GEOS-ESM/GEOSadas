@@ -9,6 +9,7 @@ setenv FVROOT `cat $FVHOME/.FVROOT`
 setenv FVWORK `cat $FVHOME/.FVWORK`
 setenv JEDIDIR $FVHOME/run/jedi
 setenv VAROFFSET 180
+setenv TIMEINC 360
 
 source $FVROOT/bin/g5_modules
 source $FVHOME/run/jedi/JEDIanaConfig.csh

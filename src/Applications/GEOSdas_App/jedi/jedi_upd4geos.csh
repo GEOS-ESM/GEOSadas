@@ -42,7 +42,15 @@ if ( -d $JEDIWORK/iau ) then
    cd $FVWORK
 #  set cost = `grep "cost type" $JEDIWORK/Config/geosvar.yaml | cut -d: -f2 | cut -d- -f1`
 #  if ( $cost == "3D" ) then
-     foreach fn ( `ls $JEDIWORK/iau/*.agcm_import_rst.*nc4` )
+     set alliau = `ls $JEDIWORK/iau/*.agcm_import_rst.*nc4`
+     if ($status) then 
+         echo " ${MYNAME}: JEDI IAU increments not found, no overwrite taken place. "
+         if ( $JEDI_IAU_OVERWRITE ) then
+            echo " ${MYNAME}: Aborting(1) ..."
+            exit (1)
+         endif
+     endif
+     foreach fn ( $alliau )
        set bname   = `basename $fn`
        set noexpid = `echo $bname | cut -d. -f2-`
        echo /bin/ln -sf $fn $noexpid
@@ -66,7 +74,7 @@ if ( -d $JEDIWORK/iau ) then
 else
    echo " ${MYNAME}: JEDI IAU increments not found, no overwrite taken place. "
    if ( $JEDI_IAU_OVERWRITE ) then
-      echo " ${MYNAME}: Aborting ..."
+      echo " ${MYNAME}: Aborting(2) ..."
       exit (1)
    endif
 endif

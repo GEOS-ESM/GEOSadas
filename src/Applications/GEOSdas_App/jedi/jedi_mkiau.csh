@@ -18,6 +18,7 @@ if ( !($?FVROOT)            ) setenv FAILED   1
 if ( !($?FVHOME)            ) setenv FAILED   1
 if ( !($?FVWORK)            ) setenv FAILED   1
 if ( !($?JEDI_MKIAU_MPIRUN) ) setenv FAILED   1
+if ( !($?JEDI_MKIAU_CUBED)  ) setenv FAILED   1
 if ( !($?JEDI_VAROFFSET)    ) setenv FAILED   1
 
 setenv JEDI_CUBED_ANA 0  # this is old and not supported at this point (Dec 2022)
@@ -52,6 +53,15 @@ if ( !($?JEDI_VARANAFRQ))  setenv JEDI_VARANAFRQ  3600
 setenv JEDIETC $FVHOME/run/jedi/Config
 setenv JEDIWORK $FVWORK/jedi.$nymda.${nhmsa}
 
+# link bkg.eta files from FVHOME/recycle - GEOSdas workflow deletes some of these from fvwork
+#                                          when GSI is running
+cd $JEDIWORK/bkg
+touch .no_archiving
+foreach fn ( `ls $FVHOME/recycle/*.bkg*eta_rst.*nc4` )
+   set sfx = `basename $fn | cut -d. -f3-`  
+   ln -sf $fn $EXPID.bkg.eta.$sfx
+end
+
 # Create analysis from increment
 cd $JEDIWORK/inc
 set these_incs = (`ls *.jedi_inc1.eta.*`)
@@ -77,7 +87,8 @@ foreach fn ( $these_incs )
   set   hh = `echo $ttag | cut -c10-11` 
   set nhms = ${hh}0000
   dyn_jediupd.x $nymd $nhms -o $EXPID.jedi_inc.eta.${nymd}_${hh}00z.nc4 \
-               $FVWORK/$EXPID.bkg.eta.${nymd}_${hh}00z.nc4 $fn $JEDIWORK/ana/$EXPID.jedi_ana.eta.${nymd}_${hh}00z.nc4
+               $JEDIWORK/bkg/$EXPID.bkg.eta.${nymd}_${hh}00z.nc4 \
+               $fn $JEDIWORK/ana/$EXPID.jedi_ana.eta.${nymd}_${hh}00z.nc4
   if ( ! -e $JEDIWORK/ana/$EXPID.jedi_ana.eta.${nymd}_${hh}00z.nc4 ) then
      echo "${MYNAME}: failed to create: $EXPID.jedi_ana.eta.${nymd}_${hh}00z.nc4"
      exit (1)
@@ -85,8 +96,18 @@ foreach fn ( $these_incs )
 end
 cd -
 
+# gather list of analysis files
 cd $JEDIWORK/ana
-set analst = `ls $EXPID.jedi_ana.eta.*`
+if ( $JEDI_MKIAU_CUBED ) then 
+  set anatyp = "ana.ceta"
+  set bkgtyp = "bkg_clcv_rst"
+  set thisrc = mkiau_cubed.rc.tenv
+else
+  set anatyp = "ana.eta"
+  set bkgtyp = "bkg.eta"
+  set thisrc = mkiau.rc.tenv
+endif
+set analst = `ls $EXPID.jedi_${anatyp}.*`
 
 cd $JEDIWORK
 
@@ -97,7 +118,7 @@ if ( ! -e IAU_EGRESS ) then
     set hhmm = `echo $ttag | cut -c10-13`
     set nhms = ${hhmm}00
     set anafn = ana/$anafn
-    set bkgfn = $FVWORK/$EXPID.bkg.eta.${nymd}_${hhmm}z.nc4
+    set bkgfn = bkg/$EXPID.${bkgtyp}.${nymd}_${hhmm}z.nc4
     set iaufn = iau/$EXPID.agcm_import_rst.${nymd}_${hhmm}z.nc4
     echo " Input  Analysis   file: $anafn"
     echo " Input  Background file: $bkgfn"
@@ -108,7 +129,7 @@ if ( ! -e IAU_EGRESS ) then
     setenv ANAFNAME $anafn
     setenv BKGFNAME $bkgfn
     setenv AGCMIMPRST $iaufn
-    vED -env $JEDIETC/mkiau.rc.tenv -o mkiau.rc
+    vED -env $JEDIETC/$thisrc -o mkiau.rc
  
     set nx = `echorc.x -rc mkiau.rc "NX"`
     set ny = `echorc.x -rc mkiau.rc "NY"`
@@ -129,16 +150,17 @@ cd iau/
 if ( $JEDI_HYBRID ) then
   set lst = `ls *agcm_import_rst.*nc4`
   if ( $#lst == 1 ) then
-     set nymd = `echo $lst | cut -d. -f3 | cut -c1-8`
-     set hhmm = `echo $lst | cut -d. -f3 | cut -c10-13`
-     set nhms = ${hhmm}00
-     set enddate = (`tick $nymd $nhms $JEDI_VARWINDOW`)
+     set nowdate = ( $nymd0 $nhms0 )
+     set enddate = (`tick $nowdate[1] $nowdate[2] $JEDI_VARWINDOW`)
      set notdone = 1
      while ( $notdone )
-       set thisdate = (`tick $nymd $nhms $JEDI_VARANAFRQ`)
-       set nymd = $thisdate[1]; set nhms = $thisdate[2]; set hhmm = `echo $nhms | cut -c1-4`
+       set nymd = $nowdate[1]; set nhms = $nowdate[2]; set hhmm = `echo $nhms | cut -c1-4`
        /bin/cp $lst[1] $EXPID.agcm_import_rst.${nymd}_${hhmm}z.nc4
-       if ( "$thisdate" == "$enddate" ) set notdone = 0
+       if ( "$nowdate" == "$enddate" ) then
+          set notdone = 0
+       else
+          set nowdate = (`tick $nymd $nhms $JEDI_VARANAFRQ`)
+       endif
      end
   endif
 else

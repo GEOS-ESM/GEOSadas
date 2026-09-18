@@ -1,14 +1,14 @@
 #------------
-# x0051.input
+# x0054smp.input
 #------------
 
 codeID: 523f29e
-description: x0051__GEOSadas-5_42_0__agrid_C360__ogrid_C
-fvsetupID: f7aaa973c7
+description: x0054smp__GEOSadas-5_44_4__agrid_C360__ogrid_C
+fvsetupID: 
 
 ---ENDHEADERS---
 
-Remote account for Intranet plots? [dao_it@train]
+Remote account for Intranet plots? [qliu@train]
 > 
 
 Is this a MERRA2 (1), GEOSIT (2), R21C (3) experiment? [0]
@@ -29,7 +29,7 @@ EXPID? [u000_C360]
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [x0051__GEOSadas-5_40_0__agrid_C360__ogrid_C]
+EXPDSC? [x0054smp__GEOSadas-5_44_4__agrid_C360__ogrid_C]
 > 
 
 Land Boundary Conditions? [Icarus_Updated]
@@ -38,14 +38,14 @@ Land Boundary Conditions? [Icarus_Updated]
 Catchment Model choice? [1]
 > 
 
-FVHOME? [/discover/nobackup/dao_it/x0051]
-> /discover/nobackup/projects/gmao/dadev/TSE_staging/dao_it/Winter_Runs/$expid
+FVHOME? [/discover/nobackup/rtodling/x0054]
+> /discover/nobackup/qliu/merra_land/LADAS/$expid
 
-The directory /discover/nobackup/projects/gmao/dadev/TSE_staging/dao_it/Winter_Runs/x0051 already exists. Clean it? [y]
+The directory /discover/nobackup/qliu/merra_land/LADAS/$expid already exists. Clean it? [y]
 > 
 
 Processing nodes (1:Haswell, 2:Skylake, 3:Cascase, 4:Milan)? [2]
-> 4
+> 3
 
 Which case of variational analysis? [1]
 > 
@@ -81,7 +81,16 @@ AeroCom? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/AeroCom]
 > 
 
 FVICS? [/archive/u/jstassi/restarts/GEOSadas-5_24_0]
-> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_42/c360/c360.rst.20231014_21z.tar
+> /discover/nobackup/projects/gmao/dadev/rtodling/archive/544/x0054
+
+Starting year-month-day? [20190116]
+> 20251129
+
+Starting hour-min-sec? [210000]
+>
+
+Name of experiment where ICs come from: [SMAP_TC]
+> x0054
 
 Run model-adjoint-related applications (0=no,1=yes)? [0]
 > 1
@@ -98,11 +107,11 @@ Run singular vector experiments (0=n,1=yes)? [0]
 Run analysis-sensitivity applications (0=no,1=yes)? [0]
 > 1
 
-Verifying experiment id: [x0051]
+Verifying experiment id: [x0054smp]
 > 
 
 Ending year-month-day? [20191121]
-> 20240206
+> 20251210
 
 Length of FORECAST run segments (in hours)? [123]
 > 
@@ -117,7 +126,7 @@ Number of PEs in the meridional direction (NY)? [36]
 > 48
 
 Job nickname? [g5das]
-> x51
+> x54smp
 
 Run in split executable mode (1=yes;0=no)? [1]
 > 
@@ -150,7 +159,7 @@ Which main class of ObsSys (1: NRT; 2: MERRA; 3: MERRA-2; 4: GEOS-IT; 5: R21C)? 
 > 
 
 OBSERVING SYSTEM CLASSES?
-> disc_airs_bufr,disc_amsua_bufr,gmao_amsr2_bufr,gmao_gmi_bufr,mls_nrt_nc,ncep_1bamua_bufr,ncep_acftpfl_bufr,ncep_atms_bufr,ncep_aura_omi_bufr,ncep_avcsam_bufr,ncep_avcspm_bufr,ncep_crisfsr_bufr,ncep_goesfv_bufr,ncep_gpsro_bufr,ncep_mhs_bufr,ncep_mtiasi_bufr,ncep_prep_bufr,ncep_satwnd_bufr,ncep_ssmis_bufr,ncep_tcvitals,npp_ompsnm_bufr,r21c_npp_ompslp_nc,m2scr_n21_ompslp_nc,gmao_mlst_bufr
+> disc_airs_bufr,gmao_amsr2_bufr,gmao_gmi_bufr,mls_nrt_nc,ncep_1bamua_bufr,ncep_acftpfl_bufr,ncep_atms_bufr,ncep_aura_omi_bufr,ncep_avcsam_bufr,ncep_avcspm_bufr,ncep_crisfsr_bufr,ncep_goesfv_bufr,ncep_gpsro_bufr,ncep_mhs_bufr,ncep_mtiasi_bufr,ncep_prep_bufr,ncep_satwnd_bufr,ncep_ssmis_bufr,ncep_tcvitals,npp_ompsnm_bufr,n21_ompslp_nc,gmao_mlst_bufr,aura_omieff_nc,npp_ompslp_nc,ncep_goescsr_bufr
 
 CHECKING OBSYSTEM? [2]
 > 1
@@ -168,7 +177,19 @@ Use unified radiance bias correction (y/n)? [y]
 > 
 
 Land DAS Analysis (y/n)? [n]
-> 
+> y
+
+Location of LDAS initial surface met forcing (bkg.lfo)  [/discover/nobackup/qzhang/archive/ladas54211smap//rs/Y2019/M12]
+> /discover/nobackup/projects/gmao/dadev/rtodling/archive/544/x0054/rs/Y2025/M11
+
+Enable LDAS feedback to atm model y/n? [n]
+> y
+
+Location of LDAS initial conditions for deterministic component? (full_path/ldas_exp)  [/discover/nobackup/qzhang/ldas_exp_C360/]
+> /discover/nobackup/projects/gmao/smap/SMAP_Nature/LADAS_offline/CF0360/C360_da_ens24
+
+Location of LDAS initial conditions for ens? (full_path/ldas_exp)
+> /discover/nobackup/projects/gmao/smap/SMAP_Nature/LADAS_offline/CF0090/C090_da_ens32
 
 Frequency (in days) for writing restarts? [0]
 > 
@@ -207,7 +228,7 @@ Do Aerosol Analysis (y/n)? [y]
 > 
 
 AOD OBSERVING CLASSES [or type 'none']?
-> mod04_061_llk,myd04_061_llk,aeronet_obs_llk
+> mod04_061_flk,myd04_061_flk,vn20aerdt_002_flk,vn20aerdb_002_flk,aeronet_obs_llk
 
 Enable GAAS feedback to model (y/n)? [y]
 > 
@@ -222,7 +243,7 @@ Output Restart TYPE (bin or nc4) [nc4]
 > 
 
 Select group: [s0818]
-> g0613
+> 
 
 Replayed Ensemble (from OPS)?  [yes]
 > no
@@ -236,8 +257,8 @@ Ensemble Resolution?  [C90]
 Ensemble Vertical Levels?  [72]
 > 
 
-Experiment archive directory for ensemble restarts or 'later': [/archive/u/dao_it/x0051]
-> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_42/c360
+Experiment archive directory for ensemble restarts or 'later': [/archive/u/rtodling/x0054]
+> /discover/nobackup/projects/gmao/dadev/rtodling/archive/544/x0054
 
 Edit COLLECTIONS list in run/HISTORY.rc.tmpl (y/n)? [n]
 > 

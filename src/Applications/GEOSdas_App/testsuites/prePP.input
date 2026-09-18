@@ -3,7 +3,7 @@
 #------------
 
 codeID: 523f29e
-description: prePP__GEOSadas-5_42_1__agrid_C720__ogrid_C
+description: prePP__GEOSadas-5_44_5__agrid_C720__ogrid_C
 fvsetupID: f7aaa973c7
 
 ---ENDHEADERS---
@@ -39,7 +39,7 @@ Catchment Model choice? [1]
 > 
 
 FVHOME? [/discover/nobackup/rtodling/prePP]
-> /discover/nobackup/projects/gmao/dadev/TSE_staging/rtodling/$expid
+> /discover/nobackup/projects/gmao/dadev/TSE_staging/rtodling/544/$expid
 
 The directory /discover/nobackup/projects/gmao/dadev/rtodling/prePP does not exist. Create it now? [y]
 > 
@@ -81,7 +81,7 @@ AeroCom? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/AeroCom]
 > 
 
 FVICS? [/archive/u/jstassi/restarts/GEOSadas-5_24_0]
-> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_42/c720/rs/Y2025/M02/c720.rst.20250225_21z.tar
+> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_44/Rev1/f5430_fp/rs/Y2026/M06/f5430_fp.rst.20260628_21z.tar
 
 Run model-adjoint-related applications (0=no,1=yes)? [0]
 > 1
@@ -102,7 +102,7 @@ Verifying experiment id: [prePP]
 > 
 
 Ending year-month-day? [20210921]
-> 20251231
+> 20261006
 
 Length of FORECAST run segments (in hours)? [123]
 > 
@@ -150,7 +150,7 @@ Which main class of ObsSys (1: NRT; 2: MERRA; 3: MERRA-2; 4: GEOS-IT; 5: R21C)? 
 > 1
 
 OBSERVING SYSTEM CLASSES?
-> disc_airs_bufr,gmao_amsr2_bufr,gmao_gmi_bufr,mls_nrt_nc,ncep_1bamua_bufr,ncep_acftpfl_bufr,ncep_atms_bufr,aura_omieff_nc,ncep_avcsam_bufr,ncep_avcspm_bufr,ncep_crisfsr_bufr,ncep_goesfv_bufr,ncep_gpsro_bufr,ncep_mhs_bufr,ncep_mtiasi_bufr,ncep_prep_bufr,ncep_satwnd_bufr,ncep_ssmis_bufr,ncep_tcvitals,npp_ompsnm_bufr,npp_ompslp_nc,n21_ompslp_nc,gmao_mlst_bufr
+> disc_airs_bufr,gmao_amsr2_bufr,gmao_gmi_bufr,mls_nrt_nc,ncep_1bamua_bufr,ncep_acftpfl_bufr,ncep_atms_bufr,ncep_aura_omi_bufr,ncep_avcsam_bufr,ncep_avcspm_bufr,ncep_crisfsr_bufr,ncep_goesfv_bufr,ncep_gpsro_bufr,ncep_mhs_bufr,ncep_mtiasi_bufr,ncep_prep_bufr,ncep_satwnd_bufr,ncep_ssmis_bufr,ncep_tcvitals,npp_ompsnm_bufr,n21_ompslp_nc,gmao_mlst_bufr,aura_omieff_nc,npp_ompslp_nc,ncep_goescsr_bufr
 
 CHECKING OBSYSTEM? [2]
 > 1
@@ -207,7 +207,7 @@ Do Aerosol Analysis (y/n)? [y]
 > 
 
 AOD OBSERVING CLASSES [or type 'none']?
-> mod04_061_flk,myd04_061_flk,aeronet_obs_flk
+> vn20aerdt_002_flk,vn20aerdb_002_flk,aeronet_obs_llk
 
 Enable GAAS feedback to model (y/n)? [y]
 > 
@@ -237,7 +237,7 @@ Ensemble Vertical Levels?  [72]
 > 
 
 Experiment archive directory for ensemble restarts or 'later': [/archive/u/rtodling/prePP]
-> /gpfsm/dnb05/projects/p139/rtodling/archive/Restarts/5_42/c720
+> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_44/Rev1/f5430_fp
 
 Edit COLLECTIONS list in run/HISTORY.rc.tmpl (y/n)? [n]
 > 

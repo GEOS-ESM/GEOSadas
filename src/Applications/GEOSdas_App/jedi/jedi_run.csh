@@ -8,7 +8,7 @@ endif
 
 setenv MYNAME jedi_run.csh
 
-if ( $#argv < 2 ) then
+if ( $#argv < 3 ) then
    echo " "
    echo " \\begin{verbatim} "
    echo " "
@@ -23,14 +23,15 @@ if ( $#argv < 2 ) then
    echo "  where "
    echo "   nymd  -  analysis synoptic date"
    echo "   nhms  -  analysis synoptic time"
+   echo "   fcoff -  fcoff  -  hours offset from (nymdb,nhmsb)"
    echo " " 
    echo " AUTHOR"
    echo "   Ricardo Todling (Ricardo.Todling@nasa.gov), NASA/GMAO "
    echo "     Initial version: 18Oct2020    by: R. Todling"
-   echo "     Last   modified: 22Set2023    by: R. Todling"
+   echo "     Last   modified: 28Jul2026    by: R. Todling"
    echo " \\end{verbatim} "
    echo " \\clearpage "
-   exit(0)
+   exit(1)
 endif
 
 
@@ -66,11 +67,13 @@ if ( !($?BATCH_SUBCMD)  )       setenv BATCH_SUBCMD      sbatch
 
 set nymdb = $1   # initial date of var window
 set nhmsb = $2   # initial time of var window
+set fcoff = $3   # 
 set yyyyb    = `echo $nymdb | cut -c1-4`
 set mmb      = `echo $nymdb | cut -c5-6`
 set ddb      = `echo $nymdb | cut -c7-8`
 set hhb      = `echo $nhmsb | cut -c1-2`
 set yyyymmddhh = ${nymdb}${hhb}
+setenv BYYYYYMMDDTHH0000Z  ${nymdb}T${hhb}0000Z
 
 set anadate  = `tick $nymdb $nhmsb $JEDI_VAROFFSET`
 set nymda    = $anadate[1]
@@ -153,12 +156,20 @@ endif
 # ----------------------
 if ( ! -e $FVWORK/.DONE_jedi_run_ana.csh.$yyyymmddhh) then
  if ( $JEDI_RUN_ANA ) then
-   zeit_ci.x jedi_var
+   zeit_ci.x jedi_run
 
-   if ( -e Config/geosvar.${nymda}_${hha}z.yaml ) then
-      setenv MYCONF Config/geosvar.${nymda}_${hha}z.yaml
+   set this = geosvar
+   if ( $JEDI_RUN_EAANA ) then
+      set this = geosens
+   endif
+   if ( $fcoff ) then
+      set this = geoshofx
+   endif
+   if ( -e Config/$this.${nymda}_${hha}z.yaml ) then
+      setenv MYCONF Config/$this.${nymda}_${hha}z.yaml
    else
-      setenv MYCONF Config/geosvar.yaml
+       echo " ${MYNAME}: $this.${nymda}_${hha}z.yaml not found, aborting ..."
+       exit (2) 
    endif
    if ( $JEDI_RUN_ADANA_TEST ) then
       setenv MYCONF Config/envarfgat4adtest.yaml
@@ -169,19 +180,57 @@ if ( ! -e $FVWORK/.DONE_jedi_run_ana.csh.$yyyymmddhh) then
       if (! -d inc ) mkdir inc 
    endif
 
-   if ( -e $FVHOME/run/jedi/jedi_run_var.j ) then
-      sbatch -W $FVHOME/run/jedi/jedi_run_var.j
-      sleep 2
+   if ( $JEDI_RUN_EAANA ) then
+     if ( -e $FVHOME/run/jedi/jedi_run_eda.j ) then
+        vED -env $FVHOME/run/jedi/jedi_run_eda.j -o jedi_run_eda.j
+        sbatch -W jedi_run_eda.j
+        sleep 2
+     else
+       echo " ${MYNAME}: cannot find jedi_run_eda.j, aborting ... "
+       exit (2) 
+     endif
    else
-      $JEDI_FV3VAR_MPIRUN $JEDIBUILD/bin/fv3jedi_var.x $MYCONF |& tee -a $FVWORK/$JEDIVARLOG
-      if ( $status ) then
-          echo " ${MYNAME}: failed in VAR, aborting ..."
-          exit (1)
-      endif
+     if ( -e $FVHOME/run/jedi/jedi_run_var.j ) then
+        vED -env $FVHOME/run/jedi/jedi_run_var.j -o jedi_run_var.j
+        sbatch -W jedi_run_var.j
+        sleep 2
+     else
+        if ( $fcoff ) then
+           $JEDI_FV3HOX_MPIRUN $JEDIBUILD/bin/fv3jedi_hofx_nomodel.x $MYCONF |& tee -a $FVWORK/$JEDIVARLOG
+#          $JEDI_FV3HOX_MPIRUN /discover/nobackup/projects/gmao/advda/rtodling/JEDI1/2026/24Jun/build-intel-release/bin/fv3jedi_hofx_nomodel.x $MYCONF |& tee -a $FVWORK/$JEDIVARLOG
+           if ( $status ) then
+              echo " ${MYNAME}: failed in VAR, aborting ..."
+              exit (1)
+           endif
+        else
+           $JEDI_FV3VAR_MPIRUN $JEDIBUILD/bin/fv3jedi_var.x $MYCONF |& tee -a $FVWORK/$JEDIVARLOG
+           if ( $status ) then
+              echo " ${MYNAME}: failed in VAR, aborting ..."
+              exit (1)
+           endif
+        endif
+     endif
+     set ichk = `grep NaN $FVWORK/$JEDIVARLOG | wc`
+     if ( $ichk[1] > 0 ) then
+         echo " ${MYNAME}: NaNs found in JEDI, failed in VAR, aborting ..."
+         exit (1)
+     endif
+     set lstinc = `ls *inc*nc4`
+     if ( ! $status ) /bin/mv *inc*nc4 ./inc # somehow datapath setting in yaml is not effective at inc part
    endif
-   /bin/mv *inc*nc4 ./inc # somehow datapath setting in yaml is not effective at inc part
-   zeit_co.x jedi_var
+   zeit_co.x jedi_run
    
+   if ( $fcoff ) then
+      # archive hofx
+      # ------------
+      cd $JEDIWRK/hofx
+      tar cvf $FVWORK/$EXPID.jedi_hofx.${nymdb}_${hhb}z.tar *nc4
+      cd -
+      touch $FVWORK/.DONE_${MYNAME}.$yyyymmddhh
+      echo " ${MYNAME}: Complete "
+      exit(0)
+   endif
+
    # Converged in these many iterations
    # ----------------------------------
    set convniter = `grep JoJc $FVWORK/$JEDIVARLOG | wc`
@@ -295,15 +344,21 @@ endif # UPD_INIT_RST
 
 # archive hofx
 # ------------
-cd $JEDIWORK/hofx
+cd $JEDIWRK/hofx
 tar cvf $FVWORK/$EXPID.jedi_hofx.${nymdb}_${hhb}z.tar *nc4
 cd -
 
 # archive varBC
 # -------------
 touch $JEDIETC/VBC.BOOTSTRAP.DONE
-cd $JEDIWORK/vbc
-tar cvf $FVWORK/$EXPID.jedi_vbc.${nymdb}_${hhb}z.tar *satbias*nc4 *aircraft*csv
+cd $JEDIWRK/vbc
+/bin/cp $JEDIWRK/obs/*tlapse.txt .
+foreach fn (`ls *tlapse.txt`)
+  set pfx = `echo $fn | cut -d. -f1`
+  /bin/mv $fn $pfx.$BYYYYYMMDDTHH0000Z.tlapse.txt # time tag as current as
+                                                  # if JEDI output these
+end
+tar cvf $FVWORK/$EXPID.jedi_vbc.${nymdb}_${hhb}z.tar *satbias*nc4 *aircraft*csv *.txt
 cd -
 
 # If here, likely successful

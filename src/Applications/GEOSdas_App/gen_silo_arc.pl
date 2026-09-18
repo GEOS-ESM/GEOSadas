@@ -706,6 +706,7 @@ sub append_other_info {
 #                 ---------------------------
 #
 \${PESTOROOT}%s/prog/Y%y4/M%m2/D%d2/H%h2/%s.prog.inst3d_met_p.%y4%m2%d2_%h2z+%y4%m2%d2_%h2%n2z.nc4
+\${PESTOROOT}%s/prog/Y%y4/M%m2/D%d2/H%h2/%s.prog.ceta.%y4%m2%d2_%h2z+%y4%m2%d2_%h2%n2z.nc4
 \${PESTOROOT}%s/prog/Y%y4/M%m2/D%d2/H%h2/%s.prog.eta.%y4%m2%d2_%h2z+%y4%m2%d2_%h2%n2z.nc4
 \${PESTOROOT}%s/prog/Y%y4/M%m2/D%d2/H%h2/%s.prog.prs.%y4%m2%d2_%h2z+%y4%m2%d2_%h2%n2z.nc4
 \${PESTOROOT}%s/prog/Y%y4/M%m2/D%d2/H%h2/%s.prog.sfc.%y4%m2%d2_%h2z+%y4%m2%d2_%h2%n2z.nc4
