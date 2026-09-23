@@ -9,14 +9,14 @@ endif ()
 #   TARGET gsi.x                                                               #
 #   SOURCES gsimain.F90                                                        #
 #   LIBS GEOSaana_GridComp GSI_GridComp GEOSgsi_Coupler                        #
-#        crtm NCEP_sfcio NCEP_bufr_r8i4 NCEP_nemsio NCEP_bacio_r4i4 NCEP_gfsio #
+#        CRTMv3 NCEP_sfcio NCEP_bufr_r8i4 NCEP_nemsio NCEP_bacio_r4i4 NCEP_gfsio #
 #        NCEP_sp_r8i4 NCEP_w3_r8i4 nc_diag_read nc_diag_write)                 #
 ################################################################################
 
 ecbuild_add_executable (
   TARGET GSIsa.x
   SOURCES GSIsa.F90
-  LIBS GEOSaana_GridComp GSI_GridComp GEOSgsi_Coupler NCEP_sigio fvgcm crtm
+  LIBS GEOSaana_GridComp GSI_GridComp GEOSgsi_Coupler NCEP_sigio fvgcm CRTMv3
        GMAO_hermes GMAO_gfio_r8 GEOSagcmPert_GridComp
        GEOS_PertShared GEOSphysicsPert_GridComp GEOSradiationPert_GridComp GEOSgwdPert_GridComp
        GEOSmoistPert_GridComp GEOSturbulencePert_GridComp GEOSsurfacePert_GridComp GEOSchemPert_GridComp

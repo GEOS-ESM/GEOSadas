@@ -1,4 +1,4 @@
-esma_set_this (OVERRIDE crtm)
+esma_set_this (OVERRIDE CRTMv3)
 
 # got below list by copying the srcs list from
 # the JSCDA_crtm src/CMakeLists.txt
