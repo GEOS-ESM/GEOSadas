@@ -19,12 +19,6 @@ ecbuild:
   remote: ../ecbuild.git
   tag: geos/v1.4.0
 
-crtm:
-  local: ./src/Shared/JCSDA_crtm/@crtm
-  remote: ../crtm.git
-  tag: geos/v2.4.1-jedi.1+1.1.0
-  develop: master
-
 CRTMv3:
   local: ./src/Shared/JCSDA_crtm/@CRTMv3
   remote: ../CRTMv3.git
@@ -92,7 +86,7 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  tag: v5.45.6
+  branch: feature/rtodling/crtm-3
   develop: develop
 
 mksi:
