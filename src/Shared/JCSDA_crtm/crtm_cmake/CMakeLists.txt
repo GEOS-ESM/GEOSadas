@@ -30,6 +30,7 @@ list( APPEND CRTM_SRCS
   src/Atmosphere/Cloud/CRTM_Cloud_Define.f90
   src/Atmosphere/CRTM_Atmosphere_Define.f90
   src/Atmosphere/CRTM_Hypsometric.f90
+  src/Atmosphere/CRTM_Relative_Humidity.f90
   src/Atmosphere/CRTM_Atmosphere.f90
   src/Atmosphere/CRTM_Model_Profiles.f90
   src/Atmosphere/iAtm_Define.f90
@@ -47,11 +48,16 @@ list( APPEND CRTM_SRCS
   src/Coefficients/AerosolCoeff/AerosolCoeff_Define.f90
   src/Coefficients/AerosolCoeff/AerosolCoeff_netCDF_IO.f90
   src/Coefficients/AerosolCoeff/AerosolCoeff_IO.f90
+  src/Coefficients/BeCoeff/BeCoeff_Binary_IO.f90
+  src/Coefficients/BeCoeff/BeCoeff_Define.f90
+  src/Coefficients/BeCoeff/BeCoeff_netCDF_IO.f90
+  src/Coefficients/BeCoeff/BeCoeff_IO.f90
   src/Coefficients/CloudCoeff/CloudCoeff_Binary_IO.f90
   src/Coefficients/CloudCoeff/CloudCoeff_Define.f90
   src/Coefficients/CloudCoeff/CloudCoeff_netCDF_IO.f90
   src/Coefficients/CloudCoeff/CloudCoeff_IO.f90
   src/Coefficients/CRTM_AerosolCoeff.f90
+  src/Coefficients/CRTM_BeCoeff.f90
   src/Coefficients/CRTM_CloudCoeff.f90
   src/Coefficients/CRTM_IRiceCoeff.f90
   src/Coefficients/CRTM_IRlandCoeff.f90
@@ -74,6 +80,8 @@ list( APPEND CRTM_SRCS
   src/Coefficients/EmisCoeff/IR_Snow/IRsnowCoeff_netCDF_IO.f90
   src/Coefficients/EmisCoeff/MW_Water/MWwaterCoeff_Define.f90
   src/Coefficients/EmisCoeff/MW_Water/MWwaterLUT/MWwaterLUT_Define.f90
+  src/Coefficients/EmisCoeff/MW_Water/MWwaterCoeff_CreateFile/MWwaterCoeff_FASTEM6.f90
+  src/Coefficients/EmisCoeff/MW_Water/MWwaterCoeff_CreateFile/MWwaterCoeff_FASTEM4.f90
   src/Coefficients/EmisCoeff/SEcategory/SEcategory_Define.f90
   src/Coefficients/EmisCoeff/SEcategory/SEcategory_IO.f90
   src/Coefficients/EmisCoeff/SEcategory/SEcategory_netCDF_IO.f90
@@ -211,7 +219,7 @@ list( APPEND CRTM_SRCS
   src/Zeeman/Zeeman_Utility.f90
   )
 
-esma_mepo_style(crtm CRTM_rel_path REL_PATH ..)
+esma_mepo_style(CRTMv3 CRTM_rel_path REL_PATH ..)
 set (CRTM_path ${CMAKE_CURRENT_SOURCE_DIR}/${CRTM_rel_path})
 
 set (SRCS)
