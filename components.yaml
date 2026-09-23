@@ -25,6 +25,12 @@ crtm:
   tag: geos/v2.4.1-jedi.1+1.1.0
   develop: master
 
+CRTMv3:
+  local: ./src/Shared/JCSDA_crtm/@CRTMv3
+  remote: ../CRTMv3.git
+  tag: v3.1.4
+  develop: develop
+
 NCEP_Shared:
   local: ./src/Shared/@NCEP_Shared
   remote: ../NCEP_Shared.git
