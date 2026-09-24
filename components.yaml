@@ -35,7 +35,7 @@ NCEP_Shared:
 GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
-  branch: feature/rtodling/add_viirs_radiance
+  tag: g5.45.1
   sparse: ./config/GMAO_Shared.sparse
   develop: main
 
@@ -86,13 +86,13 @@ FMS:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  branch: feature/rtodling/crtm-3
+  tag: v5.46.0
   develop: develop
 
 mksi:
    local: ./src/Components/@GEOSana_GridComp/GEOSaana_GridComp/GSI_GridComp/@mksi
    remote: ../GEOS_mksi.git
-   branch: feature/rtodling/viirs-m
+   tag: v5.45.0
    develop: develop
 
 GEOSgcm_GridComp:
