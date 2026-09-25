@@ -37,7 +37,7 @@ GMAO_Shared:
   local: ./src/Shared/@GMAO_Shared
   remote: ../GMAO_Shared.git
 #  tag: g5.42.4.2
-  feature/ygyu/v5.42.4/July24
+  tag: feature/ygyu/v5.42.4/July24
   sparse: ./config/GMAO_Shared.sparse
   develop: main
 
