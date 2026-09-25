@@ -200,8 +200,12 @@ CONTAINS
 !   -------------------------------------------------------
     if(JM_BKG==6*IM_BKG) cubedbkg=.true.
 
+    if ( MAPL_am_I_root() ) print *, 'nail 1'
+
 !   Create a regular Lat/Lon grid over which BKG/ANA defined
 !   --------------------------------------------------------
+    if ( MAPL_am_I_root() ) print *, 'for call MAPL_DefGridName'
+    if ( MAPL_am_I_root() ) print *, 'IM_BKG,JM_BKG,ABKGGRIDNAME,', IM_BKG,JM_BKG,trim(ABKGGRIDNAME)
     call MAPL_DefGridName (IM_BKG,JM_BKG,ABKGGRIDNAME,MAPL_am_I_root())
     if(cubedbkg) then
        if ( MAPL_am_I_root() ) then
@@ -216,6 +220,7 @@ CONTAINS
           print *
           print *, 'Background on the lat-lon grid ', trim(ABKGGRIDNAME)
           print *
+          print *, 'bkg: IM_BKG,JM_BKG,Nx,Ny', IM_BKG,JM_BKG,Nx,Ny
        endif
        ll_factory = LatLonGridFactory(grid_name=trim(ABKGGRIDNAME), &
                         Nx = Nx, Ny = Ny,   &
@@ -226,10 +231,15 @@ CONTAINS
        BKGgrid = grid_manager%make_grid(ll_factory,__RC__)
     endif
 
+    if ( MAPL_am_I_root() ) print *, 'nail 2: af  cs_fac or ll_fac: bkg'
+    
 !   Validate grid
 !   -------------
     call ESMF_GridValidate(BKGgrid,__RC__)
 
+    if ( MAPL_am_I_root() ) print *, 'nail 2: cubediau=', cubediau
+    if ( MAPL_am_I_root() ) print *, 'nail 2: IM_IAU,JM_IAU', IM_IAU,JM_IAU
+    
 !   Create either a regular Lat/Lon grid or cubed grid over which IAU defined
 !   -------------------------------------------------------------------------
     if (cubediau) then
@@ -254,6 +264,8 @@ CONTAINS
 
     sameres = IM_BKG==IM_IAU .and. JM_BKG==JM_IAU
 
+    if ( MAPL_am_I_root() ) print *, 'nail 3: af  cs_fac or ll_fac:  IAU GCM grid'
+    
 !   Create a clock
 !   --------------
     CLOCK = ESMF_ClockCreate ( name="IAUClock", timeStep=TimeStep, startTime=Time, __RC__ )
@@ -265,6 +277,10 @@ CONTAINS
 
     call MAPL_read_bundle( BkgBundle, bkgfname, Time, __RC__ )
 
+    if ( MAPL_am_I_root() ) print *, 'SUSCESS : MAPL_read_bundle'
+    
+
+    
 !   Now create a component to handle the increment output
 !   -----------------------------------------------------
     temp_config=ESMF_ConfigCreate()
@@ -317,16 +333,18 @@ CONTAINS
          !call GetWeights_init (6,1,im_iau,im_iau,lm_iau,Nx_cube,Ny_cube*6,.true.,.false.,comm)
     !endif
 
-#if 0
+#if 1
     if ( MAPL_AM_I_ROOT() ) then
        call ESMF_StatePrint(IMPORTS(BASE))
        call ESMF_StatePrint(IMPORTS(STUB))
     end if
 #endif
 
+    if ( MAPL_AM_I_ROOT() ) print*, 'nail 4, bf set_'    
 !   Prepare import of base state
 !   ----------------------------
     call set_()
+    if ( MAPL_AM_I_ROOT() ) print*, 'nail 5, af set_'    
 
 !   First run component to calculate IAU increment
 !   ----------------------------------------------
@@ -334,15 +352,20 @@ CONTAINS
          exportState=EXPORTS(BASE), clock=CLOCK, userRC=userRC, RC=STATUS)
     ASSERT_(userRC==ESMF_SUCCESS .and. STATUS==ESMF_SUCCESS)
 
+    if ( MAPL_AM_I_ROOT() ) print*, 'nail 6, af gc run baes'
+    
 !   Connect Exports of Run above with Imports of one below; regrid if needed
 !   ------------------------------------------------------------------------
     call connect_()
+    if ( MAPL_AM_I_ROOT() ) print*, 'nail 7, af connect_'    
 
 !   Second run component to write out IAU increments
 !   ------------------------------------------------
     call ESMF_GridCompRun (GCS(STUB), importState=IMPORTS(STUB), &
          exportState=EXPORTS(STUB), clock=CLOCK, userRC=userRC, phase=1, RC=STATUS)
     ASSERT_(userRC==ESMF_SUCCESS .and. STATUS==ESMF_SUCCESS)
+    if ( MAPL_AM_I_ROOT() ) print*, 'nail 8, af gc run stub'
+    
 
 !   Finalize component
 !   ------------------
@@ -652,7 +675,6 @@ CONTAINS
    call ESMFL_StateGetPointerToData(EXPORTS(BASE), dtsdt, 'DTSDT',alloc=.true.,__RC__ )
 
 !  Clean up
-
    end subroutine set_
 
    subroutine connect_

@@ -2,9 +2,6 @@
 # 
 # setup_aanajedi - setup for an atmospheric JEDI analysis
 #
-#  20Apr2015 Todling  Initial code
-#  01May2015 Todling  Add 4d-capability
-#
 #-----------------------------------------------------------------------------------------------------
 
 use Env;                 # make env vars readily available
@@ -101,6 +98,11 @@ sub init {
       }
    }
 
+   $jedigid = "#"; 
+   if ( $ENV{"GEOSJEDI_GID"} ) {
+      $jedigid = "#SBATCH --account=$GEOSJEDI_GID";
+   }
+
    $jediqos = "#"; 
    if ( $ENV{"GEOSJEDI_QOS"} ) {
       $jediqos = "#SBATCH --qos=$GEOSJEDI_QOS";
@@ -138,7 +140,7 @@ sub init {
    if ( $opt_jediroot ) {
         $jediroot = $opt_jediroot;
    } else {
-        $jediroot = "/discover/nobackup/projects/gmao/advda/swell/JediBundles/fv3_soca_SLES15_01152026/build-intel-release";
+        $jediroot = "/discover/nobackup/projects/gmao/advda/swell/JediBundles/fv3_soca_SLES15_08142026/build-intel-release";
    }
 
    if ( $opt_archive ) {
@@ -178,6 +180,13 @@ sub init {
    $nogsi = 0;
    if ( $opt_nogsi ) {
       $nogsi = 1;
+   }
+
+   $iau_overwrite = 1;
+   if ( $nogsi ) {
+     if ( $ENV{JEDI_IAU_OVERWRITE} ) {
+        $iau_overwrite = $ENV{JEDI_IAU_OVERWRITE};
+     }
    }
 
 # Swell is wired for now
@@ -381,6 +390,7 @@ sub init {
   @rc2conf   = qw ( diag2ioda.yaml
                     diffstates_geos.yaml
                     mkiau.rc.tenv
+                    mkiau_cubed.rc.tenv
                     obsop_name_map.yaml );
 
   @rc2jedi   = qw ( JEDIanaConfig.csh
@@ -388,11 +398,14 @@ sub init {
                     jedi_acquire_bkg.j
                     jedi_acquire_ebkg.j
                     jedi_acquire_ioda.j
+                    jedi_acquire_prog.j
                     jedi_acquire_vbc.j
                     jedi_diffstates.j
                     jedi_run_var.j
                     ut_jedi.j
                   );
+
+  @rc2sajedi  = qw ( jedi_anasa.j );
 
   @rc2adjedi  = qw ( JEDIadanaConfig.csh );
 
@@ -441,6 +454,24 @@ sub init {
                      ssmis_f17.yaml
                    );
 
+# For now, hofx avoids using observations that are bias corrected
+  @rc2hofxobs = qw ( 0hofx.yaml
+                     gps.yaml
+                     mls55_aura.yaml
+                     omi_aura.yaml
+                     omieff_aura.yaml
+                     ompslpnc_n21.yaml
+                     ompslpnc_npp.yaml
+                     ompsnm_npp.yaml
+                     pibal.yaml
+                     saber_timed.yaml
+                     satwind.yaml
+                     scatwind.yaml
+                     sfcship.yaml
+                     sfc.yaml
+                     sondes.yaml
+                   );
+
 }
 #......................................................................
 
@@ -455,6 +486,9 @@ if ( ! -d "$JEDIHOME/Config" ) {
 if ( ! -d "$JEDIHOME/Config/obs" ) {
    $rc = system("/bin/mkdir -p $JEDIHOME/Config/obs" );
 }
+if ( ! -d "$JEDIHOME/Config/fcobs" ) {
+   $rc = system("/bin/mkdir -p $JEDIHOME/Config/fcobs" );
+}
 # transfer resource files to proper location
 # transfer resource files to proper location
 # TBD: at this time, no editing is done of the resource
@@ -468,6 +502,11 @@ foreach $fn ( @rc2jedi ) {
   }
 }
 
+foreach $fn ( @rc2sajedi ) {
+  cp("$FVROOT/etc/jedi/$fn","$fvhome/anasa/$fn");
+}
+ed_anasa_job("$fvhome/anasa","jedi_anasa.j");
+
 # Copy scheme yaml to proper location
 foreach $fn ( @rc2conf ) {
   chomp($fn);
@@ -477,11 +516,18 @@ cp("$FVROOT/etc/jedi/geos_${scheme}.yaml","$JEDIHOME/Config/geosvar.yaml");
 if ( ! -e "$JEDIHOME/Config/geosvar.yaml" ) {
    die "File $JEDIHOME/Config/geosvar.yaml not found \n";
 }
+cp("$FVROOT/etc/jedi/geos_hofx.yaml","$JEDIHOME/Config/geoshofx.yaml");
 
 # Copy obs yamls to experiment config location
 foreach $fn ( @rc2jediobs ) {
   chomp($fn);
   cp("$FVROOT/etc/jedi/obs/$fn","$JEDIHOME/Config/obs/$fn");
+}
+
+# Copy a subset of obs yamls to use for fcst verification purposes
+foreach $fn ( @rc2hofxobs ) {
+  chomp($fn);
+  cp("$FVROOT/etc/jedi/obs/$fn","$JEDIHOME/Config/fcobs/$fn");
 }
 
 cp("$FVROOT/etc/jedi/geos_${scheme}.yaml","$JEDIHOME/Config/geosvar.yaml");
@@ -493,20 +539,22 @@ if ( $hybridvar ) {
   ed_var_yaml ("$JEDIHOME/Config","diffstates_geos.yaml");
 }
 ed_mkiau_rc ("$JEDIHOME/Config","mkiau.rc.tenv");
+ed_mkiau_rc ("$JEDIHOME/Config","mkiau_cubed.rc.tenv");
 
 # take care of satbias acq
 ed_jedibkg_acq   ("$JEDIHOME/Config");
 ed_jediebkg_acq  ("$JEDIHOME/Config",$ensrpy,$exprpy);
 ed_jediebkgx_acq ("$JEDIHOME/Config",$ensrpy,$exprpy);
 ed_jediioda_acq  ("$JEDIHOME/Config");
+ed_jediprog_acq  ("$JEDIHOME/Config");
 ed_jedivbc_acq   ("$JEDIHOME/Config");
 ed_diffstate_job ("$JEDIHOME");
 
 set_jedi_static("$jediroot","$jediinput",$cres,$i1res,$gsibecres);
 
 # edit main DAS existing settings when GSI is bypassed
-ed_rst4fcst_acq("$FVHOME/fcst/","$scheme");
-ed_4dfcst03_acq("$FVHOME/fcst/","$scheme");
+ed_rst4fcst_acq("$fvhome/fcst/");
+ed_4dfcst03_acq("$fvhome/fcst/");
 
 }
 #......................................................................
@@ -607,6 +655,37 @@ sub ed_mkiau_rc {
 
 }
 #......................................................................
+sub ed_anasa_job{
+
+  my($mydir,$config) = @_;
+
+  my($acq);
+
+  $tmprc  = "$mydir/tmp.rc";
+  $thisrc = "$mydir/$config";
+
+     open(LUN,"$thisrc")  || die "Fail to open $thisrc $!\n";
+     open(LUN2,">$tmprc") || die "Fail to open tmp.rc $!\n";
+
+     # Change variables to the correct inputs
+     #---------------------------------------
+     while( defined($rcd = <LUN>) ) {
+        chomp($rcd);
+        if($rcd =~ /\@GEOSJEDI_GID/) {$rcd=~ s/\@GEOSJEDI_GID/$jedigid/g; }
+        if($rcd =~ /\@GEOSJEDI_QOS/) {$rcd=~ s/\@GEOSJEDI_QOS/$jediqos/g; }
+        if($rcd =~ /\@GEOSJEDI_PARTITION/) {$rcd=~ s/\@GEOSJEDI_PARTITION/$jedipartition/g; }
+        if($rcd =~ /\@FVHOME/) {$rcd=~ s/\@FVHOME/$fvhome/g; }
+        if($rcd =~ /\@ARCHIVE/) {$rcd=~ s/\@ARCHIVE/$archive/g; }
+        print(LUN2 "$rcd\n");
+     }
+
+     close(LUN);
+     close(LUN2);
+     cp($tmprc, $thisrc);
+     unlink $tmprc;
+
+}
+#......................................................................
 sub ed_conf_rc {
 
   my($mydir,$conffn) = @_;
@@ -647,7 +726,7 @@ sub ed_conf_rc {
         if($rcd =~ /\@JEDI_HYBRID/)         {$rcd=~ s/\@JEDI_HYBRID/$jedihyb/g;  }
         if($rcd =~ /\@JEDI_INPUT/)          {$rcd=~ s/\@JEDI_INPUT/$jediinput/g;  }
         if($rcd =~ /\@JEDI_OBS_OPT/)        {$rcd=~ s/\@JEDI_OBS_OPT/$jedi_obs_opt/g;  }
-        if($rcd =~ /\@JEDI_IAU_OVERWRITE/)  {$rcd=~ s/\@JEDI_IAU_OVERWRITE/$nogsi/g;  }
+        if($rcd =~ /\@JEDI_IAU_OVERWRITE/)  {$rcd=~ s/\@JEDI_IAU_OVERWRITE/$iau_overwrite/g;  }
         if($rcd =~ /\@JEDI_ROOT/)           {$rcd=~ s/\@JEDI_ROOT/$jediroot/g;  }
         if($rcd =~ /\@JEDI_RUN_GETINC/)     {$rcd=~ s/\@JEDI_RUN_GETINC/$jediinc/g;  }
         if($rcd =~ /\@JEDI_STATIC_FILES/)   {$rcd=~ s/\@JEDI_STATIC_FILES/$jedistatic/g;  }
@@ -740,7 +819,22 @@ sub ed_jediioda_acq {
  open(SCRIPT,">$acq") or
  die ">>> ERROR <<< cannot write $acq";
  print  SCRIPT <<"EOF";
-$archive/$expid/jedi/obs/Y%y4/M%m2/$expid.jedi_ioda.%y4%m2%d2_%h2z.tar
+$archive/$expid/jedi/obs/Y%y4/M%m2/$expid.jedi_hofx.%y4%m2%d2_%h2z.tar
+EOF
+}
+#......................................................................
+sub ed_jediprog_acq {
+
+  my($mydir) = @_;
+
+  my($acq);
+
+  $acq = "$mydir/jedi_prog.acq";
+
+ open(SCRIPT,">$acq") or
+ die ">>> ERROR <<< cannot write $acq";
+ print  SCRIPT <<"EOF";
+$archive/$expid/prog/Y\$YYYYF/\M$MMF/D\$DDF/H\$HHF/j54rp2.prog.ceta.\${FYYYYMMDD_HH}z+\${AYYYYMMDD_HH}00z.nc4
 EOF
 }
 #......................................................................
@@ -828,20 +922,19 @@ sub ed_var_yaml {
 #......................................................................
 sub ed_rst4fcst_acq {
 
-  return 0 unless ( $nogsi );
+  return 0 unless ( $iau_overwrite );
 
-  my($mydir,$scheme) = @_;
+  my($mydir) = @_;
 
-  my($frun, $ft, $acq);
+  my($acq);
+  $acq = "$mydir/rst4fcst.acq";
 
-  $acq = "$fvhome/$mydir/rst4fcst.acq";
-
-  open(SCRIPT,">$acq") or
-  die ">>> ERROR <<< cannot write $acq";
+  open(SCRIPT,">$acq") || die ">>> ERROR <<< cannot write $acq";
   print  SCRIPT <<"EOF";
 $archive/$expid/rs/Y%y4/M%m2/$expid.rst.%y4%m2%d2_%h2z.tar
 EOF
 if ( ! $hybridvar ) {
+  open(SCRIPT,">$acq") || die ">>> ERROR <<< cannot write $acq";
  print  SCRIPT <<"EOF";
 $archive/$expid/jedi/rs/Y%y4/M%m2/$expid.jedi_agcmrst.%y4%m2%d2_%h2z.tar
 EOF
@@ -850,17 +943,15 @@ EOF
 #......................................................................
 sub ed_4dfcst03_acq {
 
-  return 0 unless ( $nogsi );
+  return 0 unless ( $iau_overwrite );
 
-  my($mydir,$scheme) = @_;
+  my($mydir) = @_;
 
   if ( ! $hybridvar ) { return 0 };
 
-  my($frun, $ft, $acq);
-
-  $acq = "$fvhome/$mydir/fcst03.acq";
-  open(SCRIPT,">$acq") or
-  die ">>> ERROR <<< cannot write $acq";
+  my($acq);
+  $acq = "$mydir/fcst03.acq";
+  open(SCRIPT,">$acq") || die ">>> ERROR <<< cannot write $acq";
   print  SCRIPT <<"EOF";
 $archive/$expid/jedi/rs/Y%y4/M%m2/$expid.jedi_agcmrst.%y4%m2%d2_%h2z.tar => $expid.agcmrst.%y4%m2%d2_%h2z.tar
 EOF
@@ -927,7 +1018,7 @@ OPTIONS
      -gcmres       specify resolution of underying AGCM (default: hres in arg list)
      -fvhome       location of experiment home directory (default: \$expdir/\$expid)
      -jedihome     location of ensemble members (default: \$FVHOME/run/jedi)
-     -jediroot     location of JEDI build directory (default: /discover/nobackup/projects/gmao/advda/swell/JediBundles/fv3_soca_SLES15/build-intel-release)
+     -jediroot     location of JEDI build directory (default: /discover/nobackup/projects/gmao/advda/swell/JediBundles/fv3_soca_SLES15_07162026_gsibec1.4.3/build-intel-release)
      -jedistatic   location of JEDI static files (default: /discover/nobackup/projects/gmao/advda/SwellStaticFiles)
      -iodadir      location of pre-existing IODA files (default: /dev/null, ie, run ncdiag2ioda)
      -h            prints this usage notice
@@ -942,13 +1033,14 @@ OPTIONAL ENVIRONMENT
 
       ARCHIVE            can be define in env or arg list
       FVHOME             can be define in env or arg list
+      GEOSJEDI_GID       can be used to defined slurm account
       GEOSJEDI_QOS       can be used to defined slurm qos
       GEOSJEDI_PARTITION can be used to defined slurm partition
 
 AUTHOR
 
      Ricardo Todling (Ricardo.Todling\@nasa.gov), NASA/GSFC/GMAO
-     Last modified: 31May2025                     by: R. Todling
+     Last modified: 29Jul2026                     by: R. Todling
 
 
 EOF

@@ -1,5 +1,7 @@
 
 radiance::
+#abi_g16         516
+ abi_g18         518
  amsua_metop-b   326
  amsua_metop-c   327
  mhs_metop-b     826
@@ -9,17 +11,21 @@ radiance::
  iasi_metop-c    877
  atms_npp        900
  atms_n20        920
- atms_n21        921
+ atms_n21        920
  ssmis_f17       717
  avhrr_metop-b   626
  avhrr_metop-c   627
+#avhrr_n18       618 
+#avhrr_n19       619 
  gmi_gpm         706
  cris-fsr_n20    960
-#cris-fsr_n21    961
+ cris-fsr_n21    961
  amsr2_gcom-w1   550
 ::
 
 jedi_radiance::
+#abi_g16         516
+ abi_g18         518
  amsua_metop-b   326
  amsua_metop-c   327
  mhs_metop-b     826
@@ -29,13 +35,15 @@ jedi_radiance::
  iasi_metop-c    877
  atms_npp        900
  atms_n20        920
- atms_n21        921
+ atms_n21        920
  ssmis_f17       717
- avhrr3_metop-b   626
- avhrr3_metop-c   627
+ avhrr3_metop-b  626
+ avhrr3_metop-c  627
+#avhrr3_n18      618
+#avhrr3_n19      619
  gmi_gpm         706
  cris-fsr_n20    960
-#cris-fsr_n21    961
+ cris-fsr_n21    961
  amsr2_gcom-w1   550
 ::
 
@@ -50,6 +58,13 @@ aircraftT::
 #tamdar         134
 ::
 
+aircraftW::
+ airep          230
+ asdar          231
+ mdcars         233
+#tamdar         234
+::
+
 sfc_temperature::
   sfcMarineT     180
 ::
@@ -62,7 +77,7 @@ gnssro::
  paz              44
  cosmic-e1       750
  cosmic-e2       751
-#cosmic-e3       752
+ cosmic-e3       752
  cosmic-e4       753
  cosmic-e5       754
  cosmic-e6       755
@@ -75,12 +90,19 @@ ozone::
  mls55_aura    330
  ompslpnc_npp  337
  ompslpnc_n21  358
+#ompsnm_npp    427
+#omieff_aura   449
 ::
 
 sonde_wind::
- sonde         220
- pibal         221
- pilot         229
+ sonde_wnd     220
+ pibal_wnd     221
+ pilot_wnd     229
+::
+
+sonde_temperature::
+ sonde_t       120
+#mls_t         304
 ::
 
 satwind::

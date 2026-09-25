@@ -50,6 +50,9 @@
           - Land_Temperature
           - Ice_Temperature
           - Snow_Temperature
+          zeroO3JacRange:
+          - 996.0
+          - 1170.0
       obs bias:
         input file: ./obs/airs_aqua.$PYYYYYMMDDTHH0000Z.satbias.nc4
         output file: ./vbc/airs_aqua.$BYYYYYMMDDTHH0000Z.satbias.nc4
@@ -87,7 +90,7 @@
         input file: fv3-jedi/rcov/airs_aqua_119_jedi_rcov.nc4
       obs prior filters:
       - filter: Perform Action
-        apply at iterations: 0, 1, 2
+#       apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 1, 6-7, 10-11, 15-17, 20-22, 24, 27-28, 30, 36, 39-40, 42, 51-52,
@@ -393,7 +396,7 @@
           - 0.75
           - 0.75
       - filter: Variable Assignment
-        apply at iterations: 0, 1, 2
+#       apply at iterations: 0, 1, 2
         assignments:
         - name: ObsError/brightnessTemperature
           channels: 1, 6-7, 10-11, 15-17, 20-22, 24, 27-28, 30, 36, 39-40, 42, 51-52,

@@ -2,6 +2,7 @@
 import re
 import math
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 import matplotlib as mpl
 import numpy as np
 import argparse
@@ -34,7 +35,7 @@ def get_n_colors(n, name='viridis'):
 
 # --- Example Usage ---
 # Get 5 colors from the 'plasma' colormap
-#colors_plasma = get_n_colors(5, name='plasma')
+#colors_plasma = get_n_colors(6, name='plasma')
 #print(f"Colors from 'plasma':\n{colors_plasma}\n")
 
 # Get 8 colors from the qualitative 'Paired' colormap
@@ -225,7 +226,7 @@ def get_jedi_norm(filename,linear):
   with open(filename, "r") as file:
     for line in file:
         # Match lines like "Norm reduction ( 7) = 59.17712266523324"
-        match = re.search(r"Norm reduction\s*\(\s*(\d+)\s*\)\s*=\s*([+-]?\d+(?:\.\d+)?)", line)
+        match = re.search(r"Norm reduction\s*\(\s*(\d+)\s*\)\s*=\s*([+-]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)",line)
         if match:
 #           index = int(match.group(1))
             value = float(match.group(2))
@@ -284,7 +285,7 @@ def comp_norm (jedi,gsi,linear):
 # plt.show()
 
 #-------------------------------
-def show_cost(jb,jo):
+def show_cost(jb,jo,mycolor,mylabel):
 
   # Regular expression to match the line and extract the number after '='
   title = 'Quadratic Cost Function Over Iterations'
@@ -292,14 +293,14 @@ def show_cost(jb,jo):
 
   # Plotting the results
 # plt.figure(figsize=(10, 5))
-  plt.plot(jb, color='r', linestyle='-', label='Jb')
-  plt.plot(jo, color='b', linestyle='-', label='Jo')
+  plt.plot(jb, color=mycolor, linestyle='-', label=mylabel+'-Jb')
+  plt.plot(jo, color=mycolor, linestyle='-', label=mylabel+'-Jo')
   plt.title(title)
   plt.xlabel('Iteration')
   plt.ylabel(ylab)
   plt.grid(True)
   plt.tight_layout()
-  plt.legend()
+# plt.legend()
 # plt.show()
 
 #-------------------------------
@@ -365,50 +366,60 @@ plt.figure(figsize=(10, 5))
 
 # if so, read GSI data 
 if got_gsi and not got_jedi:
+  n = len(gsi_files)
   if  args.color == 'null':
-    colors = get_n_colors(len(gsi_files), name='plasma')
+    colors = get_n_colors(len(gsi_files), name='hsv')
   else:
     colors = args.color
+  if args.label == "null":
+     labels = [chr(97 + i) for i in range(n)]
+  else:
+     labels = args.label
   i=0
   for file in gsi_files:
      # if so, get cost and gradient from pcgsoi
      if args.pcgsoi:
         jb,jo,grad = pcgsoi_cost_and_grad(file,args.linear)
         if args.norm:
-           show_norm(grad,args.linear,colors[i],args.label[i])
+           show_norm(grad,args.linear,colors[i],labels[i])
         else:
-           show_cost(jb,jo)
+           show_cost(jb,jo,colors[i],labels[i])
      else:
         if args.norm:
            ggnorm = get_gsi_norm(file,args.noiter0,args.linear)
            gnorm = True
-           show_norm(ggnorm,args.linear,colors[i],args.label[i])
+           show_norm(ggnorm,args.linear,colors[i],labels[i])
         else:
            gjb, gjo = get_gsi_cost(file,args.noiter0)
            gcost = True
-           show_cost(gjb,gjo)
+           show_cost(gjb,gjo,colors[i],labels[i])
      i = i + 1
   plt.legend()
 
 # if so, read JEDI data 
 if got_jedi and not got_gsi:
-# colors = get_n_colors(len(jedi_files), name='plasma')
-  colors = args.color
+  n = len(jedi_files)
+  if args.color == "null":
+     colors = get_n_colors(n, name='hsv')
+  else:
+     colors = args.color
+  if args.label == "null":
+     labels = [chr(97 + i) for i in range(n)]
+  else:
+     labels = args.label
   i=0
-  print (colors)
   for file in jedi_files:
      if args.norm:
         jjnorm = get_jedi_norm(file,args.linear)
         jnorm = True
         if not got_gsi:
-           show_norm(jjnorm,args.linear,colors[i],args.label[i])
+           show_norm(jjnorm,args.linear,colors[i],labels[i])
      else:
         jjb, jjo = get_jedi_cost(file)
         jcost = True
         if not got_gsi:
-           show_cost(jjb,jjo)
+           show_cost(jjb,jjo,colors[i],labels[i])
      i = i + 1
-     print (i)
   plt.legend()
 
 # when two cases are passed

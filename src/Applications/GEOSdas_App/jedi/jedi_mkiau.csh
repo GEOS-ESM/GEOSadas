@@ -18,6 +18,7 @@ if ( !($?FVROOT)            ) setenv FAILED   1
 if ( !($?FVHOME)            ) setenv FAILED   1
 if ( !($?FVWORK)            ) setenv FAILED   1
 if ( !($?JEDI_MKIAU_MPIRUN) ) setenv FAILED   1
+if ( !($?JEDI_MKIAU_CUBED)  ) setenv FAILED   1
 if ( !($?JEDI_VAROFFSET)    ) setenv FAILED   1
 
 setenv JEDI_CUBED_ANA 0  # this is old and not supported at this point (Dec 2022)
@@ -97,7 +98,16 @@ cd -
 
 # gather list of analysis files
 cd $JEDIWORK/ana
-set analst = `ls $EXPID.jedi_ana.eta.*`
+if ( $JEDI_MKIAU_CUBED ) then 
+  set anatyp = "ana.ceta"
+  set bkgtyp = "bkg_clcv_rst"
+  set thisrc = mkiau_cubed.rc.tenv
+else
+  set anatyp = "ana.eta"
+  set bkgtyp = "bkg.eta"
+  set thisrc = mkiau.rc.tenv
+endif
+set analst = `ls $EXPID.jedi_${anatyp}.*`
 
 cd $JEDIWORK
 
@@ -108,7 +118,7 @@ if ( ! -e IAU_EGRESS ) then
     set hhmm = `echo $ttag | cut -c10-13`
     set nhms = ${hhmm}00
     set anafn = ana/$anafn
-    set bkgfn = bkg/$EXPID.bkg.eta.${nymd}_${hhmm}z.nc4
+    set bkgfn = bkg/$EXPID.${bkgtyp}.${nymd}_${hhmm}z.nc4
     set iaufn = iau/$EXPID.agcm_import_rst.${nymd}_${hhmm}z.nc4
     echo " Input  Analysis   file: $anafn"
     echo " Input  Background file: $bkgfn"
@@ -119,7 +129,7 @@ if ( ! -e IAU_EGRESS ) then
     setenv ANAFNAME $anafn
     setenv BKGFNAME $bkgfn
     setenv AGCMIMPRST $iaufn
-    vED -env $JEDIETC/mkiau.rc.tenv -o mkiau.rc
+    vED -env $JEDIETC/$thisrc -o mkiau.rc
  
     set nx = `echorc.x -rc mkiau.rc "NX"`
     set ny = `echorc.x -rc mkiau.rc "NY"`

@@ -38,13 +38,15 @@ GMAO_Shared:
   remote: ../GMAO_Shared.git
   #tag: v5.42.4
   tag: feature/ygyu/v5.42.4/July24
+# new need to merge
+#  tag: g5.42.4.2
   sparse: ./config/GMAO_Shared.sparse
   develop: main
 
 GMAOpyobs:
   local: ./src/Shared/@GMAO_Shared/@GMAO_pyobs
   remote: ../GMAOpyobs.git
-  tag: v1.6.0
+  tag: v1.7.0
   develop: develop
 
 AeroML:
@@ -59,6 +61,8 @@ GEOS_Util:
   remote: ../GEOS_Util.git
   #tag: v2.1.13
   tag: feature/ygyu/v3.0.1/July24
+# merge required
+#  tag: g3.0.2
   develop: main
 
 GMAO_perllib:
@@ -72,7 +76,7 @@ GMAO_perllib:
 MAPL:
   local: ./src/Shared/@MAPL
   remote: ../MAPL.git
-  tag: v2.57.1
+  tag: v2.57.2
   develop: develop
 
 GEOSldas_GridComp:
@@ -80,6 +84,8 @@ GEOSldas_GridComp:
   remote: ../GEOSldas_GridComp.git
   #tag: v3.1.0
   tag: feature/ygyu/v3.1.0/July24
+#need merge
+#  tag: g3.1.1
 
 FMS:
   local: ./src/Shared/@FMS
@@ -92,6 +98,9 @@ GEOSana_GridComp:
   remote: ../GEOSana_GridComp.git
   #tag: v5.45.2
   tag: feature/ygyu/v5.45.2/July24
+#need merge
+#  tag: v5.45.5
+
   develop: develop
 
 
@@ -100,12 +109,14 @@ mksi:
    remote: ../GEOS_mksi.git
    #tag: v5.44.0  / v5.44.1
    tag: feature/ygyu/v5.44.1/July24
+#need merg
+#   tag: v5.44.2
    develop: develop
 
 GEOSgcm_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp
   remote: ../GEOSgcm_GridComp.git
-  tag: v2.7.6.1
+  tag: g2.7.6.2
   sparse: ./config/GEOSgcm_GridComp.sparse
   develop: develop
 
@@ -162,7 +173,7 @@ geos-chem:
 GOCART:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSphysics_GridComp/@GEOSchem_GridComp/@GOCART
   remote: ../GOCART.git
-  tag: g2.3.2
+  tag: g2.3.3
   develop: develop
 
 QuickChem:
@@ -298,6 +309,8 @@ GEOSgcm_App:
   remote: ../GEOSgcm_App.git
   #tag: g2.3.8.12
   tag: feature/ygyu/g2.3.8.12/July24
+# need merg
+#  tag: g2.3.8.15
   develop: develop
 
 Ocean-LETKF:

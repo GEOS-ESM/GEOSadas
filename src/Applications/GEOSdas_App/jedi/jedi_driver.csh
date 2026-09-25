@@ -14,7 +14,7 @@ else
    setenv JEDIDIR $FVHOME/run/jedi
 endif
 
-if ( $#argv < 4 ) then
+if ( $#argv < 5 ) then
    echo " "
    echo " \\begin{verbatim} "
    echo " "
@@ -24,17 +24,18 @@ if ( $#argv < 4 ) then
    echo " "
    echo " SYNOPSIS "
    echo " "
-   echo "  $MYNAME  nymdb nhmsb nymda nhmsa "
+   echo "  $MYNAME  nymdb nhmsb nymda nhmsa fcoff "
    echo " "
    echo "   nymdb  -  starting date of cycle"
    echo "   nhmsb  -  starting time of cycle"
    echo "   nymda  -  analysis date"
    echo "   nhmsa  -  analysis time"
+   echo "   fcoff  -  hours offset from (nymdb,nhmsb)"
    echo " "
    echo " AUTHOR"
    echo "   Ricardo Todling (Ricardo.Todling@nasa.gov), NASA/GMAO "
    echo "     Initial version: 18Oct2020    by: R. Todling"
-   echo "     Last   modified: 14Jun2026    by: R. Todling"
+   echo "     Last   modified: 28Jul2026    by: R. Todling"
    echo " \\end{verbatim} "
    echo " \\clearpage "
    echo " ${MYNAME}: invalid arg list, aborting"
@@ -45,6 +46,7 @@ set nymdb = $1
 set nhmsb = $2
 set nymda = $3
 set nhmsa = $4
+set fcoff = $5
 set yyyya = `echo nymda | cut -c1-4`
 set   mma = `echo nymda | cut -c5-6`
 set   dda = `echo nymda | cut -c7-8`
@@ -73,6 +75,7 @@ if ( !($?JEDI_POST) )  setenv JEDI_POST  0
 if ( !($?JEDI_IAU_OVERWRITE) )  setenv JEDI_IAU_OVERWRITE  0
 if ( !($?JEDI_RUN_ADANA_TEST) ) setenv JEDI_RUN_ADANA_TEST 0
 if ( !($?JEDI_RUN_ADANA) ) setenv JEDI_RUN_ADANA 0
+if ( !($?JEDI_RUN_ANASA) ) setenv JEDI_RUN_ANASA 0
 if ( !($?JEDI_RUN_EAANA) ) setenv JEDI_RUN_EAANA 0
 if ( !($?JEDI_OBS_OPT) ) setenv JEDI_OBS_OPT 0
 if ( !($?JEDI_SWELLUSE) ) setenv JEDI_SWELLUSE 1
@@ -93,18 +96,19 @@ if ( -e $FVWORK/.DONE_${MYNAME}.$yyyymmddhh ) then
 endif
 
 setenv JEDIWORK $FVWORK/jedi.$nymda.$nhmsa
-if ( ! -d $JEDIWORK ) mkdir -p $JEDIWORK/jedi.$nymda.$nhmsa
+if ( ! -d $JEDIWORK ) mkdir -p $JEDIWORK
 
 # Setup SWELL & IODA Files
 # ========================
-if ( $JEDI_SWELLUSE ) then
+if ( (! $JEDI_RUN_ANASA) && (! $JEDI_RUN_ADANA) ) then
+ if ( $JEDI_SWELLUSE ) then
   jedi_swellset.csh $nymda $nhmsa $JEDIDIR $JEDIWORK
   if ($status) then
      echo "${MYNAME}: failed, aborting ..."
      exit (1)
   endif
 
-else
+ else
 
 # If here, IODA files must be available 
 # -------------------------------------
@@ -129,13 +133,14 @@ else
      cd -
   endif
 
+ endif
 endif
 
 # Prepare env for analysis
 # ------------------------
 if ( $JEDI_SET ) then
    zeit_ci.x jedi_set
-   jedi_set.csh $nymdb $nhmsb |& tee -a $FVWORK/$EXPID.jedi_set.log.${nymdb}_${hhb}z.txt
+   jedi_set.csh $nymdb $nhmsb $fcoff |& tee -a $FVWORK/$EXPID.jedi_set.log.${nymdb}_${hhb}z.txt
    if ( $status ) then
       echo " ${MYNAME}: jedi_set.csh signal failure, aborting ..."
       exit (1)
@@ -146,7 +151,7 @@ endif
 # Run JEDI analysis
 if ( $JEDI_RUN ) then
    zeit_ci.x jedi_run
-   jedi_run.csh $nymdb $nhmsb |& tee -a $FVWORK/$EXPID.jedi_run.log.${nymdb}_${hhb}z.txt
+   jedi_run.csh $nymdb $nhmsb $fcoff |& tee -a $FVWORK/$EXPID.jedi_run.log.${nymdb}_${hhb}z.txt
    if ( $status ) then
       echo " ${MYNAME}: jedi_run.csh signal failure, aborting ..."
       exit (1)
@@ -161,6 +166,14 @@ if ( $JEDI_RUN ) then
        endif
        zeit_co.x jedi_mkiau
    endif
+endif
+
+# For now, all done if running verification against obs
+# -----------------------------------------------------
+if ( $fcoff ) then
+   touch $FVWORK/.DONE_${MYNAME}.$yyyymmddhh
+   echo " ${MYNAME}: Complete "
+   exit(0)
 endif
 
 # Wrap up

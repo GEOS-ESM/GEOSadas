@@ -581,6 +581,11 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
 # ------------------------------------
   create_fscript();
 
+# Create offline GCM and Analysis run jobs
+# ----------------------------------------
+  create_geos_run_gcm("run");
+  create_geos_run_ana("run");
+
 # Create job scripts to run stand-alone analysis
 # ----------------------------------------------
    set_inputparams();
@@ -757,6 +762,8 @@ sub get_runtime_values {
     $sensdeg = 1 unless ($sensdeg and $sensdeg eq "3");
     $runjobFLG = 1 if $checkFLG;
     $saveFLG = 1 unless $saveFLG == 2;
+    #ygyu code
+    print "dbqueue1= $dbqueue\n";
 }
 
 #=======================================================================
@@ -1902,7 +1909,7 @@ sub ed_ncep_rc {
           if($rcd =~ /\@NLEV_EXT/) {$rcd=~ s/\@NLEV_EXT/27/g; }
        }
        if ( $hyb_ens < 0 ) {
-          if($rcd =~ /\@NITER1/) {$rcd=~ s/\@NITER1/100/g; }
+          if($rcd =~ /\@NITER1/) {$rcd=~ s/\@NITER1/1/g; }    # ygyu code
           if($rcd =~ /\@NITER2/) {$rcd=~ s/\@NITER2/100/g; }
           if($rcd =~ /\@TLNMC/) {$rcd=~ s/\@TLNMC/1/g; }
           if($rcd =~ /\@JCPDRY/) {$rcd=~ s/\@JCPDRY/.true./g; }
@@ -2788,8 +2795,9 @@ EOF
       $landbcs = query("  Land Boundary Conditions?", $lndbcs_def);
     }
 
-    if ( "$landbcs" eq "Icarus-NLv3" ) {
-
+#    if ( "$landbcs" eq "Icarus-NLv3" ) {
+#    if ( "$landbcs" eq "Icarus_Updated" ) {
+    if ( "$landbcs" =~ /^Icarus/ ) {
        print <<"EOF";
 ---------------
 CATCHMENT MODEL
@@ -3213,8 +3221,9 @@ sub get_nodeflg {
   if    ($ans == 1) { $nodeflg = "hasw"; $ncpus_per_node = 24 }
   elsif ($ans == 2) { $nodeflg = "sky";  $ncpus_per_node = 36 }
   elsif ($ans == 3) { $nodeflg = "cas";  $ncpus_per_node = 45 }
-  elsif ($ans == 4) { $nodeflg = "mil";  $ncpus_per_node = 54 }
+  elsif ($ans == 4) { $nodeflg = "mil";  $ncpus_per_node = 64 }
   elsif ($ans == 5) { $nodeflg = "Linux";  $ncpus_per_node = 6 }
+
 
   # currently not applicable at nccs
   #---------------------------------
@@ -3677,6 +3686,12 @@ EOF
 
        $anahgrd = query("  GEOS grid resolution instead?", $anahgrd);
 
+#       # ygyu code
+#       print "anahgrd: $anahgrd \n";
+#       exit 0;
+       
+       #       if ( $anahgrd eq "a12"  ) { $analon =  24; $analat =  12 }
+       if ( $anahgrd eq "a12"  ) { $analon = 72; $analat =  46 }       
        if ( $anahgrd eq "a"  ) { $analon =   72; $analat =  46 }
        if ( $anahgrd eq "b"  ) { $analon =  144; $analat =  91 }
        if ( $anahgrd eq "c"  ) { $analon =  288; $analat = 181 }
@@ -3685,7 +3700,7 @@ EOF
 
        $gsires  = "l${siglevs}_${analon}x${analat}";
        $gsihgrd = $analat;
-
+       
        if ( $merra2 ) {
           $berror_file = "\$FVHOME/fvInput/gsi/etc/berror_gmao/gmao24Jun2011_fp+oz_fix/MERRA2/Final";
           $berror_env  = "setenv BERROR  $berror_file";
@@ -5204,6 +5219,41 @@ EOF
        $bjedi_im = $agcm_im;
        $bjedi_jm = $agcm_jm;
        $anahgrd = substr($res,0,1);
+       $jcap_ens = $jcap;
+       $ana_im_ens = $ana_im;
+       $ana_jm_ens = $ana_jm;
+  } elsif ( "$res" eq "C24" ) {  # Cubed-sphere
+       $cubed = 1;
+       $specres = "31";
+       $jcap = "21";
+       $agcm_grid_type = "Cubed-Sphere";
+       $agcm_im  =  24;
+       $agcm_jm  =  $agcm_im * 6;
+       $nx  = 2;
+       $ny  = $nx * 6;
+       $km  = $vres;
+       $dt  = 450;
+       $long_dt  = $dt;
+       $pert_dt  = 900;
+       $chemdt = $dt;
+       $solardt = 3600;
+       $irraddt = 3600;
+       $ogcmrdt = $irraddt;
+       $ana_im = 96; #$agcm_im * 4;
+       $ana_jm = 49;  #$agcm_im * 2 + 1;
+       $hist_im = $ana_im;
+       $hist_jm = $ana_jm;
+       $histc_im = $ana_im;
+       $histc_jm = $ana_jm;
+       $nx_pert = 2;
+       $ny_pert = 6 * $nx_pert;
+       $hist_pert_im = $ana_im;
+       $hist_pert_jm = $ana_jm;
+       $apert_im = $agcm_im;
+       $apert_jm = $agcm_jm;
+       $bjedi_im = $agcm_im;
+       $bjedi_jm = $agcm_jm;
+       $anahgrd = "a12";
        $jcap_ens = $jcap;
        $ana_im_ens = $ana_im;
        $ana_jm_ens = $ana_jm;
@@ -8110,7 +8160,10 @@ if ( $fvchem && $lm > 2 ) {
 
 # Batch wall-clock time setting
 #------------------------------
- if    ($dbqueue)                       { $daswallclk = "1:00" }
+#ygyu code
+ print "dbqueue2= $dbqueue\n";
+     
+ if    ($dbqueue)                       { $daswallclk = "0:10" }
  elsif ($hres eq "d" or $res eq "C180") { $daswallclk = "3:00" }
  elsif ($hres eq "e" or $res eq "C360") { $daswallclk = "3:00" }
  else                                   { $daswallclk = "3:00" }
@@ -8145,7 +8198,6 @@ print  SCRIPT <<"EOF";
 ##SBATCH --time=${daswallclk}:00
 ##SBATCH --no-requeue
 EOF
-
 }else{
 
 if ( $siteID eq "nas" ) {
@@ -8167,6 +8219,7 @@ print SCRIPT <<"EOF";
 #SBATCH --output=$jobn.log.o%j.txt
 #SBATCH --time=${daswallclk}:00
 #SBATCH --no-requeue
+EOF
 }
 
 if ($dbqueue) {
@@ -8176,6 +8229,7 @@ EOF
 }
 
 print SCRIPT <<"EOF";
+# ygyu code
 # ------------------------------
 #
 # fvDAS driver script.
@@ -9280,6 +9334,72 @@ sub write_FVDAS_Run_Config {
     system("$fvbin/write_FVDAS_Run_Config.pl -remNODE $remNODE -remID $remID");
 }
 
+#=======================================================================
+sub create_geos_run_gcm {
+
+  return 0 unless ( $fulldas );
+
+  my($mydir) = @_;
+
+  my($frun, $ft, $acq);
+
+  $acq = "$fvhome/$mydir/_geos_run_gcm.j";
+ open(SCRIPT,">$acq") or
+ die ">>> ERROR <<< cannot write $acq";
+ print  SCRIPT <<"EOF";
+#!/bin/csh -fx
+# ------------------------------
+#$group_list
+#_SBATCH --qos=dastest
+#_SBATCH --partition=preops
+#SBATCH --job-name=gcm_${expid}
+#SBATCH --output=gcm_${expid}.log.o%j.txt
+#SBATCH --ntasks=$xncpus
+#SBATCH --ntasks-per-node=$ncpus_per_node
+#SBATCH --constraint=$nodeflg
+#SBATCH --time=2:00:00
+
+source \$FVROOT/modules
+
+cd \$FVWORK
+
+\$RUN_OPT_BEGIN |& tee -a fvpsas.log
+
+EOF
+}
+#=======================================================================
+sub create_geos_run_ana {
+
+  return 0 unless ( $fulldas );
+
+  my($mydir) = @_;
+
+  my($frun, $ft, $acq);
+
+  $acq = "$fvhome/$mydir/_geos_run_analyzer.j";
+ open(SCRIPT,">$acq") or
+ die ">>> ERROR <<< cannot write $acq";
+ print  SCRIPT <<"EOF";
+#!/bin/csh -fx
+# ------------------------------
+#$group_list
+#_SBATCH --qos=dastest
+#_SBATCH --partition=preops
+#SBATCH --job-name=ana_${expid}
+#SBATCH --output=ana_${expid}.log.o%j.txt
+#SBATCH --nodes=10
+#SBATCH --constraint=$nodeflg
+#SBATCH --time=2:00:00
+
+source \$FVROOT/modules
+
+cd \$FVWORK
+
+analyzer \$nymdb \$nhmsb -expid \$EXPID -t \$SPECRES -levs \$gsinlev -x \$gsinlon -y \$gsinlat \
+         -jiter \$Viter_ \$lnobs -log ana.log
+
+EOF
+}
 #=======================================================================
 sub create_ana_aod_script_tmpl {
     my ($infl, $outf);
@@ -11038,6 +11158,11 @@ sub copy_restarts_iau {
     $cmd .= $copyFLG;
 
     print "$cmd\n";
+    # ygyu code
+    # skip
+    print "skip copy_restarts.pl\n";
+    return;
+    
     system($cmd);
 
     # check for restarts in recycle directory

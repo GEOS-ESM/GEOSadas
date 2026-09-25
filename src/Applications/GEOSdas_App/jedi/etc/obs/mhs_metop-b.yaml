@@ -45,6 +45,9 @@
           - Land_Temperature
           - Ice_Temperature
           - Snow_Temperature
+          zeroO3JacRange:
+          - 996.0
+          - 1170.0
       obs bias:
         input file: ./obs/mhs_metop-b.$PYYYYYMMDDTHH0000Z.satbias.nc4
         output file: ./vbc/mhs_metop-b.$BYYYYYMMDDTHH0000Z.satbias.nc4

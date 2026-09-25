@@ -24,6 +24,9 @@
         linear obs operator:
           Absorbers: [H2O,O3]
           Surfaces: [Water_Temperature,Land_Temperature,Ice_Temperature,Snow_Temperature]
+          zeroO3JacRange:
+          - 996.0
+          - 1170.0
       
       obs bias:
         input file: ./obs/abi_g18.$PYYYYYMMDDTHH0000Z.satbias.nc4

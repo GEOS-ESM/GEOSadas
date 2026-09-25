@@ -78,6 +78,9 @@
           - Land_Temperature
           - Ice_Temperature
           - Snow_Temperature
+          zeroO3JacRange:
+          - 996.0
+          - 1170.0
       obs bias:
         input file: ./obs/iasi_metop-b.$PYYYYYMMDDTHH0000Z.satbias.nc4
         output file: ./vbc/iasi_metop-b.$BYYYYYMMDDTHH0000Z.satbias.nc4
@@ -115,7 +118,7 @@
         input file: fv3-jedi/rcov/iasi_metop_141_jedi_rcov.nc4
       obs prior filters:
       - filter: Perform Action
-        apply at iterations: 0, 1, 2
+#       apply at iterations: 0, 1, 2
         filter variables:
         - name: brightnessTemperature
           channels: 16, 29, 32, 35, 38, 41, 44, 47, 49-51, 53, 55-57, 59, 61-63, 66,
@@ -785,7 +788,7 @@
           - 2.53
           - 9.0
       - filter: Variable Assignment
-        apply at iterations: 0, 1, 2
+#       apply at iterations: 0, 1, 2
         assignments:
         - name: ObsError/brightnessTemperature
           channels: 16, 29, 32, 35, 38, 41, 44, 47, 49-51, 53, 55-57, 59, 61-63, 66,

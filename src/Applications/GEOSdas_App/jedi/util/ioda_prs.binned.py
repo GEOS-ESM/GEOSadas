@@ -1228,6 +1228,8 @@ def main():
                         help='Tar file name (default: none)')
   parser.add_argument('--satid', type=int, default='-999',
                         help='Observation type (default: -999 (all))')
+  parser.add_argument('--nbins', type=int, default='40',
+                        help='Number of bins (default: 40 (all))')
   parser.add_argument('--qc', type=int, default='0',
                         help='Quality mark (default: 0 (used obs))')
   parser.add_argument('--xGSI', action='store_true',
@@ -1243,7 +1245,7 @@ def main():
 
   kt = 9999
   levlim = [ 1000., 0.1 ] # [ bottom, top ] hPa
-  nbins = 40
+  nbins = args.nbins
   radiance = False
   if args.var == 'auto':
      if args.obtype == "mls55_aura":
@@ -1258,9 +1260,9 @@ def main():
         varname = 'airTemperature'
      if args.obtype == "sondes_q":
         varname = 'specificHumidity'
-     if args.obtype == "sondes_u":
+     if args.obtype == "sondes_u" or args.obtype == "aircraft_u":
         varname = 'windEastward'
-     if args.obtype == "sondes_v":
+     if args.obtype == "sondes_v" or args.obtype == "aircraft_v":
         varname = 'windNorthward'
      if args.obtype == "saberT":
         varname = 'airTemperature'
