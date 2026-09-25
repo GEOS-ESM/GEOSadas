@@ -3,7 +3,7 @@
 #------------
 
 codeID: 523f29e
-description: x0055RPY__GEOSadas-5_45_4__agrid_C360__ogrid_C
+description: x0055RPY__GEOSadas-5_45_0__agrid_C360__ogrid_C
 fvsetupID: f7aaa973c7
 
 ---ENDHEADERS---
@@ -81,7 +81,7 @@ AeroCom? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/AeroCom]
 > 
 
 FVICS? [/archive/u/jstassi/restarts/GEOSadas-5_24_0]
-> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_45/c360/rs/Y2026/M08/c360.rst.20280828_21z.tar
+> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_45/c360/rs/Y2026/M08/c360.rst.20260825_21z.tar
 
 Run model-adjoint-related applications (0=no,1=yes)? [0]
 > 1
@@ -102,7 +102,7 @@ Verifying experiment id: [x0055RPY]
 > 
 
 Ending year-month-day? [20191121]
-> 20260106
+> 20261006
 
 Length of FORECAST run segments (in hours)? [123]
 > 

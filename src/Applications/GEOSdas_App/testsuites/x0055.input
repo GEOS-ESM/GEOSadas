@@ -1,9 +1,9 @@
 #------------
-# x0054.input
+# x0055.input
 #------------
 
 codeID: 523f29e
-description: x0054__GEOSadas-5_44_4__agrid_C360__ogrid_C
+description: x0055__GEOSadas-5_45_0__agrid_C360__ogrid_C
 fvsetupID: f7aaa973c7
 
 ---ENDHEADERS---
@@ -29,7 +29,7 @@ EXPID? [u000_C360]
 Check for previous use of expid (y/n)? [y]
 > n
 
-EXPDSC? [x0054__GEOSadas-5_44_4__agrid_C360__ogrid_C]
+EXPDSC? [x0055__GEOSadas-5_45_0__agrid_C360__ogrid_C]
 > 
 
 Land Boundary Conditions? [Icarus_Updated]
@@ -38,10 +38,10 @@ Land Boundary Conditions? [Icarus_Updated]
 Catchment Model choice? [1]
 > 
 
-FVHOME? [/discover/nobackup/rtodling/x0054]
-> /discover/nobackup/projects/gmao/dadev/rtodling/544/$expid
+FVHOME? [/discover/nobackup/rtodling/x0055]
+> /discover/nobackup/projects/gmao/dadev/rtodling/545/$expid
 
-The directory /discover/nobackup/projects/gmao/dadev/rtodling/544/x0054 already exists. Clean it? [y]
+The directory /discover/nobackup/projects/gmao/dadev/rtodling/545/x0055 already exists. Clean it? [y]
 > 
 
 Processing nodes (1:Haswell, 2:Skylake, 3:Cascase, 4:Milan)? [2]
@@ -81,7 +81,7 @@ AeroCom? [/discover/nobackup/projects/gmao/share/gmao_ops/fvInput_4dvar/AeroCom]
 > 
 
 FVICS? [/archive/u/jstassi/restarts/GEOSadas-5_24_0]
-> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_44/c360/rs/Y2025/M11/c360.rst.20251128_21z.tar
+> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_45/c360/rs/Y2026/M08/c360.rst.20260825_21z.tar
 
 Run model-adjoint-related applications (0=no,1=yes)? [0]
 > 1
@@ -98,11 +98,11 @@ Run singular vector experiments (0=n,1=yes)? [0]
 Run analysis-sensitivity applications (0=no,1=yes)? [0]
 > 1
 
-Verifying experiment id: [x0054]
+Verifying experiment id: [x0055]
 > 
 
 Ending year-month-day? [20191121]
-> 20260306
+> 20261006
 
 Length of FORECAST run segments (in hours)? [123]
 > 
@@ -117,7 +117,7 @@ Number of PEs in the meridional direction (NY)? [36]
 > 48
 
 Job nickname? [g5das]
-> x54
+> x55
 
 Run in split executable mode (1=yes;0=no)? [1]
 > 
@@ -236,8 +236,8 @@ Ensemble Resolution?  [C90]
 Ensemble Vertical Levels?  [72]
 > 
 
-Experiment archive directory for ensemble restarts or 'later': [/archive/u/rtodling/x0054]
-> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_44/c360
+Experiment archive directory for ensemble restarts or 'later': [/archive/u/rtodling/x0055]
+> /discover/nobackup/projects/gmao/dadev/rtodling/archive/Restarts/5_45/c360
 
 Edit COLLECTIONS list in run/HISTORY.rc.tmpl (y/n)? [n]
 > 
