@@ -150,7 +150,7 @@ Which main class of ObsSys (1: NRT; 2: MERRA; 3: MERRA-2; 4: GEOS-IT; 5: R21C)? 
 > 1
 
 OBSERVING SYSTEM CLASSES?
-> ncep_acftpfl_bufr
+> ncep_acftpfl_bufr,ncep_prep_bufr,ncep_tcvitals
 
 CHECKING OBSYSTEM? [2]
 > 1

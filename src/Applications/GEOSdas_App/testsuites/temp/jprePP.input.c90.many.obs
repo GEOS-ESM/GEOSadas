@@ -15,13 +15,13 @@ Is this a MERRA2 (1), GEOSIT (2), R21C (3) experiment? [0]
 > 
 
 AGCM Horizontal Resolution? [C48]
-> C24
+> C90
 
 AGCM Vertical Resolution? [72]
 > 
 
 OGCM Resolution? [f]
-> c
+> C
 
 EXPID? [u000_C720]
 > $expid
@@ -33,10 +33,10 @@ EXPDSC? [jprePP__GEOSadas-5_44_x__agrid_C720__ogrid_C]
 > 
 
 Land Boundary Conditions? [Icarus_Updated]
->
+> Icarus-NLv3
 
 Catchment Model choice? [1]
-> 1
+> 
 
 FVHOME? [/discover/nobackup/rtodling/jprePP]
 > /discover/nobackup/yyu11/experiment_adas/JEDI/5445/$expid
@@ -126,7 +126,7 @@ Frequency of background fields (min)? [180]
 > 60
 
 Triangular spectral truncation? [254]
-> 62
+> 
 
 Analysis vertical levels (sig))? [72]
 > 
@@ -150,7 +150,7 @@ Which main class of ObsSys (1: NRT; 2: MERRA; 3: MERRA-2; 4: GEOS-IT; 5: R21C)? 
 > 1
 
 OBSERVING SYSTEM CLASSES?
-> ncep_acftpfl_bufr
+> disc_airs_bufr,gmao_amsr2_bufr,gmao_gmi_bufr,mls_nrt_nc,ncep_1bamua_bufr,ncep_acftpfl_bufr,ncep_atms_bufr,ncep_aura_omi_bufr,ncep_avcsam_bufr,ncep_avcspm_bufr,ncep_crisfsr_bufr,ncep_goesfv_bufr,ncep_gpsro_bufr,ncep_mhs_bufr,ncep_prep_bufr,ncep_satwnd_bufr,ncep_ssmis_bufr,ncep_tcvitals
 
 CHECKING OBSYSTEM? [2]
 > 1
