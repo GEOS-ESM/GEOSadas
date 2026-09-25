@@ -72,9 +72,9 @@ use lib @SEARCH_PATH;
 # global variables
 #-----------------
 my ($archive, $date, $delete, $dmget_bin, $do_dmput, $do_tar, $endday, $expid);
-my ($fileToken, $ftype, $hm, $htype, $ignore, $links, $localflg, $local_dir);
-my ($monitorloc, $monthly_means_x, $nodiurnal, $num_days, $prefetch, $rcfile);
-my ($remote_dir, $remote_machine, $remote_user, $run_config, $silo_dir);
+my ($fileToken, $ftype, $hm, $htype, $ignore, $links, $localflg);
+my ($local_dir, $monitorloc, $monthly_means_x, $nodiurnal, $num_days, $prefetch);
+my ($rcfile, $remote_dir, $remote_machine, $remote_user, $run_config, $silo_dir);
 my ($silo_work, $script, $startday, @times, $verbose, $workdir, $yyyymm);
 my (@mean_files, @remote_file_list, @remove);
 
@@ -87,7 +87,7 @@ my (@mean_files, @remote_file_list, @remove);
     system("date"); print "\n";
 
     init();
-    fetch_inputs();
+    check_or_fetch_inputs();
     calculate_means() unless $prefetch;
 
     if ($prefetch) { $op = "PREFETCH"    }
@@ -277,17 +277,18 @@ sub get_hours_HIST {
 }
 
 #=======================================================================
-# name - fetch_inputs
-# purpose - make input files local prior to calculating monthly means
-#           and/or tarring
+# name - check_or_fetch_inputs
+# purpose - check for input files needed for monthly means or tarrting,
+#           and make them available in the workdir, if they are not there.
 #=======================================================================
-sub fetch_inputs {
+sub check_or_fetch_inputs {
     use File::Basename qw(basename);
     use File::Compare qw(compare);
     use Remote_utils qw(rm_remote_file);
     use Sys::Hostname ("hostname");
 
     my ($stem, $full_tarfile, $partial_tarfile, $check_inputs);
+    my ($currday, $filename, $time, $missing_inputs);
     my ($IN_TAR_INFO, $OUT_TAR_INFO);
 
     $stem = "$expid.$ftype.$yyyymm";
@@ -333,10 +334,57 @@ sub fetch_inputs {
     if ($check_inputs) {
         fetch_individual_inputs($OUT_TAR_INFO);
     }
+
+    # final check for files
+    #----------------------
+    $missing_inputs = 0;
+    foreach $currday ($startday..$endday) {
+        foreach $time (@times) {
+            $filename = token_resolve($fileToken, $currday, $time);
+            if (-f $filename and -s $filename) {
+                push @mean_files, $filename;
+            }
+            elsif ($ignore) {
+                warn "WARNING: $filename cannot be found\n";
+                $missing_inputs++;
+            }
+            else {
+                wrapup(1, $delete, "FATAL ERROR: $filename cannot be found");
+            }
+        }
+    }
+
+    # after fetch, store info in workdir files for tar job
+    #-----------------------------------------------------
+    # write info for OUT_TAR_INFO file
+    #---------------------------------
+    if ($do_tar) {
+        open OFO, "> $OUT_TAR_INFO" or die "Error opening $OUT_TAR_INFO: $!";
+        print OFO "$local_dir\n";
+        print OFO "$remote_dir\n";
+    }
+    if ($missing_inputs) {
+        if (@mean_files) {
+            print OFO "partial\n" if $do_tar;
+            print "\n$missing_inputs $ftype $yyyymm inputs are missing.\n";
+            print "Will create partial tarfile for $ftype inputs.\n" if $do_tar;
+        } else {
+            print OFO "empty\n" if $do_tar;
+            print "\nNo $ftype $yyyymm inputs were found.\n";
+            print "No tarfile will be created for $ftype inputs.\n" if $do_tar;
+            wrapup(1, $delete, "FATAL ERROR: no $ftype inputs were found");
+        }
+    }
+    else {
+        print OFO "full\n" if $do_tar;
+        print "\nAll $ftype $yyyymm inputs were found.\n";
+        print "Will create full tarfile for $ftype inputs.\n" if $do_tar;
+    }
+    close OFO if $do_tar;
 }
 
 #=======================================================================
-# name - get_files_from_tarfile
+# name - get_inputs_from_tarfile
 # purpose - look for archived tarfile and if found, then retrieve it,
 #           untar it, and then remove it
 #
@@ -385,7 +433,7 @@ sub fetch_individual_inputs {
     use Manipulate_time qw(token_resolve);
     use Remote_utils qw(rdmget rget);
     my ($currday, $filename, $full_local_host_name, $host, $local_ref);
-    my ($local_tarfile, $missing_inputs, $rc, $rget_rc, $rdmget_rc);
+    my ($local_tarfile, $rc, $rget_rc, $rdmget_rc);
     my ($remote_file, $remote_ref, $time, $times_addr, $try);
     my (%opts, $OUT_TAR_INFO);
 
@@ -405,7 +453,8 @@ sub fetch_individual_inputs {
             #--------------------------------
             unless (-f $filename and -s $filename) {
                 print "$filename not found in work directory\n" if $verbose;
-                wrapup(1, $delete, "Running $script failed missing $filename.") if $silo_work;
+                wrapup(1, $delete, "Running $script failed missing $filename.")
+                    if $silo_work;
 
                 # look for file in stage directory
                 #---------------------------------
@@ -415,9 +464,11 @@ sub fetch_individual_inputs {
                     # create symlink
                     #---------------
                     if ($links) {
-                        print "linking $local_dir/$filename to $filename\n" if $verbose;
+                        print "linking $local_dir/$filename to $filename\n"
+                            if $verbose;
                         $rc = symlink "$local_dir/$filename", $filename;
-                        wrapup(1, $delete, "Cannot create symbolic link to $filename") unless $rc;
+                        wrapup(1, $delete, "Cannot create symbolic link to $filename")
+                            unless $rc;
                     }
 
                     # or rget to work dir
@@ -474,6 +525,7 @@ sub fetch_individual_inputs {
         unless ($silo_work) {
             %opts = ();
             $opts{"debug"} = $verbose if $verbose;
+            $opts{"links"} = 1 if $links;
             $opts{"run_config"} = $run_config;
             $opts{"preserve"} = 1;
 
@@ -487,7 +539,6 @@ sub fetch_individual_inputs {
 
                     if ($ignore) {
                         warn "WARNING: Cannot acquire $remote_file\n";
-                        $missing_inputs++;
                         last;
                     }
 
@@ -500,55 +551,6 @@ sub fetch_individual_inputs {
                 }
             }
         }
-    }
-
-    # final check for files
-    #----------------------
-    foreach $currday ($startday..$endday) {
-        foreach $time (@times) {
-            $filename = token_resolve($fileToken, $currday, $time);
-            if (-f $filename and -s $filename) {
-                push @mean_files, $filename;
-            }
-            elsif ($ignore) {
-                warn "WARNING: $filename cannot be found\n";
-                $missing_inputs++;
-            }
-            else {
-                wrapup(1, $delete, "FATAL ERROR: $filename cannot be found");
-            }
-        }
-    }
-
-    # after prefetch, store info in workdir files for tar job
-    #--------------------------------------------------------
-    if ($prefetch) {
-
-        # write info for output tarfile
-        #------------------------------
-        if ($do_tar) {
-            open OFO, "> $OUT_TAR_INFO" or die "Error opening $OUT_TAR_INFO: $!";
-            print OFO "$local_dir\n";
-            print OFO "$remote_dir\n";
-        }
-        if ($missing_inputs) {
-            if (@mean_files) {
-                print OFO "partial\n" if $do_tar;
-                print "\n$missing_inputs $ftype $yyyymm inputs are missing.\n";
-                print "Will create partial tarfile for $ftype inputs.\n" if $do_tar;
-            } else {
-                print OFO "empty\n" if $do_tar;
-                print "\nNo $ftype $yyyymm inputs were found.\n";
-                print "No tarfile will be created for $ftype inputs.\n" if $do_tar;
-                wrapup(1, $delete, "FATAL ERROR: no $ftype inputs were found");
-            }
-        }
-        else {
-            print OFO "full\n" if $do_tar;
-            print "\nAll $ftype $yyyymm inputs were found.\n";
-            print "Will create full tarfile for $ftype inputs.\n" if $do_tar;
-        }
-        close OFO if $do_tar;
     }
 }
 
@@ -768,11 +770,13 @@ OPTIONS
  -M time_ave.x Optional binary to compute monthly means. Default is FVROOT/bin/time_ave.x
  -m mon_loc    Optional remote location to distribute means files for operational
  -nd           Do not produce diurnal means.
- -prefetch     Fetch files but do not calculate monthly means
+ -prefetch     Fetch inputs with separate job; do not calculate monthly means
  -R FVROOT     The installation directory of the fvDAS software. If not specified,
                then script will attempt to get the value from FVROOT environment variable.
  -r run_config Run_Config file for file transfer options if not DEFAULT
  -S SILO_DIR   If silo is supplied with -S all work is done on files in situ
+ -T htype      The collection hour type, needed for fetch
+ -t            Flag to write, during fetch, workdir files needed later for tarring
  -v            Flag to enable verbose output to STDOUT
  -w workdir    User defined work space for monthly processing.
 

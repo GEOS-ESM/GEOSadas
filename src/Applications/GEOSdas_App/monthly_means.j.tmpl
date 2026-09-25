@@ -34,6 +34,8 @@ set yyyymm     = __YYYYMM__
 set rundir     = __RUNDIR__
 set workdir    = __WORKDIR__
 set do_dmput   = __DO_DMPUT__
+set do_tar     = __DO_TAR__
+set lastFLG    = __LASTFLG__
 unset echo
 echo
 
@@ -42,6 +44,9 @@ if ("H$htype" != "H") set hourtypeFLG = "-T $htype"
 
 set dmputFLG = ""
 if ($do_dmput) set dmputFLG = "-p"
+ 
+set tarFLG = ""
+if ($do_tar) set tarFLG = "-t"
  
 # set job environment variables
 #------------------------------
@@ -78,7 +83,7 @@ $ERR -E 0 -D "$EXPID NOTICE: Monthly Means job has begun processing for $yyyymm"
 
 # command to calculate monthly means
 #-----------------------------------
-monthly_means.pl -L -l -v $dmputFLG $monitorlocFLG \
+monthly_means.pl -l -v $dmputFLG $tarFLG $monitorlocFLG \
    -H $FVHOME \
    -R $FVROOT \
    -D $yyyymm \
@@ -91,6 +96,13 @@ monthly_means.pl -L -l -v $dmputFLG $monitorlocFLG \
 if ( $exit_status ) then
     $ERR -E 5 -D "$EXPID FATAL ERROR: Monthly Means job has FAILED for $yyyymm"
     exit 1
+endif
+
+# if this is the last ftype and no tar jobs follow, then remove workdir
+#----------------------------------------------------------------------
+if ($lastFLG) then
+    cd $rundir
+    \rm -rf $workdir
 endif
 
 # rename output file for successful run
