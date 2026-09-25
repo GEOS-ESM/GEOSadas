@@ -19,11 +19,11 @@ ecbuild:
   remote: ../ecbuild.git
   tag: geos/v3.13.1
 
-crtm:
-  local: ./src/Shared/JCSDA_crtm/@crtm
-  remote: ../crtm.git
-  tag: geos/v2.4.1-jedi.1+1.1.0
-  develop: master
+CRTMv3:
+  local: ./src/Shared/JCSDA_crtm/@CRTMv3
+  remote: ../CRTMv3.git
+  tag: v3.1.4
+  develop: develop
 
 NCEP_Shared:
   local: ./src/Shared/@NCEP_Shared
@@ -80,13 +80,13 @@ GEOSldas_GridComp:
 GEOSana_GridComp:
   local: ./src/Components/@GEOSana_GridComp
   remote: ../GEOSana_GridComp.git
-  tag: v5.45.5
+  tag: v5.46.0
   develop: develop
 
 mksi:
    local: ./src/Components/@GEOSana_GridComp/GEOSaana_GridComp/GSI_GridComp/@mksi
    remote: ../GEOS_mksi.git
-   tag: v5.44.2
+   tag: v5.45.0
    develop: develop
 
 GEOSgcm_GridComp:
