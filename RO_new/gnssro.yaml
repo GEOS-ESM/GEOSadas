@@ -1,0 +1,203 @@
+bufr:
+  # Refractivity lives in ROSEQ3.
+  # IMPORTANT: Because group_by_variable is height from */ROSEQ3,
+  # do not include target variables from */ROSEQ1 or */ROSEQ1/ROSEQ2 in this same file.
+  # Those cause: GroupByField path */ROSEQ3, TargetField path */ROSEQ1.
+  group_by_variable: height
+  variables:
+    # NOTE ABOUT LAT/LON:
+    # In gnssro_orig.yaml, latitude/longitude are:
+    #   latitude:  "*/ROSEQ1/CLATH"
+    #   longitude: "*/ROSEQ1/CLONH"
+    # But refractivity is:
+    #   atmosphericRefractivity: "*/ROSEQ3/ARFR[1]"
+    #
+    # This bufr2netcdf.x version does not allow ROSEQ1 target fields
+    # in the same group as ROSEQ3 target fields:
+    #   GroupByField path: */ROSEQ3
+    #   TargetField path:  */ROSEQ1
+    #
+    # Therefore lat/lon cannot be directly copied into this
+    # refractivity-only ROSEQ3 YAML unless equivalent lat/lon descriptors
+    # exist under ROSEQ3, or unless the converter supports broadcasting
+    # profile-level ROSEQ1 metadata to each ROSEQ3 level.
+
+    # Timestamp / profile-level MetaData
+    timestamp:
+      datetime:
+        year: "*/YEAR"
+        month: "*/MNTH"
+        day: "*/DAYS"
+        hour: "*/HOUR"
+        minute: "*/MINU"
+        second: "*/SECO"
+
+    # Restriction
+    restrictionFlag:
+      query: "*/RSRD"
+    restrictionExpiration:
+      query: "*/EXPRSRD"
+
+    # Profile-level satellite / platform metadata
+    satelliteId:
+      query: "*/SAID"
+    satelliteInstrument:
+      query: "*/SIID"
+    satelliteConstellationRO:
+      query: "*/SCLF"
+    satelliteTransmitterId:
+      query: "*/PTID"
+    earthRadiusCurvature:
+      query: "*/ELRC"
+    sequenceNumber:
+      query: "*/SEQNUM"
+    geoidUndulation:
+      query: "*/GEODU"
+    pccf:
+      query: "*/PCCF[1]"
+    sensorAzimuthAngle:
+      query: "*/BEARAZ"
+
+    # Processing Center
+    dataProviderOrigin:
+      query: "*/OGCE"
+
+    # Quality Information
+    qualityFlags:
+      query: "*/QFRO"
+    qfro:
+      query: "*/QFRO"
+    satelliteAscendingFlag:
+      query: "*/QFRO"
+
+    # ROSEQ3: Height / refractivity profile
+    height:
+      query: "*/ROSEQ3/HEIT"
+
+    atmosphericRefractivity:
+      query: "*/ROSEQ3/ARFR[1]"
+
+    obsErrorAtmosphericRefractivity:
+      query: "*/ROSEQ3/ARFR[2]"
+
+    refractivityQualityFlag:
+      query: "*/ROSEQ3/FOST"
+
+    obsTypeAtmosphericRefractivity:
+      query: "*/SAID"
+
+encoder:
+  globals:
+    - name: "dataOriginalFormatSpec"
+      type: string
+      value: "bufr_d"
+
+    - name: "data_type"
+      type: string
+      value: "gpsro_refractivity"
+
+    - name: "subsets"
+      type: string
+      value: "NC003010"
+
+    - name: "data_description"
+      type: string
+      value: "Satellite radio occultation refractivity data from ROSEQ3"
+
+  variables:
+    # MetaData
+    - name: "MetaData/dateTime"
+      source: variables/timestamp
+      units: "seconds since 1970-01-01T00:00:00Z"
+      longName: "Datetime"
+
+    - name: "MetaData/restrictionFlag"
+      source: variables/restrictionFlag
+      longName: "Restriction on Redistribution"
+
+    - name: "MetaData/restrictionExpiration"
+      source: variables/restrictionExpiration
+      longName: "Expiration of Restriction on Redistribution"
+
+    - name: "MetaData/satelliteIdentifier"
+      source: variables/satelliteId
+      longName: "Satellite Identifier"
+
+    - name: "MetaData/satelliteInstrument"
+      source: variables/satelliteInstrument
+      longName: "Satellite Instrument"
+
+    - name: "MetaData/satelliteConstellationRO"
+      source: variables/satelliteConstellationRO
+      longName: "Satellite Constellation RO"
+
+    - name: "MetaData/satelliteTransmitterId"
+      source: variables/satelliteTransmitterId
+      longName: "Satellite Transmitter Id"
+
+    - name: "MetaData/earthRadiusCurvature"
+      source: variables/earthRadiusCurvature
+      units: "m"
+      longName: "Earth Radius of Curvature"
+
+    - name: "MetaData/sequenceNumber"
+      source: variables/sequenceNumber
+      longName: "Sequence Number"
+
+    - name: "MetaData/geoidUndulation"
+      source: variables/geoidUndulation
+      units: "m"
+      longName: "Geoid Undulation"
+
+    - name: "MetaData/pccf"
+      source: variables/pccf
+      units: "%"
+      longName: "Profile Percent Confidence"
+
+    - name: "MetaData/sensorAzimuthAngle"
+      source: variables/sensorAzimuthAngle
+      units: "degree"
+      longName: "Sensor Azimuth Angle"
+
+    - name: "MetaData/dataProviderOrigin"
+      source: variables/dataProviderOrigin
+      longName: "Identification of Originating Center"
+
+    - name: "MetaData/qfro"
+      source: variables/qfro
+      longName: "QFRO"
+
+    - name: "MetaData/qualityFlags"
+      source: variables/qualityFlags
+      longName: "Quality Flags for QFRO bit5 and bit6"
+
+    - name: "MetaData/satelliteAscendingFlag"
+      source: variables/satelliteAscendingFlag
+      longName: "Satellite Ascending Flag"
+
+    - name: "MetaData/height"
+      source: variables/height
+      units: "m"
+      longName: "Geopotential Height"
+
+    # ObsValue: Atmospheric Refractivity
+    - name: "ObsValue/atmosphericRefractivity"
+      source: variables/atmosphericRefractivity
+      units: "N units"
+      longName: "Atmospheric Refractivity"
+
+    # ObsError: Atmospheric Refractivity
+    - name: "ObsError/atmosphericRefractivity"
+      source: variables/obsErrorAtmosphericRefractivity
+      units: "N units"
+      longName: "Atmospheric Refractivity Obs Error"
+
+    # PreQC: Atmospheric Refractivity
+    - name: "PreQC/atmosphericRefractivity"
+      source: variables/refractivityQualityFlag
+      longName: "Atmospheric Refractivity Quality Flag"
+
+    # ObsType: Atmospheric Refractivity
+    - name: "ObsType/atmosphericRefractivity"
+      source: variables/obsTypeAtmosphericRefractivity
+      longName: "Atmospheric Refractivity ObsType"

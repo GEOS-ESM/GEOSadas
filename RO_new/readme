@@ -1,0 +1,41 @@
+;******** Final instructions to convert to bufr (on Jul 08th 2026) **************************
+cd  /discover/nobackup/mganesha/DSI_PBL/fromWei
+1. Edit run_bufr2ioda_gnssro.j to run the bufr to netcdf converter program on "bending angle/meta data" and "refractivity" files separately.
+;Uncomment line 37 for meta data/bending angle
+srun -n 1 $bufrbuild/build/bin/bufr2netcdf.x  ./input/gdas1.240716.t12z.gpsro.tm00.bufr_d gnssro_metadata_bending_angle_nosplits.yaml ./output/gnssro_metadata_bending_angle_2024071612.nc4
+;Uncomment line 36 for refractivity
+srun -n 1 $bufrbuild/build/bin/bufr2netcdf.x  ./input/gdas1.240716.t12z.gpsro.tm00.bufr_d gnssro.yaml ./output/gnssro_obs_2024071612.nc4
+
+2. gnssro.yaml file is the same as "gnssro_nosplits_refractivity_only_metadata_safe_annotated.yaml"
+
+;*********** Final script to produce GNSS RO PBLH files for assimilation WITH consideration of surface elevation data ********
+1. Go to scripts folder ( /discover/nobackup/mganesha/DSI_PBL/fromWei/scripts) and edit "read_gnssro_twopeaks_wsurfelev_qc_compact.ncl" for date and time under "User settings". This script is based on "read_gnssro_twopeaks_clean4.ncl" except that it considers GEOS-FP (or alternatively MERRA-2) surface elevation when calculating second peak. Save the output here: /discover/nobackup/mganesha/DSI_PBL/fromWei/scripts/output/twopeaks/thresh40_FPsfcelev_qc/ or alternatively /discover/nobackup/mganesha/DSI_PBL/fromWei/scripts/output/twopeaks/thresh40_sfcelev_qc/ for MERRA-2. 
+
+2. Plot to check output:plot_ncfile_pblh_wsfcelev_qc.ncl
+
+; Same script but python version with surface elevation data
+3. For running python script:
+
+module purge
+module load python/GEOSpyD/26.3.2-0/3.14
+rehash
+
+;Verify packages:
+python3 -c "import numpy, netCDF4; print('NumPy:', numpy.__version__); print('netCDF4:', netCDF4.__version__)"
+
+;Run command:
+python3 read_gnssro_twopeaks_wsurfelev_qc_compact.py --date 20240903 --hour 00
+
+;*************** Additional Notes ********************************************************
+;The original scripts are here:
+/home/wgu/dnb/bufr-query/install_final/bin/bufr2netcdf.x
+/home/wgu/dnb/bufr2ioda/run_bufr2ioda_avhrr_metop-b.j
+/home/wgu/dnb/bufr2ioda/gnssro.yaml
+
+;The script run_bufr2ioda_gnssro.j produces output files in the output directory:
+gnssro_obs_2024071518.nc4 is produced by running with gnssro_nosplits_refractivity_only.yaml
+gnssro_obs_2024071418_<sat>.nc4 is produced by running with gnssro_with_refractivity.yaml
+
+;********* Instruction to produce GNSS RO PBLH files for assimilation (without considering surface elevation) ***********
+1. Go to scripts folder ( /discover/nobackup/mganesha/DSI_PBL/fromWei/scripts) and edit the date in read_gnssro_twopeaks_clean4.ncl and run. Save the output in /discover/nobackup/mganesha/DSI_PBL/fromWei/scripts/output/twopeaks/thresh40/
+2. Plot to check output: plot_ncfile_pblh.ncl

@@ -1,0 +1,25 @@
+From: Ganeshan, Manisha (GSFC-613.0)[MORGAN STATE UNIV.] <manisha.ganeshan@nasa.gov>
+Date: Friday, September 25, 2026 at 1:00 PM
+To: Yang, Eun-Gyeong (GSFC-6101)[UNIVERSITY OF MARYLAND BALTIMORE CO] <eun-gyeong.yang@nasa.gov>
+Cc: Zhu, Yanqiu (GSFC-6101) <yanqiu.zhu@nasa.gov>
+Subject: readme and scripts
+
+
+Hi Eun-Gyeong,
+
+I’ve updated the instructions for producing GNSS RO based PBLH files from the raw bufr files. You can find the readme here:
+/discover/nobackup/mganesha/DSI_PBL/fromWei/output/readme
+
+The main scripts for converting bufr to netcdf is the “*.j” script below, which is to be run with “gnssro_metadata_bending_angle_nosplits.yaml” for creating the meta data netcdf file, and with “gnssro.yaml” for producing the main refractivity netcdf file. The instructions for editing and running the script are in the readme.
+/discover/nobackup/mganesha/DSI_PBL/fromWei/run_bufr2ioda_gnssro.j
+
+Following the conversion from bufr to netcdf, the following python script can be used on the netcdf files to produce PBLH files.
+/discover/nobackup/mganesha/DSI_PBL/fromWei/scripts/read_gnssro_twopeaks_wsurfelev_qc_compact.py
+
+I’ve only produced one file to test it, and the output is the same as the file produced using the NCL script that I provided to you (attached is a comparison).  Here is the path to the output file:
+/discover/nobackup/mganesha/DSI_PBL/fromWei/scripts/output/twopeaks/thresh40_FPsfcelev_qc/python/firstPBLH/gnssro_pbl_obs_2024090300.nc4
+
+Hope this helps. Please let me know if you need anything else.
+
+Regards,
+Manisha
