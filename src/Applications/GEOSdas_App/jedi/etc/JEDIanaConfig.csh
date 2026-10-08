@@ -52,3 +52,6 @@ setenv JEDI_INPUT @JEDI_INPUT
 
 # post
 setenv JEDI_CONCAT_IODA  0
+
+# make sure ensemble analysis is no invoked
+setenv JEDI_RUN_EAANA 0

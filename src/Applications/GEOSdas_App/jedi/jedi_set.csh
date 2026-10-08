@@ -56,7 +56,6 @@ endif
 if ( !($?JEDI_ANAFREQ))    setenv JEDI_ANAFREQ   21600
 if ( !($?JEDI_RUN_ADANA) ) setenv JEDI_RUN_ADANA 0
 if ( !($?JEDI_RUN_ANASA) ) setenv JEDI_RUN_ANASA 0
-if ( !($?JEDI_RUN_EAANA) ) setenv JEDI_RUN_EAANA 0
 if ( !($?JEDI_VAROFFSET))  setenv JEDI_VAROFFSET 10800
 if ( !($?JEDI_VARWINDOW))  setenv JEDI_VARWINDOW 21600
 if ( !($?MAPLFIX)       )  setenv MAPLFIX  0
@@ -348,9 +347,6 @@ cd -
 # Build full yaml to run var, or grab existing yaml
 # -------------------------------------------------
 set this = $JEDIETC/geosvar.${nymda}_${hha}z.yaml
-if ( $JEDI_RUN_EAANA ) then
-  set this = $JEDIETC/geosens.${nymda}_${hha}z.yaml
-endif
 if ( $fcoff ) then
   set this = $JEDIETC/geoshofx.${nymda}_${hha}z.yaml
 endif
@@ -394,9 +390,6 @@ else
 
   # Construct full VAR yaml
   set this = geosvar
-  if ( $JEDI_RUN_EAANA ) then
-    set this = geosens
-  endif
   if ( $fcoff ) then
     set this = geoshofx
   endif
@@ -412,7 +405,7 @@ endif
 # Acquire background ensemble (either for hybrid VAR or ensemble DA)
 setenv JEDI_GET_ENSBKG 0
 if ( ! $fcoff ) then
- if ( $JEDI_HYBRID || $JEDI_RUN_EAANA ) then
+ if ( $JEDI_HYBRID ) then
   if ( $JEDI_HYBRID == 1 ) then # lat-lon ensemble
      set ensdir = $FVHOME/atmens
      set bkgtyp = "bkg.eta"
@@ -446,8 +439,7 @@ if ( ! $fcoff ) then
 endif # fcoff
 
 # Acquire background fields (unless running ensemble DA)
-if ( (! $JEDI_RUN_EAANA) ) then
- if ( ! -e $JEDIWRK/.DONE_JEDI_GET_BKG_${nymdb}_${nhmsb} ) then
+if ( ! -e $JEDIWRK/.DONE_JEDI_GET_BKG_${nymdb}_${nhmsb} ) then
   cd bkg
   if ( $fcoff ) then
     setenv NYMD  $nymdf # forecast initial date
@@ -521,7 +513,6 @@ if ( (! $JEDI_RUN_EAANA) ) then
     endif
   endif # fcoff
   touch $JEDIWRK/.DONE_JEDI_GET_BKG_${nymdb}_${nhmsb}
- endif
 endif
 
 # When applicable, retrieve ensemble background
