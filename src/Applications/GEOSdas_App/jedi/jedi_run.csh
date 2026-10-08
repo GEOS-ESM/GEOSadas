@@ -60,6 +60,7 @@ endif
 
 # Internal defaults
 # -----------------
+if ( !($?JEDI_ANAFREQ))         setenv JEDI_ANAFREQ   21600
 if ( !($?JEDI_RUN_ADANA_TEST) ) setenv JEDI_RUN_ADANA_TEST  0
 if ( !($?JEDI_RUN_BUMP)  )      setenv JEDI_RUN_BUMP        0
 if ( !($?JEDI_RUN_CNVENS)  )    setenv JEDI_RUN_CNVENS      0
@@ -74,6 +75,15 @@ set ddb      = `echo $nymdb | cut -c7-8`
 set hhb      = `echo $nhmsb | cut -c1-2`
 set yyyymmddhh = ${nymdb}${hhb}
 setenv BYYYYYMMDDTHH0000Z  ${nymdb}T${hhb}0000Z
+
+set prvdate  = `tick $nymdb $nhmsb -$JEDI_ANAFREQ`
+set nymdp    = $prvdate[1]
+set nhmsp    = $prvdate[2]
+set yyyyp    = `echo $nymdp | cut -c1-4`
+set mmp      = `echo $nymdp | cut -c5-6`
+set ddp      = `echo $nymdp | cut -c7-8`
+set hhp      = `echo $nhmsp | cut -c1-2`
+setenv PYYYYYMMDDTHH0000Z  ${nymdp}T${hhp}0000Z
 
 set anadate  = `tick $nymdb $nhmsb $JEDI_VAROFFSET`
 set nymda    = $anadate[1]
@@ -159,9 +169,6 @@ if ( ! -e $FVWORK/.DONE_jedi_run_ana.csh.$yyyymmddhh) then
    zeit_ci.x jedi_run
 
    set this = geosvar
-   if ( $JEDI_RUN_EAANA ) then
-      set this = geosens
-   endif
    if ( $fcoff ) then
       set this = geoshofx
    endif
@@ -180,46 +187,35 @@ if ( ! -e $FVWORK/.DONE_jedi_run_ana.csh.$yyyymmddhh) then
       if (! -d inc ) mkdir inc 
    endif
 
-   if ( $JEDI_RUN_EAANA ) then
-     if ( -e $FVHOME/run/jedi/jedi_run_eda.j ) then
-        vED -env $FVHOME/run/jedi/jedi_run_eda.j -o jedi_run_eda.j
-        sbatch -W jedi_run_eda.j
-        sleep 2
-     else
-       echo " ${MYNAME}: cannot find jedi_run_eda.j, aborting ... "
-       exit (2) 
-     endif
+   if ( -e $FVHOME/run/jedi/jedi_run_var.j ) then
+      vED -env $FVHOME/run/jedi/jedi_run_var.j -o jedi_run_var.j
+      sbatch -W jedi_run_var.j
+      sleep 2
    else
-     if ( -e $FVHOME/run/jedi/jedi_run_var.j ) then
-        vED -env $FVHOME/run/jedi/jedi_run_var.j -o jedi_run_var.j
-        sbatch -W jedi_run_var.j
-        sleep 2
-     else
-        if ( $fcoff ) then
-           $JEDI_FV3HOX_MPIRUN $JEDIBUILD/bin/fv3jedi_hofx_nomodel.x $MYCONF |& tee -a $FVWORK/$JEDIVARLOG
-#          $JEDI_FV3HOX_MPIRUN /discover/nobackup/projects/gmao/advda/rtodling/JEDI1/2026/24Jun/build-intel-release/bin/fv3jedi_hofx_nomodel.x $MYCONF |& tee -a $FVWORK/$JEDIVARLOG
-           if ( $status ) then
-              echo " ${MYNAME}: failed in VAR, aborting ..."
-              exit (1)
-           endif
-        else
-           $JEDI_FV3VAR_MPIRUN $JEDIBUILD/bin/fv3jedi_var.x $MYCONF |& tee -a $FVWORK/$JEDIVARLOG
-           if ( $status ) then
-              echo " ${MYNAME}: failed in VAR, aborting ..."
-              exit (1)
-           endif
-        endif
-     endif
-     set ichk = `grep NaN $FVWORK/$JEDIVARLOG | wc`
-     if ( $ichk[1] > 0 ) then
-         echo " ${MYNAME}: NaNs found in JEDI, failed in VAR, aborting ..."
-         exit (1)
-     endif
-     set lstinc = `ls *inc*nc4`
-     if ( ! $status ) /bin/mv *inc*nc4 ./inc # somehow datapath setting in yaml is not effective at inc part
+      if ( $fcoff ) then
+         $JEDI_FV3HOX_MPIRUN $JEDIBUILD/bin/fv3jedi_hofx_nomodel.x $MYCONF |& tee -a $FVWORK/$JEDIVARLOG
+###      $JEDI_FV3HOX_MPIRUN /discover/nobackup/projects/gmao/advda/rtodling/JEDI1/2026/24Jun/build-intel-release/bin/fv3jedi_hofx_nomodel.x $MYCONF |& tee -a $FVWORK/$JEDIVARLOG
+         if ( $status ) then
+            echo " ${MYNAME}: failed in VAR, aborting ..."
+            exit (1)
+         endif
+      else
+         $JEDI_FV3VAR_MPIRUN $JEDIBUILD/bin/fv3jedi_var.x $MYCONF |& tee -a $FVWORK/$JEDIVARLOG
+         if ( $status ) then
+            echo " ${MYNAME}: failed in VAR, aborting ..."
+            exit (1)
+         endif
+      endif
    endif
+   set ichk = `grep NaN $FVWORK/$JEDIVARLOG | wc`
+   if ( $ichk[1] > 0 ) then
+       echo " ${MYNAME}: NaNs found in JEDI, failed in VAR, aborting ..."
+       exit (1)
+   endif
+   set lstinc = `ls *inc*nc4`
+   if ( ! $status ) /bin/mv *inc*nc4 ./inc # somehow datapath setting in yaml is not effective at inc part
    zeit_co.x jedi_run
-   
+
    if ( $fcoff ) then
       # archive hofx
       # ------------
@@ -358,7 +354,18 @@ foreach fn (`ls *tlapse.txt`)
   /bin/mv $fn $pfx.$BYYYYYMMDDTHH0000Z.tlapse.txt # time tag as current as
                                                   # if JEDI output these
 end
-tar cvf $FVWORK/$EXPID.jedi_vbc.${nymdb}_${hhb}z.tar *satbias*nc4 *aircraft*cov *.txt *.acftbias
+
+# Palliative for JEDI/UFO feature lacking
+# JEDI does not write out acft-bias-cov, 
+# so copy from previous cycle to current
+set acftcov = `ls aircraft_temperature.*acftbias_cov`
+if ( ! -e aircraft_temperature.$BYYYYYMMDDTHH0000Z.acftbias_cov ) then
+   /bin/cp $JEDIWRK/obs/aircraft_temperature.$PYYYYYMMDDTHH0000Z.acftbias_cov \
+                        aircraft_temperature.$BYYYYYMMDDTHH0000Z.acftbias_cov
+endif
+
+# Now tar up all bias and tlapse files
+tar cvf $FVWORK/$EXPID.jedi_vbc.${nymdb}_${hhb}z.tar *satbias*nc4 *.txt *.acftbias*
 cd -
 
 # If here, likely successful

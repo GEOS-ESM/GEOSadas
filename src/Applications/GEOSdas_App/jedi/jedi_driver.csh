@@ -76,17 +76,16 @@ if ( !($?JEDI_IAU_OVERWRITE) )  setenv JEDI_IAU_OVERWRITE  0
 if ( !($?JEDI_RUN_ADANA_TEST) ) setenv JEDI_RUN_ADANA_TEST 0
 if ( !($?JEDI_RUN_ADANA) ) setenv JEDI_RUN_ADANA 0
 if ( !($?JEDI_RUN_ANASA) ) setenv JEDI_RUN_ANASA 0
-if ( !($?JEDI_RUN_EAANA) ) setenv JEDI_RUN_EAANA 0
 if ( !($?JEDI_OBS_OPT) ) setenv JEDI_OBS_OPT 0
 if ( !($?JEDI_SWELLUSE) ) setenv JEDI_SWELLUSE 1
 if ( !($?OFFLINE_IODA_DIR) ) setenv OFFLINE_IODA_DIR /dev/null
 
 if ( $JEDI_RUN_ADANA ) then
-  source  $FVHOME/run/jedi/JEDIadanaConfig.csh
+  source   $FVHOME/run/jedi/JEDIadanaConfig.csh
 else
-  source  $FVHOME/run/jedi/JEDIanaConfig.csh
-  if ( $JEDI_RUN_EAANA ) then
-    source  $FVHOME/run/jedi/JEDIatmensConfig.csh
+  source   $FVHOME/run/jedi/JEDIanaConfig.csh
+  if ( -e  $FVHOME/run/jedi/JEDIatmensConfig.csh ) then
+    source $FVHOME/run/jedi/JEDIatmensConfig.csh
   endif
 endif
 

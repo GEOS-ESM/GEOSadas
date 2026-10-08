@@ -412,6 +412,7 @@ sub init {
   @rc2jediobs = qw ( 0observations.yaml
                      abi_g16.yaml
                      abi_g18.yaml
+                     abi_g19.yaml
                      aircraft_temperature.yaml
                      aircraft_wind.yaml
                      airs_aqua.yaml

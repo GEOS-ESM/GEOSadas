@@ -247,21 +247,21 @@ endif
 
 # If so, feedback VarBC (from previous cycle)
 # -------------------------------------------
-if ( $JEDI_FEEDBACK_VARBC ) then
+if ( $JEDI_FEEDBACK_VARBC || $JEDI_OBS_OPT == 1 ) then
   if ( -e $JEDIETC/VBC.BOOTSTRAP.DONE ) then # only when at least one JEDI cycle has completed
 
-   cd obs
+   cd $JEDIWRK
    # get tar-ball of varBC files from previous cycle
    setenv NYMDP  $nymdp
    setenv NHMSP  $nhmsp
-   setenv ACQWORK $JEDIWRK/obs
+   setenv ACQWORK $JEDIWRK
    vED -env $FVHOME/run/jedi/jedi_acquire_vbc.j -o jedi_acquire_vbc.j
    if ( $BATCH_SUBCMD == "sbatch" ) then
       sbatch -W -o jedi_vbc.log jedi_acquire_vbc.j
    else
       qsub -W block=true -o jedi_vbc.log jedi_acquire_vbc.j
    endif
-   set lstvbc = `ls *vbc*tar`
+   set lstvbc = `ls $JEDIWRK/*vbc*tar`
    if ($status) then
      echo "${MYNAME}: failed to retrieve vbc tar-ball"
      exit 1
@@ -269,7 +269,8 @@ if ( $JEDI_FEEDBACK_VARBC ) then
 
   #/bin/rm *satbias*.nc4
    # unfold tar-ball and overwrite bias correction files with those from (own) previous cycle
-   tar xvf *vbc*tar
+   cd obs
+   tar xvf $JEDIWRK/*vbc*tar
    cd -
 
  endif
@@ -289,6 +290,7 @@ cd obs
   end
 #endif
 cd -
+
 # The following accommodates for the case when the satbias coeff and cov are in the same
 cd obs
 set acft = 0
@@ -328,6 +330,19 @@ if ( $acft ) then
     endif
   endif
 endif
+cd -
+
+# To cope with SWELL get obs ...
+# ------------------------------
+if (   ! -d $JEDIWRK/obs/${nymda}T${hha}0000Z/geos_atmosphere ) then
+   mkdir -p $JEDIWRK/obs/${nymda}T${hha}0000Z/geos_atmosphere
+endif
+cd $JEDIWRK/obs/${nymda}T${hha}0000Z/geos_atmosphere
+ln -s ../../*.nc4 .
+ln -s ../../*.txt .
+ln -s ../../*.acftbias* .
+#set acftbias_in = `ls aircraft_temperature.*.acftbias`
+#ln -s $acftbias_in ${acftbias_in}_cov
 cd -
 
 # Build full yaml to run var, or grab existing yaml
