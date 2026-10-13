@@ -22,6 +22,9 @@ unsetenv PMI_SIZE
 
 setenv ATMENS_BATCHSUB "sbatch"
 
+setenv ATMENS_SAVE_BREC 0   # save analyses before recentering/inflation
+setenv ATMENS_SAVE_AREC 0   # save analysis after  recentering/inflation
+
 # Turn online (variational) bias correction on by default
 setenv PREPQC   0  # The ensemble obsever never runs PREPQC (gets inputs from central instead)
 setenv ACFTBIAS @ACFTBIAS  # 0: no aircraft bias correction

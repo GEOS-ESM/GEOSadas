@@ -37,7 +37,6 @@
   # Determines whether JEDI-based ensemble analysis will run
   # in place of GSI-based ensemble (for now, experiments
   # require a pure GSI-based initial cycle)
-  @ jedi_cycles = 0
   setenv JEDI_CAN_RUN_NOW 0
   if ( -d $FVHOME/run/jedi ) then
      set jedi_cycles = `ls $FVHOME/run/jedi/Config/geosvar.*z.yaml | wc`
@@ -48,6 +47,7 @@
         source $FVHOME/run/jedi/JEDIanaConfig.csh
         source $FVHOME/run/jedi/JEDIatmensConfig.csh
         setenv JEDI_CAN_RUN_NOW 1
+        setenv ATMENS_ENSQRF 0
      endif
   endif
 # tell which side of the machine we are on ...
@@ -520,9 +520,11 @@
       set amm = `echo ${anymd} | cut -c5-6`
       set ahh = `echo ${anhms} | cut -c1-2`
       cd $FVWORK/updated_ens
-#     if(! -e $HYBRIDGSI/${EXPID}.atmens_eana_brec.${nymdb}_${hhb}z.tar ) then
-#        tar -cvf $HYBRIDGSI/${EXPID}.atmens_eana_brec.${nymdb}_${hhb}z.tar mem0*/*.ana.eta*nc4  
-#     endif
+      if ( $ATMENS_SAVE_BREC ) then
+         if(! -e $HYBRIDGSI/${EXPID}.atmens_eana_brec.${nymdb}_${hhb}z.tar ) then
+            tar -cvf $HYBRIDGSI/${EXPID}.atmens_eana_brec.${nymdb}_${hhb}z.tar mem0*/*.ana.eta*nc4  
+         endif
+      endif
       cd -
   endif
 
@@ -553,9 +555,11 @@
       set amm = `echo ${anymd} | cut -c5-6`
       set ahh = `echo ${anhms} | cut -c1-2`
       cd $FVWORK/updated_ens
-#     if(! -e $HYBRIDGSI/${EXPID}.atmens_eana_arec.${nymdb}_${hhb}z.tar ) then
-#        tar -cvf $HYBRIDGSI/${EXPID}.atmens_eana_arec.${nymdb}_${hhb}z.tar mem0*/*.ana.eta*nc4 
-#     endif
+      if ( $ATMENS_SAVE_AREC ) then
+         if(! -e $HYBRIDGSI/${EXPID}.atmens_eana_arec.${nymdb}_${hhb}z.tar ) then
+            tar -cvf $HYBRIDGSI/${EXPID}.atmens_eana_arec.${nymdb}_${hhb}z.tar mem0*/*.ana.eta*nc4 
+         endif
+      endif
       cd -
   endif
 

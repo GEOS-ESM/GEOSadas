@@ -1,6 +1,6 @@
-#!/bin/csh
+#!/bin/csh -x
 
-setenv MYNAME jedi_driver.csh
+setenv MYNAME jedi_driver_atmens.csh
 
 if ( ! $?FVHOME ) then
   env
@@ -91,6 +91,8 @@ endif
 if ( -e $FVWORK/.DONE_${MYNAME}.$yyyymmddhh ) then
    echo "${MYNAME}: all done"
    exit(0)
+else
+   echo "${MYNAME}: Starting ... "
 endif
 
 setenv JEDIWORK $FVWORK/jedi.$nymda.$nhmsa
@@ -99,14 +101,6 @@ if ( ! -d $JEDIWORK ) mkdir -p $JEDIWORK
 # Setup SWELL & IODA Files
 # ========================
 if ( (! $JEDI_RUN_ANASA) && (! $JEDI_RUN_ADANA) ) then
- if ( $JEDI_SWELLUSE ) then
-  jedi_swellset.csh $nymda $nhmsa $JEDIDIR $JEDIWORK
-  if ($status) then
-     echo "${MYNAME}: failed, aborting ..."
-     exit (1)
-  endif
-
- else
 
 # If here, IODA files must be available 
 # -------------------------------------
@@ -131,7 +125,6 @@ if ( (! $JEDI_RUN_ANASA) && (! $JEDI_RUN_ADANA) ) then
      cd -
   endif
 
- endif
 endif
 
 # Prepare env for analysis
@@ -146,8 +139,23 @@ if ( $JEDI_SET ) then
    zeit_co.x jedi_set
 endif
 
+# Set ensemble as in non-JEDI ATMENS
+# TBD: the following lines belong to
+#      jedi_set
+# ----------------------------------
+cd $FVWORK
+  if ( ! -d mem001 ) then
+  /bin/ln -s $FVHOME/atmens/mem* .
+endif
+set members = (`ls -d mem*`)
+
+# Handle mean and variance output 
+# -------------------------------
+if ( ! -d $FVWORK/updated_ens/ensmean ) mkdir -p $FVWORK/updated_ens/ensmean
+if ( ! -d $FVWORK/updated_ens/ensrms  ) mkdir -p $FVWORK/updated_ens/ensrms
+
 # Run JEDI analysis
-if ( $JEDI_RUN ) then
+if ( $JEDI_RUN_EAANA ) then
    zeit_ci.x jedi_run
    jedi_run_atmens.csh $nymda $nhmsa $FVWORK $FVWORK $JEDIWORK |& tee -a $FVWORK/$EXPID.jedi_run_atmens.log.${nymdb}_${hhb}z.txt
    if ( $status ) then
@@ -157,8 +165,23 @@ if ( $JEDI_RUN ) then
    zeit_co.x jedi_run
 endif
 
+# The following needs parallelization
+# -----------------------------------
+if ( $JEDI_MKIAU ) then
+    zeit_ci.x jedi_mkiau
+    foreach member ( $members )
+      jedi_mkiau.csh $nymdb $nhmsb $member |& tee -a $FVWORK/$EXPID.jedi_miau.log.${nymdb}_${hhb}z.txt
+      if ( $status ) then
+         echo " ${MYNAME}: jedi_mkiau.csh signal failure for $member, aborting ..."
+         exit (1)
+      endif
+    end
+    zeit_co.x jedi_mkiau
+endif
+
 if ( $fcoff ) then
    touch $FVWORK/.DONE_${MYNAME}.$yyyymmddhh
+   echo " ${MYNAME}: Not yet ready for fcoff opt in atmens. "
    echo " ${MYNAME}: Complete "
    exit(0)
 endif
