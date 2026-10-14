@@ -447,7 +447,21 @@
 
 # Run observer for mean and each ensemble member
 # ----------------------------------------------
-  if ( ! $JEDI_CAN_RUN_NOW ) then
+  if ( $JEDI_CAN_RUN_NOW ) then
+    cd $FVWORK/
+    @ ic = 1
+    while ( $ic <= $nmem )
+      set memtag  = `echo $ic |awk '{printf "%03d", $1}'`
+      if ( ! -d mem$memtag ) then 
+         mkdir mem$memtag
+         cd mem$memtag
+         /bin/ln -sf $FVHOME/atmens/mem$memtag/$EXPID.bkg.eta.*.$NCSUFFIX .
+         cd -
+      endif
+      @ ic++
+    end
+    cd -
+  else
     if ( $RUN_OBVSR || $DO_ATM_ENS ) then
       zeit_ci.x obsvr
       obsvr_ensemble.csh $OBSCLASS $EXPID $anymd $anhms |& tee -a atm_ens.log
