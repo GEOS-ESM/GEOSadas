@@ -143,11 +143,12 @@ endif
 # TBD: the following lines belong to
 #      jedi_set
 # ----------------------------------
-cd $FVWORK
-  if ( ! -d mem001 ) then
-  /bin/ln -s $FVHOME/atmens/mem* .
-endif
+#  if ( ! -d mem001 ) then
+#  /bin/ln -s $FVHOME/atmens/mem* .
+#endif
+cd $FVHOME/atmens
 set members = (`ls -d mem*`)
+cd $FVWORK
 
 # Handle mean and variance output 
 # -------------------------------

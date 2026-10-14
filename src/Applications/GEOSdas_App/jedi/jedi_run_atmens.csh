@@ -154,10 +154,14 @@ if ( ! -e $FVWORK/.DONE_${MYNAME}_${SUITE}.$yyyymmddhh ) then
      mkdir -p archive/$EXPID/atmens/Y$yyyyi/M$mmi
      cd $FVHOME/atmens
      mkdir $EXPID.atmens_ebkgx.${nymdi}_${hhi}z
-     mv ensbkgx $EXPID.atmens_ebkgx.${nymdi}_${hhi}z
+     if ( ! -d ensbkgx ) then
+       echo " ${MYNAME}: Trouble finding ensbkgx dir in FVHOME/atmens, aborting ..."
+       exit 1
+     endif
+     /bin/mv ensbkgx $EXPID.atmens_ebkgx.${nymdi}_${hhi}z
      tar cvf $JEDIWORK/archive/$EXPID/atmens/Y$yyyyi/M$mmi/$EXPID.atmens_ebkgx.${nymdi}_${hhi}z.tar \
              $EXPID.atmens_ebkgx.${nymdi}_${hhi}z
-     mv $EXPID.atmens_ebkgx.${nymdi}_${hhi}z/ensbkgx .
+     /bin/mv $EXPID.atmens_ebkgx.${nymdi}_${hhi}z/ensbkgx .
      /bin/rm -r $EXPID.atmens_ebkgx.${nymdi}_${hhi}z
      cd -
   endif
@@ -170,14 +174,14 @@ if ( ! -e $FVWORK/.DONE_${MYNAME}_${SUITE}.$yyyymmddhh ) then
      endif
      $DRYRUN swell create ${SUITE} --skip-r2d2 --override $myyaml
   else
-     echo "Trouble finding $myyaml, aborting ..."
+     echo " ${MYNAME}: Trouble finding $myyaml, aborting ..."
      exit 1
   endif
 
   # launch convert suite
   swell launch $JEDIWORK/${EXPID}-${SUITE}/${EXPID}-${SUITE}-suite -b -t PT30S
   if ( $status ) then
-     echo "Trouble running JEDI atmos ensemble, aborting ..."
+     echo " ${MYNAME}: Trouble running JEDI atmos ensemble, aborting ..."
      exit 1
   else
      touch $FVWORK/.DONE_${MYNAME}_${SUITE}.$yyyymmddhh
@@ -203,9 +207,9 @@ source $JEDIBUILD/modules
   end
 
   # mimic env configuration of central ADAS within each member directory
-  cd $FVWORK
-  /bin/ln -sf $FVHOME/atmens/central .
-  cd -
+# cd $FVWORK
+# /bin/ln -sf $FVHOME/atmens/central .
+# cd -
   foreach mdir ( $members )
     set this = $JEDIWORK/${EXPID}-${SUITE}/run/${nymda}T${hha}0000Z/geos_atmosphere/analysis/$mdir
     cd $this
