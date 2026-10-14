@@ -229,6 +229,7 @@ cd $ENSWORK/$member
         # --------------------------------------------------------------------------------
         /bin/ln -sf $ENSWORK/ExtData $ENSWORK/${member}/
         /bin/cp $ATMENSETC/GEOS_ChemGridComp.rc .
+        /bin/cp $FVHOME/run/GWD_GridComp.rc     .
         /bin/cp $FVHOME/run/gocart/*.rc         .
         /bin/cp $FVHOME/run/gocart/*.yaml       .
         if(-e ExtData.rc) /bin/rm -f ExtData.rc
