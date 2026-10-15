@@ -34,6 +34,22 @@
       echo "atm_ens.j: cannot find $FVHOME/run/FVDAS_Run_Config, aborting ..."
       exit(1)
   endif
+  # Determines whether JEDI-based ensemble analysis will run
+  # in place of GSI-based ensemble (for now, experiments
+  # require a pure GSI-based initial cycle)
+  setenv JEDI_CAN_RUN_NOW 0
+  if ( -d $FVHOME/run/jedi ) then
+     set jedi_cycles = `ls $FVHOME/run/jedi/Config/geosvar.*z.yaml | wc`
+     @ jedi_cycles = $jedi_cycles[1] # JEDI must have cycled twice for its ens to run (viz., vbc)
+     if ( $jedi_cycles > 1                     && \
+         -e $FVHOME/run/jedi/JEDIanaConfig.csh && \
+         -e $FVHOME/run/jedi/JEDIatmensConfig.csh ) then
+        source $FVHOME/run/jedi/JEDIanaConfig.csh
+        source $FVHOME/run/jedi/JEDIatmensConfig.csh
+        setenv JEDI_CAN_RUN_NOW 1
+        setenv ATMENS_ENSQRF 0
+     endif
+  endif
 # tell which side of the machine we are on ...
   uname -a
 
@@ -55,6 +71,7 @@
   if ( $?JOBGEN_PARTITION ) then
      setenv ATMENS_QNAME $JOBGEN_PARTITION
   endif
+  setenv BATCH_SUBCMD sbatch
   setenv GID >>>GID<<<
   setenv group_list "SBATCH -A $GID"
   setenv ARCH `uname -s`
@@ -247,14 +264,16 @@
 
 # Check for Variational Aircraft Bias Correction
 # ----------------------------------------------
-  if ( (! $PREPQC ) && $ACFTBIAS == 2 ) then
-     set check_acfb = `echo $OBSCLASS | grep ncep_acftpfl_bufr`
-     if ($status) then
-        echo "Required ncep_acftpfl_bufr missing from OBSCLASS"
-        echo "Cannot perform Variational Aircraft Bias Correction"
-        echo "Aborting ..."
-        exit 1
-     endif
+  if ( ! $JEDI_CAN_RUN_NOW ) then
+    if ( (! $PREPQC ) && $ACFTBIAS == 2 ) then
+      set check_acfb = `echo $OBSCLASS | grep ncep_acftpfl_bufr`
+      if ($status) then
+         echo "Required ncep_acftpfl_bufr missing from OBSCLASS"
+         echo "Cannot perform Variational Aircraft Bias Correction"
+         echo "Aborting ..."
+         exit 1
+      endif
+    endif
   endif
 # Get date/time from restarts
 # ---------------------------
@@ -428,7 +447,22 @@
 
 # Run observer for mean and each ensemble member
 # ----------------------------------------------
-  if ( $RUN_OBVSR || $DO_ATM_ENS ) then
+  if ( $JEDI_CAN_RUN_NOW ) then
+    cd $FVWORK/
+    @ ic = 1
+    while ( $ic <= $nmem )
+      set memtag  = `echo $ic |awk '{printf "%03d", $1}'`
+      if ( ! -d mem$memtag ) then 
+         mkdir mem$memtag
+         cd mem$memtag
+         /bin/ln -sf $FVHOME/atmens/mem$memtag/$EXPID.bkg.eta.*.$NCSUFFIX .
+         cd -
+      endif
+      @ ic++
+    end
+    cd -
+  else
+    if ( $RUN_OBVSR || $DO_ATM_ENS ) then
       zeit_ci.x obsvr
       obsvr_ensemble.csh $OBSCLASS $EXPID $anymd $anhms |& tee -a atm_ens.log
       if( $status ) then
@@ -436,6 +470,7 @@
          exit(1)
       endif
       zeit_co.x obsvr
+    endif
   endif
 
 # SAVING THE CONV DIAGS
@@ -480,7 +515,11 @@
 # ------------------------------------
   if ( $RUN_EAANA || $DO_ATM_ENS ) then
       zeit_ci.x eana
-      atmos_eana.csh $EXPID $anymd $anhms |& tee -a atm_ens.log
+      if ( $JEDI_CAN_RUN_NOW ) then
+         jedi_driver_atmens.csh $nymdb $nhmsb $anymd $anhms 0 |& tee -a atm_ens.log
+      else
+         atmos_eana.csh $EXPID $anymd $anhms |& tee -a atm_ens.log
+      endif
       if( $status) then
          echo "eana failed"
          exit(1)
@@ -495,9 +534,11 @@
       set amm = `echo ${anymd} | cut -c5-6`
       set ahh = `echo ${anhms} | cut -c1-2`
       cd $FVWORK/updated_ens
-#     if(! -e $HYBRIDGSI/${EXPID}.atmens_eana_brec.${nymdb}_${hhb}z.tar ) then
-#        tar -cvf $HYBRIDGSI/${EXPID}.atmens_eana_brec.${nymdb}_${hhb}z.tar mem0*/*.ana.eta*nc4  
-#     endif
+      if ( $ATMENS_SAVE_BREC ) then
+         if(! -e $HYBRIDGSI/${EXPID}.atmens_eana_brec.${nymdb}_${hhb}z.tar ) then
+            tar -cvf $HYBRIDGSI/${EXPID}.atmens_eana_brec.${nymdb}_${hhb}z.tar mem0*/*.ana.eta*nc4  
+         endif
+      endif
       cd -
   endif
 
@@ -528,9 +569,11 @@
       set amm = `echo ${anymd} | cut -c5-6`
       set ahh = `echo ${anhms} | cut -c1-2`
       cd $FVWORK/updated_ens
-#     if(! -e $HYBRIDGSI/${EXPID}.atmens_eana_arec.${nymdb}_${hhb}z.tar ) then
-#        tar -cvf $HYBRIDGSI/${EXPID}.atmens_eana_arec.${nymdb}_${hhb}z.tar mem0*/*.ana.eta*nc4 
-#     endif
+      if ( $ATMENS_SAVE_AREC ) then
+         if(! -e $HYBRIDGSI/${EXPID}.atmens_eana_arec.${nymdb}_${hhb}z.tar ) then
+            tar -cvf $HYBRIDGSI/${EXPID}.atmens_eana_arec.${nymdb}_${hhb}z.tar mem0*/*.ana.eta*nc4 
+         endif
+      endif
       cd -
   endif
 

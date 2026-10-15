@@ -1,0 +1,194 @@
+#!/bin/csh -x
+
+setenv MYNAME jedi_driver_atmens.csh
+
+if ( ! $?FVHOME ) then
+  env
+  echo " ${MYNAME}: need FVHOME env"
+  exit (1)
+endif
+
+if ( ! -d $FVHOME/run/jedi ) then 
+   echo " ${MYNAME}: Nothing to do."
+else
+   setenv JEDIDIR $FVHOME/run/jedi
+endif
+
+if ( $#argv < 5 ) then
+   echo " "
+   echo " \\begin{verbatim} "
+   echo " "
+   echo " NAME "
+   echo " "
+   echo "  $MYNAME  - drive entire JEDI-based analysis for GEOS"
+   echo " "
+   echo " SYNOPSIS "
+   echo " "
+   echo "  $MYNAME  nymdb nhmsb nymda nhmsa fcoff "
+   echo " "
+   echo "   nymdb  -  starting date of cycle"
+   echo "   nhmsb  -  starting time of cycle"
+   echo "   nymda  -  analysis date"
+   echo "   nhmsa  -  analysis time"
+   echo "   fcoff  -  hours offset from (nymdb,nhmsb)"
+   echo " "
+   echo " AUTHOR"
+   echo "   Ricardo Todling (Ricardo.Todling@nasa.gov), NASA/GMAO "
+   echo "     Initial version: 18Oct2020    by: R. Todling"
+   echo "     Last   modified: 28Jul2026    by: R. Todling"
+   echo " \\end{verbatim} "
+   echo " \\clearpage "
+   echo " ${MYNAME}: invalid arg list, aborting"
+   exit(1)
+endif
+
+set nymdb = $1
+set nhmsb = $2
+set nymda = $3
+set nhmsa = $4
+set fcoff = $5
+set yyyya = `echo nymda | cut -c1-4`
+set   mma = `echo nymda | cut -c5-6`
+set   dda = `echo nymda | cut -c7-8`
+set   hhb = `echo $nhmsb | cut -c1-2`
+set   hha = `echo $nhmsa | cut -c1-2`
+set yyyymmddhh = ${nymda}${hha}
+
+setenv NYMDA $nymda
+setenv   HHA $hha
+
+setenv FAILED 0
+if ( !($?EXPID)   )  setenv FAILED   1
+if ( !($?FVWORK)  )  setenv FAILED   1
+
+if ( $FAILED ) then
+  env
+  echo " ${MYNAME}: not all required env vars defined"
+  exit (1)
+endif
+
+# Defaults
+if ( !($?JEDI_SET)  )  setenv JEDI_SET   1
+if ( !($?JEDI_RUN)  )  setenv JEDI_RUN   1
+if ( !($?JEDI_MKIAU))  setenv JEDI_MKIAU 0
+if ( !($?JEDI_IAU_OVERWRITE) )  setenv JEDI_IAU_OVERWRITE  1
+if ( !($?JEDI_RUN_ADANA_TEST) ) setenv JEDI_RUN_ADANA_TEST 0
+if ( !($?JEDI_RUN_ADANA) ) setenv JEDI_RUN_ADANA 0
+if ( !($?JEDI_RUN_ANASA) ) setenv JEDI_RUN_ANASA 0
+if ( !($?JEDI_RUN_EAANA) ) setenv JEDI_RUN_EAANA 0
+if ( !($?JEDI_OBS_OPT) ) setenv JEDI_OBS_OPT 0
+if ( !($?JEDI_SWELLUSE) ) setenv JEDI_SWELLUSE 1
+if ( !($?OFFLINE_IODA_DIR) ) setenv OFFLINE_IODA_DIR /dev/null
+
+source   $FVHOME/run/jedi/JEDIanaConfig.csh
+if ( -e  $FVHOME/run/jedi/JEDIatmensConfig.csh ) then
+   source $FVHOME/run/jedi/JEDIatmensConfig.csh
+else
+   echo "${MYNAME}: missing JEDIatmens Config"
+   exit(1)
+endif
+
+if ( -e $FVWORK/.DONE_${MYNAME}.$yyyymmddhh ) then
+   echo "${MYNAME}: all done"
+   exit(0)
+else
+   echo "${MYNAME}: Starting ... "
+endif
+
+setenv JEDIWORK $FVWORK/jedi.$nymda.$nhmsa
+if ( ! -d $JEDIWORK ) mkdir -p $JEDIWORK
+
+# Setup SWELL & IODA Files
+# ========================
+if ( (! $JEDI_RUN_ANASA) && (! $JEDI_RUN_ADANA) ) then
+
+# If here, IODA files must be available 
+# -------------------------------------
+  if ( $OFFLINE_IODA_DIR == "/dev/null" || $OFFLINE_IODA_DIR == "/dev/null/" ) then
+
+     # Convert GSI-nc4-diag files to IODA
+     # ----------------------------------
+     if ( $JEDI_OBS_OPT == 3 ) then
+       jedi_gsi2ioda.csh $nymda $nhmsa $FVWORK $FVWORK $JEDIWORK
+       if ( $status ) then
+         echo "Trouble converting GSI output to IODA, aborting ..."
+         exit 1
+       endif
+     endif
+
+  else
+     set IODADIR = $OFFLINE_IODA_DIR/${nymda}T${hha}0000Z/geos_atmosphere
+     if ( ! -d $FVWORK/ioda.${nymda}_${hha}0000 ) mkdir $FVWORK/ioda.${nymda}_${hha}0000
+     cd $FVWORK/ioda.${nymda}_${hha}0000
+     ln -s $IODADIR/*.nc4 .
+     ln -s $IODADIR/*.txt .
+     cd -
+  endif
+
+endif
+
+# Prepare env for analysis
+# ------------------------
+if ( $JEDI_SET ) then
+   zeit_ci.x jedi_set
+   jedi_set.csh $nymdb $nhmsb $fcoff |& tee -a $FVWORK/$EXPID.jedi_set.log.${nymdb}_${hhb}z.txt
+   if ( $status ) then
+      echo " ${MYNAME}: jedi_set.csh signal failure, aborting ..."
+      exit (1)
+   endif
+   zeit_co.x jedi_set
+endif
+
+# Set ensemble as in non-JEDI ATMENS
+# TBD: the following lines belong to
+#      jedi_set
+# ----------------------------------
+#  if ( ! -d mem001 ) then
+#  /bin/ln -s $FVHOME/atmens/mem* .
+#endif
+cd $FVHOME/atmens
+set members = (`ls -d mem*`)
+cd $FVWORK
+
+# Handle mean and variance output 
+# -------------------------------
+if ( ! -d $FVWORK/updated_ens/ensmean ) mkdir -p $FVWORK/updated_ens/ensmean
+if ( ! -d $FVWORK/updated_ens/ensrms  ) mkdir -p $FVWORK/updated_ens/ensrms
+
+# Run JEDI analysis
+if ( $JEDI_RUN_EAANA ) then
+   zeit_ci.x jedi_run
+   jedi_run_atmens.csh $nymda $nhmsa $FVWORK $FVWORK $JEDIWORK |& tee -a $FVWORK/$EXPID.jedi_run_atmens.log.${nymdb}_${hhb}z.txt
+   if ( $status ) then
+      echo " ${MYNAME}: jedi_run_atmens.csh signal failure, aborting ..."
+      exit (1)
+   endif
+   zeit_co.x jedi_run
+endif
+
+# The following needs parallelization
+# -----------------------------------
+if ( $JEDI_MKIAU ) then
+    zeit_ci.x jedi_mkiau
+    foreach member ( $members )
+      jedi_mkiau.csh $nymdb $nhmsb $member |& tee -a $FVWORK/$EXPID.jedi_miau.log.${nymdb}_${hhb}z.txt
+      if ( $status ) then
+         echo " ${MYNAME}: jedi_mkiau.csh signal failure for $member, aborting ..."
+         exit (1)
+      endif
+    end
+    zeit_co.x jedi_mkiau
+endif
+
+if ( $fcoff ) then
+   touch $FVWORK/.DONE_${MYNAME}.$yyyymmddhh
+   echo " ${MYNAME}: Not yet ready for fcoff opt in atmens. "
+   echo " ${MYNAME}: Complete "
+   exit(0)
+endif
+
+# If here, likely successful
+# --------------------------
+touch $FVWORK/.DONE_${MYNAME}.$yyyymmddhh
+echo " ${MYNAME}: Complete "
+exit(0)

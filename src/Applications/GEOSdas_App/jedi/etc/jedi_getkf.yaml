@@ -1,0 +1,292 @@
+# What is the experiment id?
+experiment_id: ${EXPID}-localensembleda
+
+# What is the experiment root (the directory where the experiment will be stored)?
+experiment_root: $JEDIWORK
+
+# What is the time of the first cycle (middle of the window)?
+start_cycle_point: '$JEDI_ISO_DATE_ANA'
+
+# What is the time of the final cycle (middle of the window)?
+final_cycle_point: '$JEDI_ISO_DATE_ANA'
+
+# List of models in this experiment
+model_components:
+- geos_atmosphere
+
+# Set the Cylc runahead limit: the maximum number of cycles that may be active ahead of the current cycle (e.g. P1: up to 1 cycle ahead, P3: up to 3 cycles ahead, default P4).
+runahead_limit: P4
+
+# What experiment_id should r2d2 reference for experiment?
+r2d2_experiment_id: ${EXPID}-localensembleda-668389b7
+
+# Server/profile name in ~/.swell/r2d2_credentials.yaml (e.g. 'gmao_server'). Leave empty if credentials are at the root level.
+r2d2_server:
+
+# Datastore name passed to R2D2 fetch and store operations (e.g. a Discover directory store or an S3 bucket store). Run scripts/discover_r2d2_datastores.py to list available datastores. Leave empty to let R2D2 pick the highest-priority writable datastore for your compute host.
+r2d2_datastore:
+
+# Skip registering and storing results of this experiment in R2D2?
+skip_r2d2: false
+
+# Record of the suite being executed
+suite_to_run: localensembleda
+
+# Dry-run option for comparing configs.
+mock_experiment: false
+
+# Do you want to use an existing JEDI build or create a new build?
+jedi_build_method: use_existing
+
+# What is the path to the existing JEDI source code directory?
+existing_jedi_source_directory: $JEDI_ROOT/../
+
+# What is the path to the existing JEDI build directory?
+existing_jedi_build_directory: $JEDI_ROOT
+
+# Configurations for the model components.
+models:
+
+  # Configuration for the geos_atmosphere model component.
+  geos_atmosphere:
+
+    # Enter the cycle times for this model.
+    cycle_times:
+    - T00
+    - T06
+    - T12
+    - T18
+
+    # Do you want to run localensembleda observer and solver together?
+    skip_ensemble_hofx: true
+
+    # Do you want to use cycling VarBC option?
+    cycling_varbc: false
+
+    # Enter number of packets in which ensemble observers should be computed.
+    ensemble_hofx_packets: 2
+
+    # Enter hofx strategy.
+    ensemble_hofx_strategy: parallel
+
+    # Provide a path that contains observation files not in r2d2.
+    ioda_locations_not_in_r2d2: ${JEDIWORK}/obs
+
+    # What number of processors do you wish to use in the x-direction?
+    npx_proc: 4
+
+    # What number of processors do you wish to use in the y-direction?
+    npy_proc: 4
+
+    # What is the horizontal resolution for the forecast model and backgrounds?
+    horizontal_resolution: '91'
+
+    # What is the vertical resolution for the forecast model and background?
+    vertical_resolution: '72'
+
+    # What is the duration for the data assimilation window?
+    window_length: PT6H
+
+    # Do you want to use a 3D or 4D (including FGAT) window?
+    window_type: 3D
+
+    # What are the analysis variables?
+    analysis_variables:
+    - eastward_wind
+    - northward_wind
+    - air_temperature
+    - water_vapor_mixing_ratio_wrt_moist_air
+    - air_pressure_at_surface
+    - air_pressure_levels
+    - cloud_liquid_ice
+    - cloud_liquid_water
+    - rain_water
+    - snow_water
+    - mole_fraction_of_ozone_in_air
+    - geopotential_at_surface
+    - fraction_of_ocean
+    - fraction_of_lake
+    - fraction_of_ice
+    - skin_temperature_at_surface
+
+    # How many members comprise the ensemble?
+    ensemble_num_members: 32
+
+    # Configure the ensemble mean and variance specifications:
+    ensmeanvariance_spec:
+    - {}
+
+    # Which observations do you want to include?
+    observations:
+    - aircraft_temperature
+    - aircraft_wind
+    - amsr2_gcom-w1
+    - amsua_aqua
+    - amsua_metop-b
+    - amsua_metop-c
+    - amsua_n15
+    - amsua_n18
+    - amsua_n19
+    - atms_n20
+    - atms_npp
+    - avhrr3_metop-b
+    - avhrr3_n18
+    - avhrr3_n19
+    - gps
+    - pibal
+    - satwind
+    - scatwind
+    - sfcship
+    - sfc
+    - sondes
+
+    # What is the path to the Swell formatted observing system records?
+    observing_system_records_path: None
+
+    # Provide the log naming convention (e.g. 'variational', 'fgat').
+    comparison_log_type: localensembleda
+
+    # What is the path to the Swell Static files directory?
+    swell_static_files: $JEDI_STATIC_FILES
+
+    # Which GSIBEC climatological or hybrid?
+    gsibec_configuration: cli_gsibec_configuration
+
+    # How many number of latutides in GSIBEC grid?
+    gsibec_nlats: 91
+
+    # How many number of longitudes in GSIBEC grid?
+    gsibec_nlons: 144
+
+    # How long before the middle of the analysis window did the background providing forecast begin?
+    background_time_offset: PT9H
+
+    # What is the path to the CRTM coefficient files?
+    crtm_coeff_dir: $JEDI_CRTM_COEFFS
+
+    # What is the database providing the observations?
+    obs_experiment: ${EXPID}
+
+    # Map observation names to their R2D2 providers.
+    observation_providers: {}
+
+    # What is the name of the name of the experiment providing the backgrounds?
+    background_experiment: ${EXPID}
+
+    # Provide a list of patterns that you wish to remove from the cycle directory.
+    clean_patterns:
+    - '*.txt'
+
+    # How long before the middle of the analysis window did the ensemble background providing forecast begin?
+    ebkg_time_offset: PT3H
+
+    # What is the path to the GEOS X-backgrounds directory?
+    geos_x_ensemble_directory: ${ARCHIVE}/
+
+    # What is the path to the GSI formatted observing system records?
+    observing_system_records_mksi_path: None
+
+    # Perform check for observations? Set to false for debugging purposes.
+    check_for_obs: true
+
+    # What is the rejection fraction for obs thinning?
+    obs_thinning_rej_fraction: 0.75
+
+    # What is the GSI formatted observing system records tag?
+    observing_system_records_mksi_path_tag: v5.44.1
+
+    # Calculate ensemble mean only?
+    ensmean_only: false
+
+    # Calculate ensemble mean and variance only?
+    ensmeanvariance_only: false
+
+    # Specify the multiplicative prior inflation coefficient (0 inf].
+    local_ensemble_inflation_mult: 1.1
+
+    # Specify the Relaxation To Prior Perturbation (RTPP) coefficient (0 1].
+    local_ensemble_inflation_rtpp: 0.6
+
+    # Specify the Relaxation To Prior Spread (RTPS) coefficient (0 1].
+    local_ensemble_inflation_rtps: 0.5
+
+    # Save the posterior ensemble members?
+    local_ensemble_save_posterior_ensemble: false
+
+    # Save the posterior ensemble member increments?
+    local_ensemble_save_posterior_ensemble_increments: false
+
+    # Save the posterior ensemble mean?
+    local_ensemble_save_posterior_mean: true
+
+    # Save the posterior ensemble mean increment?
+    local_ensemble_save_posterior_mean_increment: true
+
+    # Do posterior observer (OMA) for Local Ensemble DA?
+    local_ensemble_do_posterior_observer: false
+
+    # Which local ensemble solver type should be implemented?
+    local_ensemble_solver: Deterministic GETKF
+
+    # Use linear observer in local ensemble solver?
+    local_ensemble_use_linear_observer: true
+
+    # Shall netCDF files from HofX output be skipped for OMB and OMA?
+    skip_hofx_output: false
+
+    # What is the length scale for horizontal covariance localization?
+    horizontal_localization_lengthscale: 10000000.0
+
+    # What is the maximum number of observations to consider for horizontal covariance localization?
+    horizontal_localization_max_nobs: 1000
+
+    # Which localization scheme should be applied in the horizontal?
+    horizontal_localization_method: Horizontal Gaspari-Cohn
+
+    # Should a log (base 10) transformation be applied to vertical coordinate when constructing vertical localization?
+    vertical_localization_apply_log_transform: true
+
+    # Which localization scheme should be applied in the vertical?
+    vertical_localization_function: Gaspari Cohn
+
+    # Which coordinate should be used in constructing vertical localization?
+    vertical_localization_ioda_vertical_coord: pressure
+
+    # Which vertical coordinate group should be used in constructing vertical localization?
+    vertical_localization_ioda_vertical_coord_group: MetaData
+
+    # What is the length scale for vertical covariance localization?
+    vertical_localization_lengthscale: 2
+
+    # What is the vertical localization unit for GETKF?
+    vertical_localization_unit: logp
+
+    # What is the fraction of vertical retained variance for GETKF?
+    vertical_localization_frac_retained_variance: 0.95
+
+    # What localization scheme should be applied in constructing a vertical localization?
+    vertical_localization_method: Vertical localization
+
+    # What is the number of processors per host?
+    perhost: 48
+
+    # Shall variational bc be changed to static bc in local ensemble DA yaml?
+    change_vbc_to_sbc: false
+
+# Generate JEDI executable YAML and exit?
+generate_yaml_and_exit: false
+
+# What is the path to the user provided Swell Static Files directory?
+swell_static_files_user: None
+
+# Use cached observation files if they already exist?
+cache_fetch: true
+
+# Fetch observations directly from a public S3 bucket if they are available?
+fetch_obs_from_public_s3: false
+
+# Datetime this file was created (auto added)
+datetime_created: 20260928_132540Z
+
+# Computing platform to run the experiment
+platform: nccs_discover_sles15

@@ -56,7 +56,6 @@ endif
 if ( !($?JEDI_ANAFREQ))    setenv JEDI_ANAFREQ   21600
 if ( !($?JEDI_RUN_ADANA) ) setenv JEDI_RUN_ADANA 0
 if ( !($?JEDI_RUN_ANASA) ) setenv JEDI_RUN_ANASA 0
-if ( !($?JEDI_RUN_EAANA) ) setenv JEDI_RUN_EAANA 0
 if ( !($?JEDI_VAROFFSET))  setenv JEDI_VAROFFSET 10800
 if ( !($?JEDI_VARWINDOW))  setenv JEDI_VARWINDOW 21600
 if ( !($?MAPLFIX)       )  setenv MAPLFIX  0
@@ -247,21 +246,21 @@ endif
 
 # If so, feedback VarBC (from previous cycle)
 # -------------------------------------------
-if ( $JEDI_FEEDBACK_VARBC ) then
+if ( $JEDI_FEEDBACK_VARBC || $JEDI_OBS_OPT == 1 ) then
   if ( -e $JEDIETC/VBC.BOOTSTRAP.DONE ) then # only when at least one JEDI cycle has completed
 
-   cd obs
+   cd $JEDIWRK
    # get tar-ball of varBC files from previous cycle
    setenv NYMDP  $nymdp
    setenv NHMSP  $nhmsp
-   setenv ACQWORK $JEDIWRK/obs
+   setenv ACQWORK $JEDIWRK
    vED -env $FVHOME/run/jedi/jedi_acquire_vbc.j -o jedi_acquire_vbc.j
    if ( $BATCH_SUBCMD == "sbatch" ) then
       sbatch -W -o jedi_vbc.log jedi_acquire_vbc.j
    else
       qsub -W block=true -o jedi_vbc.log jedi_acquire_vbc.j
    endif
-   set lstvbc = `ls *vbc*tar`
+   set lstvbc = `ls $JEDIWRK/*vbc*tar`
    if ($status) then
      echo "${MYNAME}: failed to retrieve vbc tar-ball"
      exit 1
@@ -269,7 +268,8 @@ if ( $JEDI_FEEDBACK_VARBC ) then
 
   #/bin/rm *satbias*.nc4
    # unfold tar-ball and overwrite bias correction files with those from (own) previous cycle
-   tar xvf *vbc*tar
+   cd obs
+   tar xvf $JEDIWRK/*vbc*tar
    cd -
 
  endif
@@ -289,6 +289,7 @@ cd obs
   end
 #endif
 cd -
+
 # The following accommodates for the case when the satbias coeff and cov are in the same
 cd obs
 set acft = 0
@@ -330,12 +331,22 @@ if ( $acft ) then
 endif
 cd -
 
+# To cope with SWELL get obs ...
+# ------------------------------
+if (   ! -d $JEDIWRK/obs/${nymda}T${hha}0000Z/geos_atmosphere ) then
+   mkdir -p $JEDIWRK/obs/${nymda}T${hha}0000Z/geos_atmosphere
+endif
+cd $JEDIWRK/obs/${nymda}T${hha}0000Z/geos_atmosphere
+ln -s ../../*.nc4 .
+ln -s ../../*.txt .
+ln -s ../../*.acftbias* .
+#set acftbias_in = `ls aircraft_temperature.*.acftbias`
+#ln -s $acftbias_in ${acftbias_in}_cov
+cd -
+
 # Build full yaml to run var, or grab existing yaml
 # -------------------------------------------------
 set this = $JEDIETC/geosvar.${nymda}_${hha}z.yaml
-if ( $JEDI_RUN_EAANA ) then
-  set this = $JEDIETC/geosens.${nymda}_${hha}z.yaml
-endif
 if ( $fcoff ) then
   set this = $JEDIETC/geoshofx.${nymda}_${hha}z.yaml
 endif
@@ -379,9 +390,6 @@ else
 
   # Construct full VAR yaml
   set this = geosvar
-  if ( $JEDI_RUN_EAANA ) then
-    set this = geosens
-  endif
   if ( $fcoff ) then
     set this = geoshofx
   endif
@@ -397,7 +405,7 @@ endif
 # Acquire background ensemble (either for hybrid VAR or ensemble DA)
 setenv JEDI_GET_ENSBKG 0
 if ( ! $fcoff ) then
- if ( $JEDI_HYBRID || $JEDI_RUN_EAANA ) then
+ if ( $JEDI_HYBRID ) then
   if ( $JEDI_HYBRID == 1 ) then # lat-lon ensemble
      set ensdir = $FVHOME/atmens
      set bkgtyp = "bkg.eta"
@@ -431,8 +439,7 @@ if ( ! $fcoff ) then
 endif # fcoff
 
 # Acquire background fields (unless running ensemble DA)
-if ( (! $JEDI_RUN_EAANA) ) then
- if ( ! -e $JEDIWRK/.DONE_JEDI_GET_BKG_${nymdb}_${nhmsb} ) then
+if ( ! -e $JEDIWRK/.DONE_JEDI_GET_BKG_${nymdb}_${nhmsb} ) then
   cd bkg
   if ( $fcoff ) then
     setenv NYMD  $nymdf # forecast initial date
@@ -506,7 +513,6 @@ if ( (! $JEDI_RUN_EAANA) ) then
     endif
   endif # fcoff
   touch $JEDIWRK/.DONE_JEDI_GET_BKG_${nymdb}_${nhmsb}
- endif
 endif
 
 # When applicable, retrieve ensemble background

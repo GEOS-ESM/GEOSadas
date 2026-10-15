@@ -76,18 +76,14 @@ if ( !($?JEDI_IAU_OVERWRITE) )  setenv JEDI_IAU_OVERWRITE  0
 if ( !($?JEDI_RUN_ADANA_TEST) ) setenv JEDI_RUN_ADANA_TEST 0
 if ( !($?JEDI_RUN_ADANA) ) setenv JEDI_RUN_ADANA 0
 if ( !($?JEDI_RUN_ANASA) ) setenv JEDI_RUN_ANASA 0
-if ( !($?JEDI_RUN_EAANA) ) setenv JEDI_RUN_EAANA 0
 if ( !($?JEDI_OBS_OPT) ) setenv JEDI_OBS_OPT 0
 if ( !($?JEDI_SWELLUSE) ) setenv JEDI_SWELLUSE 1
 if ( !($?OFFLINE_IODA_DIR) ) setenv OFFLINE_IODA_DIR /dev/null
 
 if ( $JEDI_RUN_ADANA ) then
-  source  $FVHOME/run/jedi/JEDIadanaConfig.csh
+  source   $FVHOME/run/jedi/JEDIadanaConfig.csh
 else
-  source  $FVHOME/run/jedi/JEDIanaConfig.csh
-  if ( $JEDI_RUN_EAANA ) then
-    source  $FVHOME/run/jedi/JEDIatmensConfig.csh
-  endif
+  source   $FVHOME/run/jedi/JEDIanaConfig.csh
 endif
 
 if ( -e $FVWORK/.DONE_${MYNAME}.$yyyymmddhh ) then
@@ -101,14 +97,6 @@ if ( ! -d $JEDIWORK ) mkdir -p $JEDIWORK
 # Setup SWELL & IODA Files
 # ========================
 if ( (! $JEDI_RUN_ANASA) && (! $JEDI_RUN_ADANA) ) then
- if ( $JEDI_SWELLUSE ) then
-  jedi_swellset.csh $nymda $nhmsa $JEDIDIR $JEDIWORK
-  if ($status) then
-     echo "${MYNAME}: failed, aborting ..."
-     exit (1)
-  endif
-
- else
 
 # If here, IODA files must be available 
 # -------------------------------------
@@ -117,7 +105,7 @@ if ( (! $JEDI_RUN_ANASA) && (! $JEDI_RUN_ADANA) ) then
      # Convert GSI-nc4-diag files to IODA
      # ----------------------------------
      if ( $JEDI_OBS_OPT == 3 ) then
-       jedi_gsi2ioda.csh $nymda $nhmsa $FVWORK $FVWORK $JEDIWORK
+       jedi_gsi2ioda.csh $nymda $nhmsa $FVWORK $FVWORK $JEDIWORK  |& tee -a $FVWORK/$EXPID.jedi_g2i.log.${nymdb}_${hhb}z.txt
        if ( $status ) then
          echo "Trouble converting GSI output to IODA, aborting ..."
          exit 1
@@ -133,7 +121,6 @@ if ( (! $JEDI_RUN_ANASA) && (! $JEDI_RUN_ADANA) ) then
      cd -
   endif
 
- endif
 endif
 
 # Prepare env for analysis
@@ -159,7 +146,7 @@ if ( $JEDI_RUN ) then
    zeit_co.x jedi_run
    if ( $JEDI_MKIAU ) then
        zeit_ci.x jedi_mkiau
-       jedi_mkiau.csh $nymdb $nhmsb |& tee -a $FVWORK/$EXPID.jedi_miau.log.${nymdb}_${hhb}z.txt
+       jedi_mkiau.csh $nymdb $nhmsb "central" |& tee -a $FVWORK/$EXPID.jedi_miau.log.${nymdb}_${hhb}z.txt
        if ( $status ) then
           echo " ${MYNAME}: jedi_mkiau.csh signal failure, aborting ..."
           exit (1)

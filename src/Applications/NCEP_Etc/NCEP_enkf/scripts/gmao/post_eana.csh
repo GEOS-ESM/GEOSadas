@@ -86,6 +86,7 @@ if ( !($?FVWORK)         ) setenv FAILED 1
 
 if ( !($?NCSUFFIX)         ) setenv NCSUFFIX nc4
 if ( !($?ENSPARALLEL)      ) setenv ENSPARALLEL 0 
+if ( !($?ATMENS_ENSQRF)    ) setenv ATMENS_ENSQRF 1
 
 
 if ( !($?AENSADDINFLOC)  ) then
@@ -151,21 +152,45 @@ touch .no_archiving
      endif
   endif
 
-# Calculate OmA's by running mean observer one final time
-# -------------------------------------------------------
-  obsvr_ensfinal.csh $expid $nymd $nhms $ENSWORK/updated_ens
-  if ( $status ) then
-       echo " ${MYNAME}: error running final observer, aborting ..."
-       exit(1)
-  endif
+if ( $ATMENS_ENSQRF ) then
 
-# Calculate obs impact on analysis
-# --------------------------------
-  atmens_obsimp0hr.csh $expid $nymd $nhms 
-  if ( $status ) then
-       echo " ${MYNAME}: error running obs impact on analysis, aborting ..."
-       exit(1)
-  endif
+  # Calculate OmA's by running mean observer one final time
+  # -------------------------------------------------------
+    obsvr_ensfinal.csh $expid $nymd $nhms $ENSWORK/updated_ens
+    if ( $status ) then
+         echo " ${MYNAME}: error running final observer, aborting ..."
+         exit(1)
+    endif
+
+  # Calculate obs impact on analysis
+  # --------------------------------
+    atmens_obsimp0hr.csh $expid $nymd $nhms
+    if ( $status ) then
+         echo " ${MYNAME}: error running obs impact on analysis, aborting ..."
+         exit(1)
+    endif
+
+else
+
+  # TO-BE-DONE: this is a little out of place
+  #             ln analysis to work ens dirs
+  # -----------------------------------------
+  cd $FVWORK/updated_ens/mem001
+  set lst = `ls *ana.eta.*nc4`
+  cd -
+  echo " ${MYNAME}: Linking member analysis to main location "
+  @ ic = 0
+  while ( $ic < $nmem )
+     @ ic = $ic + 1
+     set memtag  = `echo $ic |awk '{printf "%03d", $1}'`
+     cd $FVWORK/mem$memtag
+     foreach fn ($lst)
+        set pfx = `echo $fn | cut -d. -f1-4`
+        /bin/ln -s $FVWORK/updated_ens/mem$memtag/$fn $pfx.mem$memtag.nc4
+     end
+  end
+
+endif # ATMENS_ENSQRF
 
 # Recenter ensemble
 # -----------------
