@@ -61,7 +61,7 @@ GEOS_Util:
 GMAO_perllib:
   local: ./src/Shared/@GMAO_Shared/@GMAO_perllib
   remote: ../GMAO_perllib.git
-  tag: v1.1.0
+  tag: v1.2.0
   develop: main
 
 # When updating the MAPL version, also update the MAPL version in the
