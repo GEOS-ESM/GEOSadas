@@ -69,7 +69,7 @@ GMAO_perllib:
 MAPL:
   local: ./src/Shared/@MAPL
   remote: ../MAPL.git
-  tag: v2.57.2
+  branch: feature/rtodling/first_mlt_mapl-near_2_69_x
   develop: develop
 
 GEOSldas_GridComp:
@@ -98,7 +98,7 @@ mksi:
 GEOSgcm_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp
   remote: ../GEOSgcm_GridComp.git
-  tag: g2.7.6.2
+  branch: feature/rtodling/geos-mlt-5_45_1
   sparse: ./config/GEOSgcm_GridComp.sparse
   develop: develop
 
@@ -123,13 +123,13 @@ GEOSagcmPert_GridComp:
 FVdycoreCubed_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSsuperdyn_GridComp/@FVdycoreCubed_GridComp
   remote: ../FVdycoreCubed_GridComp.git
-  tag: v2.14.1
+  branch: feature/rtodling/rt-geos-mlt-19oct26
   develop: develop
 
 fvdycore:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSsuperdyn_GridComp/@FVdycoreCubed_GridComp/@fvdycore
   remote: ../GFDL_atmos_cubed_sphere.git
-  tag: geos/v2.9.1
+  branch: feature/rtodling/rt-geos-mlt-19oct26
   develop: geos/develop
 
 GEOSchem_GridComp:
@@ -262,7 +262,7 @@ sis2:
 GEOSradiation_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp/GEOSagcm_GridComp/GEOSphysics_GridComp/@GEOSradiation_GridComp
   remote: ../GEOSradiation_GridComp.git
-  tag: v1.12.0
+  branch: feature/rtodling/geos-mlt-5_45_1
   develop: develop
 
 RRTMGP:
@@ -287,7 +287,7 @@ umwm:
 GEOSgcm_App:
   local: ./src/Applications/@GEOSgcm_App
   remote: ../GEOSgcm_App.git
-  tag: g2.3.8.15
+  branch: feature/rtodling/geos-mlt-5_45_1
   develop: develop
 
 Ocean-LETKF:
