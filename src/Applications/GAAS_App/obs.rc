@@ -95,6 +95,9 @@ INSIDE    # Exclude data which are inside these boxes
 # AERONET is passive
 #   1      323 323   45  45    -90 +90     -180 +180    0  2100    -180 +180
 
+# VIIRS DT Land and Ocean
+#   1      341 342   45  45    -90 +90     -180 +180    0  2100    -180 +180
+
 # -----   -------  -------  ----------  ----------  ----------- ------------
 # BoxId      kx       kt      lat          lon          lev         time
 

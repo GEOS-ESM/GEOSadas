@@ -4455,13 +4455,13 @@ endif
      if ($aod_obs == mod04_land_nnr)  sed -i "s/#___TERRA___//"   $ana_rc
      if ($aod_obs == myd04_land_nnr)  sed -i "s/#___AQUA___//"    $ana_rc
 
-     if ($aod_obs == vn20aerdt_002_flk) then
+     if ($aod_obs == vn20aerdt_002_flk || $aod_obs == vn20aerdt_022_flk) then
          setenv VIIRS_L2_HDF 1
          sed -i "s/#___NOAA20DT_NRT___//" $ana_rc
      endif
-     if ($aod_obs == vn20aerdb_002_flk) then
+     if ($aod_obs == vn20aerdb_002_flk ) then
          setenv VIIRS_L2_HDF 1
-         sed -i "s/#___NOAA20DB_NRT___//"    $ana_rc
+         sed -i "s/#___NOAA20DB_NRT___//" $ana_rc
      endif
 
      set dtype = `$FVROOT/bin/aod_data.py aod_type $aod_obs $AERO_OBSDBRC`

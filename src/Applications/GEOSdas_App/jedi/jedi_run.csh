@@ -358,7 +358,7 @@ foreach fn (`ls *tlapse.txt`)
   /bin/mv $fn $pfx.$BYYYYYMMDDTHH0000Z.tlapse.txt # time tag as current as
                                                   # if JEDI output these
 end
-tar cvf $FVWORK/$EXPID.jedi_vbc.${nymdb}_${hhb}z.tar *satbias*nc4 *aircraft*csv *.txt
+tar cvf $FVWORK/$EXPID.jedi_vbc.${nymdb}_${hhb}z.tar *satbias*nc4 *aircraft*cov *.txt *.acftbias
 cd -
 
 # If here, likely successful
