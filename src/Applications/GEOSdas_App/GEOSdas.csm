@@ -79,6 +79,7 @@
 #                         (cost goes down with successive updates)
 #                       - Temporarily leaving test lines commented out 
 #   8Dec2021 Sienkiewicz - add option for 'cleanup_tail' for aircraft bias correction
+#  29Oct2026 Yu         - add ZERO_OBS option: run GSI with an empty obs table and skip obs fetching
 #-----------------------------------------------------------------------------
 
 #
@@ -167,6 +168,7 @@
   if ( !($?VTRKFRQF ) )           setenv VTRKFRQF      0
   if ( !($?VTXRELOC ) )           setenv VTXRELOC      1
   if ( !($?WCONSTRAINT) )         setenv WCONSTRAINT   0
+  if ( !($?ZERO_OBS) )            setenv ZERO_OBS      0
 
   if ( $BATCH_SUBCMD == "sbatch" ) then
       setenv BLOCKFLAG "-W"
@@ -913,6 +915,10 @@ exit 1
           echo "SetupObserver_: trouble appending obs table to GSI_GridComp.rc "
           Call AbnormalExit_( 3 )
      endif
+#    Zero-observation run: comment out table entries, keep the closing "::"
+     if ( $ZERO_OBS ) then
+          sed -i '/^observation_files::/,/^::/ s/^[^#].*=>/#&/' GSI_GridComp.rc
+     endif
 
 #    Extract analysis resolution
 #    ---------------------------
@@ -1123,6 +1129,10 @@ exit 1
      if ( $status ) then
           echo "UpdateGsiGridCompResource_: trouble appending obs table to GSI_GridComp.rc "
           Call AbnormalExit_( 3 )
+     endif
+#    Zero-observation run: comment out table entries, keep the closing "::"
+     if ( $ZERO_OBS ) then
+          sed -i '/^observation_files::/,/^::/ s/^[^#].*=>/#&/' GSI_GridComp.rc
      endif
 
      cat GSI_GridComp.rc
@@ -2571,6 +2581,9 @@ exit 1
   if ( $?ECHO___ ) set echo
   set qsub_acquire = 0
 
+# Zero-observation run: nothing to fetch
+  if ( $ZERO_OBS ) exit 0
+
 # if ( $SKIPGSI && ! -e $FVHOME/run/AGCM.BOOTSTRAP.rc.tmpl ) exit 0
 
   set ecode = 0
@@ -2927,6 +2940,7 @@ exit 1
   if ( $?ECHO___ ) set echo
 
   if ( $SKIPGSI && ! -e $FVHOME/run/AGCM.BOOTSTRAP.rc.tmpl ) exit 0
+  if ( $ZERO_OBS ) exit 0
 
 # Get info about pre-qc files to be combined for QC
 # ------------------------------------------------------

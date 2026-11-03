@@ -650,6 +650,7 @@ sub set_inputparams {
     if ($ncpus_per_node) {
 #       $nodes_gsi = in($ncpus_gsi / $ncpus_per_node + 0.5);
         $nodes_avail = int($ncpus / $ncpus_per_node  + 0.5);
+        $nodes_avail = 1 if $nodes_avail < 1;
         $perhost_gsi = int($ncpus_gsi / $nodes_avail + 0.5);
 
     } else {
@@ -3799,6 +3800,8 @@ EOF
   if ( $aens_res eq "c"   ) { $aens_im =  288; $aens_jm =  181; $aens_ocn = "f" };
   if ( $aens_res eq "d"   ) { $aens_im =  576; $aens_jm =  361; $aens_ocn = "f" };
   if ( $aens_res eq "e"   ) { $aens_im = 1152; $aens_jm =  721; $aens_ocn = "f" };
+  if ( $aens_res eq "C12" ) { $aens_im =   12; $aens_jm =   72; $aens_ocn = "C" };
+  if ( $aens_res eq "C24" ) { $aens_im =   24; $aens_jm =  144; $aens_ocn = "C" };
   if ( $aens_res eq "C48" ) { $aens_im =   48; $aens_jm =  288; $aens_ocn = "C" };
   if ( $aens_res eq "C90" ) { $aens_im =   90; $aens_jm =  540; $aens_ocn = "C" };
   if ( $aens_res eq "C180") { $aens_im =  180; $aens_jm = 1080; $aens_ocn = "C" };
@@ -5197,6 +5200,41 @@ EOF
        $bjedi_im = $agcm_im;
        $bjedi_jm = $agcm_jm;
        $anahgrd = "b";
+       $jcap_ens = $jcap;
+       $ana_im_ens = $ana_im;
+       $ana_jm_ens = $ana_jm;
+  } elsif ( "$res" eq "C12" ) {  # Cubed-sphere
+       $cubed = 1;
+       $specres = "16";
+       $jcap = "24";
+       $agcm_im  =  12;
+       $agcm_grid_type = "Cubed-Sphere";
+       $agcm_jm  =  $agcm_im * 6;
+       $nx       = 1;
+       $ny       = $nx * 6;
+       $km       = $vres;
+       $dt  = 3600;
+       $long_dt  = $dt;
+       $pert_dt  = 7200;
+       $chemdt = $dt;
+       $solardt = 21600;
+       $irraddt = 21600;
+       $ogcmrdt = $irraddt;
+       $ana_im = 48; #$agcm_im * 4;
+       $ana_jm = 25; #$agcm_im * 2 + 1;
+       $hist_im = $ana_im;
+       $hist_jm = $ana_jm;
+       $histc_im = $ana_im;
+       $histc_jm = $ana_jm;
+       $nx_pert = 1;
+       $ny_pert = 6 * $nx_pert;
+       $hist_pert_im = $ana_im;
+       $hist_pert_jm = $ana_jm;
+       $apert_im = $agcm_im;
+       $apert_jm = $agcm_jm;
+       $bjedi_im = $agcm_im;
+       $bjedi_jm = $agcm_jm;
+       $anahgrd = "a";
        $jcap_ens = $jcap;
        $ana_im_ens = $ana_im;
        $ana_jm_ens = $ana_jm;
@@ -8061,7 +8099,12 @@ if ( $fvchem && $lm > 2 ) {
 # Allow for expanded memory usage when running GSI
 # ------------------------------------------------
   if ($ncpus_per_node) {
+      # ygyu add
+      print "ncpus ncpus_per_node = $ncpus,  $ncpus_per_node \n";
       $nodes_avail = int($ncpus / $ncpus_per_node  + 0.5);
+      print "nodes_avail = $nodes_avail \n";
+      print "ncpus_gsi ,  $ncpus_gsi \n";
+      $nodes_avail = 1 if $nodes_avail == 0; 
       $perhost_gsi = int($ncpus_gsi / $nodes_avail + 0.5);
       if ($analat == 361 && $nodeflg == "mil") { $perhost_gsi = 42 };
   } else {

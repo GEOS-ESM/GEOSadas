@@ -99,6 +99,12 @@ if ( $opt_fvhome ) {
 $ogcm    = substr($ogcmres, 0, 1);
 $ogcm_id = substr($ogcmres, 1, 2);
 
+#
+#print "nail 1 \n";
+#print "lndbcs =$lndbcs \n";
+#print "ogcm = $ogcm \n";
+#exit -1;
+   
 $coupled = 0;
 if ($ogcm eq "c") {
     $ogcm_im  = 360;
@@ -113,7 +119,10 @@ elsif ($ogcm eq "e") {
     $ogcm_im  = 1440;
     $ogcm_jm  =  720;
     $ogrid    = "${ogcm_im}x${ogcm_jm}";
-    $BCSTAG = "$lndbcs/Icarus_MERRA-2";
+#ygyu
+    #    $BCSTAG = "$lndbcs/Icarus_MERRA-2";
+    $BCSTAG = "$lndbcs/${lndbcs}_MERRA-2";
+    #$BCSTAG = "$lndbcs/Icarus-NLv3_MERRA-2";      
     $fvrtbcs = "g5gcm/bcs/SST";
     $sstfile = "dataoceanfile_MERRA2_SST.$ogrid.\$year.data";
     $icefile = "dataoceanfile_MERRA2_ICE.$ogrid.\$year.data";
@@ -224,6 +233,11 @@ if ( $cubed ) {
  $TILEDATA = "${bcsres}-Pfafstetter.til";
  $TILEBIN  = "${bcsres}-Pfafstetter.TIL";
 
+ my $vegdyn_suff = "_24Aug2017.dat";
+ if ($ogcm eq "e") {
+     $vegdyn_suff = ".dat";
+ }
+     
  open(SCRIPT,">$outfile") or
  die ">>> ERROR <<< cannot write $outfile";
 
@@ -344,8 +358,8 @@ if ( $cubed ) {
      if ( ! -e   \$G5GCMBCS/$BCSTAG/$bcsres/$TILEDATA ) exit 1
      /bin/ln -sf \$G5GCMBCS/$BCSTAG/$bcsres/$TILEDATA   tile.data
 
-     if ( ! -e   \$G5GCMBCS/$BCSTAG/$bcsres/vegdyn_${RES_DATELINE}_24Aug2017.dat  ) exit 1
-     /bin/ln -sf \$G5GCMBCS/$BCSTAG/$bcsres/vegdyn_${RES_DATELINE}_24Aug2017.dat    vegdyn.data
+     if ( ! -e   \$G5GCMBCS/$BCSTAG/$bcsres/vegdyn_${RES_DATELINE}${vegdyn_suff}  ) exit 1
+     /bin/ln -sf \$G5GCMBCS/$BCSTAG/$bcsres/vegdyn_${RES_DATELINE}${vegdyn_suff}    vegdyn.data
 
      if ( ! -e   \$G5GCMBCS/$BCSTAG/$bcsres/lai_clim_${RES_DATELINE}.data  ) exit 1
      /bin/ln -sf \$G5GCMBCS/$BCSTAG/$bcsres/lai_clim_${RES_DATELINE}.data    lai.data
