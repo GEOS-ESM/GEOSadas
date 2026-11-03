@@ -15,6 +15,7 @@
 #  31Jul2018  Todling/Gu  Allow for ens own setting of anavinfo file
 #  21Feb2020  Todling   Allow for high freq bkg (up to 1mn)
 #  31Mar2020  Todling   Jobmonitor to protect against faulty batch-block
+#  03Nov2026  Yu        ZERO_OBS: bypass EnKF update (members ana = bkg)
 #------------------------------------------------------------------
 if ( !($?ATMENS_VERBOSE) ) then
     setenv ATMENS_VERBOSE 0
@@ -104,6 +105,7 @@ if ( !($?ENSPARALLEL)      ) setenv ENSPARALLEL 0
 if ( !($?ATMENS_DEBUG)     ) setenv ATMENS_DEBUG 0
 if ( !($?ATMENKF_WALLCLOCK)) setenv ATMENKF_WALLCLOCK 1:00:00 
 if ( !($?ATMENKF_QNAME)    ) setenv ATMENKF_QNAME NULL
+if ( !($?ZERO_OBS)         ) setenv ZERO_OBS 0
 
 if ( $ENSPARALLEL ) then
    if ( !($?AENKF_NCPUS) ) then
@@ -145,6 +147,35 @@ set nmem = $members[1]
 # -----------------------------
 cd  $ENSWORK
 touch .no_archiving
+
+# Zero-observation DA: no EnKF update, analysis of each member is its background
+# ------------------------------------------------------------------------------
+if ( $ZERO_OBS ) then
+  echo " ${MYNAME}: ZERO_OBS=$ZERO_OBS, bypassing EnKF; setting member analyses to backgrounds"
+  if ( $nmem < 1 ) then
+     echo " ${MYNAME}: no member directories found under $ENSWORK, aborting ..."
+     exit(1)
+  endif
+  @ ic = 0
+  while ( $ic < $nmem )
+     @ ic++
+     set memtag  = `echo $ic |awk '{printf "%03d", $1}'`
+     set bkgfn = $ENSWORK/mem${memtag}/$expid.bkg.eta.${nymd}_${hhmn}z.$NCSUFFIX
+     if ( ! -e $bkgfn ) then
+        echo " ${MYNAME}: cannot find $bkgfn, aborting ..."
+        exit(1)
+     endif
+     /bin/cp $bkgfn $ENSWORK/mem${memtag}/$expid.ana.eta.${nymd}_${hhmn}z.mem${memtag}.$NCSUFFIX
+     if ( $status ) then
+        echo " ${MYNAME}: failed to create analysis for member $memtag, aborting ..."
+        exit(1)
+     endif
+     update_ens.csh $expid mem$memtag ana $ENSWORK/mem${memtag} NULL $NCSUFFIX
+  end
+  touch $ENSWORK/.DONE_${MYNAME}.$yyyymmddhh
+  echo " ${MYNAME}: Complete (ZERO_OBS)"
+  exit(0)
+endif
 
 set doing_eezy = 0
 if( (-e $ATMENSETC/easyeana.rc) ) then

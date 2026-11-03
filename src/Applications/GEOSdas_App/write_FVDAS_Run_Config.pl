@@ -5,6 +5,7 @@
 # revision history
 # 30Apr2009  Stassi  initial version
 # 28Aug2009  Stassi  Update for pleiades
+# 03Nov2026  Yu      Write ZERO_OBS when set in the environment
 #=======================================================================
 use strict;
 
@@ -25,7 +26,7 @@ my ($FVSHARE, $SHARE, $REM_GRADS_CONFIG, $G5MGRAM, $LATS4DLOC, $FVBIN,
 my ($FVROOT_PORTAL, $RC_LOC, $RTAG, $ANAID, $CASE, $ERR, $ERROR_EXP,
     $FCHOME, $FCSTAGE, $FERR, $FVDOLMS, $FVGROUP, $FVPLOTS, $FVSCRA,
     $FVSILO, $FVSPOOL, $FVSTAGE, $FVWORK, $GRADS_CONFIG, $LIBSZ, $MONTHLY_X);
-my ($ACFTBIAS, $NEWRADBC);
+my ($ACFTBIAS, $NEWRADBC, $ZERO_OBS);
 my (%vv);
 
 # main program
@@ -113,6 +114,7 @@ sub init {
     $VTRACK            = $ENV{"VTRACK"};
     $VTXLEVS           = $ENV{"VTXLEVS"};
     $VTXRELOC          = $ENV{"VTXRELOC"};
+    $ZERO_OBS          = $ENV{"ZERO_OBS"};
 
     $AOD_OBSCLASS = "none" unless $AOD_OBSCLASS;
 
@@ -351,6 +353,10 @@ sub writefile {
     print RUNCONF "setenv NEWRADBC \"$NEWRADBC\"\n";
     print RUNCONF "setenv ANGLEBC \"$NEWRADBC\"\n";
     print RUNCONF "setenv SKIPGSI $SKIPGSI\n" if $SKIPGSI;
+    if ( $ZERO_OBS ) {
+        print RUNCONF "# Zero-observation DA: GSI with empty obs table; ensemble observer/EnKF skipped\n";
+        print RUNCONF "if ( !(\$?ZERO_OBS) ) setenv ZERO_OBS 1\n";
+    }
 
     print RUNCONF "\numask 022\n";
     print RUNCONF "limit stacksize unlimited\n";

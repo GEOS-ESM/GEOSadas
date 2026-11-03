@@ -202,6 +202,14 @@
 # ----------------------------------------------
   source $FVHOME/run/atmens/AtmEnsConfig.csh
 
+# Zero-observation DA: skip ensemble observers and EnKF update (ana = bkg)
+# ------------------------------------------------------------------------
+  if ( !($?ZERO_OBS) ) setenv ZERO_OBS 0
+  if ( $ZERO_OBS ) then
+     echo "atm_ens.j: ZERO_OBS=$ZERO_OBS, ensemble observers skipped; members ana = bkg"
+     setenv ATMENS_ENSQRF 0
+  endif
+
   if ( !($?ATMENS_BATCHSUB) ) then
      echo "atm_ens.j: missing batch sub command"
      exit (1)
@@ -447,7 +455,7 @@
 
 # Run observer for mean and each ensemble member
 # ----------------------------------------------
-  if ( $JEDI_CAN_RUN_NOW ) then
+  if ( $JEDI_CAN_RUN_NOW || $ZERO_OBS ) then
     cd $FVWORK/
     @ ic = 1
     while ( $ic <= $nmem )

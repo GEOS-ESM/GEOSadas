@@ -3038,6 +3038,7 @@ endif
    if ( ! $PREPQC ) exit 0
    if (  $SKIPANA ) exit 0
    if (  $SKIPGSI && ! -e $FVHOME/run/AGCM.BOOTSTRAP.rc.tmpl ) exit 0
+   if (  $ZERO_OBS ) exit 0
 
 # Combine pre-qc files...
 #  ------------------------
@@ -5516,6 +5517,7 @@ endif
   if ( $?ECHO___ ) set echo
 
   if ( ! ($DOING_ANA && $DIAG2ODS) ) exit 0
+  if ( $ZERO_OBS ) exit 0
 
   if ( $DO4DVAR && $Final_ ) exit 0
 

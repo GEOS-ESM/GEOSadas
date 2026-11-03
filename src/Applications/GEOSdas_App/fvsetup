@@ -9341,6 +9341,10 @@ sub write_FVDAS_Run_Config {
         $ENV{"ARCHIVE"} = "lou-via-br2:." if $siteName eq "pfe";
     }
     system("$fvbin/write_FVDAS_Run_Config.pl -remNODE $remNODE -remID $remID");
+    if ( $ENV{"ZERO_OBS"} ) {
+        print "\n  NOTE: ZERO_OBS=$ENV{ZERO_OBS} found in environment; zero-observation DA"
+            . " enabled in $fvhome/run/FVDAS_Run_Config\n\n";
+    }
 }
 
 #=======================================================================
