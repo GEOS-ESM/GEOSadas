@@ -10,6 +10,7 @@
 #  16Apr2018 Todling  Settings for Y. Zhu sat-bias-correction
 #  02May2018 Todling  Unwired number of levels
 #  08Jun2020 Todling  Export mp_stats_perts
+#  03Nov2026 Yu       Add C12/C24 layouts; add -rtbcs/-bcsdir options
 #
 #-----------------------------------------------------------------------------------------------------
 
@@ -51,6 +52,8 @@ my $scriptname = basename($0);
                "ose",
                "rcorr",
 	       "r21c",
+               "rtbcs=s",
+               "bcsdir=s",
                "h" );
 
   usage() if $opt_h;
@@ -126,6 +129,12 @@ sub init {
    $bcopt = "";
    if ( $opt_r21c ) {
       $bcopt = "-r21c";
+   }
+   if ( $opt_rtbcs ) {
+      $bcopt .= " -rtbcs $opt_rtbcs";
+   }
+   if ( $opt_bcsdir ) {
+      $bcopt .= " -bcsdir $opt_bcsdir";
    }
 
    $setradbc = 0;
@@ -238,6 +247,36 @@ sub init {
 
 # define layout depending on resolution
   $agcm_nx = 4; $agcm_ny = 12;
+  if ( $agcm_im == 12 ){  # low-res testing: same small layout for all nodes (max 24 PEs)
+     if ($nodename ne "hasw" and $nodename ne "sky" and $nodename ne "cas" and $nodename ne "mil") {
+         die "Unknown node name, aborting \n";
+     }
+     $enkf_cpus = 24;
+     $agcm_nx =    2; $agcm_ny =   12;
+     $miau_nx =    2; $miau_ny =   12;
+     $obsv_nx =    2; $obsv_ny =    6;
+     $stat_nx =    2; $stat_ny =    2;
+     $chis_im =   12; $chis_jm =   72;  # cubed-resolution
+     $dhis_im =   48; $dhis_jm =   25;  # diag-resolution output
+     $hhis_im =   48; $hhis_jm =   25;  # high-resolution output
+     $lhis_im =   48; $lhis_jm =   25;  #  low-resolution output
+     $obsv_im =   48; $obsv_jm =   25; $obsv_lm = $nlevs; $obsv_jcap = 16;
+  }
+  if ( $agcm_im == 24 ){  # low-res testing: same small layout for all nodes (max 24 PEs)
+     if ($nodename ne "hasw" and $nodename ne "sky" and $nodename ne "cas" and $nodename ne "mil") {
+         die "Unknown node name, aborting \n";
+     }
+     $enkf_cpus = 24;
+     $agcm_nx =    2; $agcm_ny =   12;
+     $miau_nx =    2; $miau_ny =   12;
+     $obsv_nx =    2; $obsv_ny =   12;
+     $stat_nx =    2; $stat_ny =    2;
+     $chis_im =   24; $chis_jm =  144;  # cubed-resolution
+     $dhis_im =   96; $dhis_jm =   49;  # diag-resolution output
+     $hhis_im =   96; $hhis_jm =   49;  # high-resolution output
+     $lhis_im =   96; $lhis_jm =   49;  #  low-resolution output
+     $obsv_im =   96; $obsv_jm =   49; $obsv_lm = $nlevs; $obsv_jcap = 32;
+  }
   if ( $agcm_im == 90 ){
      if ($nodename eq "hasw") {
          $enkf_cpus = 192;
@@ -333,6 +372,9 @@ sub init {
      $hhis_im = 1152; $hhis_jm =  721;
      $lhis_im =  576; $lhis_jm =  361;
      $obsv_im =  576; $obsv_jm =  361; $obsv_lm = $nlevs; $obsv_jcap = 254;
+  }
+  unless ( $enkf_cpus && $obsv_im && $chis_im ) {
+     die "$0: resolution aim=$aim ajm=$ajm not supported (supported: C12, C24, C90, C180, C360), aborting \n";
   }
   $agcm_cpus = $agcm_nx * $agcm_ny;
   $miau_cpus = $miau_nx * $miau_ny;
@@ -955,20 +997,25 @@ sub build_lnbcs_yaml {
 
   $lc_res = "c$agcm_im";
 
+  my $land_version = "icarus-NLv3";
+  if ( "$lndbcs" eq "Icarus_Updated" ) {
+     $land_version = "icarus";
+  }
+
   open(SCRIPT,">$FVHOME/run/linkbcs_ens.yaml") or
        die ">>> ERROR <<< cannot write $FVHOME/run/linkbcs_ens.yaml";
 print  SCRIPT <<"EOF";
 platform: nccs
 experiment_type: ADAS
 agcm_grid: $lc_res
-land_version: $landbcs
+land_version: $land_version
 ocean_model: $ocean_model
 ogcm_grid: $ocean_grid_choice
 seaice_model: $seaice_model
 precip_correction: $precip_correction
 catchcn: $catchcn
 pchem_species: ops # or cmip, s2s, merra-2
-install_dir: $fvroot
+install_dir: $FVROOT
 EOF
 
 }
@@ -1016,6 +1063,8 @@ OPTIONS
      -ose          set up ensemble as an OSE-type experiment (NOT ALL READY YET)
      -radbc        set up to run with Y. Zhu satellite bias correction
      -rcorr        when specified will apply channel correlations
+     -rtbcs  DIR   location of (real-time) SST/ICE BCs passed to gen_lnbcs.pl
+     -bcsdir DIR   alternative g5gcm/bcs root for resolution-specific land BCs
      -vtxrlc       use vortex tracker and relocator
      -h            prints this usage notice
 

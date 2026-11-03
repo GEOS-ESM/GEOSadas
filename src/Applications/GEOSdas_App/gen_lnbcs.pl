@@ -9,6 +9,7 @@
 #  18Apr2017 Todling  Update to Icarus-1_0 BCs (revised topo)
 #  28Jul2017 Todling  Update to fixed(lakes) version of Icarus-cubed BCs
 #  23Oct2019 Todling  Add arg to hand Land BCs
+#  03Nov2026 Yu       Add -rtbcs/-bcsdir (alternative BCs); vegdyn name fallback
 #
 #-----------------------------------------------------------------------------------------------------
 
@@ -34,6 +35,8 @@ my $scriptname = basename($0);
                "merra2",
 	       "r21c",
 	       "geosit",
+               "rtbcs=s",
+               "bcsdir=s",
                "h" );
 
   usage() if $opt_h;
@@ -237,7 +240,16 @@ if ( $cubed ) {
  if ($ogcm eq "e") {
      $vegdyn_suff = ".dat";
  }
-     
+
+ my $usr_rtbcs_csh  = "";
+ my $usr_bcsdir_csh = "";
+ if ( $opt_rtbcs ) {
+     $usr_rtbcs_csh = "  if ( -e $opt_rtbcs/$ogrid/$sstfile ) setenv G5GRTBCS $opt_rtbcs";
+ }
+ if ( $opt_bcsdir ) {
+     $usr_bcsdir_csh = "  if ( -d $opt_bcsdir/$BCSTAG/$bcsres ) set BCSDIR = $opt_bcsdir/$BCSTAG/$bcsres";
+ }
+
  open(SCRIPT,">$outfile") or
  die ">>> ERROR <<< cannot write $outfile";
 
@@ -265,6 +277,13 @@ if ( $cubed ) {
   setenv CUBED    $cubed
   setenv G5GCMBCS \$FVHOME/fvInput/g5gcm/bcs
   setenv G5GRTBCS \$FVHOME/fvInput/$fvrtbcs
+$usr_rtbcs_csh
+# Resolution-specific land BCs (possibly from alternative BCS root)
+# -----------------------------------------------------------------
+  set BCSDIR = \$G5GCMBCS/$BCSTAG/$bcsres
+$usr_bcsdir_csh
+  set VEGDYN = \$BCSDIR/vegdyn_${RES_DATELINE}${vegdyn_suff}
+  if ( ! -e \$VEGDYN ) set VEGDYN = \$BCSDIR/vegdyn_${RES_DATELINE}.dat
 
 # Possibly real-time boundary conditions
 # --------------------------------------
@@ -355,48 +374,48 @@ if ( $cubed ) {
      if ( ! -e   \$G5GRTBCS/$ogrid/SEAWIFS_KPAR_mon_clim.$ogrid ) exit 1
      /bin/ln -sf \$G5GRTBCS/$ogrid/SEAWIFS_KPAR_mon_clim.$ogrid   SEAWIFS_KPAR_mon_clim.data
 
-     if ( ! -e   \$G5GCMBCS/$BCSTAG/$bcsres/$TILEDATA ) exit 1
-     /bin/ln -sf \$G5GCMBCS/$BCSTAG/$bcsres/$TILEDATA   tile.data
+     if ( ! -e   \$BCSDIR/$TILEDATA ) exit 1
+     /bin/ln -sf \$BCSDIR/$TILEDATA   tile.data
 
-     if ( ! -e   \$G5GCMBCS/$BCSTAG/$bcsres/vegdyn_${RES_DATELINE}${vegdyn_suff}  ) exit 1
-     /bin/ln -sf \$G5GCMBCS/$BCSTAG/$bcsres/vegdyn_${RES_DATELINE}${vegdyn_suff}    vegdyn.data
+     if ( ! -e   \$VEGDYN  ) exit 1
+     /bin/ln -sf \$VEGDYN    vegdyn.data
 
-     if ( ! -e   \$G5GCMBCS/$BCSTAG/$bcsres/lai_clim_${RES_DATELINE}.data  ) exit 1
-     /bin/ln -sf \$G5GCMBCS/$BCSTAG/$bcsres/lai_clim_${RES_DATELINE}.data    lai.data
+     if ( ! -e   \$BCSDIR/lai_clim_${RES_DATELINE}.data  ) exit 1
+     /bin/ln -sf \$BCSDIR/lai_clim_${RES_DATELINE}.data    lai.data
 
-     if ( ! -e   \$G5GCMBCS/$BCSTAG/$bcsres/green_clim_${RES_DATELINE}.data  ) exit 1
-     /bin/ln -sf \$G5GCMBCS/$BCSTAG/$bcsres/green_clim_${RES_DATELINE}.data    green.data
+     if ( ! -e   \$BCSDIR/green_clim_${RES_DATELINE}.data  ) exit 1
+     /bin/ln -sf \$BCSDIR/green_clim_${RES_DATELINE}.data    green.data
 
-     if ( ! -e   \$G5GCMBCS/$BCSTAG/$bcsres/ndvi_clim_${RES_DATELINE}.data  ) exit 1
-     /bin/ln -sf \$G5GCMBCS/$BCSTAG/$bcsres/ndvi_clim_${RES_DATELINE}.data    ndvi.data
+     if ( ! -e   \$BCSDIR/ndvi_clim_${RES_DATELINE}.data  ) exit 1
+     /bin/ln -sf \$BCSDIR/ndvi_clim_${RES_DATELINE}.data    ndvi.data
 
-     if (  ! -e  \$G5GCMBCS/$BCSTAG/$bcsres/visdf_${RES_DATELINE}.dat  ) exit 1
-     /bin/ln -sf \$G5GCMBCS/$BCSTAG/$bcsres/visdf_${RES_DATELINE}.dat    visdf.dat
+     if (  ! -e  \$BCSDIR/visdf_${RES_DATELINE}.dat  ) exit 1
+     /bin/ln -sf \$BCSDIR/visdf_${RES_DATELINE}.dat    visdf.dat
 
-     if (  ! -e  \$G5GCMBCS/$BCSTAG/$bcsres/nirdf_${RES_DATELINE}.dat  ) exit 1
-     /bin/ln -sf \$G5GCMBCS/$BCSTAG/$bcsres/nirdf_${RES_DATELINE}.dat    nirdf.dat
+     if (  ! -e  \$BCSDIR/nirdf_${RES_DATELINE}.dat  ) exit 1
+     /bin/ln -sf \$BCSDIR/nirdf_${RES_DATELINE}.dat    nirdf.dat
 
-     if(   ! -e  \$G5GCMBCS/$BCSTAG/$bcsres/topo_DYN_ave_${RES_DATELINE}.data   ) exit 1
-     /bin/ln -sf \$G5GCMBCS/$BCSTAG/$bcsres/topo_DYN_ave_${RES_DATELINE}.data   topo_dynave.data
+     if(   ! -e  \$BCSDIR/topo_DYN_ave_${RES_DATELINE}.data   ) exit 1
+     /bin/ln -sf \$BCSDIR/topo_DYN_ave_${RES_DATELINE}.data   topo_dynave.data
 
-     if(   ! -e  \$G5GCMBCS/$BCSTAG/$bcsres/topo_GWD_var_${RES_DATELINE}.data  ) exit 1
-     /bin/ln -sf \$G5GCMBCS/$BCSTAG/$bcsres/topo_GWD_var_${RES_DATELINE}.data  topo_gwdvar.data
+     if(   ! -e  \$BCSDIR/topo_GWD_var_${RES_DATELINE}.data  ) exit 1
+     /bin/ln -sf \$BCSDIR/topo_GWD_var_${RES_DATELINE}.data  topo_gwdvar.data
 
-     if(   ! -e  \$G5GCMBCS/$BCSTAG/$bcsres/topo_TRB_var_${RES_DATELINE}.data    ) exit 1
-     /bin/ln -sf \$G5GCMBCS/$BCSTAG/$bcsres/topo_TRB_var_${RES_DATELINE}.data  topo_trbvar.data
+     if(   ! -e  \$BCSDIR/topo_TRB_var_${RES_DATELINE}.data    ) exit 1
+     /bin/ln -sf \$BCSDIR/topo_TRB_var_${RES_DATELINE}.data  topo_trbvar.data
 
 #    Convert tile file to binary
 #    ---------------------------
      if ( \$CUBED ) then
-          if( -e        \$G5GCMBCS/$BCSTAG/$bcsres/Gnomonic_$bcsres.dat ) then
-            /bin/ln -sf \$G5GCMBCS/$BCSTAG/$bcsres/Gnomonic_$bcsres.dat .
+          if( -e        \$BCSDIR/Gnomonic_$bcsres.dat ) then
+            /bin/ln -sf \$BCSDIR/Gnomonic_$bcsres.dat .
           endif
           /bin/ln -sf  \$G5GCMBCS/$BCSTAG/Shared/*bin .
           /bin/ln -sf  \$G5GCMBCS/$BCSTAG/Shared/*_c2l_*.nc4 .
      endif
 
-     if( -e         \$G5GCMBCS/$BCSTAG/$bcsres/$TILEBIN ) then
-        /bin/ln -sf \$G5GCMBCS/$BCSTAG/$bcsres/$TILEBIN tile.bin
+     if( -e         \$BCSDIR/$TILEBIN ) then
+        /bin/ln -sf \$BCSDIR/$TILEBIN tile.bin
      endif
 
   endif
@@ -451,6 +470,9 @@ OPTIONS
      -merra2  specify to set related BCs
      -r21c    specify to set related BCs
      -geosit  specify to set related BCs
+     -rtbcs   alternative real-time SST/ICE BCs dir (used when its files exist)
+     -bcsdir  alternative g5gcm/bcs root for resolution-specific land BCs
+              (used when its BCSTAG/resolution dir exists)
      -h       prints this usage notice
 
 EXAMPLE COMMAND LINE

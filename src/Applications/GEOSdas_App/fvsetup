@@ -342,6 +342,7 @@
 # 19Jul2018 Wargan     Additions for OMPS
 # 2022,2024 sqz        Additions for LADAS 
 # 2025      sqz        integrated setup for LADAS 
+# 03Nov2026 Yu         C12/C24 (main and hybrid ensemble); alternative BCs via REAL TIME BCS
 #-------------------------------------------------------------------------
 use Cwd qw(abs_path cwd);
 use English;
@@ -822,6 +823,8 @@ sub defaults {
                    gmao_global_cloudy_radiance_info.rc
                    gmao_global_tgasinfo.rc
                    gmao_global_convinfo.rc
+                   gmao_global_hybens_info.x48y25l72.rc
+                   gmao_global_hybens_info.x96y49l72.rc
                    gmao_global_hybens_info.x288y181l72.rc
                    gmao_global_hybens_info.x576y361l72.rc
                    gmao_global_hybens_info.x288y181l91.rc
@@ -2091,7 +2094,7 @@ sub ed_mkiau_rc {
   my($gsinlon, $ssinlath, $ssinlon, $varwnd_nhms);
 
   if ( $cubed ) {
-      if ($siteID eq "nccs") {
+      if ($siteID eq "nccs" and $agcm_im > 24) {
           $mkiau_nx =  4;
           $mkiau_ny = 24;
       }
@@ -2917,6 +2920,26 @@ EOF
 }
 
 #=======================================================================
+# When REAL TIME BCS points outside FVINPUT, have lnbcs (and lnbcs_ens)
+# use it for SST/ICE, and use its parent g5gcm/bcs root for the
+# resolution-specific land BCs (each falls back to FVINPUT when absent)
+#=======================================================================
+sub usr_bcs_flags {
+    my ($flags, $root);
+
+    $flags = "";
+    return $flags unless ( $fvrtbcs and -d $fvrtbcs );
+    return $flags if ( $fvrtbcs =~ m|^\Q$fvbcs\E/| );
+
+    $flags = "-rtbcs $fvrtbcs";
+    if ( $fvrtbcs =~ m|^(.+)/realtime/[^/]+/?$| ) {
+        $root = $1;
+        $flags .= " -bcsdir $root" if ( -d "$root/$landbcs" );
+    }
+    return $flags;
+}
+
+#=======================================================================
 sub get_extdata {
 
     @extdatasets = qw ( agcmpert chemistry g5chem g5gcm PIESA MERRA2 AeroCom );
@@ -3239,7 +3262,9 @@ sub get_times {
   #----------------------------------------------------------
   if ( $hres eq "C" ) {                              #       CPUs
 #                                                    #       ----
-      if    ($res eq "C48")  { $nx =  4; $ny = 24 }  # (b)    96
+      if    ($res eq "C12")  { $nx =  2; $ny = 12 }  # (a)    24
+      elsif ($res eq "C24")  { $nx =  2; $ny = 12 }  # (a)    24
+      elsif ($res eq "C48")  { $nx =  4; $ny = 24 }  # (b)    96
       elsif ($res eq "C90")  { $nx =  4; $ny = 24 }  # (c)    96
       elsif ($res eq "C180") { $nx =  9; $ny = 30 }  # (d)   270
       elsif ($res eq "C360") { $nx = 10; $ny = 36 }  # (e)   360
@@ -3603,7 +3628,8 @@ sub get_setgsi {
 
   # GEOS-5 GSI MPI decomposition; must be compatible w/ ncpus                 CPUs
   #----------------------------------------------------------                 ----
-  if    ($hres eq "a")                   { $nxgsi =  4; $nygsi =  8 }  # (a)   32
+  if    ($res eq "C12" or $res eq "C24") { $nxgsi =  2; $nygsi = 12 }  # (a)   24
+  elsif ($hres eq "a")                   { $nxgsi =  4; $nygsi =  8 }  # (a)   32
   elsif ($hres eq "b" or $res eq "C48")  { $nxgsi =  4; $nygsi = 12 }  # (b)   48
   elsif ($hres eq "c" or $res eq "C90")  { $nxgsi =  4; $nygsi = 12 }  # (c)   48
   elsif ($hres eq "d" or $res eq "C180") { $nxgsi =  6; $nygsi = 32 }  # (d)  192
@@ -3806,6 +3832,9 @@ EOF
   if ( $aens_res eq "C90" ) { $aens_im =   90; $aens_jm =  540; $aens_ocn = "C" };
   if ( $aens_res eq "C180") { $aens_im =  180; $aens_jm = 1080; $aens_ocn = "C" };
   if ( $aens_res eq "C360") { $aens_im =  360; $aens_jm = 2160; $aens_ocn = "C" };
+  unless ( $aens_im and $aens_jm ) {
+      die ">>> ERROR <<< unsupported ensemble resolution: $aens_res";
+  }
 
   if ( $newradbc ) {
      $setradbc = "-radbc"; chomp($setrabc);
@@ -3842,11 +3871,13 @@ EOF
   $flags = "-nlevs $aens_lev $setacftbc $rcorrarg $setradbc $aens_lsmodel -expdir $fvhome/.. $sppt_flag $bcopt";
   $flags .= " -fvhome $fvhome" if $checkFLG;
   $flags .= " -ldasflg $ldas_flag";
+  $flags .= " " . usr_bcs_flags();
   $params = " $aens_ana $expid $aens_im $aens_jm $aens_ocn $landbcs"; 
 
   $cmd = "$fvbin/setup_atmens.pl -nodename $nodeflg $flags $params";
   print "$cmd\n";
-  system($cmd);
+  system($cmd) == 0
+      or die ">>> ERROR <<< setup_atmens.pl failed for ensemble resolution $aens_res";
 
 # Edit atm_ens.j script
 # ---------------------
@@ -5227,6 +5258,41 @@ EOF
        $histc_im = $ana_im;
        $histc_jm = $ana_jm;
        $nx_pert = 1;
+       $ny_pert = 6 * $nx_pert;
+       $hist_pert_im = $ana_im;
+       $hist_pert_jm = $ana_jm;
+       $apert_im = $agcm_im;
+       $apert_jm = $agcm_jm;
+       $bjedi_im = $agcm_im;
+       $bjedi_jm = $agcm_jm;
+       $anahgrd = "a";
+       $jcap_ens = $jcap;
+       $ana_im_ens = $ana_im;
+       $ana_jm_ens = $ana_jm;
+  } elsif ( "$res" eq "C24" ) {  # Cubed-sphere
+       $cubed = 1;
+       $specres = "32";
+       $jcap = "32";
+       $agcm_im  =  24;
+       $agcm_grid_type = "Cubed-Sphere";
+       $agcm_jm  =  $agcm_im * 6;
+       $nx       = 2;
+       $ny       = $nx * 6;
+       $km       = $vres;
+       $dt  = 1800;
+       $long_dt  = $dt;
+       $pert_dt  = 3600;
+       $chemdt = $dt;
+       $solardt = 10800;
+       $irraddt = 10800;
+       $ogcmrdt = $irraddt;
+       $ana_im = 96; #$agcm_im * 4;
+       $ana_jm = 49; #$agcm_im * 2 + 1;
+       $hist_im = $ana_im;
+       $hist_jm = $ana_jm;
+       $histc_im = $ana_im;
+       $histc_jm = $ana_jm;
+       $nx_pert = 2;
        $ny_pert = 6 * $nx_pert;
        $hist_pert_im = $ana_im;
        $hist_pert_jm = $ana_jm;
@@ -7962,6 +8028,7 @@ sub build_lnbcs {
   }elsif ($geosit) {
      $bcopt = "-geosit"; 
   }
+  $bcopt .= " " . usr_bcs_flags();
   if ( $cubed ) {
      $cmd = "$fvbin/gen_lnbcs.pl -fvhome $fvhome -o lnbcs $bcopt -cubed $agcm_im $agcm_jm ${ogcm}${ogcm_id} $landbcs";
   } else {
