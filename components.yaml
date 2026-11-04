@@ -100,7 +100,8 @@ mksi:
 GEOSgcm_GridComp:
   local: ./src/Components/@GEOSgcm_GridComp
   remote: ../GEOSgcm_GridComp.git
-  tag: g2.7.6.2
+#  tag: g2.7.6.2
+  tag: feature/ygyu/CX_g2.7.6.2
   sparse: ./config/GEOSgcm_GridComp.sparse
   develop: develop
 

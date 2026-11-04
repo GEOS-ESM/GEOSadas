@@ -2,16 +2,16 @@
 # ------------------------------
 #SBATCH --account=>>>GID<<<
 #SBATCH --constraint=>>>NODEFLG<<<
-#SBATCH --ntasks=96
+#SBATCH --ntasks=>>>AENS_NTASKS<<<
 #SBATCH --ntasks-per-node=>>>NCPUS_PER_NODE<<<
-#SBATCH --time=6:00:00
+#SBATCH --time=>>>AENS_WALLCLOCK<<<
 #SBATCH --no-requeue 
 #
 #SBATCH --job-name=atm_ens
 #SBATCH --output=atm_ens.log.o%j
 #PBS -N atm_ens
 #PBS -o atm_ens.log.o%j
-#PBS -l walltime=6:00:00
+#PBS -l walltime=>>>AENS_WALLCLOCK<<<
 #PBS -S /bin/csh
 #PBS -j eo
 # ------------------------------
@@ -169,6 +169,15 @@
   setenv SPECRES   254    # should be able to revisit analyzer to avoid needing this
 
   setenv GAAS_ANA 1
+  if ( $?MINIMAL_GCM ) then
+     echo "$MINIMAL_GCM" | grep -q -E '^[1-9][0-9]*$'
+     if ( ! $status ) then
+        setenv GAAS_ANA 0   # no aerosols in minimal GCM
+     else if ( "$MINIMAL_GCM" != "" && "$MINIMAL_GCM" != "0" ) then
+        echo "atm_ens.j: MINIMAL_GCM=$MINIMAL_GCM is invalid; use 1 (on) or 0/unset (off), aborting ..."
+        exit(1)
+     endif
+  endif
   setenv LDAS_ANA >>>LDAS_ANA<<<
   setenv LDHOME4ENS >>>LDHOME4ENS<<<
 

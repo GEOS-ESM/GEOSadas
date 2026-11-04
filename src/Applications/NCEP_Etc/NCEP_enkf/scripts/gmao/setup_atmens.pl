@@ -11,6 +11,7 @@
 #  02May2018 Todling  Unwired number of levels
 #  08Jun2020 Todling  Export mp_stats_perts
 #  03Nov2026 Yu       Add C12/C24 layouts; add -rtbcs/-bcsdir options
+#  03Nov2026 Yu       Add -mingcm (minimal GCM for low-resolution testing)
 #
 #-----------------------------------------------------------------------------------------------------
 
@@ -54,6 +55,7 @@ my $scriptname = basename($0);
 	       "r21c",
                "rtbcs=s",
                "bcsdir=s",
+               "mingcm",
                "h" );
 
   usage() if $opt_h;
@@ -154,6 +156,11 @@ sub init {
    $dosppt = 1;
    if ( $opt_nosppt ) {
       $dosppt = 0;
+   }
+
+   $mingcm = 0;
+   if ( $opt_mingcm ) {
+      $mingcm = 1;
    }
 
    $ldas_on = 0;
@@ -376,6 +383,12 @@ sub init {
   unless ( $enkf_cpus && $obsv_im && $chis_im ) {
      die "$0: resolution aim=$aim ajm=$ajm not supported (supported: C12, C24, C90, C180, C360), aborting \n";
   }
+
+# minimal GCM: use the same (long) time step as the central ADAS at low resolution
+  if ( $mingcm ) {
+     $dt = 3600 if ( $agcm_im == 12 );
+     $dt = 1800 if ( $agcm_im == 24 );
+  }
   $agcm_cpus = $agcm_nx * $agcm_ny;
   $miau_cpus = $miau_nx * $miau_ny;
   $obsv_cpus = $obsv_nx * $obsv_ny;
@@ -455,6 +468,7 @@ foreach $fn ( @generalrc ) {
 }
 foreach $fn ( @resources ) {
   chomp($fn);
+  next if ( $mingcm && "$fn" eq "post_egcm_diag.rc" );
   if ( "$fn" eq "dyn_recenter.rc" ) {
     if ( $dosppt ) {
        cp("$FVROOT/etc/atmens/dyn_recenter_l${agcm_lm}_sppt.rc","$AENSHOME/$fn");
@@ -523,6 +537,9 @@ if ( $doose ) {
 }
 ed_g5fvlay_rc ("$AENSHOME");
 
+# minimal GCM: physics/chemistry off, minimal history
+ed_mingcm ("$AENSHOME") if ( $mingcm );
+
 # take care of satbias acq
 ed_satbias_acq ("$AENSHOME");
 ed_aod4aens_acq ("$AENSHOME");
@@ -560,7 +577,7 @@ sub ed_agcm_rc {
         if($rcd =~ /\@BACM_1M_/)  {$rcd=~ s/\@BACM_1M_/ /g; }  # Bacmeister microphysics (wired)
         if($rcd =~ /\@GFDL_1M_/)  {$rcd=~ s/\@GFDL_1M_/#/g; }
         if($rcd =~ /\@GMGB2_2M_/) {$rcd=~ s/\@MGB2_2M_/#/g; }
-        if($rcd =~ /\@HIST_GOCART/) {$rcd=~ s/\@HIST_GOCART/ /g; }
+        if($rcd =~ /\@HIST_GOCART/) {$rcd=~ s/\@HIST_GOCART/($mingcm ? "#" : " ")/ge; }
         if($rcd =~ /\@CONVPAR_OPTION/)  {$rcd=~ s/\@CONVPAR_OPTION/GF/g; }
 
         if($rcd =~ /\@COUPLED/) {$rcd=~ s/\@COUPLED/#/g; } # wired for now
@@ -961,6 +978,96 @@ sub ed_g5fvlay_rc {
 
 }
 #......................................................................
+# Minimal GCM for low-resolution testing: skip physics children (see
+# DO_* switches in GEOS_PhysicsGridComp), turn off chemistry/aerosols
+# except PCHEM, and keep only the history needed by the DA cycle
+#......................................................................
+sub ed_mingcm {
+
+  my($mydir) = @_;
+  my(@keep) = qw( bkg.eta bkg.sfc );
+
+  edit_lines("$mydir/AGCM.rc.tmpl", sub {
+     s/^(\s*AERO_PROVIDER:\s*)\S+/${1}none/;
+     # no restarts/checkpoints for disabled chemistry children (PCHEM kept)
+     s/^(\s*)((GOCART|GOCART\.data|GOCART2G|DU|SS|SU|NI|CA\.\w+|ACHEM|TR|HEMCO|GAAS)_(INTERNAL|IMPORT)_(RESTART|CHECKPOINT)_(FILE|TYPE):)/$1#$2/;
+  });
+  append_lines("$mydir/AGCM.rc.tmpl",
+     "",
+     "# MINIMAL_GCM: physics children not run (GEOS_PhysicsGridComp)",
+     "DO_GWD:        0",
+     "DO_MOIST:      0",
+     "DO_TURBULENCE: 0",
+     "DO_SURFACE:    0",
+     "DO_CHEMISTRY:  0",
+     "DO_RADIATION:  0");
+
+  edit_lines("$mydir/CAP.rc.tmpl", sub {
+     s/^(\s*HEARTBEAT_DT:\s*)\d+/${1}$dt/;
+  });
+
+  edit_lines("$mydir/GEOS_ChemGridComp.rc", sub {
+     s/^(\s*ENABLE_(\w+):\s*)\.TRUE\./${1}.FALSE./i unless /ENABLE_PCHEM:/;
+  });
+
+  foreach $file ( qw( GSI_GridComp.rc.tmpl GSI_GridComp_ensfinal.rc.tmpl ) ) {
+     edit_lines("$mydir/$file", sub {
+        s/^(\s*chem_bkg_filename:\s*).*$/${1}NONE/;
+     });
+  }
+
+  keep_collections("$mydir/HISTAENS.rc.tmpl", @keep);
+  keep_collections("$mydir/post_egcm.rc",     @keep);
+
+}
+#......................................................................
+# apply a substitution (on $_) to each line of a file
+sub edit_lines {
+
+  my($file, $code) = @_;
+  my(@lines);
+
+  open(LUN,"$file") || die "Fail to open $file $!\n";
+  @lines = <LUN>;
+  close(LUN);
+  foreach (@lines) { &$code(); }
+  open(LUN,">$file") || die "Fail to open $file $!\n";
+  print LUN @lines;
+  close(LUN);
+}
+#......................................................................
+sub append_lines {
+
+  my($file, @add) = @_;
+
+  open(LUN,">>$file") || die "Fail to open $file $!\n";
+  foreach (@add) { print LUN "$_\n"; }
+  close(LUN);
+}
+#......................................................................
+# comment out entries of the COLLECTIONS list that are not in @keep
+sub keep_collections {
+
+  my($file, @keep) = @_;
+  my(%keep, $incoll);
+
+  %keep = map { $_ => 1 } @keep;
+  $incoll = 0;
+  edit_lines($file, sub {
+     if ( /^\s*COLLECTIONS:/ ) { $incoll = 1; }
+     return unless $incoll;
+     if ( /^\s*::/ ) { $incoll = 0; return; }
+     return if /^\s*#/;
+     if ( /'([^']+)'/ && ! $keep{$1} ) {
+        if ( /^(\s*COLLECTIONS:+)(.*)$/ ) {
+           $_ = "$1\n#$2\n";
+        } else {
+           s/^/#/;
+        }
+     }
+  });
+}
+#......................................................................
  
 sub build_lnbcs_yaml {
 
@@ -1058,6 +1165,8 @@ OPTIONS
      -fvhome       location of experiment home directory (default: \$expdir/\$expid)
      -acftbc BC    controls aircraft bias correction (0,1,2,or 3)
      -lsmcm        catchment option (only applicable when pointing to Icarus-NLv3)
+     -mingcm       minimal GCM: skip physics children, no chemistry/aerosols
+                   (except PCHEM), long time step at C12/C24, minimal history
      -nlevs  LEVS  number of atmospheric levels (default: 72)
      -nosppt       use to deactive SPPT scheme; use non-perturbed members
      -ose          set up ensemble as an OSE-type experiment (NOT ALL READY YET)

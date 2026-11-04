@@ -343,6 +343,7 @@
 # 2022,2024 sqz        Additions for LADAS 
 # 2025      sqz        integrated setup for LADAS 
 # 03Nov2026 Yu         C12/C24 (main and hybrid ensemble); alternative BCs via REAL TIME BCS
+# 03Nov2026 Yu         MINIMAL_GCM env: physics children off, no chemistry, minimal history
 #-------------------------------------------------------------------------
 use Cwd qw(abs_path cwd);
 use English;
@@ -3872,6 +3873,7 @@ EOF
   $flags .= " -fvhome $fvhome" if $checkFLG;
   $flags .= " -ldasflg $ldas_flag";
   $flags .= " " . usr_bcs_flags();
+  $flags .= " -mingcm" if ( mingcm_on() );
   $params = " $aens_ana $expid $aens_im $aens_jm $aens_ocn $landbcs"; 
 
   $cmd = "$fvbin/setup_atmens.pl -nodename $nodeflg $flags $params";
@@ -3889,6 +3891,14 @@ EOF
   $replace{">>>LDAS_ANA<<<"} = $ldas_ana;
   $replace{">>>LDHOME4ENS<<<"} = "$ldashome4ens";
   $replace{">>>NCPUS_PER_NODE<<<"} = "$ncpus_per_node";
+  # ensemble driver job size: the heavy steps run as separate jobs
+  if ( $aens_im <= 24 ) {   # C12/C24
+     $replace{">>>AENS_NTASKS<<<"}    = "24";
+     $replace{">>>AENS_WALLCLOCK<<<"} = "0:20:00";
+  } else {
+     $replace{">>>AENS_NTASKS<<<"}    = "96";
+     $replace{">>>AENS_WALLCLOCK<<<"} = "6:00:00";
+  }
 
   $atm_ens_j = "$fvhome/run/atm_ens.j";
   $atm_ens_j_tilde = "${atm_ens_j}~";
@@ -8180,7 +8190,8 @@ if ( $fvchem && $lm > 2 ) {
 
 # Batch wall-clock time setting
 #------------------------------
- if    ($dbqueue)                       { $daswallclk = "1:00" }
+ if    ($res eq "C12" or $res eq "C24") { $daswallclk = "0:20" }
+ elsif ($dbqueue)                       { $daswallclk = "1:00" }
  elsif ($hres eq "d" or $res eq "C180") { $daswallclk = "3:00" }
  elsif ($hres eq "e" or $res eq "C360") { $daswallclk = "3:00" }
  else                                   { $daswallclk = "3:00" }
@@ -10343,10 +10354,13 @@ sub init_agcm_rc {
     AGCM_label_subst("\@MP_MG1", "#");
     AGCM_label_subst("\@MP_GFDL", "#");
 
-    if ( $aero == "GOCART2G" ) {
+    if ( $aero eq "GOCART2G" ) {
        AGCM_label_subst("\@HIST_GOCART", "");
     } else {
        AGCM_label_subst("\@HIST_GOCART", "#");
+    }
+    if ( mingcm_on() ) {
+        AGCM_label_subst("\@HIST_GOCART", "#");
     }
 
     AGCM_label_subst("\@NX", $nx);
@@ -11542,6 +11556,94 @@ sub neg {
 }
 
 #=======================================================================
+# MINIMAL_GCM is on only when set to a positive integer; unset, empty or
+# 0 means off; any other value is an error
+#=======================================================================
+sub mingcm_on {
+    my $val = $ENV{"MINIMAL_GCM"};
+
+    return 0 unless ( defined($val) and $val ne "" and $val ne "0" );
+    return 1 if ( $val =~ /^[1-9]\d*$/ );
+    die ">>> ERROR <<< MINIMAL_GCM=$val is invalid; use 1 (on) or 0/unset (off)";
+}
+
+#=======================================================================
+# MINIMAL_GCM: for low-resolution testing, skip the physics children
+# (DO_* switches read by GEOS_PhysicsGridComp), turn off chemistry and
+# aerosols (except PCHEM), and keep only the history the DA cycle needs
+#=======================================================================
+sub ed_mingcm {
+    my ($dir, $file, @keep, @files, $cmd);
+
+    print "\n  NOTE: MINIMAL_GCM=$ENV{MINIMAL_GCM} found in environment; setting up minimal GCM\n\n";
+
+    foreach $dir ( "run", "fcst" ) {
+        foreach $file ( "AGCM.rc.tmpl", "AGCM.BOOTSTRAP.rc.tmpl" ) {
+            next unless -e "$fvhome/$dir/$file";
+            edit_lines("$fvhome/$dir/$file", sub {
+                s/^(\s*AERO_PROVIDER:\s*)\S+/${1}none/;
+                # no restarts/checkpoints for disabled chemistry children (PCHEM kept)
+                s/^(\s*)((GOCART|GOCART\.data|GOCART2G|DU|SS|SU|NI|CA\.\w+|ACHEM|TR|HEMCO|GAAS)_(INTERNAL|IMPORT)_(RESTART|CHECKPOINT)_(FILE|TYPE):)/$1#$2/;
+            });
+            open(LUN, ">>$fvhome/$dir/$file") or die "Cannot append to $fvhome/$dir/$file: $!";
+            print LUN "\n# MINIMAL_GCM: physics children not run (GEOS_PhysicsGridComp)\n"
+                .     "DO_GWD:        0\n"
+                .     "DO_MOIST:      0\n"
+                .     "DO_TURBULENCE: 0\n"
+                .     "DO_SURFACE:    0\n"
+                .     "DO_CHEMISTRY:  0\n"
+                .     "DO_RADIATION:  0\n";
+            close(LUN);
+        }
+        $file = "$fvhome/$dir/GEOS_ChemGridComp.rc";
+        if ( -e $file ) {
+            edit_lines($file, sub {
+                s/^(\s*ENABLE_\w+:\s*)\.TRUE\./${1}.FALSE./i unless /ENABLE_PCHEM:/;
+            });
+        }
+    }
+
+    # GSI: no chemistry background
+    #-----------------------------
+    foreach $file ( <$fvhome/run/GSI_GridComp*.rc.tmpl> ) {
+        edit_lines($file, sub {
+            s/^(\s*chem_bkg_filename:\s*).*$/${1}NONE/;
+        });
+    }
+
+    # minimal history: backgrounds for the DA cycle; prognostics for forecasts
+    #-------------------------------------------------------------------------
+    @keep = qw( bkg.eta bkg.sfc );
+    push @keep, "traj.lcv"                         if ( $varcase == 4 );
+    push @keep, "bkg_clcv_rst", "extbkg_clcv_rst"  if ( $ENV{"GEOSJEDI"} );
+    $cmd = "$fvbin/edhist.pl $fvhome/run/HISTORY.rc.tmpl -i -Xall -I " . join(",", @keep);
+    print "$cmd\n";
+    system($cmd);
+
+    if ( -e "$fvhome/fcst/HISTORY.rc.tmpl" ) {
+        $cmd = "$fvbin/edhist.pl $fvhome/fcst/HISTORY.rc.tmpl -i -Xall -I prog.eta,prog.sfc";
+        print "$cmd\n";
+        system($cmd);
+    }
+}
+
+#=======================================================================
+# apply a substitution (on $_) to each line of a file
+#=======================================================================
+sub edit_lines {
+    my ($file, $code) = @_;
+    my (@lines);
+
+    open(LUN, "< $file") or die "Cannot open $file: $!";
+    @lines = <LUN>;
+    close(LUN);
+    foreach (@lines) { &$code() }
+    open(LUN, "> $file") or die "Cannot write $file: $!";
+    print LUN @lines;
+    close(LUN);
+}
+
+#=======================================================================
 sub edit_resources {
   my ($proot);
   my ($cpfile, $cpdir, $target);
@@ -11557,6 +11659,8 @@ sub edit_resources {
           init_agcm_pert_rc("fcst");
           ed_g5agcm_pert_rc("fcst");
       }
+
+      ed_mingcm() if ( mingcm_on() );
   }
 
   if( $DAO == 1) { $proot = "-m $mhost -s local "; }

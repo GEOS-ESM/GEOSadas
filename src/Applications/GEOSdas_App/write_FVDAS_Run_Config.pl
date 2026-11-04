@@ -5,7 +5,7 @@
 # revision history
 # 30Apr2009  Stassi  initial version
 # 28Aug2009  Stassi  Update for pleiades
-# 03Nov2026  Yu      Write ZERO_OBS when set in the environment
+# 03Nov2026  Yu      Write ZERO_OBS and MINIMAL_GCM when set in the environment
 #=======================================================================
 use strict;
 
@@ -26,7 +26,7 @@ my ($FVSHARE, $SHARE, $REM_GRADS_CONFIG, $G5MGRAM, $LATS4DLOC, $FVBIN,
 my ($FVROOT_PORTAL, $RC_LOC, $RTAG, $ANAID, $CASE, $ERR, $ERROR_EXP,
     $FCHOME, $FCSTAGE, $FERR, $FVDOLMS, $FVGROUP, $FVPLOTS, $FVSCRA,
     $FVSILO, $FVSPOOL, $FVSTAGE, $FVWORK, $GRADS_CONFIG, $LIBSZ, $MONTHLY_X);
-my ($ACFTBIAS, $NEWRADBC, $ZERO_OBS);
+my ($ACFTBIAS, $NEWRADBC, $ZERO_OBS, $MINIMAL_GCM);
 my (%vv);
 
 # main program
@@ -115,6 +115,7 @@ sub init {
     $VTXLEVS           = $ENV{"VTXLEVS"};
     $VTXRELOC          = $ENV{"VTXRELOC"};
     $ZERO_OBS          = $ENV{"ZERO_OBS"};
+    $MINIMAL_GCM       = $ENV{"MINIMAL_GCM"};
 
     $AOD_OBSCLASS = "none" unless $AOD_OBSCLASS;
 
@@ -356,6 +357,12 @@ sub writefile {
     if ( $ZERO_OBS ) {
         print RUNCONF "# Zero-observation DA: GSI with empty obs table; ensemble observer/EnKF skipped\n";
         print RUNCONF "if ( !(\$?ZERO_OBS) ) setenv ZERO_OBS 1\n";
+    }
+    if ( defined($MINIMAL_GCM) and $MINIMAL_GCM ne "" and $MINIMAL_GCM ne "0" ) {
+        die ">> ERROR << MINIMAL_GCM=$MINIMAL_GCM is invalid; use 1 (on) or 0/unset (off)"
+            unless $MINIMAL_GCM =~ /^[1-9]\d*$/;
+        print RUNCONF "# Minimal GCM: physics children off, no chemistry/aerosols, minimal history\n";
+        print RUNCONF "if ( !(\$?MINIMAL_GCM) ) setenv MINIMAL_GCM 1\n";
     }
 
     print RUNCONF "\numask 022\n";
