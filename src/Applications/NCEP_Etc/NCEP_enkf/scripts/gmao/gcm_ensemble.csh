@@ -30,6 +30,7 @@
 #  03May2020  Todling   Logic not to over-subscribe node
 #  22Jun2020  Todling   Add ability to run a control member (also cleaned up)
 #  26Oct2024  Todling   Implement slurm array distribution opt
+#  04Nov2026  Yu        Failed GCM batch jobs touch ENSWORK/.FAILED (see jobmonitor)
 #-------------------------------------------------------------------------------------
 
 if ( !($?ATMENS_VERBOSE) ) then
@@ -236,6 +237,8 @@ set nmem = $members[1]
 cd  $ENSWORK
 touch .no_archiving
 
+if ( -e $ENSWORK/.FAILED ) /bin/rm $ENSWORK/.FAILED   # otherwise it doesn't rerun
+
 @ bkgfreq_hr  =  $ASYNBKG / 60
 @ bkgfreq_mn  =  $ASYNBKG - $bkgfreq_hr * 60
 set bkgfreq_hh = `echo $bkgfreq_hr |awk '{printf "%02d", $1}'`
@@ -354,7 +357,7 @@ if ( -d $ENSWORK/ensctrl ) then
       if( $ENSPARALLEL ) then
     
           jobgen.pl \
-               -egress EGRESS -q $AGCM_QNAME \
+               -egress EGRESS -q $AGCM_QNAME -fail $ENSWORK/.FAILED \
                -xc "update_ens.csh $expid ensctrl bkg $ENSWORK/ensctrl NULL $NCSUFFIX" \
                agcm_ensctrl          \
                $GID                  \
@@ -490,7 +493,7 @@ if(! -e .DONE_ENSFCST ) then
              endif
 
              jobgen.pl \
-                  -egress EGRESS -q $AGCM_QNAME $machfile \
+                  -egress EGRESS -q $AGCM_QNAME $machfile -fail $ENSWORK/.FAILED \
                   -xc "update_ens.csh $expid mem$memtag bkg $ENSWORK/mem${memtag} NULL $NCSUFFIX" \
                   agcm_mem${memtag}     \
                   $GID                  \
@@ -517,7 +520,7 @@ if(! -e .DONE_ENSFCST ) then
                    if ( ($npoe == $nmem) || ($fpoe == $ntodo) ) then
                       cd $ENSWORK
                       jobgen.pl \
-                           -egress EGRESS -q $AGCM_QNAME \
+                           -egress EGRESS -q $AGCM_QNAME -fail $ENSWORK/.FAILED \
                            ${pfxname}agcm_array.$hhzddmmyyyy \
                            $GID                   \
                            -array "1-$nmem%${AENS_GCM_DSTJOB}" -ncc \
@@ -544,7 +547,7 @@ if(! -e .DONE_ENSFCST ) then
                       setenv JOBGEN_NCPUS $mydist[1]
                       setenv JOBGEN_NCPUS_PER_NODE $mydist[2]
                       jobgen.pl \
-                           -q $AGCM_QNAME \
+                           -q $AGCM_QNAME -fail $ENSWORK/.FAILED \
                            agcm_dst${npoe}     \
                            $GID                \
                            $AGCM_WALLCLOCK    \

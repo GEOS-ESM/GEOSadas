@@ -11,6 +11,7 @@
 #  30Mar2017 Todling  Hack to fix env that looks for missing lib under messed up NCCS batch system
 #  21Feb2020 Todling  Allow for high freq bkg (up to 1mn)
 #  25Oct2024 Todling  Handling slurm array (and packable jobs)
+#  04Nov2026 Yu       Add -fail opt (file to touch when job fails)
 #-----------------------------------------------------------------------------------------------------
 
 use Env;                 # make env vars readily available
@@ -32,6 +33,7 @@ my $scriptname = basename($0);
   GetOptions ( "array=s",
                "egress=s",
                "expid=s",
+               "fail=s",
                "q=s",
                "proc=s",
                "machfile=s",
@@ -106,6 +108,12 @@ sub init {
 
    $check_completion = 1;
    if ( $opt_ncc ) {$check_completion = 0;}
+
+   if ( $opt_fail ) {
+      $failcommand = "touch $opt_fail";
+   } else {
+      $failcommand = "";
+   }
 
 # FVROOT is where the binaries have been installed
 # ------------------------------------------------
@@ -326,6 +334,7 @@ EOF
  print  SCRIPT <<"EOF";
  if ( ! -e $opt_egress ) then 
       echo " ${whocalled}: ${failedmsg}, Aborting ... "
+      $failcommand
       exit(1)
  endif
 EOF
@@ -333,6 +342,7 @@ EOF
  print  SCRIPT <<"EOF";
  if ( \$status ) then 
       echo " ${whocalled}: ${failedmsg}, Aborting ... "
+      $failcommand
       exit(1)
  endif
 EOF
@@ -490,6 +500,7 @@ OPTIONS
      -array    X   slurm array distribution (w/ or w/o packable)
      -egress   X   specify file to watch for completion of job (e.g., EGRESS for GCM)
      -expid    X   experiment name
+     -fail     X   file to touch when job fails (e.g., \$ENSWORK/.FAILED for jobmonitor)
      -ncc          no check completion (run regardless whether completed before)
      -packable     slurm packable distribution (must include array opt)
      -q            specify pbs queue (e.g., datamove when archiving)

@@ -3894,7 +3894,7 @@ EOF
   # ensemble driver job size: the heavy steps run as separate jobs
   if ( $aens_im <= 24 ) {   # C12/C24
      $replace{">>>AENS_NTASKS<<<"}    = "24";
-     $replace{">>>AENS_WALLCLOCK<<<"} = "0:20:00";
+     $replace{">>>AENS_WALLCLOCK<<<"} = "0:40:00";
   } else {
      $replace{">>>AENS_NTASKS<<<"}    = "96";
      $replace{">>>AENS_WALLCLOCK<<<"} = "6:00:00";

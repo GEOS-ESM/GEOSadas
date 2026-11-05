@@ -12,6 +12,8 @@
 #  08Jun2020 Todling  Export mp_stats_perts
 #  03Nov2026 Yu       Add C12/C24 layouts; add -rtbcs/-bcsdir options
 #  03Nov2026 Yu       Add -mingcm (minimal GCM for low-resolution testing)
+#  04Nov2026 Yu       Scale sppt_lscale for C12/C24
+#  04Nov2026 Yu       Add ed_wallclock_rc; short sub-job wallclocks for C12/C24
 #
 #-----------------------------------------------------------------------------------------------------
 
@@ -532,6 +534,8 @@ ed_obsv_rc ("$AENSHOME");
 ed_enkf_rc ("$AENSHOME");
 ed_stat_rc ("$AENSHOME");
 ed_conf_rc ("$AENSHOME","AtmEnsConfig.csh");
+# short sub-job wallclocks for low resolution (C12/C24)
+ed_wallclock_rc ("$AENSHOME","AtmEnsConfig.csh","0:15:00") if ( $agcm_im <= 24 );
 if ( $doose ) {
    ed_conf_rc("$AOSEHOME","AtmOSEConfig.csh");
 }
@@ -539,6 +543,9 @@ ed_g5fvlay_rc ("$AENSHOME");
 
 # minimal GCM: physics/chemistry off, minimal history
 ed_mingcm ("$AENSHOME") if ( $mingcm );
+
+# SPPT length scales for low resolution (C12/C24)
+ed_stoch_rc ("$AENSHOME") if ( $dosppt );
 
 # take care of satbias acq
 ed_satbias_acq ("$AENSHOME");
@@ -981,6 +988,38 @@ sub ed_g5fvlay_rc {
 # Minimal GCM for low-resolution testing: skip physics children (see
 # DO_* switches in GEOS_PhysicsGridComp), turn off chemistry/aerosols
 # except PCHEM, and keep only the history needed by the DA cycle
+#......................................................................
+# default sppt_lscale (500/1000/2000 km) is tuned for T62 and finer; scale it
+# with the stochastic-pattern truncation (C24: T31 x2, C12: T15 x4)
+sub ed_stoch_rc {
+
+  my($mydir) = @_;
+  my($lscale);
+
+  if ( $agcm_im == 24 ) {
+     $lscale = "sppt_lscale(1)=1000000,sppt_lscale(2)=2000000,sppt_lscale(3)=4000000.,";
+  } elsif ( $agcm_im == 12 ) {
+     $lscale = "sppt_lscale(1)=2000000,sppt_lscale(2)=4000000,sppt_lscale(3)=8000000.,";
+  } else {
+     return;
+  }
+
+  edit_lines("$mydir/aens_stoch.rc", sub {
+     s/sppt_lscale\(1\)=[^,]*,\s*sppt_lscale\(2\)=[^,]*,\s*sppt_lscale\(3\)=[^,]*,/$lscale/;
+  });
+
+}
+#......................................................................
+# set all sub-job wallclocks (except archiving) in an atmens config file
+sub ed_wallclock_rc {
+
+  my($mydir,$file,$wallclock) = @_;
+
+  edit_lines("$mydir/$file", sub {
+     s/^(\s*setenv\s+\w+_WALLCLOCK\s+)\S+/${1}${wallclock}/ unless /ENSARCH_WALLCLOCK/;
+  });
+
+}
 #......................................................................
 sub ed_mingcm {
 
