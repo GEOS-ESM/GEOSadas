@@ -56,48 +56,8 @@ models:
 
     # Which observations do you want to include?
     observations:
-    - abi_g16
-    - abi_g18
-    - abi_g19
     - aircraft
-    - airs_aqua
-    - amsr2_gcom-w1
-    - amsua_aqua
-    - amsua_metop-b
-    - amsua_metop-c
-    - amsua_n15
-    - amsua_n18
-    - amsua_n19
-    - atms_n20
-    - atms_n21
-    - atms_npp
-    - avhrr3_metop-b
-    - avhrr3_metop-c
-    - avhrr3_n18
-    - avhrr3_n19
-    - cris-fsr_n20
-    - cris-fsr_n21
-    - cris-fsr_npp
-    - gmi_gpm
-    - gps
-    - iasi_metop-b
-    - iasi_metop-c
-    - mhs_metop-b
-    - mhs_metop-c
-    - mhs_n19
-    - mls55_aura
-    - omi_aura
-    - omieff_aura
-    - ompslpnc_n21
-    - ompslpnc_npp
-    - ompsnm_npp
-    - pibal
-    - satwind
-    - scatwind
-    - sfcship
-    - sfc
-    - sondes
-    - ssmis_f17
+    - amsua_n19     # to bypass and generate bias in GsiBcToIoda
 
     # When running the ncdiag to ioda converted do you want to produce GeoVaLs files?
     produce_geovals: false
