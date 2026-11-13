@@ -122,7 +122,7 @@ cost function:
         covariance model: SABER
         covariance type: gsi hybrid covariance
         saber central block:
-          saber block name: gsi static covariance
+          saber block name: gsi hybrid covariance
           read:
             debugging mode: false
             gsi akbk: ./fv3-jedi/fv3files/akbk@JEDI_BKG_VRES.nc4

@@ -187,7 +187,7 @@ cost function:
             processor layout x direction: @JEDI_VAR_GSIXLAYOUT 
             processor layout y direction: @JEDI_VAR_GSIYLAYOUT
 #         saber block name: gsi covariance
-          saber block name: gsi static covariance
+          saber block name: gsi hybrid covariance
 
         saber outer blocks:
         - saber block name: interpolation
