@@ -369,6 +369,22 @@ sub init {
      }
      $gsibec_lat =  91;
      $gsibec_lon = 144;
+  } elsif ( $cres == 25 ) {
+       $varxlayout = 4;
+       $varylayout = 4;
+       $gsixlayout = 4;
+       $gsiylayout = 6 * $gsixlayout;
+       $perhost_var = 96;
+     $gsibec_lat =  46;
+     $gsibec_lon = 72;
+  } elsif ( $cres == 13 ) {
+       $varxlayout = 2;
+       $varylayout = 2;
+       $gsixlayout = 2;
+       $gsiylayout = 6 * $gsixlayout;
+       $perhost_var = 24;
+     $gsibec_lat =  46;
+     $gsibec_lon = 72;
   } else {
      die "Unknown resolution settings, aborting ... \n";
   }

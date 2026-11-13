@@ -71,7 +71,8 @@ GMAO_perllib:
 MAPL:
   local: ./src/Shared/@MAPL
   remote: ../MAPL.git
-  tag: v2.57.2
+#  tag: v2.57.2
+  tag: feature/ygyu/v2.57.2_FieldBundleRead
   develop: develop
 
 GEOSldas_GridComp:

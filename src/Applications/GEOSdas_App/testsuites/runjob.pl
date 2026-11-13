@@ -87,8 +87,8 @@ sub init {
 
     # these values are set with sed substitution during build
     #--------------------------------------------------------
-    $codeID = "@GIT_TAG_OR_REV@";
-    $fvsetupID = "@fvID@";
+    $codeID = '@GIT_TAG_OR_REV@';
+    $fvsetupID = '@fvID@';
     $ESMABIN = "$FindBin::Bin";
     $ESMATST = "$FindBin::Bin/../etc/testsuites";
     die ">> Error << $ESMABIN is not a directory;" unless -d $ESMABIN;

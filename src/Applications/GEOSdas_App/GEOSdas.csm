@@ -6192,7 +6192,7 @@ endif
     set lstextcrst = `ls $EXPID.extbkg_clcv_rst.*$NCSUFFIX`
     if ( ${%lstextcrst}  ) then
        tar -rf $FVWORK/$EXPID.bkgcrst.${rtag3}.tar $lstextcrst
-       /bin/rm $lstbkgcrst
+       /bin/rm $lstextcrst
     endif
     if ( $DO4DIAU ) then
        set lstagcmrst = `ls $EXPID.agcm_import_rst.*$NCSUFFIX`

@@ -179,7 +179,7 @@ models:
     - 50
 
     # How many members comprise the ensemble?
-    ensemble_num_members: 32
+    ensemble_num_members: 2
 
     # What is the path to the Swell Static files directory?
     swell_static_files: $JEDI_STATIC_FILES

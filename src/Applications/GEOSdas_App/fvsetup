@@ -3737,7 +3737,6 @@ EOF
 sub set_geosjedi {
 
   if ( ! $ENV{GEOSJEDI} ) { return 0 };
-
   $nogsi = " ";
   if ( $skipgsi ) { 
      $nogsi = "-nogsi";
@@ -11612,13 +11611,18 @@ sub ed_mingcm {
     }
 
     # minimal history: backgrounds for the DA cycle; prognostics for forecasts
+    # (extbkg_clcv_rst is not kept: it needs GOCART2G aerosols, which are off here)
     #-------------------------------------------------------------------------
     @keep = qw( bkg.eta bkg.sfc );
-    push @keep, "traj.lcv"                         if ( $varcase == 4 );
-    push @keep, "bkg_clcv_rst", "extbkg_clcv_rst"  if ( $ENV{"GEOSJEDI"} );
+    push @keep, "traj.lcv"      if ( $varcase == 4 );
+    push @keep, "bkg_clcv_rst"  if ( $ENV{"GEOSJEDI"} );
     $cmd = "$fvbin/edhist.pl $fvhome/run/HISTORY.rc.tmpl -i -Xall -I " . join(",", @keep);
     print "$cmd\n";
     system($cmd);
+
+    # GOCART is off: drop its fields (e.g. GOCART::CO2 in bkg_clcv_rst)
+    #-------------------------------------------------------------------
+    edit_lines("$fvhome/run/HISTORY.rc.tmpl", sub { $_ = "" if /'GOCART::/; });
 
     if ( -e "$fvhome/fcst/HISTORY.rc.tmpl" ) {
         $cmd = "$fvbin/edhist.pl $fvhome/fcst/HISTORY.rc.tmpl -i -Xall -I prog.eta,prog.sfc";
