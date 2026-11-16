@@ -382,7 +382,7 @@ my $SECS_PER_DAY = $SECS_PER_HR * $HRS_PER_DAY;
 my ($res, $hres);
 my ($g5hist_rc, $g5prog_rc);
 my ($gocart_tracers, $radcor, $emiss, $lsmodel_flag, $ldas_flag, $rroute_flag);
-my ($agcm_rst_flg, $sensdeg, %setupfile, @otherheaders);
+my ($agcm_rst_flg, $sensdeg, %setupfile, @otherheaders, $jedistatic);
 my ($checkFLG, $dbqueue, $runjobFLG, $saveFLG, $stopFLG);
 my (@fvprompt, @fvANS1, @fvANS2, $fvsetupflags);
 my ($fvhome, $fvroot, $fvbin, $bindir, $pwdL, $pwdP, $checkID, $siteID);
@@ -712,6 +712,8 @@ sub set_inputparams {
 #               =3 for third-deg sensitivity test
 # => check:     use when calling fvsetup from the checkinput script
 # => header=s:  header for input file
+# => jedistatic=s: JEDI static-files directory passed to setup_aanajedi.pl
+#                  (default there: /discover/nobackup/projects/gmao/advda/SwellStaticFiles)
 # => setupfile: file to copy to expid directory (set note below)
 # => runjob:    use when calling fvsetup from the runjob script
 # => save:      default value for $saveFLG used in write_saved_inputs()
@@ -741,15 +743,16 @@ sub get_runtime_values {
         $fvsetupflags .= " $_";
     }
 
-    GetOptions( "agcm"        => \$agcm_rst_flg,
-                "sensdeg=i"   => \$sensdeg,
-                "check"       => \$checkFLG,
-                "dbqueue|dbq" => \$dbqueue,
-                "header=s"    => \@otherheaders,
-                "setupfile=s" => \%setupfile,
-                "runjob"      => \$runjobFLG,
-                "save=i"      => \$saveFLG,
-                "stop"        => \$stopFLG);
+    GetOptions( "agcm"         => \$agcm_rst_flg,
+                "sensdeg=i"    => \$sensdeg,
+                "check"        => \$checkFLG,
+                "dbqueue|dbq"  => \$dbqueue,
+                "header=s"     => \@otherheaders,
+                "jedistatic=s" => \$jedistatic,
+                "setupfile=s"  => \%setupfile,
+                "runjob"       => \$runjobFLG,
+                "save=i"       => \$saveFLG,
+                "stop"         => \$stopFLG);
     $sensdeg = 1 unless ($sensdeg and $sensdeg eq "3");
     $runjobFLG = 1 if $checkFLG;
     $saveFLG = 1 unless $saveFLG == 2;
@@ -3755,6 +3758,10 @@ sub set_geosjedi {
      $xtra4jedi = "-ensrpy $jedi_ensrpy -exprpy $jedi_exprpy";
   }
   $jediopts = "-fvhome $fvhome -iodadir $iodadir -archive $acqloc -gcmres $agcm_im $nogsi $xtra4jedi";
+  if ( $jedistatic ) {
+     die ">>> ERROR <<< JEDI static directory not found: $jedistatic\n" unless ( -d $jedistatic );
+     $jediopts .= " -jedistatic $jedistatic";
+  }
 
   if ( $ENV{JEDI_ATMVAR_SCHEME} ) {
       $jedivar = $ENV{JEDI_ATMVAR_SCHEME};
