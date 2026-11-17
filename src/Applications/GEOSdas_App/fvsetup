@@ -5269,6 +5269,8 @@ EOF
        $ogcmrdt = $irraddt;
        $ana_im = 48; #$agcm_im * 4;
        $ana_jm = 25; #$agcm_im * 2 + 1;
+#       $ana_im = 72;
+#       $ana_jm = 46;
        $hist_im = $ana_im;
        $hist_jm = $ana_jm;
        $histc_im = $ana_im;
@@ -5304,6 +5306,8 @@ EOF
        $ogcmrdt = $irraddt;
        $ana_im = 96; #$agcm_im * 4;
        $ana_jm = 49; #$agcm_im * 2 + 1;
+#       $ana_im = 72;
+#       $ana_jm = 46;
        $hist_im = $ana_im;
        $hist_jm = $ana_jm;
        $histc_im = $ana_im;
@@ -8249,10 +8253,11 @@ EOF
 }
 
 print SCRIPT <<"EOF";
-#SBATCH --job-name=$jobn
-#SBATCH --output=$jobn.log.o%j.txt
-#SBATCH --time=${daswallclk}:00
+##SBATCH --job-name=$jobn
+##SBATCH --output=$jobn.log.o%j.txt
+##SBATCH --time=${daswallclk}:00
 #SBATCH --no-requeue
+EOF
 }
 
 if ($dbqueue) {
