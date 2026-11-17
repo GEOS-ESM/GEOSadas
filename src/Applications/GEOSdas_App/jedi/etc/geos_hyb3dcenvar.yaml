@@ -309,7 +309,7 @@ output:
   provider: geos
 variational:
   iterations:
-  - ninner: '100'
+  - ninner: '1'
     diagnostics:
       departures: ombg
     geometry:

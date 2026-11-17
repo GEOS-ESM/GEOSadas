@@ -8196,7 +8196,7 @@ if ( $fvchem && $lm > 2 ) {
 
 # Batch wall-clock time setting
 #------------------------------
- if    ($res eq "C12" or $res eq "C24") { $daswallclk = "0:20" }
+ if    ($res eq "C12" or $res eq "C24") { $daswallclk = "0:30" }
  elsif ($dbqueue)                       { $daswallclk = "1:00" }
  elsif ($hres eq "d" or $res eq "C180") { $daswallclk = "3:00" }
  elsif ($hres eq "e" or $res eq "C360") { $daswallclk = "3:00" }
