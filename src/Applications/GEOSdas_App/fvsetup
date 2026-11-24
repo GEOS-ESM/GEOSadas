@@ -344,6 +344,7 @@
 # 2025      sqz        integrated setup for LADAS 
 # 03Nov2026 Yu         C12/C24 (main and hybrid ensemble); alternative BCs via REAL TIME BCS
 # 03Nov2026 Yu         MINIMAL_GCM env: physics children off, no chemistry, minimal history
+# 18Nov2026 Yu         get_jedi_info: GEOSJEDI, jedi_ens_scheme (EDA/GETKF), jedi_ens_member
 #-------------------------------------------------------------------------
 use Cwd qw(abs_path cwd);
 use English;
@@ -632,6 +633,12 @@ $ENV{"PATH"} = $FindBin::Bin .":$ENV{PATH}";
   print "$cmd\n";
   system($cmd);
 
+# JEDI options: these must be the last query() calls, so that older
+# input files (which end before these prompts) replay unchanged
+# ------------------------------------------------------------------
+  get_jedi_info();
+  set_jedi_atmens();
+
 # Save inputs
 # -----------
   save_inputs();
@@ -761,6 +768,10 @@ sub get_runtime_values {
 #=======================================================================
 sub defaults {
 
+  # GEOSJEDI comes from the environment only (see get_jedi_info)
+  #-------------------------------------------------------------
+  $GEOSJEDI = ( exists $ENV{"GEOSJEDI"} ) ? $ENV{"GEOSJEDI"} : 0;
+
   # get these files from AGCMrc package
   #------------------------------------
   @rs5_core     = AGCM_rsts("rs5_core");
@@ -858,7 +869,7 @@ sub defaults {
                    vtrack.rc
                    vtx.ctl.tmpl );
 
-  if ( $ENV{"GEOSJEDI"} ) {
+  if ( $GEOSJEDI ) {
      @a3dvr_files = qw ( Chem_Registry_apert.rc
                          GSI_GridComp.rc.tmpl
                          jedi_gsi.rc.tmpl
@@ -3739,7 +3750,7 @@ EOF
 #=======================================================================
 sub set_geosjedi {
 
-  if ( ! $ENV{GEOSJEDI} ) { return 0 };
+  if ( ! $GEOSJEDI ) { return 0 };
   $nogsi = " ";
   if ( $skipgsi ) { 
      $nogsi = "-nogsi";
@@ -3781,6 +3792,94 @@ sub set_geosjedi {
 
   return 0 ;
 }
+
+#=======================================================================
+# name - get_jedi_info
+# purpose - record the JEDI choices; prompt only if GEOSJEDI is in the env
+#
+# Notes:
+# 1. These must be the LAST query() calls in fvsetup, so that older input
+#    files (which end before these prompts) replay unchanged: when the
+#    input runs out, query() takes the default.
+# 2. GEOSJEDI is never overridden: the answer must equal $ENV{GEOSJEDI};
+#    after 3 mismatches fvsetup aborts.
+#=======================================================================
+sub get_jedi_info {
+    my ($ans, $try);
+
+    $GEOSJEDI_def    = 0;
+    $jedi_ens_scheme = 1;      # 1: EDA, 2: GETKF
+    $jedi_ens_member = 32;
+
+    return 0 unless exists $ENV{"GEOSJEDI"};
+    $GEOSJEDI_def = $ENV{"GEOSJEDI"};
+
+    print <<"EOF";
+
+-----------------
+GEOS-JEDI Options
+-----------------
+
+EOF
+
+    for $try (1..3) {
+        $ans = query("  GEOSJEDI = 1:JEDI or 0:GSI (must match env)?", $GEOSJEDI_def);
+        last if $ans eq $GEOSJEDI_def;
+
+        # do not save the rejected answer
+        pop @fvprompt; pop @fvANS1; pop @fvANS2;
+        print "\n  WARNING ($try/3): GEOSJEDI is set in your environment to '$GEOSJEDI_def'.\n"
+            .   "  Accept the default (press <Enter>) or enter the same value: $GEOSJEDI_def\n\n";
+        die ">>> ERROR <<< GEOSJEDI answer must equal \$ENV{GEOSJEDI}='$GEOSJEDI_def'; aborting\n"
+            if $try == 3;
+    }
+    $GEOSJEDI = $GEOSJEDI_def;
+
+    $jedi_ens_scheme = query("  jedi_ens_scheme = 1:EDA or 2:GETKF?", $jedi_ens_scheme);
+    die ">>> ERROR <<< jedi_ens_scheme must be 1 (EDA) or 2 (GETKF): $jedi_ens_scheme\n"
+        unless $jedi_ens_scheme =~ /^[12]$/;
+
+    $jedi_ens_member = query("  jedi_ens_member?", $jedi_ens_member);
+    die ">>> ERROR <<< jedi_ens_member must be a positive integer: $jedi_ens_member\n"
+        unless $jedi_ens_member =~ /^\d+$/ and $jedi_ens_member > 0;
+
+    return 0;
+}
+
+#=======================================================================
+# name - set_jedi_atmens
+# purpose - install the JEDI ensemble analysis (EDA or GETKF) settings;
+#           runs after get_jedi_info, once everything else is set up
+#=======================================================================
+sub set_jedi_atmens {
+    my (@enslist, $nens, $cmd, %ensyaml, $fn);
+
+    return 0 unless $GEOSJEDI;
+    return 0 if ( $hyb_ens < 3 );
+
+    %ensyaml = ( 1 => "jedi_eda.yaml", 2 => "jedi_getkf.yaml" );
+    foreach $fn ( "JEDIatmensConfig.csh", $ensyaml{$jedi_ens_scheme} ) {
+        die ">>> ERROR <<< cannot find $fvetc/jedi/$fn\n"
+          . "              re-run 'make install' in the build directory, then rerun fvsetup\n"
+            unless ( -e "$fvetc/jedi/$fn" );
+    }
+
+    @enslist = (<$fvhome/atmens/mem???>);
+    $nens = scalar(@enslist);
+    if ( $nens > 0 and $nens != $jedi_ens_member ) {
+        print "\n  WARNING: $nens ensemble members installed in $fvhome/atmens,"
+            . " but jedi_ens_member = $jedi_ens_member\n\n";
+    }
+
+    $cmd = "$fvbin/setup_aanajedi.pl $jedivar $expid $bjedi_im $vres $jediopts"
+        .  " -ensonly -ensscheme $jedi_ens_scheme -ensmem $jedi_ens_member -ensres $aens_im";
+    print "$cmd\n";
+    system($cmd) == 0
+        or die ">>> ERROR <<< setup_aanajedi.pl -ensonly failed\n";
+
+    return 0;
+}
+
 #=======================================================================
 sub set_atmens {
   my ($radbc, $src_arcdir, $prompt, $dflt);
@@ -3900,7 +3999,7 @@ EOF
   # ensemble driver job size: the heavy steps run as separate jobs
   if ( $aens_im <= 24 ) {   # C12/C24
      $replace{">>>AENS_NTASKS<<<"}    = "24";
-     $replace{">>>AENS_WALLCLOCK<<<"} = "0:40:00";
+     $replace{">>>AENS_WALLCLOCK<<<"} = "1:59:00";
   } else {
      $replace{">>>AENS_NTASKS<<<"}    = "96";
      $replace{">>>AENS_WALLCLOCK<<<"} = "6:00:00";
@@ -8200,7 +8299,7 @@ if ( $fvchem && $lm > 2 ) {
 
 # Batch wall-clock time setting
 #------------------------------
- if    ($res eq "C12" or $res eq "C24") { $daswallclk = "0:30" }
+ if    ($res eq "C12" or $res eq "C24") { $daswallclk = "1:59" }
  elsif ($dbqueue)                       { $daswallclk = "1:00" }
  elsif ($hres eq "d" or $res eq "C180") { $daswallclk = "3:00" }
  elsif ($hres eq "e" or $res eq "C360") { $daswallclk = "3:00" }
@@ -8438,7 +8537,7 @@ print  SCRIPT <<"EOF";
   setenv STAGE4HYBGSI  /dev/null
   setenv RSTSTAGE4AENS /dev/null
 EOF
-  if ( $ENV{GEOSJEDI} ) {
+  if ( $GEOSJEDI ) {
 print  SCRIPT <<"EOF";
   setenv NSEGS 1
   setenv NSTEP 1
@@ -11627,7 +11726,7 @@ sub ed_mingcm {
     #-------------------------------------------------------------------------
     @keep = qw( bkg.eta bkg.sfc );
     push @keep, "traj.lcv"      if ( $varcase == 4 );
-    push @keep, "bkg_clcv_rst"  if ( $ENV{"GEOSJEDI"} );
+    push @keep, "bkg_clcv_rst"  if ( $GEOSJEDI );
     $cmd = "$fvbin/edhist.pl $fvhome/run/HISTORY.rc.tmpl -i -Xall -I " . join(",", @keep);
     print "$cmd\n";
     system($cmd);

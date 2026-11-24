@@ -14,6 +14,6 @@ setenv JEDI_OBS_OPT 1          # 1= point to xexp-like set (data in tar-balls; d
                                # 3= generate on the fly based on GSI (nc4) diags (TBD)
 
 setenv SWELL_INSTALL /discover/nobackup/projects/gmao/advda/rtodling/JEDI1/2026/SWELL/Jul/
-setenv JEDI_ROOT /discover/nobackup/projects/gmao/advda/swell/JediBundles/fv3_soca_SLES15_08142026/build-intel-release/
+setenv JEDI_ROOT @JEDI_ROOT
 
 

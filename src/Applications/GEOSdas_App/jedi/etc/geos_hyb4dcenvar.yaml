@@ -472,7 +472,7 @@ output:
   field io names: *field_io_names
 variational:
   iterations:
-  - ninner: '50'
+  - ninner: '2'
     diagnostics:
       departures: ombg
     geometry:

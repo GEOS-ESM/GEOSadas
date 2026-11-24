@@ -250,7 +250,7 @@ output:
   field io names: *field_io_names
 variational:
   iterations:
-  - ninner: '50'
+  - ninner: '2'
     diagnostics:
       departures: ombg
     geometry:
@@ -317,7 +317,7 @@ variational:
 #           gridtype: latlon
 #           field io names: *field_io_names
 #     write increment: true
-  - ninner: '25'
+  - ninner: '2'
     diagnostics:
       departures: ombg
     geometry:

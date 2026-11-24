@@ -189,7 +189,7 @@ variational:
       npy: @JEDI_INC_1RES
       npz: @JEDI_BKG_VRES
     gradient norm reduction: 1e-3
-    ninner: '100'
+    ninner: '1'
     linear model:
       name: Identity
       increment variables: *anavars

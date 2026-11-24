@@ -14,6 +14,7 @@
 #  03Nov2026 Yu       Add -mingcm (minimal GCM for low-resolution testing)
 #  04Nov2026 Yu       Scale sppt_lscale for C12/C24
 #  04Nov2026 Yu       Add ed_wallclock_rc; short sub-job wallclocks for C12/C24
+#  18Nov2026 Yu       -mingcm: keep cubed bkg_clcv (for JEDI); drop GOCART:: fields in HISTAENS
 #
 #-----------------------------------------------------------------------------------------------------
 
@@ -1024,7 +1025,7 @@ sub ed_wallclock_rc {
 sub ed_mingcm {
 
   my($mydir) = @_;
-  my(@keep) = qw( bkg.eta bkg.sfc );
+  my(@keep) = qw( bkg.eta bkg.sfc bkg_clcv );   # bkg_clcv: cubed bkg (for JEDI)
 
   edit_lines("$mydir/AGCM.rc.tmpl", sub {
      s/^(\s*AERO_PROVIDER:\s*)\S+/${1}none/;
@@ -1056,6 +1057,8 @@ sub ed_mingcm {
   }
 
   keep_collections("$mydir/HISTAENS.rc.tmpl", @keep);
+  # GOCART is off: drop its fields (e.g. GOCART::CO2 in bkg_clcv)
+  edit_lines("$mydir/HISTAENS.rc.tmpl", sub { $_ = "" if /'GOCART::/; });
   keep_collections("$mydir/post_egcm.rc",     @keep);
 
 }

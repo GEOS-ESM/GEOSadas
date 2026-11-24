@@ -2,6 +2,9 @@
 # 
 # setup_aanajedi - setup for an atmospheric JEDI analysis
 #
+#  18Nov2026 Yu  Add -ensonly/-ensscheme/-ensmem/-ensres: install JEDI ensemble
+#                analysis (EDA or GETKF); set n_ens/nlat_ens/nlon_ens in the
+#                hybrid gsibec namelist; check copies of resource files
 #-----------------------------------------------------------------------------------------------------
 
 use Env;                 # make env vars readily available
@@ -42,6 +45,10 @@ my $scriptname = basename($0);
                "jedistatic=s",
                "nodename=s",
                "nogsi",
+               "ensonly",
+               "ensscheme=i",
+               "ensmem=i",
+               "ensres=i",
                "h" );
 
   usage() if $opt_h;
@@ -52,7 +59,11 @@ my $scriptname = basename($0);
 
 # Generate pbs job script
 
-  install();
+  if ( $opt_ensonly ) {
+     install_atmens();
+  } else {
+     install();
+  }
 
 # All done
 
@@ -513,41 +524,41 @@ if ( ! -d "$JEDIHOME/Config/fcobs" ) {
 foreach $fn ( @rc2jedi ) {
   chomp($fn);
   if ( $fn eq "jedi_run_var.j" ) {
-    cp("$FVROOT/etc/jedi/$fn","$JEDIHOME/_${fn}"); # this is placed in JEDIHOME for convenience (when debug needed)
+    cpchk("$FVROOT/etc/jedi/$fn","$JEDIHOME/_${fn}"); # this is placed in JEDIHOME for convenience (when debug needed)
   } else {
-    cp("$FVROOT/etc/jedi/$fn","$JEDIHOME/$fn");
+    cpchk("$FVROOT/etc/jedi/$fn","$JEDIHOME/$fn");
   }
 }
 
 foreach $fn ( @rc2sajedi ) {
-  cp("$FVROOT/etc/jedi/$fn","$fvhome/anasa/$fn");
+  cpchk("$FVROOT/etc/jedi/$fn","$fvhome/anasa/$fn");
 }
 ed_anasa_job("$fvhome/anasa","jedi_anasa.j");
 
 # Copy scheme yaml to proper location
 foreach $fn ( @rc2conf ) {
   chomp($fn);
-  cp("$FVROOT/etc/jedi/$fn","$JEDIHOME/Config/$fn");
+  cpchk("$FVROOT/etc/jedi/$fn","$JEDIHOME/Config/$fn");
 }
-cp("$FVROOT/etc/jedi/geos_${scheme}.yaml","$JEDIHOME/Config/geosvar.yaml");
+cpchk("$FVROOT/etc/jedi/geos_${scheme}.yaml","$JEDIHOME/Config/geosvar.yaml");
 if ( ! -e "$JEDIHOME/Config/geosvar.yaml" ) {
    die "File $JEDIHOME/Config/geosvar.yaml not found \n";
 }
-cp("$FVROOT/etc/jedi/geos_hofx.yaml","$JEDIHOME/Config/geoshofx.yaml");
+cpchk("$FVROOT/etc/jedi/geos_hofx.yaml","$JEDIHOME/Config/geoshofx.yaml");
 
 # Copy obs yamls to experiment config location
 foreach $fn ( @rc2jediobs ) {
   chomp($fn);
-  cp("$FVROOT/etc/jedi/obs/$fn","$JEDIHOME/Config/obs/$fn");
+  cpchk("$FVROOT/etc/jedi/obs/$fn","$JEDIHOME/Config/obs/$fn");
 }
 
 # Copy a subset of obs yamls to use for fcst verification purposes
 foreach $fn ( @rc2hofxobs ) {
   chomp($fn);
-  cp("$FVROOT/etc/jedi/obs/$fn","$JEDIHOME/Config/fcobs/$fn");
+  cpchk("$FVROOT/etc/jedi/obs/$fn","$JEDIHOME/Config/fcobs/$fn");
 }
 
-cp("$FVROOT/etc/jedi/geos_${scheme}.yaml","$JEDIHOME/Config/geosvar.yaml");
+cpchk("$FVROOT/etc/jedi/geos_${scheme}.yaml","$JEDIHOME/Config/geosvar.yaml");
 
 # take of resolution and layout
 ed_conf_rc ("$JEDIHOME","JEDIanaConfig.csh");
@@ -573,6 +584,139 @@ set_jedi_static("$jediroot","$jediinput",$cres,$i1res,$gsibecres);
 ed_rst4fcst_acq("$fvhome/fcst/");
 ed_4dfcst03_acq("$fvhome/fcst/");
 
+}
+#......................................................................
+# install_atmens - install the JEDI ensemble analysis (EDA or GETKF):
+#                  JEDIatmensConfig.csh and the chosen yaml (the other
+#                  is removed); set ensemble size/resolution in the yaml
+#                  and in the hybrid gsibec namelist of the central analysis
+sub install_atmens {
+
+  my(%ensyaml, $yaml, $other, $nml);
+
+  die "-ensonly requires -ensscheme, -ensmem and -ensres\n"
+      unless ( $opt_ensscheme && $opt_ensmem && $opt_ensres );
+  die "invalid -ensscheme $opt_ensscheme (1:EDA or 2:GETKF)\n"
+      unless ( $opt_ensscheme == 1 || $opt_ensscheme == 2 );
+  die "invalid -ensmem $opt_ensmem\n" unless ( $opt_ensmem > 0 );
+
+  $ensmem = $opt_ensmem;
+  set_ens_res($opt_ensres);
+
+  %ensyaml = ( 1 => "jedi_eda.yaml", 2 => "jedi_getkf.yaml" );
+  $yaml  = $ensyaml{$opt_ensscheme};
+  $other = $ensyaml{3 - $opt_ensscheme};
+
+  if ( ! -d "$JEDIHOME/Config" ) {
+     $rc = system("/bin/mkdir -p $JEDIHOME/Config" );
+  }
+
+  cpchk("$FVROOT/etc/jedi/JEDIatmensConfig.csh","$JEDIHOME/JEDIatmensConfig.csh",1);
+  ed_conf_rc("$JEDIHOME","JEDIatmensConfig.csh");
+
+  cpchk("$FVROOT/etc/jedi/$yaml","$JEDIHOME/Config/$yaml",1);
+  unlink("$JEDIHOME/Config/$other") if ( -e "$JEDIHOME/Config/$other" );
+  ed_atmens_yaml("$JEDIHOME/Config",$yaml);
+
+  # hybrid central analysis reads the same ensemble
+  if ( $scheme eq "hyb3denvar" or $scheme eq "hyb4denvar" ) {
+     $nml = "$jediinput/gsibec/gsibec_configuration_$gsibecres.nml";
+     ed_gsibec_hybens($nml);
+  }
+
+  print "$0: JEDI ensemble analysis: $yaml, $ensmem members, C$opt_ensres\n";
+}
+#......................................................................
+# set_ens_res - ensemble settings by cubed resolution
+#   ens_cres             - SWELL horizontal resolution (cubed + 1)
+#   ens_npx/ens_npy      - per-tile processor layout
+#   ens_nlon/ens_nlat    - lat-lon grid of ensemble bkg.eta (as in setup_atmens.pl)
+#   ens_bec_nlon/nlat    - gsibec (climatological B) grid for EDA/GETKF
+sub set_ens_res {
+
+  my($eres) = @_;
+
+  $ens_cres = $eres + 1;
+  if      ( $eres ==  12 ) {
+     $ens_npx = 2; $ens_npy = 2;
+     $ens_nlon =  48; $ens_nlat =  25;
+     $ens_bec_nlon =  72; $ens_bec_nlat =  46;
+  } elsif ( $eres ==  24 ) {
+     $ens_npx = 4; $ens_npy = 4;
+     $ens_nlon =  96; $ens_nlat =  49;
+     $ens_bec_nlon =  72; $ens_bec_nlat =  46;
+  } elsif ( $eres ==  90 ) {
+     $ens_npx = 4; $ens_npy = 5;
+     $ens_nlon = 288; $ens_nlat = 181;
+     $ens_bec_nlon = 144; $ens_bec_nlat =  91;
+  } elsif ( $eres == 180 ) {
+     $ens_npx = 6; $ens_npy = 6;
+     $ens_nlon = 576; $ens_nlat = 361;
+     $ens_bec_nlon = 288; $ens_bec_nlat = 181;
+  } else {
+     die "no JEDI ensemble settings for C$eres, aborting ...\n";
+  }
+}
+#......................................................................
+# ed_atmens_yaml - fill ensemble placeholders in EDA/GETKF yaml
+sub ed_atmens_yaml {
+
+  my($mydir,$yaml) = @_;
+  my($rcd);
+
+  $tmprc  = "$mydir/tmp.rc";
+  $thisrc = "$mydir/$yaml";
+
+  open(LUN,"$thisrc")  || die "Fail to open $thisrc $!\n";
+  open(LUN2,">$tmprc") || die "Fail to open tmp.rc $!\n";
+  while( defined($rcd = <LUN>) ) {
+     chomp($rcd);
+     $rcd =~ s/\@JEDI_ENS_NMEM/$ensmem/g;
+     $rcd =~ s/\@ENS_CRES/$ens_cres/g;
+     $rcd =~ s/\@ENS_NPX/$ens_npx/g;
+     $rcd =~ s/\@ENS_NPY/$ens_npy/g;
+     $rcd =~ s/\@ENS_GSIBEC_NLATS/$ens_bec_nlat/g;
+     $rcd =~ s/\@ENS_GSIBEC_NLONS/$ens_bec_nlon/g;
+     print(LUN2 "$rcd\n");
+  }
+  close(LUN);
+  close(LUN2);
+  cp($tmprc, $thisrc);
+  unlink $tmprc;
+}
+#......................................................................
+# ed_gsibec_hybens - replace link to static hybrid gsibec namelist by a
+#                    local copy with n_ens/nlat_ens/nlon_ens of the ensemble
+sub ed_gsibec_hybens {
+
+  my($nml) = @_;
+  my(@lines);
+
+  die "cannot find $nml, aborting ...\n" unless ( -e $nml );
+  open(LUN,"<$nml") || die "Fail to open $nml $!\n";
+  @lines = <LUN>;
+  close(LUN);
+  unlink($nml);
+  foreach (@lines) {
+     s/\bn_ens\s*=\s*\d+/n_ens=$ensmem/i;
+     s/\bnlat_ens\s*=\s*\d+/nlat_ens=$ens_nlat/i;
+     s/\bnlon_ens\s*=\s*\d+/nlon_ens=$ens_nlon/i;
+  }
+  open(LUN,">$nml") || die "Fail to write $nml $!\n";
+  print LUN @lines;
+  close(LUN);
+  print "$0: $nml: n_ens=$ensmem, nlat_ens=$ens_nlat, nlon_ens=$ens_nlon\n";
+}
+#......................................................................
+# cpchk - copy; warn (or die, if fatal) when copy fails
+sub cpchk {
+
+  my($src,$dst,$fatal) = @_;
+
+  unless ( cp($src,$dst) ) {
+     die  "$0: >>> ERROR <<< cannot copy $src: $!\n" if ( $fatal );
+     warn "$0: WARNING: cannot copy $src: $!\n";
+  }
 }
 #......................................................................
 sub set_jedi_static{
@@ -1038,6 +1182,11 @@ OPTIONS
      -jediroot     location of JEDI build directory (default: /discover/nobackup/projects/gmao/advda/swell/JediBundles/fv3_soca_SLES15_07162026_gsibec1.4.3/build-intel-release)
      -jedistatic   location of JEDI static files (default: /discover/nobackup/projects/gmao/advda/SwellStaticFiles)
      -iodadir      location of pre-existing IODA files (default: /dev/null, ie, run ncdiag2ioda)
+     -ensonly      only install the JEDI ensemble analysis (needs -ensscheme, -ensmem, -ensres);
+                   run after a regular setup_aanajedi.pl call
+     -ensscheme N  JEDI ensemble analysis: 1=EDA (jedi_eda.yaml), 2=GETKF (jedi_getkf.yaml)
+     -ensmem N     number of ensemble members
+     -ensres N     cubed resolution of ensemble members, e.g., 12 for C12
      -h            prints this usage notice
 
 EXAMPLE COMMAND LINE

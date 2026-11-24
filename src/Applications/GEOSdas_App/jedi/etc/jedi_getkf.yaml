@@ -73,13 +73,13 @@ models:
     ioda_locations_not_in_r2d2: ${JEDIWORK}/obs
 
     # What number of processors do you wish to use in the x-direction?
-    npx_proc: 4
+    npx_proc: @ENS_NPX
 
     # What number of processors do you wish to use in the y-direction?
-    npy_proc: 4
+    npy_proc: @ENS_NPY
 
     # What is the horizontal resolution for the forecast model and backgrounds?
-    horizontal_resolution: '91'
+    horizontal_resolution: '@ENS_CRES'
 
     # What is the vertical resolution for the forecast model and background?
     vertical_resolution: '72'
@@ -110,7 +110,7 @@ models:
     - skin_temperature_at_surface
 
     # How many members comprise the ensemble?
-    ensemble_num_members: 2
+    ensemble_num_members: @JEDI_ENS_NMEM
 
     # Configure the ensemble mean and variance specifications:
     ensmeanvariance_spec:
@@ -153,10 +153,10 @@ models:
     gsibec_configuration: cli_gsibec_configuration
 
     # How many number of latutides in GSIBEC grid?
-    gsibec_nlats: 91
+    gsibec_nlats: @ENS_GSIBEC_NLATS
 
     # How many number of longitudes in GSIBEC grid?
-    gsibec_nlons: 144
+    gsibec_nlons: @ENS_GSIBEC_NLONS
 
     # How long before the middle of the analysis window did the background providing forecast begin?
     background_time_offset: PT9H

@@ -1,6 +1,11 @@
 set (ALLETC
    JEDIanaConfig.csh
+   JEDIadanaConfig.csh
+   JEDIatmensConfig.csh
    SWELLConfig.csh
+   jedi_eda.yaml
+   jedi_getkf.yaml
+   jedi_acquire_prog.j
    diffstates_geos.yaml
    diag2ioda.yaml
    geos_3dvar.yaml
