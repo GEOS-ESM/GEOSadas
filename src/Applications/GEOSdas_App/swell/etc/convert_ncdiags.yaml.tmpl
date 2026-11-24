@@ -1,0 +1,30 @@
+# swell override: GSI ncdiag + GSI bias text -> IODA   (swell suite convert_ncdiags)
+#
+# Only values ADAS has to supply are set here; everything else is the swell
+# default. $VARs are resolved by swell_run.csh (vED -env); an unresolved $VAR
+# aborts the run.
+#   SWELL_*            set by swell_run.csh / swell_config.csh
+#   SWELL_GSI_DIAG_DIR, SWELL_GSI_BIAS_DIR   set by swell_gsi2ioda.csh
+
+experiment_id: $SWELL_EXPERIMENT_ID
+experiment_root: $SWELL_EXPERIMENT_ROOT
+start_cycle_point: '$SWELL_ISO_DATE'
+final_cycle_point: '$SWELL_ISO_DATE'
+
+jedi_build_method: use_existing
+existing_jedi_build_directory: $SWELL_JEDI_BUILD
+existing_jedi_source_directory: $SWELL_JEDI_SRC
+
+models:
+  geos_atmosphere:
+    cycle_times:
+    - $SWELL_CYCLE_TIME
+    window_length: PT6H
+    background_time_offset: PT9H
+    crtm_coeff_dir: $SWELL_CRTM_COEFFS
+    path_to_gsi_nc_diags: $SWELL_GSI_DIAG_DIR
+    path_to_gsi_bc_coefficients: $SWELL_GSI_BIAS_DIR/*bias*%Y%m%d_%Hz.txt
+    produce_geovals: false      # swell default is true; ADAS does not use GeoVaLs
+    observations:
+    - aircraft
+    - amsua_n19     # radiance entry needed so GsiBcToIoda writes satbias/tlapse

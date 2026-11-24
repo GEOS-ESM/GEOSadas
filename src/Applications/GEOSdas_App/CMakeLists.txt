@@ -1,5 +1,6 @@
 add_subdirectory(testsuites)
 add_subdirectory(jedi)
+add_subdirectory(swell)
 
 set(dasscripts
     FixUnblocked.csh  

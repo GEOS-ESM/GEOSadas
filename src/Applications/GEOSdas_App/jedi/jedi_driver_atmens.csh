@@ -109,7 +109,9 @@ if ( (! $JEDI_RUN_ANASA) && (! $JEDI_RUN_ADANA) ) then
      # Convert GSI-nc4-diag files to IODA
      # ----------------------------------
      if ( $JEDI_OBS_OPT == 3 ) then
-       jedi_gsi2ioda.csh $nymda $nhmsa $FVWORK $FVWORK $JEDIWORK
+       set g2i = jedi_gsi2ioda.csh
+       if ( -e $FVHOME/run/swell/swell_config.csh ) set g2i = swell_gsi2ioda.csh
+       $g2i $nymda $nhmsa $FVWORK $FVWORK $JEDIWORK
        if ( $status ) then
          echo "Trouble converting GSI output to IODA, aborting ..."
          exit 1
