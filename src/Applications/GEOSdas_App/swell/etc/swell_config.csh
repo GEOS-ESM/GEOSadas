@@ -17,7 +17,7 @@ if ( ! $?SWELL_SRC )    setenv SWELL_SRC    /discover/nobackup/yyu11/prep_swell/
 # Expected swell commit (full or abbreviated hash). Empty string disables the check.
 # SWELL_COMMIT_STRICT=1 aborts on mismatch; 0 only warns.
 # (feature/ygyu/fn_eda_kf_wai)
-if ( ! $?SWELL_COMMIT )        setenv SWELL_COMMIT        69ada912c4fa3c7e4c3b1008a02aa2f5f2bf96ec
+if ( ! $?SWELL_COMMIT )        setenv SWELL_COMMIT        e8659d35e2445643f387b199b175a3782393b1f1
 if ( ! $?SWELL_COMMIT_STRICT ) setenv SWELL_COMMIT_STRICT 1
 
 # JEDI build and source used by swell (jedi_build_method: use_existing)

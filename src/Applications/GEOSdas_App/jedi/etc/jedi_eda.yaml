@@ -220,9 +220,9 @@ models:
     # Configure the diffstates specifications: [state1, state2]
     diffstates_spec:
       state1:
-        fn_input: geos.prior.mean.ceta.%yyyy%mm%dd_%hh%MM%ssz.nc4
-      state2:
         fn_input: analysis/mean/eda_atmos.ana.ceta.%yyyy%mm%dd_%hh%MM%ssz.nc4
+      state2:
+        fn_input: geos.prior.mean.ceta.%yyyy%mm%dd_%hh%MM%ssz.nc4
       state_diff:
         fn_output: analysis/mean/eda_atmos.inc_iter1
         grid_type:
