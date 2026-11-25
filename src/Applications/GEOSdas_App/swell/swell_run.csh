@@ -167,7 +167,7 @@ endif
 # --- success checks --------------------------------------------------------
 if ( ! $?SWELL_DONE_MARKER ) setenv SWELL_DONE_MARKER cycle_done
 if ( "$SWELL_DONE_MARKER" != "none" ) then
-   set marker = `find $cycdir -maxdepth 1 -name "${SWELL_DONE_MARKER}_*" |& head -1`
+   set marker = `find -H $cycdir -maxdepth 1 -name "${SWELL_DONE_MARKER}_*" |& head -1`
    if ( "$marker" == "" ) then
       echo "${myname}: workflow ended but $cycdir/${SWELL_DONE_MARKER}_* not found, aborting"
       exit 1

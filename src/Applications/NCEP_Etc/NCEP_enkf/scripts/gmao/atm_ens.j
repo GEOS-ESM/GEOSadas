@@ -542,14 +542,18 @@
 # ------------------------------------
   if ( $RUN_EAANA || $DO_ATM_ENS ) then
       zeit_ci.x eana
+      # (endif resets $status: keep the analysis status)
       if ( $SWELL_ENS_RUN ) then
          swell_ana_atmens.csh $nymdb $nhmsb $anymd $anhms |& tee -a atm_ens.log
+         set eana_rc = $status
       else if ( $JEDI_CAN_RUN_NOW ) then
          jedi_driver_atmens.csh $nymdb $nhmsb $anymd $anhms 0 |& tee -a atm_ens.log
+         set eana_rc = $status
       else
          atmos_eana.csh $EXPID $anymd $anhms |& tee -a atm_ens.log
+         set eana_rc = $status
       endif
-      if( $status) then
+      if( $eana_rc ) then
          echo "eana failed"
          exit(1)
       endif
@@ -612,10 +616,12 @@
       zeit_ci.x ens2gcm
       if ( $ATMENS_DO4DIAU ) then
          atmos_ens2gcm.csh $EXPID $nymdb $nhmsb |& tee -a atm_ens.log
+         set e2g_rc = $status
       else
          atmos_ens2gcm.csh $EXPID $anymd $anhms |& tee -a atm_ens.log
+         set e2g_rc = $status
       endif
-      if( $status) then
+      if( $e2g_rc ) then
          echo "ens2gcm failed"
          exit(1)
       endif

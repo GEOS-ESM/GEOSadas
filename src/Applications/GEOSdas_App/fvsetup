@@ -345,6 +345,7 @@
 # 03Nov2026 Yu         C12/C24 (main and hybrid ensemble); alternative BCs via REAL TIME BCS
 # 03Nov2026 Yu         MINIMAL_GCM env: physics children off, no chemistry, minimal history
 # 18Nov2026 Yu         get_jedi_info: GEOSJEDI, jedi_ens_scheme (EDA/GETKF), jedi_ens_member
+# 24Nov2026 Yu         swell layer (swell_setup.pl) for 3dfgat; GEOSJEDI_LAYER env
 #-------------------------------------------------------------------------
 use Cwd qw(abs_path cwd);
 use English;
@@ -395,7 +396,7 @@ my ($landbcs);
 my ($coupled, $ores, $mometc);
 my ($o_servers,$bckend_wrts, $xncpus, $ncpus_per_node);
 my ($skipgsi);
-my ($jedi_ensrpy, $jedi_exprpy);
+my ($jedi_ensrpy, $jedi_exprpy, $jedilayer);
 
 my ($sysfile, $nodeflg);
 my (@rmTilde);
@@ -719,8 +720,9 @@ sub set_inputparams {
 #               =3 for third-deg sensitivity test
 # => check:     use when calling fvsetup from the checkinput script
 # => header=s:  header for input file
-# => jedistatic=s: JEDI static-files directory passed to setup_aanajedi.pl
-#                  (default there: /discover/nobackup/projects/gmao/advda/SwellStaticFiles)
+# => jedistatic=s: JEDI static-files directory passed to setup_aanajedi.pl, or
+#                  SWELL_STATIC_FILES of the swell layer (see set_geosjedi)
+#                  (default: /discover/nobackup/projects/gmao/advda/SwellStaticFiles)
 # => setupfile: file to copy to expid directory (set note below)
 # => runjob:    use when calling fvsetup from the runjob script
 # => save:      default value for $saveFLG used in write_saved_inputs()
@@ -3748,9 +3750,48 @@ EOF
 }
 
 #=======================================================================
+# name - set_geosjedi
+# purpose - install the JEDI analysis with one of two layers:
+#           swell: GEOSdas_App/swell (swell_setup.pl), 3dfgat only
+#           jedi:  GEOSdas_App/jedi  (setup_aanajedi.pl), all schemes
+#
+# Notes:
+# 1. The layer is $ENV{GEOSJEDI_LAYER} if set; otherwise swell for 3dfgat
+#    and jedi for the hybrid schemes (not available through swell yet).
+# 2. The jedi layer also gets run/swell with SWELL_CENTRAL=0, so that its
+#    GSI ncdiag to IODA conversion uses the swell pinned there.
+#=======================================================================
 sub set_geosjedi {
 
   if ( ! $GEOSJEDI ) { return 0 };
+
+  if ( $ENV{JEDI_ATMVAR_SCHEME} ) {
+      $jedivar = $ENV{JEDI_ATMVAR_SCHEME};
+  } else {
+    if ( $hyb_ens < 3 ) { 
+      $jedivar = "3dfgat";
+    } elsif ( $hyb_ens == 3 ) { 
+      $jedivar = "hyb3denvar";
+    } else {
+      $jedivar = "hyb4denvar";
+    }
+  }
+
+  if ( $ENV{GEOSJEDI_LAYER} ) {
+      $jedilayer = $ENV{GEOSJEDI_LAYER};
+  } else {
+      $jedilayer = ( $jedivar eq "3dfgat" ) ? "swell" : "jedi";
+  }
+  die ">>> ERROR <<< GEOSJEDI_LAYER must be swell or jedi: $jedilayer\n"
+      unless ( $jedilayer eq "swell" or $jedilayer eq "jedi" );
+  print "\n  GEOS-JEDI: $jedivar analysis, $jedilayer layer\n\n";
+
+  if ( $jedistatic ) {
+     die ">>> ERROR <<< JEDI static directory not found: $jedistatic\n" unless ( -d $jedistatic );
+  }
+
+  if ( $jedilayer eq "swell" ) { return set_swell() };
+
   $nogsi = " ";
   if ( $skipgsi ) { 
      $nogsi = "-nogsi";
@@ -3770,27 +3811,82 @@ sub set_geosjedi {
   }
   $jediopts = "-fvhome $fvhome -iodadir $iodadir -archive $acqloc -gcmres $agcm_im $nogsi $xtra4jedi";
   if ( $jedistatic ) {
-     die ">>> ERROR <<< JEDI static directory not found: $jedistatic\n" unless ( -d $jedistatic );
      $jediopts .= " -jedistatic $jedistatic";
-  }
-
-  if ( $ENV{JEDI_ATMVAR_SCHEME} ) {
-      $jedivar = $ENV{JEDI_ATMVAR_SCHEME};
-  } else {
-    if ( $hyb_ens < 3 ) { 
-      $jedivar = "3dfgat";
-    } elsif ( $hyb_ens == 3 ) { 
-      $jedivar = "hyb3denvar";
-    } else {
-      $jedivar = "hyb4denvar";
-    }
   }
 
   $cmd = "$fvbin/setup_aanajedi.pl $jedivar $expid $bjedi_im $vres $jediopts";
   print "$cmd\n";
   system($cmd); 
 
+  swell_setup("-set SWELL_CENTRAL=0");
+
   return 0 ;
+}
+
+#=======================================================================
+# name - set_swell
+# purpose - install the swell layer (see GEOSdas_App/swell/README.md):
+#           3D-FGAT central analysis (swell_driver.csh, from GEOSdas.csm),
+#           JEDI IAU forcing, and the forecast acquiring that IAU
+#=======================================================================
+sub set_swell {
+    my ($cres, @set);
+
+    die ">>> ERROR <<< the swell layer runs the 3dfgat analysis only, not $jedivar;\n"
+      . "              use GEOSJEDI_LAYER=jedi (or JEDI_ATMVAR_SCHEME=3dfgat)\n"
+        unless ( $jedivar eq "3dfgat" );
+
+    $cres = $bjedi_im + 1;
+    die ">>> ERROR <<< no swell central analysis layout for C$bjedi_im backgrounds\n"
+        unless ( grep { $_ == $cres } ( 13, 25, 91, 181, 361, 721 ) );
+
+    @set = ( "SWELL_CENTRAL=1", "SWELL_CENTRAL_CRES=$cres" );
+    push @set, "SWELL_STATIC_FILES=$jedistatic" if $jedistatic;
+    if ( $skipgsi ) {
+        die ">>> ERROR <<< SKIPGSI: set OFFLINE_IODA_DIR, the IODA archive"
+          . " <dir>/<yyyymmddThhmmssZ>/geos_atmosphere\n" unless $ENV{OFFLINE_IODA_DIR};
+        push @set, "SWELL_OFFLINE_IODA_DIR=$ENV{OFFLINE_IODA_DIR}";
+    }
+
+    swell_setup( join(" ", map { "-set $_" } @set)
+               . " -mkiau $agcm_im," . 6*$agcm_im . ",$vres"
+               . " -rst4fcst $acqloc,$expid" );
+    return 0;
+}
+
+#=======================================================================
+# name - set_swell_atmens
+# purpose - swell ensemble analysis (swell_ana_atmens.csh, from atm_ens.j)
+#=======================================================================
+sub set_swell_atmens {
+    my (%method);
+
+    if ( $aens_replay eq "yes" ) {
+        print "\n  Replayed ensemble: no swell ensemble analysis to set up\n\n";
+        return 0;
+    }
+    die ">>> ERROR <<< the swell ensemble analysis needs a C12, C24, C90 or C180"
+      . " ensemble, not $aens_res\n"
+        unless ( grep { $_ eq $aens_res } qw( C12 C24 C90 C180 ) );
+
+    %method = ( 1 => "eda", 2 => "getkf2" );
+    swell_setup("-set SWELL_ENSEMBLE=$method{$jedi_ens_scheme}"
+              . " -set SWELL_ENS_CRES=" . ($aens_im + 1));
+    return 0;
+}
+
+#=======================================================================
+# name - swell_setup
+# purpose - run swell_setup.pl for this experiment (swell jobs use $gid)
+#=======================================================================
+sub swell_setup {
+    my ($args) = @_;
+    my $cmd = "$fvbin/swell_setup.pl -fvhome $fvhome -fvroot $fvroot $args";
+
+    $cmd .= " -set SWELL_SLURM_ACCOUNT=$gid" if $gid;
+
+    print "$cmd\n";
+    system($cmd) == 0 or die ">>> ERROR <<< swell_setup.pl failed\n";
 }
 
 #=======================================================================
@@ -3850,6 +3946,7 @@ EOF
 # name - set_jedi_atmens
 # purpose - install the JEDI ensemble analysis (EDA or GETKF) settings;
 #           runs after get_jedi_info, once everything else is set up
+#           (swell layer: EDA -> eda_atmos, GETKF -> localensembleda_2steps)
 #=======================================================================
 sub set_jedi_atmens {
     my (@enslist, $nens, $cmd, %ensyaml, $fn);
@@ -3857,18 +3954,20 @@ sub set_jedi_atmens {
     return 0 unless $GEOSJEDI;
     return 0 if ( $hyb_ens < 3 );
 
-    %ensyaml = ( 1 => "jedi_eda.yaml", 2 => "jedi_getkf.yaml" );
-    foreach $fn ( "JEDIatmensConfig.csh", $ensyaml{$jedi_ens_scheme} ) {
-        die ">>> ERROR <<< cannot find $fvetc/jedi/$fn\n"
-          . "              re-run 'make install' in the build directory, then rerun fvsetup\n"
-            unless ( -e "$fvetc/jedi/$fn" );
-    }
-
     @enslist = (<$fvhome/atmens/mem???>);
     $nens = scalar(@enslist);
     if ( $nens > 0 and $nens != $jedi_ens_member ) {
         print "\n  WARNING: $nens ensemble members installed in $fvhome/atmens,"
             . " but jedi_ens_member = $jedi_ens_member\n\n";
+    }
+
+    return set_swell_atmens() if ( $jedilayer eq "swell" );
+
+    %ensyaml = ( 1 => "jedi_eda.yaml", 2 => "jedi_getkf.yaml" );
+    foreach $fn ( "JEDIatmensConfig.csh", $ensyaml{$jedi_ens_scheme} ) {
+        die ">>> ERROR <<< cannot find $fvetc/jedi/$fn\n"
+          . "              re-run 'make install' in the build directory, then rerun fvsetup\n"
+            unless ( -e "$fvetc/jedi/$fn" );
     }
 
     $cmd = "$fvbin/setup_aanajedi.pl $jedivar $expid $bjedi_im $vres $jediopts"

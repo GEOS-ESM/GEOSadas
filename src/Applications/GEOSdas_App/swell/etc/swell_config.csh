@@ -48,8 +48,19 @@ if ( ! $?SWELL_SLURM_CONSTRAINT ) setenv SWELL_SLURM_CONSTRAINT mil
 # ---------------------------------------------------------------------------
 # Central analysis (swell_ana_central.csh, suite 3dfgat_atmos)
 # ---------------------------------------------------------------------------
-# 1: run the central 3D-FGAT through swell (used when JEDI_HYBRID=0); 0: old jedi_set/jedi_run path
+# 1: GEOSdas.csm runs the central analysis with swell_driver.csh (3D-FGAT);
+# 0: the jedi/ layer does it (jedi_driver.csh, hybrid schemes), converting the
+#    GSI ncdiags with swell_gsi2ioda.csh and the swell pinned here
 if ( ! $?SWELL_CENTRAL ) setenv SWELL_CENTRAL 1
+
+# Observations: converted from the GSI ncdiags of the cycle (default), or taken from
+# an IODA archive <dir>/<yyyymmddThhmmssZ>/geos_atmosphere (e.g. when SKIPGSI)
+if ( ! $?SWELL_OFFLINE_IODA_DIR ) setenv SWELL_OFFLINE_IODA_DIR ""
+
+if ( ! $?SWELL_FEEDBACK_VARBC ) setenv SWELL_FEEDBACK_VARBC 1   # cycle JEDI VarBC (else GSI biases)
+if ( ! $?SWELL_MKIAU )          setenv SWELL_MKIAU          1   # make the JEDI IAU forcing
+if ( ! $?SWELL_IAU_OVERWRITE )  setenv SWELL_IAU_OVERWRITE  1   # GEOS uses it instead of the GSI IAU
+if ( ! $?SWELL_MKIAU_MPIRUN )   setenv SWELL_MKIAU_MPIRUN   mpirun
 
 # Cubed-sphere resolution of the JEDI backgrounds as npx (C12 -> 13, C90 -> 91, ...).
 # Processor layout and GSIBEC grid follow from it (see swell_ana_central.csh).
@@ -60,9 +71,12 @@ if ( ! $?SWELL_VAR_NITER )        setenv SWELL_VAR_NITER        100     # inner 
 if ( ! $?SWELL_VAR_BKG_FREQ )     setenv SWELL_VAR_BKG_FREQ     PT3H    # FGAT background frequency
 if ( ! $?SWELL_CENTRAL_WALLTIME ) setenv SWELL_CENTRAL_WALLTIME 00:40:00
 
-# Where GEOS keeps <EXPID>/rs/Y%Y/M%m/<EXPID>.bkgcrst.<date>.tar (normally $ARCHIVE)
+# Where GEOS keeps <EXPID>/rs/Y%Y/M%m/<EXPID>.bkgcrst.<date>.tar: the archive of
+# the experiment ($FVARCH from FVDAS_Run_Config, else $ARCHIVE)
 if ( ! $?SWELL_BKG_ARCHIVE ) then
-   if ( $?ARCHIVE ) then
+   if ( $?FVARCH ) then
+      setenv SWELL_BKG_ARCHIVE $FVARCH
+   else if ( $?ARCHIVE ) then
       setenv SWELL_BKG_ARCHIVE $ARCHIVE
    endif
 endif
@@ -75,7 +89,7 @@ if ( ! $?SWELL_MKSI_PATH ) then
 endif
 
 # Persistent copy of the latest JEDI VarBC output, used by the next cycle
-# when JEDI_FEEDBACK_VARBC=1 (bootstrap from the GSI biases when empty)
+# when SWELL_FEEDBACK_VARBC=1 (bootstrap from the GSI biases when empty)
 if ( ! $?SWELL_VARBC_DIR ) then
    if ( $?FVHOME ) then
       setenv SWELL_VARBC_DIR $FVHOME/swell/varbc

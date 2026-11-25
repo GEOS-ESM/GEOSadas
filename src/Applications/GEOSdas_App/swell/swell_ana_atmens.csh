@@ -121,7 +121,7 @@ if ( ! $?SWELL_ENS_GSIBEC_NLONS ) setenv SWELL_ENS_GSIBEC_NLONS $lay[5]
 setenv SWELL_ENS_NODES $nodes
 
 # --- members ---------------------------------------------------------------
-set members = ( `find $ATMENSLOC -maxdepth 1 -name "mem[0-9][0-9][0-9]" | sort | xargs -n1 basename` )
+set members = ( `find -H $ATMENSLOC -maxdepth 1 -name "mem[0-9][0-9][0-9]" | sort | xargs -n1 basename` )
 if ( $#members == 0 ) then
    echo "${myname}: no member directories in $ATMENSLOC, aborting"
    exit 1
@@ -142,7 +142,7 @@ end
 
 # --- observations: those of the central analysis of this cycle -------------
 set obsdir = $SWELL_OBS_SHARE/${nymda}T${nhmsa}Z/geos_atmosphere
-set nobs = `find $obsdir -maxdepth 1 -type f |& grep -c "^$obsdir/"`
+set nobs = `find -H $obsdir -maxdepth 1 -type f |& grep -c "^$obsdir/"`
 if ( $nobs == 0 ) then
    echo "${myname}: no observations in $obsdir; the central analysis must run"
    echo "${myname}: through swell (swell_ana_central.csh) before the ensemble, aborting"
@@ -174,9 +174,9 @@ set cycdir = $JEDIWORK/$expid/run/${nymda}T${nhmsa}Z/geos_atmosphere
 mkdir -p $FVWORK/updated_ens/ensmean $FVWORK/updated_ens/ensrms
 foreach m ( $members )
    if ( $SWELL_ENSEMBLE == eda ) then
-      set incs = ( `find $cycdir/analysis/$m -maxdepth 1 -name "${expid}.inc_iter1.${m}.*.nc4"` )
+      set incs = ( `find -H $cycdir/analysis/$m -maxdepth 1 -name "${expid}.inc_iter1.${m}.*.nc4"` )
    else
-      set incs = ( `find $cycdir/analysis/$m -maxdepth 1 -name "${suite}.inc.eta.*.nc4"` )
+      set incs = ( `find -H $cycdir/analysis/$m -maxdepth 1 -name "${suite}.inc.eta.*.nc4"` )
    endif
    if ( $#incs != 1 ) then
       echo "${myname}: expected one increment for $m in $cycdir/analysis/$m, found $#incs, aborting"
@@ -204,7 +204,7 @@ echo "${myname}: $#members member analyses in $FVWORK/updated_ens/mem*"
 
 # --- logs ------------------------------------------------------------------
 cd $JEDIWORK
-set logs = ( `find $expid -name "*log*" -type f` )
+set logs = ( `find -H $expid -name "*log*" -type f` )
 if ( $#logs > 0 ) then
    tar czf $FVWORK/updated_ens/$EXPID.atmens_olog.${nymda}_${hha}z.tar.gz $logs
 endif

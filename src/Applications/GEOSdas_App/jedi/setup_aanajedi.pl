@@ -1095,11 +1095,12 @@ sub ed_rst4fcst_acq {
 $archive/$expid/rs/Y%y4/M%m2/$expid.rst.%y4%m2%d2_%h2z.tar
 EOF
 if ( ! $hybridvar ) {
-  open(SCRIPT,">$acq") || die ">>> ERROR <<< cannot write $acq";
+  open(SCRIPT,">>$acq") || die ">>> ERROR <<< cannot write $acq";
  print  SCRIPT <<"EOF";
 $archive/$expid/jedi/rs/Y%y4/M%m2/$expid.jedi_agcmrst.%y4%m2%d2_%h2z.tar
 EOF
 }
+close(SCRIPT);
 }
 #......................................................................
 sub ed_4dfcst03_acq {

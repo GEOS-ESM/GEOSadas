@@ -7,20 +7,21 @@
 #   nymdb nhmsb  beginning of the analysis window
 #   nymda nhmsa  analysis time (middle of the window)
 #
-# Replaces jedi_set.csh + jedi_run.csh. On success $JEDIWORK=$FVWORK/jedi.<nymda>.<nhmsa>
-# holds what jedi_mkiau.csh and the archiving expect:
+# Run by swell_driver.csh. On success $JEDIWORK=$FVWORK/jedi.<nymda>.<nhmsa>
+# holds what swell_mkiau.csh and the archiving expect:
 #   inc/$EXPID.jedi_inc1.eta.<yyyymmdd_hhmmss>z.nc4    lat-lon increment (window begin for FGAT)
 #   ana/$EXPID.jedi_ana.ceta.<yyyymmdd_hhmm>z.nc4      cubed analysis at the analysis time
-#   bkg/ iau/                                          (filled by jedi_mkiau.csh)
+#   bkg/ iau/                                          (filled by swell_mkiau.csh)
 # and in $FVWORK:
 #   $EXPID.jedi_hofx.<B>.tar    observation feedback, named <obs>.<window begin>.nc4
 #   $EXPID.jedi_vbc.<B>.tar     VarBC output at the window begin (+ tlapse, acftbias_cov)
 #   $EXPID.jedi_var.log.<B>.txt JEDI log
+#   $EXPID.jedi_cfg.log.<B>.txt JEDI configuration (yaml)
 #
 # Inputs:
 #   $FVWORK/ioda.<nymda>_<hh>0000      IODA obs and GSI-converted biases (swell_gsi2ioda.csh)
 #   $SWELL_BKG_ARCHIVE/$EXPID/rs/Y%Y/M%m/$EXPID.bkgcrst.<analysis-9h>.tar   cubed backgrounds
-#   $SWELL_VARBC_DIR                   previous JEDI VarBC (used if JEDI_FEEDBACK_VARBC=1)
+#   $SWELL_VARBC_DIR                   previous JEDI VarBC (used if SWELL_FEEDBACK_VARBC=1)
 #
 # Also writes $SWELL_OBS_SHARE/<ana>/geos_atmosphere (copy of the observations and biases
 # used here) for swell_ana_atmens.csh; the latest SWELL_OBS_SHARE_KEEP cycles are kept.
@@ -50,7 +51,6 @@ if ( ! $?EXPID || ! $?FVHOME || ! $?FVWORK ) then
    exit 1
 endif
 if ( ! $?TIMEINC )            setenv TIMEINC 360
-if ( ! $?JEDI_FEEDBACK_VARBC ) setenv JEDI_FEEDBACK_VARBC 0
 
 set donefile = $FVWORK/.DONE_${myname}.$yyyymmddhh
 if ( -e $donefile ) then
@@ -140,7 +140,7 @@ endif
 
 # --- observations and bias correction --------------------------------------
 set iodasrc = $FVWORK/ioda.${nymda}_${hha}0000
-set nsrc = `find $iodasrc -maxdepth 1 \( -type f -o -type l \) |& grep -c "^$iodasrc/"`
+set nsrc = `find -H $iodasrc -maxdepth 1 \( -type f -o -type l \) |& grep -c "^$iodasrc/"`
 if ( $nsrc == 0 ) then
    echo "${myname}: no IODA input in $iodasrc, aborting"
    exit 1
@@ -150,13 +150,13 @@ setenv SWELL_IODA_DIR $JEDIWORK/swell_obs
 set obsdir = $SWELL_IODA_DIR/${nymda}T${nhmsa}Z/geos_atmosphere
 /bin/rm -rf $SWELL_IODA_DIR
 mkdir -p $obsdir
-foreach f ( `find $iodasrc -maxdepth 1 \( -type f -o -type l \)` )
+foreach f ( `find -H $iodasrc -maxdepth 1 \( -type f -o -type l \)` )
    ln -sf $f $obsdir/
 end
 cd $obsdir
 
 # bootstrap from GSI biases: satbias covariance = satbias file, aircraft bias renamed
-foreach f ( `find . -maxdepth 1 -name "*.${ptag}.satbias.nc4"` )
+foreach f ( `find -H . -maxdepth 1 -name "*.${ptag}.satbias.nc4"` )
    set sensor = `basename $f .${ptag}.satbias.nc4`
    if ( ! -e ${sensor}.${ptag}.satbias_cov.nc4 ) then
       ln -sf $f:t ${sensor}.${ptag}.satbias_cov.nc4
@@ -173,9 +173,9 @@ endif
 
 # cycled VarBC: previous JEDI output at this background time replaces the GSI biases
 set vbcsrc = "GSI (bootstrap)"
-if ( $JEDI_FEEDBACK_VARBC ) then
+if ( $SWELL_FEEDBACK_VARBC ) then
    set prev = ()
-   if ( -d $SWELL_VARBC_DIR ) set prev = ( `find $SWELL_VARBC_DIR -maxdepth 1 -type f -name "*.${ptag}.*"` )
+   if ( -d $SWELL_VARBC_DIR ) set prev = ( `find -H $SWELL_VARBC_DIR -maxdepth 1 -type f -name "*.${ptag}.*"` )
    if ( $#prev > 0 ) then
       foreach f ( $prev )
          ln -sf $f $f:t
@@ -214,7 +214,7 @@ grep "Quadratic cost function: J " $varlog | head -1
 grep "Quadratic cost function: J " $varlog | tail -1
 
 # --- increment and analysis ------------------------------------------------
-set incs = ( `find $cycdir -maxdepth 1 -type f -name "${expid}.increment-iter1.*.nc4"` )
+set incs = ( `find -H $cycdir -maxdepth 1 -type f -name "${expid}.increment-iter1.*.nc4"` )
 if ( $#incs == 0 ) then
    echo "${myname}: no increment ${expid}.increment-iter1.*.nc4 in $cycdir, aborting"
    exit 1
@@ -232,12 +232,12 @@ else
 endif
 
 # --- observation feedback --------------------------------------------------
-foreach f ( `find $cycdir -maxdepth 1 -type f -name "${expid}.*.${btag}.nc4"` )
+foreach f ( `find -H $cycdir -maxdepth 1 -type f -name "${expid}.*.${btag}.nc4"` )
    set obsname = `basename $f | sed "s/^${expid}\.//"`
    /bin/mv $f hofx/$obsname
 end
 cd hofx
-set nhofx = `find . -maxdepth 1 -name "*.nc4" | wc -l`
+set nhofx = `find -H . -maxdepth 1 -name "*.nc4" | wc -l`
 if ( $nhofx > 0 ) then
    tar cf $FVWORK/$EXPID.jedi_hofx.${nymdb}_${hhb}z.tar *.nc4
 endif
@@ -258,14 +258,14 @@ if ( $?SWELL_OBS_SHARE ) then
    endif
    if ( ! $?SWELL_OBS_SHARE_KEEP ) setenv SWELL_OBS_SHARE_KEEP 4
    @ k1 = $SWELL_OBS_SHARE_KEEP + 1
-   foreach d ( `find $SWELL_OBS_SHARE -mindepth 1 -maxdepth 1 -type d -name "*T*Z" | sort -r | tail -n +$k1` )
+   foreach d ( `find -H $SWELL_OBS_SHARE -mindepth 1 -maxdepth 1 -type d -name "*T*Z" | sort -r | tail -n +$k1` )
       /bin/rm -rf $d
    end
    echo "${myname}: observations and biases for the ensemble saved in $share"
 endif
 
 # --- VarBC output for the next cycle ---------------------------------------
-foreach f ( `find $cycdir -maxdepth 1 -type f \( -name "*.${btag}.satbias.nc4" -o -name "*.${btag}.satbias_cov.nc4" -o -name "*.${btag}.acftbias" -o -name "*.${btag}.acftbias_cov" \)` )
+foreach f ( `find -H $cycdir -maxdepth 1 -type f \( -name "*.${btag}.satbias.nc4" -o -name "*.${btag}.satbias_cov.nc4" -o -name "*.${btag}.acftbias" -o -name "*.${btag}.acftbias_cov" \)` )
    /bin/mv $f vbc/
 end
 # JEDI writes no acftbias covariance and no tlapse: carry the inputs forward
@@ -274,27 +274,23 @@ if ( -e vbc/aircraft_temperature.${btag}.acftbias && ! -e vbc/aircraft_temperatu
       /bin/cp -L $obsdir/aircraft_temperature.${ptag}.acftbias_cov vbc/aircraft_temperature.${btag}.acftbias_cov
    endif
 endif
-foreach f ( `find $obsdir -maxdepth 1 -name "*.${ptag}.tlapse.txt"` )
+foreach f ( `find -H $obsdir -maxdepth 1 -name "*.${ptag}.tlapse.txt"` )
    set sensor = `basename $f | cut -d. -f1`
    /bin/cp -L $f vbc/$sensor.${btag}.tlapse.txt
 end
 cd vbc
-set nvbc = `find . -maxdepth 1 -type f | wc -l`
+set nvbc = `find -H . -maxdepth 1 -type f | wc -l`
 if ( $nvbc > 0 ) then
    tar cf $FVWORK/$EXPID.jedi_vbc.${nymdb}_${hhb}z.tar *
    mkdir -p $SWELL_VARBC_DIR
-   find $SWELL_VARBC_DIR -maxdepth 1 -type f -delete
+   find -H $SWELL_VARBC_DIR -maxdepth 1 -type f -delete
    /bin/cp -p * $SWELL_VARBC_DIR/
 endif
 cd $JEDIWORK
 echo "${myname}: $nvbc VarBC file(s) saved for the next cycle in $SWELL_VARBC_DIR"
 
-# --- record of the JEDI configuration --------------------------------------
-# (for the old JEDI ensemble path, atm_ens.j counts run/jedi/Config/geosvar.*z.yaml
-#  to decide that the central JEDI analysis is cycling; the swell path does not)
-if ( -d $FVHOME/run/jedi/Config ) then
-   /bin/cp $cycdir/jedi_variational_config.yaml $FVHOME/run/jedi/Config/geosvar.${nymda}_${hha}z.yaml
-endif
+# --- record of the JEDI configuration (archived with the JEDI logs) --------
+/bin/cp $cycdir/jedi_variational_config.yaml $FVWORK/$EXPID.jedi_cfg.log.${nymdb}_${hhb}z.txt
 
 touch $donefile
 echo "${myname}: Complete"

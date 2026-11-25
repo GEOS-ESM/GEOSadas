@@ -7,6 +7,7 @@ set (ALLETC
    atmens_getkf.yaml.tmpl
    atmens_getkf2.yaml.tmpl
    atmens_slurm.yaml.tmpl
+   mkiau.rc.tenv
    )
 
 install (

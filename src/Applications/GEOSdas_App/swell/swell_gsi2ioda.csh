@@ -62,7 +62,7 @@ set stage = $workdir/g2i_inputs.$yyyymmddhh
 /bin/rm -rf $stage
 mkdir -p $stage/gsi_diags $stage/gsi_bias
 
-set diags = ( `find $inpdir -maxdepth 1 -name "${EXPID}.diag_*_ges.*nc4"` )
+set diags = ( `find -H $inpdir -maxdepth 1 -name "${EXPID}.diag_*_ges.*nc4"` )
 if ( $#diags == 0 ) then
    echo "${myname}: no $inpdir/${EXPID}.diag_*_ges.*nc4 found, aborting"
    exit 1
@@ -72,7 +72,7 @@ foreach f ( $diags )
 end
 
 foreach ftype ( ana_acftbias_rst ana_satbias_rst ana_satbiaspc_rst )
-   set fn = ( `find $FVHOME/recycle -maxdepth 1 -name "${EXPID}.${ftype}.*.txt"` )
+   set fn = ( `find -H $FVHOME/recycle -maxdepth 1 -name "${EXPID}.${ftype}.*.txt"` )
    if ( $#fn != 1 ) then
       echo "${myname}: expected one $FVHOME/recycle/${EXPID}.${ftype}.*.txt, found $#fn, aborting"
       exit 1
@@ -95,7 +95,7 @@ endif
 set cycdir = $workdir/$expid/run/${nymda}T${nhmsa}Z/geos_atmosphere
 set iodadir = $outdir/ioda.${nymda}_${hha}0000
 mkdir -p $iodadir
-set outs = ( `find $cycdir -maxdepth 1 -type f \( -name "*.nc4" -o -name "*.txt" \)` )
+set outs = ( `find -H $cycdir -maxdepth 1 -type f \( -name "*.nc4" -o -name "*.txt" \)` )
 if ( $#outs == 0 ) then
    echo "${myname}: no IODA output in $cycdir, aborting"
    exit 1
