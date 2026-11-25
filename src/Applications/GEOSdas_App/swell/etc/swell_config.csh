@@ -16,12 +16,18 @@ if ( ! $?SWELL_SRC )    setenv SWELL_SRC    /discover/nobackup/yyu11/prep_swell/
 
 # Expected swell commit (full or abbreviated hash). Empty string disables the check.
 # SWELL_COMMIT_STRICT=1 aborts on mismatch; 0 only warns.
-if ( ! $?SWELL_COMMIT )        setenv SWELL_COMMIT        881b8c307ed70b3e4312f2bca1b67a6660a377fb
+# (feature/ygyu/fn_eda_kf_wai)
+if ( ! $?SWELL_COMMIT )        setenv SWELL_COMMIT        69ada912c4fa3c7e4c3b1008a02aa2f5f2bf96ec
 if ( ! $?SWELL_COMMIT_STRICT ) setenv SWELL_COMMIT_STRICT 1
 
 # JEDI build and source used by swell (jedi_build_method: use_existing)
 if ( ! $?SWELL_JEDI_BUILD )  setenv SWELL_JEDI_BUILD  /discover/nobackup/yyu11/generated/br_2026-10-27/build
 if ( ! $?SWELL_JEDI_SRC )    setenv SWELL_JEDI_SRC    /discover/nobackup/yyu11/generated/br_2026-10-27/jedi-bundle
+
+# JEDI executables run by this layer itself (EDA member increments, fv3jedi_diffstates.x):
+# run-time modules (csh, sourced in a subshell) and MPI launcher
+if ( ! $?SWELL_JEDI_MODULES ) setenv SWELL_JEDI_MODULES $SWELL_JEDI_BUILD/modules
+if ( ! $?SWELL_JEDI_MPIRUN )  setenv SWELL_JEDI_MPIRUN  mpirun
 
 # Static files and CRTM coefficients
 if ( ! $?SWELL_STATIC_FILES ) setenv SWELL_STATIC_FILES /discover/nobackup/projects/gmao/advda/SwellStaticFiles

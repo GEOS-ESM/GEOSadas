@@ -1,0 +1,77 @@
+# fv3jedi_diffstates.x: lat-lon increment of one EDA member = analysis - background
+#                       (swell writes the EDA member analyses on the cubed sphere only)
+#
+# Rendered by swell_ana_atmens.csh for each member and run in the member directory
+# (SWELL_DIFF_FV3FILES is relative to it: FMS cuts file names at 128 characters).
+# Both states are read as swell reads the EDA backgrounds (background_eda.py); the
+# output holds what dyn_jediupd.x reads (ps ts t ua va q o3ppmv) and the other
+# analysis variables.
+#   SWELL_DIFF_*, SWELL_ENS_CRES   swell_ana_atmens.csh
+
+state geometry:
+  fms initialization:
+    namelist filename: $SWELL_DIFF_FV3FILES/fmsmpp.nml
+    field table filename: $SWELL_DIFF_FV3FILES/field_table_gmao
+  akbk: $SWELL_DIFF_FV3FILES/akbk72.nc4
+  layout: [1, 1]
+  npx: $SWELL_ENS_CRES
+  npy: $SWELL_ENS_CRES
+  npz: 72
+increment geometry:
+  akbk: $SWELL_DIFF_FV3FILES/akbk72.nc4
+  layout: [1, 1]
+  npx: $SWELL_ENS_CRES
+  npy: $SWELL_ENS_CRES
+  npz: 72
+
+# increment = state1 - state2
+state1:
+  datetime: '$SWELL_DIFF_DATE'
+  filetype: cube sphere history
+  provider: geos
+  compute edge pressure from surface pressure: true
+  max allowable geometry difference: 1e-3
+  datapath: $SWELL_DIFF_ANA_DIR
+  filename: $SWELL_DIFF_ANA_FILE
+  state variables: &variables
+  - eastward_wind
+  - northward_wind
+  - air_temperature
+  - air_pressure_at_surface
+  - air_pressure_levels
+  - water_vapor_mixing_ratio_wrt_moist_air
+  - cloud_liquid_ice
+  - cloud_liquid_water
+  - rain_water
+  - snow_water
+  - mole_fraction_of_ozone_in_air
+  - skin_temperature_at_surface
+  field io names: &io_names
+    eastward_wind: ua
+    northward_wind: va
+    air_temperature: t
+    air_pressure_at_surface: ps
+    air_pressure_levels: pe
+    water_vapor_mixing_ratio_wrt_moist_air: q
+    cloud_liquid_ice: qi
+    cloud_liquid_water: ql
+    rain_water: qr
+    snow_water: qs
+    mole_fraction_of_ozone_in_air: o3ppmv
+    skin_temperature_at_surface: ts
+state2:
+  datetime: '$SWELL_DIFF_DATE'
+  filetype: cube sphere history
+  provider: geos
+  compute edge pressure from surface pressure: true
+  max allowable geometry difference: 1e-3
+  datapath: $SWELL_DIFF_BKG_DIR
+  filename: $SWELL_DIFF_BKG_FILE
+  state variables: *variables
+  field io names: *io_names
+output:
+  filetype: auxgrid
+  gridtype: latlon
+  datapath: .
+  filename: $SWELL_DIFF_OUTPUT
+  field io names: *io_names

@@ -20,6 +20,7 @@ has a small override template holding only the values ADAS knows.
 | `etc/convert_ncdiags.yaml.tmpl` | override for `swell_gsi2ioda.csh` |
 | `etc/central_3dfgat.yaml.tmpl`, `etc/central_slurm.yaml.tmpl` | override and slurm settings for `swell_ana_central.csh` |
 | `etc/atmens_{eda,getkf,getkf2}.yaml.tmpl`, `etc/atmens_slurm.yaml.tmpl` | overrides and slurm settings for `swell_ana_atmens.csh` |
+| `etc/atmens_diffstates.yaml.tmpl` | `fv3jedi_diffstates.x` input for the EDA member increments (`swell_ana_atmens.csh`) |
 | `etc/mkiau.rc.tenv` | `mkiau.x` resource template (AGCM grid filled in by `swell_setup.pl`) |
 
 ## The GEOSJEDI switch
@@ -102,13 +103,17 @@ Processor layout and GSIBEC grid follow from `SWELL_CENTRAL_CRES` (table in
 | observations | `$SWELL_OBS_SHARE/<ana>`: the same observations and biases as the central analysis of the cycle |
 | backgrounds | `$ATMENSLOC/ensbkgx/memNNN/*.bkg_clcv.*` read in place (swell links an unpacked `atmens_ebkgx` layout) |
 | B (EDA) | GSIBEC climatological, `gsibec/$SWELL_GSIBEC_VERSION` |
-| → member increments | lat-lon, from the JEDI solver (EDA `inc_iter1`, GETKF posterior ensemble increments) |
+| → member increments | lat-lon `analysis/memNNN/<suite>.inc.eta.<date>.nc4`: GETKF posterior member increments written by swell; EDA analysis − background, made by `swell_ana_atmens.csh` with `fv3jedi_diffstates.x` (swell writes the EDA member analyses `eda_atmos.ana.ceta` on the cubed sphere only) |
 | → `$FVWORK/updated_ens/memNNN` | `$EXPID.ana.eta.<date>.nc4` = `dyn_jediupd.x`(`$ATMENSLOC/memNNN/$EXPID.bkg.eta`, increment) |
 | → `$FVWORK/updated_ens` | `ensmean/`, `ensrms/` (filled by `post_eana.csh`), `$EXPID.atmens_olog.<ana>.tar.gz` |
 
 The ensemble needs the central analysis of the same cycle to have run through
 swell first (it reads `$SWELL_OBS_SHARE/<ana>`); it aborts otherwise. Layout and
 GSIBEC grid follow from `SWELL_ENS_CRES` (13, 25, 91, 181).
+
+The EDA increments are the only JEDI executable this layer runs itself: it loads
+`SWELL_JEDI_MODULES` (default `$SWELL_JEDI_BUILD/modules`) in a subshell and starts
+`fv3jedi_diffstates.x` with `SWELL_JEDI_MPIRUN` (default `mpirun`) on 6 tasks.
 
 ## swell_run.csh
 

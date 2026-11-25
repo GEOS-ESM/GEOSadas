@@ -1,9 +1,10 @@
 # swell override: ADAS ensemble analysis, EDA = perturbed-observation 3D-Var members
 #                 (swell suite eda_atmos, run by swell_ana_atmens.csh)
 #
-# Only values ADAS has to supply are set here. ADAS uses the member increments
-# (analysis/memNNN/<expid>.inc_iter1.memNNN.<date>.nc4); ensemble statistics are
-# computed later by post_eana.csh, so swell's mean/variance tasks are skipped.
+# Only values ADAS has to supply are set here. Swell writes the member analyses on
+# the cubed sphere (analysis/memNNN/eda_atmos.ana.ceta.<date>.nc4); swell_ana_atmens.csh
+# makes the lat-lon member increments from them. Ensemble statistics are computed later
+# by post_eana.csh, so swell's mean/variance tasks are skipped.
 #   SWELL_*                                    swell_run.csh / swell_config.csh
 #   SWELL_ENS_*, SWELL_ENS_ROOT, SWELL_OBS_SHARE   swell_ana_atmens.csh
 

@@ -7,10 +7,13 @@
 #   nymdb nhmsb  beginning of the analysis window
 #   nymda nhmsa  analysis time (middle of the window)
 #
-# Replaces jedi_driver_atmens.csh. Method from SWELL_ENSEMBLE:
-#   eda     swell eda_atmos               member increments <expid>.inc_iter1.memNNN.<date>.nc4
-#   getkf   swell localensembleda         member increments localensembleda.inc.eta.<date>.nc4
-#   getkf2  swell localensembleda_2steps  member increments localensembleda_2steps.inc.eta.<date>.nc4
+# Replaces jedi_driver_atmens.csh. Method from SWELL_ENSEMBLE, and the lat-lon member
+# increments (analysis/memNNN/<suite>.inc.eta.<date>.nc4) it gives:
+#   eda     swell eda_atmos               made here: analysis - background (fv3jedi_diffstates.x),
+#                                         since swell writes the member analyses
+#                                         (eda_atmos.ana.ceta.<date>.nc4) on the cubed sphere only
+#   getkf   swell localensembleda         written by swell (posterior member increments)
+#   getkf2  swell localensembleda_2steps  written by swell (posterior member increments)
 #
 # Inputs:
 #   $SWELL_OBS_SHARE/<ana>/geos_atmosphere     observations + biases of the central analysis
@@ -57,6 +60,11 @@ endif
 set mydir = `dirname $0`
 set mydir = `cd $mydir && pwd`
 
+# installed layout ($FVROOT/bin + $FVROOT/etc/swell) or source tree (swell/ + swell/etc)
+set etcdir = $mydir/etc
+if ( -d $mydir/../etc/swell ) set etcdir = `cd $mydir/../etc/swell && pwd`
+setenv SWELL_ETC_FALLBACK $etcdir
+
 source $mydir/swell_env.csh
 if ( ! $SWELL_ENV_OK ) then
    echo "${myname}: swell environment setup failed, aborting"
@@ -92,6 +100,17 @@ switch ( $SWELL_ENSEMBLE )
       exit 1
 endsw
 if ( ! $?SWELL_ENS_THIN ) setenv SWELL_ENS_THIN $thin
+
+# EDA member increments are computed here with JEDI (see "member analyses" below)
+if ( $SWELL_ENSEMBLE == eda ) then
+   if ( ! $?SWELL_JEDI_MODULES ) setenv SWELL_JEDI_MODULES $SWELL_JEDI_BUILD/modules
+   if ( ! $?SWELL_JEDI_MPIRUN )  setenv SWELL_JEDI_MPIRUN  mpirun
+   if ( ! $?MODULESHOME )        setenv MODULESHOME        /usr/share/lmod/lmod
+   if ( ! -e $SWELL_JEDI_MODULES ) then
+      echo "${myname}: JEDI run-time modules SWELL_JEDI_MODULES=$SWELL_JEDI_MODULES not found, aborting"
+      exit 1
+   endif
+endif
 
 # --- layout from resolution (as in setup_aanajedi.pl set_ens_res) -----------
 switch ( $SWELL_ENS_CRES )
@@ -170,16 +189,55 @@ if ( $status ) then
 endif
 set cycdir = $JEDIWORK/$expid/run/${nymda}T${nhmsa}Z/geos_atmosphere
 
-# --- member analyses: lat-lon background + JEDI increment ------------------
+# --- member analyses: lat-lon background + lat-lon increment ---------------
+# EDA: increment = cubed analysis - cubed background, written on the lat-lon grid by
+# fv3jedi_diffstates.x (layout 1x1: 6 tasks) in a subshell with the JEDI run-time
+# modules, so the ADAS environment of dyn_jediupd.x is left untouched
+if ( $SWELL_ENSEMBLE == eda ) then
+   set yyyya = `echo $nymda | cut -c1-4`
+   set mma   = `echo $nymda | cut -c5-6`
+   set dda   = `echo $nymda | cut -c7-8`
+   set mna   = `echo $nhmsa | cut -c3-4`
+   set ssa   = `echo $nhmsa | cut -c5-6`
+   setenv SWELL_DIFF_DATE     "${yyyya}-${mma}-${dda}T${hha}:${mna}:${ssa}Z"
+   # relative to the member directory: FMS cuts file names at 128 characters
+   setenv SWELL_DIFF_FV3FILES ../../fv3-jedi/fv3files
+   setenv SWELL_DIFF_OUTPUT   ${suite}.inc.eta.
+   if ( ! -d $cycdir/fv3-jedi/fv3files ) then
+      echo "${myname}: $cycdir/fv3-jedi/fv3files not found, aborting"
+      exit 1
+   endif
+endif
 mkdir -p $FVWORK/updated_ens/ensmean $FVWORK/updated_ens/ensrms
 foreach m ( $members )
+   set mdir = $cycdir/analysis/$m
    if ( $SWELL_ENSEMBLE == eda ) then
-      set incs = ( `find -H $cycdir/analysis/$m -maxdepth 1 -name "${expid}.inc_iter1.${m}.*.nc4"` )
-   else
-      set incs = ( `find -H $cycdir/analysis/$m -maxdepth 1 -name "${suite}.inc.eta.*.nc4"` )
+      setenv SWELL_DIFF_ANA_DIR  $mdir
+      setenv SWELL_DIFF_ANA_FILE ${suite}.ana.ceta.${nymda}_${nhmsa}z.nc4
+      setenv SWELL_DIFF_BKG_DIR  $ATMENSLOC/ensbkgx/$m
+      setenv SWELL_DIFF_BKG_FILE $EXPID.bkg_clcv.${nymda}_${hhmma}z.nc4
+      if ( ! -e $mdir/$SWELL_DIFF_ANA_FILE ) then
+         echo "${myname}: missing $mdir/$SWELL_DIFF_ANA_FILE, aborting"
+         exit 1
+      endif
+      set dtmpl = `$mydir/swell_render.csh atmens_diffstates.yaml.tmpl $mdir/diffstates.yaml`
+      if ( $status ) then
+         echo "$dtmpl"
+         echo "${myname}: cannot prepare $mdir/diffstates.yaml, aborting"
+         exit 1
+      endif
+      cd $mdir
+      ( source $MODULESHOME/init/csh; source $SWELL_JEDI_MODULES; \
+        $SWELL_JEDI_MPIRUN -np 6 $SWELL_JEDI_BUILD/bin/fv3jedi_diffstates.x diffstates.yaml ) >& diffstates.log
+      if ( $status ) then
+         tail -20 diffstates.log
+         echo "${myname}: fv3jedi_diffstates.x failed for $m (log $mdir/diffstates.log), aborting"
+         exit 1
+      endif
    endif
+   set incs = ( `find -H $mdir -maxdepth 1 -name "${suite}.inc.eta.*.nc4"` )
    if ( $#incs != 1 ) then
-      echo "${myname}: expected one increment for $m in $cycdir/analysis/$m, found $#incs, aborting"
+      echo "${myname}: expected one increment for $m in $mdir, found $#incs, aborting"
       exit 1
    endif
    set inc = $incs[1]
