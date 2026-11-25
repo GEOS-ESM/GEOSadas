@@ -126,9 +126,22 @@ if ( (! $JEDI_RUN_ANASA) && (! $JEDI_RUN_ADANA) ) then
 
 endif
 
+# Central 3D-FGAT through swell (swell_ana_central.csh replaces jedi_set.csh + jedi_run.csh)
+# ----------------------------------------------------------------------------------------
+set use_swell = 0
+if ( ! $?JEDI_HYBRID ) setenv JEDI_HYBRID 0
+if ( -e $FVHOME/run/swell/swell_config.csh && ! $fcoff && ! $JEDI_RUN_ANASA && ! $JEDI_RUN_ADANA ) then
+   source $FVHOME/run/swell/swell_config.csh
+   if ( $SWELL_CENTRAL && $JEDI_HYBRID == 0 && $JEDI_OBS_OPT != 1 ) then
+      set use_swell = 1
+   else
+      echo " ${MYNAME}: swell central analysis not used (SWELL_CENTRAL=$SWELL_CENTRAL JEDI_HYBRID=$JEDI_HYBRID JEDI_OBS_OPT=$JEDI_OBS_OPT)"
+   endif
+endif
+
 # Prepare env for analysis
 # ------------------------
-if ( $JEDI_SET ) then
+if ( $JEDI_SET && ! $use_swell ) then
    zeit_ci.x jedi_set
    jedi_set.csh $nymdb $nhmsb $fcoff |& tee -a $FVWORK/$EXPID.jedi_set.log.${nymdb}_${hhb}z.txt
    if ( $status ) then
@@ -141,10 +154,19 @@ endif
 # Run JEDI analysis
 if ( $JEDI_RUN ) then
    zeit_ci.x jedi_run
-   jedi_run.csh $nymdb $nhmsb $fcoff |& tee -a $FVWORK/$EXPID.jedi_run.log.${nymdb}_${hhb}z.txt
-   if ( $status ) then
-      echo " ${MYNAME}: jedi_run.csh signal failure, aborting ..."
-      exit (1)
+   if ( $use_swell ) then
+      swell_ana_central.csh $nymdb $nhmsb $nymda $nhmsa |& tee -a $FVWORK/$EXPID.jedi_run.log.${nymdb}_${hhb}z.txt
+      # status after the pipe is that of tee; the .DONE file is the real signal
+      if ( ! -e $FVWORK/.DONE_swell_ana_central.csh.$yyyymmddhh ) then
+         echo " ${MYNAME}: swell_ana_central.csh signal failure, aborting ..."
+         exit (1)
+      endif
+   else
+      jedi_run.csh $nymdb $nhmsb $fcoff |& tee -a $FVWORK/$EXPID.jedi_run.log.${nymdb}_${hhb}z.txt
+      if ( $status ) then
+         echo " ${MYNAME}: jedi_run.csh signal failure, aborting ..."
+         exit (1)
+      endif
    endif
    zeit_co.x jedi_run
    if ( $JEDI_MKIAU ) then

@@ -4,17 +4,17 @@
 #
 # usage: swell_run.csh suite template exproot expid nymd nhms
 #
-#   suite     swell suite/config name (e.g. convert_ncdiags, eda_atmos)
+#   suite     swell suite/config name (e.g. convert_ncdiags, 3dfgat_atmos)
 #   template  override template; a bare name is searched for in
-#             $FVHOME/run/swell, $FVROOT/etc/swell, <this script dir>/etc
+#             $FVHOME/run/swell, $FVROOT/etc/swell, <installed etc/swell or source etc>
 #   exproot   swell experiment_root (directory owned by this run)
 #   expid     swell experiment_id (unique per role and cycle, e.g. x0055-g2i-2026082612)
 #   nymd nhms analysis date/time (middle of window)
 #
 # Steps:
 #   1. swell_env.csh (pin file, venv, commit check)
-#   2. render template with vED -env; abort on any unresolved $VAR
-#   3. swell create <suite> -o <override> -p $SWELL_PLATFORM -k [-s slurm.yaml]
+#   2. render the override (and optional slurm) template with swell_render.csh
+#   3. swell create <suite> -o <override> -p $SWELL_PLATFORM -k [-s <slurm yaml>]
 #   4. swell launch <suite dir> -b -t $SWELL_TIMEOUT    (blocks until done)
 #   5. require the swell CleanCycle marker  <cycle dir>/cycle_done_*
 #   6. save cylc logs into <exproot>/<expid>/cylc_log.tar.gz; remove the
@@ -25,9 +25,11 @@
 #   SWELL_JEDI_BUILD  SWELL_JEDI_SRC  SWELL_STATIC_FILES  SWELL_CRTM_COEFFS
 #
 # Optional environment:
-#   SWELL_SLURM_FILE  slurm yaml passed with -s (default $FVHOME/run/swell/slurm.yaml if present)
-#   SWELL_MODEL       model component holding the done marker (default geos_atmosphere)
-#   SWELL_DONE_MARKER none: do not require cycle_done_* (for suites without CleanCycle)
+#   SWELL_SLURM_TEMPLATE  slurm template rendered like the override and passed with -s
+#   SWELL_SLURM_FILE      ready-made slurm yaml passed with -s
+#                         (default $FVHOME/run/swell/slurm.yaml if present)
+#   SWELL_MODEL           model component holding the done marker (default geos_atmosphere)
+#   SWELL_DONE_MARKER     none: do not require cycle_done_* (for suites without CleanCycle)
 #
 # Exit status: 0 on success, 1 on failure.
 # ---------------------------------------------------------------------------
@@ -61,12 +63,6 @@ if ( ! $SWELL_ENV_OK ) then
    exit 1
 endif
 
-which vED >& /dev/null
-if ( $status ) then
-   echo "${myname}: vED not found in PATH (needed to render $template), aborting"
-   exit 1
-endif
-
 # --- dates -----------------------------------------------------------------
 set yyyy = `echo $nymd | cut -c1-4`
 set mm   = `echo $nymd | cut -c5-6`
@@ -86,27 +82,6 @@ set suitedir = $expdir/${expid}-suite
 set cycdir   = $expdir/run/${nymd}T${nhms}Z/$SWELL_MODEL
 set cylcrun  = $HOME/cylc-run/${expid}-suite
 
-# --- locate template -------------------------------------------------------
-set tmpl = ""
-if ( -e $template ) then
-   set tmpl = $template
-else
-   set search = ( $etcdir )
-   if ( $?FVROOT ) then
-      set search = ( $FVROOT/etc/swell $search )
-   endif
-   if ( $?FVHOME ) then
-      set search = ( $FVHOME/run/swell $search )
-   endif
-   foreach d ( $search )
-      if ( "$tmpl" == "" && -e $d/$template ) set tmpl = $d/$template
-   end
-endif
-if ( "$tmpl" == "" ) then
-   echo "${myname}: cannot find override template $template, aborting"
-   exit 1
-endif
-
 # --- fresh experiment directory --------------------------------------------
 if ( "$exproot" == "" || "$expid" == "" ) then
    echo "${myname}: empty exproot or expid, aborting"
@@ -116,36 +91,42 @@ mkdir -p $exproot
 if ( -d $expdir ) /bin/rm -rf $expdir
 if ( -d $cylcrun ) /bin/rm -rf $cylcrun
 
-# --- render override -------------------------------------------------------
+# --- render override and slurm settings ------------------------------------
 set override = $exproot/${expid}.override.yaml
-vED -env $tmpl -o $override
-if ( $status || ! -e $override ) then
-   echo "${myname}: failed to render $tmpl, aborting"
+set tmpl = `$mydir/swell_render.csh $template $override`
+if ( $status ) then
+   echo "$tmpl"
+   echo "${myname}: cannot prepare the override from $template, aborting"
    exit 1
 endif
-# (\x24 is '$'; a literal dollar cannot be used inside csh backquotes)
-set nunres = `grep -v '^[[:space:]]*#' $override | grep -cP '\x24\{?[A-Za-z_]'`
-if ( $nunres > 0 ) then
-   echo "${myname}: unresolved variables in $override (from $tmpl):"
-   grep -v '^[[:space:]]*#' $override | grep -nP '\x24\{?[A-Za-z_]'
-   exit 1
+
+set slurmopt = ""
+if ( $?SWELL_SLURM_TEMPLATE ) then
+   set slurmyaml = $exproot/${expid}.slurm.yaml
+   set stmpl = `$mydir/swell_render.csh $SWELL_SLURM_TEMPLATE $slurmyaml`
+   if ( $status ) then
+      echo "$stmpl"
+      echo "${myname}: cannot prepare slurm settings from $SWELL_SLURM_TEMPLATE, aborting"
+      exit 1
+   endif
+   set slurmopt = "-s $slurmyaml"
+else
+   if ( ! $?SWELL_SLURM_FILE ) then
+      if ( $?FVHOME ) then
+         if ( -e $FVHOME/run/swell/slurm.yaml ) setenv SWELL_SLURM_FILE $FVHOME/run/swell/slurm.yaml
+      endif
+   endif
+   if ( $?SWELL_SLURM_FILE ) then
+      set slurmopt = "-s $SWELL_SLURM_FILE"
+   endif
 endif
 
 echo "${myname}: suite=$suite expid=$expid cycle=$SWELL_ISO_DATE"
 echo "${myname}: template=$tmpl"
 echo "${myname}: override=$override"
+if ( "$slurmopt" != "" ) echo "${myname}: slurm=$slurmopt"
 
 # --- create ----------------------------------------------------------------
-set slurmopt = ""
-if ( ! $?SWELL_SLURM_FILE ) then
-   if ( $?FVHOME ) then
-      if ( -e $FVHOME/run/swell/slurm.yaml ) setenv SWELL_SLURM_FILE $FVHOME/run/swell/slurm.yaml
-   endif
-endif
-if ( $?SWELL_SLURM_FILE ) then
-   set slurmopt = "-s $SWELL_SLURM_FILE"
-endif
-
 swell create $suite -o $override -p $SWELL_PLATFORM -k $slurmopt
 set rc = $status
 if ( $rc || ! -e $suitedir/flow.cylc ) then
@@ -160,6 +141,7 @@ experiment:   $expid
 cycle:        $SWELL_ISO_DATE
 override:     $override
 template:     $tmpl
+slurm:        $slurmopt
 swell_venv:   $SWELL_VENV
 swell_src:    $SWELL_SRC
 swell_commit: $SWELL_HEAD

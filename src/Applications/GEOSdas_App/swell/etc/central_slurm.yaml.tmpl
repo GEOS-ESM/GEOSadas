@@ -1,0 +1,15 @@
+# swell slurm settings for the ADAS central analysis (swell_ana_central.csh)
+#   SWELL_SLURM_*                                  swell_config.csh
+#   SWELL_CENTRAL_NODES, SWELL_CENTRAL_PERHOST     swell_ana_central.csh (from the layout)
+
+slurm_directives_global:
+  account: $SWELL_SLURM_ACCOUNT
+  qos: $SWELL_SLURM_QOS
+  constraint: $SWELL_SLURM_CONSTRAINT
+
+slurm_directives_tasks:
+  RunJediVariationalExecutable:
+    geos_atmosphere:
+      nodes: $SWELL_CENTRAL_NODES
+      ntasks-per-node: $SWELL_CENTRAL_PERHOST
+      time: '$SWELL_CENTRAL_WALLTIME'

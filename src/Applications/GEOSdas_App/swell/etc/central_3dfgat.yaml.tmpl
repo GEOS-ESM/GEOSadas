@@ -1,0 +1,51 @@
+# swell override: ADAS central analysis, 3D-FGAT with climatological GSIBEC B
+#                 (swell suite 3dfgat_atmos, run by swell_ana_central.csh)
+#
+# Only values ADAS has to supply are set here; observation operators, QC, B and
+# the JEDI YAML itself come from swell. The observation list is the suite
+# default; observations without data in the cycle are dropped by swell.
+#   SWELL_*            set by swell_run.csh / swell_config.csh
+#   SWELL_CENTRAL_*, SWELL_IODA_DIR   set by swell_ana_central.csh
+
+experiment_id: $SWELL_EXPERIMENT_ID
+experiment_root: $SWELL_EXPERIMENT_ROOT
+start_cycle_point: '$SWELL_ISO_DATE'
+final_cycle_point: '$SWELL_ISO_DATE'
+skip_eva: true
+
+jedi_build_method: use_existing
+existing_jedi_build_directory: $SWELL_JEDI_BUILD
+existing_jedi_source_directory: $SWELL_JEDI_SRC
+
+models:
+  geos_atmosphere:
+    cycle_times:
+    - $SWELL_CYCLE_TIME
+    window_type: 4D                 # 4D-Var with PSEUDO model + Identity TLM = 3D-FGAT
+    window_length: PT6H
+    background_time_offset: PT9H
+    background_frequency: $SWELL_VAR_BKG_FREQ
+
+    background_experiment: $EXPID
+    geos_x_background_directory: $SWELL_BKG_ARCHIVE
+    ioda_locations_not_in_r2d2: $SWELL_IODA_DIR
+
+    horizontal_resolution: '$SWELL_CENTRAL_CRES'
+    vertical_resolution: '72'
+    npx_proc: $SWELL_CENTRAL_NPX
+    npy_proc: $SWELL_CENTRAL_NPY
+    perhost: $SWELL_CENTRAL_PERHOST
+
+    gsibec_configuration: cli_gsibec_configuration
+    gsibec_version: '$SWELL_GSIBEC_VERSION'
+    gsibec_nlats: $SWELL_CENTRAL_GSIBEC_NLATS
+    gsibec_nlons: $SWELL_CENTRAL_GSIBEC_NLONS
+    minimizer: DRPCG
+    gradient_norm_reduction: 1e-3
+    number_of_iterations:
+    - $SWELL_VAR_NITER
+
+    crtm_coeff_dir: $SWELL_CRTM_COEFFS
+    swell_static_files: $SWELL_STATIC_FILES
+    observing_system_records_mksi_path: $SWELL_MKSI_PATH
+    clean_patterns: []              # ADAS collects the outputs after the run
