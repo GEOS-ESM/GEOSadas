@@ -71,13 +71,14 @@ else
          echo "swell_env.csh: commit = $SWELL_HEAD$swell_dirty  [$SWELL_SRC]"
          echo "swell_env.csh: JEDI   = $SWELL_JEDI_BUILD"
 
-         if ( "$SWELL_COMMIT" != "" ) then
-            echo $SWELL_HEAD | grep -q "^$SWELL_COMMIT"
-            if ( $status ) then
-               echo "swell_env.csh: swell commit $SWELL_HEAD does not match pinned SWELL_COMMIT=$SWELL_COMMIT"
-               if ( $SWELL_COMMIT_STRICT ) setenv SWELL_ENV_OK 0
-            endif
-         endif
+         # swell commit check: commented out (swell changes often)
+         #if ( "$SWELL_COMMIT" != "" ) then
+         #   echo $SWELL_HEAD | grep -q "^$SWELL_COMMIT"
+         #   if ( $status ) then
+         #      echo "swell_env.csh: swell commit $SWELL_HEAD does not match pinned SWELL_COMMIT=$SWELL_COMMIT"
+         #      if ( $SWELL_COMMIT_STRICT ) setenv SWELL_ENV_OK 0
+         #   endif
+         #endif
          unset nmod
       endif
       unset swell_exe swell_dirty
