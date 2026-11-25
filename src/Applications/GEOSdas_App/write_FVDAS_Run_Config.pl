@@ -7,6 +7,7 @@
 # 28Aug2009  Stassi  Update for pleiades
 # 03Nov2026  Yu      Write ZERO_OBS and MINIMAL_GCM when set in the environment
 # 25Nov2026  Yu      Write GEOSJEDI (0: GSI only, 1: JEDI, 2: JEDI via swell)
+# 25Nov2026  Yu      Write KEEP_WORKDIRS (1: keep the DAS and ensemble work dirs)
 #=======================================================================
 use strict;
 
@@ -27,7 +28,7 @@ my ($FVSHARE, $SHARE, $REM_GRADS_CONFIG, $G5MGRAM, $LATS4DLOC, $FVBIN,
 my ($FVROOT_PORTAL, $RC_LOC, $RTAG, $ANAID, $CASE, $ERR, $ERROR_EXP,
     $FCHOME, $FCSTAGE, $FERR, $FVDOLMS, $FVGROUP, $FVPLOTS, $FVSCRA,
     $FVSILO, $FVSPOOL, $FVSTAGE, $FVWORK, $GRADS_CONFIG, $LIBSZ, $MONTHLY_X);
-my ($ACFTBIAS, $NEWRADBC, $ZERO_OBS, $MINIMAL_GCM, $GEOSJEDI);
+my ($ACFTBIAS, $NEWRADBC, $ZERO_OBS, $MINIMAL_GCM, $GEOSJEDI, $KEEP_WORKDIRS);
 my (%vv);
 
 # main program
@@ -118,6 +119,7 @@ sub init {
     $ZERO_OBS          = $ENV{"ZERO_OBS"};
     $MINIMAL_GCM       = $ENV{"MINIMAL_GCM"};
     $GEOSJEDI          = $ENV{"GEOSJEDI"};
+    $KEEP_WORKDIRS     = $ENV{"KEEP_WORKDIRS"};
 
     $AOD_OBSCLASS = "none" unless $AOD_OBSCLASS;
 
@@ -359,6 +361,10 @@ sub writefile {
     if ( defined($GEOSJEDI) ) {
         print RUNCONF "# JEDI analysis: 0 = none (GSI only), 1 = GEOSdas_App/jedi, 2 = GEOSdas_App/swell\n";
         print RUNCONF "setenv GEOSJEDI $GEOSJEDI\n";
+    }
+    if ( defined($KEEP_WORKDIRS) ) {
+        print RUNCONF "# 1 = keep fvwork.<pid> (DAS job) and enswork.<EXPID>.<yyyymmdd>_<hh>z (atm_ens.j)\n";
+        print RUNCONF "setenv KEEP_WORKDIRS $KEEP_WORKDIRS\n";
     }
     if ( $ZERO_OBS ) {
         print RUNCONF "# Zero-observation DA: GSI with empty obs table; ensemble observer/EnKF skipped\n";

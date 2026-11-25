@@ -196,6 +196,7 @@ source $JEDIBUILD/modules
   cd $JEDIWORK/${EXPID}-${SUITE}/run/${nymda}T${hha}0000Z/geos_atmosphere/analysis/
   set members = `ls -d mem*`
   foreach dir ( mean variance $members )
+     if ( ! -d $dir ) continue   # the GETKF 2-step suite writes no mean/variance
      cd $dir
      /bin/rm *.ana.eta.*.nc4
      # rename swell-given filenames to experiment id name

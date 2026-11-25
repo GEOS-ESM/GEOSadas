@@ -5,6 +5,8 @@
 #  18Nov2026 Yu  Add -ensonly/-ensscheme/-ensmem/-ensres: install JEDI ensemble
 #                analysis (EDA or GETKF); set n_ens/nlat_ens/nlon_ens in the
 #                hybrid gsibec namelist; check copies of resource files
+#  25Nov2026 Yu  swell (python venv), JEDI build and JEDI source (new -jedisrc,
+#                @JEDI_SRC) default to yyu11 directories
 #-----------------------------------------------------------------------------------------------------
 
 use Env;                 # make env vars readily available
@@ -42,6 +44,7 @@ my $scriptname = basename($0);
                "iodadir=s",
                "jedihome=s",
                "jediroot=s",
+               "jedisrc=s",
                "jedistatic=s",
                "nodename=s",
                "nogsi",
@@ -151,7 +154,12 @@ sub init {
    if ( $opt_jediroot ) {
         $jediroot = $opt_jediroot;
    } else {
-        $jediroot = "/discover/nobackup/projects/gmao/advda/swell/JediBundles/fv3_soca_SLES15_08142026/build-intel-release";
+        $jediroot = "/discover/nobackup/yyu11/generated/br_2026-10-27/build";
+   }
+   if ( $opt_jedisrc ) {
+        $jedisrc = $opt_jedisrc;
+   } else {
+        $jedisrc = "/discover/nobackup/yyu11/generated/br_2026-10-27/jedi-bundle";
    }
 
    if ( $opt_archive ) {
@@ -200,8 +208,9 @@ sub init {
      }
    }
 
-# Swell is wired for now
-  $swell_install = "/gpfsm/dnb10/projects/p61/rtodling/JEDI1/2026/SWELL/May/opt";
+# Swell is wired for now: python venv with swell installed in editable mode from
+# /discover/nobackup/yyu11/prep_swell/install_swell/swell_etkf_adas (feature/ygyu/fn_eda_kf_wai)
+  $swell_install = "/discover/nobackup/yyu11/venv_all/venv_ss1.9_py3.11.7_PR656_uv";
 
 # other settings
    $jediinput = "$fvhome/fv3-jedi";
@@ -889,6 +898,7 @@ sub ed_conf_rc {
         if($rcd =~ /\@JEDI_OBS_OPT/)        {$rcd=~ s/\@JEDI_OBS_OPT/$jedi_obs_opt/g;  }
         if($rcd =~ /\@JEDI_IAU_OVERWRITE/)  {$rcd=~ s/\@JEDI_IAU_OVERWRITE/$iau_overwrite/g;  }
         if($rcd =~ /\@JEDI_ROOT/)           {$rcd=~ s/\@JEDI_ROOT/$jediroot/g;  }
+        if($rcd =~ /\@JEDI_SRC/)            {$rcd=~ s/\@JEDI_SRC/$jedisrc/g;  }
         if($rcd =~ /\@JEDI_RUN_GETINC/)     {$rcd=~ s/\@JEDI_RUN_GETINC/$jediinc/g;  }
         if($rcd =~ /\@JEDI_STATIC_FILES/)   {$rcd=~ s/\@JEDI_STATIC_FILES/$jedistatic/g;  }
         if($rcd =~ /\@JEDI_DIF_NCPUS/)      {$rcd=~ s/\@JEDI_DIF_NCPUS/$diffntasks/g;  }
@@ -1180,7 +1190,8 @@ OPTIONS
      -gcmres       specify resolution of underying AGCM (default: hres in arg list)
      -fvhome       location of experiment home directory (default: \$expdir/\$expid)
      -jedihome     location of ensemble members (default: \$FVHOME/run/jedi)
-     -jediroot     location of JEDI build directory (default: /discover/nobackup/projects/gmao/advda/swell/JediBundles/fv3_soca_SLES15_07162026_gsibec1.4.3/build-intel-release)
+     -jediroot     location of JEDI build directory (default: /discover/nobackup/yyu11/generated/br_2026-10-27/build)
+     -jedisrc      location of JEDI source directory (default: /discover/nobackup/yyu11/generated/br_2026-10-27/jedi-bundle)
      -jedistatic   location of JEDI static files (default: /discover/nobackup/projects/gmao/advda/SwellStaticFiles)
      -iodadir      location of pre-existing IODA files (default: /dev/null, ie, run ncdiag2ioda)
      -ensonly      only install the JEDI ensemble analysis (needs -ensscheme, -ensmem, -ensres);

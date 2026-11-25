@@ -346,6 +346,7 @@
 # 03Nov2026 Yu         MINIMAL_GCM env: physics children off, no chemistry, minimal history
 # 18Nov2026 Yu         get_jedi_info: GEOSJEDI, jedi_ens_scheme (EDA/GETKF), jedi_ens_member
 # 25Nov2026 Yu         GEOSJEDI=2: JEDI via swell (swell_setup.pl); GEOSJEDI=1: JEDI as before
+# 25Nov2026 Yu         KEEP_WORKDIRS (default 1 at C12/C24): keep fvwork.<pid> and enswork.<EXPID>.<date>
 #-------------------------------------------------------------------------
 use Cwd qw(abs_path cwd);
 use English;
@@ -9372,9 +9373,10 @@ EOF
       set jobID = \$jobIDline[\$\#jobIDline]
   endif
 
-# Remove the working directory
+# Remove the working directory (kept when KEEP_WORKDIRS=1 in FVDAS_Run_Config)
 # ----------------------------
-  /bin/rm -rf \$FVWORK
+  if ( ! \$?KEEP_WORKDIRS ) setenv KEEP_WORKDIRS 0
+  if ( ! \$KEEP_WORKDIRS ) /bin/rm -rf \$FVWORK
 
 # submit job to calculate forecast statistics
 # -------------------------------------------
@@ -9528,6 +9530,12 @@ sub write_FVDAS_Run_Config {
     $ENV{"VTRACK"}          = $vtrack;
     $ENV{"VTXLEVS"}         = $vtxlevs;
     $ENV{"VTXRELOC"}        = $vtxreloc;
+
+    # C12/C24 tests keep their work directories; an exported KEEP_WORKDIRS overrides
+    my $keepwork = ( defined($res) && $res =~ /^C(12|24)$/ ) ? 1 : 0;
+    $keepwork = $ENV{"KEEP_WORKDIRS"} if defined($ENV{"KEEP_WORKDIRS"});
+    die ">>> ERROR <<< KEEP_WORKDIRS must be 0 or 1 (found: $keepwork)\n" unless ( $keepwork =~ /^[01]$/ );
+    local $ENV{"KEEP_WORKDIRS"} = $keepwork;
 
     if ($geosit || $r21c) {
         $ENV{"MKSI_SIDB"}   = "\$FVHOME/run/gmao_satinfo.db";

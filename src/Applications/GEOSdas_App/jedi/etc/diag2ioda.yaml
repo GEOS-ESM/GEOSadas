@@ -30,7 +30,7 @@ jedi_build_method: use_existing
 existing_jedi_build_directory: $JEDI_ROOT
 
 # What is the path to the existing JEDI source code directory?
-existing_jedi_source_directory: $JEDI_ROOT/../
+existing_jedi_source_directory: $JEDI_SRC
 
 # Configurations for the model components.
 models:

@@ -13,7 +13,8 @@ setenv JEDI_OBS_OPT 1          # 1= point to xexp-like set (data in tar-balls; d
                                # 2= point to existing set of ncdiag-ioda-converted set (swell/.../DATE/geos_atmosphere)
                                # 3= generate on the fly based on GSI (nc4) diags (TBD)
 
-setenv SWELL_INSTALL /discover/nobackup/projects/gmao/advda/rtodling/JEDI1/2026/SWELL/Jul/
+setenv SWELL_INSTALL @SWELL_INSTALL
 setenv JEDI_ROOT @JEDI_ROOT
+setenv JEDI_SRC @JEDI_SRC
 
 

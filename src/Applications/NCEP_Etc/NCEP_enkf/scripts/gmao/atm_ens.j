@@ -723,9 +723,18 @@
         endif
      endif
 
-#    If made it here, all is good, then remove the working directory
+#    If made it here, all is good, then remove the working directory;
+#    KEEP_WORKDIRS=1 (FVDAS_Run_Config) keeps it, tagged with the analysis time
 #    ---------------------------------------------------------------
-     /bin/rm -rf $FVWORK
+     if ( ! $?KEEP_WORKDIRS ) setenv KEEP_WORKDIRS 0
+     if ( $KEEP_WORKDIRS ) then
+        set keepdir = ${FVWORK}.${anymd}_`echo $anhms | cut -c1-2`z
+        if ( -e $keepdir ) set keepdir = ${keepdir}.$$
+        /bin/mv $FVWORK $keepdir
+        echo "atm_ens.j: working directory kept as $keepdir"
+     else
+        /bin/rm -rf $FVWORK
+     endif
      /bin/rm     $FVHOME/.ENSWORK
   endif
 

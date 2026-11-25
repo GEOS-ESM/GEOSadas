@@ -1,5 +1,5 @@
 # What is the experiment id?
-experiment_id: ${EXPID}-localensembleda
+experiment_id: ${EXPID}-localensembleda_2steps
 
 # What is the experiment root (the directory where the experiment will be stored)?
 experiment_root: $JEDIWORK
@@ -29,8 +29,11 @@ r2d2_datastore:
 # Skip registering and storing results of this experiment in R2D2?
 skip_r2d2: false
 
+# Skip the Eva diagnostic plotting tasks?
+skip_eva: true
+
 # Record of the suite being executed
-suite_to_run: localensembleda
+suite_to_run: localensembleda_2steps
 
 # Dry-run option for comparing configs.
 mock_experiment: false
@@ -39,7 +42,7 @@ mock_experiment: false
 jedi_build_method: use_existing
 
 # What is the path to the existing JEDI source code directory?
-existing_jedi_source_directory: $JEDI_ROOT/../
+existing_jedi_source_directory: $JEDI_SRC
 
 # What is the path to the existing JEDI build directory?
 existing_jedi_build_directory: $JEDI_ROOT
@@ -152,6 +155,9 @@ models:
     # Which GSIBEC climatological or hybrid?
     gsibec_configuration: cli_gsibec_configuration
 
+    # Which version of the GSIBEC static files (gsibec/<version> directory)?
+    gsibec_version: 1.0.2
+
     # How many number of latutides in GSIBEC grid?
     gsibec_nlats: @ENS_GSIBEC_NLATS
 
@@ -181,7 +187,7 @@ models:
     ebkg_time_offset: PT3H
 
     # What is the path to the GEOS X-backgrounds directory?
-    geos_x_ensemble_directory: ${ARCHIVE}/
+    geos_x_ensemble_directory: ${JEDIWORK}/archive
 
     # What is the path to the GSI formatted observing system records?
     observing_system_records_mksi_path: None
@@ -211,7 +217,7 @@ models:
     local_ensemble_inflation_rtps: 0.5
 
     # Save the posterior ensemble members?
-    local_ensemble_save_posterior_ensemble: false
+    local_ensemble_save_posterior_ensemble: true
 
     # Save the posterior ensemble member increments?
     local_ensemble_save_posterior_ensemble_increments: false

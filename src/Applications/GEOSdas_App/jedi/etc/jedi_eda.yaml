@@ -29,6 +29,9 @@ r2d2_datastore:
 # Skip registering and storing results of this experiment in R2D2?
 skip_r2d2: false
 
+# Skip the Eva diagnostic plotting tasks?
+skip_eva: true
+
 # Record of the suite being executed
 suite_to_run: eda_atmos
 
@@ -42,7 +45,7 @@ jedi_build_method: use_existing
 existing_jedi_build_directory: $JEDI_ROOT/
 
 # What is the path to the existing JEDI source code directory?
-existing_jedi_source_directory: $JEDI_ROOT/../
+existing_jedi_source_directory: $JEDI_SRC
 
 # Configurations for the model components.
 models:
@@ -164,6 +167,9 @@ models:
 
     # Which GSIBEC climatological or hybrid?
     gsibec_configuration: cli_gsibec_configuration
+
+    # Which version of the GSIBEC static files (gsibec/<version> directory)?
+    gsibec_version: 1.0.2
 
     # Which data assimilation minimizer do you wish to use?
     minimizer: DRPCG

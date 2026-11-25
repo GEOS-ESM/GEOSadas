@@ -26,6 +26,7 @@ setenv JEDI_OBS_OPT @JEDI_OBS_OPT  # 1= point to xexp-like set (data in tar-ball
                                    # 3= generate on the fly based on GSI (nc4) diags (TBD)
 
 setenv JEDI_ROOT @JEDI_ROOT
+setenv JEDI_SRC @JEDI_SRC
 
 # Specific to run procedure
 setenv JEDI_RUN_ANA      1
