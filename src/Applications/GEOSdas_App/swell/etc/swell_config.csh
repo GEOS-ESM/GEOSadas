@@ -46,13 +46,8 @@ if ( ! $?SWELL_SLURM_QOS )        setenv SWELL_SLURM_QOS        allnccs
 if ( ! $?SWELL_SLURM_CONSTRAINT ) setenv SWELL_SLURM_CONSTRAINT mil
 
 # ---------------------------------------------------------------------------
-# Central analysis (swell_ana_central.csh, suite 3dfgat_atmos)
+# Central analysis (GEOSJEDI=2: GEOSdas.csm runs swell_driver.csh; suite 3dfgat_atmos)
 # ---------------------------------------------------------------------------
-# 1: GEOSdas.csm runs the central analysis with swell_driver.csh (3D-FGAT);
-# 0: the jedi/ layer does it (jedi_driver.csh, hybrid schemes), converting the
-#    GSI ncdiags with swell_gsi2ioda.csh and the swell pinned here
-if ( ! $?SWELL_CENTRAL ) setenv SWELL_CENTRAL 1
-
 # Observations: converted from the GSI ncdiags of the cycle (default), or taken from
 # an IODA archive <dir>/<yyyymmddThhmmssZ>/geos_atmosphere (e.g. when SKIPGSI)
 if ( ! $?SWELL_OFFLINE_IODA_DIR ) setenv SWELL_OFFLINE_IODA_DIR ""
@@ -106,9 +101,9 @@ endif
 if ( ! $?SWELL_OBS_SHARE_KEEP ) setenv SWELL_OBS_SHARE_KEEP 4
 
 # ---------------------------------------------------------------------------
-# Ensemble analysis (swell_ana_atmens.csh, called by atm_ens.j)
+# Ensemble analysis (GEOSJEDI=2: atm_ens.j runs swell_ana_atmens.csh)
 # ---------------------------------------------------------------------------
-# none: GSI EnKF (or the old JEDI path); eda: eda_atmos; getkf: localensembleda;
+# none: GSI EnKF; eda: eda_atmos; getkf: localensembleda;
 # getkf2: localensembleda_2steps
 if ( ! $?SWELL_ENSEMBLE ) setenv SWELL_ENSEMBLE none
 

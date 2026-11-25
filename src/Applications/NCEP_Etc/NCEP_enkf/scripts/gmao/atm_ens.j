@@ -37,10 +37,14 @@
   # Determines whether JEDI-based ensemble analysis will run
   # in place of GSI-based ensemble (for now, experiments
   # require a pure GSI-based initial cycle)
+  # GEOSJEDI (FVDAS_Run_Config): 1 = JEDI (GEOSdas_App/jedi), 2 = JEDI via swell (GEOSdas_App/swell)
   setenv JEDI_CAN_RUN_NOW 0
-  # Ensemble analysis through swell (swell_ana_atmens.csh) when the experiment opts in
   setenv SWELL_ENS_RUN 0
-  if ( -e $FVHOME/run/swell/swell_config.csh ) then
+  set jedi_mode = 0
+  if ( $?GEOSJEDI ) then
+     set jedi_mode = $GEOSJEDI
+  endif
+  if ( "$jedi_mode" == "2" ) then
      source $FVHOME/run/swell/swell_config.csh
      if ( "$SWELL_ENSEMBLE" != "none" ) then
         setenv SWELL_ENS_RUN 1
@@ -48,7 +52,8 @@
         setenv ATMENS_ENSQRF 0
      endif
   endif
-  if ( -d $FVHOME/run/jedi && ! $SWELL_ENS_RUN ) then
+  if ( "$jedi_mode" == "1" ) then
+   if ( -d $FVHOME/run/jedi ) then
      set jedi_cycles = `ls $FVHOME/run/jedi/Config/geosvar.*z.yaml | wc`
      @ jedi_cycles = $jedi_cycles[1] # JEDI must have cycled twice for its ens to run (viz., vbc)
      if ( $jedi_cycles > 1                     && \
@@ -59,6 +64,7 @@
         setenv JEDI_CAN_RUN_NOW 1
         setenv ATMENS_ENSQRF 0
      endif
+   endif
   endif
 # tell which side of the machine we are on ...
   uname -a

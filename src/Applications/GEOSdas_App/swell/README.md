@@ -22,36 +22,39 @@ has a small override template holding only the values ADAS knows.
 | `etc/atmens_{eda,getkf,getkf2}.yaml.tmpl`, `etc/atmens_slurm.yaml.tmpl` | overrides and slurm settings for `swell_ana_atmens.csh` |
 | `etc/mkiau.rc.tenv` | `mkiau.x` resource template (AGCM grid filled in by `swell_setup.pl`) |
 
-## Setting up an experiment (fvsetup)
+## The GEOSJEDI switch
 
-With `GEOSJEDI=1` in the environment, `fvsetup` installs one of two layers:
+One value selects the JEDI analysis of an experiment. `fvsetup` takes it from
+the environment and writes it into `$FVHOME/run/FVDAS_Run_Config`; at run time
+`GEOSdas.csm` and `atm_ens.j` read only that value. The two JEDI designs share
+no code: `GEOSJEDI=1` runs only `GEOSdas_App/jedi`, `GEOSJEDI=2` only `GEOSdas_App/swell`.
 
-| | swell layer (`GEOSdas_App/swell`) | jedi layer (`GEOSdas_App/jedi`) |
-|---|---|---|
-| used for | `3dfgat` (default when `hyb_ens < 3`) | the hybrid schemes (default when `hyb_ens >= 3`) |
-| set up by | `swell_setup.pl` | `setup_aanajedi.pl` (+ `swell_setup.pl`, `SWELL_CENTRAL=0`) |
-| central analysis | `swell_driver.csh` | `jedi_driver.csh` (GSI ncdiag conversion with `swell_gsi2ioda.csh`) |
-| ensemble analysis | `swell_ana_atmens.csh` (`SWELL_ENSEMBLE`) | `jedi_driver_atmens.csh` |
+| `GEOSJEDI` | `fvsetup` | central analysis (`GEOSdas.csm`) | ensemble analysis (`atm_ens.j`) |
+|---|---|---|---|
+| 0 or unset | GSI only | none | GSI EnKF |
+| 1 | `setup_aanajedi.pl` → `run/jedi` | `jedi_driver.csh` | `jedi_driver_atmens.csh` (its own gate) |
+| 2 | `swell_setup.pl` → `run/swell` | `swell_driver.csh` (3D-FGAT) | `swell_ana_atmens.csh` when `SWELL_ENSEMBLE` is not `none` |
 
-- `GEOSJEDI_LAYER=swell|jedi` overrides the default; the swell layer refuses the
-  hybrid schemes (hybrid 3DEnVar through swell is still to come). A 3D-FGAT
-  central analysis with a swell ensemble needs `JEDI_ATMVAR_SCHEME=3dfgat`.
-- `fvsetup -jedistatic DIR` becomes `SWELL_STATIC_FILES`; the fvsetup answers
+With `GEOSJEDI=2`:
+
+- the central analysis is 3D-FGAT with climatological B, also when the ensemble
+  is on (`hyb_ens >= 3`; hybrid through swell is still to come);
+- `fvsetup -jedistatic DIR` becomes `SWELL_STATIC_FILES`; the answers
   `jedi_ens_scheme` 1 (EDA) / 2 (GETKF) become `SWELL_ENSEMBLE` `eda` / `getkf2`;
   the cubed resolutions give `SWELL_CENTRAL_CRES` / `SWELL_ENS_CRES`; `SKIPGSI`
-  needs `OFFLINE_IODA_DIR` (→ `SWELL_OFFLINE_IODA_DIR`).
+  needs `OFFLINE_IODA_DIR` (→ `SWELL_OFFLINE_IODA_DIR`);
 - `$FVHOME/run/swell/swell_config.csh` is the installed default with the
-  experiment settings in a marked block at the top; edit it to change them.
+  experiment settings in a marked block at the top; edit it to change them;
 - `fcst/rst4fcst.acq` acquires the JEDI IAU (`jedi_agcmrst`) in place of the
-  GSI IAU (`agcm_import_rst`); the restart line stays.
+  GSI IAU (`agcm_import_rst`); the restart line stays;
+- `atm_ens.j` skips the GSI observer when the swell ensemble runs, as it does
+  for the `GEOSJEDI=1` ensemble.
 
-At run time:
-
-- `GEOSdas.csm` runs `swell_driver.csh` when `SWELL_CENTRAL=1`, else
-  `jedi_driver.csh` when `$FVHOME/run/jedi` exists.
-- `atm_ens.j` runs `swell_ana_atmens.csh` when `SWELL_ENSEMBLE` is not `none`
-  (the GSI observer is skipped, as for the old JEDI path); otherwise GSI EnKF or
-  the old JEDI path as before.
+New experiments always get `setenv GEOSJEDI 0|1|2` in `FVDAS_Run_Config`, so a
+`GEOSJEDI` exported in the shell that submits the job does not matter. Experiments
+set up before the switch existed have no such line and take `GEOSJEDI` from the
+job's environment (none: GSI only); add `setenv GEOSJEDI 1` (or `0`) to their
+`FVDAS_Run_Config`.
 
 Templates and an optional `slurm.yaml` placed in `$FVHOME/run/swell` take
 precedence over the installed ones in `$FVROOT/etc/swell`.

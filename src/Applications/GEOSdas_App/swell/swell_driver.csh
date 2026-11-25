@@ -7,8 +7,8 @@
 #   nymdb nhmsb  beginning of the analysis window
 #   nymda nhmsa  analysis time
 #
-# Called by GEOSdas.csm (JEDI_AnalysisRun_) when $FVHOME/run/swell/swell_config.csh
-# sets SWELL_CENTRAL=1. Steps (each one restartable through its .DONE file):
+# Called by GEOSdas.csm (JEDI_AnalysisRun_) when GEOSJEDI=2 (FVDAS_Run_Config).
+# Steps (each one restartable through its .DONE file):
 #   1. observations  $FVWORK/ioda.<A>: swell_gsi2ioda.csh (GSI ncdiags), or links to
 #                    $SWELL_OFFLINE_IODA_DIR/<A>T..Z/geos_atmosphere when that is set
 #   2. analysis      swell_ana_central.csh

@@ -6,6 +6,7 @@
 # 30Apr2009  Stassi  initial version
 # 28Aug2009  Stassi  Update for pleiades
 # 03Nov2026  Yu      Write ZERO_OBS and MINIMAL_GCM when set in the environment
+# 25Nov2026  Yu      Write GEOSJEDI (0: GSI only, 1: JEDI, 2: JEDI via swell)
 #=======================================================================
 use strict;
 
@@ -26,7 +27,7 @@ my ($FVSHARE, $SHARE, $REM_GRADS_CONFIG, $G5MGRAM, $LATS4DLOC, $FVBIN,
 my ($FVROOT_PORTAL, $RC_LOC, $RTAG, $ANAID, $CASE, $ERR, $ERROR_EXP,
     $FCHOME, $FCSTAGE, $FERR, $FVDOLMS, $FVGROUP, $FVPLOTS, $FVSCRA,
     $FVSILO, $FVSPOOL, $FVSTAGE, $FVWORK, $GRADS_CONFIG, $LIBSZ, $MONTHLY_X);
-my ($ACFTBIAS, $NEWRADBC, $ZERO_OBS, $MINIMAL_GCM);
+my ($ACFTBIAS, $NEWRADBC, $ZERO_OBS, $MINIMAL_GCM, $GEOSJEDI);
 my (%vv);
 
 # main program
@@ -116,6 +117,7 @@ sub init {
     $VTXRELOC          = $ENV{"VTXRELOC"};
     $ZERO_OBS          = $ENV{"ZERO_OBS"};
     $MINIMAL_GCM       = $ENV{"MINIMAL_GCM"};
+    $GEOSJEDI          = $ENV{"GEOSJEDI"};
 
     $AOD_OBSCLASS = "none" unless $AOD_OBSCLASS;
 
@@ -354,6 +356,10 @@ sub writefile {
     print RUNCONF "setenv NEWRADBC \"$NEWRADBC\"\n";
     print RUNCONF "setenv ANGLEBC \"$NEWRADBC\"\n";
     print RUNCONF "setenv SKIPGSI $SKIPGSI\n" if $SKIPGSI;
+    if ( defined($GEOSJEDI) ) {
+        print RUNCONF "# JEDI analysis: 0 = none (GSI only), 1 = GEOSdas_App/jedi, 2 = GEOSdas_App/swell\n";
+        print RUNCONF "setenv GEOSJEDI $GEOSJEDI\n";
+    }
     if ( $ZERO_OBS ) {
         print RUNCONF "# Zero-observation DA: GSI with empty obs table; ensemble observer/EnKF skipped\n";
         print RUNCONF "if ( !(\$?ZERO_OBS) ) setenv ZERO_OBS 1\n";
