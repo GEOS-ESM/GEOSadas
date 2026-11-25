@@ -1,0 +1,29 @@
+# swell slurm settings for the ADAS ensemble analysis (swell_ana_atmens.csh)
+#   SWELL_SLURM_*                              swell_config.csh
+#   SWELL_ENS_NODES, SWELL_ENS_PERHOST         swell_ana_atmens.csh (from the layout)
+# Entries for tasks that a suite does not have are ignored.
+
+slurm_directives_global:
+  account: $SWELL_SLURM_ACCOUNT
+  qos: $SWELL_SLURM_QOS
+  constraint: $SWELL_SLURM_CONSTRAINT
+
+slurm_directives_tasks:
+  RunJediEdaExecutable:              # one job per member
+    geos_atmosphere:
+      nodes: $SWELL_ENS_NODES
+      ntasks-per-node: $SWELL_ENS_PERHOST
+      time: '$SWELL_ENS_WALLTIME'
+  RunJediLocalEnsembleDaExecutable:
+    geos_atmosphere:
+      nodes: $SWELL_ENS_NODES
+      ntasks-per-node: $SWELL_ENS_PERHOST
+      time: '$SWELL_ENS_WALLTIME'
+  RunJediEtkfSolver:
+    geos_atmosphere:
+      nodes: $SWELL_ENS_NODES
+      ntasks-per-node: $SWELL_ENS_PERHOST
+      time: '$SWELL_ENS_WALLTIME'
+  RunJediEtkfObserver:
+    geos_atmosphere:
+      time: '$SWELL_ENS_WALLTIME'

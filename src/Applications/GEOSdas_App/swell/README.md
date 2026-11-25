@@ -12,14 +12,17 @@ has a small override template holding only the values ADAS knows.
 | `swell_run.csh` | generic: render templates → `swell create` → `swell launch -b` → check → clean |
 | `swell_gsi2ioda.csh` | role: GSI ncdiag + GSI bias → IODA (suite `convert_ncdiags`) |
 | `swell_ana_central.csh` | role: central 3D-FGAT analysis (suite `3dfgat_atmos`), replaces `jedi_set.csh` + `jedi_run.csh` |
+| `swell_ana_atmens.csh` | role: ensemble analysis (EDA / GETKF), replaces `jedi_driver_atmens.csh` |
 | `etc/convert_ncdiags.yaml.tmpl` | override for `swell_gsi2ioda.csh` |
 | `etc/central_3dfgat.yaml.tmpl`, `etc/central_slurm.yaml.tmpl` | override and slurm settings for `swell_ana_central.csh` |
+| `etc/atmens_{eda,getkf,getkf2}.yaml.tmpl`, `etc/atmens_slurm.yaml.tmpl` | overrides and slurm settings for `swell_ana_atmens.csh` |
 
 ## Enabling in an experiment
 
     mkdir -p $FVHOME/run/swell
     cp $FVROOT/etc/swell/swell_config.csh $FVHOME/run/swell/
     # edit: SWELL_CENTRAL_CRES (npx of the JEDI backgrounds, e.g. 13 for C12, 91 for C90)
+    #       SWELL_ENSEMBLE (none|eda|getkf|getkf2) and SWELL_ENS_CRES (npx of the ensemble)
     #       and, if needed, the swell/JEDI pins and SWELL_STATIC_FILES
 
 With `$FVHOME/run/swell/swell_config.csh` present (opt-in):
@@ -30,6 +33,9 @@ With `$FVHOME/run/swell/swell_config.csh` present (opt-in):
   instead of `jedi_set.csh` + `jedi_run.csh` when `SWELL_CENTRAL=1`,
   `JEDI_HYBRID=0` and `JEDI_OBS_OPT` is 2 or 3; otherwise the old path is used.
   `jedi_mkiau.csh` and `jedi_upd4geos.csh` follow unchanged.
+- `atm_ens.j` runs the ensemble analysis with `swell_ana_atmens.csh` when
+  `SWELL_ENSEMBLE` is not `none` (the GSI observer is skipped, as for the old
+  JEDI path); otherwise GSI EnKF or the old JEDI path as before.
 
 Templates and an optional `slurm.yaml` placed in `$FVHOME/run/swell` take
 precedence over the installed ones in `$FVROOT/etc/swell`.
@@ -46,9 +52,26 @@ precedence over the installed ones in `$FVROOT/etc/swell`.
 | → `$JEDIWORK/ana` | `$EXPID.jedi_ana.ceta.<date>.nc4` (cubed analysis at the analysis time) |
 | → `$FVWORK` | `$EXPID.jedi_{hofx,vbc}.<B>.tar`, `$EXPID.jedi_var.log.<B>.txt` |
 | → `$SWELL_VARBC_DIR` | VarBC output at the window begin, input of the next cycle |
+| → `$SWELL_OBS_SHARE/<ana>` | copy of the observations and biases used, read by the ensemble |
 
 Processor layout and GSIBEC grid follow from `SWELL_CENTRAL_CRES` (table in
 `swell_ana_central.csh`; any `SWELL_CENTRAL_*` already set wins).
+
+## Ensemble analysis data flow (swell_ana_atmens.csh)
+
+| | |
+|---|---|
+| method | `SWELL_ENSEMBLE`: `eda` (eda_atmos), `getkf` (localensembleda), `getkf2` (localensembleda_2steps) |
+| observations | `$SWELL_OBS_SHARE/<ana>`: the same observations and biases as the central analysis of the cycle |
+| backgrounds | `$ATMENSLOC/ensbkgx/memNNN/*.bkg_clcv.*` read in place (swell links an unpacked `atmens_ebkgx` layout) |
+| B (EDA) | GSIBEC climatological, `gsibec/$SWELL_GSIBEC_VERSION` |
+| → member increments | lat-lon, from the JEDI solver (EDA `inc_iter1`, GETKF posterior ensemble increments) |
+| → `$FVWORK/updated_ens/memNNN` | `$EXPID.ana.eta.<date>.nc4` = `dyn_jediupd.x`(`$ATMENSLOC/memNNN/$EXPID.bkg.eta`, increment) |
+| → `$FVWORK/updated_ens` | `ensmean/`, `ensrms/` (filled by `post_eana.csh`), `$EXPID.atmens_olog.<ana>.tar.gz` |
+
+The ensemble needs the central analysis of the same cycle to have run through
+swell first (it reads `$SWELL_OBS_SHARE/<ana>`); it aborts otherwise. Layout and
+GSIBEC grid follow from `SWELL_ENS_CRES` (13, 25, 91, 181).
 
 ## swell_run.csh
 

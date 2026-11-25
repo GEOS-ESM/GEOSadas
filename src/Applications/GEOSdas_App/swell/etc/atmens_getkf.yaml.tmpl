@@ -1,0 +1,57 @@
+# swell override: ADAS ensemble analysis, 1-step GETKF
+#                 (swell suite localensembleda, run by swell_ana_atmens.csh)
+#
+# Only values ADAS has to supply are set here; the observation list, localization
+# and inflation are the swell defaults. ADAS uses the posterior member increments
+# (analysis/memNNN/localensembleda.inc.eta.<date>.nc4); ensemble statistics are
+# computed later by post_eana.csh, so swell's mean/variance tasks are skipped.
+#   SWELL_*                                    swell_run.csh / swell_config.csh
+#   SWELL_ENS_*, SWELL_ENS_ROOT, SWELL_OBS_SHARE   swell_ana_atmens.csh
+
+experiment_id: $SWELL_EXPERIMENT_ID
+experiment_root: $SWELL_EXPERIMENT_ROOT
+start_cycle_point: '$SWELL_ISO_DATE'
+final_cycle_point: '$SWELL_ISO_DATE'
+skip_eva: true
+skip_ensemble_statistics: true
+
+jedi_build_method: use_existing
+existing_jedi_build_directory: $SWELL_JEDI_BUILD
+existing_jedi_source_directory: $SWELL_JEDI_SRC
+
+models:
+  geos_atmosphere:
+    cycle_times:
+    - $SWELL_CYCLE_TIME
+    window_type: 3D
+    window_length: PT6H
+    background_time_offset: PT9H     # time tag of the bias files
+    ebkg_time_offset: PT3H
+
+    background_experiment: $EXPID
+    geos_x_ensemble_directory: $SWELL_ENS_ROOT
+    ioda_locations_not_in_r2d2: $SWELL_OBS_SHARE
+    ensemble_num_members: $SWELL_ENS_NMEM
+
+    horizontal_resolution: '$SWELL_ENS_CRES'
+    vertical_resolution: '72'
+    npx_proc: $SWELL_ENS_NPX
+    npy_proc: $SWELL_ENS_NPY
+    perhost: $SWELL_ENS_PERHOST
+
+    gsibec_configuration: cli_gsibec_configuration
+    gsibec_version: '$SWELL_GSIBEC_VERSION'
+    gsibec_nlats: $SWELL_ENS_GSIBEC_NLATS
+    gsibec_nlons: $SWELL_ENS_GSIBEC_NLONS
+    obs_thinning_rej_fraction: $SWELL_ENS_THIN
+
+    skip_ensemble_hofx: true
+    local_ensemble_save_posterior_ensemble: false
+    local_ensemble_save_posterior_ensemble_increments: true
+    local_ensemble_save_posterior_mean: false
+    local_ensemble_save_posterior_mean_increment: false
+
+    crtm_coeff_dir: $SWELL_CRTM_COEFFS
+    swell_static_files: $SWELL_STATIC_FILES
+    observing_system_records_mksi_path: $SWELL_MKSI_PATH
+    clean_patterns: []

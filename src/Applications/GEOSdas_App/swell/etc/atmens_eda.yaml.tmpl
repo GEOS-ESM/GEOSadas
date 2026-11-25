@@ -1,0 +1,88 @@
+# swell override: ADAS ensemble analysis, EDA = perturbed-observation 3D-Var members
+#                 (swell suite eda_atmos, run by swell_ana_atmens.csh)
+#
+# Only values ADAS has to supply are set here. ADAS uses the member increments
+# (analysis/memNNN/<expid>.inc_iter1.memNNN.<date>.nc4); ensemble statistics are
+# computed later by post_eana.csh, so swell's mean/variance tasks are skipped.
+#   SWELL_*                                    swell_run.csh / swell_config.csh
+#   SWELL_ENS_*, SWELL_ENS_ROOT, SWELL_OBS_SHARE   swell_ana_atmens.csh
+
+experiment_id: $SWELL_EXPERIMENT_ID
+experiment_root: $SWELL_EXPERIMENT_ROOT
+start_cycle_point: '$SWELL_ISO_DATE'
+final_cycle_point: '$SWELL_ISO_DATE'
+skip_eva: true
+skip_ensemble_statistics: true
+
+jedi_build_method: use_existing
+existing_jedi_build_directory: $SWELL_JEDI_BUILD
+existing_jedi_source_directory: $SWELL_JEDI_SRC
+
+models:
+  geos_atmosphere:
+    cycle_times:
+    - $SWELL_CYCLE_TIME
+    window_type: 3D
+    window_length: PT6H
+    background_time_offset: PT9H     # time tag of the bias files
+    ebkg_time_offset: PT3H
+
+    background_experiment: $EXPID
+    geos_x_ensemble_directory: $SWELL_ENS_ROOT
+    ioda_locations_not_in_r2d2: $SWELL_OBS_SHARE
+    ensemble_num_members: $SWELL_ENS_NMEM
+
+    horizontal_resolution: '$SWELL_ENS_CRES'
+    vertical_resolution: '72'
+    npx_proc: $SWELL_ENS_NPX
+    npy_proc: $SWELL_ENS_NPY
+    perhost: $SWELL_ENS_PERHOST
+
+    gsibec_configuration: cli_gsibec_configuration
+    gsibec_version: '$SWELL_GSIBEC_VERSION'
+    gsibec_nlats: $SWELL_ENS_GSIBEC_NLATS
+    gsibec_nlons: $SWELL_ENS_GSIBEC_NLONS
+    minimizer: DRPCG
+    gradient_norm_reduction: 1e-3
+    number_of_iterations:
+    - $SWELL_ENS_NITER
+    obs_pert_amplitude: $SWELL_ENS_OBS_PERT
+    obs_thinning_rej_fraction: $SWELL_ENS_THIN
+
+    crtm_coeff_dir: $SWELL_CRTM_COEFFS
+    swell_static_files: $SWELL_STATIC_FILES
+    observing_system_records_mksi_path: $SWELL_MKSI_PATH
+    clean_patterns: []
+
+    # channel-correlated radiances (airs, cris, iasi) are left out: their obs
+    # errors cannot be perturbed consistently yet
+    observations:
+    - aircraft_temperature
+    - aircraft_wind
+    - amsr2_gcom-w1
+    - amsua_aqua
+    - amsua_metop-b
+    - amsua_metop-c
+    - amsua_n15
+    - amsua_n18
+    - amsua_n19
+    - atms_n20
+    - atms_npp
+    - avhrr3_metop-b
+    - avhrr3_n18
+    - avhrr3_n19
+    - gmi_gpm
+    - gps
+    - mhs_metop-b
+    - mhs_metop-c
+    - mhs_n19
+    - mls55_aura
+    - omi_aura
+    - ompsnm_npp
+    - pibal
+    - satwind
+    - scatwind
+    - sfcship
+    - sfc
+    - sondes
+    - ssmis_f17

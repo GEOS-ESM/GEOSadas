@@ -16,7 +16,7 @@ if ( ! $?SWELL_SRC )    setenv SWELL_SRC    /discover/nobackup/yyu11/prep_swell/
 
 # Expected swell commit (full or abbreviated hash). Empty string disables the check.
 # SWELL_COMMIT_STRICT=1 aborts on mismatch; 0 only warns.
-if ( ! $?SWELL_COMMIT )        setenv SWELL_COMMIT        44fe8d1f9ccd89d204c31089708e17151a291b78
+if ( ! $?SWELL_COMMIT )        setenv SWELL_COMMIT        881b8c307ed70b3e4312f2bca1b67a6660a377fb
 if ( ! $?SWELL_COMMIT_STRICT ) setenv SWELL_COMMIT_STRICT 1
 
 # JEDI build and source used by swell (jedi_build_method: use_existing)
@@ -81,3 +81,29 @@ if ( ! $?SWELL_VARBC_DIR ) then
       setenv SWELL_VARBC_DIR $FVHOME/swell/varbc
    endif
 endif
+
+# Observations and biases used by the central analysis, per cycle, read by the
+# ensemble analysis of the same cycle (latest SWELL_OBS_SHARE_KEEP cycles kept)
+if ( ! $?SWELL_OBS_SHARE ) then
+   if ( $?FVHOME ) then
+      setenv SWELL_OBS_SHARE $FVHOME/swell/obs
+   endif
+endif
+if ( ! $?SWELL_OBS_SHARE_KEEP ) setenv SWELL_OBS_SHARE_KEEP 4
+
+# ---------------------------------------------------------------------------
+# Ensemble analysis (swell_ana_atmens.csh, called by atm_ens.j)
+# ---------------------------------------------------------------------------
+# none: GSI EnKF (or the old JEDI path); eda: eda_atmos; getkf: localensembleda;
+# getkf2: localensembleda_2steps
+if ( ! $?SWELL_ENSEMBLE ) setenv SWELL_ENSEMBLE none
+
+# Cubed-sphere resolution of the ensemble backgrounds as npx (C12 -> 13, C24 -> 25,
+# C90 -> 91, C180 -> 181). Layout and GSIBEC grid follow from it (see swell_ana_atmens.csh).
+#if ( ! $?SWELL_ENS_CRES ) setenv SWELL_ENS_CRES 13
+
+if ( ! $?SWELL_ENS_NITER )    setenv SWELL_ENS_NITER    50      # EDA inner iterations
+if ( ! $?SWELL_ENS_OBS_PERT ) setenv SWELL_ENS_OBS_PERT 0.5     # EDA obs perturbation amplitude
+if ( ! $?SWELL_ENS_WALLTIME ) setenv SWELL_ENS_WALLTIME 00:40:00
+# Obs thinning rejection fraction; default 0.8 (eda) / 0.75 (getkf), as in jedi_eda/getkf.yaml
+#if ( ! $?SWELL_ENS_THIN ) setenv SWELL_ENS_THIN 0.8

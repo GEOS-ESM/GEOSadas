@@ -38,7 +38,17 @@
   # in place of GSI-based ensemble (for now, experiments
   # require a pure GSI-based initial cycle)
   setenv JEDI_CAN_RUN_NOW 0
-  if ( -d $FVHOME/run/jedi ) then
+  # Ensemble analysis through swell (swell_ana_atmens.csh) when the experiment opts in
+  setenv SWELL_ENS_RUN 0
+  if ( -e $FVHOME/run/swell/swell_config.csh ) then
+     source $FVHOME/run/swell/swell_config.csh
+     if ( "$SWELL_ENSEMBLE" != "none" ) then
+        setenv SWELL_ENS_RUN 1
+        setenv JEDI_CAN_RUN_NOW 1
+        setenv ATMENS_ENSQRF 0
+     endif
+  endif
+  if ( -d $FVHOME/run/jedi && ! $SWELL_ENS_RUN ) then
      set jedi_cycles = `ls $FVHOME/run/jedi/Config/geosvar.*z.yaml | wc`
      @ jedi_cycles = $jedi_cycles[1] # JEDI must have cycled twice for its ens to run (viz., vbc)
      if ( $jedi_cycles > 1                     && \
@@ -473,11 +483,11 @@
          mkdir mem$memtag
          cd mem$memtag
          /bin/ln -sf $FVHOME/atmens/mem$memtag/$EXPID.bkg.eta.*.$NCSUFFIX .
-         cd -
+         cd $FVWORK
       endif
       @ ic++
     end
-    cd -
+    cd $FVWORK
   else
     if ( $RUN_OBVSR || $DO_ATM_ENS ) then
       zeit_ci.x obsvr
@@ -532,7 +542,9 @@
 # ------------------------------------
   if ( $RUN_EAANA || $DO_ATM_ENS ) then
       zeit_ci.x eana
-      if ( $JEDI_CAN_RUN_NOW ) then
+      if ( $SWELL_ENS_RUN ) then
+         swell_ana_atmens.csh $nymdb $nhmsb $anymd $anhms |& tee -a atm_ens.log
+      else if ( $JEDI_CAN_RUN_NOW ) then
          jedi_driver_atmens.csh $nymdb $nhmsb $anymd $anhms 0 |& tee -a atm_ens.log
       else
          atmos_eana.csh $EXPID $anymd $anhms |& tee -a atm_ens.log

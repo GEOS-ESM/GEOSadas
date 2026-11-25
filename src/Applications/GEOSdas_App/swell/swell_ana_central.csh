@@ -22,6 +22,9 @@
 #   $SWELL_BKG_ARCHIVE/$EXPID/rs/Y%Y/M%m/$EXPID.bkgcrst.<analysis-9h>.tar   cubed backgrounds
 #   $SWELL_VARBC_DIR                   previous JEDI VarBC (used if JEDI_FEEDBACK_VARBC=1)
 #
+# Also writes $SWELL_OBS_SHARE/<ana>/geos_atmosphere (copy of the observations and biases
+# used here) for swell_ana_atmens.csh; the latest SWELL_OBS_SHARE_KEEP cycles are kept.
+#
 # Resolution: SWELL_CENTRAL_CRES (npx: 13, 25, 91, 181, 361, 721) selects the processor
 # layout and GSIBEC grid; any SWELL_CENTRAL_{NPX,NPY,PERHOST,GSIBEC_NLATS,GSIBEC_NLONS}
 # already in the environment wins.
@@ -241,6 +244,26 @@ endif
 cd $JEDIWORK
 echo "${myname}: $nhofx observation feedback file(s)"
 
+# --- inputs for the ensemble analysis of this cycle ------------------------
+# The observations and bias correction this analysis used; done before the VarBC
+# directory is refreshed below, since some of the inputs are links into it.
+if ( $?SWELL_OBS_SHARE ) then
+   set share = $SWELL_OBS_SHARE/${nymda}T${nhmsa}Z/geos_atmosphere
+   /bin/rm -rf $share
+   mkdir -p $share
+   /bin/cp -L $obsdir/* $share/
+   if ( $status ) then
+      echo "${myname}: failed to copy the inputs of this analysis to $share, aborting"
+      exit 1
+   endif
+   if ( ! $?SWELL_OBS_SHARE_KEEP ) setenv SWELL_OBS_SHARE_KEEP 4
+   @ k1 = $SWELL_OBS_SHARE_KEEP + 1
+   foreach d ( `find $SWELL_OBS_SHARE -mindepth 1 -maxdepth 1 -type d -name "*T*Z" | sort -r | tail -n +$k1` )
+      /bin/rm -rf $d
+   end
+   echo "${myname}: observations and biases for the ensemble saved in $share"
+endif
+
 # --- VarBC output for the next cycle ---------------------------------------
 foreach f ( `find $cycdir -maxdepth 1 -type f \( -name "*.${btag}.satbias.nc4" -o -name "*.${btag}.satbias_cov.nc4" -o -name "*.${btag}.acftbias" -o -name "*.${btag}.acftbias_cov" \)` )
    /bin/mv $f vbc/
@@ -267,8 +290,8 @@ cd $JEDIWORK
 echo "${myname}: $nvbc VarBC file(s) saved for the next cycle in $SWELL_VARBC_DIR"
 
 # --- record of the JEDI configuration --------------------------------------
-# (atm_ens.j counts run/jedi/Config/geosvar.*z.yaml to decide that the central
-#  JEDI analysis is cycling; keep providing it until the ensemble moves to swell)
+# (for the old JEDI ensemble path, atm_ens.j counts run/jedi/Config/geosvar.*z.yaml
+#  to decide that the central JEDI analysis is cycling; the swell path does not)
 if ( -d $FVHOME/run/jedi/Config ) then
    /bin/cp $cycdir/jedi_variational_config.yaml $FVHOME/run/jedi/Config/geosvar.${nymda}_${hha}z.yaml
 endif
